@@ -45,8 +45,11 @@ This shapes almost every design decision, so it is stated once here and assumed 
   the users who cannot judge it, and it does not restore secure-context features anyway. The scheme and
   bind address live in one place so HTTPS stays a config change, never a rewrite.
 - Because there is no secure context, there is **no service worker and no PWA install**. Phones are
-  online-only. An order queues in `localStorage` and retries through short WiFi dropouts, but only
-  while the page stays open.
+  online-only. There is no automatic retry queue: a failed submission leaves the order on screen with
+  a retry action the server taps themselves. `localStorage` holds the in-progress order as a draft
+  cart so a reload does not lose it, which is not a queue and must never grow into one. Every
+  submission carries a client-generated id so a retry after a lost response returns the original
+  order instead of creating a second one.
 - The laptop's IP address is not stable and cannot be made stable without admin rights. **The QR code
   carries the full URL including the current IP**, which is why it solves both enrolment and
   addressing. Never introduce a flow that depends on a phone remembering an address.

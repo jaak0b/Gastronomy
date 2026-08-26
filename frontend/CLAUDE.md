@@ -13,14 +13,13 @@ Two audiences in one build:
 - **The server phone app.** Used one-handed, at night, at a loud festival, by a volunteer who has never
   been trained on it. This is the primary surface and every design trade-off favours it.
 - **The admin configuration UI.** Used on the laptop before the event: items and prices, production
-  locations and their zones, item-to-location assignment, station and printer setup, device enrolment
-  and revocation.
+  locations, item-to-location assignment, station and printer setup, device enrolment and revocation.
 
 ## Hard rules
 
 1. **Keep the core framework-agnostic and modular.** Code in `src/core/` must not import Vue or Pinia
-   and must not touch the DOM. Order building, price totalling, routing rules, and the offline retry
-   queue are plain TypeScript, so they are testable without mounting anything.
+   and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
+   and submission identity are plain TypeScript, so they are testable without mounting anything.
 
 2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order state, a
    print outcome, a transport kind) must handle every member explicitly and end in `assertNever`. Never
@@ -33,11 +32,13 @@ Two audiences in one build:
    kitchen. Three states, always distinguishable: not yet sent, sent and confirmed printed, failed with
    a stated reason.
 
-4. **The offline queue is core logic, not a component concern.** An order queues in `localStorage` and
-   retries through short WiFi dropouts. Its rules (what queues, how long, when it gives up, how it
-   avoids double submission on reconnect) live in `src/core/` with tests, never inside a component.
-   Remember that phones are online-only: there is no service worker, so the queue survives a dropout
-   but not a closed tab. The UI must say so where it matters.
+4. **There is no offline retry queue, and nothing may grow into one.** A failed submission leaves the
+   order on screen exactly as it was and offers a retry the server taps themselves. No timers, no
+   background resubmission, no give-up window, no queue data structure. `localStorage` holds the
+   in-progress order as a **draft cart** so a reload does not lose half-built work: a draft is one
+   order, with no list, no timer and no state field. Any implementation that gives it those has
+   rebuilt the queue under another name and must be rejected in review. The client-generated
+   submission id that makes retry safe against a lost response lives in `src/core/` with tests.
 
 5. **Localization through vue-i18n, German and English complete in the same change.** No string
    literals in templates or components. A key present in one locale only is an incomplete change.
@@ -51,9 +52,11 @@ Two audiences in one build:
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.
 - **The order total is prominent**, because its only job is helping a human add up cash correctly.
-- **Zone is chosen once at shift start** and shown persistently in the header, with a per-item override
-  available but never required. Routing is otherwise automatic: an item's candidate locations filtered
-  by the server's zone. Do not make the server pick a location per item in the normal flow.
+- **There are no zones.** An item that has exactly one candidate production location routes
+  automatically, and no location control renders for it. That is the normal case and it must be
+  completely invisible. Only an item with more than one candidate location asks the server to choose,
+  and that choice belongs to the order line, not to a session, a device or a shift. Never introduce a
+  remembered location preference or a shift-start selection screen.
 - **Enrolment is a QR scan.** The QR carries the full URL including the laptop's current IP, so nothing
   in the app may depend on a remembered address. A 6-digit code is the fallback for a broken camera.
 - **No feature may require a service worker**, a secure context, or an installed PWA.
@@ -63,7 +66,8 @@ Two audiences in one build:
 Two tiers, governed by their own skills in `.claude/skills/`:
 
 - **Unit tests (Vitest, `tests/`)** are the internal correctness net. Core logic first: totals, routing,
-  the retry queue, state transitions. See `writing-unittests`.
+  draft cart persistence, submission identity across retries, state transitions. See
+  `writing-unittests`.
 - **Web tests (Playwright, `e2e/`)** are owner-facing assurance that approved behaviour does not drift.
   Required for the order placement flow. See `writing-webtests`.
 
