@@ -29,7 +29,7 @@ Contents:
 7. Printing service
 8. Frontend screens
 9. Offline and failure behaviour on the phone
-10. Configuration and setup
+10. The program on the laptop and its setup
 11. Testing strategy
 12. Open questions
 
@@ -95,7 +95,7 @@ answered with "that was decided against", not with a redesign.
 | Accounts, usernames, passwords | Nobody will manage credentials at a festival. Section 2.8 describes what replaces them. |
 | Guest self-ordering | The server at the table is the product. |
 | Reporting and analytics beyond a list of the evening's orders | Nobody will read it. |
-| Native apps, app store distribution, PWA install | There is no secure context over plain HTTP, so no service worker and no install prompt exist. |
+| Native apps for the phones, app store distribution, PWA install | Every phone uses a browser and nothing else. There is no secure context over plain HTTP, so no service worker and no install prompt exist. The laptop is the one machine that does run a native application, and section 10.1 says what it is and what it deliberately is not. |
 | Tray tracking, delivery confirmation | A server carries the tray. The app is not told when it arrives. |
 | Cancelling or correcting an order after it is placed | The moment an order is placed, its slip is printing or already lying on the pile at the station. Cancelling in software does nothing to paper that already exists, and a cancel button would tell the server the order is withdrawn while the kitchen carries on cooking it. That illusion is the exact defect this product exists to remove. The honest correction is the one the paper process already uses: walk over and tell the station. Section 3.6 says what the phone tells the server. |
 | Deleting or cleaning up a mistaken order | It stays in the database. No money moves through the app and nothing aggregates orders, so a wrong order costs a line in a list the treasurer skims once. A cleanup mechanism would be a second way to make a slip disappear from a screen while it is still on a pile. |
@@ -325,7 +325,7 @@ Invariants:
   previous one in the same transaction.
 * An order always belongs to the session that was active when it was accepted. Sessions are never
   reassigned.
-* Ending a session deletes nothing. The SQLite file is the whole history and section 10.5 describes the
+* Ending a session deletes nothing. The SQLite file is the whole history and section 10.8 describes the
   backup.
 
 **Starting a session is guarded, because starting one by accident during service is the one action that
@@ -1263,10 +1263,11 @@ they are rendered on the backend from resx, because the printer has no resource 
 
 **Database failures have a stated outcome, like every other failure.** A write that cannot complete
 returns 503 with `code: DatabaseUnavailable` and a message telling the server to try sending the order
-again. On startup the backend verifies that the database file's directory
-is writable, and refuses to start with a plain sentence on the console when it is not. A volunteer who
-copies the program into `Program Files` on Windows hits exactly that, and a program that starts and
-then silently fails every order is the worst possible response to it.
+again. On startup the backend verifies that the data folder is writable, and when it is not, the
+program window shows `desktop.error.dataFolder` naming the folder and does not start serving. A
+program that starts and then silently fails every order is the worst possible response to a folder it
+cannot write to. Section 10.2 covers the case this actually catches on a fire department laptop: a
+`ProgramData` folder created by one Windows user that a different one can only read.
 
 ### 5.2 Enrolment and session (server phones)
 
@@ -2404,7 +2405,7 @@ does instead of printing is write a file.
 
 | Part | Value |
 |---|---|
-| Root folder | `mock-slips`, in the same directory as the database file, whose path is the `appsettings.json` setting in section 10.4 |
+| Root folder | `mock-slips`, in the data folder beside the database file, whose path is the setting in section 10.2 |
 | Folder per location | `{sanitised location name}-{first eight characters of the location id}` |
 | File name | `{session start, yyyyMMdd-HHmmss}_{folder name of the location}_slip-{sequence, three digits}_print-{n}.txt` |
 | File name of a test print | `{session start, yyyyMMdd-HHmmss}_{folder name of the location}_test-{process id}.txt` |
@@ -2437,8 +2438,8 @@ creates its location's folder and writes and deletes a probe file in it. If any 
 reason the operating system gave, and every job at that station returns `PrinterError` with zero bytes
 written. That is the `PrinterError` with zero bytes row of the table in section 7.6, so the ticket goes
 `Blocked` and the phone is told the station needs a human. This is one of the four known causes in
-section 3.2, because the message names a folder and a person can move the program into one they are
-allowed to write: the give-up window is suspended while it holds, and the 20 minute outer bound ends it
+section 3.2, because the message names a folder and a person can pick a data folder they are allowed
+to write in, from the settings window (section 10.1): the give-up window is suspended while it holds, and the 20 minute outer bound ends it
 in `Failed` rather than in silence if nobody acts. The admin printer screen shows
 `admin.printers.mockFolderUnwritable` with the path in it. Nothing is ever reported as printed when no
 file was written.
@@ -2530,6 +2531,10 @@ These rules bind every string in this section and every string added later.
 
 There is no shift-start screen. A server who has just set up their phone lands on the catalog and can
 take an order immediately.
+
+**The program window and its settings window are not in this table and are not web screens.** They
+belong to the desktop application and are specified in section 10.1, which also states why they never
+grow into a second admin interface.
 
 ### 8.3 Enrolment by QR code
 
@@ -2819,7 +2824,9 @@ cause has stopped being the useful fact and the walk is.
 ### 8.9 Admin configuration
 
 Runs on the laptop, in a browser, at `http://localhost:5000/admin`. It is a wider layout than the phone
-app and shares the same localization files.
+app and shares the same localization files. The volunteer gets here by clicking "Open the admin pages"
+in the program window rather than by typing that address (section 10.1), and this is the only
+administrative interface the product has.
 
 Opened from a phone, the same page renders one sentence and nothing else, because a volunteer who reads
 the laptop's address off the overview screen and types it into a phone would otherwise get a broken
@@ -2845,7 +2852,11 @@ names exactly what is missing.
 | `admin.overview.stationBlocked` | Kümmern Sie sich um den Drucker bei {name}. Dort warten {count} Bons seit {minutes} Minuten. | Sort out the printer at {name}. {count} slips have been waiting there for {minutes} minutes. |
 | `admin.overview.address` | Die Telefone erreichen den Laptop unter {url}. | Phones reach the laptop at {url}. |
 | `admin.overview.addressChanged` | Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}. | Set every phone up again. The laptop's address was {previous} and is now {current}. |
-| `admin.overview.console` | Lassen Sie das schwarze Fenster offen. Wenn Sie es schließen, nimmt das Programm keine Bestellungen mehr an. | Leave the black window open. If you close it, the program stops taking orders. |
+
+**The overview no longer carries a line about keeping a window open.** It used to, because the program
+was a console window that anybody could close by accident. The desktop application (section 10.1)
+removes that failure instead of warning about it: closing its window minimises it and the server keeps
+running, so there is nothing left for the overview to warn about and the key is gone.
 
 **Stations, items, assignment, tables.** Plain list and form screens. The strings that carry a rule:
 
@@ -2917,7 +2928,7 @@ decision rather than leaving it open.
 | `admin.printers.sharedHelp` | Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Station die Adresse eines Druckers ein, der noch arbeitet. | This is intended. When a printer fails, enter the address of a printer that is still working for that station. |
 | `admin.printers.lastHeard` | Zuletzt gemeldet: {time} | Last heard from at {time} |
 | `admin.printers.mockFolder` | Die Bons dieses Testdruckers liegen im Ordner {path}. | The slips from this test printer are in the folder {path}. |
-| `admin.printers.mockFolderUnwritable` | Der Testdrucker bei {name} kann keine Bons ablegen. In den Ordner {path} lässt sich nichts schreiben. Legen Sie das Programm in einen Ordner, in dem Sie Dateien anlegen dürfen. | The test printer at {name} cannot put slips anywhere. Nothing can be written into the folder {path}. Move the program into a folder where you are allowed to create files. |
+| `admin.printers.mockFolderUnwritable` | Der Testdrucker bei {name} kann keine Bons ablegen. In den Ordner {path} lässt sich nichts schreiben. Wählen Sie in den Einstellungen des Programms einen Datenordner, in dem Sie Dateien anlegen dürfen. | The test printer at {name} cannot put slips anywhere. Nothing can be written into the folder {path}. In the program's settings, choose a data folder where you are allowed to create files. |
 | `admin.printers.faultTitle` | Störung am Testdrucker simulieren | Simulate a fault on the test printer |
 | `admin.printers.faultHelp` | Damit führen Sie vor, was am Telefon passiert, wenn ein Drucker ausfällt. Die Auswahl gilt nur für den Testdrucker. | This shows what happens on the phone when a printer fails. The setting applies to the test printer only. |
 | `admin.printers.fault.none` | Keine Störung | No fault |
@@ -3023,7 +3034,8 @@ nothing else live that a reader has to know about.
 |---|---|---|
 | `admin.backup.title` | Datensicherung | Backup |
 | `admin.backup.create` | Sicherungsdatei anlegen | Create a backup file |
-| `admin.backup.done` | Kopieren Sie die Datei {name} aus dem Programmordner auf einen USB-Stick. Sie enthält den ganzen Verlauf. | Copy the file {name} from the program folder onto a USB stick. It holds the whole history. |
+| `admin.backup.done` | Kopieren Sie die Datei {name} auf einen USB-Stick. Sie enthält den ganzen Verlauf und liegt im Ordner {path}. | Copy the file {name} onto a USB stick. It holds the whole history and is in the folder {path}. |
+| `admin.backup.openFolderHint` | Den Ordner öffnen Sie im Programmfenster unter Einstellungen mit "Datenordner öffnen". | Open the folder from the program window, under Settings, with "Open the data folder". |
 | `admin.backup.help` | Legen Sie die Sicherungsdatei über diese Schaltfläche an. Die Datenbankdatei einfach zu kopieren, während das Programm läuft, kann die letzten Bestellungen auslassen. | Create the backup file with this button. Copying the database file while the program is running can leave out the most recent orders. |
 | `admin.diagnostics.title` | Technische Angaben | Technical details |
 | `admin.diagnostics.log` | Protokolldatei öffnen | Open the log file |
@@ -3063,9 +3075,26 @@ of the button, and the endpoint refuses the same tickets with `station.takeRefus
 it another way. During a working evening the page is a list with no buttons on it, which is both safe
 and honest: it says what is coming, and it offers nothing to press.
 
-**What the user can do.** Read, filter by station, and mark a row as taken when that row offers it.
-Nothing else. There is no login, no configuration, and no way to change an order from here. Marking a
-row as taken can be undone for ten seconds.
+**What the user can do.** Read, filter by station, switch the language, and mark a row as taken when
+that row offers it. Nothing else. There is no login, no configuration, and no way to change an order
+from here. Marking a row as taken can be undone for ten seconds.
+
+**The page has a visible language switch, because nothing else here can know the language.** Every
+other surface knows: a phone stores the language its server chose (section 2.8), the admin runs on the
+laptop. This page is opened at 21:00 by whoever is standing at the fryer, on a phone that has never
+seen the system, with no token and nothing stored. So the switch is on the page, visible, labelled
+`station.language`, with the two options written in their own language: "Deutsch" and "English". Those
+two option labels are names rather than translated strings and stay identical in both locales.
+
+**What it shows before anybody touches it:** German, unless the phone's browser asks for English first
+in its `Accept-Language` header, in which case English. German is the fallback for everything else,
+because the fire department is German and a wrong guess costs one tap. This is the one place
+`Accept-Language` is used, and it does not contradict section 5.1: the rule there is that a stored
+language beats a header, and this page has no stored language to beat it.
+
+The choice is remembered in `localStorage` for the origin, so a reload during a long evening does not
+put the page back to German under somebody's hands. That is a display preference, not order state, and
+nothing about it is a queue.
 
 | Key | Deutsch | English |
 |---|---|---|
@@ -3073,6 +3102,7 @@ row as taken can be undone for ten seconds.
 | `station.warningTitle` | Diese Seite ist nur für den Notfall. | This page is only for emergencies. |
 | `station.warningBody` | Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Station den Bonstapel ab. | Open it only when the printer has failed. In normal operation the station works off the pile of slips. |
 | `station.empty` | Es liegen keine offenen Bestellungen an. Alle Bons sind gedruckt. | There are no open orders. Every slip has printed. |
+| `station.language` | Sprache | Language |
 | `station.filterLabel` | Station | Station |
 | `station.filterHelp` | Wählen Sie die Station, deren Bons Sie hier sehen wollen. | Choose the station whose slips you want to see here. |
 | `station.row` | Bon {sequence}, Bestellung {order}, {table} | Slip {sequence}, order {order}, {table} |
@@ -3243,9 +3273,283 @@ sent twice, not against two people taking the same order, which is a problem sof
 
 ---
 
-## 10. Configuration and setup
+## 10. The program on the laptop and its setup
 
-### 10.1 What the admin configures, in order
+### 10.1 The desktop application
+
+The program the volunteer starts is an **Avalonia desktop application**, not a console window. The
+window is what the operator sees all evening, and it exists to make three failures impossible or
+visible: the program being closed by accident, the laptop going to sleep, and nobody noticing that no
+phone can reach the laptop.
+
+**How the code is split.**
+
+| Project | Role |
+|---|---|
+| `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
+| `GastronomyApp.Infrastructure` | EF Core SQLite, printer transports, device token store. |
+| `GastronomyApp.Api` | **A library.** It configures and returns the web application: REST endpoints, SignalR hub, static frontend, composition root. It hosts nothing by itself and has no entry point. |
+| `GastronomyApp.Desktop` | **The executable.** The Avalonia window, and the host that starts and runs the web application returned by `GastronomyApp.Api` in the same process. |
+| `*.Tests` | Unit tests against Core, integration tests against Infrastructure and the API. |
+
+The repository gains a third source tree beside the two that exist:
+
+| Folder | Contents |
+|---|---|
+| `backend/` | `GastronomyApp.Core`, `GastronomyApp.Infrastructure`, `GastronomyApp.Api`, the test projects. |
+| `frontend/` | The Vue application, built into the API library's `wwwroot`. |
+| `desktop/` | `GastronomyApp.Desktop`, the Avalonia application and the published executable. |
+| `pi-agent/` | The Python agent for USB-attached printers. Deferred. |
+
+**One process.** The desktop application does not launch a service, a second executable or a child
+process. It starts the web application in its own process and stops it when it quits. Two processes
+would mean two things to close, two things to crash, and a volunteer who can see one of them running
+while the other is gone.
+
+**Version 1 does not specify a headless entry point**, because nobody has asked for one. The library
+split makes one possible later: a second executable referencing `GastronomyApp.Api` would run the same
+web application with no window and no restructuring of anything below it.
+
+#### The boundary between the window and the admin pages
+
+**The admin interface is the web page, and the desktop window never becomes a second one.** The web
+admin has to exist regardless, because the phones are browsers and the person setting them up is
+already in a browser. A second administrative surface in the window would have to be kept true against
+the first, and the two would disagree on the evening one of them was not updated.
+
+The window is a launcher, a status light and an address display. Three things live in it and nothing
+else: **starting and stopping the server, the address the phones need, and the settings that cannot be
+changed through a web page served by the very server being configured.** Every other setting, every
+list and every live view belongs to the admin pages, and the window's answer to all of them is the
+button that opens the admin pages.
+
+#### What the window shows
+
+Deliberately minimal. A volunteer glances at it while carrying something.
+
+1. **The current address, in large type, with a QR code of it beside it.** This is the most useful
+   thing on the screen, and it is what a phone needs. Scanning that code opens the site on a phone,
+   which is how a volunteer proves the phones can reach the laptop.
+2. **Running or stopped**, and **one** attention indicator: either everything is in order, or something
+   needs looking at. The indicator links through to the admin pages and says nothing more. It does not
+   repeat printer status, order counts, ticket ages or any live feed: all of that is on the admin
+   overview already, and a second copy of it would be the second administrative surface this section
+   forbids.
+3. **How many phones are set up**, and, until the first phone has ever connected, a line saying that no
+   phone has connected yet. A firewall rule that was never created and a WiFi the laptop is not on both
+   look exactly like a working system until a server tries to take an order. This line is what turns
+   that into something visible during setup instead of during service.
+4. **Three buttons: open the admin pages, settings, quit.** The button that opens the admin pages is
+   the largest and is never hidden behind a menu, because it is the one a volunteer needs and the one
+   they would otherwise be told to find by typing an address.
+5. **Errors in plain language, on the window.** The port is already taken, the data folder cannot be
+   written to, no network was found. These are shown in the window where the person is looking, not
+   written to a log nobody opens, and they replace both the console line and the startup refusal that
+   an earlier draft of this document specified.
+
+The QR code in the window is drawn from the same QR encoder the printing service uses for the station
+card's fallback path (section 7.7 and open question 11). One encoder, one place: a second
+implementation of QR encoding for the sake of one window would be a second thing to get wrong.
+
+#### Closing the window may never end the evening
+
+**Clicking the window's close button minimises the window. It never stops the server.** Quitting
+happens only through the quit button, and the quit button asks for confirmation first.
+
+This is the entire justification for the desktop application existing. In the console design, the one
+gesture every computer user makes without thinking, clicking the cross in the corner, ended ordering
+for the whole festival, and the only defence was a bold line in a checklist that the person who closed
+the window had not read. A window that cannot be closed by accident removes the failure rather than
+warning about it.
+
+**The program does not open a browser by itself when it starts.** The owner considered it and chose
+the visible button instead: a volunteer restarting the program at 20:30 because something looked wrong
+does not want a browser window arriving on top of what they were doing.
+
+#### Only one instance may run
+
+A second launch must not produce a second server. The application takes a named mutex at startup; when
+the mutex is already held, the second instance signals the first over a named pipe, the first brings
+its window to the front, and the second exits without showing anything. Two instances would mean two
+servers, one of which loses the port, and phones talking to whichever won it.
+
+The port bind is the backstop for the case the mutex cannot catch, such as a second Windows user
+signed in through fast user switching. That failure surfaces as the plain "the port is already taken"
+message from the list above rather than as a crash.
+
+#### The settings window
+
+It holds only what cannot live in a web page served by the server being configured, which is exactly
+four things:
+
+| Setting | Why it cannot be a web page |
+|---|---|
+| Port | Changing it moves the address the admin page is being served on. |
+| Bind address | Same, and a wrong value makes the admin page unreachable. |
+| Data folder | The database has to be opened before anything can be served. |
+| Which network's address is shown | Only relevant when the laptop is on more than one network, and it decides which address the phones are given. |
+
+Two buttons sit beside them: **open the data folder**, so a volunteer can find the backup file
+(section 10.8), and **allow access from the network**, which is the firewall repair described in
+section 10.3. Everything else stays in the web admin.
+
+**`appsettings.json` is no longer a file any human opens.** Section 10.7 says what became of it.
+
+#### The laptop may not sleep while the server runs
+
+A sleeping laptop is a festival with no ordering system and no error message anywhere. While the
+server is running, the application tells Windows to keep the machine awake, and it releases that as
+soon as the server stops.
+
+Concretely, on Windows: `SetThreadExecutionState` with `ES_CONTINUOUS | ES_SYSTEM_REQUIRED` while
+running, and `ES_CONTINUOUS` alone to release it. The display is deliberately not held on, because
+the screen switching off costs nothing and the laptop stays awake behind it.
+
+**This replaces the checklist step that asked a volunteer to change the laptop's power settings, and
+that step is deleted.** What the application cannot override is a closed lid, which is a hardware
+policy rather than a timeout, so the checklist still says to leave the lid open.
+
+**On platforms other than Windows** no equivalent call is made in version 1. Avalonia keeps macOS and
+Linux open as targets and nothing here forbids them, but the sleep suppression, the firewall rule
+(section 10.3) and the `C:\ProgramData` data folder (section 10.2) are all Windows behaviour. On
+another platform the program runs, serves and prints, and the operator is responsible for keeping the
+machine awake and the port reachable.
+
+#### The window's text
+
+Strings live in the same resx pair as the rest of the backend (backend rule 2), because the desktop
+application is C#. German and English, complete, like everywhere else.
+
+| Key | Deutsch | English |
+|---|---|---|
+| `desktop.windowTitle` | Bestellsystem | Ordering system |
+| `desktop.addressLabel` | Adresse für die Telefone | Address for the phones |
+| `desktop.address` | Die Telefone erreichen den Laptop unter {url}. | Phones reach the laptop at {url}. |
+| `desktop.qrHelp` | Scannen Sie den Code mit einem Telefon, um zu prüfen, dass die Telefone den Laptop erreichen. | Scan the code with a phone to check that the phones reach the laptop. |
+| `desktop.status.running` | Das Programm nimmt Bestellungen an. | The program is taking orders. |
+| `desktop.status.stopped` | Das Programm nimmt keine Bestellungen an. | The program is not taking orders. |
+| `desktop.attention.none` | Es ist alles in Ordnung. | Everything is in order. |
+| `desktop.attention.some` | Öffnen Sie die Verwaltung. Dort wartet etwas, um das Sie sich kümmern müssen. | Open the admin pages. Something there needs you to deal with it. |
+| `desktop.phones.none` | Es hat sich noch kein Telefon verbunden. | No phone has connected yet. |
+| `desktop.phones.one` | Ein Telefon ist eingerichtet. | One phone is set up. |
+| `desktop.phones.many` | {count} Telefone sind eingerichtet. | {count} phones are set up. |
+| `desktop.button.admin` | Verwaltung öffnen | Open the admin pages |
+| `desktop.button.settings` | Einstellungen | Settings |
+| `desktop.button.quit` | Programm beenden | Quit the program |
+| `desktop.minimised` | Das Programm läuft weiter und nimmt weiter Bestellungen an. Sie holen es über die Taskleiste zurück. | The program keeps running and keeps taking orders. You get it back from the taskbar. |
+| `desktop.quit.title` | Programm wirklich beenden? | Really quit the program? |
+| `desktop.quit.body` | Die Telefone können danach keine Bestellungen mehr aufgeben. | Phones can no longer place orders afterwards. |
+| `desktop.quit.confirm` | Beenden | Quit |
+| `desktop.quit.cancel` | Weiterlaufen lassen | Keep it running |
+| `desktop.error.portInUse` | Wählen Sie in den Einstellungen einen anderen Port. Der Port {port} wird schon von einem anderen Programm benutzt. | Choose a different port in the settings. Port {port} is already being used by another program. |
+| `desktop.error.dataFolder` | Wählen Sie in den Einstellungen einen anderen Datenordner. In den Ordner {path} lässt sich nichts schreiben. | Choose a different data folder in the settings. Nothing can be written into the folder {path}. |
+| `desktop.error.noNetwork` | Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk. | Connect the laptop to the WiFi the phones are on. The laptop is not on any network at the moment. |
+| `desktop.settings.title` | Einstellungen | Settings |
+| `desktop.settings.port` | Port | Port |
+| `desktop.settings.portHelp` | Ändern Sie den Port nur, wenn das Programm meldet, dass er belegt ist. | Change the port only when the program reports that it is taken. |
+| `desktop.settings.bindAddress` | Adresse, auf der das Programm antwortet | Address the program answers on |
+| `desktop.settings.dataFolder` | Datenordner | Data folder |
+| `desktop.settings.dataFolderHelp` | Hier liegen die Datenbank und die Sicherungsdateien. | The database and the backup files are here. |
+| `desktop.settings.openDataFolder` | Datenordner öffnen | Open the data folder |
+| `desktop.settings.network` | Netzwerk, dessen Adresse angezeigt wird | Network whose address is shown |
+| `desktop.settings.networkHelp` | Wählen Sie das WLAN, in dem die Telefone sind. Der Laptop ist in mehr als einem Netzwerk. | Choose the WiFi the phones are on. The laptop is on more than one network. |
+| `desktop.settings.firewall` | Zugriff aus dem Netzwerk freigeben | Allow access from the network |
+| `desktop.settings.firewallHelp` | Nehmen Sie das nur, wenn die Telefone den Laptop nicht erreichen. Windows fragt dabei einmal nach. | Use this only when the phones cannot reach the laptop. Windows asks you once while it happens. |
+| `desktop.settings.firewallDeclined` | Öffnen Sie in den Windows-Einstellungen "Firewall & Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. | In the Windows settings, open "Firewall & network protection" and allow this program the incoming connection on the private network. |
+| `desktop.firstRun.title` | Einmalige Einrichtung | One-time setup |
+| `desktop.firstRun.body` | Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an. | Confirm the question Windows asks. The program allows access from the network and creates its data folder. |
+| `desktop.firstRun.declined` | Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, holen Sie das in den Einstellungen unter "Zugriff aus dem Netzwerk freigeben" nach. | The program runs anyway. If the phones cannot reach the laptop later, do this in the settings under "Allow access from the network". |
+
+`desktop.phones.one` and `desktop.phones.many` are two keys rather than one, because these are backend
+resx strings and resx has no plural machinery. The web app's `{count}` strings go through vue-i18n
+plural forms as they always have; this table is not part of that.
+
+### 10.2 Where the data lives
+
+**The database, the log, the mock's slip folder and the backup files live in
+`C:\ProgramData\GastronomyApp\`.** They do not live beside the executable.
+
+The reason is the realistic case at a fire department: several people take turns operating the laptop
+and they do not all sign in as the same Windows user. `ProgramData` is reachable no matter who signs
+in. A folder under a user's own profile is not, and a folder beside the executable depends on where
+somebody happened to drop it.
+
+**The permissions trap, which breaks exactly the case this choice exists to serve.** A new folder
+created under `ProgramData` inherits an access control list that gives its creator full control and
+everyone else read access only. So the volunteer who sets the system up at home can write to it, and
+the different volunteer who signs in at the festival can read the database and cannot write to it.
+Orders then start failing for a reason nobody present could guess, on the evening it matters.
+
+**When the application creates its folder it must therefore grant the `Users` group modify rights on
+it, explicitly.** A `FileSystemAccessRule` for the well-known `Users` group with `Modify`, with
+`ContainerInherit` and `ObjectInherit` so files and subfolders created later carry it too. This needs
+no administrator rights, because the owner of a folder may always change that folder's own access
+list, but it does have to be done deliberately: the default inheritance will not do it and the failure
+it causes is silent until somebody else signs in.
+
+The first run setup step in section 10.3 performs the same grant, so a folder created before this rule
+existed is repaired rather than left broken.
+
+**What this means for updating the program.** The executable and the data are now in different places,
+so replacing the executable with a newer one does not touch the database, the log or the backups. An
+update is a file copy, and the evening's history survives it.
+
+**On platforms other than Windows** the data folder is the platform's own per-user application data
+location and the access control grant does not happen, because the mechanism is Windows-specific and
+the several-people-take-turns argument does not describe a machine that is not the fire department's
+Windows laptop. Version 1 targets Windows.
+
+### 10.3 First run, and the one elevation
+
+**The program does not run as an administrator.** The owner considered it and rejected it, for three
+reasons that are worth keeping written down:
+
+* A UAC prompt on every start is the same problem that ruled out a self-signed certificate: a scary
+  dialog put in front of exactly the person who cannot judge it, every single time.
+* A laptop whose operator is a standard user could not run the program at all.
+* A web server bound to every interface on an open WiFi is a much larger liability with full machine
+  rights behind it than without.
+
+Instead, **the first run performs the work that needs elevation once, in a single elevation**, and the
+program runs as a normal user for the rest of its life. Two things happen in that one elevation:
+
+1. **The inbound firewall rule for the program is created.**
+2. **The data folder is created and made writable by anyone who may sign in** (section 10.2).
+
+`desktop.firstRun.body` says what the Windows prompt is for before it appears. If the elevation is
+declined, `desktop.firstRun.declined` says what still works and where to repair it, and the program
+starts normally.
+
+#### Why the firewall rule is created deliberately and never left to the prompt
+
+The Windows Defender Firewall prompt that appears when a program first listens on a port looks like it
+solves this, and it does not.
+
+* **The prompt cannot be re-triggered.** Once a decision has been recorded for a program, Windows does
+  not ask again. A volunteer who clicked "Cancel" while carrying a crate of glasses has silently
+  decided the question for every future evening.
+* **Worse, Microsoft documents that when the user lacks administrative rights, block rules are created
+  no matter which button is clicked.** The prompt in that case is not a question. It is a block rule
+  with a dialog in front of it, and the phones cannot reach the laptop afterwards.
+
+So the rule is created with an elevated command during first run rather than by the runtime prompt. It
+is scoped to the program rather than to a bare port, restricted to the private profile and to the local
+subnet, and it allows the inbound TCP connection the phones need.
+
+#### The firewall button afterwards
+
+Somebody will decline the elevation, and somebody will arrive at a laptop where the rule was never
+created. The settings window therefore keeps **"Allow access from the network"** available for the rest
+of the program's life. It elevates and adds the same rule.
+
+If that elevation is declined too, the program falls back to opening the Windows firewall settings and
+showing `desktop.settings.firewallDeclined`, which is one plain sentence naming what to look for. It
+does not pretend the rule was added.
+
+**On platforms other than Windows** no firewall rule is created and the button is not shown. The
+operator's own firewall has to allow the port, and the program says which port that is.
+
+### 10.4 What the admin configures, in order
 
 The order matters, because each step needs the one before it. The overview screen enforces it by naming
 the next missing thing rather than letting the admin wander.
@@ -3269,15 +3573,16 @@ the next missing thing rather than letting the admin wander.
    list. There is no separate step for entering the servers' names, because setting a phone up is what
    creates them.
 
-### 10.2 Setup checklist, English
+### 10.5 Setup checklist, English
 
 Print this page and take it with you.
 
 **At home, the day before**
 
-1. Copy the program file onto the laptop and double click it. A black window opens. **Leave it open.**
-   Closing that window stops the program and the evening with it.
-2. Open the browser on the laptop and go to `http://localhost:5000/admin`.
+1. Copy the program onto the laptop and start it. The first time, Windows asks once whether the program
+   may make a change: confirm it. The program uses that one moment to allow access from the network and
+   to create its data folder, and it never asks again.
+2. In the program window, click "Open the admin pages".
 3. Create the stations, for example Kitchen and Bar.
 4. Enter the items with their prices.
 5. Tick, for each item, which stations can prepare it. Food usually gets only the kitchen. Beer at a
@@ -3295,29 +3600,31 @@ Print this page and take it with you.
    a DHCP reservation, or set a static address on the laptop's WiFi adapter. If the address changes
    during the evening, every phone loses the laptop at once and every one of them has to be set up
    again, one at a time.
-10. Plug the laptop into power. Set it so that it does not go to sleep and the screen stays on, and do
-    not close the lid.
-11. When Windows asks whether the program may communicate on the network, allow it for the private
-    network.
-12. Set up each printer: paper roll in, power on, network cable or WiFi bridge connected.
-13. Open the printer screen and search the network for printers, then tap the one that belongs to each
+10. Plug the laptop into power and leave the lid open. The program keeps the laptop awake by itself, so
+    there is nothing to change in the power settings. A closed lid still sends it to sleep.
+11. Set up each printer: paper roll in, power on, network cable or WiFi bridge connected.
+12. Open the printer screen and search the network for printers, then tap the one that belongs to each
     station. If the search finds nothing, print the printer's self test to read its address and type it
     in: hold the feed button down while switching the printer on, then let go.
-14. Print a test slip at every station. Fetch the slip, check that the station name on it is the right
+13. Print a test slip at every station. Fetch the slip, check that the station name on it is the right
     one, and tape the station card that prints with it inside that printer's lid. The QR code on the
     card is what the kitchen needs on the evening the printer dies.
-15. Open the overview and read the address shown there, for example `http://192.168.1.23:5000`. Open
-    that address once from one phone to prove the phones can reach the laptop.
-16. Start the event. Slip numbers now begin at 1. The program refuses to start while a station is still
-    on the test printer, which is what catches a station nobody set up.
-17. Set the phones up one at a time. Open the server list, tap "New server", and let that person scan
+14. Take one phone and scan the QR code in the program window. If the ordering page opens, the phones
+    can reach the laptop. If nothing opens, go back to step 8, and then use "Allow access from the
+    network" in the program's settings.
+15. Start the event. Slip numbers now begin at 1. The program refuses to start the event while a station
+    is still on the test printer, which is what catches a station nobody set up.
+16. Set the phones up one at a time. Open the server list, tap "New server", and let that person scan
     the QR code with their camera and type their name. Their name appears in the list, and you move on
-    to the next person. If somebody's camera does not work, they open the address on the screen in
-    their browser and type the six digits next to the QR code instead.
+    to the next person. If somebody's camera does not work, they open the address from the program
+    window in their browser and type the six digits next to the QR code instead.
+17. Look at the program window once more. It says how many phones are set up, and that number should
+    match the number of people you set up.
 
 **During the festival**
 
-18. Leave the laptop running with the program open and the black window open.
+18. Leave the program running. Clicking the cross in the corner only puts the window away: the program
+    carries on taking orders, and only "Quit the program" stops it.
 19. If you are running the evening, carry a phone that is set up. A station that stops answering or runs
     out of paper appears as a banner on every phone, so you find out where you are standing rather than
     by walking back to the laptop.
@@ -3336,19 +3643,20 @@ Print this page and take it with you.
 
 23. Open "Only orders that need checking" and make sure it is empty. This is the one check that catches
     an order nobody produced, and it takes five seconds.
-24. Open the backup screen, create the backup file, and copy it onto a USB stick. That file is the whole
-    history.
+24. Open the backup screen and create the backup file. Then open the program's settings, click "Open the
+    data folder", and copy that file onto a USB stick. It holds the whole history.
 
-### 10.3 Setup checklist, German
+### 10.6 Setup checklist, German
 
 Drucken Sie diese Seite aus und nehmen Sie sie mit.
 
 **Zu Hause, am Tag vorher**
 
-1. Kopieren Sie die Programmdatei auf den Laptop und starten Sie sie mit einem Doppelklick. Es öffnet
-   sich ein schwarzes Fenster. **Lassen Sie es offen.** Wenn Sie es schließen, ist das Programm aus und
-   der Abend mit ihm.
-2. Öffnen Sie am Laptop den Browser und rufen Sie `http://localhost:5000/admin` auf.
+1. Kopieren Sie das Programm auf den Laptop und starten Sie es. Beim ersten Start fragt Windows einmal
+   nach, ob das Programm eine Änderung vornehmen darf: bestätigen Sie das. Das Programm gibt in diesem
+   einen Moment den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an, und danach fragt es
+   nie wieder.
+2. Klicken Sie im Programmfenster auf "Verwaltung öffnen".
 3. Legen Sie die Stationen an, zum Beispiel Küche und Theke.
 4. Tragen Sie die Artikel mit ihren Preisen ein.
 5. Kreuzen Sie bei jedem Artikel an, welche Stationen ihn zubereiten können. Essen bekommt meist nur
@@ -3369,35 +3677,37 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
    meist DHCP-Reservierung, oder stellen Sie am WLAN-Adapter des Laptops eine feste Adresse ein. Wenn
    sich die Adresse während des Abends ändert, verlieren alle Telefone auf einen Schlag die Verbindung
    und jedes einzelne muss neu eingerichtet werden.
-10. Schließen Sie den Laptop ans Stromnetz an. Stellen Sie ein, dass er nicht in den Ruhezustand geht
-    und der Bildschirm anbleibt, und klappen Sie ihn nicht zu.
-11. Wenn Windows fragt, ob das Programm im Netzwerk kommunizieren darf, erlauben Sie es für das private
-    Netzwerk.
-12. Richten Sie jeden Drucker ein: Papierrolle einlegen, einschalten, Netzwerkkabel oder WLAN-Brücke
+10. Schließen Sie den Laptop ans Stromnetz an und lassen Sie ihn aufgeklappt. Das Programm hält den
+    Laptop von selbst wach, an den Energieeinstellungen müssen Sie nichts ändern. Zugeklappt geht er
+    trotzdem in den Ruhezustand.
+11. Richten Sie jeden Drucker ein: Papierrolle einlegen, einschalten, Netzwerkkabel oder WLAN-Brücke
     anschließen.
-13. Öffnen Sie die Seite Drucker, suchen Sie die Drucker im Netz und tippen Sie den an, der zu der
+12. Öffnen Sie die Seite Drucker, suchen Sie die Drucker im Netz und tippen Sie den an, der zu der
     jeweiligen Station gehört. Wenn die Suche nichts findet, drucken Sie am Drucker den Selbsttest, um
     die Adresse abzulesen, und tragen Sie sie ein. Halten Sie dazu die Papiertaste gedrückt, während Sie
     den Drucker einschalten, und lassen Sie sie dann los.
-14. Drucken Sie an jeder Station einen Testbon. Holen Sie den Bon, prüfen Sie, ob der Stationsname
+13. Drucken Sie an jeder Station einen Testbon. Holen Sie den Bon, prüfen Sie, ob der Stationsname
     darauf stimmt, und kleben Sie die Stationskarte, die mit ausgedruckt wird, in den Deckel dieses
     Druckers. Der QR-Code auf der Karte ist das, was die Küche an dem Abend braucht, an dem der Drucker
     ausfällt.
-15. Öffnen Sie die Übersicht und lesen Sie die dort angezeigte Adresse ab, zum Beispiel
-    `http://192.168.1.23:5000`. Rufen Sie diese Adresse einmal von einem Telefon aus auf, um zu prüfen,
-    dass die Telefone den Laptop erreichen.
-16. Starten Sie die Veranstaltung. Die Bonnummern beginnen jetzt bei 1. Das Programm startet die
+14. Nehmen Sie ein Telefon und scannen Sie den QR-Code im Programmfenster. Wenn sich die Bestellseite
+    öffnet, erreichen die Telefone den Laptop. Wenn sich nichts öffnet, gehen Sie zurück zu Schritt 8
+    und nehmen Sie danach in den Einstellungen des Programms "Zugriff aus dem Netzwerk freigeben".
+15. Starten Sie die Veranstaltung. Die Bonnummern beginnen jetzt bei 1. Das Programm startet die
     Veranstaltung nicht, solange eine Station noch auf dem Testdrucker steht, und genau das fällt sonst
     niemandem auf.
-17. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Bedienungen, tippen Sie auf
+16. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Bedienungen, tippen Sie auf
     "Neue Bedienung" und lassen Sie diese Bedienung den QR-Code mit der Kamera scannen und ihren Namen
     eingeben. Der Name erscheint danach in der Liste, und Sie machen mit der nächsten Person weiter.
-    Wenn bei jemandem die Kamera nicht funktioniert, ruft diese Person im Browser die angezeigte
-    Adresse auf und gibt dort die sechs Ziffern neben dem QR-Code ein.
+    Wenn bei jemandem die Kamera nicht funktioniert, ruft diese Person die Adresse aus dem
+    Programmfenster im Browser auf und gibt dort die sechs Ziffern neben dem QR-Code ein.
+17. Sehen Sie noch einmal ins Programmfenster. Dort steht, wie viele Telefone eingerichtet sind, und
+    diese Zahl muss zu der Zahl der Personen passen, die Sie eingerichtet haben.
 
 **Während des Festes**
 
-18. Lassen Sie den Laptop mit dem geöffneten Programm und dem schwarzen Fenster laufen.
+18. Lassen Sie das Programm laufen. Ein Klick auf das Kreuz in der Ecke legt nur das Fenster weg: das
+    Programm nimmt weiter Bestellungen an, und nur "Programm beenden" hält es an.
 19. Wenn Sie den Abend leiten, tragen Sie selbst ein eingerichtetes Telefon bei sich. Eine Station, die
     nicht mehr antwortet oder kein Papier mehr hat, erscheint auf jedem Telefon als Hinweis. So erfahren
     Sie es dort, wo Sie gerade stehen, und nicht erst am Laptop.
@@ -3418,31 +3728,44 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 23. Öffnen Sie "Nur Bestellungen, die geprüft werden müssen" und prüfen Sie, dass die Liste leer ist.
     Das ist die eine Kontrolle, die eine Bestellung findet, die niemand zubereitet hat, und sie dauert
     fünf Sekunden.
-24. Öffnen Sie die Datensicherung, legen Sie die Sicherungsdatei an und kopieren Sie sie auf einen
-    USB-Stick. Diese Datei ist der gesamte Verlauf.
+24. Öffnen Sie die Datensicherung und legen Sie die Sicherungsdatei an. Öffnen Sie danach die
+    Einstellungen des Programms, klicken Sie auf "Datenordner öffnen" und kopieren Sie diese Datei auf
+    einen USB-Stick. Sie enthält den gesamten Verlauf.
 
-### 10.4 Configuration that is not in the UI
+### 10.7 Configuration that is not in the UI
 
-A small `appsettings.json` next to the executable holds what a volunteer never touches: the port, the
-bind address, the scheme, the database path, and the log level. The scheme, host, and port live in one
-options object so a later move to HTTPS is a setting rather than a rewrite.
+**`appsettings.json` is no longer a file any human opens.** It ships beside the executable, it holds
+the shipped defaults for the scheme, the port, the bind address and the log level, and a volunteer
+never sees it. Asking somebody with little technical ability to edit JSON on the evening the port is
+taken was never a workable answer, and the settings window (section 10.1) is what replaced it.
 
-The log is a rolling file next to the database, one file per day, kept for the last fourteen days. It
-is reachable from the diagnostics screen. When the marquee bar reports that it received nothing all
-evening, the log is the only artifact that can answer why, and a log that only exists on a console
-window somebody closed answers nothing.
+What a volunteer changes is written to `settings.json` in `C:\ProgramData\GastronomyApp\`, which
+overrides the shipped defaults. That location is fixed and is not itself configurable, because the
+data folder path is one of the settings stored in it and a setting cannot say where it is kept. The
+scheme, host and port stay in one options object, so a later move to HTTPS is a setting rather than a
+rewrite.
 
-### 10.5 The backup, and why it is a button
+The log is a rolling file in the data folder, one file per day, kept for the last fourteen days. It is
+reachable from the diagnostics screen and from the data folder button in the settings window. When the
+marquee bar reports that it received nothing all evening, the log is the only artifact that can answer
+why, which is why it is a file that outlives the program run rather than lines on a screen.
+
+### 10.8 The backup, and why it is a button
 
 SQLite runs in WAL mode, which is the right journal mode for one writer and several readers. It also
 means that the most recent transactions live in `gastronomy.db-wal` rather than in `gastronomy.db`, so
 copying the one file a volunteer can see loses the end of the evening, silently, which is the worst
 possible way to lose data.
 
-The backup screen therefore has a button. It runs `VACUUM INTO` a dated file next to the database, which
+The backup screen therefore has a button. It runs `VACUUM INTO` a dated file in the data folder, which
 produces one consistent file with everything in it, and then names that file on screen so the volunteer
 knows exactly which one to drag onto the USB stick. The program also writes one automatically when an
 event session ends, so a volunteer who forgets step 24 still has one.
+
+**Finding that file is the settings window's job, not the admin page's.** The backup no longer sits
+beside the executable where a volunteer could stumble over it, and a web page cannot open a folder on
+the machine it is served from. So the admin screen names the file and the path, and the settings
+window's "Open the data folder" button is what actually opens it.
 
 ---
 
@@ -3602,8 +3925,12 @@ below rather than closing them.** No printer hardware will be bought until the f
 the system on `MockPrinterTransport` and agreed that it is a tool they want. That is why the mock is a
 shipped product feature rather than a test fixture, and why it is the vehicle the whole system is
 evaluated on (section 7.8). It also means that questions 1 and 11, which both need a TM-T20IV on a desk,
-cannot be answered until after that decision, rather than at leisure before the first festival. Nothing
-else in this list has been settled.
+cannot be answered until after that decision, rather than at leisure before the first festival.
+
+**Most of the rest of this list has since been closed by the owner.** A closed question keeps its
+number and its heading says so, because the numbers are referenced elsewhere in this document and an
+answer nobody can find gets asked again. Three questions are still genuinely open: 1, 8 and 11. Two of
+those need a printer on a desk.
 
 1. **The process id echo on real hardware.** The confirmation design in section 7.4 depends on
    `GS ( H` returning the specified process id after printing completes on a TM-T20IV over port 9100.
@@ -3628,36 +3955,49 @@ else in this list has been settled.
    a volunteer how to do it. **No fallback printer field, no secondary printer, and no automatic
    rerouting will be added.**
 
-3. **Admin access from something other than the laptop.** Version 1 restricts every admin endpoint to
-   the laptop, which means the admin has to stand there. The task that actually needs mobility is not
-   revoking a phone, it is knowing that a printer has stopped, and that already reaches every phone
-   through `PrinterStatusChanged`, so the checklist now says the person running the evening should carry
-   a phone that is set up. That covers most of the value with no new attack surface. Is an admin device
-   still wanted for the rest, knowing it is a real widening of the attack surface on an open network?
+3. **Admin access from something other than the laptop. Closed: loopback only, confirmed for version
+   1.** The admin endpoints answer on the laptop and nowhere else, and no admin device will be added.
+   The task that actually needs mobility is not revoking a phone, it is knowing that a printer has
+   stopped, and that already reaches every phone through `PrinterStatusChanged`, so the person running
+   the evening carries a phone that is set up. That covers most of the value with none of the cost, and
+   the cost is real: on an open WiFi with plain HTTP, any admin credential reachable from the network is
+   readable off the air. Section 5.1 specifies the rule.
 
    **One use case under this heading is already settled and is not part of the open question.** Marking
    an item sold out is an admin action, so it means walking to the laptop, and the owner has accepted
    that for version 1. No phone-reachable sold-out control will be added, and section 8.9 says so on
    the screen with `admin.items.soldOutWalk` rather than leaving somebody hunting for it.
 
-4. **Address form in German.** This specification uses the Sie form everywhere. A fire department crew
-   normally says du to each other. Which one does the owner want on the phones, on the slips, and in the
-   printed checklist? Changing it later is a single pass over the resource files, but it should be
-   decided once.
+4. **Address form in German. Closed: Sie, confirmed.** The Sie form is used on the phones, on the
+   slips, in the admin pages, in the program window and in the printed checklist. This document already
+   uses it throughout, so nothing has to change. A fire department crew says du to each other, but the
+   text is read by whoever is holding the phone, including people helping out for one evening, and Sie
+   is the form that is never wrong for any of them.
 
-5. **Reprint on demand from the station.** Right now a station with a working printer that lost a slip
-   has to ask the server to tap "Erneut drucken" on their phone, or open the break-glass page. Should
-   the break-glass page also be allowed to reprint a slip? It would be convenient, and it is also the
-   first step toward the station using a screen in normal operation, which the product deliberately
-   refuses.
+5. **Reprint on demand from the station. Closed: deferred to version 2.** The break-glass page will not
+   reprint a slip in version 1.
 
-6. **Paper width.** Everything here assumes 80 mm rolls, so 48 columns in Font A. If the department
-   already owns 58 mm rolls, the column counts and the double size regions change, and the layout in
-   section 7.7 needs a second variant.
+   The use case is real and worth recording, because it will come back. A station's printer fails, the
+   kitchen works the orders off the screen for twenty minutes, and then the printer recovers. The food
+   from those twenty minutes is on trays that still need a label, and the only thing that can produce
+   one is the printer that is now working again.
 
-7. **Order note versus line note on the slip.** Both are printed. Is an order level note actually
-   wanted, or is it a field that will be used to write things the kitchen has to read on every slip of
-   the order?
+   It waits because of what it would do to the page. Every other action on the break-glass page is
+   either reading, or an admission that the printer is dead. A reprint button is the one feature that
+   works perfectly well while the printer is fine, and that is exactly how a break-glass page quietly
+   becomes a screen the kitchen uses in normal operation, which section 1.5 lists as a non-goal. The
+   version 1 answer is the one that already exists: the server taps "Erneut drucken" on their phone, or
+   somebody at the laptop uses the order list.
+
+6. **Paper width. Closed: 80 mm, confirmed, and no work follows.** The TM-T20IV is an 80 mm printer,
+   and section 7.7 already assumes 72 mm printable and 48 columns in Font A. No 58 mm variant of the
+   slip layout will be written.
+
+7. **Order level note on the slip. Closed: it stays.** Both the order note and the line note are
+   printed. The owner's reason is that guests routinely ask for a change to the order as a whole rather
+   than to one line of it, and a server who has nowhere to write that will write it on the wrong line or
+   not at all. The risk in the original question, that the field becomes a place to write things the
+   kitchen has to read on every slip, is accepted.
 
 8. **The five minute give-up window and the twenty minute outer bound.** Five minutes before a ticket
    whose cause is unknown is called failed, and twenty minutes before one is called failed whatever the
@@ -3667,16 +4007,42 @@ else in this list has been settled.
    Both should be checked against one real evening, and the second one is the number that decides
    whether the suspension rule is generous or negligent.
 
-9. **The black console window.** Closing it ends the evening, and nothing in the product defends that
-   beyond a bold line in the checklist and a line on the overview screen. A tray icon, or a window that
-   asks for confirmation before it closes, is worth more than several of the features specified above.
-   Is it worth building for version 1?
+9. **The black console window. Closed: there is no console window any more.** The program is an
+   Avalonia desktop application, specified in section 10.1. Closing its window minimises it and the
+   server keeps running; quitting is an explicit action that asks for confirmation first. The owner's
+   reasoning was that the failure this question describes is not one a volunteer can be warned out of,
+   and that asking somebody with little technical ability to read a console or edit a configuration file
+   was never a workable design. The window also carries the address, its QR code, the count of phones
+   that are set up, and the errors that used to be console lines.
 
-10. **A name the phones can use instead of an address.** A fixed address is now a checklist step, which
-    is the cheap answer. The thorough answer is for the laptop to advertise a name on the local network
-    so a changed address strands nobody. Doing that on Windows means a dependency for mDNS, and backend
-    rule 5 is deliberately hostile to dependencies, so this is a trade the owner should make rather than
-    the author.
+10. **A name the phones can use instead of an address. Closed: deferred to version 2. Version 1 uses
+    the IP address only.** A fixed address stays a checklist step and the QR code stays the way a phone
+    gets to the laptop.
+
+    The findings that decided it are recorded here so nobody has to rediscover them:
+
+    * **A WiFi repeater in NAT mode passes IP traffic and never passes multicast.** A `.local` name
+      would therefore fail for exactly the waiters standing furthest from the access point, which is
+      the group a name was supposed to help. The QR code degrades gracefully across that topology. A
+      name does not.
+    * **Android 11 and older cannot resolve `.local` at all.** The support arrived in a module update
+      that was never backported, so a fire department's older phones are excluded by the operating
+      system.
+    * **A WiFi network with no internet can leave cellular as the phone's default network**, and
+      cellular is documented as excluded from `.local` resolution. Our network has no internet by
+      design.
+    * **Chrome may treat a typed `.local` name as a search term.** On a network with no internet that
+      produces an offline error page, which a volunteer reads as "the system is down".
+    * **Windows has no built-in way to advertise a hostname.** Its own API publishes services rather
+      than address records. The maintained library is a single-maintainer fork, which backend rule 5
+      excludes, so the compliant route is roughly 150 hand-written lines against the BCL.
+    * **It is gated on a field test**, on the real network with the real phones. That costs nothing and
+      settles the question better than any further research.
+
+    One finding that is not actionable now but is worth watching: **Android 17 will gate all local
+    network traffic behind a permission**, with no documented browser exemption yet. That would affect
+    the QR code path too, not only a name, so it is a risk to version 1 as it stands rather than an
+    argument about version 2.
 
 11. **QR printing on real hardware.** Section 7.7 specifies the station card's QR code with the
     `GS ( k` family: model 2, a six dot module, error correction level M, and the break-glass URL as the

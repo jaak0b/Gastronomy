@@ -26,12 +26,14 @@ no payment data, and issues no receipts to guests.
 
 | Folder | Role |
 |---|---|
-| `backend/` | ASP.NET Core (.NET 9). REST API, SignalR push, SQLite, printing service. Serves the built frontend. |
-| `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app and admin configuration UI. Builds into the backend's `wwwroot`. |
+| `backend/` | .NET 9 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, printing service, static frontend) and is hosted by the desktop app. |
+| `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
+| `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
 | `pi-agent/` | Python agent for USB-attached printers. **Deferred**, not yet started. Until it exists, `MockPrinterTransport` stands in. |
 
-Two source trees ship as one executable: the frontend build output is embedded in the backend's
-single-file self-contained binary. The operator double-clicks one file.
+Three source trees ship as one executable: the frontend build output is embedded, the Api library is
+hosted in-process, and the operator double-clicks the desktop app. Closing its window never stops the
+server; only an explicit confirmed quit does.
 
 ## Deployment reality
 

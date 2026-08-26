@@ -5,9 +5,11 @@ never contradicts it.
 
 ## The stack
 
-ASP.NET Core on .NET 9, published as a **single-file self-contained executable**. No runtime install on
-the operator's laptop, no separate web server, no reverse proxy: one process serves the REST API, the
-SignalR hub, and the built frontend from `wwwroot`, on one port.
+ASP.NET Core on .NET 9. `GastronomyApp.Api` is a **class library** that configures and returns the web
+application; the Avalonia desktop app (`desktop/GastronomyApp.Desktop`) hosts it in-process and is the
+only executable. One process serves the REST API, the SignalR hub, and the built frontend from
+`wwwroot`, on one port. No runtime install on the operator's laptop, no separate web server, no
+reverse proxy.
 
 - **SQLite via EF Core.** One file. A backup is a file copy, which is what a volunteer can actually do.
 - **SignalR** for every server-to-client push: print confirmed, print failed, printer out of paper,
@@ -80,7 +82,7 @@ Planned, not yet built. Update this table as it lands.
 |---|---|
 | `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
 | `GastronomyApp.Infrastructure` | EF Core SQLite, printer transports, device token store. |
-| `GastronomyApp.Api` | ASP.NET Core host: REST endpoints, SignalR hub, static frontend, composition root. |
+| `GastronomyApp.Api` | Class library: REST endpoints, SignalR hub, static frontend, composition root. Hosted by `GastronomyApp.Desktop`. |
 | `*.Tests` | Unit tests against Core, integration tests against Infrastructure and the API. |
 
 ## Testing
@@ -102,8 +104,8 @@ duplicate.
 ## Build and run
 
 ```powershell
-dotnet build backend/GastronomyApp.Api/GastronomyApp.Api.csproj
-dotnet run --project backend/GastronomyApp.Api
-dotnet test backend --filter "FullyQualifiedName~MethodName"
-dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure
+dotnet build GastronomyApp.slnx
+dotnet run --project desktop/GastronomyApp.Desktop
+dotnet test GastronomyApp.slnx --filter "FullyQualifiedName~MethodName"
+dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure --startup-project desktop/GastronomyApp.Desktop
 ```
