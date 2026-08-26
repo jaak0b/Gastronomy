@@ -87,9 +87,10 @@ of this task; the owner commits separately.
 
 ### Step 0: Preconditions
 
-Confirm `dotnet --version` reports a .NET 9 SDK, `node --version` reports a current LTS Node, and
-`npm --version` works. If any tool is missing or the wrong major version, stop and report the gap;
-do not attempt to install a different tool as a substitute.
+Confirm `dotnet --version` reports a .NET 9 SDK at version 9.0.2xx or later (the slnx solution
+format used in Step 2 requires this minimum), `node --version` reports a current LTS Node, and
+`npm --version` works. If any tool is missing or the wrong major or minimum version, stop and
+report the gap; do not attempt to install a different tool as a substitute.
 
 ### Step 1: Root build configuration files
 
@@ -104,6 +105,7 @@ contents:
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <LangVersion>latest</LangVersion>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
@@ -160,8 +162,11 @@ indent_size = 2
 trim_trailing_whitespace = false
 ```
 
-`dotnet_diagnostic.IDE0005.severity = error` is the analyzer id for unused usings; combined with
-`TreatWarningsAsErrors` in `Directory.Build.props`, an unused using fails the build. Use UTF-8
+`dotnet_diagnostic.IDE0005.severity = error` is the analyzer id for unused usings. On its own an
+`.editorconfig` severity is evaluated by the IDE only; `Directory.Build.props` also sets
+`EnforceCodeStyleInBuild` to `true`, which makes `dotnet build` itself run the code style analyzers
+and apply these severities during the command-line build. Combined with `TreatWarningsAsErrors`,
+an unused using, or a non-file-scoped namespace, fails `dotnet build`. Use UTF-8
 with BOM (`charset = utf-8-bom`) for `.cs` files only because that is the .NET template default;
 this line does not apply to non-C# files, which is why it sits under the `[*.cs]` section.
 
@@ -173,7 +178,9 @@ Create the solution:
 dotnet new sln -n GastronomyApp --format slnx
 ```
 
-This produces `GastronomyApp.slnx` at the root. If the installed SDK does not support
+This produces `GastronomyApp.slnx` at the root. Both `dotnet new sln --format slnx` and every
+`dotnet sln <file>.slnx add` command used later in this document require a recent .NET 9 SDK
+(9.0.2xx or later, already confirmed in Step 0). If the installed SDK does not support
 `--format slnx`, stop and report the gap rather than falling back to the classic `.sln` format.
 
 Create `GastronomyApp.Core`:
@@ -287,6 +294,17 @@ version now comes from `Directory.Packages.props`; a version attribute present o
 template's generated test class file (`Tests.cs` or `UnitTest1.cs`, whichever the installed
 template produced).
 
+The template also emits a `PackageReference Include="coverlet.collector"` with a version
+attribute. Architect decision, settled: remove that `PackageReference` entirely from every test
+project's `.csproj`, rather than stripping its version. This repository deliberately has no
+coverage gate (root rules: mutation testing and a coverage gate are deliberately not adopted yet),
+so the collector has no job here, and it is not on the allowed package list in this document. Do
+not add a matching `PackageVersion` entry for it either; simply delete the line. Apply the same
+rule to any other template-emitted package reference you encounter anywhere in this task that is
+not on this document's allowed package list: delete it, then confirm the affected project still
+builds. If removing it causes a build failure you cannot resolve by deletion alone, stop and
+report the gap instead of adding the package to the allowed list yourself.
+
 Add references:
 
 ```powershell
@@ -360,9 +378,19 @@ properties (`<AvaloniaUseCompiledBindingsByDefault>`, etc.) exactly as the templ
 them.
 
 Set the window title. Open `desktop/GastronomyApp.Desktop/MainWindow.axaml` and set the `Title`
-attribute on the root `Window` element to `GastronomyApp`. Do not add any other control, menu,
-tray icon, or server-hosting code; the template's default single blank window with that title is
-the full scope of this task for the desktop UI.
+attribute on the root `Window` element to `GastronomyApp`. Architect decision, settled: this
+literal is a deliberate, documented exception to the no-string-literals-in-axaml rule, because
+"GastronomyApp" is the product name, invariant across German and English, not a translatable
+sentence. Do not build resx or vue-i18n plumbing to localize it in this task; the localization
+task revisits this literal once that machinery exists. Do not add any other control, menu, tray
+icon, or server-hosting code; the template's default single blank window with that title is the
+full scope of this task for the desktop UI.
+
+The Avalonia MVVM template's generated `Program.cs` contains a `static` `Main` method and a
+`static` `BuildAvaloniaApp` method. Leave both as the template generated them: they are forced by
+the framework's application entry point convention, which falls under the framework-metadata
+registration exception to the no-static-methods rule, and are not something this task, or any
+later one, should try to rewrite into an instance method.
 
 Add to the solution:
 
@@ -652,6 +680,17 @@ having run the command.
    ```
    Success looks like: Vitest reporting the single `scaffoldingIdentity` test passing, with a
    summary showing `1 passed` and `0 failed`.
+
+**Contingency for template-generated warnings:** `TreatWarningsAsErrors` and
+`EnforceCodeStyleInBuild` apply to every project, including the ones a template generated, so a
+warning inside template-authored code (Avalonia's generated files, or a type issue vue-tsc reports
+in template-authored `.vue` files) fails command 1 or command 3 above exactly as it would in
+hand-written code. When that happens, fix the generated file so it is warning-clean if the fix is
+mechanical and obvious (an unused using, a missing accessibility modifier, an easily-typed
+generic). If the fix is not mechanical and obvious, stop and report the warning instead of guessing
+at a structural change. Never suppress a warning with a pragma, an `#nullable disable`, a
+`suppressWarnings` attribute, or an inline directive, and never relax `TreatWarningsAsErrors` or
+`EnforceCodeStyleInBuild` in `Directory.Build.props` to make a warning go away.
 
 ## 6. Out of scope
 
