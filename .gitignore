@@ -1,0 +1,55 @@
+# .NET
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+.vs/
+.idea/
+TestResults/
+coverage*.json
+coverage*.xml
+*.coverage
+*.trx
+
+# EF Core / SQLite runtime data
+*.db
+*.db-shm
+*.db-wal
+app-data/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# Python (pi-agent, deferred)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local machine configuration, never committed
+.claude/settings.local.json
+appsettings.Local.json
+.env
+.env.local
