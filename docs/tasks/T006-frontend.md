@@ -66,8 +66,6 @@ address; a phone gets 404). This task consumes:
 | GET/POST/PUT | `/api/admin/items`, `/api/admin/items/{id}` | `{name,categoryName,priceCents,sortOrder,locationIds[]}` | list / 201 / 200; 422 when `locationIds` empty |
 | POST | `/api/admin/items/{id}/availability` | `{isAvailable}` | 200, the sold-out toggle, never refused |
 | POST | `/api/admin/items/{id}/deactivate` | | 200 or 409 during a live session |
-| GET/PUT | `/api/admin/table-suggestions` | `{labels:[...]}` | list / 200 |
-| POST | `/api/admin/table-suggestions/from-last-session` | | 200 |
 | GET | `/api/admin/server-people` | | 200, one row per person with phone state, last seen, user agent, outstanding invitation |
 | PUT | `/api/admin/server-people/{id}` | `{name}` | 200, the rename |
 | POST | `/api/admin/server-people/{id}/revoke-device` | | 200 or 409 (no phone set up) |
@@ -76,13 +74,18 @@ address; a phone gets 404). This task consumes:
 | GET/PUT | `/api/admin/printers`, `/api/admin/printers/{locationId}` | full printer configuration | 200 |
 | POST | `/api/admin/printers/{locationId}/test-print` | | 202 |
 | POST | `/api/admin/printers/{locationId}/reconnect` | | 202, names locations sharing that endpoint |
-| POST | `/api/admin/printers/discover` | | 202, then `PrinterDiscovered` events |
 | POST | `/api/admin/mock/{locationId}/fault` | `{fault, mode}` | 200; `fault` one of `None, PaperEnd, CoverOpen, ConnectTimeout, DropSocketEarly, DropSocketMidJob, UnknownOutcome`; `mode` one of `Once, Sticky`; 422 when transport is not `Mock` |
 | GET | `/api/admin/event-session` | | 200 current session plus what blocks starting a new one |
 | POST | `/api/admin/event-session` | `{name, isPractice, confirmedName}` | 201; 409 with blocking conditions |
 
 Out of scope for this task's screens, read but not built here: `/api/admin/orders`, the print-history
-endpoint, CSV export/import, backup, diagnostics, log. See section 6.
+endpoint, CSV export/import, backup, diagnostics, log, `POST /api/admin/printers/discover` and its
+`PrinterDiscovered` event, and `GET/PUT /api/admin/table-suggestions` plus
+`.../from-last-session`. The consistency review found none of these five has a backend in this vertical
+slice (T005 excludes discovery and table-suggestions management from its scope); the printer discovery
+button and the table-suggestions admin screen are dropped from this task accordingly (see section 6 and
+section 7). The table suggestion chips on the review screen survive unaffected, because they read
+`tableSuggestions[]` off `GET /api/catalog`, which is in scope regardless.
 
 ### 2.3 Station break-glass endpoints
 
@@ -90,7 +93,7 @@ endpoint, CSV export/import, backup, diagnostics, log. See section 6.
 |---|---|---|
 | GET | `/station/{accessKey}` | the SPA shell in station mode |
 | GET | `/api/station/{accessKey}/locations` | 200, active production locations plus each one's print-capability, the filter's contents |
-| GET | `/api/station/{accessKey}/tickets?locationId=` | 200, open tickets oldest first, each carrying `canAcknowledge` and, when false, the reason key |
+| GET | `/api/station/{accessKey}/tickets?locationId=` | 200, open tickets oldest first, each carrying `canAcknowledge`, `reprintCount`, and, when `canAcknowledge` is false, the reason key |
 | POST | `/api/station/{accessKey}/tickets/{ticketId}/acknowledge` | 200 moves to `HandledOnPaper`; 409 with `station.takeRefused` or `station.alreadyTaken` |
 | GET | `/api/station/{accessKey}/status` | 200, the selected location's printer status |
 
@@ -107,7 +110,6 @@ its access key. Events this frontend consumes:
 | `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, failureReason, printerHasPaper, messageKey, parameters}` | phone: update that ticket's chip and render its message; station page: refetch tickets |
 | `OrderStatusChanged` | `{orderId, status}` | phone: update the order's headline state |
 | `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | phone: header banner; station page: re-evaluate `canAcknowledge`-gated rows; admin printer screen: update indicator |
-| `PrinterDiscovered` | `{host, port, respondedAtUtc}` | admin printer search screen adds a tappable row |
 | `CatalogChanged` | `{version}` | phone refetches `/api/catalog` |
 | `EnrolmentCompleted` | `{serverPersonId, serverPersonName, deviceId}` | admin people list gains a row / QR panel closes |
 | `DeviceRevoked` | `{deviceId}` | that phone clears its token, keeps its draft, shows enrolment |
@@ -116,6 +118,11 @@ its access key. Events this frontend consumes:
 The station page never renders a payload's ticket fields directly; every one of the two events it
 receives triggers a refetch of `GET /api/station/{accessKey}/tickets`, because neither event carries
 `canAcknowledge` and only the server computes it (spec 6.2, 5.6).
+
+`PrinterDiscovered` and `POST /api/admin/printers/discover` are dropped from this task's scope, for the
+same reason as section 2.2's note: nothing in this vertical slice implements printer discovery on the
+backend. `PrintersList.vue` in section 3.1 offers manual address entry only; the discovery button and
+its result list are not built here.
 
 Reconnect behaviour assumed from spec 6.3: automatic reconnect intervals `0, 2, 5, 10, 30`, then every
 30 seconds; on every reconnect the client refetches rather than assuming it missed nothing; if the hub
@@ -254,6 +261,7 @@ frontend/
       messageForTicket.spec.ts
       catalogItemState.spec.ts
       tableLabel.spec.ts
+      i18nCoverage.spec.ts
     stores/
       connection.spec.ts
     components/
@@ -262,10 +270,10 @@ frontend/
       orders/UnknownQuestion.spec.ts
       station/StationTicketRow.spec.ts
   e2e/
+    playwright.config.ts                    (T001's file, unchanged path)
     order-placement/
       order-placement.spec.ts
       order-placement.flow.md
-      playwright.config.ts
 ```
 
 ### 3.2 `src/core` module list with exported signatures
@@ -302,10 +310,13 @@ export interface DraftOrder {
   lines: DraftLine[]
   clientOrderId: string | null
 }
-export type OrderStatus = 'Accepted' | 'NeedsAttention'
+export type OrderStatus = 'Accepted' | 'Printing' | 'Printed' | 'NeedsAttention'
 export type TicketStatus =
   | 'Queued' | 'Blocked' | 'Printing' | 'Unknown' | 'Failed'
   | 'Printed' | 'PrintedOnTestPrinter' | 'HandledOnPaper'
+export type PrintFailureReason =
+  | 'PaperEnd' | 'CoverOpen' | 'Unreachable' | 'Timeout' | 'SocketDropped'
+  | 'PrinterError' | 'StationDisabled' | 'StationFaulty' | 'TicketResolvedByHuman'
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableLabel: string
@@ -319,7 +330,7 @@ export interface TicketSummary {
   locationName: string
   sequenceNumber: number
   status: TicketStatus
-  failureReason: string | null
+  failureReason: PrintFailureReason | null
   printerHasPaper: boolean | null
 }
 export interface OrderSummary {
@@ -439,10 +450,13 @@ export type OrderPresentationState =
 export function presentOrderState(order: OrderSummary): OrderPresentationState
 ```
 
-Exhaustive switch over `TicketStatus` per ticket combined into one `OrderPresentationState`, mirroring
-the priority table in spec 3.1 as read on the frontend from `OrderSummary.status` and each ticket's
-own `status`; ends in `assertNever` on both the `TicketStatus` and `OrderPresentationState` switches
-anywhere they are branched on.
+Exhaustive switch over the four-member `OrderStatus` (`Accepted`, `Printing`, `Printed`,
+`NeedsAttention`), combined with each ticket's own `status`, mirroring spec 3.1's state table exactly:
+`Accepted` and `Printing` both present as `'Printing'` (spec 3.1 renders `orders.status.printing` for
+both); `Printed` presents as `'HandledOnPaper'` when at least one of the order's tickets is
+`HandledOnPaper`, and as `'Printed'` otherwise; `NeedsAttention` presents as itself. The switch over
+`OrderStatus` ends in `assertNever`, and so does any switch over `TicketStatus` anywhere it is branched
+on.
 
 `messageForTicket.ts`:
 
@@ -507,12 +521,14 @@ REST calls with no draft-cart-like state of their own.
 
 ## 4. Ordered steps
 
-1. **Core modules, test-first.** For each module in section 3.2, write its Vitest spec before the
-   module exists (TDD red-first, root rule 3), run it, paste the failing output, then implement.
-   Cover in this order: `draftCart` (persistence, restore, clear-only-on-acceptance, no list/timer/
-   state field), `submission` (id generated once, reused by retry/reload/re-enrolment, new order
-   gets a new id), `totals`, `basket`, `routingPreview`, `catalogItemState`, `orderStateMachine`,
-   `messageForTicket`, `tableLabel`.
+1. **Core modules, test-first.** Delete `frontend/src/core/placeholder.ts` and
+   `frontend/tests/core/placeholder.spec.ts` first, per T001's own rule that the first task adding a
+   real `src/core/` module retires its placeholder. Then, for each module in section 3.2, write its
+   Vitest spec before the module exists (TDD red-first, root rule 3), run it, paste the failing
+   output, then implement. Cover in this order: `draftCart` (persistence, restore,
+   clear-only-on-acceptance, no list/timer/state field), `submission` (id generated once, reused by
+   retry/reload/re-enrolment, new order gets a new id), `totals`, `basket`, `routingPreview`,
+   `catalogItemState`, `orderStateMachine`, `messageForTicket`, `tableLabel`.
 2. **i18n resource files.** Copy every string table in `docs/spec.md` section 8 into
    `src/locales/de.json` and `src/locales/en.json` verbatim, key for key, exactly as printed in the
    spec's tables. Do not paraphrase, shorten, or "improve" a single string; the spec's tables are the
@@ -555,10 +571,19 @@ REST calls with no draft-cart-like state of their own.
     origin (the frontend cannot itself detect this; it renders whatever the backend's 404-vs-page
     decision from spec 5.1 already produced, so this view exists for the one case the backend does
     serve a page: opening `/admin` itself, per spec 5.1's own carve-out).
-11. **Playwright config and the one required spec.** Add `frontend/e2e/order-placement/` per section
-    6 below. Wire `npm run test:e2e` to run it, and mark it so `npm test` (Vitest) never touches it
-    and CI or a local run without a live backend stays green.
-12. **Full verification pass**, section 5.
+11. **The one required Playwright spec.** Add `frontend/e2e/order-placement/order-placement.spec.ts`
+    and its co-located `order-placement.flow.md` inside T001's existing
+    `frontend/e2e/playwright.config.ts`; do not add a second Playwright config. Add
+    `"test:e2e": "playwright test --config e2e/playwright.config.ts"` to `frontend/package.json`,
+    since T001 installed `@playwright/test` but wrote no script for it. Mark the spec so `npm test`
+    (Vitest) never touches it and so a run without a live backend stays green (section 6).
+12. **SignalR client package.** Add `@microsoft/signalr` to `frontend/package.json`. This is an
+    addition beyond T001's allowed frontend package list (Vite/Vue/TypeScript plus `pinia`,
+    `vue-i18n`, `vitest`, `@vue/test-utils`, `jsdom`, `@playwright/test`); it is stated here as an
+    architect-approved exception on the same footing as the backend's QRCoder and SignalR.Client
+    exceptions, because `connection.ts` (section 3.3) needs a real `HubConnection` and nothing on
+    that package list provides one.
+13. **Full verification pass**, section 5.
 
 ## 5. Constraints
 
@@ -639,12 +664,13 @@ before the skip is lifted.
 
 ## 8. Assumptions and ambiguities, with the reading chosen
 
-- **Order status enum members.** The spec's prose names `Accepted` and `NeedsAttention` explicitly
-  (spec 5.4, 9.4) but does not print a table of every value the way it does for `TicketStatus`.
-  Chosen reading: the frontend's `OrderStatus` union has exactly these two members, matching every
-  concrete example in the spec text; `orderStateMachine.ts`'s `assertNever` will fail to compile the
-  moment a backend task introduces a third value, which is the intended, low-cost way to catch that
-  drift at the frontend-backend seam during consistency review.
+- **Order status enum members, corrected by the consistency review (ruling 5).** `OrderStatus` is the
+  full four-member set spec 3.1's state table and T002's `OrderStatus` enum both give:
+  `Accepted`, `Printing`, `Printed`, `NeedsAttention`. `orderStateMachine.ts`'s `presentOrderState`
+  maps all four, per section 3.2's mapping rule (`Accepted` and `Printing` both present as
+  `'Printing'`; `Printed` presents as `'HandledOnPaper'` when at least one ticket is `HandledOnPaper`,
+  else `'Printed'`; `NeedsAttention` presents as itself), and its `assertNever` is now pointed at the
+  correct baseline instead of one that would have failed to compile on the very first real payload.
 - **`admin.notOnLaptop` rendering path.** Spec 5.1 says the admin page is served from every address
   but only loopback gets a working admin API; a phone opening `/admin` gets one sentence. Chosen
   reading: the frontend's router still mounts `NotOnLaptop.vue` for every `/admin/...` path (not only

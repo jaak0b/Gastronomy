@@ -15,25 +15,24 @@ section 6 is run by the owner on a real Windows machine.
 
 ## 2. Assumed from earlier tasks
 
-T005 (the `GastronomyApp.Api` composition root) is not read by this document; its exact shape is
-assumed as follows, and the consistency review reconciles any mismatch:
+**This section reflects the cross-task consistency review's rulings, applied verbatim (findings
+T007-1, T007-2, T007-3).** `GastronomyApp.Api` and `GastronomyApp.Api.Hosting` are defined by T005;
+this task only constructs and consumes them.
 
-- `GastronomyApp.Api` exposes a static composition entry point:
+- `GastronomyApp.Api` exposes an instance composition entry point, per architect ruling 3:
 
   ```csharp
   namespace GastronomyApp.Api;
 
-  public static class ApiHost
+  public sealed class GastronomyAppApiApplication
   {
-      public static WebApplication Build(ApiHostOptions options);
+      public WebApplication Build(ApiHostOptions options);
   }
-
-  public sealed record ApiHostOptions(
-      string DataDirectory,
-      int Port,
-      string BindAddress);
   ```
 
+  `ApiHostOptions` is declared once, by T005, in `GastronomyApp.Api.Options`, as three `required init`
+  properties (`DataDirectory`, `Port`, `BindAddress`). T007 does not redeclare it; `HostLauncher`
+  constructs `new GastronomyAppApiApplication()` and calls `Build(options)` with no `args` parameter.
   `Build` performs every step section 10.1's table assigns to the Api library (REST endpoints, SignalR
   hub, static frontend, EF Core/SQLite wiring against `DataDirectory`, composition root) and returns an
   unstarted `WebApplication`. It does not call `Run`, `Start`, or `RunAsync`; the desktop host owns the
@@ -43,11 +42,12 @@ assumed as follows, and the consistency review reconciles any mismatch:
   reaches the Api and does not affect what the server binds to.
 
 - Session-active query used to gate the data folder field (section 10.1, "disabled while a session is
-  active"). Assumed as a method on the same `WebApplication` built by `ApiHost.Build`, resolved from its
-  `Services`, rather than a raw HTTP call back into the server the desktop itself is hosting:
+  active"). Per the consistency review's assignment (finding T005-12), this port is defined and
+  registered by T005, in `GastronomyApp.Api.Hosting`, backed by a read of the active `EventSession`
+  through T003:
 
   ```csharp
-  namespace GastronomyApp.Core.Sessions;
+  namespace GastronomyApp.Api.Hosting;
 
   public interface ISessionStateQuery
   {
@@ -56,10 +56,12 @@ assumed as follows, and the consistency review reconciles any mismatch:
   ```
 
   The desktop resolves `app.Services.GetRequiredService<ISessionStateQuery>()` once the `WebApplication`
-  is running, and calls it when the settings window opens and before it enables the data folder field.
-  If `ISessionStateQuery` turns out not to exist under that name in T005, the consistency review renames
-  the desktop's call site; the shape (an async boolean query resolved from the hosted application's
-  `IServiceProvider`) is the part this task depends on and asks T005 to confirm.
+  built by `GastronomyAppApiApplication.Build` is running, and calls it when the settings window opens
+  and before it enables the data folder field. The shape this task depends on (an async boolean query
+  resolved from the hosted application's `IServiceProvider`) is unchanged by the review; only the
+  namespace moved from an earlier assumption of `GastronomyApp.Core.Sessions` to
+  `GastronomyApp.Api.Hosting`, since T007 resolves it from `app.Services` and never needs to see Core,
+  and T002 is the blocking document with no reason to carry a service that only Api and desktop use.
 
 - Port-in-use, folder-not-writable and no-network detection happen on the desktop side, before or
   around the `StartAsync` call, not as exceptions defined by T005. `StartAsync` is assumed to throw
@@ -72,7 +74,7 @@ assumed as follows, and the consistency review reconciles any mismatch:
 ```
 desktop/
   GastronomyApp.Desktop/
-    GastronomyApp.Desktop.csproj          (edited: resx generator, SkiaSharp/QR package reference)
+    GastronomyApp.Desktop.csproj          (edited: resx generator, QRCoder package reference)
     App.axaml / App.axaml.cs               (edited: TrayIcon, single-instance bootstrap)
     Program.cs                             (edited: setup-argument branch, mutex/pipe bootstrap)
     app.manifest                            (edited: requestedExecutionLevel stays "asInvoker")
@@ -91,7 +93,7 @@ desktop/
       FirstRunViewModel.cs
       ViewModelBase.cs
     Services/
-      HostLauncher.cs                       (IHostLauncher impl, owns ApiHost.Build + WebApplication lifetime)
+      HostLauncher.cs                       (IHostLauncher impl, owns GastronomyAppApiApplication.Build + WebApplication lifetime)
       QrCodeGenerator.cs                     (IQrCodeGenerator impl)
       NetworkAddressProvider.cs              (INetworkAddressProvider impl)
       SingleInstanceCoordinator.cs           (ISingleInstance impl: mutex + named pipe)
@@ -102,7 +104,9 @@ desktop/
         NoOpPowerManager.cs                  (non-Windows fallback)
       SettingsStore.cs                       (reads/writes settings.json, layers over appsettings.json)
   GastronomyApp.Desktop.Tests/
-    GastronomyApp.Desktop.Tests.csproj      (edited: FakeItEasy, Avalonia.Headless.NUnit references)
+    GastronomyApp.Desktop.Tests.csproj      (unedited: FakeItEasy and Avalonia.Headless.NUnit already
+                                              referenced and version-pinned centrally by T001 step 7b)
+    ScaffoldingSmokeTest.cs                 (deleted in step 3, see below)
     ViewModels/
       MainWindowViewModelTests.cs
       SettingsWindowViewModelTests.cs
@@ -230,7 +234,10 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
    with no implementation bodies beyond `throw new NotImplementedException()`, so ViewModels can be
    written against them immediately.
 
-3. **`MainWindowViewModel` tests, red first.** In `GastronomyApp.Desktop.Tests/ViewModels`, write
+3. **Delete `GastronomyApp.Desktop.Tests/ScaffoldingSmokeTest.cs`**, the T001 placeholder, before adding
+   the fixtures below: this is the first task to add a real fixture to that project.
+
+4. **`MainWindowViewModel` tests, red first.** In `GastronomyApp.Desktop.Tests/ViewModels`, write
    NUnit + FakeItEasy tests against fakes of `IHostLauncher`, `IPowerManager`, `IQrCodeGenerator`,
    `INetworkAddressProvider`, `ISessionStateQuery`-backed status, covering:
    - Start transitions `Status` from `Stopped` to `Running`, calls `IPowerManager.PreventSleep()`.
@@ -249,18 +256,18 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
    Run the suite, paste the red output (every test fails or does not compile because
    `MainWindowViewModel` does not exist yet), then implement `MainWindowViewModel` to green.
 
-4. **`QuitConfirmViewModel` tests, red first.** `RequestQuit()` opens the confirm state; `Cancel()`
+5. **`QuitConfirmViewModel` tests, red first.** `RequestQuit()` opens the confirm state; `Cancel()`
    returns to running with no side effect; `Confirm()` calls `IHostLauncher.StopAsync` then signals the
    application to exit. Assert the dialog never closes the app without `Confirm()` having been called
    (guards spec 10.1's "quit only through the quit button, which asks for confirmation first").
 
-5. **`SettingsWindowViewModel` tests, red first**, covering:
+6. **`SettingsWindowViewModel` tests, red first**, covering:
    - Port/bind-address fields are editable when `ISessionStateQuery.IsSessionActiveAsync()` is false
      and no phone is enrolled; both refused (bound to `IsEnabled = false`,
      `desktop.settings.addressLocked` shown) once a session has accepted an order, per spec 10.1's "How
      costly, and when refused" subsection. Model this as a constructor-supplied
-     `bool anyOrderAcceptedThisSession` flag until T005 exposes the concrete query; wire the real query
-     in step 9.
+     `bool anyOrderAcceptedThisSession` flag until T005's `ISessionStateQuery` is wired against the
+     running `WebApplication`; wire the real query in step 10.
    - Data folder field `IsEnabled` is false whenever `ISessionStateQuery.IsSessionActiveAsync()`
      returns true, with `desktop.settings.dataFolderLocked` shown; true otherwise. A changed value never
      moves files and shows `desktop.settings.dataFolderRestart` (no move, restart required).
@@ -273,36 +280,37 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
      spec: "only relevant when the laptop is on more than one network") when the list has zero or one
      entries.
 
-6. **`FirstRunViewModel` tests, red first, the detection matrix.** Given fakes of `IFirewallSetup` and
+7. **`FirstRunViewModel` tests, red first, the detection matrix.** Given fakes of `IFirewallSetup` and
    `IDataFolderSetup`, cover the four cells: both configured (no dialog shown), only firewall missing,
    only data folder missing/unwritable, both missing. Each missing case shows
    `desktop.firstRun.title`/`desktop.firstRun.body` and offers `IElevatedSetupLauncher`; declining
    shows `desktop.firstRun.declined` and the ViewModel still reports `ReadyToStart = true` (spec 10.3:
    "the program starts normally" on decline).
 
-7. **`ISingleInstance` behaviour test.** Fake the port directly (no real mutex/pipe in this test): given
+8. **`ISingleInstance` behaviour test.** Fake the port directly (no real mutex/pipe in this test): given
    `AcquireOrSignalExisting()` returns `SignaledExistingAndShouldExit`, `Program.cs`'s composition logic
    (tested via a small `AppBootstrapper` class extracted for testability) must not construct
    `MainWindowViewModel` or start `IHostLauncher`, and must exit before any window is shown. Given
    `AcquiredPrimary`, bootstrapping proceeds normally and `ActivationRequested` (raised when a second
    launch signals over the pipe) brings the existing window to front, never opens a second window.
 
-8. **Avalonia.Headless smoke test.** One test per window (`MainWindow`, `SettingsWindow`) that boots
+9. **Avalonia.Headless smoke test.** One test per window (`MainWindow`, `SettingsWindow`) that boots
    the headless Avalonia app, sets the `DataContext` to a ViewModel built from fakes, and asserts the
    window loads without exception and its title text resolves through the resx table (not a hardcoded
    string). This is presence-and-wiring coverage only; it does not replace the ViewModel tests above.
 
-9. **Wire the real ports.** Implement `HostLauncher` (calls `ApiHost.Build`, then `StartAsync`/
-   `StopAsync` on the returned `WebApplication`, catching bind/write failures per section 2's
-   assumption and mapping them to `HostLaunchResult` cases), `QrCodeGenerator` (see constraint below on
-   which encoder), `NetworkAddressProvider` (`NetworkInterface.GetAllNetworkInterfaces()`), and the
-   Windows implementations of `IPowerManager`, `IFirewallSetup`, `IDataFolderSetup`,
-   `IElevatedSetupLauncher`, `ISingleInstance`. Replace the constructor flags used as stand-ins in steps
-   3 and 5 with the real `ISessionStateQuery` resolved from the running `WebApplication.Services`, per
-   the assumption in section 2. Add `NoOpPowerManager` for non-Windows and select it at startup via
-   `OperatingSystem.IsWindows()`.
+10. **Wire the real ports.** Implement `HostLauncher` (calls `new GastronomyAppApiApplication().Build(options)`,
+    then `StartAsync`/`StopAsync` on the returned `WebApplication`, catching bind/write failures per
+    section 2's assumption and mapping them to `HostLaunchResult` cases), `QrCodeGenerator` (see
+    constraint below on the QRCoder package), `NetworkAddressProvider`
+    (`NetworkInterface.GetAllNetworkInterfaces()`), and the Windows implementations of
+    `IPowerManager`, `IFirewallSetup`, `IDataFolderSetup`, `IElevatedSetupLauncher`, `ISingleInstance`.
+    Replace the constructor flags used as stand-ins in steps 4 and 6 with the real
+    `ISessionStateQuery` resolved from the running `WebApplication.Services`, per the assumption in
+    section 2. Add `NoOpPowerManager` for non-Windows and select it at startup via
+    `OperatingSystem.IsWindows()`.
 
-10. **Build the views.** `MainWindow.axaml`/`SettingsWindow.axaml` bind to the ViewModels with compiled
+11. **Build the views.** `MainWindow.axaml`/`SettingsWindow.axaml` bind to the ViewModels with compiled
     bindings (`x:DataType` on every `DataTemplate`); QR matrix renders as a `Canvas` of `Rectangle`
     cells built in code-behind from `IQrCodeGenerator.GenerateMatrix`, not as an `ItemsSource`-bound
     `ItemsControl` grid (keeps rendering fast for a fixed-size matrix redrawn once per address change).
@@ -311,14 +319,14 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
     confirmation dialog and first-run dialog are built as separate `Window`s shown via
     `ShowDialog<T>`, never as XAML-declared `Flyout` content (desktop CLAUDE.md gotcha).
 
-11. **`Program.cs` bootstrap.** Parse `args` for `--setup` first, before touching Avalonia, and branch:
+12. **`Program.cs` bootstrap.** Parse `args` for `--setup` first, before touching Avalonia, and branch:
     `--setup` runs the elevated-step logic from section 4 and returns without building the Avalonia
     app; otherwise call `ISingleInstance.AcquireOrSignalExisting()` before `BuildAvaloniaApp().Start(...)`,
     exiting immediately on `SignaledExistingAndShouldExit`.
 
 ## 6. Constraints
 
-- MVVM per `desktop\CLAUDE.md` rule 8: every one of the behaviours in steps 3 to 7 lives in a
+- MVVM per `desktop\CLAUDE.md` rule 8: every one of the behaviours in steps 4 to 8 lives in a
   ViewModel behind a port; no static state beyond `AvaloniaProperty.Register` and framework metadata.
 - Compiled bindings on: `AvaloniaUseCompiledBindingsByDefault=true` already set by T001; every
   `DataTemplate` added here carries `x:DataType`.
@@ -335,15 +343,16 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
 - QR encoder: per spec 10.1 ("A QR encoder is a version 1 requirement, unconditionally... The window
   and the card use the one encoder, in one place"), this task builds the one client-side QR matrix
   generator both the window and the future station-card renderer (section 5.5, a later task) will
-  share. The spec does not name a library; it only fixes that there is exactly one encoder shared
-  everywhere it is needed, and that open question 11 governs only how the symbol later reaches a
-  printed slip (firmware `GS ( k` vs. a raster of this encoder's output), not whether the encoder
-  exists. This task places the encoder behind `IQrCodeGenerator` precisely so that choice (a
-  hand-rolled ISO/IEC 18004 encoder vs. a small vendored library) is swappable without touching any
-  caller; `QrCodeGenerator` picks a small dependency-free managed QR encoder (no native interop, so it
-  runs identically headless in tests) and returns a boolean matrix rather than a rendered image, so
-  both the Avalonia `Canvas` renderer here and a future raster-to-ESC/POS renderer consume the same
-  shape.
+  share. **Per architect ruling 7, the QRCoder package (MIT license) is ratified as the encoder.** This
+  task adds `QRCoder` to `Directory.Packages.props`, stated here as an architect-approved exception to
+  T001's no-new-packages constraint, on the same footing as the SignalR client package T005 adds and
+  the `@microsoft/signalr` package T006 adds. `IQrCodeGenerator` stays exactly as declared in section 4;
+  `QrCodeGenerator` adapts QRCoder's `QRCodeData.ModuleMatrix` into `IReadOnlyList<bool[]>`, so it
+  returns a boolean matrix rather than a rendered image and both the Avalonia `Canvas` renderer here and
+  a future raster-to-ESC/POS renderer consume the same shape. Open question 11 still governs only how
+  the symbol later reaches a printed slip (firmware `GS ( k` vs. a raster of this encoder's output), not
+  whether the encoder exists; if 11 ever forces the raster fallback, the same QRCoder package serves
+  that path too, and T004 needs no package and no matrix for `GS ( k` regardless.
 - `appsettings.json` beside the executable is read-only shipped defaults (scheme, port, bind address,
   log level per spec 10.7); `ISettingsStore`/`SettingsStore` layers `settings.json` from the data
   folder over it and never writes back to `appsettings.json`.
@@ -357,7 +366,7 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
 ## 7. Verification
 
 - `dotnet test GastronomyApp.slnx --filter FullyQualifiedName~GastronomyApp.Desktop.Tests` green,
-  output quoted, covering every ViewModel test in steps 3 to 8.
+  output quoted, covering every ViewModel test in steps 4 to 9.
 - `dotnet build GastronomyApp.slnx` zero warnings.
 - Each ViewModel test file's red-then-green pair is quoted in the change: the failing run before the
   implementation existed, and the passing run after.
@@ -392,7 +401,8 @@ and verified manually"):**
     order has been placed in the current session, editable again after restarting into a fresh session;
     data folder field is disabled while a session is active with `desktop.settings.dataFolderLocked`
     shown, editable when no session is active.
-12. Tray icon: minimizing to tray, right-click shows "Open the admin pages" and "Quit" only; both work.
+12. Tray icon (step 11): minimizing to tray, right-click shows "Open the admin pages" and "Quit" only;
+    both work.
 
 ## 8. Out of scope
 
@@ -409,26 +419,32 @@ and verified manually"):**
 
 ## 9. Assumptions
 
-Restated from section 2, plus the smaller ones made while writing the steps above:
+Restated from section 2 as settled by the cross-task consistency review, plus the smaller ones made
+while writing the steps above:
 
-1. `GastronomyApp.Api` exposes `ApiHost.Build(ApiHostOptions)` returning an unstarted
-   `WebApplication`, with `ApiHostOptions(string DataDirectory, int Port, string BindAddress)`; the
-   desktop owns `StartAsync`/`StopAsync`.
-2. Session-active state is queryable as `ISessionStateQuery.IsSessionActiveAsync()`, resolved from the
-   running `WebApplication.Services`, and this is also what the settings window asks before enabling
-   the data folder field and before deciding whether to lock the port/bind-address fields.
+1. `GastronomyApp.Api` exposes `GastronomyAppApiApplication.Build(ApiHostOptions options)`, an instance
+   method taking no `args` parameter, returning an unstarted `WebApplication`; the desktop owns
+   `StartAsync`/`StopAsync`. `ApiHostOptions` is T005's own three `required init` properties
+   (`DataDirectory`, `Port`, `BindAddress`) in `GastronomyApp.Api.Options`; T007 does not redeclare it.
+   (Settled by architect ruling 3 and consistency review finding T007-1/T007-2.)
+2. Session-active state is queryable as `ISessionStateQuery.IsSessionActiveAsync()` in
+   `GastronomyApp.Api.Hosting`, defined and registered by T005, resolved from the running
+   `WebApplication.Services`, and this is also what the settings window asks before enabling the data
+   folder field and before deciding whether to lock the port/bind-address fields. (Settled by
+   consistency review finding T005-12/T007-3.)
 3. `StartAsync` surfaces a port-already-bound failure in a way `IHostLauncher` can distinguish (an
    `IOException`/`SocketException`) rather than the Api library defining its own typed result for this;
    `HostLauncher` is the seam that turns whatever T005 throws into `HostLaunchResult`.
-4. The QR encoder is a small managed, dependency-free library choice made inside this task (behind
-   `IQrCodeGenerator`) because the spec fixes that exactly one encoder exists and is shared, but leaves
-   the concrete library/algorithm open.
+4. The QR encoder is the QRCoder package (MIT), ratified by architect ruling 7 and consistency review
+   finding T007-4, added to `Directory.Packages.props` as a stated exception to T001's no-new-packages
+   constraint; `QrCodeGenerator` adapts it behind `IQrCodeGenerator` without changing that port's shape.
 5. `Program.cs`'s composition logic is extracted into a small `AppBootstrapper` class so single-instance
    short-circuiting is unit-testable without booting real Avalonia.
 6. "Which network to display" (spec 10.1's settings table) is a desktop-local display preference
    (`DesktopSettings.SelectedNetworkInterface`), not part of `ApiHostOptions`, since it affects only
    what address the window and QR code show, not what the server binds to (`BindAddress` already
-   covers the bind side, typically `0.0.0.0` or a specific interface IP entered separately).
+   covers the bind side, typically `0.0.0.0` or a specific interface IP entered separately). Confirmed
+   by the consistency review as matching T005's own step 1 wording verbatim.
 
 ## 10. Ambiguities and chosen readings
 
@@ -443,9 +459,8 @@ Restated from section 2, plus the smaller ones made while writing the steps abov
   same elevated step, with the same two idempotent actions"); read as one shared
   `IElevatedSetupLauncher.RunElevatedSetupAsync()` call site used from both `FirstRunViewModel` and
   `SettingsWindowViewModel`, not two separate ports.
-- Tray icon behaviour beyond "minimal version the spec describes": spec 10.1 does not mandate a tray
-  icon explicitly, only that `desktop\CLAUDE.md` notes `TrayIcon` exists natively. Read as: include it
-  showing running/stopped via icon or tooltip text and the two menu actions listed in step 10, since a
-  window that can only be restored from the taskbar (no tray habit) is a reasonable but strictly
-  smaller reading; the taskbar-only reading remains acceptable if the consistency review prefers
-  dropping the tray icon entirely, since the spec text does not require one.
+- Tray icon: settled by the consistency review (finding T007-9). Keep it exactly as specified in step
+  11: two menu items, "Open the admin pages" and "Quit", both routed to `MainWindowViewModel`'s
+  existing commands, no independent tray logic. It costs nothing to build and matches
+  `desktop\CLAUDE.md`'s note that `TrayIcon` is native; the earlier "acceptable to drop" reading is
+  withdrawn.

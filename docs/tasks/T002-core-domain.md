@@ -44,6 +44,8 @@ backend/
       PrintJob.cs
       PrintAttempt.cs
       NumberCounter.cs
+      PrinterConfiguration.cs
+      PrinterStatus.cs
     Enums/
       OrderStatus.cs
       LocationTicketStatus.cs
@@ -78,10 +80,11 @@ backend/
       RetryPolicy.cs
       GiveUpWindowCalculator.cs
       TicketAcknowledgePolicy.cs
+      PrinterEndpointKeyBuilder.cs
       Never.cs
   GastronomyApp.Core.Tests/
     GastronomyApp.Core.Tests.csproj            (unchanged from T001)
-    ScaffoldingSmokeTest.cs                    (deleted in step 3 below)
+    ScaffoldingSmokeTest.cs                    (deleted in step 4 below)
     Services/
       OrderRoutingResolverTest.cs
       OrderStatusCalculatorTest.cs
@@ -92,6 +95,7 @@ backend/
       RetryPolicyTest.cs
       GiveUpWindowCalculatorTest.cs
       TicketAcknowledgePolicyTest.cs
+      PrinterEndpointKeyBuilderTest.cs
 ```
 
 Every fixture is named `<ClassUnderTest>Test`, one fixture per production class, one file per fixture,
@@ -420,11 +424,46 @@ public sealed class NumberCounter
     public string? PrinterEndpointKey { get; set; }
     public required int NextValue { get; set; }
 }
+
+public sealed class PrinterConfiguration
+{
+    public required Guid ProductionLocationId { get; set; }
+    public required TransportKind TransportKind { get; set; }
+    public string? Host { get; set; }
+    public required int Port { get; set; }
+    public string? AgentIdentifier { get; set; }
+    public required int CharactersPerLine { get; set; }
+    public required string CodePageName { get; set; }
+    public required int ConnectTimeoutSeconds { get; set; }
+    public required int JobTimeoutSeconds { get; set; }
+    public required int HeartbeatSeconds { get; set; }
+    public required bool IsEnabled { get; set; }
+}
+
+public sealed class PrinterStatus
+{
+    public required Guid ProductionLocationId { get; set; }
+    public required bool IsOnline { get; set; }
+    public required bool IsPaperEnd { get; set; }
+    public required bool IsPaperNearEnd { get; set; }
+    public required bool IsCoverOpen { get; set; }
+    public required bool IsInErrorState { get; set; }
+    public required bool IsFaulty { get; set; }
+    public required string LastDetail { get; set; }
+    public required DateTime LastChangedAtUtc { get; set; }
+    public required DateTime LastHeardFromAtUtc { get; set; }
+}
 ```
 
-`PrinterConfiguration` and `PrinterStatus` are out of scope for this task (see section 8); they belong
-to the printing configuration slice, not the order-to-ticket vertical slice, and no service in this task
-needs them as entities, only through `IPrinterStatusReader` (section 6).
+`PrinterConfiguration.TransportKind` is typed as the `TransportKind` enum from section 4.1 rather than
+as a plain string, per ruling 6: T002's enums are the one source of truth for every closed set in this
+domain, and spec 2.12's `Network` / `Agent` / `Mock` values are exactly that enum's three members.
+`PrinterConfiguration` and `PrinterStatus` carry no id of their own; `ProductionLocationId` is both the
+foreign key and, per spec 2.12, the primary key (a one-to-one relationship with `ProductionLocation`),
+which is why neither type declares a separate `Id`. Neither entity gets a dedicated service in this task
+(no `PrinterConfigurationTest.cs`, no behaviour to drive): they exist here purely as the shape
+Infrastructure maps and `IPrinterStatusReader` reads from, per the "entities live in Core" rule that
+makes Core, not a sibling task, the only place that can declare them.
 
 ## 5. Ordered steps
 
@@ -483,13 +522,47 @@ public sealed class OrderTotalCalculator
 (`OrderLine` from `GastronomyApp.Core.Entities`, via `using`.) Re-run the filtered test, quote the green
 output.
 
-### Step 3: Delete the scaffolding smoke test
+### Step 3: `PrinterEndpointKeyBuilder`
+
+Placed here, ahead of routing and acceptance, because T003's numbering allocator step and T004's fleet
+grouping both need it and both start work early. It computes spec 2.13's canonical printer endpoint key,
+`TransportKind|Host|Port|AgentIdentifier`, with the empty string standing in for a part a transport does
+not use; the key is never parsed back apart, only built and compared.
+
+Write `backend/GastronomyApp.Core.Tests/Services/PrinterEndpointKeyBuilderTest.cs` first, covering: a
+`Network` transport with a host and port produces `Network|192.168.1.23|9100|`; an `Agent` transport with
+no host or port and an `AgentIdentifier` produces `Agent|||agent-1`; a `Mock` transport with none of
+host, port, or agent identifier set produces `Mock|||` (using `0` for a `null` port, since `Port` is
+declared as `int?` in the signature below to let a transport that has no port at all, such as `Agent`,
+omit it honestly rather than being forced to invent one); two builds with identical inputs produce equal
+strings; and two builds that differ only in `Host` produce different strings. Run `dotnet test --filter
+FullyQualifiedName~PrinterEndpointKeyBuilderTest`, quote the compiler-error red run.
+
+Then write `backend/GastronomyApp.Core/Services/PrinterEndpointKeyBuilder.cs`:
+
+```csharp
+namespace GastronomyApp.Core.Services;
+
+public sealed class PrinterEndpointKeyBuilder
+{
+    public string Build(TransportKind transportKind, string host, int? port, string agentIdentifier)
+    {
+    }
+}
+```
+
+`host`, `port`, and `agentIdentifier` are taken as given (an empty string or a null port both render as
+the empty segment); this method does no validation of which fields a given `transportKind` should or
+should not carry, since that validation belongs to whichever task owns `PrinterConfiguration` editing,
+not to this pure string-building step. Re-run the filtered test, quote the green output.
+
+### Step 4: Delete the scaffolding smoke test
 
 Delete `backend/GastronomyApp.Core.Tests/ScaffoldingSmokeTest.cs` now that a real fixture exists, per
 T001's own instruction. Run `dotnet test GastronomyApp.slnx --filter
 FullyQualifiedName~GastronomyApp.Core` and quote the output showing only real fixtures remain.
 
-### Step 4: `OrderRoutingResolver`
+### Step 5: `OrderRoutingResolver`
 
 Write `backend/GastronomyApp.Core.Tests/Services/OrderRoutingResolverTest.cs` first. Cover, per spec
 2.6 and the 11.1 table: one active candidate routes with no chosen location and no station control
@@ -589,7 +662,7 @@ green.
 
 Re-run the filtered test for `OrderRoutingResolverTest`, quote the green output.
 
-### Step 5: `OrderStatusCalculator`
+### Step 6: `OrderStatusCalculator`
 
 Write `backend/GastronomyApp.Core.Tests/Services/OrderStatusCalculatorTest.cs` first. This is the
 exhaustive test 11.1 names: cover the five-row priority table in spec 3.1 for every combination of
@@ -629,7 +702,16 @@ Takes ticket statuses rather than `LocationTicket` entities because the calculat
 rest of the ticket, and a caller building the projection from a query result should not have to
 materialize full entities just to call this. Re-run, quote green.
 
-### Step 6: `OrderAcceptanceService` and its ports
+**Projection ownership, stated once here because this task owns `OrderStatusCalculator`.** Whoever
+changes a ticket writes the order status projection in the same transaction through this calculator:
+the printing worker (a sibling task) on the print path, the Api layer (a sibling task) on the HTTP paths
+(acceptance, resolve, acknowledge). The calculator itself never writes; `Calculate` is a pure function
+from ticket statuses to an `OrderStatus` value, and persisting the result onto `Order.Status` is always
+the caller's job, inside whatever transaction is already writing the ticket change that triggered the
+recomputation. Every sibling task that writes a `LocationTicket.Status` change quotes this sentence
+verbatim rather than restating the rule in its own words, so the rule cannot drift between documents.
+
+### Step 7: `OrderAcceptanceService` and its ports
 
 This is the use case for spec 5.4 / 9.3 / 4.1: validate, resolve idempotency, allocate numbers, route,
 create tickets. Because numbering allocation "happens inside the acceptance transaction" per the brief,
@@ -639,6 +721,26 @@ use case needs (idempotency check, number allocation, ticket/order persistence) 
 this service makes in one pass, so an EF implementation of the ports can wrap the whole call in one
 `BEGIN IMMEDIATE` and every allocation therefore participates in it. This section defines the ports
 first, because the service constructor takes them.
+
+**The exact division of labour with the Infrastructure task's `IOrderRepository` implementation, stated
+here so both coders build one implementation of order acceptance rather than two.** `OrderAcceptanceService`
+in this task owns every piece of acceptance *logic*: validation (empty lines, quantity range, table
+label shape, unknown item id, station-required, station-not-assigned), idempotency *decision* (what to
+do when `ClientOrderId` is already known versus not), routing (via `OrderRoutingResolver`), number
+allocation *calls* (via `INumberAllocator`, in the order the ticket loop needs them), total computation
+(via `OrderTotalCalculator`), and the construction of the `Order`, `OrderLine`, and `LocationTicket`
+graph, exactly as specified by the tests in this step. The Infrastructure implementation of
+`IOrderRepository` (a sibling task's work) does exactly two things and no more: `FindByClientOrderIdAsync`
+executes a lookup by the unique `ClientOrderId` index, and `AddAsync` executes the insert of the graph
+this service already built, inside the transaction that the composition root opened around the whole
+`AcceptAsync` call. The repository implementation never re-derives a number, never re-resolves a
+routing decision, never re-validates a line, and never re-creates a `LocationTicket`; if a repository
+implementation contains a decision this step's tests already cover, that is the defect, not a second
+valid approach, per root rule 6's ban on a concept computed in two places. The one exception, and it is
+storage-layer defence rather than a second producer of the figure: `AddAsync` may assert that the
+`Order.TotalCents` it is about to insert equals the recomputed sum of its lines, and throw if it does
+not, as a guard against a future caller that constructs an `Order` by hand outside this service; that
+assertion checks a value this service already computed, it does not compute a competing one.
 
 `backend/GastronomyApp.Core/Ports/ICatalogItemRepository.cs`:
 
@@ -674,6 +776,8 @@ public interface INumberAllocator
     Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken);
 
     Task<int> AllocateLocationSequenceNumberAsync(Guid eventSessionId, Guid productionLocationId, CancellationToken cancellationToken);
+
+    Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
 }
 ```
 
@@ -685,6 +789,17 @@ this service triggers commits or rolls back atomically with the order insert. Th
 implement that; it only has to shape the port so it is possible, which passing `CancellationToken`
 through and keeping allocation as separate awaited calls (rather than a single "allocate everything"
 call that would hide the per-ticket loop from the transaction) achieves.
+
+`AllocatePrinterProcessIdAsync` is the third counter kind from spec 2.13, `NumberCounterKind.PrinterProcessId`,
+keyed by `PrinterEndpointKey` (built by `PrinterEndpointKeyBuilder`, section 5 step 3) rather than by
+`EventSessionId` or `ProductionLocationId`, matching the `NumberCounter` entity's own composite key
+exactly. `OrderAcceptanceService` never calls this member; it exists on `INumberAllocator` because all
+three `NumberCounterKind` values share one allocation concern and one storage-layer counter table, and
+splitting it into a second port would be a second producer of "how a counter row is read and
+incremented" for the same underlying mechanism. The printing-worker task (a sibling to this one) is this
+member's only caller, allocating a process id at spec 7.4 step 6; no test in this task's own suite
+exercises it beyond `A.Fake<INumberAllocator>()` compiling against the full interface, since this task
+has no printing-dispatch logic to drive it with.
 
 `backend/GastronomyApp.Core/Ports/IOrderRepository.cs`:
 
@@ -864,11 +979,11 @@ bullet:
   snapshot is taken from the current catalog row rather than copied from the request.
 
 Quote the red run (most of these will be compiler errors on the first pass since none of the production
-types exist), then implement `Result<TValue, TFailure>` dependencies already exist from step 4, so write
+types exist), then implement `Result<TValue, TFailure>` dependencies already exist from step 5, so write
 `OrderAcceptanceService.cs` and its request/result records as specified above. Re-run filtered to
 `OrderAcceptanceServiceTest`, quote green.
 
-### Step 7: `TicketStateMachine`
+### Step 8: `TicketStateMachine`
 
 Write `backend/GastronomyApp.Core.Tests/Services/TicketStateMachineTest.cs` first. Enumerate every
 transition drawn in spec 3.2's diagram as an allowed case (one test method per arrow, or a
@@ -905,17 +1020,17 @@ a final `_ => false` arm (this one case is the deliberate exception to "no swall
 method's whole contract is "true for a listed edge, false otherwise", so `false` is not a swallowed
 value but the specified answer; do not use `Never` here). Re-run, quote green.
 
-### Step 8: `PrintJobStateMachine`
+### Step 9: `PrintJobStateMachine`
 
 Write `backend/GastronomyApp.Core.Tests/Services/PrintJobStateMachineTest.cs` first, same shape as step
-7 but over spec 3.3's diagram and `PrintJobStatus`. Additionally and specifically (11.1's callout): a
+8 but over spec 3.3's diagram and `PrintJobStatus`. Additionally and specifically (11.1's callout): a
 parameterized test proving that for every `PrintAttemptOutcome` with `BytesWritten > 0`, the resulting
-job status per the mapping in step 9 (`RetryPolicy`) is never one this state machine calls
+job status per the mapping in step 10 (`RetryPolicy`) is never one this state machine calls
 `CanTransition` back into `Queued` or `PreflightCheck` for, i.e. bytes-written outcomes never reach a
 state this machine allows to transition back to a retryable state directly; write this as a test that
-composes `PrintJobStateMachine.CanTransition` with the outcome-to-status mapping table from step 9 (you
-may need to write step 9's `RetryPolicy` type shape first to compile this test, in which case do so, but
-still keep `RetryPolicyTest.cs` as its own red-then-green step 9 before relying on its behaviour here;
+composes `PrintJobStateMachine.CanTransition` with the outcome-to-status mapping table from step 10 (you
+may need to write step 10's `RetryPolicy` type shape first to compile this test, in which case do so, but
+still keep `RetryPolicyTest.cs` as its own red-then-green step 10 before relying on its behaviour here;
 this cross-check test belongs in `PrintJobStateMachineTest.cs` because it is a property of the state
 machine, not of the policy).
 
@@ -940,21 +1055,23 @@ edges including the two separately-drawn `SocketDropped` arrows from `Sending`, 
 machine is state-to-state and `PrintAttempt.Phase` is what distinguishes the wire event, not this
 switch). Re-run, quote green.
 
-### Step 9: `RetryPolicy`
+### Step 10: `RetryPolicy`
 
 Write `backend/GastronomyApp.Core.Tests/Services/RetryPolicyTest.cs` first. One test method per row of
 spec 7.6's table (nine rows, both `Confirmed` rows, both `SocketDropped` rows, both `Timeout` rows, as
 11.1 requires), each asserting the full `PrintOutcomeMapping` returned: `JobStatus`, `TicketStatus`,
-`ShouldRetryAutomatically`, and (only for the two `Confirmed` rows) that `TransportKind.Mock` maps
-`TicketStatus` to `PrintedOnTestPrinter` while `TransportKind.Network` and `TransportKind.Agent` both
-map it to `Printed`. Also test that `PrintFailureReason` is populated correctly for every row that
-reaches `Blocked` or `Failed`-bound status (`Blocked` outcome to `PrintFailureReason.PrinterError` is
-wrong; re-read spec 7.6: `Blocked` outcome maps to job/ticket `Blocked` with no failure reason yet, the
-`FailureReason` is assigned later when the give-up window or outer bound actually fails the ticket, so
-`PrintOutcomeMapping` for a `Blocked`-status row carries `FailureReason: null` and only a row whose
-`ShouldRetryAutomatically` is false and whose resulting status is terminal for this attempt carries a
-reason; get this right against the table, not against the summary prose in 3.5, since 7.6 states it
-binds when they disagree).
+`ShouldRetryAutomatically`, and `FailureReason`, and (only for the two `Confirmed` rows) that
+`TransportKind.Mock` maps `TicketStatus` to `PrintedOnTestPrinter` while `TransportKind.Network` and
+`TransportKind.Agent` both map it to `Printed`. Also test that every one of the nine rows maps
+`FailureReason` to `null`: spec 7.6's table assigns no failure reason at the per-attempt level for any
+of its rows, including the ones that reach `Blocked` (`Blocked` outcome maps to job/ticket `Blocked`
+with no failure reason yet). `PrintFailureReason` is assigned later, once, by whichever mechanism
+actually ends the ticket: the give-up window or the outer bound (`GiveUpWindowCalculator`, section 5
+step 12) naming why a `Queued` or `Blocked` ticket gave up, or the station circuit breaker (a sibling
+task's territory, see section 8) naming `StationFaulty`. `RetryPolicy` and `PrintOutcomeMapping` are not
+where that assignment happens; the property exists on the record purely so every later terminal writer
+(the printing worker in a later task) has one place to put the reason once it is known, and this task's
+own tests prove `RetryPolicy.Map` itself never populates it.
 
 Quote red, then write:
 
@@ -968,6 +1085,7 @@ public sealed record PrintOutcomeMapping
     public required PrintJobStatus JobStatus { get; init; }
     public required LocationTicketStatus TicketStatus { get; init; }
     public required bool ShouldRetryAutomatically { get; init; }
+    public PrintFailureReason? FailureReason { get; init; }
 }
 ```
 
@@ -993,7 +1111,7 @@ combinations the table declares impossible, and cover that with a test asserting
 `(Confirmed, bytesWritten: 0, any transport)`, since the spec never describes a confirmed job with zero
 bytes and inventing a silent answer for it would be worse than a loud one. Re-run, quote green.
 
-### Step 10: `Never`
+### Step 11: `Never`
 
 `RetryPolicy` above already needs this; write it now if not written already, with its own tiny
 red-first test (`NeverTest.cs`) asserting it throws `InvalidOperationException` naming the unhandled
@@ -1019,7 +1137,7 @@ service in this task that needs an unreachable-default arm in a `switch` stateme
 purpose; since `Never` has no fields, callers may construct a fresh one at the call site
 (`new Never().OfType<...>(...)`) rather than needing it injected.
 
-### Step 11: `GiveUpWindowCalculator`
+### Step 12: `GiveUpWindowCalculator`
 
 Write `backend/GastronomyApp.Core.Tests/Services/GiveUpWindowCalculatorTest.cs` first. Cover, per 11.1's
 `GiveUpWindow` row and spec 3.2's worked example exactly (reuse its numbers: paper out at minute 0,
@@ -1115,7 +1233,7 @@ earlier than `ticketCreatedAtUtc`), sets `HasReachedGiveUpWindow` when that accu
 `GiveUpWindow`, sets `HasReachedOuterBound` when `currentStatus != LocationTicketStatus.Printing` and
 `evaluatedAtUtc - ticketCreatedAtUtc >= OuterBound`. Re-run, quote green.
 
-### Step 12: `TicketAcknowledgePolicy`
+### Step 13: `TicketAcknowledgePolicy`
 
 Write `backend/GastronomyApp.Core.Tests/Services/TicketAcknowledgePolicyTest.cs` first. Cover the exact
 boolean expression from spec 5.6, one case per clause per 11.1: each `LocationTicketStatus` in
@@ -1162,7 +1280,7 @@ Implement exactly the expression from spec 5.6: `ticketStatus is Failed or Unkno
 `stationCannotPrintRightNow = station.IsFaulty || !station.IsOnline || station.IsPaperEnd ||
 station.IsCoverOpen || station.IsInErrorState || !station.IsEnabled`. Re-run, quote green.
 
-### Step 13: `IPrinterStatusReader`
+### Step 14: `IPrinterStatusReader`
 
 This is the printer-status/dispatch port surface Core needs, kept to exactly what
 `TicketAcknowledgePolicy`'s callers and a later printing-worker task need to reason about outcomes, per
@@ -1182,11 +1300,11 @@ public interface IPrinterStatusReader
 ```
 
 Returns null when no status has ever been recorded for that location (a station never yet connected).
-`StationPrintability` is the same record from step 12, reused rather than duplicated, because it is
+`StationPrintability` is the same record from step 13, reused rather than duplicated, because it is
 already exactly the shape a caller needs to feed `TicketAcknowledgePolicy.CanAcknowledge`; this is the
 single-source-of-truth rule from `CLAUDE.md` rule 6 applied to this port's return type.
 
-### Step 14: Full suite, zero warnings
+### Step 15: Full suite, zero warnings
 
 Run `dotnet build GastronomyApp.slnx` and quote `0 Warning(s)`, `0 Error(s)`. Run `dotnet test
 GastronomyApp.slnx --filter FullyQualifiedName~GastronomyApp.Core` and quote every fixture passing with
@@ -1205,12 +1323,12 @@ Ports (`GastronomyApp.Core.Ports`): `IClock`, `ICatalogItemRepository`, `IProduc
 Services (`GastronomyApp.Core.Services`, all `sealed class`, all constructor-injected, none static):
 `OrderRoutingResolver`, `OrderStatusCalculator`, `OrderTotalCalculator`, `OrderAcceptanceService`,
 `TicketStateMachine`, `PrintJobStateMachine`, `RetryPolicy`, `GiveUpWindowCalculator`,
-`TicketAcknowledgePolicy`, `Never`.
+`TicketAcknowledgePolicy`, `PrinterEndpointKeyBuilder`, `Never`.
 
 Entities (`GastronomyApp.Core.Entities`, all `sealed class`): `EventSession`, `ProductionLocation`,
 `CatalogItem`, `ItemLocationAssignment`, `TableSuggestion`, `ServerPerson`, `Device`,
 `EnrolmentInvitation`, `Order`, `OrderLine`, `LocationTicket`, `PrintJob`, `PrintAttempt`,
-`NumberCounter`.
+`NumberCounter`, `PrinterConfiguration`, `PrinterStatus`.
 
 Enums (`GastronomyApp.Core.Enums`): `OrderStatus`, `LocationTicketStatus`, `PrintJobStatus`,
 `PrintJobKind`, `PrintFailureReason`, `PrintAttemptOutcome`, `PrintAttemptPhase`, `TransportKind`,
@@ -1219,13 +1337,25 @@ Enums (`GastronomyApp.Core.Enums`): `OrderStatus`, `LocationTicketStatus`, `Prin
 Results (`GastronomyApp.Core.Results`, all `sealed record`): `Result<TValue, TFailure>`,
 `RoutingDecision`, `RoutingFailure` (+ `RoutingFailureReason`), `OrderAcceptanceResult`,
 `OrderValidationFailure` (+ `OrderValidationFailureReason`), `OrderAcceptanceLineRequest`,
-`OrderAcceptanceRequest`, `PrintOutcomeMapping`, `SuspensionPeriod`, `GiveUpWindowEvaluation`,
-`StationPrintability`.
+`OrderAcceptanceRequest`, `PrintOutcomeMapping` (carrying `FailureReason`, see section 5 step 10),
+`SuspensionPeriod`, `GiveUpWindowEvaluation`, `StationPrintability`.
 
 Any task that needs to construct an `OrderAcceptanceRequest`, call `OrderAcceptanceService.AcceptAsync`,
 implement one of the five repository/allocator/status ports, or consult
 `TicketAcknowledgePolicy.CanAcknowledge` should use these exact names and shapes; do not introduce a
 parallel or renamed version of any of them.
+
+**Not defined by this task, and not to be duplicated by it.** T004 (the printing service task) owns and
+introduces `GastronomyApp.Core.Localization.ISlipTextProvider` and its companion `SlipStrings` type,
+also inside `GastronomyApp.Core`, because the slip renderer's need for localized text is T004's concern
+and T002 has no slip-rendering logic to drive it. T002's coder must not create a rival localization
+port (an `ILocalizer`, a second `ISlipTextProvider`, or similar): if a step in this document seems to
+need rendered text, it does not, since every failure reason and status this task produces stays a typed
+enum value all the way out (see section 8), and resolving it into a sentence is later work. T004 also
+introduces `GastronomyApp.Core.Printing` (`IPrinterTransport`, `IPrinterSession`, `PrinterEndpoint`,
+`PrintPayload`, `PrinterStatusSnapshot`, `PrintDispatchResult`) as its own step 0, reusing this task's
+`TransportKind` and `PrintAttemptOutcome` rather than declaring parallel enums; T002's coder does not
+need to and must not pre-build any part of that namespace.
 
 ## 7. Verification
 
@@ -1258,10 +1388,12 @@ Explicitly not part of this task:
   (sending a job, claiming it, running the retry loop) is the printing-worker task's port surface, built
   on top of `PrintJobStateMachine` and `RetryPolicy` from this task but not itself part of it.
 * `StationCircuitBreaker`, `ProcessIdAllocator`, `EnrolmentInvitationVerifier`, `DeviceTokenHasher`, and
-  every entity/service that belongs to enrolment, device tokens, printer configuration
-  (`PrinterConfiguration`, `PrinterStatus` as entities), or the admin/station HTTP surface. These are
+  every service that belongs to enrolment, device tokens, or the admin/station HTTP surface. These are
   real, spec'd, and listed in 11.1, but they are outside the vertical slice this task builds (order
-  placement, routing, ticket creation, print outcome/retry decisions) and belong to sibling tasks.
+  placement, routing, ticket creation, print outcome/retry decisions) and belong to sibling tasks. This
+  task does still declare the `PrinterConfiguration` and `PrinterStatus` entities themselves (section
+  4.2), because entities live in Core and nobody else can own them; only the services that edit or poll
+  them are out of scope here.
 * Frontend (`frontend/src/core/*`) and desktop. This task is `backend/GastronomyApp.Core` only.
 * Localization resx content of any kind.
 * Git commands. The owner commits separately.
