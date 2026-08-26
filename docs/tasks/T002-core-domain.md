@@ -532,7 +532,7 @@ not use; the key is never parsed back apart, only built and compared.
 Write `backend/GastronomyApp.Core.Tests/Services/PrinterEndpointKeyBuilderTest.cs` first, covering: a
 `Network` transport with a host and port produces `Network|192.168.1.23|9100|`; an `Agent` transport with
 no host or port and an `AgentIdentifier` produces `Agent|||agent-1`; a `Mock` transport with none of
-host, port, or agent identifier set produces `Mock|||` (using `0` for a `null` port, since `Port` is
+host, port, or agent identifier set produces `Mock|||` (an empty segment for a `null` port, since `Port` is
 declared as `int?` in the signature below to let a transport that has no port at all, such as `Agent`,
 omit it honestly rather than being forced to invent one); two builds with identical inputs produce equal
 strings; and two builds that differ only in `Host` produce different strings. Run `dotnet test --filter
@@ -1013,7 +1013,7 @@ public sealed class TicketStateMachine
 ```
 
 Implement `CanTransition` as a `switch` expression on `(from, to)` matching exactly the edges drawn in
-spec 3.2 (fifteen edges, counting `Failed -> Queued`, `Printed -> Queued`, and
+spec 3.2 (eighteen distinct pairs, counting `Failed -> Queued`, `Printed -> Queued`, and
 `PrintedOnTestPrinter -> Queued` as three of them, and the terminal `[*]` arrows out of `Printed` and
 `HandledOnPaper` as meaning no outgoing edges from those states rather than a case in this switch), with
 a final `_ => false` arm (this one case is the deliberate exception to "no swallowing default": the
