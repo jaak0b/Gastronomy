@@ -379,29 +379,31 @@ device-authenticated or station-key-authenticated caller.
 **There is no exception-based domain error middleware.** Per review finding T005-1, T002's services
 return `Result<TValue, TFailure>`, so there is nothing for a global exception-handling middleware to
 catch on the validation/business-rule path. Instead this task writes one small, endpoint-layer
-mapper, `ErrorHandling/ResultEnvelope.cs`, called explicitly by every endpoint that calls into a
-Core service returning a `Result`:
+mapper, `ErrorHandling/ResultEnvelope.cs`, an ordinary instance class registered in DI and injected
+into every endpoint handler that calls into a Core service returning a `Result`:
 
 ```csharp
 namespace GastronomyApp.Api.ErrorHandling;
 
-public static class ResultEnvelope
+public sealed class ResultEnvelope
 {
-    public static IResult ToProblem(OrderValidationFailure failure)
+    public IResult ToProblem(OrderValidationFailure failure)
     {
     }
 
-    public static IResult ToProblem(RoutingFailure failure)
+    public IResult ToProblem(RoutingFailure failure)
     {
     }
 }
 ```
 
-(Extension-method-shaped static helpers over a closed `Result` failure type are the one place this
-task uses a static method beyond the framework-metadata exception: they hold no state, are pure
-functions from a failure value to an `IResult`, and match the minimal-API convention every endpoint
-file in this task already follows. This is a deliberate, narrow exception, recorded here rather than
-silently taken.)
+`ResultEnvelope` is registered once in `GastronomyAppApiApplication.Build` (`builder.Services
+.AddSingleton<ResultEnvelope>()`, since it holds no per-request state) and reaches each endpoint
+either through constructor-style delegate injection on the minimal-API handler
+(`([FromServices] ResultEnvelope resultEnvelope, ...) => { }`) or through an endpoint filter that
+wraps a returned `Result` before the handler's response is written, whichever a given endpoint file
+in step 7 through step 10 reads more clearly with; either way it is resolved from the container like
+every other collaborator in this task, not called as a static member.
 
 Red: `ErrorHandling/ResultEnvelopeTest.cs`, a unit test per row of the table below, asserting the
 exact status and `ApiError.Code`.
