@@ -1841,9 +1841,18 @@ on a scrap of paper and sending it out with the food. That only works if every o
 so every order is.
 
 Each row carries what a person needs to make and label the food, and nothing else: the slip number, the
-order number, the table label, every line with its quantity and any line note, the order note, and the
-time the order was taken. It is the same information as the printed slip, in the same order, because a
-station reading a screen and a station reading paper should not have to learn two layouts.
+order number, the table label, every line with its quantity and any line note, the order note, the
+time the order was taken, and `ReprintCount`. It is the same information as the printed slip, in the
+same order, because a station reading a screen and a station reading paper should not have to learn two
+layouts.
+
+**A ticket whose `ReprintCount` is greater than zero renders a `NACHDRUCK` / `REPRINT` chip.** A reprint
+returns a `Printed` ticket to `Queued` (section 3.2), which at a station that cannot print is what makes
+it acknowledgeable here alongside the orders that never printed at all. The person working off this
+screen has to be able to tell "print this again" apart from a fresh order, because the original slip may
+still be on the pile, and the chip is the same distinguishing mechanism two identical slip numbers
+already carry on paper: it mirrors the reprint banner the reprinted slip itself carries (section 7.7).
+The string key is `station.reprint`.
 
 **Filtering by production location, because a printer can move.** The filter exists for the
 configuration in section 2.12, where the admin has pointed a broken station at a working station's
@@ -3228,6 +3237,13 @@ taken, and every line with its quantity and note. That is the whole of what some
 food and label it, and it is laid out in the same order as the printed slip so nobody has to learn a
 second layout at the worst moment of the evening.
 
+**A row whose ticket has been reprinted carries a `NACHDRUCK` / `REPRINT` chip, string key
+`station.reprint`.** A reprint puts a `Printed` ticket back in `Queued` (section 3.2), so it can end up
+open and acknowledgeable on this page next to orders that never printed at all. Without the chip nothing
+on the screen would tell those two apart, and the person working off it needs to, because the original
+slip may still be sitting on the pile. The chip mirrors the reprint banner the slip itself carries
+(section 7.7): the same two orders, distinguished the same way, on paper and on screen.
+
 **Every open order is listed, not only the broken ones.** The old design showed only failed, unknown
 and blocked tickets, which is useless in the case the page exists for: when the printer is dead, every
 order is one the station has to make, and a list of three out of forty is a list of three orders that
@@ -3315,6 +3331,7 @@ nothing about it is a queue.
 | `station.status.cannotPrint` | Der Drucker kann gerade nicht drucken | The printer cannot print right now |
 | `station.status.failed` | Nicht gedruckt | Not printed |
 | `station.status.unknown` | Unklar, ob gedruckt | Not known whether it printed |
+| `station.reprint` | NACHDRUCK | REPRINT |
 | `station.take` | Übernommen | Taken |
 | `station.takeHelp` | Schreiben Sie die Tischnummer auf einen Zettel und legen Sie ihn zum Essen. | Write the table number on a piece of paper and put it with the food. |
 | `station.takeUnavailable` | Holen Sie diesen Bon am Drucker. Der Drucker dieser Station arbeitet. | Fetch this slip at the printer. This station's printer is working. |
@@ -4246,8 +4263,8 @@ cannot be answered until after that decision, rather than at leisure before the 
 
 **Most of the rest of this list has since been closed by the owner.** A closed question keeps its
 number and its heading says so, because the numbers are referenced elsewhere in this document and an
-answer nobody can find gets asked again. Four questions are still genuinely open: 1, 8, 11 and 12. Two
-of those need a printer on a desk and one needs the owner to edit a file this document may not touch.
+answer nobody can find gets asked again. Three questions are still genuinely open: 1, 8 and 11. Two of
+those need a printer on a desk.
 
 1. **The process id echo on real hardware.** The confirmation design in section 7.4 depends on
    `GS ( H` returning the specified process id after printing completes on a TM-T20IV over port 9100.
@@ -4378,18 +4395,7 @@ of those need a printer on a desk and one needs the owner to edit a file this do
     camera that will not focus is a real thing at 21:00. What is left to answer here is only which of
     the two ways the symbol reaches the paper.
 
-12. **The settings window holds two buttons, and `desktop/CLAUDE.md` reads as forbidding them.** That
-    file says: "The settings window holds only what cannot live in a web page served by the very server
-    being configured: port, bind address, database location, and which network to display. Nothing
-    else." Section 10.1 puts two buttons in that window, "open the data folder" and "repair the setup",
-    and section 10.3 makes the repair a permanent resident of it.
-
-    Both are defensible on the file's own reasoning. They are actions rather than settings, and neither
-    can live in a served page: the repair exists for the case where the firewall is blocking that page
-    or the database behind it cannot be written to, and the folder button exists so a volunteer can find
-    the backup file. The file simply predates them.
-
-    **This is the only contradiction between the four `CLAUDE.md` files and this specification**, and it
-    is left open rather than resolved because the fix is one sentence in `desktop/CLAUDE.md` allowing
-    actions that cannot be performed from a served page, and this pass was scoped to the specification
-    and its revision log. The owner decides whether to add that sentence or to remove the buttons.
+12. **The settings window holds two buttons, and `desktop/CLAUDE.md` read as forbidding them. Closed:
+    both buttons stay.** `desktop/CLAUDE.md` now allows exactly these two actions as machine-level
+    concerns, so the contradiction with section 10.1's two buttons, "open the data folder" and "repair
+    the setup", and section 10.3's permanent placement of the repair button, is gone.
