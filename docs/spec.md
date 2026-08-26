@@ -128,8 +128,9 @@ erDiagram
 
     ServerPerson ||--o{ Device : uses
     ServerPerson ||--o{ Order : placed
+    ServerPerson |o--o{ EnrolmentInvitation : "is invited by"
 
-    EnrolmentCode |o--o| Device : "was redeemed by"
+    EnrolmentInvitation |o--o| Device : "was redeemed by"
     Device ||--o{ Order : submitted
 
     Order ||--|{ OrderLine : "consists of"
@@ -181,7 +182,6 @@ erDiagram
     Device {
         Guid Id PK
         Guid ServerPersonId FK
-        string DisplayName
         string Language
         byte_array TokenHash
         byte_array TokenSalt
@@ -193,12 +193,16 @@ erDiagram
         DateTime RevokedAtUtc "nullable"
         string UserAgentSnapshot
     }
-    EnrolmentCode {
+    EnrolmentInvitation {
         Guid Id PK
-        byte_array CodeHash
-        byte_array CodeSalt
+        Guid ServerPersonId FK "nullable"
+        byte_array QrCodeHash
+        byte_array QrCodeSalt
+        byte_array SixDigitHash
+        byte_array SixDigitSalt
         int CodeIterations
         string CodeAlgorithm
+        int FailedSixDigitAttempts
         DateTime CreatedAtUtc
         DateTime ExpiresAtUtc
         DateTime ConsumedAtUtc "nullable"
@@ -479,17 +483,23 @@ After the first evening the department has a real list for free: the admin scree
 distinct label that servers actually typed during the last session, so the second festival starts with
 suggestions that match how this crew names its tables.
 
-### 2.8 ServerPerson, Device, EnrolmentCode
+### 2.8 ServerPerson, Device, EnrolmentInvitation
 
 There are no usernames and no passwords anywhere in the product.
 
-**ServerPerson** is a name to print on the slip, the owner of the evening's orders, and the entry in
-the admin list.
+**A phone is set up for one person at a time, from the laptop.** The admin creates an invitation, the
+laptop shows one QR code, that server scans it with the camera app on their own phone, types their name
+in the browser that opens, and their name is in the admin's list a moment later. The crew is under
+twenty people, so working through them one by one costs a few minutes of one evening's preparation, and
+the owner chose that over anything that sets up a group at once.
+
+**ServerPerson** is a name to print on the slip, the owner of the evening's orders, and the row in the
+admin list.
 
 | Field | Type | Notes |
 |---|---|---|
 | Id | Guid | |
-| Name | string(40) | |
+| Name | string(40) | Typed by the server while setting up their phone, and changeable by the admin at any time |
 | IsActive | bool | |
 | CreatedAtUtc | DateTime | |
 
@@ -497,56 +507,99 @@ An order belongs to a `ServerPerson`, not to a phone. That is what makes a flat 
 phone, or a re-enrolment survivable: the evening's history follows the human, and the questions in
 section 3.4 stay answerable by the person who can walk to the station.
 
+**The admin can rename a person at any time, and that is a safety valve rather than a convenience.**
+The name on every slip is whatever the server typed into their own phone, so sooner or later somebody
+types "Papa" or a nickname the kitchen does not know. Renaming changes the row and not its identity:
+the person keeps their id, their orders and their open questions, and the next slip carries the new
+name. A slip already on the pile keeps the name it was printed with, and a reprint carries the current
+name, because a slip is rendered when it is printed and no name is copied onto the order.
+
 **Device** is one enrolled phone.
 
 | Field | Type | Notes |
 |---|---|---|
 | Id | Guid | |
-| ServerPersonId | Guid | Who is carrying it. The admin can reassign it when a phone changes hands between shifts. |
-| DisplayName | string(40) | Defaults to the person's name, editable in admin |
+| ServerPersonId | Guid | Whose phone this is. Set when the invitation is redeemed and never changed afterwards. |
 | Language | string(2) | `de` or `en`. Every message the backend sends to this phone is rendered by the phone in this language. |
 | TokenLookupId | string(32) | Non-secret random id, sent with every request so the backend can find the one row to verify against |
 | TokenHash, TokenSalt, TokenIterations, TokenAlgorithm | | PBKDF2-HMAC-SHA512, per-token random salt, iteration count and algorithm name stored alongside the hash so both can be raised later without invalidating existing devices |
 | CreatedAtUtc, LastSeenAtUtc | DateTime | |
 | RevokedAtUtc | DateTime? | Non-null means every request from this device is rejected |
-| UserAgentSnapshot | string(200) | So the admin can tell two phones apart in the list |
+| UserAgentSnapshot | string(200) | So the admin can see which handset a person is carrying when a phone is not behaving |
 
-**EnrolmentCode** is a single-use, short-lived credential shown on the laptop.
+**A person has at most one phone that works, and issuing them a new QR code revokes the old one in the
+same transaction.** That one rule covers the three situations that actually occur. A phone is lost, and
+whoever finds it must not be able to send orders to the kitchen. A battery dies and the server borrows
+a colleague's handset for the rest of the evening. A phone is handed to the next shift, and the person
+taking it sets it up under their own name. Without the rule the lost phone keeps working all evening,
+and no amount of admin diligence at 22:00 makes up for that.
+
+A device carries no name of its own. There is one name for a server, it lives on `ServerPerson`, and
+the slip, the phone's settings sheet and the admin list all read it from there.
+
+**EnrolmentInvitation** is the single-use, short-lived credential behind one QR code.
 
 | Field | Type | Notes |
 |---|---|---|
 | Id | Guid | |
-| CodeHash, CodeSalt, CodeIterations, CodeAlgorithm | | Same hashing scheme as device tokens |
+| ServerPersonId | Guid? | Null for somebody new, who types their own name. Set when the admin issues a fresh code to somebody already in the list. |
+| QrCodeHash, QrCodeSalt | | The long random value carried in the QR URL |
+| SixDigitHash, SixDigitSalt | | The typed fallback for a camera that does not work |
+| CodeIterations, CodeAlgorithm | | The same PBKDF2-HMAC-SHA512 scheme as device tokens, for both secrets |
+| FailedSixDigitAttempts | int | Counts wrong six digit codes against this invitation. See the redemption rules below. |
 | CreatedAtUtc, ExpiresAtUtc | DateTime | Lifetime 5 minutes |
-| ConsumedAtUtc, ConsumedByDeviceId | | Set atomically by the first successful redemption |
+| ConsumedAtUtc, ConsumedByDeviceId | | Set atomically by the successful redemption |
 
-The six digits and the QR URL of the code currently on screen live in the rotation service's in-memory
-state and are never written to the database. Persisting them beside their own hash would make the
-hashing decorative.
+The QR URL and the six digits are returned once, in the response that created the invitation, and after
+that they exist only on the admin's screen. They are never written to the database and never fetchable
+again, because persisting them beside their own hash would make the hashing decorative. An admin who
+reloads the page creates a new invitation instead, which is one click.
 
 Invariants:
 
-* Redemption is a single atomic update: a code moves from unconsumed to consumed in the same
-  transaction that creates the device, so a photographed QR code cannot enrol a second phone.
-* Codes rotate about every 30 seconds while the "Set up a server phone" screen is open, so a whole crew
-  can enrol during one briefing. Rotation does not invalidate codes that are still inside their 5
-  minute window, because a phone may be slow to open the page.
-* Verification is a linear scan over the unconsumed, unexpired codes, of which there are at most a
-  handful. This is why a hashed short code needs no plaintext lookup index.
-* **A code that is already consumed or expired answers 410 and is not counted as a failed attempt.**
-  Eight people scanning the same displayed QR within two seconds is the design goal, not an attack, and
-  seven of them get a 410 as a matter of course.
-* **A wrong code is counted per source address, and only that address is locked.** Ten wrong codes from
-  one address within five minutes lock that address for five minutes. Codes already issued to other
-  people are never invalidated by somebody else's mistyping, because that is what turns one person's
-  bad thumb into everyone's problem on an open network.
-* The admin can lift every lock from the enrolment screen, and the screen lists the locked addresses so
-  the person at the laptop can see that it happened at all.
+* **At most one invitation is outstanding at any moment.** Creating one consumes any invitation still
+  outstanding, so nobody holds two live codes and two people never hold one each. Verification checks a
+  single row rather than searching a set, which is why a hashed short code needs no plaintext lookup
+  index.
+* Redemption is a single atomic update: the invitation moves from unconsumed to consumed in the same
+  transaction that creates the device, so a photographed QR code cannot set up a second phone.
+* **An invitation expires the moment it is redeemed, and otherwise five minutes after it was created.**
+  Five minutes is long enough to walk from the laptop to wherever the phone was left lying and unlock
+  it, and short enough that a code somebody photographed over a shoulder is dead before they could use
+  it.
+* An invitation that names a person keeps that person's id when it is redeemed, so a server whose phone
+  was lost comes back to their own orders and their own open questions. An invitation that names nobody
+  creates the person from the name that is typed.
+* **Ten wrong six digit codes stop the six digits being accepted for that invitation, and the QR code
+  stays valid.** Nothing is locked, no address is remembered, and the admin's answer is the same click
+  that produced the code in the first place.
 * Tokens are never logged, never returned after enrolment, and never recoverable. A lost phone is
-  handled by revoking and enrolling again.
+  handled by issuing its owner a new QR code, which revokes the lost one.
 * Revoking a device sets `RevokedAtUtc` and pushes a SignalR message to that device, which clears its
   token and returns to the enrolment screen. **The half-built order on that phone is kept**, for the
-  reasons in section 9.4.
+  reasons in section 9.4. A device is revoked in exactly two ways, and both do the same thing: the
+  admin removes the phone from the person's row, or the admin issues that person a new QR code.
+
+**What protects redemption, now that one code serves one person.** The six digit fallback is short
+enough to guess if somebody can try it a few thousand times, so the guessing is capped on the
+invitation itself: after ten wrong six digit codes the digits stop being accepted, which bounds any
+attacker at ten tries against a code that lives five minutes and exists only while an admin is standing
+at the laptop setting somebody up. The QR code is a long random value and those attempts do not touch
+it, so spraying digits at the endpoint cannot stop the crew being set up. The worst it costs is one
+walk back to the laptop for the one person whose camera is broken. Above that sits the anonymous rate
+limit in section 5.1, twenty requests per minute per address, which is what keeps the endpoint from
+being hammered at all.
+
+**What was removed with the rolling code, and why nothing replaced it.** An earlier design regenerated
+the code about every thirty seconds with several codes valid at once, so a whole crew could scan one
+laptop screen during a briefing. Its normal case was eight people scanning the same code within two
+seconds, seven of whom were told the code had already been used, and telling that apart from an attack
+took a counter of wrong attempts per source address, a five minute lock on the address, an endpoint
+listing the locked addresses, an endpoint lifting every lock, and a screen for the admin to work them
+from. One code for one person cannot produce that race, so all of it is gone: no counter per address,
+no lock, no unlock endpoint, and nothing on the admin screen about locks. Blocking review finding B13,
+which was about that lockout being global, trivially triggered by a stranger and impossible to lift, is
+dissolved rather than fixed. The mechanism it described a defect in no longer exists.
 
 ### 2.9 Order and OrderLine
 
@@ -1227,14 +1280,13 @@ Request:
 {
   "code": "8f2a1c...",
   "sixDigitCode": null,
-  "serverPersonId": "c2f1...",
-  "newServerName": null,
+  "name": "Anna",
   "userAgent": "Mozilla/5.0 ..."
 }
 ```
 
-Exactly one of `code` (from the QR URL) and `sixDigitCode` is supplied. Exactly one of
-`serverPersonId` (picked from the admin's list) and `newServerName` is supplied.
+Exactly one of `code` (from the QR URL) and `sixDigitCode` is supplied. `name` is what the server typed
+on their own phone and is always required.
 
 Response 200:
 
@@ -1249,12 +1301,23 @@ Response 200:
 
 `deviceToken` is returned exactly once and never again.
 
+**One redemption does one of two things, decided by the invitation and not by the phone.** An
+invitation the admin issued to somebody already in the list carries a `ServerPersonId`: the typed name
+is written to that person, who keeps their id, their orders and their open questions, and the new
+device is theirs. An invitation issued for somebody new carries none, and the typed name creates the
+person. Either way the device row and the consumption of the invitation commit in one transaction.
+
+An admin who chooses "new server" for somebody who is already in the list gets a second row with the
+same name rather than a merge. Matching people by the name they typed would be guessing, so the product
+does not: the admin takes the duplicate off the list, and section 8.9 says which button does that.
+
 | Status | When |
 |---|---|
-| 200 | Redeemed. The code is now consumed. |
+| 200 | Redeemed. The invitation is now consumed. |
 | 400 | Neither code form supplied, or both, or the name is empty |
-| 410 | The code was already used or has expired. The message tells the phone to scan again, because the laptop is already showing a fresher code. This does not count as a failed attempt. |
-| 423 | This address is locked for five minutes after ten wrong codes. Only this address is locked. |
+| 404 | These six digits match no invitation. Counted against the outstanding invitation. |
+| 410 | The invitation was already used, has expired, or was replaced when the admin created a newer one. All three send the reader back to the laptop for a fresh QR code, so the phone shows one sentence for all of them. |
+| 422 | `SixDigitCodeRetired`. Ten wrong six digit codes have been sent against the outstanding invitation, so its digits are no longer accepted. Its QR code still is. |
 | 429 | Rate limited |
 
 #### GET /api/session
@@ -1264,7 +1327,6 @@ Device auth. Returns who this device is.
 ```json
 {
   "deviceId": "9a71...",
-  "displayName": "Anna",
   "serverPerson": { "id": "c2f1...", "name": "Anna" },
   "eventSession": { "id": "...", "name": "Samstagabend", "isPractice": false },
   "language": "de"
@@ -1569,29 +1631,38 @@ decides where a line goes if the station the server chose was switched off in th
 | PUT | /api/admin/table-suggestions | `{labels: ["Tisch 1", ...]}` replaces the list |
 | POST | /api/admin/table-suggestions/from-last-session | 200 with the distinct table labels servers actually typed, added to the list |
 
-**Staff and devices**
+**Servers and their phones**
+
+One list, one row per person, because a person has one phone (section 2.8). There is no second list of
+devices to keep beside it.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/server-people | | 200 |
-| POST | /api/admin/server-people | `{name}` | 201 |
-| POST | /api/admin/server-people/{id}/deactivate | | 200 |
-| GET | /api/admin/devices | | 200 with person, last seen, revoked state, user agent |
-| POST | /api/admin/devices/{id}/revoke | | 200, pushes `DeviceRevoked` to that device |
-| PUT | /api/admin/devices/{id} | `{displayName, serverPersonId}` | 200. Changing the person is the shift handover: the day crew's phone becomes the evening crew's phone without a revoke, and earlier orders stay with the person who placed them. |
+| GET | /api/admin/server-people | | 200, one row per person with the state of their phone, when it was last seen, its user agent, and whether an invitation for them is outstanding |
+| PUT | /api/admin/server-people/{id} | `{name}` | 200. The rename, allowed at any time including during a live event. The person keeps their orders and their open questions, and the next slip carries the new name. |
+| POST | /api/admin/server-people/{id}/revoke-device | | 200, pushes `DeviceRevoked` to that phone. 409 when the person has no phone set up. |
+| POST | /api/admin/server-people/{id}/deactivate | | 200, revoking their phone in the same transaction. Their orders stay where they are. |
+
+**No endpoint creates a person, and no endpoint moves a phone to somebody else.** A person exists
+because a redemption named them (section 5.2), so the admin never types a name that a server is about
+to type themselves. A phone changes hands by its new carrier setting it up under their own name, and
+the invitation endpoint below is how that is started.
 
 **Enrolment**
 
-| Method | Path | Response |
-|---|---|---|
-| POST | /api/admin/enrolment/session/start | 200 `{qrUrl, sixDigitCode, expiresAtUtc}`. Begins rotation, which then pushes `EnrolmentCodeRotated` about every 30 seconds. |
-| POST | /api/admin/enrolment/session/stop | 204. Outstanding codes keep their 5 minute lifetime. |
-| POST | /api/admin/enrolment/invalidate-all | 204. Immediately consumes every outstanding code. |
-| GET | /api/admin/enrolment/locks | 200 with the addresses currently locked and when each lock expires |
-| POST | /api/admin/enrolment/unlock | 204. Lifts every lock at once. |
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | /api/admin/enrolment/invitations | `{}` for somebody new, or `{serverPersonId}` for somebody already in the list | 201 `{invitationId, qrUrl, sixDigitCode, expiresAtUtc, serverPerson}`. Consumes any invitation still outstanding. With a `serverPersonId` it also revokes that person's phone in the same transaction and pushes `DeviceRevoked` to it. 404 when that person does not exist. |
+
+That is the whole enrolment API, and the revoke inside it is the point of the call rather than a side
+effect of it. The usual reason to issue somebody a second QR code is that their first phone has to stop
+working immediately: it is lost, or it is flat and its owner is picking up a different handset. Waiting
+until the new phone is set up would leave the old one able to order in the meantime, so the revoke
+happens when the code is created. An invitation nobody scans therefore leaves that person without a
+phone until the admin creates another one, which is the right outcome for a phone that is gone.
 
 The QR URL is built from the address the laptop is actually reachable on. The backend enumerates its
-non-loopback IPv4 addresses at startup and on every enrolment session start. When there is more than
+non-loopback IPv4 addresses at startup and whenever an invitation is created. When there is more than
 one, the admin picks which network the phones are on, and the choice is remembered. The URL has the
 form `http://192.168.1.23:5000/j/8f2a1c...`.
 
@@ -1601,7 +1672,8 @@ reboot that hands the laptop a new address leaves every phone holding a token it
 unsent order stranded in storage for an address nobody will visit again. There is no software recovery
 for that, which is why the setup checklist makes a fixed address a step rather than a hope, and why the
 overview screen names the previous address when it changed. The recovery, when it happens anyway, is
-that every phone scans the new QR code, and orders queued on the old address are written on paper.
+that every phone is set up again from the new address, one person at a time, and orders left on the old
+address are written on paper.
 
 **Printers**
 
@@ -1805,8 +1877,7 @@ connects with its access key instead. The admin connects from the laptop.
 | `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | `devices`, `admin`, `station:{locationId}` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. `waitingTicketCount` is appended to that banner with `header.stationWaiting`. The admin printer screen updates its indicator. The station page re-evaluates which rows offer the acknowledge button. |
 | `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap to fill in the address. |
 | `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out stays in the picker, greyed and not selectable, and any quantity already in the basket for it is flagged rather than silently dropped. A changed price is picked up the same way, which is what keeps an open basket showing the backend's current prices. |
-| `EnrolmentCodeRotated` | `{qrUrl, sixDigitCode, expiresAtUtc}` | `admin` | The enrolment screen swaps the QR image and the six digits, with the remaining seconds shown. |
-| `EnrolmentCompleted` | `{deviceId, displayName, serverPersonName}` | `admin` | The enrolment screen adds the newly set up phone to a live list so the admin can watch a crew do it during a briefing. |
+| `EnrolmentCompleted` | `{serverPersonId, serverPersonName, deviceId}` | `admin` | The QR code is replaced by the person's name and the list gains their row, so the admin sees that somebody across the room finished without walking over to look at their phone. |
 | `DeviceRevoked` | `{deviceId}` | `device:{deviceId}`, `admin` | The phone clears its token and shows the enrolment screen with an explanation. **The half-built order on screen is kept**, and comes back when the phone is set up again. |
 | `EventSessionStarted` | `{eventSessionId, name, isPractice}` | `devices`, `admin`, all stations | Phones clear their local order list, because those orders belong to the previous session, and show a one line notice. A half-built order is untouched. |
 
@@ -2462,39 +2533,45 @@ take an order immediately.
 
 ### 8.3 Enrolment by QR code
 
-**Purpose.** Turn a phone that has never seen the tool into an enrolled device, in under fifteen
-seconds, during a briefing.
+**Purpose.** Turn a phone that has never seen the tool into an enrolled device, in one step, while its
+owner is standing at the laptop.
 
-**What is on it.** The name picker, filled from the admin's list of staff, a way to type a name that is
-not in the list, and one button. Nothing else.
+**What is on it.** One field for a name and one button. Nothing else.
 
-**What the user can do.** Pick a name or type one, then continue. On success the phone stores its token
-and goes straight to the catalog.
+**What the user can do.** Type their name and continue. The phone stores its token and goes straight to
+the catalog.
 
 **The scan happens in the phone's own camera app**, which opens the URL in the browser. The web app
 never asks for the camera. It cannot: `getUserMedia` needs a secure context and this product is served
 over plain HTTP, so an in-page scanner is not a feature that was skipped, it is a feature that cannot
 exist here.
 
+**Every server types their own name, and nobody picks from a list.** There is no list to pick from
+until people have set their phones up, and scrolling twenty names on a phone is slower than typing
+four letters anyway. What it costs is the occasional "Papa", and the rename in section 2.8 is what pays
+for it. A server whose phone is being replaced types their name again on the new one, and the laptop
+keeps them on the same row with the same orders, because the QR code the admin issued names them
+already (section 5.2).
+
 | Key | Deutsch | English |
 |---|---|---|
 | `enrol.title` | Dieses Telefon einrichten | Set up this phone |
-| `enrol.intro` | Wählen Sie Ihren Namen aus. Danach können Sie Bestellungen aufnehmen. | Choose your name. After that you can take orders. |
+| `enrol.intro` | Geben Sie Ihren Namen ein, damit die Küche sieht, wer die Bestellung aufgenommen hat. | Enter your name so the kitchen can see who took the order. |
 | `enrol.nameLabel` | Ihr Name | Your name |
-| `enrol.notInList` | Mein Name steht nicht in der Liste | My name is not in the list |
-| `enrol.typeName` | Namen eingeben | Enter your name |
 | `enrol.continue` | Weiter | Continue |
-| `enrol.error.nameMissing` | Geben Sie Ihren Namen ein, damit die Küche sieht, wer die Bestellung aufgenommen hat. | Enter your name so the kitchen can see who took the order. |
-| `enrol.error.codeUsed` | Scannen Sie den QR-Code noch einmal. Der Code auf dem Laptop wechselt alle 30 Sekunden, und jeder gilt für ein Telefon. | Scan the QR code again. The code on the laptop changes every 30 seconds and each one is for one phone. |
-| `enrol.error.locked` | Warten Sie fünf Minuten und scannen Sie den QR-Code dann noch einmal. Von diesem Telefon wurde zu oft ein falscher Code gesendet. | Wait five minutes and then scan the QR code again. A wrong code was sent from this phone too often. |
+| `enrol.error.codeUsed` | Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code gilt nicht mehr. | Ask at the laptop for a new QR code. This code is no longer valid. |
 | `enrol.error.noConnection` | Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht. | Check that you are on the festival WiFi. This phone cannot reach the laptop. |
 | `enrol.orderHeld` | Ihre angefangene Bestellung ist noch da. Sie steht wieder auf dem Bildschirm, sobald das Telefon eingerichtet ist. | The order you had started is still here. It comes back on the screen as soon as the phone is set up. |
 | `enrol.success` | Das Telefon ist eingerichtet. | Your phone is ready. |
 
-`enrol.error.codeUsed` used to tell the reader to ask the person at the laptop for a new code. During a
-briefing that is the wrong instruction, because the laptop is already showing a fresher code and
-rotating every thirty seconds. The instruction has to be the one that works from where the reader is
-standing.
+The button stays disabled until a name has been typed, so no sentence about the field being empty is
+needed. That is the app checking what it can check, and it is why there is no `enrol.error.nameMissing`
+any more.
+
+`enrol.error.codeUsed` answers all three ways a code can be dead: somebody has already used it, its
+five minutes ran out, or the admin created a newer one. The person holding the phone does the same
+thing in every case, so they are told the same sentence, and section 8.1's rule that one rule is stated
+once is what decides that.
 
 ### 8.4 Enrolment with a six digit code
 
@@ -2502,18 +2579,31 @@ standing.
 laptop shows its own address in large type next to the QR image, so the volunteer types the address
 into the browser and lands here.
 
+**Both fields are on this one screen**, the code and the name, because the person is standing at the
+laptop reading digits off it and there is nothing to be gained by making them tap through two steps. A
+wrong code therefore does not cost them the name they already typed.
+
 | Key | Deutsch | English |
 |---|---|---|
 | `enrolCode.title` | Einrichten mit dem sechsstelligen Code | Set up with the six digit code |
 | `enrolCode.intro` | Geben Sie den sechsstelligen Code ein, der auf dem Laptop steht. | Enter the six digit code shown on the laptop. |
-| `enrolCode.validity` | Jeder Code gilt fünf Minuten und kann nur einmal verwendet werden. | Each code is valid for five minutes and can be used only once. |
+| `enrolCode.validity` | Der Code gilt fünf Minuten und für ein Telefon. | The code is valid for five minutes and for one phone. |
 | `enrolCode.field` | Code | Code |
 | `enrolCode.continue` | Weiter | Continue |
 | `enrolCode.error.wrong` | Lesen Sie die sechs Ziffern noch einmal vom Laptop ab. Dieser Code stimmt nicht. | Read the six digits from the laptop again. This code is not correct. |
+| `enrolCode.error.retired` | Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen. | Ask at the laptop for a new QR code. This code was entered wrongly too often and is not accepted any more. |
+
+The name field is the one from section 8.3 and carries `enrol.nameLabel`, because a server has one name
+and the product has one word for it.
 
 The numeric keypad is opened by `inputmode="numeric"`, the field accepts digits only, and the button
-stays disabled until six digits are present. That is the app checking what it can check, so no sentence
-about the code's length is needed.
+stays disabled until six digits and a name are present. That is the app checking what it can check, so
+no sentence about the code's length is needed.
+
+`enrolCode.error.retired` is what a reader sees after ten wrong six digit codes have been sent against
+the code currently on the laptop (section 2.8). The QR code beside it still works, so a server whose
+camera does work is unaffected, and the reader of this sentence needs the one thing it says: a new code
+from the laptop.
 
 ### 8.5 The header, always visible
 
@@ -2754,11 +2844,10 @@ names exactly what is missing.
 | `admin.overview.openTickets` | Sehen Sie in der Bestellliste nach. {count} Bons warten noch auf den Druck. | Check the order list. {count} slips are still waiting to print. |
 | `admin.overview.stationBlocked` | Kümmern Sie sich um den Drucker bei {name}. Dort warten {count} Bons seit {minutes} Minuten. | Sort out the printer at {name}. {count} slips have been waiting there for {minutes} minutes. |
 | `admin.overview.address` | Die Telefone erreichen den Laptop unter {url}. | Phones reach the laptop at {url}. |
-| `admin.overview.addressChanged` | Lassen Sie alle Telefone den QR-Code neu scannen. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}. | Have every phone scan the QR code again. The laptop's address was {previous} and is now {current}. |
+| `admin.overview.addressChanged` | Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}. | Set every phone up again. The laptop's address was {previous} and is now {current}. |
 | `admin.overview.console` | Lassen Sie das schwarze Fenster offen. Wenn Sie es schließen, nimmt das Programm keine Bestellungen mehr an. | Leave the black window open. If you close it, the program stops taking orders. |
 
-**Stations, items, assignment, tables, staff.** Plain list and form screens. The strings that carry a
-rule:
+**Stations, items, assignment, tables.** Plain list and form screens. The strings that carry a rule:
 
 | Key | Deutsch | English |
 |---|---|---|
@@ -2785,8 +2874,6 @@ rule:
 | `admin.tables.title` | Tische | Tables |
 | `admin.tables.help` | Diese Namen erscheinen als Vorschläge auf dem Telefon. Die Bedienung kann jederzeit einen anderen Tisch eintippen. | These names appear as suggestions on the phone. A server can always type a different table. |
 | `admin.tables.fromLastSession` | Tischnamen der letzten Veranstaltung übernehmen | Add the table names from the last event |
-| `admin.people.title` | Bedienungen | Servers |
-| `admin.people.help` | Diese Namen stehen bei der Einrichtung eines Telefons zur Auswahl. | These names can be chosen when a phone is set up. |
 
 **Sold out is a toggle in the item list, and that is a design requirement rather than a layout note.**
 It is set by somebody who has just been told the kitchen is out of Bratwurst, and it is unset twenty
@@ -2854,34 +2941,58 @@ mock's user interface: the list of faults above, the choice between `Once` and `
 path so that a demonstrator knows where the slips are landing. Setting it back to "Keine Störung" is
 what clears a fault that was set to hold, which for "Kein Papier" is the paper change.
 
-**Setting up a server phone.** The enrolment screen, kept open during a briefing.
+**Servers and their phones.** One screen with one row per person, and the three things an admin ever
+does to a row: create a QR code, remove the phone, change the name.
 
 | Key | Deutsch | English |
 |---|---|---|
-| `admin.enrol.title` | Telefon einrichten | Set up a server phone |
-| `admin.enrol.step1` | Lassen Sie diesen Bildschirm offen. | Leave this screen open. |
-| `admin.enrol.step2` | Die Bedienung scannt den QR-Code mit der Kamera ihres Telefons. | The server scans the QR code with the camera on their phone. |
-| `admin.enrol.step3` | Die Bedienung wählt im Browser ihren Namen aus. | The server chooses their name in the browser. |
-| `admin.enrol.rotation` | Der Code wird alle 30 Sekunden erneuert. Jeder Code gilt fünf Minuten und für ein Telefon. | The code is renewed every 30 seconds. Each code is valid for five minutes and for one phone. |
+| `admin.people.title` | Bedienungen | Servers |
+| `admin.people.help` | Richten Sie die Telefone nacheinander ein. Eine Bedienung hat genau ein Telefon. | Set the phones up one after another. A server has exactly one phone. |
+| `admin.people.new` | Neue Bedienung | New server |
+| `admin.people.empty` | Hier steht noch niemand. Tippen Sie auf "Neue Bedienung" und lassen Sie die erste Bedienung den QR-Code scannen. | Nobody is in this list yet. Tap "New server" and let the first server scan the QR code. |
+| `admin.people.noPhone` | Kein Telefon eingerichtet | No phone set up |
+| `admin.people.lastSeen` | Zuletzt gesehen: {time} | Last seen at {time} |
+| `admin.people.newCode` | Neuen QR-Code erstellen | Create a new QR code |
+| `admin.people.newCodeEffect` | Das bisherige Telefon von {name} kann danach keine Bestellungen mehr senden. Mit dem neuen QR-Code richtet {name} ein Telefon ein, auch ein geliehenes. | The phone {name} has been using can no longer send orders afterwards. With the new QR code {name} sets up a phone, a borrowed one as well. |
+| `admin.people.rename` | Namen ändern | Change the name |
+| `admin.people.renameHelp` | Ändern Sie den Namen, wenn eine Bedienung sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf. | Change the name when a server mistyped it. From the next slip onwards the new name is on it. |
+| `admin.people.revoke` | Einrichtung entfernen | Remove this phone |
+| `admin.people.revokeConfirm` | Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert. | The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved. |
+| `admin.people.revoked` | Einrichtung entfernt | Removed |
+| `admin.people.deactivate` | Bedienung aus der Liste nehmen | Take this server off the list |
+| `admin.people.deactivateHelp` | Nehmen Sie einen Namen aus der Liste, wenn er dort doppelt steht. Die Bestellungen bleiben gespeichert. | Take a name off the list when it ended up there twice. The orders stay saved. |
+
+**`admin.people.newCodeEffect` sits under the button and only on a row that already has a phone**,
+because it is the sentence that says what the click destroys. On a row with no phone the button carries
+no warning, since there is nothing there to lose, and section 8.1's rule about checking rather than
+writing a sentence is what settles that.
+
+**The QR code opens over that list**, from "Neue Bedienung" for somebody new and from a row's "Neuen
+QR-Code erstellen" for somebody already in it. Both show the same panel, and the difference is invisible
+to the person with the phone.
+
+| Key | Deutsch | English |
+|---|---|---|
+| `admin.enrol.title` | Telefon einrichten | Set up a phone |
+| `admin.enrol.step1` | Die Bedienung scannt diesen QR-Code mit der Kamera ihres Telefons. | The server scans this QR code with the camera on their phone. |
+| `admin.enrol.step2` | Die Bedienung gibt im Browser ihren Namen ein. | The server enters their name in the browser. |
+| `admin.enrol.step3` | Der Name steht danach in der Liste. | The name is in the list afterwards. |
+| `admin.enrol.validity` | Der QR-Code gilt fünf Minuten und für ein Telefon. | The QR code is valid for five minutes and for one phone. |
 | `admin.enrol.cameraTitle` | Wenn die Kamera nicht funktioniert | If the camera does not work |
 | `admin.enrol.cameraStep` | Öffnen Sie im Browser des Telefons {url} und geben Sie dort den Code {code} ein. | Open {url} in the browser on the phone and enter the code {code} there. |
-| `admin.enrol.enrolled` | Eingerichtet: {names} | Set up so far: {names} |
-| `admin.enrol.stop` | Einrichtung beenden | Stop setting up phones |
-| `admin.enrol.invalidate` | Alle offenen Codes sofort ungültig machen | Make every open code invalid now |
-| `admin.enrol.locked` | {count} Telefone sind gesperrt, weil sie zu oft einen falschen Code gesendet haben. | {count} phones are locked because they sent a wrong code too often. |
-| `admin.enrol.unlock` | Sperren aufheben | Lift the locks |
+| `admin.enrol.done` | {name} hat das Telefon eingerichtet. | {name} has set up their phone. |
+| `admin.enrol.expired` | Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt. | Create a new QR code. This one was not scanned for five minutes. |
+| `admin.enrol.codeRetired` | Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen. | Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more. |
 
-**Devices.**
+**Nothing here has to stay open.** The invitation lives in the database for its five minutes, so a
+closed tab, a reload, or a hub connection that dropped does not cancel it, and no phone is waiting on
+the admin's browser. What a reload does cost is the code itself, which is shown once and never fetched
+again (section 2.8), so the admin creates another one. `admin.enrol.done` arrives over SignalR while
+the panel is open and is how the person at the laptop sees that the server across the room finished.
 
-| Key | Deutsch | English |
-|---|---|---|
-| `admin.devices.title` | Eingerichtete Telefone | Phones that are set up |
-| `admin.devices.lastSeen` | Zuletzt gesehen: {time} | Last seen at {time} |
-| `admin.devices.reassign` | Telefon einer anderen Bedienung geben | Give this phone to a different server |
-| `admin.devices.reassignHelp` | Ab jetzt steht der neue Name auf den Bons. Die bisherigen Bestellungen bleiben bei der Person, die sie aufgenommen hat. | From now on the new name is on the slips. Earlier orders stay with the person who took them. |
-| `admin.devices.revoke` | Einrichtung entfernen | Remove this phone |
-| `admin.devices.revokeConfirm` | Das Telefon von {name} kann danach keine Bestellungen mehr senden. {name} kann es mit einem neuen QR-Code wieder einrichten. | The phone belonging to {name} can no longer send orders afterwards. {name} can set it up again with a new QR code. |
-| `admin.devices.revoked` | Einrichtung entfernt | Removed |
+**The screen shows one QR code at a time, and that is the whole of the enrolment model.** Creating a
+code consumes whichever one was outstanding, so what is on the screen is what works, and there is
+nothing else live that a reader has to know about.
 
 **Orders and the event.**
 
@@ -3106,14 +3217,17 @@ signal is back.
 **Reconnect.** SignalR reconnects, then the store calls `GET /api/orders/mine` and replaces its list.
 The phone never has to work out what it missed.
 
-**The device was revoked while it was offline.** The next call answers 401. The app clears the token,
+**The device was revoked while it was offline**, either from its owner's row or because the admin
+issued that person a new QR code. The next call answers 401. The app clears the token,
 **keeps the draft order**, and shows the enrolment screen with a line saying the started order is still
 there. Throwing away a half-built order because an admin tapped the wrong row would be destroying a
 guest's order to solve an administrative problem.
 
 **The device is revoked and set up again.** The same person's orders are still on the order list,
 because the list is scoped by `ServerPersonId` and not by the phone. Every unanswered slip question the
-person has is still answerable on the same handset.
+person has is still answerable, on whichever handset they are now carrying. This holds because the QR
+code the admin issued names the person, so the redemption reuses their row rather than creating one
+(sections 2.8 and 5.2).
 
 **An item sold out, or a price changed, while the basket was open.** See section 8.6. The line stays and
 is flagged, the phone shows the backend's new price, and the order is still accepted when sent.
@@ -3146,12 +3260,14 @@ the next missing thing rather than letting the admin wander.
    screen shows a live preview of where each item lands or which stations the server will choose
    between.
 5. **Tables.** Optional. Only suggestions.
-6. **Server names.** Optional. A server can also type their own name during setup.
-7. **A practice run.** Optional but recommended, and the right way to place test orders: they are kept
+6. **A practice run.** Optional but recommended, and the right way to place test orders: they are kept
    out of the treasurer's export and the test printer is expected rather than reported as a fault.
-8. **Start the event.** This resets slip numbering to 1 and refuses while a station is still on the test
+7. **Start the event.** This resets slip numbering to 1 and refuses while a station is still on the test
    printer.
-9. **Set up the phones.** Last, because the phones fetch the catalog when they are set up.
+8. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One server at a
+   time: create a QR code, that person scans it and types their name, and their name appears in the
+   list. There is no separate step for entering the servers' names, because setting a phone up is what
+   creates them.
 
 ### 10.2 Setup checklist, English
 
@@ -3177,8 +3293,8 @@ Print this page and take it with you.
    help.
 9. **Give the laptop a fixed address.** Either reserve one for it in the router, which is usually called
    a DHCP reservation, or set a static address on the laptop's WiFi adapter. If the address changes
-   during the evening, every phone loses the laptop at once and the whole crew has to scan the QR code
-   again.
+   during the evening, every phone loses the laptop at once and every one of them has to be set up
+   again, one at a time.
 10. Plug the laptop into power. Set it so that it does not go to sleep and the screen stays on, and do
     not close the lid.
 11. When Windows asks whether the program may communicate on the network, allow it for the private
@@ -3194,8 +3310,10 @@ Print this page and take it with you.
     that address once from one phone to prove the phones can reach the laptop.
 16. Start the event. Slip numbers now begin at 1. The program refuses to start while a station is still
     on the test printer, which is what catches a station nobody set up.
-17. Open "Set up a server phone" and let the servers scan the QR code one after another. Watch their
-    names appear in the list.
+17. Set the phones up one at a time. Open the server list, tap "New server", and let that person scan
+    the QR code with their camera and type their name. Their name appears in the list, and you move on
+    to the next person. If somebody's camera does not work, they open the address on the screen in
+    their browser and type the six digits next to the QR code instead.
 
 **During the festival**
 
@@ -3250,7 +3368,7 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 9. **Geben Sie dem Laptop eine feste Adresse.** Reservieren Sie ihm eine im Router, das heißt dort
    meist DHCP-Reservierung, oder stellen Sie am WLAN-Adapter des Laptops eine feste Adresse ein. Wenn
    sich die Adresse während des Abends ändert, verlieren alle Telefone auf einen Schlag die Verbindung
-   und die ganze Mannschaft muss den QR-Code neu scannen.
+   und jedes einzelne muss neu eingerichtet werden.
 10. Schließen Sie den Laptop ans Stromnetz an. Stellen Sie ein, dass er nicht in den Ruhezustand geht
     und der Bildschirm anbleibt, und klappen Sie ihn nicht zu.
 11. Wenn Windows fragt, ob das Programm im Netzwerk kommunizieren darf, erlauben Sie es für das private
@@ -3271,8 +3389,11 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 16. Starten Sie die Veranstaltung. Die Bonnummern beginnen jetzt bei 1. Das Programm startet die
     Veranstaltung nicht, solange eine Station noch auf dem Testdrucker steht, und genau das fällt sonst
     niemandem auf.
-17. Öffnen Sie "Telefon einrichten" und lassen Sie die Bedienungen nacheinander den QR-Code scannen. Die
-    Namen erscheinen dabei in der Liste.
+17. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Bedienungen, tippen Sie auf
+    "Neue Bedienung" und lassen Sie diese Bedienung den QR-Code mit der Kamera scannen und ihren Namen
+    eingeben. Der Name erscheint danach in der Liste, und Sie machen mit der nächsten Person weiter.
+    Wenn bei jemandem die Kamera nicht funktioniert, ruft diese Person im Browser die angezeigte
+    Adresse auf und gibt dort die sechs Ziffern neben dem QR-Code ein.
 
 **Während des Festes**
 
@@ -3321,7 +3442,7 @@ possible way to lose data.
 The backup screen therefore has a button. It runs `VACUUM INTO` a dated file next to the database, which
 produces one consistent file with everything in it, and then names that file on screen so the volunteer
 knows exactly which one to drag onto the USB stick. The program also writes one automatically when an
-event session ends, so a volunteer who forgets step 22 still has one.
+event session ends, so a volunteer who forgets step 24 still has one.
 
 ---
 
@@ -3349,7 +3470,7 @@ required for the order placement flow and the printing pipeline.
 | `EscPosSlipRenderer` | Byte for byte output for a normal slip, a reprint with its reprint time, a wrapped long item name, a chosen station that differs from the printing one, umlauts under PC858, and the double size regions |
 | `EscPosSlipRenderer`, station card | A test slip emits the five `GS ( k` functions in the order given in 7.7, with model 2, a module size of 6, error correction level M, `pL` and `pH` equal to the URL length plus three for both a short and a 69 character URL, and the URL itself byte for byte, followed by the same URL wrapped underneath as text |
 | `ProcessIdAllocator` | Cycling at 9999, uniqueness within a printer, resumption from the persisted value after a restart, and that two locations sharing one endpoint draw from one counter and never receive the same value |
-| `EnrolmentCodeVerifier` | Correct code, wrong code, expired code, already consumed code, that a consumed code does not count as a failed attempt, and that a lockout applies to one source address and leaves other codes valid |
+| `EnrolmentInvitationVerifier` | The QR code and the six digit code each verify against their own hash, a wrong six digit code is refused, an expired invitation is refused, a consumed one is refused, one replaced by a newer invitation is refused, the tenth wrong six digit code stops the digits being accepted, and the QR code of that same invitation still verifies afterwards |
 | `DeviceTokenHasher` | A token verifies against its own hash, a different token does not, and a stored iteration count is honoured |
 
 **Frontend core** (Vitest, `src/core/`, no component mounting):
@@ -3376,8 +3497,8 @@ teardown. No test touches a developer's real database or filesystem.
 | Order acceptance | Split across locations, snapshot of names and prices, a line that names a station, a line whose named station was deactivated in between, a sold out item still accepted, an unreachable printer still producing 201, and a total that changed since the catalog fetch returned alongside the accepted order |
 | Configuration invariants | An item cannot be saved without a station, a station cannot be deactivated while it is the last one for an item, and an item cannot be deactivated during a live event |
 | Event session start | Refused while a ticket is non-final, refused while a question is unanswered, refused while a station is on the test printer, allowed for a practice run in the same state, and allowed after the typed confirmation when orders are recent |
-| Authentication | Valid token, unknown token, revoked token, admin path from a foreign address returns 404, admin path from the laptop's own address succeeds, admin page served with an explanation to a phone, station access key valid and regenerated |
-| Enrolment | Code consumed by the first redemption, second redemption returns 410 without counting as a failure, expiry, rotation, lockout confined to one address, unlock, and that the device row and the consumption commit together |
+| Authentication | Valid token, unknown token, revoked token, a token revoked by issuing its owner a new QR code, admin path from a foreign address returns 404, admin path from the laptop's own address succeeds, admin page served with an explanation to a phone, station access key valid and regenerated |
+| Enrolment | The invitation is consumed by the first redemption and the second returns 410, expiry, creating an invitation consumes the one that was outstanding, creating one for a person revokes that person's phone in the same transaction, a redemption naming a person keeps that person's id and their earlier orders, a redemption naming nobody creates the person from the typed name, the device row and the consumption commit together, and a person can never hold two unrevoked devices |
 | SignalR | Each event reaches exactly the groups listed in section 6.2 and no others, including that ticket events reach every phone of the placing person |
 | Printer worker | Every row of the failure table in section 3.5 against `MockPrinterTransport`, jobs attempted in sequence number order, and a blocked job holding the station rather than being overtaken |
 | Mock transport | One file per slip in that location's folder holding exactly the rendered text, a reprint written beside its original rather than over it, two sessions in the same folder not colliding, two locations with the same name kept apart, all seven faults armable through the admin endpoint in both `Once` and `Sticky` modes, and a folder that cannot be written producing `PrinterError` with zero bytes rather than a reported print |
@@ -3417,8 +3538,10 @@ session so the test printer is the expected transport.
    the first time.
 8. A price is changed at the laptop between the catalog fetch and the send. The order is accepted and
    the phone shows the new total.
-9. A revoked device returns to the enrolment screen with its half-built order intact, is set up again,
-   and sees its own earlier orders in the list.
+9. A phone is lost. The admin creates a new QR code for its owner, that phone returns to the enrolment
+   screen with its half-built order intact and can no longer send orders, a second handset is set up
+   from the new code under the same name, and it shows that person's earlier orders and their open
+   slip questions.
 
 **Printing pipeline, required, one scenario per printer failure mode**
 
@@ -3458,6 +3581,8 @@ session so the test printer is the expected transport.
 3. Try to start an event with a station on the test printer, get the refusal, set up the printer, and
    start it.
 4. Start a new event and watch numbering restart at 1 while old orders keep their numbers.
+5. Set up two servers one after the other from the server list, rename the second one after they typed
+   a nickname, and see the new name on the next slip while the slip already printed keeps the old one.
 
 ### 11.4 What is not tested
 

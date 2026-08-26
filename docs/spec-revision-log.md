@@ -75,6 +75,23 @@ difference.
   the screen and not only the failed ones. B2's actual danger was never the listing, it was the button,
   and the restriction moved onto the button: a row offers "Übernommen" only when its station genuinely
   cannot print, and the endpoint refuses the rest. B2 remains fixed, by a different mechanism.
+* **The rolling enrolment code was replaced by one invitation per person**, which supersedes B13 above
+  and touches N1, N3 and N6. B13 was closed by making the lockout per source address, adding an unlock
+  endpoint and treating a consumed code as a race rather than a failed attempt. None of that exists any
+  more. The admin now creates one invitation for one person, the waiter scans it and types their own
+  name, and at most one invitation is outstanding at a time, so the race B13's machinery existed to
+  distinguish from an attack cannot occur. **B13 is dissolved rather than fixed:** there is no failure
+  counter per address, no lock, no unlock endpoint and nothing on the admin screen about locks. What
+  remains is a cap on guessing the six digit fallback, counted on the invitation itself rather than on
+  an address, which deliberately cannot lock anybody out because the QR stays valid throughout.
+  Consequently N1's "rotation service's in-memory state" no longer exists, and N6's `admin.devices.*`
+  string group is gone with the screen it named, though the terminology rule it settled still holds.
+* **Two counters were rekeyed from the location to the printer address**, which touches N3 above. N3 was
+  closed by making the process id counter a persisted row per location. Since two stations may now share
+  one printer, a per-location counter could hand the same process id to one socket twice and let a late
+  echo from a timed out job confirm the next job as printed. The counter is keyed by printer endpoint,
+  and the print workers were rekeyed the same way so that one printer is served by exactly one
+  connection. N3 remains fixed, by a counter with a wider key.
 
 ## Non-blocking findings
 
