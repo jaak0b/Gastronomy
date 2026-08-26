@@ -85,6 +85,10 @@ Planned, not yet built. Update this table as it lands.
 
 ## Testing
 
+**NUnit** is the test framework. **FakeItEasy** provides fakes for port interfaces (`A.Fake<IXxx>()`).
+Both are chosen because the owner already works with them; do not introduce a second framework or a
+second faking library alongside them.
+
 **Conventions:** fixture is `<ClassUnderTest>Test`, method is `MethodName_State_Expected`. One fixture
 per production class, one file per fixture. Never a catch-all fixture name.
 
