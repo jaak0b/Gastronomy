@@ -108,6 +108,12 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    per concept in each language, used consistently. Assume the reader is holding a phone in one hand
    at a loud festival and has never been trained on the tool.
 
+   **Read the `no-ai-slop` skill before writing or changing any user-facing text or any UI code, and
+   before reviewing either.** This binds the main agent and every subagent without exception, and the
+   subagent prompt must say so. Text that reads as machine-generated fails review regardless of
+   whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
+   `no-ai-slop` governs the prose itself.
+
 10. **Never use the em-dash character**, and never a hyphen as a substitute for it. Rewrite with a
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
     modifiers). This binds source, documentation, commit messages, and UI text.
