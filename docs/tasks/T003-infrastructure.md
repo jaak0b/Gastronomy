@@ -4,9 +4,10 @@
 
 Build the persistence layer of `GastronomyApp.Infrastructure` that the vertical slice needs: the EF
 Core `DbContext` over every entity in spec section 2, the frozen initial migration, repository
-implementations for the ports T002 defines, the acceptance transaction (`BEGIN IMMEDIATE`, gapless
-counter allocation, same-transaction idempotent lookup), and the device token / enrolment invitation
-store (PBKDF2-HMAC-SHA512, per-secret salt, hashed lookup). Test-first throughout: every behaviour is
+implementations for `IOrderRepository` and `INumberAllocator` (T002's ports), the transactional shell
+around T002's `OrderAcceptanceService` (`BEGIN IMMEDIATE`, gapless counter allocation, same-transaction
+idempotent lookup), and the device token / enrolment invitation store (this task's own ports,
+PBKDF2-HMAC-SHA512, per-secret salt, hashed lookup). Test-first throughout: every behaviour is
 proven by a red integration test before the code that greens it exists. Definition of done: `dotnet
 test GastronomyApp.slnx --filter "FullyQualifiedName~GastronomyApp.Infrastructure"` green, `dotnet
 build GastronomyApp.slnx` zero warnings, every scenario in spec section 11.2 that is listed as
@@ -24,27 +25,24 @@ any mismatch against what T002 actually produced.
 ### 2.1 Domain entities
 
 Plain C# classes (not EF entities, no ORM attributes, no navigation-property backing fields required
-beyond ordinary collections), one file per type under a `GastronomyApp.Core.Domain` namespace, with
-every field from spec section 2 and the types spec section 2.1 specifies (`Guid`, `string(n)` as
-`string` with the length enforced by Fluent API in this task, `int` cents, `byte[]` for hash/salt
-columns). Assumed types, matching the entity list in spec 2.2, with the field types in the tables
-there: `EventSession`, `ProductionLocation`, `CatalogItem`, `ItemLocationAssignment`,
+beyond ordinary collections), one file per type under the `GastronomyApp.Core.Entities` namespace
+(T002 section 6), with every field from spec section 2 and the types spec section 2.1 specifies
+(`Guid`, `string(n)` as `string` with the length enforced by Fluent API in this task, `int` cents,
+`byte[]` for hash/salt columns). Types, matching the entity list in spec 2.2, with the field types in
+the tables there: `EventSession`, `ProductionLocation`, `CatalogItem`, `ItemLocationAssignment`,
 `TableSuggestion`, `ServerPerson`, `Device`, `EnrolmentInvitation`, `Order`, `OrderLine`,
 `LocationTicket`, `PrintJob`, `PrintAttempt`, `PrinterConfiguration`, `PrinterStatus`, `NumberCounter`.
 
-Assumed status representation: T002 defines a C# `enum` per state machine (`OrderStatus`,
-`TicketStatus`, `PrintJobStatus`) rather than storing the spec's naming strings directly as free text.
-This task assumes `Order.Status` is typed `OrderStatus`, `LocationTicket.Status` is typed
-`TicketStatus`, `PrintJob.Status` is typed `PrintJobStatus`, and that each enum's member names are
+Status representation: T002 defines a C# `enum` per state machine (`OrderStatus`,
+`LocationTicketStatus`, `PrintJobStatus`) rather than storing the spec's naming strings directly as
+free text. `Order.Status` is typed `OrderStatus`, `LocationTicket.Status` is typed
+`LocationTicketStatus`, `PrintJob.Status` is typed `PrintJobStatus`, and each enum's member names are
 exactly the state names spec sections 3.1/3.2/3.3 use (`Accepted`, `Printing`, `Printed`,
 `NeedsAttention` for `OrderStatus`; `Queued`, `Blocked`, `Printing`, `Printed`, `PrintedOnTestPrinter`,
-`Unknown`, `Failed`, `HandledOnPaper` for `TicketStatus`; the `PrintJob` machine's states for
-`PrintJobStatus`). This task maps each enum to a SQLite `TEXT` column via
-`.HasConversion<string>()`, never to an `int`, so a manual look at the database during a live event
-shows a readable value. If T002 instead stored these as plain `string`, the mapping in step 4 below
-changes from an enum conversion to a plain `string` column with a check constraint; the consistency
-review should confirm which shape T002 actually chose and this document's step 4 should be corrected
-to match, not silently reinterpreted.
+`Unknown`, `Failed`, `HandledOnPaper` for `LocationTicketStatus`; the `PrintJob` machine's states for
+`PrintJobStatus`), confirmed row by row against T002. This task maps each enum to a SQLite `TEXT`
+column via `.HasConversion<string>()`, never to an `int`, so a manual look at the database during a
+live event shows a readable value.
 
 Assumed value types for two composite-ish fields that are not full entities:
 - `PrinterEndpointKey`: assumed to be a plain `string`, built as `TransportKind|Host|Port|AgentIdentifier`
@@ -56,48 +54,87 @@ Assumed value types for two composite-ish fields that are not full entities:
 
 ### 2.2 Ports (interfaces) this task implements
 
-This task assumes T002 declares these interfaces in `GastronomyApp.Core.Ports` (namespace and exact
-member names assumed; the consistency review reconciles against what T002 actually wrote):
+T002 declares `IOrderRepository` and `INumberAllocator` in `GastronomyApp.Core.Ports`, and the order
+acceptance request/result records in `GastronomyApp.Core.Services` and `GastronomyApp.Core.Results`.
+This task implements those interfaces exactly as T002 declares them and does not widen them:
 
 ```csharp
 namespace GastronomyApp.Core.Ports;
 
 public interface IOrderRepository
 {
-    Task<OrderAcceptanceResult> AcceptAsync(NewOrderRequest request, CancellationToken cancellationToken);
     Task<Order?> FindByClientOrderIdAsync(Guid clientOrderId, CancellationToken cancellationToken);
+    Task AddAsync(Order order, CancellationToken cancellationToken);
 }
 
-public record NewOrderRequest(
+public interface INumberAllocator
+{
+    Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken);
+    Task<int> AllocateLocationSequenceNumberAsync(Guid eventSessionId, Guid productionLocationId, CancellationToken cancellationToken);
+    Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
+}
+```
+
+`IOrderRepository` is a plain storage port: it does not decide anything about acceptance. The domain
+logic that used to be assumed to live inside an `AcceptAsync` method here (global number allocation,
+per-location ticket creation, sequence number allocation, line insertion, total computation) belongs to
+`GastronomyApp.Core.Services.OrderAcceptanceService.AcceptAsync(OrderAcceptanceRequest request,
+CancellationToken cancellationToken)`, which is T002's, not this task's. Section 4 step 4 below
+describes exactly how this task composes the two: `OrderAcceptanceService` decides, `IOrderRepository`
+and `INumberAllocator` are what it decides through, and this task's own code supplies only the
+transaction shell around that call.
+
+The request and result records this task's step 4 constructs and reads, as T002 declares them:
+
+```csharp
+namespace GastronomyApp.Core.Services;
+
+public sealed record OrderAcceptanceRequest(
     Guid ClientOrderId,
     Guid EventSessionId,
     Guid ServerPersonId,
     Guid DeviceId,
     string TableLabel,
     string? Note,
-    IReadOnlyList<NewOrderLineRequest> Lines);
+    IReadOnlyList<OrderAcceptanceLineRequest> Lines);
 
-public record NewOrderLineRequest(
+public sealed record OrderAcceptanceLineRequest(
     Guid CatalogItemId,
-    Guid? ChosenProductionLocationId,
+    Guid? ProductionLocationId,
     int Quantity,
     string? Note);
+```
 
-public record OrderAcceptanceResult(Order Order, bool WasAlreadyAccepted);
+```csharp
+namespace GastronomyApp.Core.Results;
 
-public interface INumberCounterAllocator
+public sealed record OrderAcceptanceResult
 {
-    Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken);
-    Task<int> AllocateLocationSequenceNumberAsync(Guid eventSessionId, Guid productionLocationId, CancellationToken cancellationToken);
-    Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
+    public required Order Order { get; init; }
+    public required bool WasAlreadyAccepted { get; init; }
 }
+```
+
+Note the field rename inside the line request: T002 calls the chosen station `ProductionLocationId`
+(matching spec 5.4's request field `productionLocationId`), not `ChosenProductionLocationId`. The
+entity field stays `OrderLine.ChosenProductionLocationId`; the request field and the entity field are
+deliberately different words, and this task's persistence code is the one place that maps one onto the
+other.
+
+Device and enrolment ports are this task's own, not T002's (T002 excludes them; no domain service
+consumes them):
+
+```csharp
+namespace GastronomyApp.Core.Ports;
 
 public interface IDeviceTokenStore
 {
-    Task<Device> IssueAsync(Guid serverPersonId, string language, string userAgentSnapshot, CancellationToken cancellationToken);
+    Task<IssuedDeviceToken> IssueAsync(Guid serverPersonId, string language, string userAgentSnapshot, CancellationToken cancellationToken);
     Task<DeviceVerificationResult> VerifyAsync(string tokenLookupId, string secret, CancellationToken cancellationToken);
     Task RevokeAsync(Guid deviceId, CancellationToken cancellationToken);
 }
+
+public sealed record IssuedDeviceToken(Device Device, string PlaintextToken);
 
 public record DeviceVerificationResult(bool IsValid, Device? Device);
 
@@ -116,16 +153,24 @@ public record EnrolmentRedemptionResult(EnrolmentRedemptionOutcome Outcome, Devi
 public enum EnrolmentRedemptionOutcome { Redeemed, CodeInvalid, CodeExpired, SixDigitAttemptsExhausted }
 ```
 
+`IDeviceTokenStore.IssueAsync` returns `IssuedDeviceToken` rather than the bare `Device` entity,
+because the plaintext token (spec 5.2's `deviceToken`, returned exactly once) has nowhere else to
+travel from this call: `Device` itself never carries the plaintext, only its hash. `VerifyAsync`
+returns the named `DeviceVerificationResult` rather than a bare `Device?`, because a caller needs to
+distinguish "no such token" from "revoked" from "wrong secret" only as far as "invalid", and this
+shape is deliberately the narrower one; any consumer wanting a bare `Device?` adapts at its own
+boundary.
+
 `Order`, `Device`, `ServerPerson` above are the Core domain entities from section 2.1, not DTOs.
 
-### 2.3 Domain result type for database-unavailable
+### 2.3 Infrastructure exception for database-unavailable
 
-This task assumes Core declares a discriminated outcome type, not a thrown exception, for the
-"database did not answer" case (spec 5.1's `DatabaseUnavailable`), because rule 2 in the root
-`CLAUDE.md` forbids letting a raw exception reach a caller who cannot act on it. Assumed shape:
+Per architect ruling 1, database unavailability is a cross-cutting **infrastructure** concern, not a
+Core domain result. This task declares the type itself, in `GastronomyApp.Infrastructure`, not in
+Core:
 
 ```csharp
-namespace GastronomyApp.Core;
+namespace GastronomyApp.Infrastructure;
 
 public enum InfrastructureFailureReason { DatabaseUnavailable }
 
@@ -141,13 +186,9 @@ This task's repositories catch `Microsoft.Data.Sqlite.SqliteException` for `SQLI
 `SQLITE_IOERR` / `SQLITE_CORRUPT` / `SQLITE_READONLY` cases that survive the 5 second busy timeout and
 rethrow as `InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, ...)`, never
 swallowing the original exception (it becomes `inner`). This is the type the (out of scope, later)
-API-layer exception middleware maps to HTTP 503 with `code: DatabaseUnavailable`; this task does not
-touch HTTP and only needs the type to exist and be thrown correctly. If T002 named this type
-differently or modeled it as a `Result<T, TError>` return value instead of an exception, the
-consistency review should flag it: this task's repositories need exactly one of "throw a typed
-exception" or "return a typed failure", not both, and every repository method's async signature in
-section 2.2 above would need the second form's return type if the result-type shape is what T002
-actually chose.
+API-layer exception middleware catches and maps to HTTP 503 with `code: DatabaseUnavailable`, and per
+ruling 1 it is the **only** type that middleware catches; this task does not touch HTTP and only needs
+the type to exist, live in the `GastronomyApp.Infrastructure` namespace, and be thrown correctly.
 
 ## 3. File layout
 
@@ -178,6 +219,7 @@ backend/
       GastronomyAppDbContextModelSnapshot.cs
     Repositories/
       OrderRepository.cs
+      OrderAcceptanceTransaction.cs
       NumberCounterAllocator.cs
       DeviceTokenStore.cs
       EnrolmentInvitationStore.cs
@@ -187,6 +229,7 @@ backend/
   GastronomyApp.Infrastructure.Tests/
     GastronomyAppDbContextTest.cs
     OrderRepositoryTest.cs
+    OrderAcceptanceTransactionTest.cs
     NumberCounterAllocatorTest.cs
     DeviceTokenStoreTest.cs
     EnrolmentInvitationStoreTest.cs
@@ -290,7 +333,7 @@ Each `Configurations/*Configuration.cs` implements `IEntityTypeConfiguration<T>`
   `TokenSalt` mapped as `byte[]` (SQLite `BLOB`), never `string`.
 - `EnrolmentInvitationConfiguration`: a partial unique filtered index expressing spec 2.8's "at most
   one invitation is outstanding at any moment": `builder.HasIndex(i => i.Id).HasFilter("ConsumedAtUtc
-  IS NULL")` is not sufinstant on its own since it does not enforce singleton-ness; the actual
+  IS NULL")` is not sufficient on its own since it does not enforce singleton-ness; the actual
   constraint needed is a unique index over a constant expression filtered to the outstanding condition.
   SQLite supports this as a partial unique index over an always-equal expression:
   `builder.HasIndex("ConsumedAtUtc").IsUnique().HasFilter("ConsumedAtUtc IS NULL")` does not by itself
@@ -372,7 +415,7 @@ Add the `IsOutstandingMarker` generated column and its unique index via `migrati
 appended to the generated `Up()` method (and a corresponding `DROP` in `Down()`), since EF's scaffolder
 does not know about it.
 
-### Step 3: `INumberCounterAllocator` and the acceptance transaction
+### Step 3: `INumberAllocator`
 
 Three red tests first, `NumberCounterAllocatorTest.cs`:
 
@@ -396,37 +439,60 @@ decide the test's exact shape). The third test disposes the `DbContext` and conn
 allocations against a temp file, opens a new one, and asserts continuity, proving spec 4.3's
 "the first order after a restart takes the next value straight from the table."
 
-Implementation, `NumberCounterAllocator.cs`, implementing `INumberCounterAllocator`. Each `AllocateX`
+Implementation, `NumberCounterAllocator.cs`, implementing `INumberAllocator`. Each `AllocateX`
 method:
 
 1. `SELECT NextValue FROM NumberCounter WHERE CounterKind = @kind AND EventSessionId = @sessionOrNull
    AND ProductionLocationId = @locationOrNull AND PrinterEndpointKey = @endpointOrNull` inside the
-   ambient transaction (never opens its own; the caller, `OrderRepository.AcceptAsync`, owns the
-   transaction per Step 4).
+   ambient transaction (never opens its own; the caller, `OrderAcceptanceTransaction` per Step 4, owns
+   the transaction).
 2. If no row exists, insert one with `NextValue = 1` and return `1`.
 3. If a row exists, `UPDATE ... SET NextValue = NextValue + 1 WHERE <same composite key>` and return the
    pre-increment value.
 
-Uses `PrinterEndpointKeyBuilder` (assumed Core service, section 2.1) to compute the
-`PrinterEndpointKey` string for `AllocatePrinterProcessIdAsync`, never builds the pipe-joined string
-itself, so the join format lives in exactly one place (root rule 6).
+Uses `PrinterEndpointKeyBuilder` (T002 `GastronomyApp.Core.Services` service, per T002's own fix
+adding it ahead of this task) to compute the `PrinterEndpointKey` string for
+`AllocatePrinterProcessIdAsync`, never builds the pipe-joined string itself, so the join format lives
+in exactly one place (root rule 6).
 
-`AllocatePrinterProcessIdAsync` additionally cycles at 9999: `NextValue` wraps to `1` once it would
-exceed `9999`, per spec 2.11's `ProcessId` field ("1 to 9999 from that printer's persisted counter").
-This is out of this task's integration-test scope in the strict sense (the cycling arithmetic itself is
-`ProcessIdAllocator`'s unit-test territory per spec 11.1, assumed to be a Core class this repository
-calls into rather than reimplementing), but the allocator here is the thing that persists whatever
-value `ProcessIdAllocator` computes, so `NumberCounterAllocatorTest` includes one integration test
-proving persistence round-trips a wrapped value correctly:
+**The 9999 wrap for `AllocatePrinterProcessIdAsync` is this task's own arithmetic, not a Core
+class's.** T002 explicitly excludes a `ProcessIdAllocator` from Core, and no other document defines
+one, so the cycling lives directly inside `NumberCounterAllocator`: `NextValue` wraps to `1` once it
+would exceed `9999`, per spec 2.11's `ProcessId` field ("1 to 9999 from that printer's persisted
+counter"). `NumberCounterAllocatorTest` includes the integration test proving this, over the real
+table:
 
 ```csharp
 [Test]
 public async Task AllocatePrinterProcessIdAsync_At9999_WrapsTo1AndPersists()
 ```
 
-### Step 4: `IOrderRepository.AcceptAsync`, the idempotent submission storage
+### Step 4: `IOrderRepository`, and the acceptance transaction shell around `OrderAcceptanceService`
 
-Red tests first, `OrderRepositoryTest.cs`:
+**Ownership, stated once so nothing below re-litigates it.** `GastronomyApp.Core.Services.
+OrderAcceptanceService.AcceptAsync(OrderAcceptanceRequest, CancellationToken)` is the one and only
+place that decides a global order number, a `LocationTicket` per distinct routed location, each
+location's sequence number, every `OrderLine`, and the order's `TotalCents`. This task never
+reimplements any of that. What this task owns is the transaction shell: opening `BEGIN IMMEDIATE`,
+performing the same-transaction `ClientOrderId` lookup, invoking `OrderAcceptanceService.AcceptAsync`
+exactly once inside that transaction, persisting what it decided through `IOrderRepository.AddAsync`,
+and committing or rolling back. `OrderAcceptanceService` reaches the database only through
+`IOrderRepository` and `INumberAllocator`, both implemented in this task; it never opens a connection
+or a transaction itself.
+
+Red tests first, `OrderRepositoryTest.cs` (over `IOrderRepository`'s two members directly) and
+`OrderAcceptanceTransactionTest.cs` (over the composed shell plus `OrderAcceptanceService`):
+
+```csharp
+[Test]
+public async Task AddAsync_NewOrder_PersistsOrderTicketsAndLines()
+
+[Test]
+public async Task FindByClientOrderIdAsync_UnknownId_ReturnsNull()
+
+[Test]
+public async Task AddAsync_TotalDisagreesWithLines_Throws()
+```
 
 ```csharp
 [Test]
@@ -442,53 +508,69 @@ public async Task AcceptAsync_TwoParallelSubmissionsSameClientOrderId_ProduceExa
 public async Task AcceptAsync_MultipleLocations_AllocatesIndependentSequenceNumbers()
 ```
 
-The third test is the concurrency proof required by spec 11.2 ("a hundred parallel duplicates create
-exactly one order"): it fires two (this task's version; a higher-count variant is acceptable but two
-concurrent callers against `BEGIN IMMEDIATE`'s single-writer serialization is enough to prove no race,
-since SQLite's write lock makes every write transaction fully serial regardless of caller count) calls
-to `AcceptAsync` with the same `ClientOrderId` from two separate `GastronomyAppDbContext` instances
-against the same file-backed database concurrently via `Task.WhenAll`, and asserts exactly one row
+The four `OrderAcceptanceTransactionTest` methods are the same four scenarios this document's earlier
+draft attributed to a repository-owned `AcceptAsync`; they survive verbatim as integration tests, only
+their target moves from `OrderRepository` to `OrderAcceptanceTransaction` composed with the real
+`OrderAcceptanceService`. The third is the concurrency proof required by spec 11.2 ("a hundred parallel
+duplicates create exactly one order"): it fires two (this task's version; a higher-count variant is
+acceptable but two concurrent callers against `BEGIN IMMEDIATE`'s single-writer serialization is enough
+to prove no race, since SQLite's write lock makes every write transaction fully serial regardless of
+caller count) concurrent `Task.WhenAll` calls with the same `ClientOrderId` from two separate
+`GastronomyAppDbContext` instances against the same file-backed database, and asserts exactly one row
 exists in `Orders` afterward and both calls returned the same `Order.Id`.
 
-Implementation, `OrderRepository.cs`, implementing `IOrderRepository.AcceptAsync`:
+Implementation, `Repositories/OrderRepository.cs`, implementing `IOrderRepository`'s two members only:
+
+- `FindByClientOrderIdAsync`: a plain `SELECT` by the unique `ClientOrderId` index from Step 1,
+  including the order's lines and tickets (the caller needs the full aggregate back, not just the row).
+- `AddAsync`: inserts the `Order` row, one `LocationTicket` per distinct `ProductionLocationId` already
+  present on the order's lines, and every `OrderLine`, exactly as `OrderAcceptanceService` already
+  built them onto the `Order` aggregate before calling this method. This is a pure persistence write:
+  it does not allocate numbers (already set on the aggregate by the time it arrives here) and does not
+  decide routing (already resolved). The one thing it does that is genuinely this task's own concern,
+  not a re-decision of Core's: it recomputes `Sum(Quantity * UnitPriceCentsSnapshot)` across the
+  aggregate's lines and throws if it disagrees with `Order.TotalCents` before writing, as the storage-
+  layer assertion spec 2.9 calls for ("asserted in the acceptance transaction and covered by a test").
+  This is a defensive check on what `OrderAcceptanceService` already computed, not a second computation
+  of the figure: if it ever fires, `OrderAcceptanceService` has a bug, and this assertion is what turns
+  that bug into a loud test failure instead of a silently wrong total reaching the database.
+
+Implementation, `Repositories/OrderAcceptanceTransaction.cs`, the shell:
 
 1. Open the underlying `SqliteConnection` (via `SqliteConnectionFactory`, not `:memory:` for
    production use) and begin a transaction with `BEGIN IMMEDIATE` explicitly (EF Core's
    `Database.BeginTransactionAsync()` defaults to `BEGIN DEFERRED` on the SQLite provider, which does
    not take the write lock until the first write statement runs and therefore does not serialize
-   readers the way spec 4.1 step 1 requires; this task issues `PRAGMA` and `BEGIN IMMEDIATE` as a raw
+   readers the way spec 4.1 step 1 requires; this task issues `BEGIN IMMEDIATE` as a raw
    `Database.ExecuteSqlRawAsync("BEGIN IMMEDIATE")` and manages commit/rollback itself rather than
    using the `IDbContextTransaction` wrapper, because that wrapper has no API to select `IMMEDIATE`).
-2. Inside the transaction, `SELECT` for an existing `Order` by `ClientOrderId`
-   (`FindByClientOrderIdAsync`'s query, reused here rather than duplicated, root rule 6). If found,
-   commit (nothing to write) and return `OrderAcceptanceResult(existingOrder, WasAlreadyAccepted:
-   true)`. This is the same-transaction lookup spec 9.3 and 4.1 both require: because `BEGIN IMMEDIATE`
-   already holds the write lock, no other writer can insert a matching row between this read and the
-   caller's next step, so there is no window for a duplicate to slip in even under the two-parallel-
-   callers test above (the second caller blocks on `BEGIN IMMEDIATE` until the first commits, then its
-   own lookup finds the first caller's row).
-3. If not found: allocate the global order number via `INumberCounterAllocator`, insert the `Order`
-   row. For each distinct `ProductionLocationId` the order's lines route to (assumed: the caller,
-   the not-yet-built order-acceptance use case in Core, has already run `OrderRoutingResolver` and
-   passed `ChosenProductionLocationId` per line in `NewOrderLineRequest`; this repository does not run
-   routing itself, it only persists the routing decision it is handed, per root rule 6's "unify on the
-   single source"), insert one `LocationTicket`, allocating that location's sequence number via the
-   same allocator.
-4. Insert every `OrderLine`, each pointing at its `LocationTicketId`.
-5. Recompute `TotalCents` from `Quantity * UnitPriceCentsSnapshot` across all lines as a defensive
-   assertion before insert (spec 2.9: "asserted in the acceptance transaction and covered by a test"),
-   throwing rather than silently trusting a caller-supplied total if it disagrees; `NewOrderRequest`
-   above deliberately carries no `TotalCents` field for this reason, it is always computed here.
-6. Commit. On any `SqliteException` indicating the busy timeout was exceeded or a disk/IO failure,
-   catch, roll back if the transaction is still open, and throw
+2. Inside the transaction, call `IOrderRepository.FindByClientOrderIdAsync(request.ClientOrderId, ct)`.
+   If found, commit (nothing to write) and return `OrderAcceptanceResult { Order = existingOrder,
+   WasAlreadyAccepted = true }`. This is the same-transaction lookup spec 9.3 and 4.1 both require:
+   because `BEGIN IMMEDIATE` already holds the write lock, no other writer can insert a matching row
+   between this read and the next step, so there is no window for a duplicate to slip in even under the
+   two-parallel-callers test above (the second caller blocks on `BEGIN IMMEDIATE` until the first
+   commits, then its own lookup finds the first caller's row).
+3. If not found, call `OrderAcceptanceService.AcceptAsync(request, ct)`, passing `IOrderRepository` and
+   `INumberAllocator` (both this task's implementations) as the dependencies `OrderAcceptanceService`
+   was constructed with. `OrderAcceptanceService` allocates the global order number and every location
+   sequence number through `INumberAllocator`, builds the `Order` aggregate with its tickets and lines,
+   and calls `IOrderRepository.AddAsync` itself to persist it, still inside this same ambient
+   transaction (the transaction is opened before `AcceptAsync` is called and committed only after it
+   returns, so every allocator call and the `AddAsync` write share the one `BEGIN IMMEDIATE` scope).
+4. Commit, and return `OrderAcceptanceResult { Order = <the aggregate OrderAcceptanceService built>,
+   WasAlreadyAccepted = false }`. On any `SqliteException` indicating the busy timeout was exceeded or a
+   disk/IO failure, catch, roll back if the transaction is still open, and throw
    `InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, ...)` per section 2.3,
    never letting the raw `SqliteException` reach the caller (root rule 2).
 
-Snapshot fields (`ItemNameSnapshot`, `UnitPriceCentsSnapshot`) are populated from whatever the caller
-supplied in `NewOrderLineRequest` plus a `CatalogItem` lookup this repository performs inside the same
-transaction (reading current name/price at acceptance time, per spec 2.5: "editing a name or price
-never changes an existing order... every `OrderLine` carries a snapshot" and spec 11.2's price
-scenario: "the accepted total is computed from the backend's current prices").
+Snapshot fields (`ItemNameSnapshot`, `UnitPriceCentsSnapshot`) are populated by `OrderAcceptanceService`
+from a `CatalogItem` lookup it performs through a Core-side read port inside the same transaction
+(reading current name/price at acceptance time, per spec 2.5: "editing a name or price never changes an
+existing order... every `OrderLine` carries a snapshot" and spec 11.2's price scenario: "the accepted
+total is computed from the backend's current prices"); this task supplies whatever `CatalogItem`-lookup
+port `OrderAcceptanceService` requires as a repository implementation, alongside `IOrderRepository` and
+`INumberAllocator`, but does not itself decide what gets snapshotted.
 
 ### Step 5: `Pbkdf2SecretHasher`
 
@@ -583,11 +665,9 @@ Implementation, `Repositories/DeviceTokenStore.cs`, implementing `IDeviceTokenSt
   column's length in spec 2.8's `Device` table) and a random secret (assumed: the part after the dot in
   spec 5.1's `Authorization: Bearer <TokenLookupId>.<secret>`, a separately generated high-entropy
   random string, not derived from `TokenLookupId`), hashes the secret with `Pbkdf2SecretHasher`, inserts
-  the `Device` row, and returns the `Device` domain entity. The plaintext token
-  (`$"{tokenLookupId}.{secret}"`) is returned to the caller (assumed: via a value on the entity or a
-  side value the port signature above does not currently carry; the consistency review should confirm
-  whether T002's actual `IDeviceTokenStore.IssueAsync` signature returns the plaintext token alongside
-  `Device`, since `Device` itself never carries it) and is never written back to any column.
+  the `Device` row, and returns `IssuedDeviceToken(device, plaintextToken)` per section 2.2, where
+  `plaintextToken` is `$"{tokenLookupId}.{secret}"`. The plaintext token is returned to the caller
+  exactly once through this record and is never written back to any column.
 - `VerifyAsync(tokenLookupId, secret)`: looks up the one `Device` row by `TokenLookupId` (spec 5.1: "the
   backend splits on the dot, loads the one device row by `TokenLookupId`, and verifies the secret with
   PBKDF2 using that row's stored salt, iteration count, and algorithm"). If no row, or
@@ -666,20 +746,20 @@ Implementation, `Repositories/EnrolmentInvitationStore.cs`, implementing `IEnrol
   reuses, if `CreateAsync`-style transaction management is chosen) a `BEGIN IMMEDIATE` transaction that
   atomically: resolves the `ServerPerson` (existing row if `invitation.ServerPersonId` is set, per
   `request.Name` written onto it; a new row created from `request.Name` otherwise), creates the
-  `Device` row via the same code path as `IDeviceTokenStore.IssueAsync` (this store depends on
-  `IDeviceTokenStore` rather than duplicating the hashing/insert logic, root rule 6), sets
-  `invitation.ConsumedAtUtc` and `invitation.ConsumedByDeviceId`, and commits. Returns
-  `EnrolmentRedemptionResult(Redeemed, device, serverPerson)`.
+  `Device` row via `IDeviceTokenStore.IssueAsync` (this store depends on `IDeviceTokenStore` rather
+  than duplicating the hashing/insert logic, root rule 6), which now returns `IssuedDeviceToken`; this
+  store reads `.Device` off it for `EnrolmentRedemptionResult`, sets `invitation.ConsumedAtUtc` and
+  `invitation.ConsumedByDeviceId`, and commits. Returns `EnrolmentRedemptionResult(Redeemed, device,
+  serverPerson)`.
 
 `Device.Language` is set per spec 2.8: German unless `request.AcceptLanguageHeader` asks for English
-first; this parsing (assumed to be a small pure function, either living here or in a Core helper this
-task calls, since it has no database dependency: if T002 already defines an `AcceptLanguageParser` in
-Core, this task calls it rather than reimplementing, root rule 6; if not, this task adds a private
-method here, since it is infrastructure-adjacent and not a domain rule).
+first. No Core class exists for this parsing (T002 declares no `AcceptLanguageParser`), so this task
+adds a private method inside `EnrolmentInvitationStore` for it, since it is infrastructure-adjacent
+(reading one HTTP header value) and not a domain rule.
 
 ### Step 8: Database-unavailable behaviour
 
-Red test, appended to `OrderRepositoryTest.cs` or a new `DatabaseUnavailableTest.cs`:
+Red test, appended to `OrderAcceptanceTransactionTest.cs` or a new `DatabaseUnavailableTest.cs`:
 
 ```csharp
 [Test]
@@ -692,7 +772,8 @@ public async Task AcceptAsync_ConcurrentWriterHoldsLockPastBusyTimeout_ThrowsInf
 The first test creates a temp file, opens it once to run migrations, then marks the file read-only via
 `File.SetAttributes(path, FileAttributes.ReadOnly)` (Windows-appropriate, matching this repository's
 target platform per spec 10.2's "Version 1 targets Windows"; the test removes the read-only attribute
-in teardown before deleting the temp file, or deletion fails), attempts `AcceptAsync`, and asserts an
+in teardown before deleting the temp file, or deletion fails), attempts `OrderAcceptanceTransaction.
+AcceptAsync`, and asserts an
 `InfrastructureException` with `Reason == DatabaseUnavailable` is thrown, never a raw
 `SqliteException`. The second test holds an open uncommitted `BEGIN IMMEDIATE` transaction from one
 connection against a temp file, and from a second connection with `busy_timeout` set very low (this
@@ -729,8 +810,8 @@ Quote both outputs in full before considering this task done, per root rule 5.
   later step of this same task once `dotnet ef migrations add` has produced it and tests pass against
   it, generate a corrective migration instead if a mistake is found after that point.
 - No positional tuple access anywhere (backend rule 8); every multi-value return in this task is
-  already a named `record` (`OrderAcceptanceResult`, `DeviceVerificationResult`,
-  `EnrolmentRedemptionResult`, `HashedSecret`, `EnrolmentInvitationCreated`).
+  already a named `record` (T002's `OrderAcceptanceResult`, and this task's own `IssuedDeviceToken`,
+  `DeviceVerificationResult`, `EnrolmentRedemptionResult`, `HashedSecret`, `EnrolmentInvitationCreated`).
 - Never the em-dash character, never a hyphen substituting for one, anywhere in this document or in any
   file this task writes.
 - No trademarked words in file names or identifiers.
@@ -741,9 +822,9 @@ Quote both outputs in full before considering this task done, per root rule 5.
 
 ## 6. Verification
 
-1. `dotnet build GastronomyApp.slnx` — zero warnings, zero errors, across every project including
+1. `dotnet build GastronomyApp.slnx`: zero warnings, zero errors, across every project including
    `GastronomyApp.Infrastructure` and `GastronomyApp.Infrastructure.Tests`.
-2. `dotnet test GastronomyApp.slnx --filter "FullyQualifiedName~GastronomyApp.Infrastructure"` — every
+2. `dotnet test GastronomyApp.slnx --filter "FullyQualifiedName~GastronomyApp.Infrastructure"`: every
    test listed in section 4 passes, reported with the real `Passed:`/`Failed:` totals quoted.
 3. For each step in section 4, the red output was captured and quoted before the corresponding
    production code was written (TDD gate, root rule 3); this is a process requirement on whoever
@@ -759,8 +840,10 @@ Quote both outputs in full before considering this task done, per root rule 5.
 
 Per the spec's own list, this task is the home for: Numbering (all six scenarios), Idempotency (all
 three scenarios), the persistence half of Order acceptance (split across locations, snapshot of names
-and prices; the routing-resolution and printer-reachability halves of that row belong to whichever
-task builds the order-acceptance use case and the printer worker, out of this task's scope), Enrolment
+and prices, proven as integration tests over `OrderAcceptanceTransaction` composed with T002's real
+`OrderAcceptanceService`; the routing-resolution decision itself is `OrderAcceptanceService`'s and
+`OrderRoutingResolver`'s, T002's, and the printer-reachability half of that row belongs to the printer
+worker task, both out of this task's scope), Enrolment
 (the concurrency, consumption, expiry, and identity-preservation scenarios; the rate-limiting half
 belongs to the API task), and the token-verification and wrong-secret-rejection halves of
 Authentication (the address-based admin/station routing half of that row belongs to the API task).
