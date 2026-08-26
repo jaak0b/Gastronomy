@@ -767,7 +767,7 @@ stateDiagram-v2
 | `Blocked` | The printer answered, and it has no paper or an open cover. Nothing was sent. |
 | `Printing` | Bytes are being written, or the process id echo is being waited for. |
 | `Printed` | The printer echoed the process id, or a human confirmed the slip is on the pile. |
-| `PrintedOnTestPrinter` | The station is on the test printer. The slip exists on the laptop's screen and nowhere else. |
+| `PrintedOnTestPrinter` | The station is on the test printer. The slip exists as a file on the laptop and nowhere else. |
 | `Unknown` | Bytes were written and the outcome is genuinely not knowable from here. |
 | `Failed` | Nothing was sent and the give-up window expired. The reason says whether the printer was unreachable, switched off, or declared faulty. |
 | `HandledOnPaper` | The station saw the order on the break-glass page and is producing it. The slip will not be chased any further. |
@@ -1398,7 +1398,7 @@ that every phone scans the new QR code, and orders queued on the old address are
 |---|---|---|---|
 | GET | /api/admin/printers | | 200 configuration plus live status per location |
 | PUT | /api/admin/printers/{locationId} | full configuration | 200. Changing the transport restarts that location's worker. |
-| POST | /api/admin/printers/{locationId}/test-print | | 202. Prints a test slip naming the location, the current time, and carrying the station card's QR code. |
+| POST | /api/admin/printers/{locationId}/test-print | | 202. Prints a test slip naming the location, the current time, and carrying the station card's QR code. Section 7.7 gives the command sequence for that QR code. |
 | POST | /api/admin/printers/{locationId}/reconnect | | 202. Also clears `IsFaulty`, which is how a human ends a circuit breaker. |
 | POST | /api/admin/printers/discover | | 202, then `PrinterDiscovered` events. Scans the laptop's own /24 for open port 9100 and reports what answered. |
 
@@ -1406,14 +1406,22 @@ Discovery exists because the two checklist steps most likely to go wrong on site
 button while powering a printer on, reading an IP address off a self test, and typing it in, once per
 printer, at every event, because DHCP moves them. A list to tap replaces all three.
 
-**Mock station**
+**The test printer**
+
+One endpoint, because the mock's slips are files in a folder (section 7.8) rather than a screen with a
+list to fetch and clear.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/mock/{locationId}/slips | | 200, the rendered slips this fake printer has produced, newest first |
-| POST | /api/admin/mock/{locationId}/fault | `{fault, mode}` | 200. `fault` is one of `None`, `PaperEnd`, `CoverOpen`, `ConnectTimeout`, `DropSocketMidJob`, `UnknownOutcome`. `mode` is `Once` or `Sticky`. |
-| POST | /api/admin/mock/{locationId}/clear | | 204, clears the slip list |
-| POST | /api/admin/mock/{locationId}/load-paper | | 204, clears a sticky `PaperEnd` |
+| POST | /api/admin/mock/{locationId}/fault | `{fault, mode}` | 200. `fault` is one of `None`, `PaperEnd`, `CoverOpen`, `ConnectTimeout`, `DropSocketEarly`, `DropSocketMidJob`, `UnknownOutcome`. `mode` is `Once` or `Sticky`. 422 when the location's transport is not `Mock`. |
+
+The fault set is enumerated in exactly two places, here and in the table in section 7.8, and the two
+are the same seven values. `DropSocketEarly` is the zero byte drop that section 7.6 singles out as the
+only failure the system retries by itself, and the end to end scenario in section 11.3 cannot be written
+without arming it.
+
+Arming `None` clears a sticky fault. For `PaperEnd` that is the paper change: the station reports itself
+ready, and the slips parked behind it print without anybody re-sending anything.
 
 **Event session and orders**
 
@@ -1497,7 +1505,7 @@ connects with its access key instead. The admin connects from the laptop.
 | `device:{deviceId}` | One phone. Used only for revocation. |
 | `devices` | All enrolled, unrevoked phones |
 | `admin` | The laptop's admin UI |
-| `station:{locationId}` | Any open break-glass page for that location, and the admin mock station view |
+| `station:{locationId}` | Any open break-glass page for that location |
 
 ### 6.2 Events
 
@@ -1512,7 +1520,6 @@ connects with its access key instead. The admin connects from the laptop.
 | `EnrolmentCodeRotated` | `{qrUrl, sixDigitCode, expiresAtUtc}` | `admin` | The enrolment screen swaps the QR image and the six digits, with the remaining seconds shown. |
 | `EnrolmentCompleted` | `{deviceId, displayName, serverPersonName}` | `admin` | The enrolment screen adds the newly set up phone to a live list so the admin can watch a crew do it during a briefing. |
 | `DeviceRevoked` | `{deviceId}` | `device:{deviceId}`, `admin` | The phone clears its token and shows the enrolment screen with an explanation. **The half-built order on screen is kept**, and comes back when the phone is set up again. |
-| `MockSlipPrinted` | `{locationId, sequenceNumber, renderedText, printedAtUtc, kind}` | `admin`, `station:{locationId}` | The mock station view prepends the rendered slip. |
 | `EventSessionStarted` | `{eventSessionId, name, isPractice}` | `devices`, `admin`, all stations | Phones clear their local order list, because those orders belong to the previous session, and show a one line notice. A half-built order is untouched. |
 
 ### 6.3 Delivery and reconnection
@@ -1600,10 +1607,10 @@ public sealed record PrintDispatchResult(
 public enum PrintDispatchOutcome
 {
     Confirmed,
-    BlockedBeforeSending,
-    NotReachable,
+    Blocked,
+    Unreachable,
     SocketDropped,
-    TimedOut,
+    Timeout,
     PrinterError
 }
 
@@ -1614,13 +1621,20 @@ Every multi-value return is a named record read by name. `BytesWritten` is on th
 inferred, because it is the single fact that decides whether an automatic retry is safe, and it counts
 bytes handed to the socket rather than bytes the printer acknowledged, which nothing can know.
 
+**One outcome, one spelling, in all three enums that carry it.** `PrintDispatchOutcome` is what the
+transport returns, `PrintAttempt.Outcome` is that same value persisted, and `PrintJob.FailureReason`
+uses the same words plus the four reasons that never come from a transport at all (`PaperEnd`,
+`CoverOpen`, `StationDisabled`, `StationFaulty`). `Blocked`, `Unreachable`, `Timeout`, `SocketDropped`,
+`PrinterError` and `Confirmed` mean the same thing wherever they appear, so mapping between the three is
+a copy rather than a translation table somebody has to keep correct.
+
 Implementations:
 
 | Implementation | Talks to | State |
 |---|---|---|
 | `NetworkPrinterTransport` | Raw TCP to port 9100, ESC/POS both directions | Version 1 |
 | `AgentPrinterTransport` | The Python Pi agent over a small HTTP and WebSocket protocol, for USB attached printers | Deferred. The interface above is the whole contract it will implement. |
-| `MockPrinterTransport` | An on-screen fake station | Version 1, and a shipped product feature |
+| `MockPrinterTransport` | A folder of text files, one file per slip | Version 1, and a shipped product feature |
 
 ### 7.3 One worker per printer
 
@@ -1706,12 +1720,12 @@ printer.**
 | Outcome | Bytes | Automatic retry | Job state | Ticket state |
 |---|---|---|---|---|
 | `Confirmed` | all | no | `Confirmed` | `Printed` |
-| `BlockedBeforeSending` | 0 | yes, when the condition clears | `Blocked` | `Blocked` |
-| `NotReachable` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
+| `Blocked` | 0 | yes, when the condition clears | `Blocked` | `Blocked` |
+| `Unreachable` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
 | `SocketDropped` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
 | `SocketDropped` | > 0 | **never** | `Unknown` | `Unknown` |
-| `TimedOut` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
-| `TimedOut` | > 0 | **never** | `Unknown` | `Unknown` |
+| `Timeout` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
+| `Timeout` | > 0 | **never** | `Unknown` | `Unknown` |
 | `PrinterError` | 0 | yes, when the error clears | `Blocked` | `Blocked` |
 | `PrinterError` | > 0 | **never** | `Unknown` | `Unknown` |
 
@@ -1741,7 +1755,7 @@ seven separate "check the pile for Bon NNN" questions on four different phones, 
 queued long enough ago that the server has forgotten the table. Nobody has been told that the station
 itself is the problem.
 
-So the worker stops. When two consecutive attempts at one printer end `Unknown` or `TimedOut`, or when
+So the worker stops. When two consecutive attempts at one printer end `Unknown` or `Timeout`, or when
 its queue reaches ten waiting tickets, the worker:
 
 1. Sets `PrinterStatus.IsFaulty` and pushes `PrinterStatusChanged`, which reaches every phone, the
@@ -1783,7 +1797,46 @@ setting, defaulting to German, because a kitchen crew reads one language.
 | Order header | `ESC a 0`, `GS ! 0x00`, `ESC E 1` for the number line | Order number, table, server, time |
 | Lines | `ESC a 0`, `GS ! 0x00` | Quantity, item, and any line note indented by four spaces |
 | Footer | `ESC a 0` | Item count, order note, the other stations this order went to, and the chosen station when it differs |
+| Station card, only on a test slip | `ESC a 1`, the `GS ( k` sequence below, `ESC a 0` | The QR code to this station's break-glass page, with the same URL underneath as text |
 | Finish | `ESC d 4`, `GS V 66 3` | Feed and cut |
+
+**The QR code on a test slip.** The test print in section 5.5 carries the station card, and that card,
+taped inside the printer lid, is the whole of how the 32 character `StationAccessKey` reaches the people
+who need it at 21:00 (sections 2.4 and 8.10). So the renderer has to print a two-dimensional barcode,
+and the command sequence is specified here rather than left as something the implementer will work out.
+
+The `GS ( k` functions, in the order they are sent:
+
+| Step | Bytes | Meaning |
+|---|---|---|
+| Select the model | `1D 28 6B 04 00 31 41 32 00` | `cn` 49, `fn` 65. Model 2, which is the model every phone camera reads. |
+| Set the module size | `1D 28 6B 03 00 31 43 06` | `fn` 67, six dots per module |
+| Set the error correction level | `1D 28 6B 03 00 31 45 31` | `fn` 69, `n` 49, level M |
+| Store the data | `1D 28 6B pL pH 31 50 30`, then the URL as bytes | `fn` 80, `m` 48. `pL + pH * 256` is the length of the URL plus three. |
+| Print what is stored | `1D 28 6B 03 00 31 51 30` | `fn` 81, `m` 48 |
+
+**What is encoded is the station's break-glass URL and nothing else**, in the form
+`http://192.168.1.23:5000/station/8f2a1c...`, built by the same code that builds the URL for the admin's
+own station card rather than assembled a second time, per hard rule 6. Its longest realistic form is 7
+characters of scheme, 15 of address, 6 of port, 9 of `/station/` and 32 of key, so 69 bytes.
+
+**Why six dot modules and level M.** Sixty-nine bytes in byte mode at level M needs QR version 5, which
+is 37 modules square. At 203 dots per inch one dot is 0.125 mm, so a six dot module is 0.75 mm and the
+symbol is 222 dots, 27.8 mm, across. The four module quiet zone on each side adds 48 dots, which gives
+270 dots of the 576 the print head has and 33.8 mm of the 72 mm printable width, so the symbol fits with
+room to spare and `ESC a 1` centres it. Level L would fit version 4 and a slightly smaller symbol, but
+this card spends a season taped inside a warm printer lid and thermal paper fades, so 15 percent
+recovery is worth the four extra modules. Level H would push the symbol to version 7 for a robustness no
+phone camera at this size can use. A 0.75 mm module is comfortably above what a phone reads at arm's
+length in a dark marquee.
+
+**The URL is printed underneath the symbol as plain text as well**, wrapped over two lines at 48
+columns. That is what somebody reads out when a symbol will not scan, and it is what
+`MockPrinterTransport` writes into its file, because a text file cannot hold a symbol (section 7.8).
+
+**This sequence is an assumption until a printer is on a desk.** `GS ( k` is documented for the TM
+series, but the TM-T20IV's firmware has not been checked, exactly as `GS ( H` has not been checked.
+Open question 11 records it with its fallback.
 
 **The time on the slip is the time the order was taken**, never the time it was printed. On a reprint
 40 minutes later the two differ, and a print time on a slip that reuses the original sequence number
@@ -1863,6 +1916,48 @@ Tisch 12
 The reprint banner exists so that two slips with the same number on the same pile are immediately
 distinguishable from two separate orders. In English the banner reads `REPRINT`.
 
+**Rendered example, test slip with the station card, German, 48 columns**
+
+```
+================================================
+KÜCHE
+================================================
+TESTBON
+26.08.2026, 17:05 Uhr
+------------------------------------------------
+         [ QR-Code, 37 x 37 Module ]
+http://192.168.1.23:5000/station/
+8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c
+------------------------------------------------
+Kleben Sie diese Karte in den Deckel des
+Druckers. Wenn der Drucker ausfällt, führt der
+QR-Code zur Notfallseite dieser Station.
+================================================
+```
+
+**Rendered example, test slip with the station card, English, 48 columns**
+
+```
+================================================
+KITCHEN
+================================================
+TEST SLIP
+26/08/2026, 17:05
+------------------------------------------------
+          [ QR code, 37 x 37 modules ]
+http://192.168.1.23:5000/station/
+8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c
+------------------------------------------------
+Tape this card inside the printer lid. If the
+printer fails, the QR code opens this station's
+emergency page.
+================================================
+```
+
+The bracketed line is the symbol itself, which no example in a text document can show. A test slip
+carries no order number and no sequence number, because it belongs to a printer rather than to an order
+(section 2.11).
+
 **When a line went to a different station than the server chose**, because that station was switched
 off between the catalog fetch and the order, the footer carries one more line: `Gewählt war: Theke
 Zelt` / `Chosen station was: Bar marquee`. The receiving station can then see at a glance that the
@@ -1875,43 +1970,89 @@ line with anything that could push it off the paper.
 
 ### 7.8 MockPrinterTransport
 
-The mock is a product feature. The entire system is developed, demonstrated, and tested with zero
-hardware, and the mock stays the test double afterwards.
+The mock is a product feature, not a test fixture that leaked into this document. No printer has been
+bought, and none will be bought until the fire department has run an evening on the mock and said the
+system is a tool they want, so every demonstration between now and that decision runs on it. It stays
+the test double afterwards.
 
-It behaves like a real printer session: it holds one connection, it emits an ASB style status stream, it
-answers `QueryStatusAsync`, and it returns the same `PrintDispatchResult` record. It renders each slip
-to text and pushes it to the mock station view over SignalR.
+It behaves like a real printer session: it holds one connection at a time, it emits an ASB style status
+stream, it answers `QueryStatusAsync`, and it returns the same `PrintDispatchResult` record. What it
+does instead of printing is write a file.
+
+**One slip, one file.**
+
+| Part | Value |
+|---|---|
+| Root folder | `mock-slips`, in the same directory as the database file, whose path is the `appsettings.json` setting in section 10.4 |
+| Folder per location | `{sanitised location name}-{first eight characters of the location id}` |
+| File name | `{session start, yyyyMMdd-HHmmss}_{folder name of the location}_slip-{sequence, three digits}_print-{n}.txt` |
+| File name of a test print | `{session start, yyyyMMdd-HHmmss}_{folder name of the location}_test-{process id}.txt` |
+| Content | `PrintPayload.RenderedText` verbatim, which is exactly the lines the ESC/POS payload would have put on the paper |
+| Encoding | UTF-8 with no byte order mark, lines separated by carriage return and line feed |
+
+Sanitising a location name replaces every character that is not a letter, a digit, a hyphen or an
+underscore with an underscore. The eight character id suffix is what keeps two stations both called
+"Theke" apart, and the readable half is what lets somebody find the right folder without opening it.
+
+`{n}` in `print-{n}` is `ReprintCount + 1`, so the first print of slip 042 is `print-1` and its first
+reprint is `print-2`. A reprint deliberately keeps the sequence number of the slip it repeats (section
+3.4), so without that counter a reprint would overwrite the file it is meant to lie beside. The session
+start does the same job across evenings, because sequence numbers restart at 1 with every event session
+(section 4.3). The location is named in the file as well as in the folder, so a file copied out of its
+folder still says where it belongs.
+
+A QR code cannot exist in a text file. On a test slip (section 7.7) the mock's file therefore carries
+the break-glass URL as a line of text, which is the string the QR code encodes, so a demonstrator can
+still open that station's page.
+
+**The mock has no artificial delay.** It writes the file and returns. The 400 millisecond render that
+made a demonstration look like real printing is gone: it slowed every integration test and showed
+nothing that a folder of files does not show already. A test that needs to watch a job while it is still
+in flight arms `UnknownOutcome`, which holds the job in `Printing` until `JobTimeoutSeconds` expires.
+
+**A folder that cannot be written is a printer fault and is reported as one.** When a worker starts, it
+creates its location's folder and writes and deletes a probe file in it. If any of that fails,
+`PrinterStatus` goes offline with `IsInErrorState` set and `LastDetail` naming the full path and the
+reason the operating system gave, and every job at that station returns `PrinterError` with zero bytes
+written. That is the `PrinterError` with zero bytes row of the table in section 7.6, so the ticket goes
+`Blocked`, the phone is told the station needs a human, and the give-up window ends it in `Failed`
+rather than in silence. The admin printer screen shows `admin.printers.mockFolderUnwritable` with the
+path in it. Nothing is ever reported as printed when no file was written.
 
 **A ticket printed by the mock reaches `PrintedOnTestPrinter`, never `Printed`.** That distinction is
 the whole defence against the trap in section 3.5: a station whose printer was never configured is
 created on the mock, and if the mock reported `Printed` then that station would report every order all
-evening as successfully printed, to the phone, to the admin list, and to the attention filter, while
-the slips accumulated in a browser tab nobody has open. The volunteer who set up two of three stations
-and missed the third would learn about it from a guest.
+evening as successfully printed, to the phone, to the admin list, and to the attention filter, while the
+files piled up in a folder nobody has opened. The volunteer who set up two of three stations and missed
+the third would learn about it from a guest.
 
 During a practice run that state is shown as the normal outcome it is. During a real event it puts the
 order in `NeedsAttention` and tells the placing server that the order went to the test printer. Starting
 a real event refuses while any active station is still on the mock, which is the check that stops it
 from happening at all.
 
-Fault injection, set per location, either `Once` or `Sticky`:
+**Fault injection stays, and it is one control.** The tests need every failure mode, and a person
+demonstrating the system needs to be able to produce one on request. That is the whole requirement, so
+a fault is armed in exactly two ways: `POST /api/admin/mock/{locationId}/fault` (section 5.5), and one
+row on the admin printer screen holding the list of faults and the choice between `Once` and `Sticky`.
+There is no button per fault, and no fake station screen to press it on.
 
 | Fault | What the mock does | Outcome returned | Bytes written | Resulting ticket state |
 |---|---|---|---|---|
-| `None` | Renders the slip after a short delay | `Confirmed` | all | `PrintedOnTestPrinter` |
-| `PaperEnd` | Reports paper end in its status stream and refuses at pre-flight | `BlockedBeforeSending` | 0 | `Blocked` |
-| `CoverOpen` | Reports cover open, refuses at pre-flight | `BlockedBeforeSending` | 0 | `Blocked` |
-| `ConnectTimeout` | Never completes `ConnectAsync` | `NotReachable` | 0 | `Queued`, then `Failed` |
-| `DropSocketEarly` | Drops before the first byte | `SocketDropped` | 0 | `Queued`, then `Failed` |
-| `DropSocketMidJob` | Accepts about half the payload, then throws as if the socket died | `SocketDropped` | partial | `Unknown` |
-| `UnknownOutcome` | Accepts the whole payload, renders nothing, and never sends the process id echo | `TimedOut` | all | `Unknown` |
+| `None` | Writes the file and returns | `Confirmed` | all | `PrintedOnTestPrinter` |
+| `PaperEnd` | Reports paper end in its status stream and refuses at pre-flight | `Blocked` | 0 | `Blocked` |
+| `CoverOpen` | Reports cover open, refuses at pre-flight | `Blocked` | 0 | `Blocked` |
+| `ConnectTimeout` | Never completes `ConnectAsync` | `Unreachable` | 0 | `Queued`, then `Failed` |
+| `DropSocketEarly` | Drops before the first byte, writing no file | `SocketDropped` | 0 | `Queued`, then `Failed` |
+| `DropSocketMidJob` | Writes about half the text to the file, then throws as if the socket died | `SocketDropped` | partial | `Unknown` |
+| `UnknownOutcome` | Accepts the whole payload, writes no file, and never sends the process id echo | `Timeout` | all | `Unknown` |
 
-`PaperEnd` set to `Sticky` is cleared by the "Papier einlegen" / "Load paper" button on the mock station
-view, which is exactly the sequence a real paper change produces: blocked, then automatically printed
-without anybody re-sending anything.
+A half-written file is what a half-printed slip looks like, which is the point of `DropSocketMidJob`.
+`UnknownOutcome` writes nothing, so a demonstrator who walks to the folder and answers the question in
+section 3.4 honestly answers that the slip is missing, and the reprint path runs.
 
-The mock's timing is configurable and defaults to a 400 millisecond render, so a demonstration looks
-like real printing rather than an instant state change.
+`PaperEnd` armed as `Sticky` is cleared by arming `None`, which is the same sequence a real paper change
+produces: blocked, then printed by itself with nobody re-sending anything.
 
 Every failure mode the real transports can produce is reproducible in the mock. That is the acceptance
 criterion for the mock, and section 11 lists the tests that hold it.
@@ -1961,7 +2102,6 @@ These rules bind every string in this section and every string added later.
 | Order list and order detail | Server | `/orders` |
 | Settings sheet | Server | Opened from the header |
 | Admin configuration | Admin, on the laptop | `/admin/...` |
-| Mock station | Admin, on the laptop | `/admin/mock/{locationId}` |
 | Break-glass station page | Station staff, in an emergency | `/station/{accessKey}` |
 
 There is no shift-start screen. A server who has just set up their phone lands on the catalog and can
@@ -2269,7 +2409,7 @@ rule:
 |---|---|---|
 | `admin.printers.title` | Drucker | Printers |
 | `admin.printers.kindNetwork` | Netzwerkdrucker | Network printer |
-| `admin.printers.kindMock` | Testdrucker am Bildschirm | Test printer on screen |
+| `admin.printers.kindMock` | Testdrucker ohne Gerät | Test printer without hardware |
 | `admin.printers.kindAgent` | Drucker am Raspberry Pi | Printer on a Raspberry Pi |
 | `admin.printers.hostHelp` | Tragen Sie die IP-Adresse des Druckers ein oder suchen Sie ihn im Netz. | Enter the printer's IP address, or search the network for it. |
 | `admin.printers.search` | Drucker im Netz suchen | Search the network for printers |
@@ -2286,6 +2426,24 @@ rule:
 | `admin.printers.reconnect` | Wieder verbinden | Connect again |
 | `admin.printers.reconnectHelp` | Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an. | Check the printer for a paper jam and a loose cable first. After that the printer accepts slips again. |
 | `admin.printers.lastHeard` | Zuletzt gemeldet: {time} | Last heard from at {time} |
+| `admin.printers.mockFolder` | Die Bons dieses Testdruckers liegen im Ordner {path}. | The slips from this test printer are in the folder {path}. |
+| `admin.printers.mockFolderUnwritable` | Der Testdrucker bei {name} kann keine Bons ablegen. In den Ordner {path} lässt sich nichts schreiben. Legen Sie das Programm in einen Ordner, in dem Sie Dateien anlegen dürfen. | The test printer at {name} cannot put slips anywhere. Nothing can be written into the folder {path}. Move the program into a folder where you are allowed to create files. |
+| `admin.printers.faultTitle` | Störung am Testdrucker simulieren | Simulate a fault on the test printer |
+| `admin.printers.faultHelp` | Damit führen Sie vor, was am Telefon passiert, wenn ein Drucker ausfällt. Die Auswahl gilt nur für den Testdrucker. | This shows what happens on the phone when a printer fails. The setting applies to the test printer only. |
+| `admin.printers.fault.none` | Keine Störung | No fault |
+| `admin.printers.fault.paperEnd` | Kein Papier | No paper |
+| `admin.printers.fault.coverOpen` | Klappe offen | Cover open |
+| `admin.printers.fault.connectTimeout` | Drucker antwortet nicht | The printer does not answer |
+| `admin.printers.fault.dropEarly` | Verbindung bricht ab, bevor etwas gesendet wurde | The connection breaks before anything is sent |
+| `admin.printers.fault.dropMidJob` | Verbindung bricht mitten im Druck ab | The connection breaks in the middle of printing |
+| `admin.printers.fault.unknown` | Drucker meldet nicht, ob er gedruckt hat | The printer does not report whether it printed |
+| `admin.printers.fault.once` | Einmal | Once |
+| `admin.printers.fault.sticky` | Bis zum Zurücksetzen | Until it is reset |
+
+The fault row appears only for a station whose transport is the test printer, and it is the whole of the
+mock's user interface: the list of faults above, the choice between `Once` and `Sticky`, and the folder
+path so that a demonstrator knows where the slips are landing. Setting it back to "Keine Störung" is
+what clears a fault that was set to hold, which for "Kein Papier" is the paper change.
 
 **Setting up a server phone.** The enrolment screen, kept open during a briefing.
 
@@ -2394,42 +2552,6 @@ gaining rows.
 printed from the admin and also printed on its test slip during setup, carries the station name and a
 QR code to that station's break-glass URL. It is taped inside the printer lid. Nobody reads 32 hex
 characters aloud across a loud marquee.
-
-### 8.11 Mock station view
-
-**Purpose.** Develop, demonstrate, and test the entire system with no hardware present, and reproduce
-every printer failure on demand.
-
-**What is on it.**
-
-* A column of rendered slips, newest at the top, in a fixed width typeface at the configured column
-  count, so what is on the screen is exactly what would be on the paper.
-* The current simulated printer state: paper, cover, connection.
-* One button per fault, each of which can be armed once or held on.
-* A button that loads paper, which is what clears a held paper end and lets the parked slips print by
-  themselves.
-* A button that clears the list of slips.
-
-| Key | Deutsch | English |
-|---|---|---|
-| `mock.title` | Testdrucker: {name} | Test printer: {name} |
-| `mock.intro` | Dieser Drucker ist nur auf dem Bildschirm. Sie können damit den ganzen Ablauf ohne Gerät vorführen. | This printer exists only on screen. You can use it to demonstrate the whole process without any hardware. |
-| `mock.state.ready` | Bereit | Ready |
-| `mock.state.paperEnd` | Kein Papier | No paper |
-| `mock.state.coverOpen` | Klappe offen | Cover open |
-| `mock.state.disconnected` | Nicht erreichbar | Not reachable |
-| `mock.fault.paperEnd` | Papier leer simulieren | Simulate an empty paper roll |
-| `mock.fault.coverOpen` | Offene Klappe simulieren | Simulate an open cover |
-| `mock.fault.timeout` | Keine Verbindung simulieren | Simulate no connection |
-| `mock.fault.dropEarly` | Abbruch vor dem ersten Byte simulieren | Simulate a break before the first byte |
-| `mock.fault.dropSocket` | Abbruch mitten im Druck simulieren | Simulate a break in the middle of printing |
-| `mock.fault.unknown` | Unklaren Ausgang simulieren | Simulate an unclear outcome |
-| `mock.fault.once` | Einmal | Once |
-| `mock.fault.sticky` | Bis zum Zurücksetzen | Until it is reset |
-| `mock.loadPaper` | Papier einlegen | Load paper |
-| `mock.clear` | Bons löschen | Clear the slips |
-| `mock.reprintBadge` | Nachdruck | Reprint |
-| `mock.empty` | Es wurde noch nichts gedruckt. | Nothing has been printed yet. |
 
 ---
 
@@ -2571,7 +2693,9 @@ the next missing thing rather than letting the admin wander.
 
 1. **Stations.** One per kitchen or bar. At a normal site this is two rows.
 2. **Printers.** One per station. During preparation at home, leave every station on the test printer
-   and the whole system can be tried out and demonstrated without any hardware.
+   and the whole system can be tried out and demonstrated without any hardware. Each slip is written as
+   a text file into that station's folder under `mock-slips`, next to the database, and the printer
+   screen names the path.
 3. **Items and prices.**
 4. **Assignment.** Tick which stations can produce each item. An item must have at least one, and the
    screen shows a live preview of where each item lands or which stations the server will choose
@@ -2755,10 +2879,11 @@ required for the order placement flow and the printing pipeline.
 | `OrderStatusCalculator` | The priority table in section 3.1, exhaustively over every combination of ticket states, including that no combination falls through |
 | `TicketStateMachine` | Every transition in section 3.2, and that every transition not listed is refused |
 | `PrintJobStateMachine` | Every transition in section 3.3, and specifically that a result with bytes written can never reach a retryable state |
-| `RetryPolicy` | The full table in section 7.6, one case per row, including both `SocketDropped` rows and both `TimedOut` rows |
+| `RetryPolicy` | The full table in section 7.6, one case per row, including both `SocketDropped` rows and both `Timeout` rows |
 | `StationCircuitBreaker` | Two consecutive unknown outcomes trip it, a queue depth of ten trips it, a confirmed job resets the counter, and tripping moves every waiting ticket at once |
 | `GiveUpWindow` | The window is measured from ticket creation, so a ticket that waited behind others expires on time |
 | `EscPosSlipRenderer` | Byte for byte output for a normal slip, a reprint with its reprint time, a wrapped long item name, a chosen station that differs from the printing one, umlauts under PC858, and the double size regions |
+| `EscPosSlipRenderer`, station card | A test slip emits the five `GS ( k` functions in the order given in 7.7, with model 2, a module size of 6, error correction level M, `pL` and `pH` equal to the URL length plus three for both a short and a 69 character URL, and the URL itself byte for byte, followed by the same URL wrapped underneath as text |
 | `ProcessIdAllocator` | Cycling at 9999, uniqueness within a printer, and resumption from the persisted value after a restart |
 | `EnrolmentCodeVerifier` | Correct code, wrong code, expired code, already consumed code, that a consumed code does not count as a failed attempt, and that a lockout applies to one source address and leaves other codes valid |
 | `DeviceTokenHasher` | A token verifies against its own hash, a different token does not, and a stored iteration count is honoured |
@@ -2790,6 +2915,7 @@ teardown. No test touches a developer's real database or filesystem.
 | Enrolment | Code consumed by the first redemption, second redemption returns 410 without counting as a failure, expiry, rotation, lockout confined to one address, unlock, and that the device row and the consumption commit together |
 | SignalR | Each event reaches exactly the groups listed in section 6.2 and no others, including that ticket events reach every phone of the placing person |
 | Printer worker | Every row of the failure table in section 3.5 against `MockPrinterTransport`, jobs attempted in sequence number order, and a blocked job holding the station rather than being overtaken |
+| Mock transport | One file per slip in that location's folder holding exactly the rendered text, a reprint written beside its original rather than over it, two sessions in the same folder not colliding, two locations with the same name kept apart, all seven faults armable through the admin endpoint in both `Once` and `Sticky` modes, and a folder that cannot be written producing `PrinterError` with zero bytes rather than a reported print |
 | Circuit breaker | Two unknown outcomes trip the station, every waiting ticket fails in one transaction, and the reconnect action clears it |
 | Crash recovery | A ticket left in `Printing` when the process died comes back as `Unknown`, `Queued` and `Blocked` tickets are re-enqueued in order, and a ticket left over from a previous session is enqueued too |
 | Storage failures | A busy database waits rather than failing, a write failure returns 503 with a message key, and a read-only database directory refuses to start with a stated reason |
@@ -2805,7 +2931,7 @@ session so the test printer is the expected transport.
 **Order placement flow, required**
 
 1. A phone is set up by redeeming a code, builds an order, sends it, and sees it confirmed printed, with
-   the slip visible on the mock station.
+   the slip file written into that station's folder.
 2. An order that spans two stations produces two slips with one shared order number and two independent
    sequence numbers.
 3. An item with one candidate station is added with a single tap and never asks where it goes.
@@ -2817,7 +2943,7 @@ session so the test printer is the expected transport.
    the retry button appears, the connection comes back, one tap sends it, and exactly one order exists.
 7. **The answer to a submission is lost on the way back.** The server taps retry, the retry carries the
    same `clientOrderId`, and afterwards exactly one order exists, with one set of numbers, and exactly
-   one slip per location on the mock stations. The phone shows the same confirmation it would have shown
+   one slip file in each location's folder. The phone shows the same confirmation it would have shown
    the first time.
 8. A price is changed at the laptop between the catalog fetch and the send. The order is accepted and
    the phone shows the new total.
@@ -2861,8 +2987,8 @@ session so the test printer is the expected transport.
 
 No mutation testing and no coverage gate. Load testing is not attempted, because the load is a handful
 of orders per minute. Real hardware verification against a physical TM-T20IV is a manual checklist
-carried out once before the first festival, and it is listed as an open question below because one
-command on it needs confirming.
+carried out once before the first festival, and it is listed in the open questions below because two
+commands on it need confirming.
 
 ---
 
@@ -2870,12 +2996,22 @@ command on it needs confirming.
 
 These are genuinely undecided and need the owner, or a printer on a desk, before they can be closed.
 
+**One owner decision has been taken since this document was written, and it moves two of the questions
+below rather than closing them.** No printer hardware will be bought until the fire department has run
+the system on `MockPrinterTransport` and agreed that it is a tool they want. That is why the mock is a
+shipped product feature rather than a test fixture, and why it is the vehicle the whole system is
+evaluated on (section 7.8). It also means that questions 1 and 11, which both need a TM-T20IV on a desk,
+cannot be answered until after that decision, rather than at leisure before the first festival. Nothing
+else in this list has been settled.
+
 1. **The process id echo on real hardware.** The confirmation design in section 7.4 depends on
    `GS ( H` returning the specified process id after printing completes on a TM-T20IV over port 9100.
    The command is documented for the TM series, but it needs confirming on the actual firmware before
    the design is trusted. If it turns out not to be available, the fallback is to treat a clean write
    plus a clean `DLE EOT n=4` read afterwards as a weaker confirmation, and to widen the `Unknown` state
-   to cover more cases. That fallback prints correctly but asks the human question more often.
+   to cover more cases. That fallback prints correctly but asks the human question more often. The
+   question stays open, and it now sits behind the hardware decision above: there is no printer to test
+   against until the fire department has evaluated the system on the mock and asked for one.
 
 2. **A second printer as a station's fallback.** When a printer dies, the current answer is the
    break-glass page, which asks a station to look at a screen, which the product otherwise refuses. A
@@ -2926,3 +3062,14 @@ These are genuinely undecided and need the owner, or a printer on a desk, before
     so a changed address strands nobody. Doing that on Windows means a dependency for mDNS, and backend
     rule 5 is deliberately hostile to dependencies, so this is a trade the owner should make rather than
     the author.
+
+11. **QR printing on real hardware.** Section 7.7 specifies the station card's QR code with the
+    `GS ( k` family: model 2, a six dot module, error correction level M, and the break-glass URL as the
+    stored data. The family is documented for the TM series and the geometry fits the 72 mm printable
+    width with room to spare, but the TM-T20IV's own firmware has not been checked, exactly as question
+    1's `GS ( H` has not been checked. Both are answered on the same afternoon with the same printer. If
+    `GS ( k` does not print, the fallback is to build the QR matrix in the backend and send it as a
+    raster bit image with `GS v 0`, which every ESC/POS printer supports. That costs a QR encoding
+    dependency, which backend rule 5 is hostile to, so if the owner refuses the dependency the second
+    fallback is the URL printed as wrapped text with no symbol at all. That one works, and nobody enjoys
+    typing it.

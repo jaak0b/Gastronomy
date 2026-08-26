@@ -13,8 +13,13 @@ Dispositions used:
   trade-off and the open question it became.
 
 Counts: 15 blocking (12 Fixed, 3 Dissolved), 24 non-blocking (21 Fixed, 3 Dissolved), 0 false
-positives, 0 deferred to the owner as a disposition. Three findings became open questions in addition
-to being fixed, and those are named below.
+positives, 0 deferred to the owner as a disposition.
+
+Exactly one numbered finding became an open question as well as being fixed: B10, which became open
+question 10. Three more open questions came from parts of the review that are not numbered findings:
+ranked missing piece 2 became open question 2, ranked missing piece 12 became open question 9, and the
+challenge to the admin loopback decision rewrote open question 3. In the other direction, N12 closed
+the old open question 6, which was removed from the list.
 
 ---
 
@@ -173,11 +178,17 @@ This dissolved B7, B8, N7 and N14.
 
 ---
 
-## One thing to settle before implementation starts
+## The one thing to settle before implementation: settled
 
-`frontend/CLAUDE.md` still carries the old model as a hard design constraint: "Zone is chosen once at
+`frontend/CLAUDE.md` used to carry the old model as a hard design constraint: "Zone is chosen once at
 shift start and shown persistently in the header, with a per-item override available but never
-required. Do not make the server pick a location per item in the normal flow." The revised spec now
-contradicts that file. This pass did not touch it, because changing a `CLAUDE.md` was outside what was
-asked. It should be updated in the same change as the first line of code, or the first frontend agent
-that reads it will rebuild the header zone chip.
+required. Do not make the server pick a location per item in the normal flow." The revised spec
+contradicted that file, and this pass left it alone, because changing a `CLAUDE.md` was outside what
+was asked.
+
+That file has since been updated and the contradiction is gone. Its design constraints now open with
+"There are no zones", say that an item with exactly one candidate production location routes
+automatically with no control rendered, put the choice for an item with several candidates on the order
+line rather than on a session, a device or a shift, and forbid a remembered location preference and a
+shift-start selection screen outright. Nothing is left to do here. A reader who came looking for the
+constraint described above will not find it, because it is no longer there.
