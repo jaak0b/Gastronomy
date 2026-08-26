@@ -58,11 +58,14 @@ SignalR hub, and the built frontend from `wwwroot`, on one port.
    station's transport is configuration, not code. New transports are new implementations, never a
    branch inside an existing one.
 
-10. **`MockPrinterTransport` is a first-class product feature, not scaffolding.** It renders slips to an
-    on-screen fake station and simulates, on demand: paper out, cover open, connection timeout, dropped
-    socket mid-job, and a job whose outcome is genuinely unknown. It is how the whole system is
-    developed and demonstrated without hardware, and it stays the test double afterwards. Every failure
-    mode the real transports can produce must be reproducible in the mock.
+10. **`MockPrinterTransport` writes slips to a folder, and stays that simple.** One file per slip,
+    holding exactly the content that would have been printed. No rendered station screen, no pile
+    visualisation, no styling: a folder of files is enough to show that the right lines reached the
+    right station. It must still be able to produce, on demand, every failure mode the real transports
+    can: paper out, cover open, connection timeout, dropped socket mid-job, and a job whose outcome is
+    genuinely unknown. Keep that to the smallest control a test or a demonstrator can trigger. This is
+    how the whole system is developed and demonstrated without hardware, and it stays the test double
+    afterwards.
 
 11. **Print jobs are serialized per printer, and a job's outcome is never assumed.** The hardware
     constraints in the root `CLAUDE.md` are load-bearing: one connection at a time, 90 second timeout,

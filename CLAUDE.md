@@ -163,19 +163,18 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 No printer hardware has been bought. The fire department will first try the system with
 `MockPrinterTransport` standing in for every station, and only if they agree it is a tool they want
-will the printers be purchased. The mock is therefore not scaffolding and not a test double in this
-phase: **it is the thing the buying decision is made on.**
+will the printers be purchased.
 
-Two consequences bind implementation order and quality.
+**Keep the mock simple.** It writes the slip content it would have printed to a file in a folder, one
+file per slip, and nothing more. No rendered station screen, no pile visualisation, no styling. A
+folder of files is enough to show that the right lines reached the right station. Failure simulation
+(paper out, cover open, dropped connection, unknown outcome) exists because the tests need it, so
+keep it to the smallest control that lets a test or a demonstrator trigger each case.
 
-- **Build the vertical slice first, complete:** a server places an order on a phone, it is split by
-  production location, slips appear at the mock stations, and the print state comes back to the
-  phone. Admin configuration polish, device revocation, the break-glass page and the failure edge
-  cases come after that slice works end to end, because the slice is what gets demonstrated.
-- **The mock station view is a product screen, not a debug view.** The rendered slip must look like
-  the real printed slip, and slips must accumulate the way a paper pile accumulates. Simulating paper
-  out, a cover left open and a dropped connection is part of the demonstration, because those are the
-  questions a volunteer will ask.
+**Build the vertical slice first, complete:** a server places an order on a phone, it is split by
+production location, a file appears in each station's folder, and the print state comes back to the
+phone. Admin configuration polish, device revocation, the break-glass page and the failure edge cases
+come after that slice works end to end.
 
 The `GS ( H` process id echo that print confirmation depends on stays unverified against real
 TM-T20IV firmware until hardware is bought. It is contained behind `IPrinterTransport`, and the spec
