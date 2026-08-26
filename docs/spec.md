@@ -87,8 +87,8 @@ answered with "that was decided against", not with a redesign.
 |---|---|
 | Payments of any kind | Cash is handled by hand at the table. The app takes no payment, stores no payment data, and has no card reader. |
 | Guest receipts, invoices, tax documents | Any of these would drag German fiscal law (KassenSichV, TSE, GoBD) into a hobby project. The printed slip is a production instruction for staff, not a receipt for a guest. |
-| Kitchen display system | Staff work off a pile of paper. Putting a screen in the kitchen would replace the process instead of removing one walk from it. |
-| Stock, inventory, sold-out counts | An item can be switched off by the admin. Counting portions is not attempted. |
+| Kitchen display system | Staff work off a pile of paper. Putting a screen in the kitchen would replace the process instead of removing one walk from it. The break-glass page (section 8.10) does list a station's open orders, and it is not this: it has no printer to compete with when it is being used, nothing on it advances an order through a workflow, and the station reaches for it only when the paper has stopped arriving. |
+| Stock, inventory, portion counts | An item is marked sold out by hand, in one tap, by whoever hears that the kitchen has run out. Counting portions is not attempted, because nobody will keep the count correct while serving. |
 | Table reservations or floor plans | Tables are moved during the evening. Managing them as objects is more work than the problem is worth. |
 | Zones or areas grouping stations | Almost every festival has one kitchen and one bar. Grouping stations into areas made every server perform a shift-start ritual for a case that hardly ever happens. Routing now comes from the item itself, and section 2.6 describes the one remaining choice a server makes. |
 | Cloud, remote access, multi-site | There is no internet on site. |
@@ -245,7 +245,7 @@ erDiagram
         Guid ProductionLocationId FK
         string Kind
         string Status
-        int ProcessId
+        int ProcessId "nullable"
         string FailureReason "nullable"
         Guid RequestedByDeviceId FK "nullable"
         DateTime CreatedAtUtc
@@ -256,6 +256,7 @@ erDiagram
         Guid PrintJobId FK
         int AttemptNumber
         string Outcome
+        string Phase
         int BytesWritten
         string TransportDetail
         string PrinterStatusSnapshotJson
@@ -292,6 +293,7 @@ erDiagram
         string CounterKind PK
         Guid EventSessionId PK "nullable"
         Guid ProductionLocationId PK "nullable"
+        string PrinterEndpointKey PK "nullable"
         int NextValue
     }
 ```
@@ -372,8 +374,27 @@ Invariants:
 | CategoryName | string(40) | Free text, used only to group buttons on the phone |
 | PriceCents | int | Zero is allowed, for example for tap water |
 | SortOrder | int | |
-| IsActive | bool | Soft delete. Items are never hard deleted because orders reference them. |
-| IsAvailable | bool | The "sold out" switch. Flipping it pushes to every phone at once. |
+| IsActive | bool | Not on this festival's menu at all. Soft delete, because orders reference items. |
+| IsAvailable | bool | On the menu, but sold out tonight. Flipping it pushes to every phone at once. |
+
+**These two flags are two different things, set by two different people at two different times, and the
+document never uses one word for both.**
+
+| | `IsActive` false, "deaktiviert" / "deactivated" | `IsAvailable` false, "ausverkauft" / "sold out" |
+|---|---|---|
+| What it means | The item is not on this festival's menu | The item is on the menu and has run out tonight |
+| Who sets it | The admin, at the laptop, setting up the event | Whoever hears that the kitchen has run out |
+| When | Before the event, between events | During service, and very often reversed twenty minutes later when somebody finds another crate |
+| How | The item editor, refused during a live event | One toggle in the item list, one tap each way, no form and no dialog |
+| On the phone | The item is not in the catalog at all | The item stays in the list, greyed, not selectable, labelled `catalog.soldOut` |
+
+Sold out is reversed constantly by somebody who is busy, so it is one tap and nothing else. Deactivation
+is a considered edit made once, so it lives in the editor where a considered edit belongs.
+
+**A sold-out item stays on the phone rather than disappearing from it.** An item that vanishes silently
+sends a server hunting through categories for something that was there a minute ago, wondering whether
+they are on the wrong screen. Greyed out with "Ausverkauft" underneath answers that question at the
+moment it is asked, which is the moment the guest asks for it.
 
 Invariants:
 
@@ -382,10 +403,12 @@ Invariants:
   This is the invariant the whole routing design rests on.
 * `PriceCents >= 0`.
 * Editing a name or price never changes an existing order. Every `OrderLine` carries a snapshot.
-* Deactivating an item is refused while a non-practice session is active. The sold-out switch is the
-  tool during service; deactivation is a between-events operation. Without this rule a phone holding a
-  cached catalog could offer an item that acceptance would then have to reject, and a rejected order at
-  a busy table is the failure this product exists to prevent.
+* **Deactivating an item is refused while a non-practice session is active**, and the refusal names the
+  sold-out toggle as the tool for tonight. Deactivation is a between-events operation. Without this rule
+  a phone holding a cached catalog could offer an item that has left the menu entirely, and the catalog
+  the phone holds would be describing a different festival from the one it is standing in.
+* **Marking an item sold out is allowed at any time and never refused.** It changes nothing about
+  orders that already exist, and an order carrying a line for it is still accepted (section 5.4).
 
 ### 2.6 ItemLocationAssignment and routing
 
@@ -578,7 +601,7 @@ sequence number.
 | LocationSequenceNumber | int | Allocated at acceptance, unique per location per session |
 | Status | string | See section 3.2 |
 | ReprintCount | int | Zero on the first print. Every reprint slip says so in its header. |
-| CreatedAtUtc | DateTime | The give-up window in section 3.2 is measured from here |
+| CreatedAtUtc | DateTime | Both windows in section 3.2 are measured from here: the give-up window, which does not run while the cause is known, and the outer bound, which always runs |
 | ResolvedAtUtc | DateTime? | When a human answered an unknown outcome or acknowledged a manual handover |
 | ResolutionNote | string(200)? | Who answered and what they answered |
 
@@ -602,8 +625,8 @@ what happened" a recordable fact rather than a guess.
 | ProductionLocationId | Guid | Which printer's worker owns it. Always set, including for `Test`. |
 | Kind | string | `Initial`, `Reprint`, or `Test` |
 | Status | string | See section 3.3 |
-| ProcessId | int | 1 to 9999 from that printer's persisted counter. Sent with `GS ( H` and echoed back by the printer when it has finished processing the job. |
-| FailureReason | string? | `PaperEnd`, `CoverOpen`, `Unreachable`, `Timeout`, `SocketDropped`, `PrinterError`, `StationDisabled`, `StationFaulty` |
+| ProcessId | int? | 1 to 9999 from that printer's persisted counter. **Null until step 6 of section 7.4**, which is the first moment a value is legitimate. Sent with `GS ( H` and echoed back by the printer when it has finished processing the job. |
+| FailureReason | string? | `PaperEnd`, `CoverOpen`, `Unreachable`, `Timeout`, `SocketDropped`, `PrinterError`, `StationDisabled`, `StationFaulty`, `TicketResolvedByHuman` |
 | RequestedByDeviceId | Guid? | Null for the initial job, set when a human asked for a reprint |
 | CreatedAtUtc, CompletedAtUtc | | |
 
@@ -613,14 +636,23 @@ what happened" a recordable fact rather than a guess.
 | PrintJobId | Guid | |
 | AttemptNumber | int | 1 based |
 | Outcome | string | `Confirmed`, `Blocked`, `Unreachable`, `SocketDropped`, `Timeout`, `PrinterError` |
+| Phase | string | Where in the job sequence the attempt ended: `Connecting`, `PreflightCheck`, `Sending`, `AwaitingEcho`. Diagnostics only. Section 7.6 says why it never changes an outcome. |
 | BytesWritten | int | **Bytes handed to the socket for this job's payload.** Not bytes the printer acknowledged, which nothing can know. Any value above zero is treated as possibly delivered, which is the conservative direction. |
-| TransportDetail | string(400) | The socket error text or the transport's own message. Never shown raw to a server. |
+| TransportDetail | string(400) | The socket error text or the transport's own message. **Admin-only, and the boundary is a rule rather than a habit:** it is serialized in exactly one place, the print-history response in section 5.5, which is served only to the laptop. No response to a phone and no SignalR payload carries it, in raw or summarized form. A device-facing failure is described by a message key and its parameters, never by transport text. |
 | PrinterStatusSnapshotJson | string | The ASB or `DLE EOT` state at the end of the attempt |
 | StartedAtUtc, EndedAtUtc | | |
 
 Invariants:
 
 * At most one `PrintJob` per ticket is in a non-final state at any moment.
+* **A job is only ever sent while its ticket is still waiting for it.** A job whose ticket has left
+  `Queued` and `Blocked` ends `Failed` with `FailureReason: TicketResolvedByHuman` and zero bytes
+  written. Section 7.4 step 2 gives the check and section 3.2 gives the reason: this is what makes it
+  impossible for one ticket to be both handled by a human and printed by a machine.
+* `ProcessId` is null until step 6 of section 7.4 and never changes afterwards. A job that ended before
+  step 6 keeps it null, which is the honest record that nothing was sent. A non-nullable column would
+  have forced a placeholder value onto such a job, and a placeholder that a returning echo could match
+  is exactly the stale match the counter exists to prevent.
 * An attempt with `BytesWritten > 0` never leads to an automatic retry. Only a human can ask for the
   reprint.
 * Attempts are append only. Nothing in the print history is ever updated after it ends.
@@ -634,7 +666,7 @@ Invariants:
 |---|---|---|---|
 | ProductionLocationId | Guid | | One to one |
 | TransportKind | string | `Mock` | `Network`, `Agent`, or `Mock`. This is the only place the choice exists. |
-| Host | string(64)? | | IP address of the printer or its WiFi bridge |
+| Host | string(64)? | | IP address of the printer or its WiFi bridge. **Two locations may name the same address, and that is a supported configuration rather than a mistake.** See below. |
 | Port | int | 9100 | |
 | AgentIdentifier | string(64)? | | Reserved for the deferred Pi agent |
 | CharactersPerLine | int | 48 | Font A on 80 mm paper |
@@ -653,9 +685,37 @@ Invariants:
 | LastDetail | string(200) | |
 | LastChangedAtUtc, LastHeardFromAtUtc | DateTime | |
 
+**Two locations may point at one printer, and that is the answer to a dead printer.**
+
+There is no fallback printer field, no secondary printer, and no automatic rerouting anywhere in this
+product. What exists instead is that a location's printer configuration is an address the admin can
+change at any time, including to an address another location is already using. When the marquee bar's
+printer dies, the admin puts the kitchen printer's address into the marquee bar's configuration, and
+from that moment both stations' slips come off the kitchen machine, interleaved. Somebody carries the
+bar's slips thirty metres, which is exactly the process the department ran before there was software.
+
+What that configuration means concretely:
+
+* **The two locations keep separate sequence numbering.** `LocationSequenceNumber` is allocated per
+  location (section 4.1) and nothing about it looks at printers. The kitchen's slips still run 41, 42,
+  43 and the bar's still run 17, 18, 19 on the same roll, so each station's gap detection keeps working
+  on its own numbering exactly as before. Section 4.2 states this as a rule rather than leaving it as a
+  consequence somebody has to derive.
+* **One machine still means one connection.** The worker in section 7.3 is started per distinct printer
+  endpoint rather than per location, so two locations sharing an address share one worker and one
+  socket. This is the whole reason that rule is written the way it is.
+* **Which station a slip is for is unmistakable on the paper.** The station name is the first thing on
+  the slip, centred, bold, and at double width and double height (section 7.7), so it is legible from
+  across a marquee before anybody reads a single item. That was already true of every slip and no change
+  to the layout is needed for this case.
+* **The admin screen says so on both locations**, with `admin.printers.shared`, so a shared address
+  reads as a decision somebody made rather than as two rows that happen to look alike.
+
 Invariants:
 
 * Status is written only by that printer's worker, so there is one writer per row and no contention.
+  When two locations share a printer, one worker writes both `PrinterStatus` rows from the one socket
+  it owns, so the two rows agree and there is still exactly one writer each.
 * Every status change pushes a SignalR event. Clients never poll for printer state.
 
 ### 2.13 NumberCounter
@@ -667,11 +727,25 @@ relationship instead of a naming convention. See section 4.
 |---|---|---|
 | CounterKind | string(20) | `GlobalOrder`, `LocationSequence`, or `PrinterProcessId`. Part of the primary key. |
 | EventSessionId | Guid? | Set for `GlobalOrder` and `LocationSequence`, null for `PrinterProcessId`. Part of the primary key. |
-| ProductionLocationId | Guid? | Set for `LocationSequence` and `PrinterProcessId`, null for `GlobalOrder`. Part of the primary key. |
+| ProductionLocationId | Guid? | Set for `LocationSequence`, null for `GlobalOrder` and `PrinterProcessId`. Part of the primary key. |
+| PrinterEndpointKey | string(96)? | Set for `PrinterProcessId`, null for the other two. Part of the primary key. |
 | NextValue | int | |
 
 `PrinterProcessId` lives here rather than in memory because a counter that restarts at 1 after a crash
 can match a stale echo, and a stale match reports a lost slip as printed.
+
+**The process id counter belongs to the printer, not to the location**, which is why its key is the
+endpoint and not a location id. Two locations sharing one machine (section 2.12) share one counter, and
+they have to. Two independent counters feeding one socket can hand out the same value twice: a job that
+timed out at 90 seconds can have its echo arrive late while the next job is already waiting for an
+echo, and if that next job came from the other location's counter with the same number, the worker would
+accept the dead job's echo as the live job's confirmation and report a lost slip as printed. One counter
+per socket makes that arithmetically impossible.
+
+`PrinterEndpointKey` is the canonical form of the endpoint, `TransportKind|Host|Port|AgentIdentifier`,
+with the empty string for the parts a transport does not use. It is a string because an endpoint has no
+id of its own, it is built in one place alongside the worker that uses it, and it is never parsed back
+apart.
 
 ---
 
@@ -681,6 +755,33 @@ Two state machines exist, plus one projection. The ticket state is a machine dri
 human answers. The print job state is the machine that touches hardware. The order status is not a
 machine at all: it is recomputed from the ticket states, and section 3.1 gives the table that computes
 it.
+
+### 3.0 The principle every rule in this section follows
+
+**If we know why a slip is not printing, the system waits and says why. It gives up only when nobody
+knows what is happening.**
+
+Paper out, an open cover, a station switched off at the laptop, and a test printer that cannot write
+its folder are known causes. Each one names a thing a person can do, each one is already being walked
+towards by the time the message lands, and the slip prints by itself the moment somebody acts. A
+printer that has stopped answering, or one that answers and has stopped making sense, is a different
+kind of event: nobody knows what is wrong, nobody is walking anywhere, and the order has to be carried
+to the station by a human before the food is late.
+
+Earlier drafts of this document treated those two the same. Both ran the same five minute clock, and
+both ended in the same "the order failed" message on the same phones. That is wrong in both directions
+at once. It cries wolf during an ordinary paper change, which is roughly a minute of work at a station
+where somebody is already holding the new roll, and after two of those an evening the crew learns that
+the failure message means nothing. Where the concrete rules below differ from each other, this is the
+difference they are expressing:
+
+| | Cause known and fixable | Cause unknown |
+|---|---|---|
+| Examples | Paper end, cover open, station disabled, the mock's folder unwritable | Unreachable, timing out, two unknown outcomes in a row, a mechanical error |
+| The give-up window | Suspended, because giving up would be wrong | Running |
+| What the phone says | The cause and the one action that fixes it, plus that the slip prints by itself afterwards | To carry the order to the station in person |
+| What escalates | Visibility: the count of waiting slips on every phone's station banner, and a named row in the admin overview | The ticket itself, to `Failed` |
+| What stops it parking forever | The outer bound in section 3.2, which no cause suspends | The give-up window |
 
 ### 3.1 Order status, a projection of its tickets
 
@@ -749,12 +850,15 @@ stateDiagram-v2
     Queued --> Blocked : pre-flight status says paper end or cover open
     Blocked --> Queued : printer reports paper loaded and cover closed
     Queued --> Failed : the give-up window expired
-    Blocked --> Failed : the give-up window expired
+    Queued --> Failed : the outer bound was reached
+    Blocked --> Failed : the outer bound was reached
     Unknown --> Printed : a human answered that the slip is on the pile
     Unknown --> Queued : a human answered that the slip is missing, reprint queued
     Failed --> Queued : a human asked for a reprint
     Failed --> HandledOnPaper : station staff acknowledged it on the break-glass page
     Unknown --> HandledOnPaper : station staff acknowledged it on the break-glass page
+    Blocked --> HandledOnPaper : acknowledged at a station that cannot print
+    Queued --> HandledOnPaper : acknowledged at a station that cannot print
     Printed --> Queued : a human asked for a reprint
     PrintedOnTestPrinter --> Queued : a human asked for a reprint
     Printed --> [*]
@@ -769,23 +873,72 @@ stateDiagram-v2
 | `Printed` | The printer echoed the process id, or a human confirmed the slip is on the pile. |
 | `PrintedOnTestPrinter` | The station is on the test printer. The slip exists as a file on the laptop and nowhere else. |
 | `Unknown` | Bytes were written and the outcome is genuinely not knowable from here. |
-| `Failed` | Nothing was sent and the give-up window expired. The reason says whether the printer was unreachable, switched off, or declared faulty. |
-| `HandledOnPaper` | The station saw the order on the break-glass page and is producing it. The slip will not be chased any further. |
+| `Failed` | Nothing was sent, and either the give-up window expired or the ticket hit the outer bound. The reason says whether the printer was unreachable, switched off, out of paper, or declared faulty. |
+| `HandledOnPaper` | The station saw the order on the break-glass page and is producing it. The slip will not be chased any further, and no job for it will ever be sent. |
 
 **The give-up window is 5 minutes, and it runs from `LocationTicket.CreatedAtUtc`, not from the first
 attempt.** That distinction matters: a ticket queued behind twenty others at a station that answers
-slowly is failing from the guest's point of view whether or not the worker has reached it yet. Before
-the window expires the phone shows "Wird gedruckt". After it expires the phone shows the failure with
-its cause and its next step. Five minutes was chosen because it is roughly how long a volunteer takes
-to walk to the bar and back, so a ticket that recovers on its own recovers before anyone acts on the
-message.
+slowly is failing from the guest's point of view whether or not the worker has reached it yet. Five
+minutes was chosen because it is roughly how long a volunteer takes to walk to the bar and back, so a
+ticket that recovers on its own recovers before anyone acts on the message.
 
-**Nothing parks forever.** A ticket at a switched off station, a ticket behind a jam, and a ticket at a
-station nobody has looked at since 21:00 all reach `Failed` when the window expires, with
-`FailureReason` naming which of those it was. The phone then carries a message with an action in it,
-the admin overview counts them, and the order shows up in the attention filter. A ticket that never
-leaves `Queued` and a phone that says "Wird gedruckt" all evening is the exact shape of a silently
-dropped order, and the window is what makes it impossible.
+**The window does not run while the cause is known.** This is section 3.0 as a concrete rule. The clock
+is suspended for a ticket whose station is held by one of these four conditions, and it resumes the
+moment the condition clears without the elapsed time being reset:
+
+| Condition | How it is read |
+|---|---|
+| Paper end | `PrinterStatus.IsPaperEnd` |
+| Cover open | `PrinterStatus.IsCoverOpen` |
+| Station switched off at the laptop | `PrinterConfiguration.IsEnabled` is false |
+| The test printer's folder cannot be written | `PrinterStatus.IsInErrorState` on a `Mock` transport |
+
+Every other reason a slip has not printed runs the clock: unreachable, timing out, a station declared
+faulty, and a mechanical error the printer reports. The concrete failure the suspension prevents is
+ordinary: the paper runs out, somebody walks off to find a roll, and at a busy bar the next four
+minutes bring another ten orders. Under the old rule all of them reached `Failed` and ten servers were
+told their order had failed, sixty seconds before the roll went in and all ten printed correctly.
+
+**The outer bound is 20 minutes from `LocationTicket.CreatedAtUtc`, and no cause suspends it.** A
+ticket that reaches 20 minutes goes to `Failed` whatever is holding it, with `FailureReason` naming the
+cause, and the phone gets `ticket.failedAfterWaiting`, which tells the server to announce the order at
+the station in person. Twenty minutes is longer than a paper change takes even when the roll has to be
+fetched from a car, and it is shorter than the time a guest waits before asking where the food is, so a
+ticket that fails at the bound still fails early enough for the walk to be worth making.
+
+**Escalation between five minutes and the bound is visibility, not failure.** A ticket whose cause is
+known and unfixed does not stay quiet while it waits:
+
+1. **From the moment it blocks.** The ticket is `Blocked`, its order is `NeedsAttention` by row 1 of
+   section 3.1, and the phone shows the cause with the one action that fixes it and the sentence that
+   the slip prints by itself afterwards. Nothing about this is new.
+2. **Past five minutes.** Every phone's station banner gains the count of slips waiting at that station
+   (`header.stationWaiting`), and the admin overview gains a row naming the station, the count and how
+   long they have waited (`admin.overview.stationBlocked`). The station's own break-glass page has been
+   listing them since they were accepted (section 5.6).
+3. **At twenty minutes.** `Failed`, on every affected phone, with the walk-over message.
+
+**Nothing parks forever, and the outer bound is what guarantees it.** A ticket at a switched off
+station, a ticket behind a jam, and a ticket at a station nobody has looked at since 21:00 all reach
+`Failed`. A ticket that never leaves `Queued` while a phone says "Wird gedruckt" all evening is the
+exact shape of a silently dropped order, and suspending the give-up window would have reintroduced it
+had the bound not been specified in the same breath.
+
+**A ticket is never handled by a human and printed by a machine as well.** The moment a ticket leaves
+`Queued` or `Blocked`, any job still queued for it is dead: section 7.4 step 2 re-reads the ticket
+inside the transaction that claims the job, and a job whose ticket has moved on ends `Failed` with
+`FailureReason: TicketResolvedByHuman` and zero bytes written. The race in the other direction is
+closed by the claim itself, which sets the ticket to `Printing` in that same transaction. So either the
+human wins and the worker finds the ticket already resolved, or the worker wins and the human's
+acknowledge gets a 409 saying the slip is printing. There is no window between the two, which is what
+keeps a recovering printer from putting a second copy of an order onto a pile that a station is already
+cooking from.
+
+`HandledOnPaper` reached from `Unknown` is the one case where a slip may physically exist, and that is
+the station's own judgment rather than a gap in this rule: the station looked at its pile, found
+nothing, and is making the order from the screen. It is the same answer as "the slip is missing" with
+the reprint declined, and no reprint is queued. Reprint is not offered from `HandledOnPaper` at all
+(section 5.4).
 
 ### 3.3 PrintJob
 
@@ -806,8 +959,10 @@ stateDiagram-v2
     AwaitingEcho --> Unknown : socket dropped
     AwaitingEcho --> Unknown : 90 second job timeout expired
     Queued --> Failed : give-up window expired without reaching the printer
-    Blocked --> Failed : give-up window expired
+    Blocked --> Failed : give-up window expired or the outer bound was reached
     Queued --> Failed : the station was declared faulty
+    Queued --> Failed : its ticket is no longer waiting for it
+    Blocked --> Failed : its ticket is no longer waiting for it
     Unknown --> ResolvedPrinted : human answered that the slip is there
     Unknown --> ResolvedMissing : human answered that the slip is missing
     Confirmed --> [*]
@@ -819,6 +974,14 @@ stateDiagram-v2
 Every state in this machine has at least one producer and at least one way out. An earlier draft
 declared a `Cancelled` outcome in four separate places without a single transition that could reach it,
 which is how a state that nothing can enter survives review.
+
+**The two `SocketDropped` arrows are drawn separately and end in the same place on purpose.** A drop
+during `PreflightCheck` and a drop during `Sending` before the first byte are different events on the
+wire and are recorded as such: `PrintAttempt.Phase` carries which one it was, so the log answers "where
+was it when the marquee's WiFi went" without guessing. Neither one changes what the system does,
+because the only fact that decides whether a retry is safe is `BytesWritten`, and it is zero in both.
+Section 7.6 states that as a rule, and its table maps by outcome and byte count rather than by phase
+for exactly that reason.
 
 ### 3.4 The unknown outcome, stated directly
 
@@ -858,15 +1021,17 @@ state; it does not report job history. So:
 | What went wrong | Bytes written | Automatic retry | Ticket state | What the server is told |
 |---|---|---|---|---|
 | Printer not reachable on the network | 0 | Yes, with backoff, until the give-up window | `Queued`, then `Failed` | The station is not answering, with what to do next |
-| Paper end or cover open found before sending | 0 | Yes, as soon as the printer reports it is ready | `Blocked` | Which station, what is wrong, and that it prints by itself afterwards |
+| Paper end or cover open found before sending | 0 | Yes, as soon as the printer reports it is ready | `Blocked`, and `Failed` only at the 20 minute outer bound | Which station, what is wrong, and that it prints by itself afterwards. The give-up window does not run, because the cause is known. |
 | Socket dropped before the first byte | 0 | Yes, with backoff | `Queued` | Nothing, unless the give-up window expires |
 | Socket dropped part way through the write | > 0 | Never | `Unknown` | The question in section 8.8 |
 | 90 second timeout with no echo | > 0 | Never | `Unknown` | The question in section 8.8 |
 | Paper ran out part way through a job | > 0 | Never | `Unknown` | The question, plus the note that the printer has no paper |
 | Printer reports a mechanical error | Either | Never | `Unknown` if bytes were written, otherwise `Blocked` | The station name and to fetch someone who can look at the printer |
-| Two jobs in a row end `Unknown` at one station, or its queue reaches ten | 0 for the queued ones | No, the station is declared faulty | `Failed` for every waiting ticket, at once | To announce the order at the station in person, on every affected phone at the same time |
+| Two jobs in a row end `Unknown` at one station | 0 for the queued ones | No, the station is declared faulty | `Failed` for every waiting ticket, at once | To announce the order at the station in person, on every affected phone at the same time |
+| Many slips waiting at one station | 0 | Yes, nothing about a queue changes behaviour | Unchanged | The count, in the station banner and the admin overview. A queue is information, never a trigger. |
 | Backend restarted mid-job | Unknown | Never | `Unknown` on recovery | The question, on the next connect of that phone |
-| Station is disabled in configuration | 0 | Held, then the window expires | `Queued`, then `Failed` | That the station is switched off, and after five minutes that the order has to be announced in person |
+| Station is disabled in configuration | 0 | Held until it is switched on again | `Queued`, and `Failed` only at the 20 minute outer bound | That the station is switched off. The give-up window does not run, because the cause is known. |
+| A human took the ticket on the break-glass page while a job was queued for it | 0 | No, the job ends `Failed` with `TicketResolvedByHuman` | `HandledOnPaper` | That the station has taken the order from the screen and no slip will be printed |
 | Station is on the test printer during a real event | all | No | `PrintedOnTestPrinter` | That the order went to the test printer and no slip is on the pile |
 
 ### 3.6 A guest changes their mind
@@ -913,11 +1078,11 @@ Two numbers appear on every slip. Both matter, and they do different jobs.
 
 Counters live in the `NumberCounter` table, keyed by kind and by the ids the counter belongs to:
 
-| CounterKind | EventSessionId | ProductionLocationId | Counts |
-|---|---|---|---|
-| `GlobalOrder` | set | null | Global order numbers |
-| `LocationSequence` | set | set | That location's sequence numbers |
-| `PrinterProcessId` | null | set | ESC/POS process ids for that printer, cycling 1 to 9999 |
+| CounterKind | EventSessionId | ProductionLocationId | PrinterEndpointKey | Counts |
+|---|---|---|---|---|
+| `GlobalOrder` | set | null | null | Global order numbers |
+| `LocationSequence` | set | set | null | That location's sequence numbers |
+| `PrinterProcessId` | null | null | set | ESC/POS process ids for one printer, cycling 1 to 9999. Two locations sharing a machine share this row, and section 2.13 says why they have to. |
 
 The key is composite rather than a formatted string. An earlier draft built a string like
 `session:{guid}:location:{guid}`, which is 90 characters and did not fit its own 80 character column,
@@ -959,6 +1124,11 @@ mechanism is dead. Four rules keep that true:
   paper-out condition stops everything. Without this rule a pile could read 41, 43, 44 and then 42 a
   minute later, which teaches a station to wait and see, and waiting and see is the same behaviour as
   ignoring gaps.
+* **Sequence numbering is per location and knows nothing about printers.** When two locations share one
+  machine (section 2.12), the roll carries `BON 041`, `BON 017`, `BON 042` interleaved, and each
+  station's gap detection still works on its own run of numbers because each station only ever sorts
+  its own slips. The station name at the top of each slip is what tells the person at the printer which
+  pile it belongs on, and the numbers do the rest once it is on the right pile.
 
 Because there is no cancellation and no deletion, a committed number always has a slip behind it. Every
 gap in a pile means one thing and only one thing: that slip did not come out, and the admin order list
@@ -1001,7 +1171,7 @@ address live in one configuration object so a later move to HTTPS is a setting r
 |---|---|---|
 | Server phones | `/api/...` | `Authorization: Bearer <TokenLookupId>.<secret>`. The backend splits on the dot, loads the one device row by `TokenLookupId`, and verifies the secret with PBKDF2 using that row's stored salt, iteration count, and algorithm. A revoked device is rejected. |
 | Admin | `/api/admin/...` | The request must arrive from the laptop itself: the loopback interface, or one of the addresses this process is bound to. No password exists because nobody would manage one. Requests to admin paths from any other address get 404, not 403, so a phone browsing the site learns nothing. |
-| Station break-glass | `/api/station/{accessKey}/...` | The 32 character access key in the path is the whole credential. It grants read access to that one location's tickets that need a human and the ability to acknowledge one. |
+| Station break-glass | `/api/station/{accessKey}/...` | The 32 character access key in the path is the whole credential. It grants two things and nothing else: **reading the open tickets of any production location**, and acknowledging a ticket whose station cannot print. Section 5.6 gives both rules exactly, including why reading is not scoped to the key's own location and why acknowledging is scoped much more tightly than reading. |
 | Enrolment and health | `/api/enrolment/redeem`, `/api/health` | Anonymous, rate limited |
 
 Loopback only for the admin API is the right trade for version 1. It replaces a credential nobody would
@@ -1137,9 +1307,24 @@ Device auth. One call, everything the ordering screen needs.
 `locationIds` holds the item's active candidate locations, always at least one. An item with exactly
 one is routed silently. An item with more than one makes the phone ask, once, as the line is added.
 
-The phone caches this in memory and refetches when the `CatalogChanged` SignalR event arrives. The
-candidate list is used on the phone for display and for the question, and the routing is recomputed on
-the backend at acceptance, which is authoritative.
+**What the payload contains, and the two item states it distinguishes** (section 2.5):
+
+* **Deactivated items (`IsActive` false) are not in the payload at all.** They are not on this
+  festival's menu, so there is nothing for the phone to draw.
+* **Sold-out items (`IsAvailable` false) are in the payload, with `isAvailable: false`.** The phone
+  draws them greyed and not selectable with the reason underneath (section 8.6). Leaving them out would
+  make a server hunt for an item that was on the screen a minute ago.
+
+**Prices come from here and from nowhere else.** `priceCents` is the backend's current price, and it is
+what the phone displays and what the phone adds up. The phone never sends a price, never proposes one,
+and has no field in which it could: the request body in section 5.4 carries item ids and quantities.
+The total stored on an order is computed by the backend from its own prices at acceptance, so a phone
+holding a stale catalog produces a stale number on a screen and never a stale number in the database.
+
+The phone caches this in memory and refetches when the `CatalogChanged` SignalR event arrives, which is
+what keeps an open basket current when a price is edited or an item sells out mid-order. The candidate
+list is used on the phone for display and for the question, and the routing is recomputed on the
+backend at acceptance, which is authoritative.
 
 ### 5.4 Orders (server phones)
 
@@ -1175,6 +1360,15 @@ assigned locations.
 anything. It exists so that a price the admin edited after the phone last fetched the catalog cannot
 pass unnoticed by everybody, which is what happens when the backend simply recomputes and stores its
 own answer.
+
+**`expectedTotalCents` is a comparison value and nothing else, and an implementer must not be able to
+read it any other way.** It is compared against the recomputed total, echoed back in the response so
+the phone can show the difference, and then discarded. It is not stored on the order, not stored on any
+line, and it never contributes a cent to `Order.TotalCents`. **The phone never sends a price and never
+influences one.** There is no price field anywhere in this request: a line carries an item id, a
+quantity, an optional note and an optional station, and the money comes from `CatalogItem.PriceCents`
+as the backend reads it inside the acceptance transaction. A request whose `expectedTotalCents` is
+absent, zero, or wildly wrong is accepted exactly like any other, at the backend's own total.
 
 Response 201:
 
@@ -1229,11 +1423,22 @@ than the order.
 is, which is forever: orders are never deleted, so the protection never expires and no cleanup job has
 to be written or remembered.
 
-An item that is sold out or has been deactivated since the catalog was fetched is **accepted**, not
-rejected. The guest has already ordered it and the server has already read the total aloud. Only an
-item id that does not exist at all is a 422, and that is a broken client rather than a guest.
+**An item that went sold out, or was deactivated, after the catalog was fetched is accepted, not
+rejected.** The guest ordered it, the server read the total aloud, and the cash may already be in their
+apron. The split of sold out from deactivated in section 2.5 changes nothing here: both states are
+accepted at submission, and neither one is ever a reason to refuse an order. **Only an item id that
+does not exist at all is a 422**, and that is a broken client rather than a guest.
+
+The server usually learns before they send rather than after, because `CatalogChanged` reaches the open
+basket and flags the line while they are still standing at the table (section 8.6). When they send it
+anyway, which is the right thing to do, the accepted consequence is stated plainly: **a slip can print
+for something the kitchen has run out of, and the station sends word back with the tray.** That is what
+happens with a paper order pad today, and no software can prevent it, because the only place the
+information exists at the moment of the order is in the kitchen.
 
 An unreachable printer never produces an error here. The order is accepted and the print state follows.
+**No property of any printer or station is ever a reason to reject, delay, or hold an order at this
+endpoint**, and section 3.1 states the same rule from the order's side.
 
 #### GET /api/orders/mine
 
@@ -1342,9 +1547,15 @@ addresses.
 | GET | /api/admin/items | | 200 list with assignments |
 | POST | /api/admin/items | `{name, categoryName, priceCents, sortOrder, locationIds[]}` | 201, 422 when `locationIds` is empty |
 | PUT | /api/admin/items/{id} | same | 200, 422 when `locationIds` is empty |
-| POST | /api/admin/items/{id}/availability | `{isAvailable}` | 200, pushes `CatalogChanged` |
-| POST | /api/admin/items/{id}/deactivate | | 200, or 409 while a non-practice session is active |
+| POST | /api/admin/items/{id}/availability | `{isAvailable}` | 200, pushes `CatalogChanged`. The sold-out toggle. Never refused, in either direction, at any time. |
+| POST | /api/admin/items/{id}/deactivate | | 200, or 409 while a non-practice session is active, naming the sold-out toggle as tonight's tool |
 | POST | /api/admin/catalog/import | CSV upload | 200 with a per-row result list, 422 with row numbers and reasons |
+
+**The two item states are two endpoints on purpose.** `availability` is the sold-out toggle: one call,
+one field, no confirmation step, and it is what the admin screen's toggle sends on each tap (section
+8.9). `deactivate` takes an item off this festival's menu and is refused during a live event. Section
+2.5 gives the table of who sets which one and when, and no screen or endpoint in the product treats
+them as one concept.
 
 `locationIds` is the whole assignment. There is no priority field: with more than one candidate the
 server chooses, and the only automatic ordering left is `ProductionLocation.SortOrder`, which is what
@@ -1397,10 +1608,17 @@ that every phone scans the new QR code, and orders queued on the old address are
 | Method | Path | Body | Response |
 |---|---|---|---|
 | GET | /api/admin/printers | | 200 configuration plus live status per location |
-| PUT | /api/admin/printers/{locationId} | full configuration | 200. Changing the transport restarts that location's worker. |
+| PUT | /api/admin/printers/{locationId} | full configuration | 200. Changing the endpoint restarts the workers on both sides of the change. **An address another location already uses is accepted**, and the response says which locations now share it. |
 | POST | /api/admin/printers/{locationId}/test-print | | 202. Prints a test slip naming the location, the current time, and carrying the station card's QR code. Section 7.7 gives the command sequence for that QR code. |
 | POST | /api/admin/printers/{locationId}/reconnect | | 202. Also clears `IsFaulty`, which is how a human ends a circuit breaker. |
 | POST | /api/admin/printers/discover | | 202, then `PrinterDiscovered` events. Scans the laptop's own /24 for open port 9100 and reports what answered. |
+
+**Pointing a station at another station's printer is the product's answer to a dead printer**, and it
+is this endpoint and nothing more. There is no fallback printer field to fill in beforehand and no
+automatic rerouting, because both would have to guess during the one minute of the evening when nobody
+wants a guess. What the admin does instead is type the working printer's address into the broken
+station's configuration, which takes about as long as reading it off the other row. Section 2.12
+describes what the configuration then means, and checklist step 21 is how a volunteer is told to do it.
 
 Discovery exists because the two checklist steps most likely to go wrong on site are holding a feed
 button while powering a printer on, reading an IP address off a self test, and typing it in, once per
@@ -1432,11 +1650,27 @@ ready, and the slips parked behind it print without anybody re-sending anything.
 | GET | /api/admin/orders | `?status=&locationId=&since=&search=` | 200 |
 | POST | /api/admin/orders/{id}/tickets/{ticketId}/resolve | `{slipIsOnThePile}` | 200. The laptop's answer to the `Unknown` question, for the evening when the placing server's phone is flat, lost, or in a pocket at the far end of the marquee. |
 | POST | /api/admin/orders/{id}/tickets/{ticketId}/reprint | | 202 |
-| GET | /api/admin/orders/{id}/print-history | | 200 with jobs and attempts, including the technical detail |
+| GET | /api/admin/orders/{id}/print-history | | 200 with jobs and attempts, including `PrintAttempt.TransportDetail` and `Phase`. See the boundary note below. |
 | GET | /api/admin/export/orders.csv | | 200 CSV of the session, for the treasurer to look at afterwards |
 | POST | /api/admin/backup | | 200 `{fileName}`. Runs `VACUUM INTO` a dated file next to the database. |
 | GET | /api/admin/diagnostics | | 200 with version, database path, database size, uptime, listening addresses, per printer status, and the path of the log file |
 | GET | /api/admin/log | | 200, the current rolling log file as plain text, so the question "the marquee bar got nothing all evening, why" has an artifact to answer it |
+
+**Where the technical detail may and may not go.** `PrintAttempt.TransportDetail` holds socket error
+text, and section 2.11 says it is never shown raw to a server. The print-history endpoint above is the
+one place in the product that serializes it, which is compatible with that rule because this path is
+served only to the laptop and read by the person diagnosing the evening, not by a server holding a
+phone. The boundary is worth stating as a rule rather than leaving to an implementer's judgment, since
+the obvious shortcut is to reuse one ticket serializer for both audiences:
+
+* **Admin, on the laptop:** the print-history response, the diagnostics response, and the log file may
+  carry transport text in full.
+* **Everything a device can reach:** every `/api/orders` response, every `/api/station` response, and
+  every SignalR payload carry a `messageKey` and its parameters and never a transport string, in raw or
+  summarized form. The client renders the sentence from its own resource file in its own language.
+
+A failure that has no message key is a failure nobody wrote a sentence for, and the answer is to write
+the sentence, never to fall back to the socket error.
 
 **CSV formats.** Both files are UTF-8 **with a byte order mark** and use the semicolon as the delimiter,
 because the audience opens them in German Excel, where a comma delimited file lands in one column and a
@@ -1457,27 +1691,81 @@ when any row fails.
 ### 5.6 Station break-glass endpoints
 
 Nobody opens these in normal operation. They exist for the evening when a printer dies and food still
-has to be produced.
+has to be produced, and on that evening the station has to be able to work the whole pile off a phone
+screen rather than only the slips that happened to fail.
 
 | Method | Path | Response |
 |---|---|---|
 | GET | /station/{accessKey} | The single page app shell, in station mode |
-| GET | /api/station/{accessKey}/tickets | 200 with the tickets at that location that need a human, oldest first, each with its sequence number, order number, table label, lines, and note |
-| POST | /api/station/{accessKey}/tickets/{ticketId}/acknowledge | 200, moving the ticket to `HandledOnPaper`. 409 with a stated reason when the ticket is not in a state that needs a human. |
-| GET | /api/station/{accessKey}/status | 200 with that location's printer status |
+| GET | /api/station/{accessKey}/locations | 200 with the active production locations and, for each, whether its printer can print right now. This is the filter's contents. |
+| GET | /api/station/{accessKey}/tickets | 200 with the open tickets, oldest sequence number first. `?locationId=` selects one location and defaults to the key's own. |
+| POST | /api/station/{accessKey}/tickets/{ticketId}/acknowledge | 200, moving the ticket to `HandledOnPaper`. 409 with a stated reason when the ticket's station can print. |
+| GET | /api/station/{accessKey}/status | 200 with the selected location's printer status |
 
-**Which tickets "need a human" is decided on the server, not by wording on the page.** The list is:
-tickets in `Failed`, `Unknown`, or `Blocked`, plus tickets in `Queued` whose printer has been offline
-for longer than the give-up window. Nothing else appears, and the acknowledge endpoint refuses anything
-else with a stated reason.
+**The list is every open ticket, not only the broken ones.** A ticket is open when its status is
+anything other than `Printed`, `PrintedOnTestPrinter` or `HandledOnPaper`, which is to say `Queued`,
+`Blocked`, `Printing`, `Unknown` and `Failed`. When a printer has died and no spare exists, the kitchen
+opens this page on somebody's phone and produces the orders straight off it, writing the table number
+on a scrap of paper and sending it out with the food. That only works if every order is on the screen,
+so every order is.
 
-That rule is the whole safety of this page. If the list contained every `Queued` ticket, then in normal
-operation a row would appear for every order for the second or two before it comes off the printer, a
-helper who had the page open for an unrelated reason would tap "Übernommen" to tidy the screen, and
-that order would be marked as handled, never printed, and reported to the placing server as a normal
-successful outcome. The gap in the pile would have no explanation. It also keeps the page genuinely
-empty during a working evening, which is the only thing that stops it from quietly becoming the kitchen
-display system that section 1.5 refuses.
+Each row carries what a person needs to make and label the food, and nothing else: the slip number, the
+order number, the table label, every line with its quantity and any line note, the order note, and the
+time the order was taken. It is the same information as the printed slip, in the same order, because a
+station reading a screen and a station reading paper should not have to learn two layouts.
+
+**Filtering by production location, because a printer can move.** The filter exists for the
+configuration in section 2.12, where the admin has pointed a broken station at a working station's
+printer. The person standing at the kitchen printer is then pulling the bar's slips off the same roll
+and needs the bar's list, while holding a card that was printed for the kitchen. So a valid access key
+opens the page for the whole site and the filter chooses which location's tickets it shows, opening on
+the key's own location. That is a real widening of what one key grants, and it is taken deliberately:
+the alternative is a bar crew needing a second card that is taped inside a printer they cannot get to.
+The key still grants only reading and acknowledging, which is what it granted before.
+
+**Showing is always safe. Acting is what is dangerous.**
+
+That sentence is the whole safety of this page, and it replaces an earlier design that tried to buy
+safety by hiding rows. Hiding rows never was the protection: a helper cannot drop an order by reading
+about it. What drops an order is the acknowledge button, which marks a ticket as handled on paper,
+prints nothing, and reports a normal successful outcome to the placing server. Tapped on a live order
+at a healthy printer, to tidy a screen, it produces a gap in the pile that nothing can explain. So the
+button is what is restricted, and the list is not.
+
+**The acknowledge action is offered only for a ticket whose station genuinely cannot print right now.**
+The condition is evaluated on the server, and the page renders the button only when the server says so:
+
+> A ticket may be acknowledged when its own status is `Failed`, `Unknown` or `Blocked`, **or** when its
+> production location cannot print right now.
+>
+> A location cannot print right now when any of these holds: `PrinterStatus.IsFaulty`,
+> `PrinterStatus.IsOnline` is false, `PrinterStatus.IsPaperEnd`, `PrinterStatus.IsCoverOpen`,
+> `PrinterStatus.IsInErrorState`, or `PrinterConfiguration.IsEnabled` is false.
+
+Everything else is refused. `POST .../acknowledge` on a ticket at a working station answers **409 with
+`station.takeRefused`**, which tells the reader to fetch the slip at the printer and says that the
+printer is printing again. A ticket in `Printing` is refused by the same rule, and section 3.2 explains
+why that closes the race rather than merely narrowing it: claiming a job sets the ticket to `Printing`
+in the same transaction, so the human and the worker cannot both win.
+
+The two halves of the condition cover the two shapes of the problem. The ticket half catches a slip
+that failed at a station that is otherwise fine. The station half catches every slip queued behind a
+dead or blocked printer, including the ones still sitting in `Queued` because a `Blocked` job ahead of
+them is holding the machine: when the kitchen has decided to work off the screen, they need all of the
+orders and not only the one at the head of the queue.
+
+**Each ticket carries the decision rather than the page recomputing it.** The response gives every
+ticket a `canAcknowledge` boolean and, when it is false, the reason key to render under the row. The
+page never evaluates printer state itself. A rule that is enforced in one place and drawn in another
+drifts the first time somebody edits one of them.
+
+**The page is no longer empty during a working evening, and the old five minute delay is gone with
+it.** An earlier design listed a `Queued` ticket only once its printer had been offline for longer than
+the give-up window, which meant that a station whose printer had just died watched an empty screen for
+five minutes with the food waiting. Tickets now appear the moment they are accepted, and what keeps
+this from becoming the kitchen display system that section 1.5 refuses is not an empty list: it is that
+there is no button to press while the printer works, and that the station is reading paper because
+paper is faster than a phone.
 
 An unknown or regenerated access key returns 404 with a message telling the reader to ask the person at
 the laptop for the current link. The station card printed on the test slip means that link is usually
@@ -1511,12 +1799,12 @@ connects with its access key instead. The admin connects from the laptop.
 
 | Event | Payload | Sent to | What the client does |
 |---|---|---|---|
-| `OrderAccepted` | `{orderId, globalOrderNumber, tableLabel, totalCents, tickets[]}` | `person:{placing}`, `admin` | The phone adds the order to its list. The admin list gains a row. |
+| `OrderAccepted` | `{orderId, globalOrderNumber, tableLabel, totalCents, tickets[]}` | `person:{placing}`, `admin`, `station:{locationId}` of every ticket | The phone adds the order to its list. The admin list gains a row. The station page gains a row, because its list is every open ticket (section 5.6) rather than only the failed ones. |
 | `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, failureReason, printerHasPaper, messageKey, parameters}` | `person:{placing}`, `admin`, `station:{locationId}` | The phone updates that ticket's chip and, when the status needs a human, renders the message and its next step in its own language. The station page adds or removes a row. |
 | `OrderStatusChanged` | `{orderId, status}` | `person:{placing}`, `admin` | The phone updates the order's headline state. |
-| `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, lastDetail}` | `devices`, `admin`, `station:{locationId}` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. The admin printer screen updates its indicator. |
+| `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | `devices`, `admin`, `station:{locationId}` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. `waitingTicketCount` is appended to that banner with `header.stationWaiting`. The admin printer screen updates its indicator. The station page re-evaluates which rows offer the acknowledge button. |
 | `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap to fill in the address. |
-| `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out becomes unavailable in the picker, and any quantity already in the basket for it is flagged rather than silently dropped. |
+| `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out stays in the picker, greyed and not selectable, and any quantity already in the basket for it is flagged rather than silently dropped. A changed price is picked up the same way, which is what keeps an open basket showing the backend's current prices. |
 | `EnrolmentCodeRotated` | `{qrUrl, sixDigitCode, expiresAtUtc}` | `admin` | The enrolment screen swaps the QR image and the six digits, with the remaining seconds shown. |
 | `EnrolmentCompleted` | `{deviceId, displayName, serverPersonName}` | `admin` | The enrolment screen adds the newly set up phone to a live list so the admin can watch a crew do it during a briefing. |
 | `DeviceRevoked` | `{deviceId}` | `device:{deviceId}`, `admin` | The phone clears its token and shows the enrolment screen with an explanation. **The half-built order on screen is kept**, and comes back when the phone is set up again. |
@@ -1641,22 +1929,33 @@ Implementations:
 Serialization is structural, not advisory.
 
 * At startup, and whenever a printer configuration changes, the `PrinterFleet` service starts one
-  `PrinterWorker` per enabled production location and stops the worker of a disabled one.
+  `PrinterWorker` **per distinct printer endpoint** among the enabled production locations, and stops
+  a worker whose last location was disabled or moved elsewhere.
+* **One worker per printer, not per location, because two locations may share a machine** (section
+  2.12). Keying the worker on the location would put two workers and two sockets on one printer the
+  moment an admin points a broken station at a working one, and the hardware allows exactly one
+  printing connection at a time. A worker serves every active location whose configuration resolves to
+  its endpoint, writes each of their `PrinterStatus` rows from the one socket it owns, and allocates
+  from the one `PrinterProcessId` counter that belongs to that endpoint.
 * A worker owns a queue of print job ids with a single consumer. Because there is exactly one consumer
   and exactly one worker per printer, two jobs can never be in flight at the same printer.
-* **Jobs are attempted in `LocationSequenceNumber` order**, and a blocked job holds the station rather
-  than being overtaken by a later one. That is what the hardware does anyway, since a paper-out
-  condition stops everything, and it is what keeps a pile from reading 41, 43, 44 and then 42 a minute
-  later. A pile that heals itself teaches a station to wait and see, and waiting and seeing is the same
-  behaviour as ignoring gaps.
+* **Jobs are attempted in `LocationTicket.CreatedAtUtc` order**, and a blocked job holds the printer
+  rather than being overtaken by a later one. Within one location that is the same thing as
+  `LocationSequenceNumber` order, because sequence numbers are allocated at acceptance in creation
+  order, so each station's slips still reach its pile in an unbroken run. That is what the hardware
+  does anyway, since a paper-out condition stops everything, and it is what keeps a pile from reading
+  41, 43, 44 and then 42 a minute later. A pile that heals itself teaches a station to wait and see,
+  and waiting and seeing is the same behaviour as ignoring gaps. When two locations share a printer,
+  their slips interleave on the roll and each station's own run of numbers stays unbroken, which is the
+  rule stated in section 4.2.
 * The worker owns the connection. Nothing else in the process opens a socket to a printer. This is what
   keeps the "one connection at a time" rule true even while the admin runs a test print, which is why a
   test print is a `PrintJob` of kind `Test` rather than a side channel.
 * The worker keeps its session open between jobs, so `GS a` status arrives as a push rather than being
   discovered on the next job. The 90 second idle timeout is kept alive by the `DLE EOT n=4` heartbeat
   every 10 seconds.
-* **On startup the worker enqueues every ticket of that location that is `Queued` or `Blocked`,
-  regardless of which event session it belongs to**, oldest sequence number first. Scoping this to the
+* **On startup the worker enqueues every ticket of every location it serves that is `Queued` or
+  `Blocked`, regardless of which event session it belongs to**, oldest first. Scoping this to the
   current session would leave a ticket that was parked behind a paper-out when the next evening began
   invisible to the worker, invisible to the phone, and `Queued` in the database forever. Section 2.3
   also refuses to start a session while such a ticket exists, so the two rules cover the same hole from
@@ -1667,8 +1966,19 @@ Serialization is structural, not advisory.
 ### 7.4 The job sequence
 
 1. **Take the job.** Load the ticket, its order, and its lines in one query.
-2. **Check that the job is still wanted.** A job whose printer has since been declared faulty is left
-   for the circuit breaker in section 7.6 to resolve rather than attempted.
+2. **Claim the job, or discover that nobody wants it any more.** In one transaction, re-read the
+   ticket and move it from `Queued` or `Blocked` to `Printing`. Nothing is attempted outside that
+   claim, and this step is the one that makes a duplicate impossible:
+   * **The ticket is no longer waiting**, because a human answered a question, asked for something, or
+     took it on the break-glass page. The job ends `Failed` with `FailureReason: TicketResolvedByHuman`,
+     the attempt records zero bytes, and **the socket is not touched**. A printer that recovers after a
+     station has taken an order onto paper therefore prints nothing for it, which is what keeps a table
+     from being served the same order twice.
+   * **The claim succeeded.** The ticket is now `Printing`, and every endpoint that lets a human take a
+     ticket over refuses a `Printing` ticket with a 409. Neither side can act after the other has, and
+     there is no interval in which both can.
+   * **The printer has since been declared faulty.** The job is left for the circuit breaker in section
+     7.6 to resolve rather than attempted, and the ticket is not claimed.
 3. **Ensure the connection.** If no session is open, connect with `ConnectTimeout`. Failure marks the
    printer offline, pushes `PrinterStatusChanged`, leaves the job `Queued`, and schedules a reconnect
    with backoff 1, 2, 5, 10, 30 seconds, capped at 30.
@@ -1680,16 +1990,20 @@ Serialization is structural, not advisory.
 5. **Render.** Build the ESC/POS payload for this ticket in the language configured for the location.
    Rendering is pure and has no side effects, so it is unit tested byte for byte.
 6. **Take a process id.** The next value of that printer's `PrinterProcessId` counter, which lives in
-   `NumberCounter` and therefore survives a crash. A counter that restarted at 1 could match a stale
-   echo from a job sent before the restart, and a stale match turns a genuinely lost slip into a
-   reported success, which is worse than an honest `Unknown`.
+   `NumberCounter` keyed by the printer's endpoint and therefore survives a crash and is shared by two
+   locations on one machine. A counter that restarted at 1 could match a stale echo from a job sent
+   before the restart, and a stale match turns a genuinely lost slip into a reported success, which is
+   worse than an honest `Unknown`. **This is the first step at which `PrintJob.ProcessId` is anything
+   but null**, which is why the column is nullable: a job that ended at step 2 or step 4 was never sent
+   and has no legitimate value to hold, and a placeholder in that column would be a number a returning
+   echo could match.
 7. **Send.** Write the payload, then `GS ( H` requesting the process id response on print completion.
    Count bytes as they are written.
 8. **Wait for the echo,** up to `JobTimeout` (90 seconds). Receiving the matching process id **on the
    same socket that sent the job** is the only thing that produces `Confirmed`. An echo arriving on a
    reconnected socket is discarded.
-9. **Record the attempt** with its outcome, byte count, and the status snapshot at the end, then map to
-   the job and ticket states in section 3.
+9. **Record the attempt** with its outcome, the phase it ended in, its byte count, and the status
+   snapshot at the end, then map to the job and ticket states in section 3.
 10. **Push.** `TicketStatusChanged` and, if it changed, `OrderStatusChanged`.
 
 ### 7.5 Status handling
@@ -1729,6 +2043,14 @@ printer.**
 | `PrinterError` | 0 | yes, when the error clears | `Blocked` | `Blocked` |
 | `PrinterError` | > 0 | **never** | `Unknown` | `Unknown` |
 
+**The table maps by outcome and byte count, and deliberately not by phase.** A `SocketDropped` during
+`PreflightCheck` and a `SocketDropped` during `Sending` before the first byte are drawn as separate
+arrows in section 3.3 because they are separate events on the wire, and `PrintAttempt.Phase` records
+which one happened so the log can answer where the job was when the connection went. Neither one
+changes the row that applies, because the only fact that decides whether a re-send is safe is whether
+any byte reached the printer, and in both cases none did. A phase that changed an outcome would be a
+second rule competing with the sentence above it, and one of the two would eventually be wrong.
+
 The zero byte rows are the ones worth being explicit about. A socket that dies during the connect
 handshake or before the first write is a common event on festival WiFi. Treating that as `Unknown`
 would put a "walk to the kitchen and read the top of the pile" question on a phone several times an
@@ -1755,8 +2077,8 @@ seven separate "check the pile for Bon NNN" questions on four different phones, 
 queued long enough ago that the server has forgotten the table. Nobody has been told that the station
 itself is the problem.
 
-So the worker stops. When two consecutive attempts at one printer end `Unknown` or `Timeout`, or when
-its queue reaches ten waiting tickets, the worker:
+So the worker stops. **When two consecutive attempts at one printer end `Unknown` or `Timeout`**, the
+worker:
 
 1. Sets `PrinterStatus.IsFaulty` and pushes `PrinterStatusChanged`, which reaches every phone, the
    admin, and that station's break-glass page at once.
@@ -1766,9 +2088,28 @@ its queue reaches ten waiting tickets, the worker:
 3. Attempts nothing further at that station.
 
 A human ends it with the reconnect action on the printer screen, which clears `IsFaulty` and restarts
-the worker. The tickets are reprinted from the order list or taken at the station on paper. A queue
-depth of ten at a station that normally clears in two seconds is already a diagnosis, and saying so
-early is the whole point.
+the worker. The tickets are reprinted from the order list or taken at the station on paper.
+
+**Two consecutive unknown outcomes is the only trigger, and queue depth is deliberately not one.** An
+earlier draft also tripped the breaker at ten waiting tickets, and that rule was wrong in the way that
+matters most: it turned an ordinary paper change into a reported station fault. The paper runs out,
+somebody walks off to find a roll, and at a busy bar ten orders take four minutes. The breaker fired,
+ten tickets went to `Failed` in one transaction, and ten servers were told their order had failed
+sixty seconds before the roll went in and all ten printed correctly. A crew that is told that twice in
+an evening stops believing the message, and the message is the whole product. Depth is not a diagnosis
+either way: ten slips waiting at a station whose printer has no paper is exactly what a working system
+looks like at minute four of a paper change.
+
+The two-unknowns trigger stays exactly as it was, because it detects the one thing nothing else
+detects: a printer that answers and has stopped making sense. Section 3.0 is the general form of this
+distinction, and the breaker is where it bites hardest.
+
+**Depth is information, and it is shown as information.** The count of tickets waiting at a station
+rides on `PrinterStatusChanged` as `waitingTicketCount` and appears in two places: appended to the
+station banner on every phone with `header.stationWaiting`, so a banner reads "Der Drucker an der
+Station Theke innen hat kein Papier. Dort warten 8 Bons.", and on the admin overview and printer screen
+with `admin.overview.stationBlocked` and `admin.printers.waiting`. It changes nothing about what the
+worker does. Nothing in the system reads a queue depth and takes an action.
 
 ### 7.7 The slip
 
@@ -1792,13 +2133,22 @@ setting, defaulting to German, because a kitchen crew reads one language.
 |---|---|---|
 | Init | `ESC @`, `ESC t 19`, `GS a 15` | Reset, code page, enable status back |
 | Reprint banner, only on a reprint | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | `NACHDRUCK` / `REPRINT`, then the reprint time in normal size |
-| Location name | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | Up to 24 characters, truncated with a full stop if longer |
+| Location name | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | Up to 24 characters, truncated with a full stop if longer. **The intended station, and the first thing on every slip.** |
 | Sequence number | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | `BON 042` / `SLIP 042` |
 | Order header | `ESC a 0`, `GS ! 0x00`, `ESC E 1` for the number line | Order number, table, server, time |
 | Lines | `ESC a 0`, `GS ! 0x00` | Quantity, item, and any line note indented by four spaces |
 | Footer | `ESC a 0` | Item count, order note, the other stations this order went to, and the chosen station when it differs |
 | Station card, only on a test slip | `ESC a 1`, the `GS ( k` sequence below, `ESC a 0` | The QR code to this station's break-glass page, with the same URL underneath as text |
 | Finish | `ESC d 4`, `GS V 66 3` | Feed and cut |
+
+**The station name at the top is what makes a shared printer safe, and it needs no change to do it.**
+When two locations print on one machine (section 2.12), both stations' slips come off one roll
+interleaved, so the person tearing them off has to sort them without reading carefully. The location
+name is already the first region after the init sequence, centred, bold, and at double width and double
+height, which is 24 columns of 72 mm paper: `KÜCHE` and `THEKE ZELT` are legible across a marquee
+before anyone reads a single item line. Nothing in this layout was added for the shared case and
+nothing needs to be. The only slip that carries a different first line is a reprint, whose banner sits
+above the station name, and that banner is itself the warning it is meant to be.
 
 **The QR code on a test slip.** The test print in section 5.5 carries the station card, and that card,
 taped inside the printer lid, is the whole of how the 32 character `StationAccessKey` reaches the people
@@ -2015,9 +2365,12 @@ creates its location's folder and writes and deletes a probe file in it. If any 
 `PrinterStatus` goes offline with `IsInErrorState` set and `LastDetail` naming the full path and the
 reason the operating system gave, and every job at that station returns `PrinterError` with zero bytes
 written. That is the `PrinterError` with zero bytes row of the table in section 7.6, so the ticket goes
-`Blocked`, the phone is told the station needs a human, and the give-up window ends it in `Failed`
-rather than in silence. The admin printer screen shows `admin.printers.mockFolderUnwritable` with the
-path in it. Nothing is ever reported as printed when no file was written.
+`Blocked` and the phone is told the station needs a human. This is one of the four known causes in
+section 3.2, because the message names a folder and a person can move the program into one they are
+allowed to write: the give-up window is suspended while it holds, and the 20 minute outer bound ends it
+in `Failed` rather than in silence if nobody acts. The admin printer screen shows
+`admin.printers.mockFolderUnwritable` with the path in it. Nothing is ever reported as printed when no
+file was written.
 
 **A ticket printed by the mock reaches `PrintedOnTestPrinter`, never `Printed`.** That distinction is
 the whole defence against the trap in section 3.5: a station whose printer was never configured is
@@ -2177,6 +2530,18 @@ The settings button opens a sheet with the language choice and the name this pho
 Language is a device setting, so a server whose phone is set to English gets English from the app and
 in every message the laptop sends them.
 
+**`header.stationWaiting` is appended to whichever station banner is already showing**, rather than
+being a banner of its own. A station with a problem produces one banner, which names the station and
+the one thing to do about it, and the count of waiting slips is the second sentence of that banner:
+"Der Drucker an der Station Theke innen hat kein Papier. Dort warten 8 Bons." The count is what tells a
+server how much of the evening is parked behind the roll, and section 7.6 says why it is shown and
+never acted on. It appears once the station has been held for longer than the give-up window, so an
+ordinary two second queue never draws it.
+
+**Every string with a `{count}` placeholder is resolved through vue-i18n's plural forms**, so a count
+of one reads correctly in both languages rather than producing "1 Bons". The tables in this section
+give the general form, and the singular is written alongside it in the resource file.
+
 | Key | Deutsch | English |
 |---|---|---|
 | `header.reconnecting` | Keine Verbindung zum Laptop. Es wird weiter versucht. | No connection to the laptop. The app keeps trying. |
@@ -2185,6 +2550,7 @@ in every message the laptop sends them.
 | `header.stationPaperOut` | Der Drucker an der Station {name} hat kein Papier. | The printer at {name} has no paper. |
 | `header.stationOffline` | Die Station {name} antwortet gerade nicht. | Station {name} is not answering right now. |
 | `header.stationFaulty` | Sagen Sie an der Station {name} Bescheid. Der Drucker dort nimmt nichts mehr an. | Tell the people at {name}. The printer there is not accepting anything any more. |
+| `header.stationWaiting` | Dort warten {count} Bons. | {count} slips are waiting there. |
 | `header.settings` | Einstellungen | Settings |
 | `settings.title` | Einstellungen | Settings |
 | `settings.person` | Sie bedienen als {name}. | You are serving as {name}. |
@@ -2204,8 +2570,10 @@ in the dark.
   logical pixels with 8 pixels of spacing.
 * Tapping an item adds one. Once an item has a quantity, a minus button and the count appear in the
   button itself, so adding and removing never move the finger far.
-* An item that the admin marked unavailable is shown, greyed, not tappable, with its reason under the
-  name. Hiding it would make a server search for something that is not there.
+* **A sold-out item stays in the grid**, greyed, not tappable, with `catalog.soldOut` under the name.
+  Hiding it would send a server searching the categories for something that was there a minute ago. An
+  item that was deactivated at the laptop is a different thing and is not in the catalog at all
+  (section 2.5), because it is not on this festival's menu.
 * A banner at the top when a station has no paper, is not answering, or has been declared faulty.
 * The basket bar at the bottom, always visible, showing the number of items, the running total, and the
   button to the summary.
@@ -2225,7 +2593,7 @@ a setting they never set.
 |---|---|---|
 | `catalog.title` | Bestellung aufnehmen | Take an order |
 | `catalog.searchPlaceholder` | Artikel suchen | Search for an item |
-| `catalog.unavailable` | Heute nicht mehr verfügbar | Not available any more today |
+| `catalog.soldOut` | Ausverkauft | Sold out |
 | `catalog.lineNote` | Hinweis für diese Position | Note for this item |
 | `catalog.lineNotePlaceholder` | Zum Beispiel: ohne Zwiebeln | For example: no onions |
 | `catalog.basketEmpty` | Noch nichts ausgewählt | Nothing chosen yet |
@@ -2233,16 +2601,19 @@ a setting they never set.
 | `catalog.toReview` | Weiter zur Übersicht | Go to the summary |
 | `catalog.paperWarning` | Der Drucker an der Station {name} hat kein Papier. Sie können weiter bestellen, der Bon wird gedruckt, sobald Papier eingelegt ist. | The printer at {name} has no paper. You can keep ordering, and the slip prints as soon as paper is loaded. |
 | `catalog.offlineWarning` | Die Station {name} antwortet gerade nicht. Sie können weiter bestellen, der Bon wird nachgedruckt. | Station {name} is not answering right now. You can keep ordering and the slip prints later. |
-| `catalog.itemRemovedFromCatalog` | Nehmen Sie {name} aus der Bestellung. Der Artikel wurde gerade als nicht mehr verfügbar markiert. | Take {name} out of the order. It has just been marked as no longer available. |
+| `catalog.itemSoldOut` | Fragen Sie den Gast, ob er etwas anderes möchte. {name} ist gerade ausverkauft. | Ask the guest whether they would like something else. {name} has just sold out. |
 | `line.whereTitle` | Wo soll {item} zubereitet werden? | Where should {item} be prepared? |
 | `line.whereHelp` | Die Auswahl gilt nur für diese Position. | The choice applies to this item only. |
 | `line.station` | Station: {name} | Station: {name} |
 | `line.changeStation` | Station ändern | Change the station |
 
-When a `CatalogChanged` event removes an item the server has already added, the quantity stays in the
-basket and is flagged with `catalog.itemRemovedFromCatalog`. Silently deleting a line that a guest
-already ordered would be a change the server never sees. The order is still accepted if they send it,
-per section 5.4, because the guest ordered it and the money was already counted.
+**When an item sells out while it is already in the basket**, the quantity stays exactly where it is
+and the line is flagged with `catalog.itemSoldOut`. Silently deleting a line a guest already ordered
+would be a change the server never sees. The flag usually arrives while they are still standing at the
+table, which is the point of the live push: they ask the guest for a second choice instead of coming
+back to it with a tray. If they send it anyway, the order is accepted (section 5.4), the slip prints,
+and the station sends word back. The guest ordered it and the cash may already be counted, so refusing
+at that moment would solve nothing and lose the order.
 
 ### 8.7 Review and total
 
@@ -2333,6 +2704,7 @@ the three carries the whole signal on its own.
 | `ticket.paperEnd` | Legen Sie eine neue Papierrolle in den Drucker bei {station}. Der Bon wird danach von selbst gedruckt. | Put a new paper roll into the printer at {station}. The slip prints by itself afterwards. |
 | `ticket.coverOpen` | Schließen Sie die Klappe am Drucker bei {station}. Der Bon wird danach von selbst gedruckt. | Close the cover on the printer at {station}. The slip prints by itself afterwards. |
 | `ticket.failed` | Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort antwortet seit fünf Minuten nicht. | Tell {station} about order {number} in person. The printer there has not answered for five minutes. |
+| `ticket.failedAfterWaiting` | Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Bon wartet dort seit {minutes} Minuten auf den Druck. | Tell {station} about order {number} in person. The slip has been waiting there {minutes} minutes to print. |
 | `ticket.stationFaulty` | Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort nimmt nichts mehr an. | Tell {station} about order {number} in person. The printer there is not accepting anything any more. |
 | `ticket.stationDisabled` | Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Station ist am Laptop ausgeschaltet. | Tell {station} about order {number} in person. The station is switched off at the laptop. |
 | `ticket.printerError` | Holen Sie jemanden, der sich den Drucker bei {station} ansehen kann. Der Drucker meldet eine Störung. | Fetch somebody who can look at the printer at {station}. The printer is reporting a fault. |
@@ -2345,6 +2717,14 @@ the three carries the whole signal on its own.
 `order.changedMind` stands in the order detail, on every order, because that is where a server is
 looking when a guest changes their mind. It is the whole of section 3.6 in two sentences, at the point
 of action.
+
+**`ticket.paperEnd` and `ticket.coverOpen` keep saying that the slip prints by itself, and they keep
+saying it for as long as it is true.** The give-up window does not run while one of those is the cause
+(section 3.2), so a ticket showing one of these messages is not counting down towards a failure and the
+message does not have to hedge. `ticket.failedAfterWaiting` is what replaces it if the roll never goes
+in, at the 20 minute outer bound, and it is the only message on this screen that reports a failure
+whose cause the system knew all along. It names the minutes rather than the cause, because by then the
+cause has stopped being the useful fact and the walk is.
 
 ### 8.9 Admin configuration
 
@@ -2372,6 +2752,7 @@ names exactly what is missing.
 | `admin.overview.itemsWithoutLocation` | Ordnen Sie {count} Artikeln eine Station zu. Ohne Station können sie nicht bestellt werden. | Give {count} items a station. Without one they cannot be ordered. |
 | `admin.overview.paperNearEnd` | Legen Sie bei {name} eine neue Papierrolle bereit. Die eingelegte Rolle geht zu Ende. | Put a new paper roll ready at {name}. The roll in the printer is running out. |
 | `admin.overview.openTickets` | Sehen Sie in der Bestellliste nach. {count} Bons warten noch auf den Druck. | Check the order list. {count} slips are still waiting to print. |
+| `admin.overview.stationBlocked` | Kümmern Sie sich um den Drucker bei {name}. Dort warten {count} Bons seit {minutes} Minuten. | Sort out the printer at {name}. {count} slips have been waiting there for {minutes} minutes. |
 | `admin.overview.address` | Die Telefone erreichen den Laptop unter {url}. | Phones reach the laptop at {url}. |
 | `admin.overview.addressChanged` | Lassen Sie alle Telefone den QR-Code neu scannen. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}. | Have every phone scan the QR code again. The laptop's address was {previous} and is now {current}. |
 | `admin.overview.console` | Lassen Sie das schwarze Fenster offen. Wenn Sie es schließen, nimmt das Programm keine Bestellungen mehr an. | Leave the black window open. If you close it, the program stops taking orders. |
@@ -2390,9 +2771,13 @@ rule:
 | `admin.items.title` | Artikel | Items |
 | `admin.items.priceHelp` | Preise dienen nur zum Zusammenrechnen. Über die App wird kein Geld bezahlt. | Prices are only there for adding up. No money is paid through the app. |
 | `admin.items.needsLocation` | Kreuzen Sie mindestens eine Station an. Ohne Station kann dieser Artikel nicht bestellt werden. | Tick at least one station. Without one this item cannot be ordered. |
-| `admin.items.soldOut` | Heute nicht mehr verfügbar | Not available any more today |
-| `admin.items.soldOutEffect` | Der Artikel verschwindet sofort auf allen Telefonen. | The item disappears on every phone immediately. |
-| `admin.items.deactivateBlocked` | Nehmen Sie den Artikel mit "Heute nicht mehr verfügbar" aus dem Angebot. Während einer laufenden Veranstaltung kann er nicht gelöscht werden. | Take the item off the list with "Not available any more today". It cannot be deleted while an event is running. |
+| `admin.items.soldOut` | Ausverkauft | Sold out |
+| `admin.items.soldOutHelp` | Schalten Sie einen Artikel auf ausverkauft, sobald er alle ist. Er bleibt auf den Telefonen stehen, ist aber nicht mehr auswählbar. | Switch an item to sold out as soon as it has run out. It stays on the phones and can no longer be chosen. |
+| `admin.items.soldOutUndo` | Wieder verfügbar | Available again |
+| `admin.items.deactivate` | Nicht auf der Karte | Not on the menu |
+| `admin.items.deactivateHelp` | Nehmen Sie einen Artikel damit für dieses Fest ganz von der Karte. Auf den Telefonen erscheint er dann gar nicht mehr. | Take an item off the menu for this festival entirely. It then does not appear on the phones at all. |
+| `admin.items.deactivateBlocked` | Schalten Sie den Artikel stattdessen auf "Ausverkauft". Während einer laufenden Veranstaltung lässt er sich nicht von der Karte nehmen. | Switch the item to "Sold out" instead. It cannot be taken off the menu while an event is running. |
+| `admin.items.soldOutWalk` | Der Laptop ist die einzige Stelle, an der Sie das umschalten können. | The laptop is the only place where you can switch this. |
 | `admin.assignment.title` | Zuordnung | Assignment |
 | `admin.assignment.help` | Kreuzen Sie an, wo ein Artikel zubereitet werden kann. Bei einer Station läuft es von selbst, bei mehreren wählt die Bedienung beim Aufnehmen aus. | Tick where an item can be prepared. With one station it happens by itself, with several the server chooses while taking the order. |
 | `admin.assignment.preview` | Vorschau: {item} geht an {location}. | Preview: {item} goes to {location}. |
@@ -2402,6 +2787,21 @@ rule:
 | `admin.tables.fromLastSession` | Tischnamen der letzten Veranstaltung übernehmen | Add the table names from the last event |
 | `admin.people.title` | Bedienungen | Servers |
 | `admin.people.help` | Diese Namen stehen bei der Einrichtung eines Telefons zur Auswahl. | These names can be chosen when a phone is set up. |
+
+**Sold out is a toggle in the item list, and that is a design requirement rather than a layout note.**
+It is set by somebody who has just been told the kitchen is out of Bratwurst, and it is unset twenty
+minutes later when somebody finds another crate. One tap each way, in the list, with no editor to open,
+no form to fill and no dialog to confirm. Everything about it is reversible, nothing about it is
+destructive, and a confirmation step would only make a busy person tap twice. Taking an item off the
+menu lives in the item editor instead, where a considered edit belongs, and is refused during a live
+event.
+
+**Marking an item sold out means walking to the laptop, and the owner has accepted that for version 1.**
+The admin screens answer only on the laptop (section 5.1), so there is no way to do this from a phone
+and none is planned. The walk is short, it happens a handful of times an evening, and the person who
+hears "we are out of Bratwurst" is usually within sight of the laptop anyway. `admin.items.soldOutWalk`
+says so on the screen so nobody hunts for the control on their phone. Open question 3 records the
+decision rather than leaving it open.
 
 **Printers.**
 
@@ -2425,6 +2825,9 @@ rule:
 | `admin.printers.faulty` | Störung. Es wird nichts mehr an diesen Drucker gesendet. | Fault. Nothing more is being sent to this printer. |
 | `admin.printers.reconnect` | Wieder verbinden | Connect again |
 | `admin.printers.reconnectHelp` | Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an. | Check the printer for a paper jam and a loose cable first. After that the printer accepts slips again. |
+| `admin.printers.waiting` | {count} Bons warten auf diesen Drucker. | {count} slips are waiting for this printer. |
+| `admin.printers.shared` | Diese Adresse ist auch bei {names} eingetragen. Die Bons dieser Stationen kommen aus demselben Drucker. | This address is also set at {names}. The slips for these stations come out of the same printer. |
+| `admin.printers.sharedHelp` | Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Station die Adresse eines Druckers ein, der noch arbeitet. | This is intended. When a printer fails, enter the address of a printer that is still working for that station. |
 | `admin.printers.lastHeard` | Zuletzt gemeldet: {time} | Last heard from at {time} |
 | `admin.printers.mockFolder` | Die Bons dieses Testdruckers liegen im Ordner {path}. | The slips from this test printer are in the folder {path}. |
 | `admin.printers.mockFolderUnwritable` | Der Testdrucker bei {name} kann keine Bons ablegen. In den Ordner {path} lässt sich nichts schreiben. Legen Sie das Programm in einen Ordner, in dem Sie Dateien anlegen dürfen. | The test printer at {name} cannot put slips anywhere. Nothing can be written into the folder {path}. Move the program into a folder where you are allowed to create files. |
@@ -2439,6 +2842,12 @@ rule:
 | `admin.printers.fault.unknown` | Drucker meldet nicht, ob er gedruckt hat | The printer does not report whether it printed |
 | `admin.printers.fault.once` | Einmal | Once |
 | `admin.printers.fault.sticky` | Bis zum Zurücksetzen | Until it is reset |
+
+**`admin.printers.shared` appears on the row of every location that names the address**, so the two
+stations describe each other and neither one looks like a stray edit. It is a statement of fact rather
+than a warning, because it is a supported configuration and the most likely reason for it is that
+somebody has just answered a dead printer correctly. `admin.printers.sharedHelp` sits under the address
+field, where the admin is standing when a printer has died and they are deciding what to type.
 
 The fault row appears only for a station whose transport is the test printer, and it is the whole of the
 mock's user interface: the list of faults above, the choice between `Once` and `Sticky`, and the folder
@@ -2511,24 +2920,41 @@ what clears a fault that was set to hold, which for "Kein Papier" is the paper c
 
 ### 8.10 Break-glass station page
 
-**Purpose.** One evening in ten, a printer dies and food still has to be made. This page shows that
-station's orders that need a human so the kitchen can keep working. It is not a kitchen display system,
+**Purpose.** One evening in ten, a printer dies and no spare exists. This page is how the station keeps
+producing anyway: the kitchen opens it on somebody's phone, works the orders off the screen, and writes
+the table number on a scrap of paper that goes out with the food. It is not a kitchen display system,
 and it must never become part of the normal workflow.
 
-**What keeps it out of the normal workflow is the server, not this paragraph.** The endpoint returns
-only the tickets defined in section 5.6, so during a working evening this page is empty. A row appears
-when a slip failed, when its outcome is unknown, when the printer is blocked, or when the station has
-been offline longer than the give-up window. An order that is printing normally never appears here, so
-there is no row for a helper to tidy away, and no way for a tap on this page to stop a slip that was
-about to come out of a working printer.
+**What is on it.** A warning block at the top saying when to use it, a filter naming the production
+location, then that location's open tickets, oldest first. Each row is dominated by the slip number, in
+the same three digit form as the printed slip, then the order number, the table, the time the order was
+taken, and every line with its quantity and note. That is the whole of what somebody needs to make the
+food and label it, and it is laid out in the same order as the printed slip so nobody has to learn a
+second layout at the worst moment of the evening.
 
-**What is on it.** A warning block at the top saying when to use it, then the station's open tickets,
-oldest first. Each row is dominated by the slip number, in the same three digit form as the printed
-slip, followed by the order number, the table, and the lines. One button per row marks it as taken.
+**Every open order is listed, not only the broken ones.** The old design showed only failed, unknown
+and blocked tickets, which is useless in the case the page exists for: when the printer is dead, every
+order is one the station has to make, and a list of three out of forty is a list of three orders that
+will be produced and thirty seven that will not. Section 5.6 defines open as anything not yet
+`Printed`, `PrintedOnTestPrinter` or `HandledOnPaper`.
 
-**What the user can do.** Read, and mark a row as taken. Nothing else. There is no login, no
-configuration, and no way to change an order from here. Marking a row as taken can be undone for ten
-seconds.
+**The filter is there because a printer can move.** When the admin has pointed a broken station at a
+working one (section 2.12), the person at the kitchen printer is tearing off the bar's slips too and
+needs the bar's list while holding a card printed for the kitchen. The filter opens on the station whose
+card was scanned and lists the others by name.
+
+**Showing is always safe. Acting is what is dangerous.** Reading a row cannot lose an order. Tapping
+"Übernommen" on a live order can: it marks the ticket handled on paper, prints nothing, and tells the
+server who placed it that everything is fine. So the restriction is on the button and not on the list.
+**A row offers the button only when its station genuinely cannot print right now**, which section 5.6
+defines exactly and the server decides; every other row renders with `station.takeUnavailable` in place
+of the button, and the endpoint refuses the same tickets with `station.takeRefused` if anybody reaches
+it another way. During a working evening the page is a list with no buttons on it, which is both safe
+and honest: it says what is coming, and it offers nothing to press.
+
+**What the user can do.** Read, filter by station, and mark a row as taken when that row offers it.
+Nothing else. There is no login, no configuration, and no way to change an order from here. Marking a
+row as taken can be undone for ten seconds.
 
 | Key | Deutsch | English |
 |---|---|---|
@@ -2536,17 +2962,36 @@ seconds.
 | `station.warningTitle` | Diese Seite ist nur für den Notfall. | This page is only for emergencies. |
 | `station.warningBody` | Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Station den Bonstapel ab. | Open it only when the printer has failed. In normal operation the station works off the pile of slips. |
 | `station.empty` | Es liegen keine offenen Bestellungen an. Alle Bons sind gedruckt. | There are no open orders. Every slip has printed. |
+| `station.filterLabel` | Station | Station |
+| `station.filterHelp` | Wählen Sie die Station, deren Bons Sie hier sehen wollen. | Choose the station whose slips you want to see here. |
 | `station.row` | Bon {sequence}, Bestellung {order}, {table} | Slip {sequence}, order {order}, {table} |
+| `station.rowTime` | Aufgenommen um {time} | Taken at {time} |
+| `station.line` | {quantity} x {item} | {quantity} x {item} |
+| `station.lineNote` | Hinweis: {note} | Note: {note} |
+| `station.orderNote` | Hinweis zur Bestellung: {note} | Note for the order: {note} |
+| `station.status.waiting` | Wartet auf den Druck | Waiting to print |
+| `station.status.cannotPrint` | Der Drucker kann gerade nicht drucken | The printer cannot print right now |
+| `station.status.failed` | Nicht gedruckt | Not printed |
+| `station.status.unknown` | Unklar, ob gedruckt | Not known whether it printed |
 | `station.take` | Übernommen | Taken |
+| `station.takeHelp` | Schreiben Sie die Tischnummer auf einen Zettel und legen Sie ihn zum Essen. | Write the table number on a piece of paper and put it with the food. |
+| `station.takeUnavailable` | Holen Sie diesen Bon am Drucker. Der Drucker dieser Station arbeitet. | Fetch this slip at the printer. This station's printer is working. |
+| `station.takeRefused` | Holen Sie den Bon am Drucker. Der Drucker dieser Station druckt wieder, deshalb wurde dieser Bon nicht übernommen. | Fetch the slip at the printer. This station's printer is printing again, so this slip was not taken. |
 | `station.undo` | Rückgängig | Undo |
 | `station.takenNote` | Für diese Bestellung wird kein Bon mehr gedruckt. | No slip will be printed for this order any more. |
 | `station.alreadyPrinted` | Dieser Bon wurde inzwischen gedruckt und liegt auf dem Stapel. | This slip has printed in the meantime and is on the pile. |
-| `station.printerBack` | Der Drucker antwortet wieder. Neue Bestellungen werden gedruckt. | The printer is answering again. New orders are being printed. |
+| `station.printerBack` | Der Drucker antwortet wieder. Die Bons kommen wieder aus dem Drucker. | The printer is answering again. The slips are coming out of the printer again. |
 | `station.unknownKey` | Fragen Sie die Person am Laptop nach dem aktuellen Link. Diese Adresse gilt nicht mehr. | Ask the person at the laptop for the current link. This address is no longer valid. |
 
-The page connects to SignalR and adds rows as tickets fail, so a station that has the page open during
-a printer outage does not need to refresh. When the printer comes back the page says so and stops
-gaining rows.
+`station.takeHelp` sits under the take button rather than in the warning block at the top, because
+writing the table on a scrap of paper is the step that gets forgotten and the button is where the
+person is looking when they are about to forget it.
+
+The page connects to SignalR and updates itself, so a station working off it does not refresh. It gains
+a row on `OrderAccepted`, updates one on `TicketStatusChanged`, and re-evaluates which rows offer the
+take button on `PrinterStatusChanged`. When the printer comes back, `station.printerBack` says so and
+the take buttons disappear, which is the same rule as everywhere else on this page: the button exists
+only while the printer cannot print.
 
 **How the station gets the link at 21:00 is a printed card, not a sentence.** Each station's card,
 printed from the admin and also printed on its test slip during setup, carries the station name and a
@@ -2670,8 +3115,8 @@ guest's order to solve an administrative problem.
 because the list is scoped by `ServerPersonId` and not by the phone. Every unanswered slip question the
 person has is still answerable on the same handset.
 
-**The catalog changed while the basket was open.** See section 8.6. The line stays and is flagged, and
-the order is still accepted when sent.
+**An item sold out, or a price changed, while the basket was open.** See section 8.6. The line stays and
+is flagged, the phone shows the backend's new price, and the order is still accepted when sent.
 
 **The event session was restarted while the phone was open.** The `EventSessionStarted` event clears the
 phone's order list, because those orders belong to the previous session, and a one line notice explains
@@ -2758,13 +3203,22 @@ Print this page and take it with you.
 19. If you are running the evening, carry a phone that is set up. A station that stops answering or runs
     out of paper appears as a banner on every phone, so you find out where you are standing rather than
     by walking back to the laptop.
-20. When a printer runs out of paper, put a new roll in. The waiting slips print by themselves.
+20. When a printer runs out of paper, put a new roll in. The waiting slips print by themselves, and
+    nothing is reported as failed while the paper is out.
+21. **When a printer dies and you have no spare, point that station at a printer that still works.**
+    Open the printer screen, read the address off a station whose printer is fine, and enter that same
+    address for the broken station. Both stations' slips then come out of the one printer, each with
+    its station name in large letters at the top, and somebody carries the other station's slips
+    across.
+22. **If there is no working printer at all, use the station page.** Scan the QR code on the card taped
+    inside the printer lid. The station's orders are on the screen, and whoever makes the food writes
+    the table number on a scrap of paper and sends it out with the tray.
 
 **Afterwards**
 
-21. Open "Only orders that need checking" and make sure it is empty. This is the one check that catches
+23. Open "Only orders that need checking" and make sure it is empty. This is the one check that catches
     an order nobody produced, and it takes five seconds.
-22. Open the backup screen, create the backup file, and copy it onto a USB stick. That file is the whole
+24. Open the backup screen, create the backup file, and copy it onto a USB stick. That file is the whole
     history.
 
 ### 10.3 Setup checklist, German
@@ -2827,14 +3281,23 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
     nicht mehr antwortet oder kein Papier mehr hat, erscheint auf jedem Telefon als Hinweis. So erfahren
     Sie es dort, wo Sie gerade stehen, und nicht erst am Laptop.
 20. Wenn ein Drucker kein Papier mehr hat, legen Sie eine neue Rolle ein. Die wartenden Bons werden
-    danach von selbst gedruckt.
+    danach von selbst gedruckt, und solange das Papier fehlt, wird keine Bestellung als gescheitert
+    gemeldet.
+21. **Wenn ein Drucker ausfällt und Sie keinen Ersatz haben, tragen Sie bei dieser Station einen
+    Drucker ein, der noch arbeitet.** Öffnen Sie die Seite Drucker, lesen Sie die Adresse einer Station
+    ab, deren Drucker in Ordnung ist, und tragen Sie dieselbe Adresse bei der ausgefallenen Station
+    ein. Die Bons beider Stationen kommen dann aus diesem einen Drucker, jeder mit seinem Stationsnamen
+    in großen Buchstaben oben, und jemand trägt die Bons der anderen Station hinüber.
+22. **Wenn gar kein Drucker mehr arbeitet, nehmen Sie die Stationsseite.** Scannen Sie den QR-Code auf
+    der Karte im Deckel des Druckers. Die Bestellungen der Station stehen dann am Bildschirm, und wer
+    das Essen macht, schreibt die Tischnummer auf einen Zettel und gibt ihn mit dem Tablett hinaus.
 
 **Danach**
 
-21. Öffnen Sie "Nur Bestellungen, die geprüft werden müssen" und prüfen Sie, dass die Liste leer ist.
+23. Öffnen Sie "Nur Bestellungen, die geprüft werden müssen" und prüfen Sie, dass die Liste leer ist.
     Das ist die eine Kontrolle, die eine Bestellung findet, die niemand zubereitet hat, und sie dauert
     fünf Sekunden.
-22. Öffnen Sie die Datensicherung, legen Sie die Sicherungsdatei an und kopieren Sie sie auf einen
+24. Öffnen Sie die Datensicherung, legen Sie die Sicherungsdatei an und kopieren Sie sie auf einen
     USB-Stick. Diese Datei ist der gesamte Verlauf.
 
 ### 10.4 Configuration that is not in the UI
@@ -2880,11 +3343,12 @@ required for the order placement flow and the printing pipeline.
 | `TicketStateMachine` | Every transition in section 3.2, and that every transition not listed is refused |
 | `PrintJobStateMachine` | Every transition in section 3.3, and specifically that a result with bytes written can never reach a retryable state |
 | `RetryPolicy` | The full table in section 7.6, one case per row, including both `SocketDropped` rows and both `Timeout` rows |
-| `StationCircuitBreaker` | Two consecutive unknown outcomes trip it, a queue depth of ten trips it, a confirmed job resets the counter, and tripping moves every waiting ticket at once |
-| `GiveUpWindow` | The window is measured from ticket creation, so a ticket that waited behind others expires on time |
+| `StationCircuitBreaker` | Two consecutive unknown outcomes trip it, a confirmed job resets the counter, tripping moves every waiting ticket at once, and **no queue depth trips it**: fifty tickets waiting at a station that is out of paper leave it untripped |
+| `GiveUpWindow` | The window is measured from ticket creation, so a ticket that waited behind others expires on time. It is suspended for each of the four known causes in section 3.2 and resumes without resetting when the cause clears. The 20 minute outer bound expires under every one of those causes, including a station that stayed blocked for the whole time. |
+| `TicketAcknowledgePolicy` | The condition in section 5.6, one case per clause: each ticket status that always allows it, each printer condition that allows it, and a `Queued` or `Printing` ticket at a healthy station refused |
 | `EscPosSlipRenderer` | Byte for byte output for a normal slip, a reprint with its reprint time, a wrapped long item name, a chosen station that differs from the printing one, umlauts under PC858, and the double size regions |
 | `EscPosSlipRenderer`, station card | A test slip emits the five `GS ( k` functions in the order given in 7.7, with model 2, a module size of 6, error correction level M, `pL` and `pH` equal to the URL length plus three for both a short and a 69 character URL, and the URL itself byte for byte, followed by the same URL wrapped underneath as text |
-| `ProcessIdAllocator` | Cycling at 9999, uniqueness within a printer, and resumption from the persisted value after a restart |
+| `ProcessIdAllocator` | Cycling at 9999, uniqueness within a printer, resumption from the persisted value after a restart, and that two locations sharing one endpoint draw from one counter and never receive the same value |
 | `EnrolmentCodeVerifier` | Correct code, wrong code, expired code, already consumed code, that a consumed code does not count as a failed attempt, and that a lockout applies to one source address and leaves other codes valid |
 | `DeviceTokenHasher` | A token verifies against its own hash, a different token does not, and a stored iteration count is honoured |
 
@@ -2897,7 +3361,8 @@ required for the order placement flow and the printing pipeline.
 | `draftCart` | Written on every change, restored on load exactly as it was, cleared only on acceptance, kept across a revocation, and holding no list, no timer, and no retry state |
 | `submission` | The id is generated once on the first send, reused by every retry, not regenerated by a reload or a re-enrolment, and a new order gets a new id |
 | `orderStateMachine` | Exhaustive switch coverage with `assertNever`, so a new state is a compile error |
-| `messageForTicket` | Each ticket state and failure reason maps to exactly one message key in both languages |
+| `messageForTicket` | Each ticket state and failure reason maps to exactly one message key in both languages, and no mapping ever falls back to a transport string |
+| `catalogItemState` | A sold-out item is rendered and not selectable, a deactivated item is absent from the payload and so cannot be rendered at all, and a sold-out line already in the basket keeps its quantity and gains the flag |
 
 ### 11.2 Integration tests
 
@@ -2916,7 +3381,12 @@ teardown. No test touches a developer's real database or filesystem.
 | SignalR | Each event reaches exactly the groups listed in section 6.2 and no others, including that ticket events reach every phone of the placing person |
 | Printer worker | Every row of the failure table in section 3.5 against `MockPrinterTransport`, jobs attempted in sequence number order, and a blocked job holding the station rather than being overtaken |
 | Mock transport | One file per slip in that location's folder holding exactly the rendered text, a reprint written beside its original rather than over it, two sessions in the same folder not colliding, two locations with the same name kept apart, all seven faults armable through the admin endpoint in both `Once` and `Sticky` modes, and a folder that cannot be written producing `PrinterError` with zero bytes rather than a reported print |
-| Circuit breaker | Two unknown outcomes trip the station, every waiting ticket fails in one transaction, and the reconnect action clears it |
+| Circuit breaker | Two unknown outcomes trip the station, every waiting ticket fails in one transaction, the reconnect action clears it, and a station with fifty tickets queued behind a paper-out is never tripped by depth |
+| Break-glass listing and acknowledge | Every open ticket is listed including `Queued` and `Printing` ones, a `Printed` or `HandledOnPaper` ticket is not, `canAcknowledge` is false for every ticket at a healthy station and true once the printer is faulty, offline, out of paper, cover-open, in error, or disabled, acknowledging a healthy station's ticket answers 409 with `station.takeRefused`, the filter returns another location's tickets for the same access key, and an unknown key answers 404 |
+| No duplicate after recovery | A ticket taken on the break-glass page while a job sits queued for it leaves that job `Failed` with `TicketResolvedByHuman` and zero bytes when the printer recovers, no slip file is written, and acknowledging a ticket the worker has already moved to `Printing` answers 409 |
+| Shared printer | Two locations configured with one endpoint are served by one worker and one socket, their slips interleave on the roll while each location's sequence numbers stay unbroken, each slip carries its own station name, both `PrinterStatus` rows track the one machine, and both locations draw process ids from one counter |
+| Two item states | The sold-out toggle is accepted during a live event and reverses cleanly, deactivation is refused during a live event, a sold-out item is present in `/api/catalog` with `isAvailable: false`, a deactivated item is absent, and an order carrying either is accepted at 201 |
+| Prices | The accepted total is computed from the backend's current prices, an `expectedTotalCents` that is absent, zero, or wildly wrong changes neither the stored total nor acceptance, and no request field anywhere can influence a price |
 | Crash recovery | A ticket left in `Printing` when the process died comes back as `Unknown`, `Queued` and `Blocked` tickets are re-enqueued in order, and a ticket left over from a previous session is enqueued too |
 | Storage failures | A busy database waits rather than failing, a write failure returns 503 with a message key, and a read-only database directory refuses to start with a stated reason |
 | Files | The CSV export opens with the declared delimiter and encoding, the import accepts `3,50`, `3.50` and `3`, rejects a row with no station, and imports nothing when any row fails |
@@ -2968,17 +3438,23 @@ session so the test printer is the expected transport.
 | Two orders arriving at once at one printer | Serialized, both printed, sequence numbers consecutive and in order |
 | A blocked ticket and a later one | The later slip does not overtake the blocked one |
 | Station declared faulty | Every waiting ticket fails at once, every affected phone shows the message, and the admin printer screen shows the fault |
+| Ten orders arrive during a paper change | No ticket fails, no station is declared faulty, every phone's banner names the station and the count, and all ten print when the roll goes in |
+| A blocked station is never fixed | The tickets stay `Blocked` past five minutes with the banner and the admin row escalating, and reach `Failed` at the 20 minute outer bound with `ticket.failedAfterWaiting` |
 | Backend restarted mid job | Ticket comes back as `Unknown` and the question appears |
-| Station disabled with a slip queued | The slip waits, and after the give-up window the phone says to announce the order at the station in person |
+| Station disabled with a slip queued | The slip waits without failing while the station is off, prints by itself when it is switched back on, and reaches `Failed` only if the outer bound arrives first |
+| A printer is repointed at another station's printer | Both locations' slips come off one transport, each carrying its own station name and its own unbroken run of sequence numbers, and one worker holds the connection |
+| Break-glass with a dead printer | Every open ticket at that station is listed immediately with its lines and table, every row offers the take button, taking one moves it to `HandledOnPaper` and tells the placing phone so |
+| The printer recovers after a ticket was taken on paper | The queued job ends `Failed` with `TicketResolvedByHuman`, no slip is printed for it, and the table is not served twice |
 | Station left on the test printer in a real event | The order reaches `NeedsAttention` and the phone says no slip is on the pile |
 | Break-glass acknowledgement | A failed ticket reaches `HandledOnPaper`, disappears from the station page, no slip is printed afterwards, and the order leaves `NeedsAttention` |
-| Break-glass during normal printing | A queued ticket at a healthy printer never appears on the station page, and acknowledging it by id is refused with a stated reason |
+| Break-glass during normal printing | A queued ticket at a healthy printer **is listed** with its lines and table but renders no take button, and acknowledging it by id is refused with `station.takeRefused` |
 
 **Admin flow**
 
 1. Configure a station, a printer, an item, and an assignment from an empty database, and place an order
    end to end.
-2. Mark an item unavailable and watch it become unavailable on an open phone without a reload.
+2. Mark an item sold out and watch it grey out on an open phone without a reload, with the line already
+   in a basket kept and flagged, then mark it available again and watch it come back.
 3. Try to start an event with a station on the test printer, get the refusal, set up the printer, and
    start it.
 4. Start a new event and watch numbering restart at 1 while old orders keep their numbers.
@@ -3013,14 +3489,19 @@ else in this list has been settled.
    question stays open, and it now sits behind the hardware decision above: there is no printer to test
    against until the fire department has evaluated the system on the mock and asked for one.
 
-2. **A second printer as a station's fallback.** When a printer dies, the current answer is the
-   break-glass page, which asks a station to look at a screen, which the product otherwise refuses. A
-   cheaper answer exists and costs one configuration field: let a station name a fallback station whose
-   printer takes its slips, with the intended station printed in large type at the top. The marquee
-   bar's drinks then print at the indoor bar and somebody carries them thirty metres, which is exactly
-   the pre-software process. This is deliberately left out of version 1, because version 1 is being cut
-   towards the simplest thing that works, but it is the first feature to add if a printer dies at the
-   first festival.
+2. **A second printer as a station's fallback. Closed by the owner, and the number is kept so the
+   answer stays findable.** The question proposed a fallback printer field: let a station name another
+   station whose printer takes its slips when its own dies. The owner's answer is that the field is not
+   needed, because the capability is already there without it. A printer configuration is an address
+   the admin can change during the evening, and two locations may point at one address, so the fix for
+   a dead printer is to type the working printer's address into the broken station's configuration.
+   Both stations' slips then come off one machine with the station name in large type at the top of
+   each, and somebody carries the other station's slips over: exactly the outcome the fallback field
+   was proposed to buy, with no field, no second address to keep correct, and no rerouting decision the
+   software has to make while nobody wants it making decisions. Section 2.12 specifies what that
+   configuration means, section 7.3 keeps it to one connection per machine, and checklist step 21 tells
+   a volunteer how to do it. **No fallback printer field, no secondary printer, and no automatic
+   rerouting will be added.**
 
 3. **Admin access from something other than the laptop.** Version 1 restricts every admin endpoint to
    the laptop, which means the admin has to stand there. The task that actually needs mobility is not
@@ -3028,6 +3509,11 @@ else in this list has been settled.
    through `PrinterStatusChanged`, so the checklist now says the person running the evening should carry
    a phone that is set up. That covers most of the value with no new attack surface. Is an admin device
    still wanted for the rest, knowing it is a real widening of the attack surface on an open network?
+
+   **One use case under this heading is already settled and is not part of the open question.** Marking
+   an item sold out is an admin action, so it means walking to the laptop, and the owner has accepted
+   that for version 1. No phone-reachable sold-out control will be added, and section 8.9 says so on
+   the screen with `admin.items.soldOutWalk` rather than leaving somebody hunting for it.
 
 4. **Address form in German.** This specification uses the Sie form everywhere. A fire department crew
    normally says du to each other. Which one does the owner want on the phones, on the slips, and in the
@@ -3048,9 +3534,13 @@ else in this list has been settled.
    wanted, or is it a field that will be used to write things the kitchen has to read on every slip of
    the order?
 
-8. **The five minute give-up window.** Five minutes before a ticket is called failed, measured from when
-   the order was taken. That number is a reasoned guess about how long a volunteer waits before walking,
-   and it should be checked against one real evening.
+8. **The five minute give-up window and the twenty minute outer bound.** Five minutes before a ticket
+   whose cause is unknown is called failed, and twenty minutes before one is called failed whatever the
+   cause, both measured from when the order was taken (section 3.2). Five minutes is a reasoned guess
+   about how long a volunteer waits before walking. Twenty is a reasoned guess about the longest a
+   paper change can honestly take, bounded by how long a guest waits before asking where the food is.
+   Both should be checked against one real evening, and the second one is the number that decides
+   whether the suspension rule is generous or negligent.
 
 9. **The black console window.** Closing it ends the evening, and nothing in the product defends that
    beyond a bold line in the checklist and a line on the overview screen. A tray icon, or a window that

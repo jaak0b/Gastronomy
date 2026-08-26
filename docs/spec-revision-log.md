@@ -38,10 +38,43 @@ the old open question 6, which was removed from the list.
 | B9 | The order status projection contradicts the ticket machine and its mapping is never given | Fixed | 3.1 no longer draws the order status as a machine. It is a recomputation, given as a five row priority table that is total over every combination of ticket states, with the reason the diagram was the wrong shape. 11.1 tests the table exhaustively. |
 | B10 | A change of the laptop's IP strands every enrolled phone and its stored orders | Fixed | Giving the laptop a fixed address is checklist step 9 in both languages, with the two ways a volunteer can do it. 5.5 states the consequence and the recovery outright. `admin.overview.addressChanged` names the previous and current address. Advertising a hostname instead became open question 10, because it costs a dependency. |
 | B11 | An item can become unroutable and acceptance has no defined answer | Fixed, partly Dissolved | The zone removal deleted the fallback rule the finding was mostly about. What remained is fixed: the candidate set is the item's **active** locations (2.6), an item cannot be saved with none (2.5), a station cannot be deactivated while it is the last one for an active item (2.4), and an item cannot be deactivated during a live event. A station chosen by the server that was switched off in the meantime falls to the lowest `SortOrder` candidate and the slip prints which station was chosen. |
-| B12 | The headline retry rule contradicts its own table one line below | Fixed | 7.6 splits `SocketDropped`, `TimedOut` and `PrinterError` by byte count, so zero bytes always retries and any bytes never does. `BytesWritten` is defined in 2.11 and 7.2 as bytes handed to the socket, with the note that acknowledgement is unknowable. |
+| B12 | The headline retry rule contradicts its own table one line below | Fixed | 7.6 splits `SocketDropped`, `Timeout` and `PrinterError` by byte count, so zero bytes always retries and any bytes never does. `BytesWritten` is defined in 2.11 and 7.2 as bytes handed to the socket, with the note that acknowledgement is unknowable. |
 | B13 | Enrolment lockout is global, trivially triggered by a stranger, and has no unlock | Fixed | Failures are counted per source address and lock only that address (2.8). A 410 on a consumed or expired code is explicitly a race, not a failed attempt. `GET /api/admin/enrolment/locks` and `POST /api/admin/enrolment/unlock` exist (5.5) with admin strings. `enrol.error.codeUsed` now says to scan again, which is the instruction that works during a briefing. |
-| B14 | The print queue is unbounded and a slowly failing station generates questions for an hour | Fixed | 7.6 adds a station circuit breaker: two consecutive `Unknown` or `TimedOut` outcomes, or a queue depth of ten, sets `PrinterStatus.IsFaulty`, pushes it to every phone, and fails every waiting ticket in one transaction. The give-up window starts at ticket creation. The admin reconnect action clears it. |
+| B14 | The print queue is unbounded and a slowly failing station generates questions for an hour | Fixed | 7.6 adds a station circuit breaker: two consecutive `Unknown` or `Timeout` outcomes, or a queue depth of ten, sets `PrinterStatus.IsFaulty`, pushes it to every phone, and fails every waiting ticket in one transaction. The give-up window starts at ticket creation. The admin reconnect action clears it. **Superseded in part, see the note below.** |
 | B15 | The phone labels two different numbers "Nr." and the `Unknown` question names the wrong one | Fixed | One word per number, everywhere: "Bestellung 137" / "Order 137" and "Bon 042" / "Slip 042". The slip header prints `BON 042` / `SLIP 042`. `orders.row`, `orders.ticket`, `orders.detailTitle`, `station.row` and `ticket.unknown.action` all changed, and the rule is stated in the conventions, in 4.4 and in 8.1. |
+
+### What changed in the spec after these dispositions were written
+
+This table records what the spec said when each finding was closed, and two of those sentences no
+longer describe the current document. Both are left in place rather than rewritten, because a
+disposition that is edited to match today's spec stops being a record of anything. What follows is the
+difference.
+
+* **`TimedOut` was renamed to `Timeout`.** B12 and B14 above were written before section 7.2 unified the
+  outcome spelling across `PrintDispatchOutcome`, `PrintAttempt.Outcome` and `PrintJob.FailureReason`.
+  The enum member has been `Timeout` since that pass, and the two mentions above are quoted in the
+  current spelling so a reader searching the spec for the name finds it. Nothing about either
+  disposition changed, only the word.
+* **The circuit breaker's queue depth trigger was removed.** B14 was closed with two triggers, two
+  consecutive unknown outcomes or a queue of ten waiting tickets. The owner has since removed the depth
+  trigger entirely, because it turned an ordinary paper change into a reported station fault: ten
+  orders in four minutes is normal at a busy bar, so the roll running out failed ten tickets and told
+  ten servers their order had failed about a minute before all ten printed correctly. The two-unknowns
+  trigger, which is what actually answers B14's finding, is unchanged. Queue depth is now shown as
+  information on the station banner and the admin overview and read by nothing. Section 7.6 carries the
+  reasoning.
+* **The give-up window no longer runs while the cause is known**, which touches B3 above. B3 was closed
+  by making the window run from `LocationTicket.CreatedAtUtc` so that nothing could park forever. The
+  window is now suspended while the station's blocking cause is known and fixable (paper end, cover
+  open, station disabled, the mock's folder unwritable), and B3's guarantee is carried instead by a 20
+  minute outer bound measured from the same field, which no cause suspends. B3 remains fixed: a ticket
+  still cannot sit unresolved with the phone saying "Wird gedruckt" all evening.
+* **The break-glass page lists every open ticket**, which touches B2 above. B2 was closed by restricting
+  the listing, on the reasoning that a helper could acknowledge a live queued ticket. The owner has
+  since asked for the full listing, because a station whose printer has died has to work every order off
+  the screen and not only the failed ones. B2's actual danger was never the listing, it was the button,
+  and the restriction moved onto the button: a row offers "Übernommen" only when its station genuinely
+  cannot print, and the endpoint refuses the rest. B2 remains fixed, by a different mechanism.
 
 ## Non-blocking findings
 
