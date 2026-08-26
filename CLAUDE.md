@@ -159,6 +159,28 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     prose, not terse machine-speak. The setup checklist that the fire department follows is part of the
     product, not an afterthought.
 
+## Current phase: the mock is the demo
+
+No printer hardware has been bought. The fire department will first try the system with
+`MockPrinterTransport` standing in for every station, and only if they agree it is a tool they want
+will the printers be purchased. The mock is therefore not scaffolding and not a test double in this
+phase: **it is the thing the buying decision is made on.**
+
+Two consequences bind implementation order and quality.
+
+- **Build the vertical slice first, complete:** a server places an order on a phone, it is split by
+  production location, slips appear at the mock stations, and the print state comes back to the
+  phone. Admin configuration polish, device revocation, the break-glass page and the failure edge
+  cases come after that slice works end to end, because the slice is what gets demonstrated.
+- **The mock station view is a product screen, not a debug view.** The rendered slip must look like
+  the real printed slip, and slips must accumulate the way a paper pile accumulates. Simulating paper
+  out, a cover left open and a dropped connection is part of the demonstration, because those are the
+  questions a volunteer will ask.
+
+The `GS ( H` process id echo that print confirmation depends on stays unverified against real
+TM-T20IV firmware until hardware is bought. It is contained behind `IPrinterTransport`, and the spec
+specifies a fallback, but treat it as an assumption rather than a fact.
+
 ## Hardware constraints that bind the code
 
 These come from the Epson TM-T20IV Technical Reference Guide and are not negotiable by preference.
