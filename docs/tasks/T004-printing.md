@@ -16,9 +16,11 @@ the printing-only integration scenarios in section 5 run end to end with `Printe
 succeeds with zero warnings and `dotnet test GastronomyApp.slnx` is green.
 
 This task writes into `backend/GastronomyApp.Infrastructure` (renderer, both transports) and
-`backend/GastronomyApp.Api` (the hosted service that starts one worker per printer endpoint and
-wires worker callbacks toward SignalR). It does not add REST endpoints, a SignalR hub, or any
-frontend code.
+`backend/GastronomyApp.Api` (the hosted service that starts one worker per printer endpoint,
+exposes `IPrinterFleet` as the printing subsystem's one inbound contract, and raises outcomes
+through `IPrintCallbacks`, its one outbound contract). It does not add REST endpoints, a SignalR
+hub, or any frontend code; another task's SignalR dispatcher implements `IPrintCallbacks` and calls
+`IPrinterFleet`.
 
 ## 2. Assumed from earlier tasks
 
@@ -34,30 +36,62 @@ T002 and T003 actually produced rather than guessing.
   `PrintJob`, `PrintAttempt`, `PrinterConfiguration`, `PrinterStatus`, `LocationTicket`,
   `ProductionLocation`, `Order`, `OrderLine`, `NumberCounter`, `EventSession`. Field names and
   nullability follow the tables in spec sections 2.3, 2.4, 2.9 to 2.13 verbatim.
-* Enums matching spec section 3.2 (`TicketStatus`: `Queued`, `Blocked`, `Printing`, `Printed`,
+* Enums matching spec section 3.2 (`LocationTicketStatus`: `Queued`, `Blocked`, `Printing`, `Printed`,
   `PrintedOnTestPrinter`, `Unknown`, `Failed`, `HandledOnPaper`), spec section 3.3 (`PrintJobStatus`:
   `Queued`, `PreflightCheck`, `Blocked`, `Sending`, `AwaitingEcho`, `Confirmed`, `Unknown`, `Failed`,
   `ResolvedPrinted`, `ResolvedMissing`), and `PrintJobKind` (`Initial`, `Reprint`, `Test`) from spec
   section 2.11.
 * `TicketStateMachine` and `PrintJobStateMachine` classes in Core that expose a method shaped
-  `bool CanTransition(TicketStatus from, TicketStatus to)` (and the `PrintJob` equivalent),
+  `bool CanTransition(LocationTicketStatus from, LocationTicketStatus to)` (and the `PrintJob` equivalent),
   implementing exactly the transitions drawn in the mermaid diagrams of spec sections 3.2 and 3.3,
   refusing every transition not drawn. This task's worker calls these before writing a new status
-  rather than re-deriving the graph; if T002 names the method differently, the review updates the
-  call sites in this task's production code, not the test intent.
+  rather than re-deriving the graph.
 * `OrderStatusCalculator` implementing the table in spec section 3.1, callable as
-  `OrderStatus Calculate(IReadOnlyCollection<TicketStatus> ticketStatuses, bool isPractice)`. The
-  worker calls this after every ticket write that might change the order's projected status, per
-  spec section 7.4 step 10 ("Push. `TicketStatusChanged` and, if it changed, `OrderStatusChanged`").
-* `PrintDispatchOutcome`, `PrinterTransportKind`, `IPrinterTransport`, `IPrinterSession`,
-  `PrinterEndpoint`, `PrintPayload`, `PrinterStatusSnapshot`, `PrintDispatchResult` exactly as given
-  in spec section 7.2. These are Core ports; this task implements `IPrinterTransport` twice
-  (`NetworkPrinterTransport`, `MockPrinterTransport`) in Infrastructure and consumes the rest from
-  Core. If T002 places these records in a different namespace than
-  `GastronomyApp.Core.Printing`, only the `using` directives in this task's files change.
-* `FailureReason` as a closed set of strings (or an enum backing them) matching spec section 2.11:
+  `OrderStatus Calculate(IReadOnlyCollection<LocationTicketStatus> ticketStatuses, bool isPractice)`.
+  **Projection ownership, stated exactly as T002 states it:** whoever changes a ticket writes the
+  order status projection in the same transaction through this calculator: this task's worker on the
+  print path, T005 on the HTTP paths (acceptance, resolve, acknowledge). The calculator itself never
+  writes. On the print path, the worker calls it after every ticket write that might change the
+  order's projected status, per spec section 7.4 step 10 ("Push. `TicketStatusChanged` and, if it
+  changed, `OrderStatusChanged`").
+* `RetryPolicy`, owned by T002, callable as
+  `PrintOutcomeMapping Map(PrintAttemptOutcome outcome, TransportKind transportKind, int bytesWritten)`,
+  where
+
+  ```csharp
+  public sealed record PrintOutcomeMapping
+  {
+      public required PrintJobStatus JobStatus { get; init; }
+      public required LocationTicketStatus TicketStatus { get; init; }
+      public required bool ShouldRetryAutomatically { get; init; }
+      public PrintFailureReason? FailureReason { get; init; }
+  }
+  ```
+
+  This task's worker injects `RetryPolicy` and applies the mapping it returns; it does not compute
+  the mapping itself and does not carry a private fallback implementation of spec section 7.6's
+  table. `PrintOutcomeMapping.FailureReason` is null for every row of that table (the reason is
+  assigned later, by the give-up window, the outer bound, or the breaker, not by the mapping), and
+  the worker's terminal writers are what set `PrintJob.FailureReason` from `PrintFailureReason`.
+* `GiveUpWindowCalculator`, owned by T002, holding the 5 minute give-up window and 20 minute outer
+  bound as `static readonly TimeSpan` data fields and computing elapsed unsuspended time from a
+  caller-supplied `IReadOnlyCollection<SuspensionPeriod>`. This task's worker is the caller: it
+  reconstructs the suspension periods from `PrinterStatus` and `PrinterConfiguration.IsEnabled`
+  history (paper end, cover open, station disabled, mock folder unwritable) and passes them to the
+  calculator rather than computing the window arithmetic itself. `StationCircuitBreaker` is not
+  owned by T002 (T002 excludes it) and stays this task's own class, built in Step 6.
+* `PrintAttemptOutcome` (`Confirmed`, `Blocked`, `Unreachable`, `SocketDropped`, `Timeout`,
+  `PrinterError`) and `TransportKind` (`Network`, `Agent`, `Mock`), both owned by T002 and consumed
+  by `RetryPolicy.Map` above. This task introduces, in `GastronomyApp.Core.Printing` as its own Step
+  0 (it is the only consumer and the only implementer), the six port types T002 does not define:
+  `IPrinterTransport`, `IPrinterSession`, `PrinterEndpoint`, `PrintPayload`, `PrinterStatusSnapshot`,
+  `PrintDispatchResult`. This task implements `IPrinterTransport` twice (`NetworkPrinterTransport`,
+  `MockPrinterTransport`) in Infrastructure.
+* `PrintFailureReason`, an enum owned by T002 with exactly the nine members spec section 2.11 lists:
   `PaperEnd`, `CoverOpen`, `Unreachable`, `Timeout`, `SocketDropped`, `PrinterError`,
-  `StationDisabled`, `StationFaulty`, `TicketResolvedByHuman`.
+  `StationDisabled`, `StationFaulty`, `TicketResolvedByHuman`. `IPrintCallbacks.OnTicketStatusChangedAsync`'s
+  failure parameter is typed `PrintFailureReason?`, not `string?`; T005's SignalR dispatcher renders it
+  to the wire string.
 * A localization port the renderer can call without knowing resx exists. Assumed shape (Core
   defines the interface, Api/Infrastructure supplies the implementation, per hard rule 6 "extend
   the concept's existing home"):
@@ -89,10 +123,12 @@ T002 and T003 actually produced rather than guessing.
   "Localization is resx-only", and backend project table: Core has no framework dependencies).
   `GastronomyApp.Api`'s composition root registers the concrete implementation
   (`ResxSlipTextProvider`, in `GastronomyApp.Infrastructure` since it is an adapter, wired at
-  startup in `GastronomyApp.Api`) reading `Strings.de.resx` / `Strings.en.resx`, satisfying backend
-  hard rule 2 ("Localization is resx-only... This includes the text printed on receipt slips"). If
-  T002/T003 already defined a broader `ILocalizer` port used elsewhere in the app, the review
-  reconciles `ISlipTextProvider` into that port rather than keeping two.
+  startup in `GastronomyApp.Api`) reading `SlipStrings.de.resx` / `SlipStrings.en.resx`, satisfying
+  backend hard rule 2 ("Localization is resx-only... This includes the text printed on receipt
+  slips"). This task is the only document that creates a backend resx pair, and it commits to this
+  name rather than reusing `Strings.de.resx` / `Strings.en.resx`, because the desktop project (a
+  separate task) creates its own `Strings.de.resx` / `Strings.en.resx` pair and two files sharing one
+  name across the product invites the wrong one being edited.
 
 **Assumed to exist in `GastronomyApp.Infrastructure`, produced by T003:**
 
@@ -102,12 +138,14 @@ T002 and T003 actually produced rather than guessing.
   `DbSet<NumberCounter>`, `DbSet<EventSession>`, configured for SQLite with
   `BEGIN IMMEDIATE`-style write serialization per spec section 4.1 step 1 and a 5 second busy
   timeout.
-* A counter allocator satisfying spec section 2.13 and section 7.4 step 6, callable as
-  `Task<int> AllocateNextAsync(CounterKind kind, Guid? eventSessionId, Guid? productionLocationId,
-  string? printerEndpointKey, CancellationToken ct)`, cycling `PrinterProcessId` at 9999 as spec
-  section 2.11 states (`1 to 9999`). This task calls it once per job at step 6 of spec section 7.4
-  and nowhere else, and never allocates a `GlobalOrder` or `LocationSequence` number (those belong
-  to order acceptance, T003's territory, per spec section 4.1).
+* `INumberAllocator`, a Core port implemented in Infrastructure, carrying
+  `Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken ct)` (plus
+  T002's own `GlobalOrder`/`LocationSequence` members, which this task never calls), cycling
+  `PrinterProcessId` at 9999 as spec section 2.11 states (`1 to 9999`). This task's
+  `IPrinterWorkerDataAccess.AllocateProcessIdAsync` (Step 6) is the worker's narrow delegate to that
+  one Core port member, not a second allocator: this task calls it once per job at step 6 of spec
+  section 7.4 and nowhere else, and never allocates a `GlobalOrder` or `LocationSequence` number
+  (those belong to order acceptance, T003's territory, per spec section 4.1).
 * Repository or direct `DbContext` access sufficient for this task's worker to: load a ticket with
   its order and lines in one query (spec 7.4 step 1), claim a ticket transactionally (spec 7.4 step
   2), write `PrintJob` and `PrintAttempt` rows (append-only, per spec 2.11 invariant "Attempts are
@@ -117,12 +155,13 @@ T002 and T003 actually produced rather than guessing.
   fixed yet; if T003 introduces a narrower repository port, the review retargets the worker's data
   access to it without changing this task's test intent (each test still proves the same worker
   behaviour against the same in-memory SQLite fixture).
-* `PrinterEndpointKey` construction exactly as spec section 2.13 defines it:
-  `TransportKind|Host|Port|AgentIdentifier`, empty string for unused parts. This task assumes a
-  single static-free helper for this (a non-static instance method on a small
-  `PrinterEndpointKeyBuilder` class, per backend hard rule 1 forbidding static methods) that both
-  `PrinterFleet` (grouping locations into workers) and the counter allocator call, so the string is
-  built in exactly one place per root hard rule 6.
+* `PrinterEndpointKeyBuilder`, a non-static Core service owned by T002 (per architect ruling 8),
+  carrying `string Build(TransportKind transportKind, string host, int? port, string
+  agentIdentifier)` and building the canonical form spec section 2.13 defines
+  (`TransportKind|Host|Port|AgentIdentifier`, empty string for unused parts, never parsed back
+  apart). This task consumes it from Core in two places: `PrinterFleet` (grouping locations into
+  workers) and the call site that builds the `printerEndpointKey` argument to
+  `AllocateProcessIdAsync`. This task does not declare its own copy of this class.
 
 **What this task does if an assumption turns out wrong.** Every production class in this task takes
 its Core and Infrastructure dependencies through constructor-injected interfaces (never a concrete
@@ -144,6 +183,11 @@ Confirm `backend/GastronomyApp.Infrastructure` already references `backend/Gastr
 (from T001/T003) and add no new package beyond what `Directory.Packages.props` already lists,
 except where a step below names one explicitly and justifies it under backend hard rule 5
 (official Microsoft or highly regarded community package only, BCL preferred).
+
+If `backend/GastronomyApp.Api.Tests/ScaffoldingSmokeTest.cs` (T001's placeholder) is still present
+when this task's first real `Api.Tests` fixture is added in Step 6, delete it in that same change.
+T005 also claims this deletion for the same reason; whichever task lands first performs it, and the
+other finds it already gone.
 
 `NetworkPrinterTransport`'s TCP work uses `System.Net.Sockets.TcpListener` /
 `System.Net.Sockets.TcpClient` from the BCL for both the transport and its in-process fake printer
@@ -285,7 +329,7 @@ public sealed class MockPrinterTransport : IPrinterTransport
 {
     public MockPrinterTransport(string dataDirectory, IMockFaultRegistry faultRegistry, TimeProvider timeProvider);
 
-    public PrinterTransportKind Kind { get; }
+    public TransportKind Kind { get; }
     public Task<IPrinterSession> ConnectAsync(PrinterEndpoint endpoint, CancellationToken cancellationToken);
 }
 
@@ -419,7 +463,7 @@ public sealed class NetworkPrinterTransport : IPrinterTransport
 {
     public NetworkPrinterTransport(TimeProvider timeProvider);
 
-    public PrinterTransportKind Kind { get; }
+    public TransportKind Kind { get; }
     public Task<IPrinterSession> ConnectAsync(PrinterEndpoint endpoint, CancellationToken cancellationToken);
 }
 ```
@@ -499,6 +543,8 @@ public sealed class PrinterWorker
         IPrinterWorkerDataAccess dataAccess,
         IPrintCallbacks callbacks,
         EscPosSlipRenderer renderer,
+        RetryPolicy retryPolicy,
+        GiveUpWindowCalculator giveUpWindowCalculator,
         TimeProvider timeProvider);
 
     public Guid[] ServedProductionLocationIds { get; }
@@ -510,7 +556,7 @@ public sealed class PrinterWorker
 
 public interface IPrintCallbacks
 {
-    Task OnTicketStatusChangedAsync(Guid orderId, Guid locationTicketId, TicketStatus newStatus, string? failureReason, CancellationToken ct);
+    Task OnTicketStatusChangedAsync(Guid orderId, Guid locationTicketId, LocationTicketStatus newStatus, PrintFailureReason? failureReason, CancellationToken ct);
     Task OnOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct);
     Task OnPrinterStatusChangedAsync(Guid productionLocationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct);
 }
@@ -520,11 +566,11 @@ public interface IPrinterWorkerDataAccess
     Task<TicketLoadResult> LoadTicketForPrintingAsync(Guid locationTicketId, CancellationToken ct);
     Task<ClaimResult> TryClaimAsync(Guid locationTicketId, CancellationToken ct);
     Task RecordAttemptAsync(PrintAttempt attempt, CancellationToken ct);
-    Task ApplyOutcomeAsync(Guid locationTicketId, PrintDispatchOutcome outcome, int bytesWritten, PrinterStatusSnapshot statusAtEnd, CancellationToken ct);
+    Task ApplyOutcomeAsync(Guid locationTicketId, PrintAttemptOutcome outcome, int bytesWritten, PrinterStatusSnapshot statusAtEnd, CancellationToken ct);
     Task<IReadOnlyList<Guid>> LoadRecoverableTicketIdsAsync(IReadOnlyCollection<Guid> servedLocationIds, CancellationToken ct);
     Task MarkPrintingTicketsUnknownAsync(IReadOnlyCollection<Guid> servedLocationIds, CancellationToken ct);
     Task<int> CountWaitingTicketsAsync(Guid productionLocationId, CancellationToken ct);
-    Task FailAllWaitingAtEndpointAsync(IReadOnlyCollection<Guid> servedLocationIds, string failureReason, CancellationToken ct);
+    Task FailAllWaitingAtEndpointAsync(IReadOnlyCollection<Guid> servedLocationIds, PrintFailureReason failureReason, CancellationToken ct);
     Task<int> AllocateProcessIdAsync(string printerEndpointKey, CancellationToken ct);
 }
 ```
@@ -542,7 +588,7 @@ itself for the integration tests in Step 8:
 1. `RunAsync_ClaimFailsBecauseTicketNoLongerWaiting_EndsFailedWithTicketResolvedByHumanZeroBytes`:
    proves spec section 7.4 step 2's first bullet: the socket is never touched (assert the fake
    `IPrinterTransport.ConnectAsync` / session is never called), the job ends `Failed` with
-   `FailureReason.TicketResolvedByHuman`, zero bytes recorded.
+   `PrintFailureReason.TicketResolvedByHuman`, zero bytes recorded.
 2. `RunAsync_ClaimSucceeds_MovesTicketToPrintingBeforeSending`.
 3. `RunAsync_PrinterDeclaredFaultySinceEnqueue_LeavesTicketUnclaimedForBreakerToResolve`: spec
    section 7.4 step 2's third bullet.
@@ -586,14 +632,12 @@ itself for the integration tests in Step 8:
 22. `RunAsync_RetryMapping_ZeroBytesRetried_BytesNeverRetried`: a table-driven test iterating every
     row of spec section 7.6's mapping table (`Confirmed`/`Network`, `Confirmed`/`Mock`, `Blocked`/0,
     `Unreachable`/0, `SocketDropped`/0, `SocketDropped`/>0, `Timeout`/0, `Timeout`/>0,
-    `PrinterError`/0, `PrinterError`/>0), asserting the resulting job state, ticket state, and
-    whether an automatic retry is scheduled, matches the table exactly. This is the `RetryPolicy`
-    coverage named in spec section 11.1, implemented as the worker's own outcome-to-state mapping
-    method (a private `MapOutcome` or an extracted `RetryPolicy` class the worker calls; extracting
-    it to its own class in `GastronomyApp.Core` is preferred, per root hard rule 6, since the
-    mapping is pure and belongs with the state machines T002 owns: if T002 has already placed a
-    `RetryPolicy` class in Core, this task's worker calls that class instead of reimplementing the
-    table, and the review reconciles the constructor).
+    `PrinterError`/0, `PrinterError`/>0), each case faking `RetryPolicy.Map` (constructor-injected,
+    per section 2) to return the `PrintOutcomeMapping` spec section 7.6's row specifies, and
+    asserting the worker writes exactly that job state and ticket state and schedules a retry only
+    when `ShouldRetryAutomatically` is true. This test proves the worker **applies** the mapping
+    `RetryPolicy` (T002's class) returns; it does not compute the mapping and carries no private
+    fallback implementation of the table.
 23. `StationCircuitBreaker_TwoConsecutiveUnknownOrTimeoutOutcomes_TripsAtEndpoint`: asserts
     `IsFaulty` is set for every `ServedProductionLocationIds` entry and
     `FailAllWaitingAtEndpointAsync` is called once, in one logical transaction (assert both effects
@@ -605,27 +649,55 @@ itself for the integration tests in Step 8:
     11.1's `StationCircuitBreaker` row.
 26. `StationCircuitBreaker_HumanReconnectClearsFaultyAndRestartsWorker`: a reconnect call clears
     `IsFaulty` on every served location and resumes attempting jobs.
-27. `GiveUpWindow_MeasuredFromLocationTicketCreatedAtUtc_NotFromFirstAttempt`: spec section 3.2.
-28. `GiveUpWindow_SuspendedForFourKnownCauses_ResumesWithoutResettingWhenCauseClears`: the four
-    suspending causes: paper end, cover open, station disabled, mock folder unwritable, per spec
-    sections 3.0 and 7.8. Accumulate unsuspended time across an alternating sequence of
-    suspend/resume per spec section 11.1's `GiveUpWindow` row.
-29. `GiveUpWindow_MechanicalErrorBlockedTicket_IsNotSuspendedAndExpiresAtFiveMinutes`.
+27. `GiveUpWindow_MeasuredFromLocationTicketCreatedAtUtc_NotFromFirstAttempt`: constructor-injected
+    `GiveUpWindowCalculator` (T002's class, holding the 5 minute and 20 minute constants as data),
+    asserting the worker passes `LocationTicket.CreatedAtUtc` as the calculation's origin rather than
+    the first attempt's timestamp, per spec section 3.2.
+28. `GiveUpWindow_SuspendedForFourKnownCauses_ResumesWithoutResettingWhenCauseClears`: asserts the
+    worker reconstructs an `IReadOnlyCollection<SuspensionPeriod>` from `PrinterStatus` and
+    `PrinterConfiguration.IsEnabled` history covering the four suspending causes (paper end, cover
+    open, station disabled, mock folder unwritable, per spec sections 3.0 and 7.8) and passes it to
+    `GiveUpWindowCalculator`, which accumulates unsuspended time across an alternating sequence of
+    suspend/resume per spec section 11.1's `GiveUpWindow` row. This test proves the worker's
+    reconstruction is correct; the accumulation arithmetic itself is `GiveUpWindowCalculator`'s own
+    unit-test territory in T002, not retested here.
+29. `GiveUpWindow_MechanicalErrorBlockedTicket_IsNotSuspendedAndExpiresAtFiveMinutes`: asserts the
+    worker's reconstructed suspension collection contains no period for a mechanical-error `Blocked`
+    ticket, so `GiveUpWindowCalculator` expires it at five minutes.
 30. `OuterBound_TwentyMinutes_FiresUnderEveryKnownCause_NeverFiresOnPrinting`: assert a ticket
     that is 20 minutes old while `Printing` (bytes on the wire) is re-evaluated only once the job
-    ends, never failed mid-flight.
+    ends, never failed mid-flight, using `GiveUpWindowCalculator`'s twenty minute outer bound.
+31. `StationCircuitBreaker_IsWorkerOwned_NotSharedWithGiveUpWindowCalculator`: the two-consecutive-
+    unknown-or-timeout trip counter (tests 23 to 26) is this task's own `StationCircuitBreaker`
+    class, not part of `GiveUpWindowCalculator`; this test asserts the breaker still trips when the
+    give-up window has not yet expired, proving the two mechanisms are independent, per spec section
+    7.6 ("Two consecutive unknown outcomes is the only trigger, and queue depth is deliberately not
+    one") and this task's section 2 note that `StationCircuitBreaker` is unowned by T002.
 
-### Step 7: `PrinterFleet` (Api hosted service)
+### Step 7: `PrinterFleet` (Api hosted service, and the printing subsystem's one inbound contract)
 
-File: `backend/GastronomyApp.Api/Printing/PrinterFleet.cs`.
+File: `backend/GastronomyApp.Api/Printing/PrinterFleet.cs`, plus `IPrinterFleet.cs` in the same
+folder.
 Test file: `backend/GastronomyApp.Api.Tests/Printing/PrinterFleetTest.cs`.
 
-Signature:
+`IPrinterFleet` is the printing subsystem's whole inbound surface: every caller outside this task
+(the order acceptance endpoint enqueuing a job, the reconnect endpoint, the test-print endpoint)
+goes through it, and nothing else in this task or any other reaches into a `PrinterWorker` directly.
+Outbound notifications stay on `IPrintCallbacks` (Step 6): `IPrinterFleet` carries commands in,
+`IPrintCallbacks` carries outcomes out, and the two together are the one coherent contract between
+this task and T005. This task both defines the interface and provides the only implementation:
 
 ```csharp
 namespace GastronomyApp.Api.Printing;
 
-public sealed class PrinterFleet : IHostedService
+public interface IPrinterFleet
+{
+    Task EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken);
+    Task TestPrintAsync(Guid productionLocationId, CancellationToken cancellationToken);
+}
+
+public sealed class PrinterFleet : IPrinterFleet, IHostedService
 {
     public PrinterFleet(
         IPrinterConfigurationSource configurationSource,
@@ -638,11 +710,15 @@ public sealed class PrinterFleet : IHostedService
     public Task StartAsync(CancellationToken cancellationToken);
     public Task StopAsync(CancellationToken cancellationToken);
     public Task ReconcileAsync(CancellationToken cancellationToken);
+
+    public Task EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken);
+    public Task TestPrintAsync(Guid productionLocationId, CancellationToken cancellationToken);
 }
 
 public interface IPrinterTransportFactory
 {
-    IPrinterTransport Create(PrinterTransportKind kind);
+    IPrinterTransport Create(TransportKind kind);
 }
 
 public interface IPrinterConfigurationSource
@@ -650,6 +726,20 @@ public interface IPrinterConfigurationSource
     Task<IReadOnlyList<(ProductionLocation Location, PrinterConfiguration Configuration)>> LoadEnabledAsync(CancellationToken ct);
 }
 ```
+
+`EnqueueAsync` resolves the ticket's `ProductionLocationId` to the worker serving its endpoint and
+calls that worker's `Enqueue`, per spec section 7.3's per-endpoint grouping; T005's order acceptance
+endpoint calls it once per ticket after a genuine 201, never after a 200 that returned an
+already-accepted order (that call site itself is T005's, per its own findings; this task only
+guarantees `EnqueueAsync` is safe and correct to call repeatedly for distinct tickets). `PrintJobKind`
+lets one method serve both the initial print and a reprint, matching spec section 2.11's
+`PrintJob.Kind`; `EnqueueAsync` creates the `PrintJob` row itself (`Initial` or `Reprint`) before
+handing the ticket id to the worker, so the worker's queue always has a job to attempt.
+`ReconnectAsync` clears `IsFaulty` on every location sharing the given location's endpoint and
+restarts that one worker's attempts, per spec section 7.6's reconnect rule, returning the full list
+of affected `ProductionLocationId`s so a caller can push one `PrinterStatusChanged` per location.
+`TestPrintAsync` enqueues a `PrintJobKind.Test` job at the given location's worker, per spec section
+7.3 ("a test print is a `PrintJob` of kind `Test`... rather than a side channel").
 
 Required tests, red first:
 
@@ -662,6 +752,17 @@ Required tests, red first:
 4. `ReconcileAsync_ConfigurationChangeAddingLocationToExistingEndpoint_JoinsExistingWorkerNotANewOne`.
 5. `StartAsync_CallsRecoverAtStartupOnEveryWorker`.
 6. `StopAsync_StopsEveryWorkerCleanly`.
+7. `EnqueueAsync_CreatesPrintJobThenEnqueuesOnTheOwningWorker`: asserts a `PrintJob` row is written
+   with the given `PrintJobKind` before the worker's `Enqueue` is called, and that the worker chosen
+   is the one whose `ServedProductionLocationIds` contains the ticket's location.
+8. `EnqueueAsync_UnknownLocationTicketId_ThrowsRatherThanSilentlyDroppingTheCall`: per root hard rule
+   2 (no silently swallowed errors), an id that resolves to no ticket surfaces as a value or
+   exception the caller acts on, never a no-op.
+9. `ReconnectAsync_ClearsIsFaultyOnEveryLocationSharingTheEndpointAndReturnsTheirIds`: matches spec
+   section 7.6's shared-endpoint reconnect rule and T004's own
+   `StationCircuitBreaker_HumanReconnectClearsFaultyAndRestartsWorker` worker-level test from Step 6,
+   asserted here at the fleet level across two locations on one endpoint.
+10. `TestPrintAsync_EnqueuesATestKindJobAtTheGivenLocationsWorker`.
 
 ### Step 8: Printing-only integration scenarios, no HTTP
 
@@ -711,9 +812,10 @@ Carried forward from the root, backend, and this task's own scope, binding every
   rule 7 (a documented hardware constraint this task's ESC/POS byte sequences already state as
   spec-cited literals, not as comments; prefer naming the constant instead of commenting it, for
   example `private const byte GsInitCommand = 0x1D;` rather than a comment explaining the byte).
-- No static methods or properties anywhere in this task's code, including the endpoint-key builder
-  (assumed non-static in section 2) and any helper class. Framework metadata registration is the
-  only exception, and nothing in this task's scope needs it.
+- No static methods or properties anywhere in this task's code, including any helper class this
+  task writes (`PrinterEndpointKeyBuilder` is non-static per architect ruling 8, but it is owned by
+  T002 in Core, not written by this task). Framework metadata registration is the only exception,
+  and nothing in this task's scope needs it.
 - No empty catch blocks. A caught exception in the renderer, either transport, or the worker either
   rethrows, surfaces through `PrintDispatchResult`/`PrinterStatusSnapshot`, or is otherwise turned
   into a value a caller acts on.
@@ -722,10 +824,9 @@ Carried forward from the root, backend, and this task's own scope, binding every
 - Never use the em-dash character, and never a hyphen as its substitute, anywhere in this document,
   in code identifiers, in test names, or in commit-adjacent text this task produces.
 - Localization stays resx-only, wired through `ISlipTextProvider`/`ResxSlipTextProvider` per
-  section 2. Both `Strings.de.resx` and `Strings.en.resx` (or the domain-specific pair this task
-  adds, for example `SlipStrings.de.resx` / `SlipStrings.en.resx`) must contain every key this task
-  introduces, in both languages, in the same change that introduces the key, per root hard rule 8
-  and backend hard rule 2.
+  section 2. `SlipStrings.de.resx` and `SlipStrings.en.resx` in `GastronomyApp.Infrastructure` must
+  each contain every key this task introduces, in both languages, in the same change that introduces
+  the key, per root hard rule 8 and backend hard rule 2.
 - `MockPrinterTransport` stays exactly as simple as backend hard rule 10 and the root CLAUDE.md
   "Current phase" section describe: one file per slip, the seven fault controls, nothing else. Do
   not add a rendered station screen, a pile visualisation, or styling to it under any pretext.
@@ -791,7 +892,7 @@ step:
   composition root; this task's own tests use a recording fake for that interface and never touch
   SignalR types.
 - `AgentPrinterTransport` (the Pi agent transport). Deferred per spec section 7.2's table and the
-  root CLAUDE.md; not started, not stubbed beyond what already exists in `PrinterTransportKind`.
+  root CLAUDE.md; not started, not stubbed beyond what already exists in `TransportKind`.
 - Real-hardware verification against a physical TM-T20IV. Open questions 1 and 11 in spec section
   12 stay open. This task's `NetworkPrinterTransport` and the `GS ( H` / `GS ( k` sequences compile
   and are unit-tested against the in-process fake server from Step 4, which is a documented
@@ -800,11 +901,12 @@ step:
   write plus a clean `DLE EOT n=4` read as a weaker confirmation) is not implemented in this task,
   since it is only exercised if the primary path is later found not to work on real firmware.
 - The composition root wiring that registers `PrinterFleet` as a hosted service in
-  `GastronomyApp.Api`'s `Program`/startup configuration, and the registration of
-  `ResxSlipTextProvider` and `EfCorePrinterWorkerDataAccess` in dependency injection. This task
-  writes the classes and their tests; wiring them into the actual ASP.NET Core host belongs to
-  whichever task builds the composition root (assumed to be T003 or a later Api-wiring task), since
-  this task's classes are constructor-injected and testable without a running host.
+  `GastronomyApp.Api`'s `Build` method, and the registration of `ResxSlipTextProvider`,
+  `EfCorePrinterWorkerDataAccess`, both transports, and the transport factory in dependency
+  injection. This task writes the classes and their tests; wiring them into the actual ASP.NET Core
+  host is T005's composition root, since this task's classes are constructor-injected and testable
+  without a running host. `HubNotificationDispatcher`, which implements this task's `IPrintCallbacks`
+  and is registered as its implementation, is also T005's, not this task's.
 - The admin printer screen, the break-glass page, and any frontend code whatsoever.
 - Device authentication, order acceptance, routing, or numbering allocation logic beyond the single
   `AllocateProcessIdAsync` call this task's worker makes at spec section 7.4 step 6. Global order
@@ -814,15 +916,11 @@ step:
 
 ## 7. Ambiguities and chosen readings
 
-- **Whether `RetryPolicy` and the state machines live in `GastronomyApp.Core` or inside this
-  task's worker.** The spec names `RetryPolicy`, `TicketStateMachine`, and `PrintJobStateMachine`
-  as unit-tested classes in section 11.1 without saying which project owns them. Root hard rule 6
-  ("extend the concept's existing home") and the backend project table (Core holds "domain models,
-  ports, use cases... no framework dependencies") both point at Core, since the outcome-to-state
-  mapping is pure domain logic with no printer, socket, or EF Core dependency. This task assumes
-  T002 owns them and calls them from the worker; if T002 does not produce them, this task's
-  fallback (an extracted `RetryPolicy` class placed in Core by this task itself) is named in Step 6
-  so the worker's tests do not silently depend on inline logic nobody can find later.
+`RetryPolicy`, `GiveUpWindowCalculator`, and the two state machines are settled, not ambiguous:
+T002 owns all four in Core, and this task's worker injects and calls them (section 2). The bullet
+that used to record this as an open fork is removed; section 2 states the resolved ownership
+instead.
+
 - **Whether the mock's `ISlipTextProvider` implementation lives in Infrastructure or Api.** The
   backend project table puts "printer transports" in Infrastructure and "composition root" in Api.
   This task places `ResxSlipTextProvider` in Infrastructure, next to the renderer that consumes it,
@@ -837,6 +935,6 @@ step:
   single drain-the-queue-once method.** Section 3.2 states there is a single consumer per worker
   and the worker owns a queue; this task assumes `RunAsync` is the long-running loop `PrinterFleet`
   starts once per worker and keeps running until the supplied `CancellationToken` is cancelled at
-  shutdown, with `Enqueue` adding work from outside (called by whatever the acceptance and
-  reconnect/reprint call sites turn out to be in later tasks) and the loop waking on a new item or
-  its own heartbeat timer, whichever comes first.
+  shutdown, with `Enqueue` adding work from outside (called by `PrinterFleet.EnqueueAsync`, `IPrinterFleet`'s
+  own implementation, on behalf of T005's order acceptance and reprint endpoints, per Step 7) and
+  the loop waking on a new item or its own heartbeat timer, whichever comes first.
