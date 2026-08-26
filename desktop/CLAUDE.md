@@ -19,7 +19,9 @@ second admin UI: no item editing, no printer management, no order views. The web
 for the phones regardless, and two admin surfaces would have to be kept true.
 
 The settings window holds only what cannot live in a web page served by the very server being
-configured: port, bind address, database location, and which network to display. Nothing else.
+configured: port, bind address, database location, and which network to display, plus two actions
+that belong to the machine rather than the product: opening the data folder, and the elevated
+"Repair the setup" action (firewall rule and folder permissions, both idempotent). Nothing else.
 
 ## Hard rules
 

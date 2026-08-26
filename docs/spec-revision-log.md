@@ -242,3 +242,108 @@ automatically with no control rendered, put the choice for an item with several 
 line rather than on a session, a device or a shift, and forbid a remembered location preference and a
 shift-start selection screen outright. Nothing is left to do here. A reader who came looking for the
 constraint described above will not find it, because it is no longer there.
+
+---
+
+# Second review pass: dispositions for `docs/spec-review-2.md`
+
+A disposition for every one of the 31 findings in the second adversarial review, which raised 9
+blocking and 22 non-blocking findings against the 4056 line document. The dispositions are the same
+four as above.
+
+Counts: 9 blocking, all Fixed. 22 non-blocking: 21 Fixed, 0 false positives, 1 Owner decision needed.
+No finding was dropped, and none was dissolved, because the owner removed no mechanism during this
+pass.
+
+Five judgment calls inside the blocking findings were decided by the architect before the pass began
+and are recorded as settled rather than argued again: the outcome mapping depends on the transport kind
+and lives only in 7.6; a `Printing` ticket is never acknowledgeable by anybody; the circuit breaker
+follows the workers to the printer endpoint; the break-glass page joins one site-wide station group;
+and the desktop's three seams are the locked data folder, the elevated relaunch of the same executable,
+and the general repair action.
+
+## Blocking findings
+
+| # | The finding, in one line | Disposition | What the spec says now |
+|---|---|---|---|
+| B1 | The 7.6 outcome table sends every mock print to `Printed`, reopening the trap 7.8 exists to close | Fixed | 7.6's table gained a transport column and its `Confirmed` row split in two: `Network` or `Agent` maps the ticket to `Printed`, `Mock` maps it to `PrintedOnTestPrinter`. 7.6 states in its opening that it is the single mapping and that 7.8 and 3.5 restate it, with 7.6 binding on any disagreement. 7.4 step 9 now points at 7.6 instead of "section 3". 7.8's fault table says its ticket column is read out of 7.6. 11.1's `RetryPolicy` row tests both `Confirmed` rows by name. |
+| B2 | The break-glass acknowledge rule permits a `Printing` ticket, which 5.6 asserts one line later that it forbids | Fixed | 5.6 states `canAcknowledge` as one boolean expression: the ticket is `Failed`, `Unknown` or `Blocked`, **or** (the location cannot print right now **and** the ticket is not `Printing`). A paragraph says in its own sentence that a `Printing` ticket is never acknowledgeable under any station condition, and why: bytes may be leaving the socket. 8.10 matches, and such a row renders `station.status.printing` instead of a button. 11.1's `TicketAcknowledgePolicy` and 11.2's break-glass row both walk a `Printing` ticket through all six printer conditions. |
+| B3 | The admin screen instructs the operator to change the data folder mid-evening, and changing it destroys the evening | Fixed | 10.1 gained a subsection on what a settings change costs. **The data folder cannot be changed while an event session is active**: the field is disabled with `desktop.settings.dataFolderLocked` saying why, and an allowed change takes effect on the next start with nothing moved (`desktop.settings.dataFolderRestart`). `admin.printers.mockFolderUnwritable` was rewritten and no longer mentions the data folder setting at all: it says to announce the orders in person, then to repair the setup or free disk space. No message in the product now instructs a mid-service folder change. |
+| B4 | The circuit breaker was never rekeyed to the printer endpoint when the workers were | Fixed | The breaker is a property of the printer endpoint, like the worker, the socket and the `PrinterProcessId` counter. A trip sets `IsFaulty` on every active location resolving to that endpoint and fails every waiting ticket at all of them in one transaction with `StationFaulty`; each affected location produces its own `header.stationFaulty` banner, so every one is named. `reconnect` on any of those locations clears all of them and restarts the one worker, and the response names them. Stated in 7.6, cross-stated in 2.12, 7.3, 3.5 and the 5.5 endpoint row, with new integration and end to end rows. |
+| B5 | A station page filtered to another location never receives that location's new orders | Fixed | 6.1 replaced `station:{locationId}` with one site-wide `stations` group, with the reasoning: the access key already grants site-wide reading, so the group scope matches the page scope, and per-location filtering stays a client-side view concern. `OrderAccepted`, `TicketStatusChanged` and `PrinterStatusChanged` all push there. There is no leave-and-join on a filter change, so there is no window. 11.2's SignalR row and a new end to end scenario cover the filter case. |
+| B6 | First run needs an elevated process, and 10.1 forbids the program from starting one | Fixed | 10.1's "one process" rule is now "one process serves the phones", with the exception stated plainly: the program relaunches **its own executable with a setup argument, elevated**, which creates the firewall rule, grants the folder rights and exits, hosting nothing. **The setup process is exempt from the single-instance mutex because it never hosts the server**, so it neither takes the mutex nor is refused by it, and the running instance waits for it. The mutex is taken by the window, and the single-instance section says so. |
+| B7 | The ProgramData permission repair cannot run for the second Windows user, who is the person it exists to protect | Fixed | The repair is decoupled from first run. 10.2 defines the test as **"is the required state present"**, evaluated on every start, and says why a marker inside the unwritable folder was the trap. A folder that exists and cannot be written to now produces `desktop.error.dataFolderRepair`, which offers the elevated repair and never a different folder. 10.3 turned the firewall button into **"Repair the setup"**, one button running the same two idempotent actions, runnable by anybody who can answer the UAC prompt, with instructions as the only fallback. |
+| B8 | Acknowledge can be undone for ten seconds, and there is no endpoint, transition, or event that undoes it | Fixed | 8.10 specifies the safer of the review's two readings and says so explicitly: **the undo is a ten second client-side delay before sending, not a reversal afterwards.** The row greys, holds its place and renders `station.takenPending` with a countdown; undo cancels it and nothing reaches the server. No undo endpoint, no `HandledOnPaper --> Queued` transition and no retraction event exist, and 8.10 says why `HandledOnPaper` cannot be taken back. The accepted cost, two phones each holding an unsent acknowledgement, is stated, and the loser gets 409 with the new `station.alreadyTaken`. Covered end to end. |
+| B9 | The 20 minute outer bound is specified to fire "whatever is holding it", including a job with bytes on the wire | Fixed | 3.2 states the exception in the same breath as the bound: **the outer bound never fires on a ticket in `Printing`**, because failing it would send a server to announce an order the printer puts on the pile seconds later. Nothing parks, because `JobTimeoutSeconds` bounds the job at 90 seconds and the bound is evaluated again the moment the job ends, so the ticket is at most 90 seconds late. 11.1's `GiveUpWindow` row now asserts this instead of the opposite. |
+
+## Non-blocking findings
+
+| # | The finding, in one line | Disposition | What the spec says now |
+|---|---|---|---|
+| N1 | `PrintedOnTestPrinter` and `Printing` are missing from the mock's failure paths and the station status strings | Fixed | 7.8 gained a paragraph distinguishing its two zero byte rows, which run the clock and fail at five minutes, from the mock's unwritable folder, which is a suspending cause and ends at the 20 minute bound. `station.status.printing` was added to 8.10's table. |
+| N2 | The location's slip language is specified but exists nowhere in the model, the API or a screen | Fixed | `SlipLanguage` was added to `ProductionLocation` in the ERD and in 2.4's field table, to the body of both location endpoints in 5.5 with `de` as the default, and to the admin station form with `admin.locations.slipLanguage` and its help string. 7.7 now names the field instead of asserting a setting that did not exist. |
+| N3 | Every QR-consuming surface needs a raster encoder, which makes open question 11's second fallback impossible | Fixed | 10.1 states that a QR encoder is a version 1 requirement unconditionally, because the window draws a code on every start and the printable station card carries one, neither with a printer in the loop. Open question 11 was narrowed to how the symbol reaches the slip, and its second fallback, the URL as wrapped text with no symbol, is withdrawn. |
+| N4 | Changing the port or the bind address in the settings window has no stated consequence | Fixed | 10.1's new settings subsection states the consequence in full and reuses the existing warning: both fields carry the sentence `admin.overview.addressChanged` already carries, `desktop.settings.bindAddressHelp` was added and `desktop.settings.portHelp` was extended, and **both are refused while any phone is enrolled and the session has accepted an order**, with `desktop.settings.addressLocked`. |
+| N5 | The station card's printed QR is dead after an address change, and the recovery text does not mention it | Fixed | Checklist step 9 in both languages now says the cards in the printer lids carry the old address too and to print and tape a fresh card at every station. |
+| N6 | `ticket.failed` states a duration that the suspension rule makes false | Fixed | The duration is gone and the cause is named instead: "Der Drucker dort antwortet nicht." / "The printer there is not answering." The minutes stay only on `ticket.failedAfterWaiting`, where they are true. |
+| N7 | The suspension arithmetic is left to the implementer | Fixed | 3.2 states the accumulation rule in one sentence, a stopwatch paused and resumed rather than reset or read off the wall clock, and gives the review's worked example including the conclusion that the outer bound dominates a heavily suspended ticket and that this is intended. 11.1's `GiveUpWindow` row tests the alternating case against that example. |
+| N8 | `OrderAccepted` and `TicketStatusChanged` carry nothing a station row can be rendered from | Fixed | 6.2 states that the station page refetches `GET /api/station/{accessKey}/tickets` on both events rather than rendering from the payload, with the reason: widening the payload would put a second producer of `canAcknowledge` beside the one 5.6 requires to be the only one. |
+| N9 | The 503 and 429 responses have no strings, and the string that will be reused states a falsehood | Fixed | `review.sendFailedDatabase` and `review.tooManyRequests` were added in both languages, and 5.1 names them on the 503 and the 429. 5.1 also says why the 503 does not reuse `review.sendFailed`: the laptop answered and its disk did not. |
+| N10 | `TicketResolvedByHuman` and `Confirmed` have no message key, which 11.1 asserts is impossible | Fixed | 2.11 states that eight of the nine `FailureReason` values reach a client and that `TicketResolvedByHuman` is an admin-only diagnostic with no key, because its ticket is `HandledOnPaper` and carries that state's message. 11.1's `messageForTicket` row was scoped to the eight and asserts the ninth has none. |
+| N11 | The plural-forms rule is stated inside 8.5 and the strings that need it are mostly in 8.9 | Fixed | The rule moved to 8.1, where it binds every table in section 8, and it names all ten `{count}` keys. A second rule was added: a string carries at most one number needing a plural form, and the two strings carrying a second number are shown to be safe by construction, `admin.overview.stationBlocked` because its `{minutes}` is never below five and `ticket.failedAfterWaiting` because its `{minutes}` is never below twenty. |
+| N12 | Cause-first guidance, against 8.1's own rule | Fixed | `catalog.paperWarning` and `catalog.offlineWarning` now lead with "Nehmen Sie weiter Bestellungen auf." / "Keep taking orders." and carry the cause as the trailing clause. `admin.printers.mockFolderUnwritable` leads with the action, as part of B3. |
+| N13 | Checklist step 14 tells the volunteer to expect the ordering page, which an unenrolled phone cannot show | Fixed | Step 14 in both languages now says the screen asking for a six digit code is what should appear, and that seeing any page from the program at all is the proof. |
+| N14 | Nothing in checklist step 12 changes the transport from `Mock` to `Network` | Fixed | 6.2's `PrinterDiscovered` row states that tapping a discovered printer fills in the host and port **and sets `TransportKind` to `Network`**. `admin.printers.hostHelp` says so, and checklist step 12 in both languages says it, including that a hand-typed address needs the kind set as well. |
+| N15 | At most one outstanding invitation is asserted but never enforced | Fixed | 2.8 specifies a partial unique index over the outstanding condition and states that creating an invitation consumes the previous one in the same transaction that inserts, so two admin tabs produce one outstanding row and one loser. 11.2's enrolment row tests the concurrent case. |
+| N16 | A revoked device's live SignalR connection is not terminated | Fixed | 6.2 states that the transaction setting `RevokedAtUtc` removes the connection from every group and aborts it, and that the hub refuses it if it reconnects. `DeviceRevoked` is what tells the person, not what enforces the revocation. Tested in 11.2's SignalR row. |
+| N17 | `Device.Language` has no stated origin at enrolment | Fixed | 2.8 states the default: German, unless the redeeming browser's `Accept-Language` asks for English first, with the note that the settings sheet is where it changes and that a stored language always beats the header afterwards. It is the same rule as 8.10's opening language. |
+| N18 | `Blocked --> Failed` at the give-up window exists in the job machine and not in the ticket machine | Fixed | The arrow was added to 3.2's diagram, conditioned on the cause not being one of the four suspending ones, with prose naming the case it covers: `PrinterError` with zero bytes, which is a mechanical error and an unknown cause. 3.5's mechanical error row was updated to match. |
+| N19 | 7.5's release rule names only paper end | Fixed | 7.5 now says that any blocking condition going from set to clear releases the `Blocked` jobs at that printer, names paper end, cover open and the error state as the blocking conditions, and says what naming only paper end would have broken. |
+| N20 | An order whose only ticket is `HandledOnPaper` reports itself `Printed` to the server | Fixed | The bucket is kept and the chip is not: 3.1 states that when at least one ticket is `HandledOnPaper` the phone renders the new `orders.status.handledOnPaper` instead of `orders.status.printed`. It is a rendering rule over a status the calculator already produced, so the table stays total. |
+| N21 | The revision log records two closures that the current spec has removed, without saying so | Fixed | Recorded in the supersession note below, which belongs with the first review's supersession list. |
+| N22 | The desktop `CLAUDE.md` says the settings window holds four settings and nothing else | Owner decision needed | This pass was scoped to `docs/spec.md` and this log, and the fix the review names is one sentence in `desktop/CLAUDE.md`. It became **open question 12**, which quotes the file, gives the case for both buttons on the file's own reasoning, records that it is the only `CLAUDE.md` contradiction across the four files, and leaves the owner to choose between adding the sentence and removing the buttons. |
+
+## Supersession note, which closes N21
+
+This belongs with the first review's "What changed in the spec after these dispositions were written"
+list above, and is recorded here so that the earlier dispositions stay a record of what was true when
+they were written.
+
+* **Device reassignment was removed by the enrolment rewrite**, which touches B4 above and ranked
+  missing piece 6. B4's disposition cites "An admin can reassign a phone to a different person for a
+  shift handover (5.5)", and the missing piece cites `PUT /api/admin/devices/{id}` with
+  `admin.devices.reassign`. Neither exists. The current 5.5 states the opposite outright: "No endpoint
+  creates a person, and no endpoint moves a phone to somebody else." What replaced it is the rule in
+  2.8 that a person has at most one working phone and that issuing a new QR code revokes the old one in
+  the same transaction, so a phone changes hands by its new carrier setting it up under their own name.
+  B4's actual finding, that an `Unknown` question is unanswerable when the placing phone dies, is
+  unaffected and remains fixed: orders and questions are scoped by `ServerPersonId`, the
+  `person:{serverPersonId}` group still exists, and the admin resolve endpoint still exists. Only the
+  reassignment sentence went.
+
+## Two first-review closures were reopened, and both are closed again
+
+The second review found that two of the closures recorded above had been undone by later passes. Both
+are named here, because this log is what a future reader checks to see whether a closure was silently
+undone.
+
+* **B6 of the first review, the mock reporting every order as printed.** It was closed by the rule that
+  a mock station's ticket reaches `PrintedOnTestPrinter` and never `Printed`. Finding B1 of the second
+  review showed that 7.6's mapping table, which 11.1 instructs an implementer to build `RetryPolicy`
+  from, still mapped every `Confirmed` dispatch to `Printed` with no mention of the transport, so an
+  implementer following the document as written would have shipped exactly the defect B6 described.
+  **It is closed again**, and this time in the place the implementer reads: the mapping depends on the
+  transport kind, it is stated once in 7.6, 7.8 and 3.5 defer to it, and the test row names the mock
+  case. A station left on the test printer reaches `PrintedOnTestPrinter`, its order reaches
+  `NeedsAttention` by row 2 of 3.1 during a real event, and it shows as needing attention rather than
+  as printed.
+* **B2 of the first review, the break-glass page dropping a live ticket.** It was closed by restricting
+  the listing, then re-closed by moving the restriction onto the button when the owner asked for the
+  full listing. Finding B2 of the second review showed that the button's condition, written as a
+  disjunction, permitted a `Printing` ticket whenever the printer reported paper end, an open cover or
+  an error state, which are exactly the conditions that arise while a job is in flight. **It is closed
+  again**, by the boolean expression in 5.6: a `Printing` ticket is excluded whatever the printer
+  reports, the prose says so as its own sentence, the endpoint refuses it, 8.10 renders a status in
+  place of a button, and both the unit test and the integration test now walk a `Printing` ticket
+  through every printer condition in turn. The claim transaction, the 409 and the acknowledge condition
+  now say the same thing in the same words.
