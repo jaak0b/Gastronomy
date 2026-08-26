@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/GastronomyApp.Api.Tests/GastronomyApp.Api.Tests.csproj" />
+    <Project Path="backend/GastronomyApp.Api/GastronomyApp.Api.csproj" />
+    <Project Path="backend/GastronomyApp.Core.Tests/GastronomyApp.Core.Tests.csproj" />
+    <Project Path="backend/GastronomyApp.Core/GastronomyApp.Core.csproj" />
+    <Project Path="backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj" />
+    <Project Path="backend/GastronomyApp.Infrastructure/GastronomyApp.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/desktop/">
+    <Project Path="desktop/GastronomyApp.Desktop.Tests/GastronomyApp.Desktop.Tests.csproj" />
+    <Project Path="desktop/GastronomyApp.Desktop/GastronomyApp.Desktop.csproj" />
+  </Folder>
+</Solution>

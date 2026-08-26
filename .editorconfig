@@ -1,0 +1,22 @@
+root = true
+
+[*]
+indent_style = space
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8-bom
+
+[*.cs]
+indent_size = 4
+file_header_template = unset
+csharp_style_namespace_declarations = file_scoped:error
+dotnet_diagnostic.CS8321.severity = error
+dotnet_style_require_accessibility_modifiers = always:error
+dotnet_remove_unnecessary_suppression_exclusions = none
+dotnet_diagnostic.IDE0005.severity = error
+
+[*.{js,ts,vue,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
