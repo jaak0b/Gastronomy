@@ -132,6 +132,17 @@ textarea {
   color: var(--text);
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
 textarea {
   min-height: 88px;
   resize: vertical;
@@ -755,12 +766,6 @@ textarea:focus {
   margin-bottom: 8px;
 }
 
-.assignment-editor input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
-  min-height: 22px;
-}
-
 .assignment-editor .preview {
   margin: 12px 0 0;
   padding: 10px 12px;
@@ -876,4 +881,52 @@ textarea:focus {
 
 .price-error {
   margin-top: -8px;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  padding: 16px;
+  z-index: 20;
+}
+
+.confirm-dialog {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.confirm-dialog .confirm-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.confirm-dialog .confirm-body {
+  margin: 0;
+}
+
+.deactivate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #b42318;
+}
+
+.deactivated {
+  color: #6b7280;
+}
+
+.show-deactivated-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
 }

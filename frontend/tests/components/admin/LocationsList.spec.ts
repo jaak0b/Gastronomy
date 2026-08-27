@@ -52,7 +52,8 @@ function mountList() {
 
 async function deactivateFirstStation(list: ReturnType<typeof mountList>) {
   await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-  await list.get('.toggle-active').trigger('click')
+  await list.get('.deactivate').trigger('click')
+  await list.get('.confirm').trigger('click')
   await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
 }
 
@@ -60,33 +61,122 @@ const ONE_STATION_SWITCHED_OFF = JSON.stringify({
   locations: [{ ...JSON.parse(ONE_STATION).locations[0], isActive: false }],
 })
 
+describe('switching a station off', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('asks before it happens, rather than acting on the first tap', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+
+    expect(list.find('.confirm-dialog').exists()).toBe(true)
+    expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
+  })
+
+  it('says that the orders already placed are kept', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+
+    expect(list.get('.confirm-body').text()).toContain('bleiben gespeichert')
+  })
+
+  it('does nothing when the question is answered with no', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await list.get('.cancel').trigger('click')
+
+    expect(list.find('.confirm-dialog').exists()).toBe(false)
+    expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
+  })
+
+  it('switches the station off once the question is answered with yes', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await list.get('.confirm').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
+    )
+  })
+})
+
 describe('a station that is switched off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it('says so on its row, so the list is readable at a glance', async () => {
+  it('is left out of the list until the admin asks to see deactivated entries', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })),
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
 
-    expect(list.get('.switched-off').text()).toBe('Abgeschaltet')
+    expect(list.find('li').exists()).toBe(false)
   })
 
-  it('offers to switch it back on rather than off again', async () => {
+  it('says so on its row once it is shown', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })),
     )
 
     const list = mountList()
+    await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
+    await list.get('.show-deactivated').setValue(true)
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
 
-    expect(list.get('.toggle-active').text()).toBe('Station einschalten')
+    expect(list.get('.deactivated').text()).toBe('Deaktiviert')
+  })
+
+  it('offers to switch it back on without asking a question first', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
+    await list.get('.show-deactivated').setValue(true)
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+
+    expect(list.get('.reactivate').text()).toBe('Station einschalten')
   })
 
   it('switches it back on at its own address', async () => {
@@ -100,34 +190,12 @@ describe('a station that is switched off', () => {
     )
 
     const list = mountList()
+    await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
+    await list.get('.show-deactivated').setValue(true)
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-    await list.get('.toggle-active').trigger('click')
+    await list.get('.reactivate').trigger('click')
 
     await vi.waitFor(() => expect(urls).toContain(`/api/admin/locations/${STATION_ID}/activate`))
-  })
-})
-
-describe('a station that is switched on', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  it('offers to switch it off', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-
-    expect(list.get('.toggle-active').text()).toBe('Station abschalten')
-  })
-
-  it('carries no switched-off marker', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-
-    expect(list.find('.switched-off').exists()).toBe(false)
   })
 })
 
@@ -148,7 +216,8 @@ describe('the buttons beside a station', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-    await list.get('.toggle-active').trigger('click')
+    await list.get('.deactivate').trigger('click')
+    await list.get('.confirm').trigger('click')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),

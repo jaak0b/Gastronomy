@@ -169,7 +169,9 @@
       "deactivate": "Station abschalten",
       "empty": "Legen Sie die erste Station an, zum Beispiel Küche oder Theke.",
       "activate": "Station einschalten",
-      "switchedOff": "Abgeschaltet"
+      "deactivateTitle": "Station abschalten?",
+      "deactivateBody": "Die Station verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Station später wieder einschalten.",
+      "deactivateConfirm": "Station abschalten"
     },
     "items": {
       "title": "Artikel",
@@ -178,8 +180,6 @@
       "soldOut": "Ausverkauft",
       "soldOutHelp": "Schalten Sie einen Artikel auf ausverkauft, sobald er alle ist. Er bleibt auf den Telefonen stehen, ist aber nicht mehr auswählbar.",
       "soldOutUndo": "Wieder verfügbar",
-      "deactivate": "Nicht auf der Karte",
-      "deactivateHelp": "Nehmen Sie einen Artikel damit für dieses Fest ganz von der Karte. Auf den Telefonen erscheint er dann gar nicht mehr.",
       "deactivateBlocked": "Schalten Sie den Artikel stattdessen auf \"Ausverkauft\". Während einer laufenden Veranstaltung lässt er sich nicht von der Karte nehmen.",
       "soldOutWalk": "Der Laptop ist die einzige Stelle, an der Sie das umschalten können.",
       "new": "Neuer Artikel",
@@ -187,8 +187,10 @@
       "price": "Preis in Euro",
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
       "empty": "Legen Sie den ersten Artikel mit seinem Preis an.",
-      "activate": "Wieder auf die Karte",
-      "offTheMenu": "Nicht auf der Karte"
+      "activate": "Artikel aktivieren",
+      "deactivateTitle": "Artikel deaktivieren?",
+      "deactivateBody": "Der Artikel verschwindet von den Telefonen und kann nicht mehr bestellt werden. Die bisherigen Bestellungen bleiben gespeichert. Sie können ihn später wieder aktivieren.",
+      "deactivateConfirm": "Artikel deaktivieren"
     },
     "assignment": {
       "title": "Zuordnung",
@@ -255,10 +257,10 @@
       "revoke": "Einrichtung entfernen",
       "revokeConfirm": "Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert.",
       "revoked": "Einrichtung entfernt",
-      "deactivate": "Bedienung aus der Liste nehmen",
-      "deactivateHelp": "Nehmen Sie einen Namen aus der Liste, wenn er dort doppelt steht. Die Bestellungen bleiben gespeichert.",
-      "activate": "Bedienung wieder in die Liste",
-      "offTheList": "Nicht in der Liste"
+      "activate": "Bedienung wieder aufnehmen",
+      "deactivateTitle": "Bedienung aus der Liste nehmen?",
+      "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Bedienung später wieder aufnehmen.",
+      "deactivateConfirm": "Bedienung herausnehmen"
     },
     "enrol": {
       "title": "Telefon einrichten",
@@ -317,7 +319,11 @@
     "stationIsNotOnTheTestPrinter": "Diese Station druckt nicht in einen Ordner. Störungen zum Ausprobieren gibt es nur bei Stationen, die in einen Ordner drucken.",
     "unknownMockFault": "Diese Störung kennt das Programm nicht. Wählen Sie eine Störung aus der Liste.",
     "unknownTransportKind": "Diese Anschlussart kennt das Programm nicht. Wählen Sie eine Anschlussart aus der Liste.",
-    "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt."
+    "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
+    "deactivate": "Deaktivieren",
+    "deactivated": "Deaktiviert",
+    "showDeactivated": "Deaktivierte anzeigen",
+    "itemHasNoActiveStation": "Alle Stationen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Station zu, die läuft."
   },
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",

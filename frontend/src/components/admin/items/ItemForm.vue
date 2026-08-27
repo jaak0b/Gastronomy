@@ -12,10 +12,7 @@ const props = defineProps<{
   locations: AdminLocation[]
   errorKey: string | null
 }>()
-const emit = defineEmits<{
-  save: [item: AdminItemDraft]
-  setActive: [id: string, isActive: boolean]
-}>()
+const emit = defineEmits<{ save: [item: AdminItemDraft] }>()
 
 const { t, locale } = useI18n()
 const name = ref(props.item?.name ?? '')
@@ -74,15 +71,5 @@ function save(): void {
     />
     <p v-if="errorKey !== null" class="error">{{ t(errorKey) }}</p>
     <button type="submit" :disabled="name.trim().length === 0">{{ t('admin.save') }}</button>
-    <template v-if="item !== null">
-      <button
-        type="button"
-        class="toggle-active"
-        @click="emit('setActive', item.itemId, !item.isActive)"
-      >
-        {{ item.isActive ? t('admin.items.deactivate') : t('admin.items.activate') }}
-      </button>
-      <p class="help">{{ t('admin.items.deactivateHelp') }}</p>
-    </template>
   </form>
 </template>

@@ -81,7 +81,11 @@ function stubFetchWith(items: unknown) {
   return urls
 }
 
-describe('an item that was taken off the menu', () => {
+const DEACTIVATED_ITEM = {
+  items: [{ ...ONE_ITEM.items[0], isActive: false }],
+}
+
+describe('deactivating an item', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -90,40 +94,40 @@ describe('an item that was taken off the menu', () => {
     vi.unstubAllGlobals()
   })
 
-  it('says so on its row', async () => {
-    stubFetchWith(OFF_THE_MENU)
+  it('asks before it happens', async () => {
+    const urls = stubFetchWith(ONE_ITEM)
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
 
-    expect(list.get('.off-the-menu').text()).toBe('Nicht auf der Karte')
+    expect(list.find('.confirm-dialog').exists()).toBe(true)
+    expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
-  it('offers to put it back on the menu', async () => {
-    stubFetchWith(OFF_THE_MENU)
+  it('says that the orders already placed are kept', async () => {
+    stubFetchWith(ONE_ITEM)
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-    await list.get('li button:nth-of-type(2)').trigger('click')
-    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
 
-    expect(list.get('.toggle-active').text()).toBe('Wieder auf die Karte')
+    expect(list.get('.confirm-body').text()).toContain('bleiben gespeichert')
   })
 
-  it('puts it back on the menu at its own address', async () => {
-    const urls = stubFetchWith(OFF_THE_MENU)
+  it('deactivates it once the question is answered with yes', async () => {
+    const urls = stubFetchWith(ONE_ITEM)
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-    await list.get('li button:nth-of-type(2)').trigger('click')
-    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
-    await list.get('.toggle-active').trigger('click')
+    await list.get('.deactivate').trigger('click')
+    await list.get('.confirm').trigger('click')
 
-    await vi.waitFor(() => expect(urls).toContain(`/api/admin/items/${ITEM_ID}/activate`))
+    await vi.waitFor(() => expect(urls).toContain(`/api/admin/items/${ITEM_ID}/deactivate`))
   })
 })
 
-describe('an item that is on the menu', () => {
+describe('an item that is deactivated', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -132,24 +136,34 @@ describe('an item that is on the menu', () => {
     vi.unstubAllGlobals()
   })
 
-  it('carries no off-the-menu marker', async () => {
-    stubFetchWith(ONE_ITEM)
+  it('is left out of the list until the admin asks to see deactivated entries', async () => {
+    stubFetchWith(DEACTIVATED_ITEM)
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.show-deactivated').exists()).toBe(true))
 
-    expect(list.find('.off-the-menu').exists()).toBe(false)
+    expect(list.find('li').exists()).toBe(false)
   })
 
-  it('offers to take it off the menu', async () => {
-    stubFetchWith(ONE_ITEM)
+  it('offers no sold-out toggle, because nobody can order it', async () => {
+    stubFetchWith(DEACTIVATED_ITEM)
 
     const list = mountList()
+    await list.get('.show-deactivated').setValue(true)
     await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-    await list.get('li button:nth-of-type(2)').trigger('click')
-    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
 
-    expect(list.get('.toggle-active').text()).toBe('Nicht auf der Karte')
+    expect(list.find('.sold-out-toggle').exists()).toBe(false)
+  })
+
+  it('offers to activate it again without asking a question first', async () => {
+    const urls = stubFetchWith(DEACTIVATED_ITEM)
+
+    const list = mountList()
+    await list.get('.show-deactivated').setValue(true)
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.reactivate').trigger('click')
+
+    await vi.waitFor(() => expect(urls).toContain(`/api/admin/items/${ITEM_ID}/activate`))
   })
 })
 

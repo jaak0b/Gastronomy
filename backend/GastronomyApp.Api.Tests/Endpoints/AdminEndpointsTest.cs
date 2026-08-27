@@ -302,6 +302,82 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
+    public async Task Activate_ItemWhoseOnlyStationIsSwitchedOff_IsRefused()
+    {
+        await SwitchOffEveryStationOfBratwurstAsync();
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/items/{context.World.BratwurstItemId}/activate",
+            content: null);
+
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+            Assert.That(
+                body.RootElement.GetProperty("messageKey").GetString(),
+                Is.EqualTo("admin.itemHasNoActiveStation"));
+        });
+    }
+
+    [Test]
+    public async Task Activate_ItemWhoseOnlyStationIsSwitchedOff_LeavesItDeactivated()
+    {
+        await SwitchOffEveryStationOfBratwurstAsync();
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/items/{context.World.BratwurstItemId}/activate",
+            content: null);
+
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        CatalogItem item = await database.CatalogItems.FirstAsync(
+            candidate => candidate.Id == context.World.BratwurstItemId);
+
+        Assert.That(item.IsActive, Is.False);
+    }
+
+    [Test]
+    public async Task PutItem_OnlyStationsThatAreSwitchedOff_IsRefused()
+    {
+        await using (GastronomyAppDbContext database = context.Factory.CreateContext())
+        {
+            await database.ProductionLocations
+                .Where(location => location.Id == context.World.BarLocationId)
+                .ExecuteUpdateAsync(location => location.SetProperty(entry => entry.IsActive, false));
+        }
+
+        using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
+            $"/api/admin/items/{context.World.BratwurstItemId}",
+            new
+            {
+                name = "Bratwurst",
+                categoryName = "Essen",
+                priceCents = 350,
+                sortOrder = 1,
+                locationIds = new[] { context.World.BarLocationId },
+            });
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+    }
+
+    private async Task SwitchOffEveryStationOfBratwurstAsync()
+    {
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        List<Guid> stationIds = await database.ItemLocationAssignments
+            .Where(assignment => assignment.CatalogItemId == context.World.BratwurstItemId)
+            .Select(assignment => assignment.ProductionLocationId)
+            .ToListAsync();
+
+        await database.CatalogItems
+            .Where(item => item.Id == context.World.BratwurstItemId)
+            .ExecuteUpdateAsync(item => item.SetProperty(entry => entry.IsActive, false));
+        await database.ProductionLocations
+            .Where(location => stationIds.Contains(location.Id))
+            .ExecuteUpdateAsync(location => location.SetProperty(entry => entry.IsActive, false));
+    }
+
+    [Test]
     public async Task PostMockFault_MockStation_ArmsTheFault()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(

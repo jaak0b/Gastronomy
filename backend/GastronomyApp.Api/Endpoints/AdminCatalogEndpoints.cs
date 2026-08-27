@@ -106,6 +106,11 @@ public sealed class AdminItemHandler
     {
         IResult? refusal = Validate(request);
 
+        if (refusal is null && !await AnyStationIsActiveAsync(request.LocationIds!, cancellationToken))
+        {
+            refusal = ItemHasNoActiveStation();
+        }
+
         if (refusal is not null)
         {
             return refusal;
@@ -146,6 +151,11 @@ public sealed class AdminItemHandler
         CancellationToken cancellationToken)
     {
         IResult? refusal = Validate(request);
+
+        if (refusal is null && !await AnyStationIsActiveAsync(request.LocationIds!, cancellationToken))
+        {
+            refusal = ItemHasNoActiveStation();
+        }
 
         if (refusal is not null)
         {
@@ -217,6 +227,17 @@ public sealed class AdminItemHandler
             return Results.NotFound();
         }
 
+        List<Guid> assignedLocationIds = await dbContext.ItemLocationAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.CatalogItemId == itemId)
+            .Select(assignment => assignment.ProductionLocationId)
+            .ToListAsync(cancellationToken);
+
+        if (!await AnyStationIsActiveAsync(assignedLocationIds, cancellationToken))
+        {
+            return ItemHasNoActiveStation();
+        }
+
         item.IsActive = true;
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushCatalogChangedAsync(cancellationToken);
@@ -239,6 +260,25 @@ public sealed class AdminItemHandler
         await PushCatalogChangedAsync(cancellationToken);
 
         return Results.Ok(new SavedItemView(itemId));
+    }
+
+    private async Task<bool> AnyStationIsActiveAsync(
+        IReadOnlyCollection<Guid> productionLocationIds,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.ProductionLocations
+            .AsNoTracking()
+            .AnyAsync(
+                location => location.IsActive && productionLocationIds.Contains(location.Id),
+                cancellationToken);
+    }
+
+    private IResult ItemHasNoActiveStation()
+    {
+        return resultEnvelope.Problem(
+            StatusCodes.Status422UnprocessableEntity,
+            "UnprocessableEntity",
+            "admin.itemHasNoActiveStation");
     }
 
     private IResult? Validate(SaveItemRequest request)

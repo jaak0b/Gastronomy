@@ -169,7 +169,9 @@
       "deactivate": "Switch this station off",
       "empty": "Create the first station, for example Kitchen or Bar.",
       "activate": "Switch this station on",
-      "switchedOff": "Switched off"
+      "deactivateTitle": "Switch this station off?",
+      "deactivateBody": "The station disappears from the list and takes no more orders. The orders placed so far stay saved. You can switch the station back on later.",
+      "deactivateConfirm": "Switch the station off"
     },
     "items": {
       "title": "Items",
@@ -178,8 +180,6 @@
       "soldOut": "Sold out",
       "soldOutHelp": "Switch an item to sold out as soon as it has run out. It stays on the phones and can no longer be chosen.",
       "soldOutUndo": "Available again",
-      "deactivate": "Not on the menu",
-      "deactivateHelp": "Take an item off the menu for this festival entirely. It then does not appear on the phones at all.",
       "deactivateBlocked": "Switch the item to \"Sold out\" instead. It cannot be taken off the menu while an event is running.",
       "soldOutWalk": "The laptop is the only place where you can switch this.",
       "new": "New item",
@@ -187,8 +187,10 @@
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
       "empty": "Create the first item with its price.",
-      "activate": "Back on the menu",
-      "offTheMenu": "Not on the menu"
+      "activate": "Activate the item",
+      "deactivateTitle": "Deactivate this item?",
+      "deactivateBody": "The item disappears from the phones and can no longer be ordered. The orders placed so far stay saved. You can activate it again later.",
+      "deactivateConfirm": "Deactivate the item"
     },
     "assignment": {
       "title": "Assignment",
@@ -255,10 +257,10 @@
       "revoke": "Remove this phone",
       "revokeConfirm": "The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved.",
       "revoked": "Removed",
-      "deactivate": "Take this server off the list",
-      "deactivateHelp": "Take a name off the list when it ended up there twice. The orders stay saved.",
-      "activate": "Put this server back on the list",
-      "offTheList": "Not on the list"
+      "activate": "Put the server back on the list",
+      "deactivateTitle": "Take this server off the list?",
+      "deactivateBody": "The name disappears from the list and the enrolled phone is signed out. The orders placed so far stay saved. You can put the server back on the list later.",
+      "deactivateConfirm": "Take the server off"
     },
     "enrol": {
       "title": "Set up a phone",
@@ -317,7 +319,11 @@
     "stationIsNotOnTheTestPrinter": "This station does not print to a folder. Practice faults are only available for stations that print to a folder.",
     "unknownMockFault": "The program does not know this fault. Choose one from the list.",
     "unknownTransportKind": "The program does not know this connection type. Choose one from the list.",
-    "actionFailed": "That did not work. Try again, and reload the page if it still does not work."
+    "actionFailed": "That did not work. Try again, and reload the page if it still does not work.",
+    "deactivate": "Deactivate",
+    "deactivated": "Deactivated",
+    "showDeactivated": "Show deactivated entries",
+    "itemHasNoActiveStation": "Every station this item belongs to is switched off. Switch one of them back on, or assign the item to a station that is running."
   },
   "station": {
     "title": "{name}: orders on screen",

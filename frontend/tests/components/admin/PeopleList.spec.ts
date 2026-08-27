@@ -65,6 +65,50 @@ function stubFetchWith(people: unknown) {
   return urls
 }
 
+describe('taking a server person off the list', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks before it happens', async () => {
+    const urls = stubFetchWith(ONE_PERSON)
+
+    const list = mountList()
+    await firstPerson(list)
+    await list.get('.deactivate').trigger('click')
+
+    expect(list.find('.confirm-dialog').exists()).toBe(true)
+    expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
+  })
+
+  it('says that the orders already placed are kept', async () => {
+    stubFetchWith(ONE_PERSON)
+
+    const list = mountList()
+    await firstPerson(list)
+    await list.get('.deactivate').trigger('click')
+
+    expect(list.get('.confirm-body').text()).toContain('bleiben gespeichert')
+  })
+
+  it('takes them off the list once the question is answered with yes', async () => {
+    const urls = stubFetchWith(ONE_PERSON)
+
+    const list = mountList()
+    await firstPerson(list)
+    await list.get('.deactivate').trigger('click')
+    await list.get('.confirm').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),
+    )
+  })
+})
+
 describe('a server person taken off the list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -74,43 +118,36 @@ describe('a server person taken off the list', () => {
     vi.unstubAllGlobals()
   })
 
-  it('says so on their row', async () => {
+  it('is left out of the list until the admin asks to see deactivated entries', async () => {
     stubFetchWith(OFF_THE_LIST)
 
     const list = mountList()
-    await firstPerson(list)
+    await vi.waitFor(() => expect(list.find('.show-deactivated').exists()).toBe(true))
 
-    expect(list.get('.off-the-list').text()).toBe('Nicht in der Liste')
+    expect(list.find('li').exists()).toBe(false)
   })
 
-  it('offers to put them back on the list', async () => {
+  it('says so on their row once it is shown', async () => {
     stubFetchWith(OFF_THE_LIST)
 
     const list = mountList()
+    await list.get('.show-deactivated').setValue(true)
     await firstPerson(list)
 
-    expect(list.get('.toggle-active').text()).toBe('Bedienung wieder in die Liste')
+    expect(list.get('.deactivated').text()).toBe('Deaktiviert')
   })
 
-  it('puts them back on the list at their own address', async () => {
+  it('puts them back on the list without asking a question first', async () => {
     const urls = stubFetchWith(OFF_THE_LIST)
 
     const list = mountList()
+    await list.get('.show-deactivated').setValue(true)
     await firstPerson(list)
-    await list.get('.toggle-active').trigger('click')
+    await list.get('.reactivate').trigger('click')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/activate`),
     )
-  })
-
-  it('offers to take an active person off the list', async () => {
-    stubFetchWith(ONE_PERSON)
-
-    const list = mountList()
-    await firstPerson(list)
-
-    expect(list.get('.toggle-active').text()).toBe('Bedienung aus der Liste nehmen')
   })
 })
 
@@ -146,7 +183,8 @@ describe('a server person in the admin list', () => {
 
     const list = mountList()
     await firstPerson(list)
-    await list.get('.toggle-active').trigger('click')
+    await list.get('.deactivate').trigger('click')
+    await list.get('.confirm').trigger('click')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),
