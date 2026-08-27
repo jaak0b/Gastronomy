@@ -14,6 +14,7 @@ public sealed record RoutingFailure
 
 public enum RoutingFailureReason
 {
+    ItemHasNoStation,
     StationRequired,
     StationNotAssignedToItem,
 }

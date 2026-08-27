@@ -3,6 +3,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Printing;
 using GastronomyApp.Infrastructure;
 using GastronomyApp.Infrastructure.Printing;
 using Microsoft.AspNetCore.Builder;
@@ -55,6 +56,8 @@ public sealed class AdminPrinterHandler
     private readonly IPrinterFleet printerFleet;
     private readonly PrinterFleet fleet;
     private readonly IMockFaultRegistry mockFaultRegistry;
+    private readonly IPrinterWorkerDataAccess printerWorkerDataAccess;
+    private readonly MockPrinterTransport mockPrinterTransport;
     private readonly ResultEnvelope resultEnvelope;
 
     public AdminPrinterHandler(
@@ -62,12 +65,16 @@ public sealed class AdminPrinterHandler
         IPrinterFleet printerFleet,
         PrinterFleet fleet,
         IMockFaultRegistry mockFaultRegistry,
+        IPrinterWorkerDataAccess printerWorkerDataAccess,
+        MockPrinterTransport mockPrinterTransport,
         ResultEnvelope resultEnvelope)
     {
         this.dbContext = dbContext;
         this.printerFleet = printerFleet;
         this.fleet = fleet;
         this.mockFaultRegistry = mockFaultRegistry;
+        this.printerWorkerDataAccess = printerWorkerDataAccess;
+        this.mockPrinterTransport = mockPrinterTransport;
         this.resultEnvelope = resultEnvelope;
     }
 
@@ -101,6 +108,22 @@ public sealed class AdminPrinterHandler
             PrinterStatus? status = statuses.FirstOrDefault(
                 candidate => candidate.ProductionLocationId == location.Id);
 
+            IReadOnlyList<string> sharedWithLocationNames = configurations
+                .Where(candidate => candidate.ProductionLocationId != location.Id
+                    && candidate.TransportKind == configuration.TransportKind
+                    && candidate.Host == configuration.Host
+                    && candidate.Port == configuration.Port)
+                .Join(
+                    locations,
+                    candidate => candidate.ProductionLocationId,
+                    sharing => sharing.Id,
+                    (candidate, sharing) => sharing.Name)
+                .ToList();
+
+            int waitingTicketCount = await printerWorkerDataAccess.CountWaitingTicketsAsync(
+                location.Id,
+                cancellationToken);
+
             views.Add(new AdminPrinterView(
                 location.Id,
                 location.Name,
@@ -116,8 +139,15 @@ public sealed class AdminPrinterHandler
                 configuration.IsEnabled,
                 status?.IsOnline ?? false,
                 status?.IsPaperEnd ?? false,
+                status?.IsPaperNearEnd ?? false,
                 status?.IsCoverOpen ?? false,
-                status?.IsFaulty ?? false));
+                status?.IsFaulty ?? false,
+                waitingTicketCount,
+                status?.LastChangedAtUtc,
+                sharedWithLocationNames,
+                configuration.TransportKind == TransportKind.Mock
+                    ? mockPrinterTransport.SlipRootFolderPath
+                    : null));
         }
 
         return Results.Ok(new AdminPrinterListView(views));

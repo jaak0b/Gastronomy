@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStationStore } from '../../src/stores/station'
+import { useConnectionStore } from '../../src/stores/connection'
 
 describe('the ten second delay before a slip is taken', () => {
   beforeEach(() => {
@@ -24,7 +25,6 @@ describe('the ten second delay before a slip is taken', () => {
       }),
     )
     const station = useStationStore()
-    station.accessKey = 'abc'
     station.selectedLocationId = 'location-kueche'
     station.tickets = [
       {
@@ -33,10 +33,10 @@ describe('the ten second delay before a slip is taken', () => {
         globalOrderNumber: 137,
         sequenceNumber: 42,
         tableLabel: 'Tisch 12',
-        createdAtUtc: '2026-08-27T19:00:00Z',
+        orderCreatedAtUtc: '2026-08-27T19:00:00Z',
         status: 'Failed',
         canAcknowledge: true,
-        refusalReasonKey: null,
+        canAcknowledgeReasonKey: null,
         reprintCount: 0,
         orderNote: null,
         lines: [],
@@ -67,7 +67,7 @@ describe('the ten second delay before a slip is taken', () => {
     station.beginTake('ticket-1')
     await vi.advanceTimersByTimeAsync(10000)
 
-    expect(fetchCalls).toContain('/api/station/abc/tickets/ticket-1/acknowledge')
+    expect(fetchCalls).toContain('/api/stations/location-kueche/tickets/ticket-1/acknowledge')
   })
 
   it('never reaches the acknowledge endpoint when the cook taps undo', async () => {
@@ -87,5 +87,56 @@ describe('the ten second delay before a slip is taken', () => {
     station.undoTake('ticket-1')
 
     expect(station.isPending('ticket-1')).toBe(false)
+  })
+})
+
+describe('a station screen that lost the hub and got it back', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('fetches its slips again when everyone is asked to catch up', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify({ tickets: [], locations: [] }), { status: 200 })
+      }),
+    )
+    const station = useStationStore()
+    const connection = useConnectionStore()
+    station.selectedLocationId = 'location-kueche'
+    station.listen()
+    urls.length = 0
+
+    await connection.refetchAll()
+
+    expect(urls.some((url) => url.includes('/tickets'))).toBe(true)
+  })
+
+  it('asks after its printer again too, because a stale banner is a lie', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify({ tickets: [], locations: [] }), { status: 200 })
+      }),
+    )
+    const station = useStationStore()
+    const connection = useConnectionStore()
+    station.selectedLocationId = 'location-kueche'
+    station.listen()
+    urls.length = 0
+
+    await connection.refetchAll()
+
+    expect(urls.some((url) => url.includes('/status'))).toBe(true)
   })
 })

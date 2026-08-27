@@ -22,6 +22,8 @@ public sealed record TicketStatusChangedEvent(
 
 public sealed record OrderStatusChangedEvent(Guid OrderId, string Status);
 
+public sealed record StationBacklogChangedEvent(Guid LocationId);
+
 public sealed record PrinterStatusChangedEvent(
     Guid LocationId,
     string LocationName,
@@ -31,6 +33,7 @@ public sealed record PrinterStatusChangedEvent(
     bool IsCoverOpen,
     bool IsFaulty,
     int WaitingTicketCount,
+    DateTime LastChangedAtUtc,
     string LastDetail);
 
 public sealed record CatalogChangedEvent(string Version);

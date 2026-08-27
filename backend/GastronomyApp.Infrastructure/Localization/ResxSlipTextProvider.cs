@@ -30,8 +30,7 @@ public sealed class ResxSlipTextProvider : ISlipTextProvider
             Read("ItemsTotalPrefix", culture),
             Read("AlsoGoesToPrefix", culture),
             Read("ChosenStationWasPrefix", culture),
-            Read("TestSlipHeader", culture),
-            Read("StationCardInstructions", culture));
+            Read("TestSlipHeader", culture));
     }
 
     private string Read(string key, CultureInfo culture)

@@ -52,6 +52,8 @@ public sealed class MockPrinterTransport : IPrinterTransport
             () => openSessions.TryRemove(endpoint.ProductionLocationId, out _));
     }
 
+    public string SlipRootFolderPath => SlipRootFolder();
+
     private string SlipRootFolder()
     {
         return Path.Combine(dataDirectory, SlipRootFolderName);

@@ -14,7 +14,7 @@ const { t } = useI18n()
 
 const selectedNames = computed(() =>
   props.locations
-    .filter((location) => props.selectedLocationIds.includes(location.id))
+    .filter((location) => props.selectedLocationIds.includes(location.locationId))
     .map((location) => location.name),
 )
 
@@ -39,11 +39,11 @@ const previewText = computed(() => {
   <fieldset class="assignment-editor">
     <legend>{{ t('admin.assignment.title') }}</legend>
     <p class="help">{{ t('admin.assignment.help') }}</p>
-    <label v-for="location in locations" :key="location.id">
+    <label v-for="location in locations" :key="location.locationId">
       <input
         type="checkbox"
-        :checked="selectedLocationIds.includes(location.id)"
-        @change="emit('toggle', location.id)"
+        :checked="selectedLocationIds.includes(location.locationId)"
+        @change="emit('toggle', location.locationId)"
       />
       <span>{{ location.name }}</span>
     </label>

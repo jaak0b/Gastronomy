@@ -23,8 +23,7 @@ public sealed record TestSlipRenderRequest(
     string LocationName,
     string LanguageCode,
     DateTimeOffset PrintedAtUtc,
-    TimeZoneInfo DisplayTimeZone,
-    Uri StationCardUrl);
+    TimeZoneInfo DisplayTimeZone);
 
 public sealed record RenderedSlip(ReadOnlyMemory<byte> Bytes, string RenderedText);
 
@@ -83,10 +82,7 @@ public sealed class EscPosSlipRenderer
             new SlipSegment(LargeText(), WrapLarge(request.LocationName)),
             new SlipSegment(NormalText(), [MajorSeparator()]),
             new SlipSegment(LargeText(), WrapLarge(strings.TestSlipHeader)),
-            new SlipSegment(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MinorSeparator()]),
-            new SlipSegment(StationCardCommands(request.StationCardUrl), []),
-            new SlipSegment(NormalText(), [.. WrapUrl(request.StationCardUrl), MinorSeparator()]),
-            new SlipSegment(NormalText(), [.. SplitParagraph(strings.StationCardInstructions), MajorSeparator()]),
+            new SlipSegment(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()]),
         ];
 
         return Compose(segments);
@@ -199,35 +195,6 @@ public sealed class EscPosSlipRenderer
         return [.. alignCentre, .. sizeDouble, .. emphasisOn];
     }
 
-    private IReadOnlyList<byte> StationCardCommands(Uri stationCardUrl)
-    {
-        string url = stationCardUrl.ToString();
-        int storedLength = url.Length + 3;
-        byte[] storeData =
-        [
-            0x1D,
-            0x28,
-            0x6B,
-            (byte)(storedLength % 256),
-            (byte)(storedLength / 256),
-            0x31,
-            0x50,
-            0x30,
-        ];
-
-        return
-        [
-            .. alignCentre,
-            .. qrSelectModel,
-            .. qrModuleSize,
-            .. qrErrorCorrection,
-            .. storeData,
-            .. encoder.GetBytes(url),
-            .. qrPrintSymbol,
-            .. alignLeft,
-        ];
-    }
-
     private SlipTimeFormats FormatsFor(string languageCode)
     {
         return languageCode.StartsWith("en", StringComparison.OrdinalIgnoreCase)
@@ -254,23 +221,6 @@ public sealed class EscPosSlipRenderer
     private IReadOnlyList<string> SplitParagraph(string paragraph)
     {
         return paragraph.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-    }
-
-    private IReadOnlyList<string> WrapUrl(Uri stationCardUrl)
-    {
-        string url = stationCardUrl.ToString();
-        if (url.Length <= LineWidth)
-        {
-            return [url];
-        }
-
-        int lastSlash = url.LastIndexOf('/');
-        if (lastSlash > 0 && lastSlash + 1 <= LineWidth && url.Length - lastSlash - 1 <= LineWidth)
-        {
-            return [url[..(lastSlash + 1)], url[(lastSlash + 1)..]];
-        }
-
-        return Wrap(url);
     }
 
     private IReadOnlyList<string> Wrap(string text)

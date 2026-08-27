@@ -40,6 +40,9 @@ const banners = computed(() =>
 
 <template>
   <header class="app-header">
+    <button type="button" class="stations-link" @click="navigate('/stations')">
+      {{ t('header.stations') }}
+    </button>
     <button type="button" class="orders-link" @click="navigate('/orders')">
       <span>{{ t('orders.title') }}</span>
       <span v-if="order.attentionCount > 0" class="attention">

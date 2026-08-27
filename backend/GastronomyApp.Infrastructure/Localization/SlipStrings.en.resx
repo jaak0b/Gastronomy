@@ -91,9 +91,4 @@
   <data name="TestSlipHeader" xml:space="preserve">
     <value>TEST SLIP</value>
   </data>
-  <data name="StationCardInstructions" xml:space="preserve">
-    <value>Tape this card inside the printer lid. If the
-printer fails, the QR code opens this station's
-emergency page.</value>
-  </data>
 </root>

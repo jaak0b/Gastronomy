@@ -167,6 +167,14 @@ public sealed class OrderPlacementHandler
                     "order.submissionIdReused");
             }
 
+            foreach (LocationTicket waiting in existing.Tickets)
+            {
+                await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(
+                    waiting.Id,
+                    PrintJobKind.Initial,
+                    cancellationToken);
+            }
+
             return Results.Json(
                 orderReader.Describe(existing, expectedTotalCents),
                 statusCode: StatusCodes.Status200OK);

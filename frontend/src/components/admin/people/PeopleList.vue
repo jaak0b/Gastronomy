@@ -11,12 +11,17 @@ const revokedIds = ref<string[]>([])
 const newName = ref('')
 
 async function revoke(id: string): Promise<void> {
-  await people.revokeDevice(id)
-  revokedIds.value = [...revokedIds.value, id]
+  const revoked = await people.revokeDevice(id)
+  if (revoked) {
+    revokedIds.value = [...revokedIds.value, id]
+  }
 }
 
 async function rename(id: string): Promise<void> {
-  await people.rename(id, newName.value.trim())
+  const renamed = await people.rename(id, newName.value.trim())
+  if (!renamed) {
+    return
+  }
   renamingId.value = null
   newName.value = ''
 }
@@ -34,19 +39,27 @@ onMounted(async () => {
     <p v-if="people.enrolledName !== null" class="enrolled">
       {{ t('admin.enrol.done', { name: people.enrolledName }) }}
     </p>
+    <p v-if="people.errorMessage !== null" class="refusal error">
+      {{
+        people.errorMessage.count === null
+          ? t(people.errorMessage.key, people.errorMessage.parameters)
+          : t(people.errorMessage.key, people.errorMessage.parameters, people.errorMessage.count)
+      }}
+    </p>
     <p v-if="people.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
     <p v-else-if="people.people.length === 0" class="empty">{{ t('admin.people.empty') }}</p>
     <ul>
-      <li v-for="person in people.people" :key="person.id">
+      <li v-for="person in people.people" :key="person.serverPersonId">
         <span class="name">{{ person.name }}</span>
-        <span v-if="!person.hasPhone" class="no-phone">{{ t('admin.people.noPhone') }}</span>
+        <span v-if="!person.isActive" class="off-the-list">{{ t('admin.people.offTheList') }}</span>
+        <span v-if="!person.hasDevice" class="no-phone">{{ t('admin.people.noPhone') }}</span>
         <span v-else-if="person.lastSeenAtUtc !== null" class="last-seen">
           {{ t('admin.people.lastSeen', { time: person.lastSeenAtUtc }) }}
         </span>
-        <button type="button" class="new-code" @click="people.createInvitation(person.id)">
+        <button type="button" class="new-code" @click="people.createInvitation(person.serverPersonId)">
           {{ t('admin.people.newCode') }}
         </button>
-        <p v-if="person.hasPhone" class="new-code-effect">
+        <p v-if="person.hasDevice" class="new-code-effect">
           {{ t('admin.people.newCodeEffect', { name: person.name }) }}
         </p>
         <button
@@ -54,34 +67,38 @@ onMounted(async () => {
           class="rename"
           @click="
             () => {
-              renamingId = person.id
+              renamingId = person.serverPersonId
               newName = person.name
             }
           "
         >
           {{ t('admin.people.rename') }}
         </button>
-        <template v-if="renamingId === person.id">
+        <template v-if="renamingId === person.serverPersonId">
           <input v-model="newName" type="text" />
-          <button type="button" @click="rename(person.id)">{{ t('admin.save') }}</button>
+          <button type="button" @click="rename(person.serverPersonId)">{{ t('admin.save') }}</button>
           <p class="help">{{ t('admin.people.renameHelp') }}</p>
         </template>
         <button
-          v-if="person.hasPhone"
+          v-if="person.hasDevice"
           type="button"
           class="revoke"
-          @click="revoke(person.id)"
+          @click="revoke(person.serverPersonId)"
         >
           {{ t('admin.people.revoke') }}
         </button>
-        <span v-if="revokedIds.includes(person.id)" class="revoked">
+        <span v-if="revokedIds.includes(person.serverPersonId)" class="revoked">
           {{ t('admin.people.revoked') }}
         </span>
-        <p v-if="person.hasPhone" class="revoke-confirm">
+        <p v-if="person.hasDevice" class="revoke-confirm">
           {{ t('admin.people.revokeConfirm', { name: person.name }) }}
         </p>
-        <button type="button" class="deactivate" @click="people.deactivate(person.id)">
-          {{ t('admin.people.deactivate') }}
+        <button
+          type="button"
+          class="toggle-active"
+          @click="people.setActive(person.serverPersonId, !person.isActive)"
+        >
+          {{ person.isActive ? t('admin.people.deactivate') : t('admin.people.activate') }}
         </button>
         <p class="deactivate-help">{{ t('admin.people.deactivateHelp') }}</p>
       </li>

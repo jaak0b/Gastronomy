@@ -1,22 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useStationStore, TAKE_DELAY_SECONDS } from '../stores/station'
 import { useConnectionStore } from '../stores/connection'
-import { currentRoute } from '../router'
 import StationWarning from '../components/station/StationWarning.vue'
 import StationFilter from '../components/station/StationFilter.vue'
 import StationTicketRow from '../components/station/StationTicketRow.vue'
-import LanguageSwitch from '../components/LanguageSwitch.vue'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const station = useStationStore()
 const connection = useConnectionStore()
-
-const accessKey = computed(() => {
-  const route = currentRoute.value
-  return route.name === 'station' ? route.accessKey : ''
-})
 
 const selectedName = computed(
   () =>
@@ -33,39 +26,36 @@ const printerIsBack = computed(
     !station.printer.isCoverOpen,
 )
 
-watch(
-  () => station.language,
-  (next) => {
-    locale.value = next
-  },
-  { immediate: true },
-)
+const releases: (() => void)[] = []
 
 onMounted(async () => {
-  await station.open(accessKey.value)
-  connection.onEvent('OrderAccepted', () => {
-    void station.loadTickets()
-  })
-  connection.onEvent('TicketStatusChanged', () => {
-    void station.loadTickets()
-  })
-  connection.onEvent('PrinterStatusChanged', () => {
-    void station.loadTickets()
-    void station.loadPrinter()
-  })
-  await connection.connect(accessKey.value)
+  await station.open()
+  releases.push(
+    station.listen(),
+    connection.onEvent('StationBacklogChanged', () => {
+      void station.loadTickets()
+    }),
+    connection.onEvent('TicketStatusChanged', () => {
+      void station.loadTickets()
+    }),
+    connection.onEvent('PrinterStatusChanged', () => {
+      void station.refresh()
+    }),
+  )
+})
+
+onUnmounted(() => {
+  for (const release of releases) {
+    release()
+  }
+  releases.length = 0
 })
 </script>
 
 <template>
-  <p v-if="station.keyIsUnknown" class="unknown-key">{{ t('station.unknownKey') }}</p>
+  <p v-if="station.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
   <section v-else class="station-page">
     <h1>{{ t('station.title', { name: selectedName }) }}</h1>
-    <LanguageSwitch
-      :language="station.language"
-      label-key="station.language"
-      @select="station.setLanguage"
-    />
     <StationWarning />
     <StationFilter
       :locations="station.locations"

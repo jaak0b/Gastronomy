@@ -36,6 +36,11 @@ public static class AdminServerPeopleEndpoints
             CancellationToken cancellationToken) =>
                 await handler.RevokeDeviceAsync(serverPersonId, cancellationToken));
 
+        group.MapPost("/{serverPersonId:guid}/activate", async (
+            Guid serverPersonId,
+            AdminServerPeopleHandler handler,
+            CancellationToken cancellationToken) => await handler.ActivateAsync(serverPersonId, cancellationToken));
+
         group.MapPost("/{serverPersonId:guid}/deactivate", async (
             Guid serverPersonId,
             AdminServerPeopleHandler handler,
@@ -56,7 +61,7 @@ public sealed class AdminServerPeopleHandler
     private readonly GastronomyAppDbContext dbContext;
     private readonly IDeviceTokenStore deviceTokenStore;
     private readonly IEnrolmentInvitationStore invitationStore;
-    private readonly BreakGlassUrlBuilder urlBuilder;
+    private readonly EnrolmentUrlBuilder urlBuilder;
     private readonly OutstandingInvitationCache invitationCache;
     private readonly HubNotificationDispatcher dispatcher;
     private readonly DeviceConnectionTerminator connectionTerminator;
@@ -67,7 +72,7 @@ public sealed class AdminServerPeopleHandler
         GastronomyAppDbContext dbContext,
         IDeviceTokenStore deviceTokenStore,
         IEnrolmentInvitationStore invitationStore,
-        BreakGlassUrlBuilder urlBuilder,
+        EnrolmentUrlBuilder urlBuilder,
         OutstandingInvitationCache invitationCache,
         HubNotificationDispatcher dispatcher,
         DeviceConnectionTerminator connectionTerminator,
@@ -169,6 +174,22 @@ public sealed class AdminServerPeopleHandler
         await RevokeAsync(device.Id, cancellationToken);
 
         return Results.Ok(new DeviceRevokedEvent(device.Id));
+    }
+
+    public async Task<IResult> ActivateAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    {
+        ServerPerson? person = await dbContext.ServerPeople
+            .FirstOrDefaultAsync(candidate => candidate.Id == serverPersonId, cancellationToken);
+
+        if (person is null)
+        {
+            return Results.NotFound();
+        }
+
+        person.IsActive = true;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(new ServerPersonView(person.Id, person.Name));
     }
 
     public async Task<IResult> DeactivateAsync(Guid serverPersonId, CancellationToken cancellationToken)

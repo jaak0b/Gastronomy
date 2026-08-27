@@ -30,7 +30,8 @@
     "stationOffline": "Station {name} is not answering right now.",
     "stationFaulty": "Tell the people at {name}. The printer there is not accepting anything any more.",
     "stationWaiting": "{count} slip is waiting there. | {count} slips are waiting there.",
-    "settings": "Settings"
+    "settings": "Settings",
+    "stations": "Stations"
   },
   "settings": {
     "title": "Settings",
@@ -81,7 +82,8 @@
     "tooManyRequests": "Wait a moment, then tap \"Send again\". The laptop is getting too many requests at once.",
     "retry": "Send again",
     "sendFailedAgain": "Write the order on paper and take it to the station. Sending has failed several times.",
-    "duplicateRisk": "Check your orders before you take this one again. It has already been sent."
+    "duplicateRisk": "Check your orders before you take this one again. It has already been sent.",
+    "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
   "orders": {
     "title": "My orders",
@@ -115,10 +117,31 @@
     "testPrinter": "Tell {station} about order {number} in person. The station is still on the test printer at the laptop, so there is no slip on the pile.",
     "reprintQueued": "The slip is printed again. It carries the same number again and is marked as a reprint.",
     "handledOnPaper": "The station has taken this order from the screen. No slip will be printed.",
-    "reprint": "Print again"
+    "reprint": "Print again",
+    "blocked": "This slip is waiting because the station printer cannot print right now.",
+    "illegalTransition": "This slip is no longer in the state you see on screen. Reload the page.",
+    "printJobAlreadyRunning": "A print is already running for this slip. Wait for it before you print again.",
+    "printedOnTestPrinter": "This slip printed on the test printer, so it is not at the station.",
+    "questionAlreadyAnswered": "Somebody else has already answered this question.",
+    "reprintNotAllowed": "This slip cannot be printed again right now. That is only possible once it has printed or failed.",
+    "resolvedByHuman": "Somebody handled this slip by hand.",
+    "socketDropped": "The connection to the printer broke. Whether the slip printed is still open.",
+    "timeout": "The printer did not answer in time.",
+    "unknownOutcome": "Whether this slip printed is still open. Check at the station.",
+    "unreachable": "The station printer cannot be reached."
   },
   "order": {
-    "changedMind": "Tell the station and take the change as a new order. A sent order cannot be taken back here, because its slip is already printing."
+    "changedMind": "Tell the station and take the change as a new order. A sent order cannot be taken back here, because its slip is already printing.",
+    "itemHasNoStation": "One item on this order has no station set up. Tell whoever is at the laptop, and pass the order on in person until then.",
+    "noLines": "Choose something before you send.",
+    "notYours": "This order belongs to another phone. You can only change your own orders.",
+    "quantityOutOfRange": "That quantity is too large. Enter a smaller one or place two orders.",
+    "stationNotAssignedToItem": "That station does not make this item. Choose another station.",
+    "stationRequired": "Choose a station for this item.",
+    "submissionIdReused": "This order was already sent with different contents. Check the order list before you send again.",
+    "tableLabelMissing": "Enter a table before you send.",
+    "tableLabelTooLong": "That table is too long. Write it shorter, for example: Table 12.",
+    "unknownItem": "One item on this order no longer exists. Reload the menu and build the order again."
   },
   "admin": {
     "notOnLaptop": "Open the admin pages on the laptop itself at {url}.",
@@ -142,11 +165,11 @@
       "slipLanguageHelp": "Choose the language the slips are printed in at this station. This is the language of the people working there, not the language of the server.",
       "openTickets": "This station still has {count} open slip and cannot be switched off right now. | This station still has {count} open slips and cannot be switched off right now.",
       "lastForItems": "Give {names} a different station first. This station is the only one for those items.",
-      "stationCard": "Print the station card",
-      "stationCardHelp": "Tape the card inside the printer lid. If the printer fails, the QR code on the card opens this station's emergency page.",
       "new": "New station",
       "deactivate": "Switch this station off",
-      "empty": "Create the first station, for example Kitchen or Bar."
+      "empty": "Create the first station, for example Kitchen or Bar.",
+      "activate": "Switch this station on",
+      "switchedOff": "Switched off"
     },
     "items": {
       "title": "Items",
@@ -163,7 +186,9 @@
       "category": "Category",
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
-      "empty": "Create the first item with its price."
+      "empty": "Create the first item with its price.",
+      "activate": "Back on the menu",
+      "offTheMenu": "Not on the menu"
     },
     "assignment": {
       "title": "Assignment",
@@ -231,7 +256,9 @@
       "revokeConfirm": "The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved.",
       "revoked": "Removed",
       "deactivate": "Take this server off the list",
-      "deactivateHelp": "Take a name off the list when it ended up there twice. The orders stay saved."
+      "deactivateHelp": "Take a name off the list when it ended up there twice. The orders stay saved.",
+      "activate": "Put this server back on the list",
+      "offTheList": "Not on the list"
     },
     "enrol": {
       "title": "Set up a phone",
@@ -280,7 +307,17 @@
       "confirmYes": "Yes, reset them",
       "confirmNo": "Cancel",
       "done": "The slip numbers start at 1 again."
-    }
+    },
+    "itemNameMissing": "Give the item a name before you save it.",
+    "itemNeedsAStation": "Tick at least one station so the item can be ordered.",
+    "locationHasOpenTickets": "This station still has open slips and cannot be switched off yet. Work through the slips and try again afterwards.",
+    "locationNameMissing": "Give the station a name before you save it.",
+    "personHasNoPhone": "No phone is enrolled for this person, so there is nothing to revoke.",
+    "personNameMissing": "Give the person a name before you save.",
+    "stationIsNotOnTheTestPrinter": "This station does not print to a folder. Practice faults are only available for stations that print to a folder.",
+    "unknownMockFault": "The program does not know this fault. Choose one from the list.",
+    "unknownTransportKind": "The program does not know this connection type. Choose one from the list.",
+    "actionFailed": "That did not work. Try again, and reload the page if it still does not work."
   },
   "station": {
     "title": "{name}: orders on screen",
@@ -312,8 +349,7 @@
     "alreadyTaken": "Somebody else has just taken this slip. Talk to each other so the order is made only once.",
     "takenNote": "No slip will be printed for this order any more.",
     "alreadyPrinted": "This slip has printed in the meantime and is on the pile.",
-    "printerBack": "The printer is answering again. The slips are coming out of the printer again.",
-    "unknownKey": "Ask the person at the laptop for the current link. This address is no longer valid."
+    "printerBack": "The printer is answering again. The slips are coming out of the printer again."
   },
   "welcome": {
     "title": "This phone is not set up yet.",
@@ -323,5 +359,15 @@
   "language": {
     "german": "Deutsch",
     "english": "English"
+  },
+  "enrolment": {
+    "oneCodeFormRequired": "Scan the QR code or type the six digit code. Either one is enough.",
+    "nameMissing": "Enter your name so the kitchen knows who took the order.",
+    "codeUnknown": "The laptop does not know this code. Ask for a new code at the laptop.",
+    "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the laptop.",
+    "sixDigitCodeRetired": "This code was typed in wrongly too often and is no longer valid. Ask for a new code at the laptop."
+  },
+  "session": {
+    "unsupportedLanguage": "The program does not have that language. Choose German or English."
   }
 }

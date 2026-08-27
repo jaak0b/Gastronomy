@@ -21,7 +21,7 @@ public interface IPrinterTransportFactory
 
 public interface IPrinterFleet
 {
-    public Task EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
+    public Task<PrintJobEnsured> EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
 
     public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken);
 
@@ -182,7 +182,10 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         }
     }
 
-    public async Task EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken)
+    public async Task<PrintJobEnsured> EnqueueAsync(
+        Guid locationTicketId,
+        PrintJobKind kind,
+        CancellationToken cancellationToken)
     {
         Guid? productionLocationId = await dataAccess.ResolveProductionLocationAsync(locationTicketId, cancellationToken);
         if (productionLocationId is null)
@@ -191,8 +194,18 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
                 $"There is no location ticket with id {locationTicketId}, so no print job was created.");
         }
 
-        await dataAccess.CreatePrintJobAsync(locationTicketId, productionLocationId.Value, kind, cancellationToken);
-        WorkerFor(productionLocationId.Value).Enqueue(locationTicketId);
+        PrintJobEnsured ensured = await dataAccess.EnsureOpenPrintJobAsync(
+            locationTicketId,
+            productionLocationId.Value,
+            kind,
+            cancellationToken);
+
+        if (ensured.WasCreated)
+        {
+            WorkerFor(productionLocationId.Value).Enqueue(locationTicketId);
+        }
+
+        return ensured;
     }
 
     public async Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken)

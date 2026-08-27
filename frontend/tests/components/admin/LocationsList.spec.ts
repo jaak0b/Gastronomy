@@ -6,8 +6,28 @@ import LocationsList from '../../../src/components/admin/locations/LocationsList
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
+const STATION_ID = '11111111-1111-1111-1111-111111111111'
+
 const ONE_STATION = JSON.stringify({
-  locations: [{ id: 'location-kueche', name: 'Küche', sortOrder: 1, slipLanguage: 'de', isActive: true }],
+  locations: [
+    {
+      locationId: STATION_ID,
+      name: 'Küche',
+      sortOrder: 1,
+      slipLanguage: 'de',
+      isActive: true,
+      accessKey: 'key-kueche',
+      breakGlassUrl: 'http://192.168.1.20:5000/s/key-kueche',
+      transportKind: 'Mock',
+      host: null,
+      port: 9100,
+      isEnabled: true,
+      isOnline: true,
+      isPaperEnd: false,
+      isCoverOpen: false,
+      isFaulty: false,
+    },
+  ],
 })
 
 function refuseDeactivationWith(messageKey: string, parameters: Record<string, unknown>) {
@@ -32,9 +52,110 @@ function mountList() {
 
 async function deactivateFirstStation(list: ReturnType<typeof mountList>) {
   await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
-  await list.get('li button:nth-of-type(2)').trigger('click')
+  await list.get('.toggle-active').trigger('click')
   await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
 }
+
+const ONE_STATION_SWITCHED_OFF = JSON.stringify({
+  locations: [{ ...JSON.parse(ONE_STATION).locations[0], isActive: false }],
+})
+
+describe('a station that is switched off', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('says so on its row, so the list is readable at a glance', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+
+    expect(list.get('.switched-off').text()).toBe('Abgeschaltet')
+  })
+
+  it('offers to switch it back on rather than off again', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+
+    expect(list.get('.toggle-active').text()).toBe('Station einschalten')
+  })
+
+  it('switches it back on at its own address', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION_SWITCHED_OFF, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.toggle-active').trigger('click')
+
+    await vi.waitFor(() => expect(urls).toContain(`/api/admin/locations/${STATION_ID}/activate`))
+  })
+})
+
+describe('a station that is switched on', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('offers to switch it off', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+
+    expect(list.get('.toggle-active').text()).toBe('Station abschalten')
+  })
+
+  it('carries no switched-off marker', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+
+    expect(list.find('.switched-off').exists()).toBe(false)
+  })
+})
+
+describe('the buttons beside a station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('switch that station off at its own address', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.toggle-active').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
+    )
+  })
+
+})
 
 describe('a station the laptop refuses to switch off', () => {
   beforeEach(() => {
@@ -90,7 +211,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
+      'Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.',
     )
   })
 })

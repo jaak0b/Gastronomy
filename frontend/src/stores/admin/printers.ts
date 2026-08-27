@@ -19,9 +19,15 @@ export type MockFaultMode = 'Once' | 'Sticky'
 export interface AdminPrinter {
   locationId: string
   locationName: string
-  transport: TransportKind
+  transportKind: TransportKind
   host: string | null
-  port: number | null
+  port: number
+  agentIdentifier: string | null
+  charactersPerLine: number
+  codePageName: string
+  connectTimeoutSeconds: number
+  jobTimeoutSeconds: number
+  heartbeatSeconds: number
   isEnabled: boolean
   isOnline: boolean
   isPaperEnd: boolean
@@ -55,15 +61,26 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
   }
 
   async function save(printer: AdminPrinter): Promise<void> {
-    await request(`/api/admin/printers/${printer.locationId}`, {
+    errorMessage.value = null
+    const result = await request(`/api/admin/printers/${printer.locationId}`, {
       method: 'PUT',
       body: {
-        transport: printer.transport,
+        transportKind: printer.transportKind,
         host: printer.host,
         port: printer.port,
+        agentIdentifier: printer.agentIdentifier,
+        charactersPerLine: printer.charactersPerLine,
+        codePageName: printer.codePageName,
+        connectTimeoutSeconds: printer.connectTimeoutSeconds,
+        jobTimeoutSeconds: printer.jobTimeoutSeconds,
+        heartbeatSeconds: printer.heartbeatSeconds,
         isEnabled: printer.isEnabled,
       },
     })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return
+    }
     await load()
   }
 
@@ -90,10 +107,15 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
     fault: MockFault,
     mode: MockFaultMode,
   ): Promise<void> {
-    await request(`/api/admin/mock/${locationId}/fault`, {
+    errorMessage.value = null
+    const result = await request(`/api/admin/mock/${locationId}/fault`, {
       method: 'POST',
       body: { fault, mode },
     })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return
+    }
     await load()
   }
 

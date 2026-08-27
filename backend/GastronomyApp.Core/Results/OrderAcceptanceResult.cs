@@ -23,4 +23,5 @@ public enum OrderValidationFailureReason
     UnknownCatalogItemId,
     StationRequired,
     StationNotAssignedToItem,
+    ItemHasNoStation,
 }

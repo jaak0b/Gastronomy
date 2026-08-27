@@ -21,12 +21,12 @@ describe('the route the app boots into, read from the address bar', () => {
     expect(currentRoute.value).toEqual({ name: 'admin', section: 'printers' })
   })
 
-  it('boots the station page when a station card is scanned', async () => {
-    window.history.replaceState({}, '', '/station/abc123')
+  it('boots the station backlog when that address is opened', async () => {
+    window.history.replaceState({}, '', '/stations')
 
     const { currentRoute } = await import('../../src/router')
 
-    expect(currentRoute.value).toEqual({ name: 'station', accessKey: 'abc123' })
+    expect(currentRoute.value).toEqual({ name: 'stations' })
   })
 
   it('boots the admin even when the address carries a trailing slash', async () => {

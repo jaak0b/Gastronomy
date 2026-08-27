@@ -13,36 +13,32 @@ public static class StationEndpoints
 {
     public static IEndpointRouteBuilder MapStationEndpoints(this IEndpointRouteBuilder routes)
     {
-        routes.MapGet("/station/{accessKey}", (StationShellResponder responder) => responder.Respond());
+        RouteGroupBuilder group = routes.MapGroup("/api/stations").RequireAuthorization();
 
-        RouteGroupBuilder group = routes.MapGroup("/api/station/{accessKey}");
-
-        group.MapGet("/locations", async (
+        group.MapGet(string.Empty, async (
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
             return await handler.ListLocationsAsync(cancellationToken);
         });
 
-        group.MapGet("/tickets", async (
-            Guid? locationId,
-            HttpContext httpContext,
+        group.MapGet("/{locationId:guid}/tickets", async (
+            Guid locationId,
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.ListTicketsAsync(httpContext, locationId, cancellationToken);
+            return await handler.ListTicketsAsync(locationId, cancellationToken);
         });
 
-        group.MapGet("/status", async (
-            Guid? locationId,
-            HttpContext httpContext,
+        group.MapGet("/{locationId:guid}/status", async (
+            Guid locationId,
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.StatusAsync(httpContext, locationId, cancellationToken);
+            return await handler.StatusAsync(locationId, cancellationToken);
         });
 
-        group.MapPost("/tickets/{ticketId:guid}/acknowledge", async (
+        group.MapPost("/{locationId:guid}/tickets/{ticketId:guid}/acknowledge", async (
             Guid ticketId,
             StationAcknowledgeHandler handler,
             CancellationToken cancellationToken) =>

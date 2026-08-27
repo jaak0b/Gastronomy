@@ -15,7 +15,6 @@ public sealed class ApiPipeline
         app.UseDefaultFiles();
         app.UseStaticFiles();
         app.UseMiddleware<LoopbackAdminAuthorizationMiddleware>();
-        app.UseMiddleware<StationAccessKeyMiddleware>();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseRateLimiter();

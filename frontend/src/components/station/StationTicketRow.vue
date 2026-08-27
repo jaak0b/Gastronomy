@@ -78,12 +78,12 @@ const isReprint = computed(() => props.ticket.reprintCount > 0)
   <article class="station-ticket-row" :class="{ 'is-pending': isPending }">
     <h2 class="headline">{{ headline }}</h2>
     <span v-if="isReprint" class="reprint-chip">{{ t('station.reprint') }}</span>
-    <p class="row-time">{{ t('station.rowTime', { time: ticket.createdAtUtc }) }}</p>
+    <p class="row-time">{{ t('station.rowTime', { time: ticket.orderCreatedAtUtc }) }}</p>
     <p class="status">{{ t(statusKey) }}</p>
     <p v-for="(line, index) in ticket.lines" :key="index" class="line">
       {{ t('station.line', { quantity: line.quantity, item: line.itemName }) }}
-      <span v-if="line.note !== null" class="line-note">
-        {{ t('station.lineNote', { note: line.note }) }}
+      <span v-if="line.lineNote !== null && line.lineNote !== undefined" class="line-note">
+        {{ t('station.lineNote', { note: line.lineNote }) }}
       </span>
     </p>
     <p v-if="ticket.orderNote !== null" class="order-note">
@@ -98,7 +98,7 @@ const isReprint = computed(() => props.ticket.reprintCount > 0)
       <p class="take-help">{{ t('station.takeHelp') }}</p>
     </template>
     <p v-else class="take-unavailable">
-      {{ t(ticket.refusalReasonKey ?? 'station.takeUnavailable') }}
+      {{ t(ticket.canAcknowledgeReasonKey ?? 'station.takeUnavailable') }}
     </p>
     <p v-if="noticeKey !== null && noticeKey !== undefined" class="notice">{{ t(noticeKey) }}</p>
   </article>

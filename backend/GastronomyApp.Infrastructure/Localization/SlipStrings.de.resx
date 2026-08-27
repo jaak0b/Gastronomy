@@ -91,9 +91,4 @@
   <data name="TestSlipHeader" xml:space="preserve">
     <value>TESTBON</value>
   </data>
-  <data name="StationCardInstructions" xml:space="preserve">
-    <value>Kleben Sie diese Karte in den Deckel des
-Druckers. Wenn der Drucker ausfällt, führt der
-QR-Code zur Notfallseite dieser Station.</value>
-  </data>
 </root>

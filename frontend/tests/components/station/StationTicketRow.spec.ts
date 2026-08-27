@@ -9,7 +9,7 @@ import en from '../../../src/locales/en.json'
 interface RowOverrides {
   status?: TicketStatus
   canAcknowledge?: boolean
-  refusalReasonKey?: string | null
+  canAcknowledgeReasonKey?: string | null
   reprintCount?: number
 }
 
@@ -20,13 +20,13 @@ function row(overrides: RowOverrides = {}): StationTicketRow {
     globalOrderNumber: 137,
     sequenceNumber: 42,
     tableLabel: 'Tisch 12',
-    createdAtUtc: '2026-08-27T19:00:00Z',
+    orderCreatedAtUtc: '2026-08-27T19:00:00Z',
     status: overrides.status ?? 'Queued',
     canAcknowledge: overrides.canAcknowledge ?? false,
-    refusalReasonKey: overrides.refusalReasonKey ?? null,
+    canAcknowledgeReasonKey: overrides.canAcknowledgeReasonKey ?? null,
     reprintCount: overrides.reprintCount ?? 0,
     orderNote: null,
-    lines: [{ quantity: 2, itemName: 'Bratwurst', note: 'ohne Zwiebeln' }],
+    lines: [{ quantity: 2, itemName: 'Bratwurst', lineNote: 'ohne Zwiebeln' }],
   }
 }
 
@@ -37,6 +37,45 @@ function mountRow(ticket: StationTicketRow, isPending = false) {
     global: { plugins: [i18n] },
   })
 }
+
+const BACKEND_TICKET = {
+  ticketId: 'ticket-1',
+  orderId: 'order-1',
+  locationId: 'location-kueche',
+  locationName: 'Küche',
+  sequenceNumber: 42,
+  globalOrderNumber: 137,
+  tableLabel: 'Tisch 12',
+  orderNote: null,
+  orderCreatedAtUtc: '2026-08-27T19:00:00Z',
+  status: 'Queued',
+  reprintCount: 0,
+  canAcknowledge: false,
+  canAcknowledgeReasonKey: 'station.alreadyTaken',
+  lines: [{ quantity: 2, itemName: 'Bratwurst', lineNote: 'ohne Zwiebeln' }],
+}
+
+describe('StationTicketRow, fed exactly what the laptop sends', () => {
+  it('prints the note the server typed for the kitchen', () => {
+    const ticket = mountRow(BACKEND_TICKET as unknown as StationTicketRow)
+
+    expect(ticket.get('.line-note').text()).toBe('Hinweis: ohne Zwiebeln')
+  })
+
+  it('says when the slip was ordered', () => {
+    const ticket = mountRow(BACKEND_TICKET as unknown as StationTicketRow)
+
+    expect(ticket.get('.row-time').text()).toContain('2026-08-27T19:00:00Z')
+  })
+
+  it('gives the stated reason a slip cannot be taken', () => {
+    const ticket = mountRow(BACKEND_TICKET as unknown as StationTicketRow)
+
+    expect(ticket.get('.take-unavailable').text()).toBe(
+      'Dieser Bon wurde gerade von jemand anderem übernommen. Sprechen Sie sich ab, damit die Bestellung nur einmal gemacht wird.',
+    )
+  })
+})
 
 describe('StationTicketRow, what the row says', () => {
   it('leads with the slip number, the order number and the table', () => {

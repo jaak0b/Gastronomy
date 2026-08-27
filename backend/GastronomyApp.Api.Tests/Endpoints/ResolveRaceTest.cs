@@ -28,6 +28,9 @@ public sealed class ResolveRaceTest
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
         LocationTicket ticket = await database.LocationTickets.FirstAsync(candidate => candidate.Id == ticketId);
         ticket.Status = LocationTicketStatus.Unknown;
+        await database.PrintJobs
+            .Where(job => job.LocationTicketId == ticketId)
+            .ExecuteUpdateAsync(job => job.SetProperty(entry => entry.Status, PrintJobStatus.Unknown));
         await database.SaveChangesAsync();
     }
 

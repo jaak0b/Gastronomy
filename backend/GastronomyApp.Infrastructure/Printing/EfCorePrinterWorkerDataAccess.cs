@@ -11,16 +11,13 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 {
     private readonly ImmediateTransactionRunner transactionRunner = new();
     private readonly Func<GastronomyAppDbContext> contextFactory;
-    private readonly Uri stationBaseUri;
     private readonly TimeProvider timeProvider;
 
     public EfCorePrinterWorkerDataAccess(
         Func<GastronomyAppDbContext> contextFactory,
-        Uri stationBaseUri,
         TimeProvider timeProvider)
     {
         this.contextFactory = contextFactory;
-        this.stationBaseUri = stationBaseUri;
         this.timeProvider = timeProvider;
     }
 
@@ -87,7 +84,6 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             Lines = [.. lines.Select(line => new TicketLineLoadResult(line.Quantity, line.ItemNameSnapshot, line.Note))],
             AlsoGoesToStationNames = siblingNames,
             ChosenStationNameIfDifferent = chosenName,
-            StationCardUrl = new Uri(stationBaseUri, $"station/{location.StationAccessKey}"),
         };
     }
 
@@ -475,6 +471,71 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             .SingleAsync(ct);
     }
 
+    public async Task<PrintJobEnsured> EnsureOpenPrintJobAsync(
+        Guid locationTicketId,
+        Guid productionLocationId,
+        PrintJobKind kind,
+        CancellationToken ct)
+    {
+        await using GastronomyAppDbContext context = contextFactory();
+
+        return await transactionRunner.RunAsync(
+            context,
+            async transactionCancellationToken =>
+            {
+                bool jobIsAlreadyOpen = await context.PrintJobs
+                    .AnyAsync(
+                        job => job.LocationTicketId == locationTicketId
+                            && (job.Status == PrintJobStatus.Queued
+                                || job.Status == PrintJobStatus.PreflightCheck
+                                || job.Status == PrintJobStatus.Sending
+                                || job.Status == PrintJobStatus.AwaitingEcho),
+                        transactionCancellationToken);
+
+                if (jobIsAlreadyOpen)
+                {
+                    return new TransactionOutcome<PrintJobEnsured>
+                    {
+                        Value = new PrintJobEnsured(false, null),
+                        ShouldCommit = false,
+                    };
+                }
+
+                DateTime now = timeProvider.GetUtcNow().UtcDateTime;
+                Guid jobId = Guid.NewGuid();
+
+                context.PrintJobs.Add(new PrintJob
+                {
+                    Id = jobId,
+                    LocationTicketId = locationTicketId,
+                    ProductionLocationId = productionLocationId,
+                    Kind = kind,
+                    Status = PrintJobStatus.Queued,
+                    ProcessId = null,
+                    FailureReason = null,
+                    RequestedByDeviceId = null,
+                    CreatedAtUtc = now,
+                });
+
+                if (kind == PrintJobKind.Reprint)
+                {
+                    LocationTicket ticket = await context.LocationTickets
+                        .SingleAsync(candidate => candidate.Id == locationTicketId, transactionCancellationToken);
+                    ticket.ReprintCount++;
+                    ticket.Status = LocationTicketStatus.Queued;
+                }
+
+                await context.SaveChangesAsync(transactionCancellationToken);
+
+                return new TransactionOutcome<PrintJobEnsured>
+                {
+                    Value = new PrintJobEnsured(true, jobId),
+                    ShouldCommit = true,
+                };
+            },
+            ct);
+    }
+
     public async Task<Guid> CreatePrintJobAsync(
         Guid? locationTicketId,
         Guid productionLocationId,
@@ -516,10 +577,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         ProductionLocation location = await context.ProductionLocations.AsNoTracking()
             .SingleAsync(candidate => candidate.Id == productionLocationId, ct);
 
-        return new TestPrintLoadResult(
-            location.Name,
-            location.SlipLanguage,
-            new Uri(stationBaseUri, $"station/{location.StationAccessKey}"));
+        return new TestPrintLoadResult(location.Name, location.SlipLanguage);
     }
 
     public async Task<Guid?> ResolveProductionLocationAsync(Guid locationTicketId, CancellationToken ct)

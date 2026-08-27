@@ -1,3 +1,4 @@
+import de from '../locales/de.json'
 import type { ApiErrorBody } from './apiError'
 
 export interface AdminErrorMessage {
@@ -6,16 +7,26 @@ export interface AdminErrorMessage {
   count: number | null
 }
 
-export const GENERIC_ADMIN_ERROR_KEY = 'admin.loadFailed'
+export const GENERIC_ADMIN_ERROR_KEY = 'admin.actionFailed'
 
-const RENDERABLE_KEYS = [
-  'admin.locations.openTickets',
-  'admin.locations.lastForItems',
-  'admin.itemsWouldHaveNoStation',
-  'admin.stationHasNoPrinterWorker',
-  'admin.items.needsLocation',
-  'admin.items.deactivateBlocked',
-]
+type MessageTree = { [key: string]: string | MessageTree }
+
+function knownKeys(tree: MessageTree, prefix = ''): Set<string> {
+  const known = new Set<string>()
+  for (const [key, value] of Object.entries(tree)) {
+    const path = prefix === '' ? key : `${prefix}.${key}`
+    if (typeof value === 'string') {
+      known.add(path)
+    } else {
+      for (const nested of knownKeys(value, path)) {
+        known.add(nested)
+      }
+    }
+  }
+  return known
+}
+
+const RENDERABLE_KEYS = knownKeys(de as MessageTree)
 
 function countFrom(parameters: Record<string, string | number>): number | null {
   const count = parameters.count
@@ -23,7 +34,7 @@ function countFrom(parameters: Record<string, string | number>): number | null {
 }
 
 export function adminErrorMessage(body: ApiErrorBody | null): AdminErrorMessage {
-  if (body === null || !RENDERABLE_KEYS.includes(body.messageKey)) {
+  if (body === null || !RENDERABLE_KEYS.has(body.messageKey)) {
     return { key: GENERIC_ADMIN_ERROR_KEY, parameters: {}, count: null }
   }
   const parameters = body.parameters ?? {}

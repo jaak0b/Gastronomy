@@ -10,6 +10,30 @@ function respondWith(body: string, status = 200) {
   vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status })))
 }
 
+interface RecordedWrite {
+  url: string
+  method: string
+  body: Record<string, unknown>
+}
+
+function recordWrites(body: string) {
+  const writes: RecordedWrite[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method !== undefined && init.method !== 'GET') {
+        writes.push({
+          url,
+          method: init.method,
+          body: JSON.parse(init.body as string) as Record<string, unknown>,
+        })
+      }
+      return new Response(body, { status: 200 })
+    }),
+  )
+  return writes
+}
+
 function mountPrinters() {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(PrintersList, { global: { plugins: [i18n] } })
@@ -20,9 +44,15 @@ const ONE_PRINTER = JSON.stringify({
     {
       locationId: 'location-kueche',
       locationName: 'Küche',
-      transport: 'Mock',
+      transportKind: 'Mock',
       host: null,
-      port: null,
+      port: 9100,
+      agentIdentifier: null,
+      charactersPerLine: 42,
+      codePageName: 'PC858',
+      connectTimeoutSeconds: 5,
+      jobTimeoutSeconds: 90,
+      heartbeatSeconds: 15,
       isEnabled: true,
       isOnline: true,
       isPaperEnd: false,
@@ -35,6 +65,64 @@ const ONE_PRINTER = JSON.stringify({
       mockFolderPath: null,
     },
   ],
+})
+
+describe('saving a printer', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('names the transport under the name the laptop binds', async () => {
+    const writes = recordWrites(ONE_PRINTER)
+
+    const page = mountPrinters()
+    await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
+    await page.get('.printer-row button:nth-of-type(3)').trigger('click')
+    await page.get('.printer-form').trigger('submit')
+
+    await vi.waitFor(() => expect(writes.length).toBeGreaterThan(0))
+    expect(writes[0].body.transportKind).toBe('Mock')
+  })
+
+  it('carries every setting the laptop insists on, so the save is not refused', async () => {
+    const writes = recordWrites(ONE_PRINTER)
+
+    const page = mountPrinters()
+    await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
+    await page.get('.printer-row button:nth-of-type(3)').trigger('click')
+    await page.get('.printer-form').trigger('submit')
+
+    await vi.waitFor(() => expect(writes.length).toBeGreaterThan(0))
+    expect(Object.keys(writes[0].body).sort()).toEqual(
+      [
+        'agentIdentifier',
+        'charactersPerLine',
+        'codePageName',
+        'connectTimeoutSeconds',
+        'heartbeatSeconds',
+        'host',
+        'isEnabled',
+        'jobTimeoutSeconds',
+        'port',
+        'transportKind',
+      ].sort(),
+    )
+  })
+})
+
+describe('the mock station controls', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('appear for a station that prints to a folder', async () => {
+    respondWith(ONE_PRINTER)
+
+    const page = mountPrinters()
+    await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
+
+    expect(page.find('.mock-fault-panel').exists()).toBe(true)
+  })
 })
 
 describe('the printers page', () => {

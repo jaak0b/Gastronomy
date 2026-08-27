@@ -12,7 +12,10 @@ const props = defineProps<{
   locations: AdminLocation[]
   errorKey: string | null
 }>()
-const emit = defineEmits<{ save: [item: AdminItemDraft]; deactivate: [id: string] }>()
+const emit = defineEmits<{
+  save: [item: AdminItemDraft]
+  setActive: [id: string, isActive: boolean]
+}>()
 
 const { t, locale } = useI18n()
 const name = ref(props.item?.name ?? '')
@@ -37,7 +40,7 @@ function save(): void {
     return
   }
   emit('save', {
-    id: props.item?.id,
+    itemId: props.item?.itemId,
     name: name.value,
     categoryName: categoryName.value,
     priceCents,
@@ -72,8 +75,12 @@ function save(): void {
     <p v-if="errorKey !== null" class="error">{{ t(errorKey) }}</p>
     <button type="submit" :disabled="name.trim().length === 0">{{ t('admin.save') }}</button>
     <template v-if="item !== null">
-      <button type="button" class="deactivate" @click="emit('deactivate', item.id)">
-        {{ t('admin.items.deactivate') }}
+      <button
+        type="button"
+        class="toggle-active"
+        @click="emit('setActive', item.itemId, !item.isActive)"
+      >
+        {{ item.isActive ? t('admin.items.deactivate') : t('admin.items.activate') }}
       </button>
       <p class="help">{{ t('admin.items.deactivateHelp') }}</p>
     </template>

@@ -70,7 +70,6 @@ public sealed class OrderAcceptanceServiceTest
         {
             Id = id,
             Name = name,
-            StationAccessKey = name,
             SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,
@@ -572,6 +571,8 @@ public sealed class OrderAcceptanceServiceTest
             OrderValidationFailureReason.StationRequired => RequestWith([LineFor(AmbiguouslyRoutedItemId(), 1)]),
             OrderValidationFailureReason.StationNotAssignedToItem =>
                 RequestWith([LineFor(_bratwurstId, 1, _barIndoorId)]),
+            OrderValidationFailureReason.ItemHasNoStation =>
+                RequestWith([LineFor(ItemWithNoActiveStationId(), 1)]),
             _ => throw new InvalidOperationException($"No scenario covers {scenario}"),
         };
 
@@ -605,6 +606,15 @@ public sealed class OrderAcceptanceServiceTest
         return _beerId;
     }
 
+    private Guid ItemWithNoActiveStationId()
+    {
+        GivenAssignments(_beerId, [_barIndoorId]);
+        A.CallTo(() => _productionLocationRepository.FindActiveAsync(A<CancellationToken>._))
+            .Returns(Task.FromResult<IReadOnlyCollection<ProductionLocation>>([]));
+
+        return _beerId;
+    }
+
     [Test]
     public async Task AcceptAsync_EveryDeclaredValidationFailureReason_IsProducedByARealRequest()
     {
@@ -624,6 +634,7 @@ public sealed class OrderAcceptanceServiceTest
             [RoutingFailureReason.StationRequired] = OrderValidationFailureReason.StationRequired,
             [RoutingFailureReason.StationNotAssignedToItem] =
                 OrderValidationFailureReason.StationNotAssignedToItem,
+            [RoutingFailureReason.ItemHasNoStation] = OrderValidationFailureReason.ItemHasNoStation,
         };
 
         Assert.That(

@@ -13,7 +13,7 @@ export type AppRoute =
   | { name: 'review' }
   | { name: 'orders' }
   | { name: 'orderDetail'; orderId: string }
-  | { name: 'station'; accessKey: string }
+  | { name: 'stations' }
   | { name: 'admin'; section: AdminSection }
 
 const ADMIN_SECTIONS: AdminSection[] = [
@@ -51,8 +51,8 @@ export function resolveRoute(path: string): AppRoute {
       ? { name: 'orderDetail', orderId: segments[1] }
       : { name: 'orders' }
   }
-  if (first === 'station' && segments.length >= 2) {
-    return { name: 'station', accessKey: segments[1] }
+  if (first === 'stations') {
+    return { name: 'stations' }
   }
   if (first === 'admin') {
     return { name: 'admin', section: adminSectionFrom(segments[1]) }

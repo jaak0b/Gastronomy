@@ -68,7 +68,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
         await SendToAsync(
             eventNames.TicketStatusChanged,
             payload,
-            [groupNames.Person(order.ServerPersonId), groupNames.Admin, groupNames.Stations],
+            [groupNames.Devices, groupNames.Admin],
             ct);
     }
 
@@ -109,12 +109,13 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             snapshot.IsCoverOpen,
             isFaulty,
             waitingTicketCount,
+            snapshot.ObservedAt.UtcDateTime,
             snapshot.Detail);
 
         await SendToAsync(
             eventNames.PrinterStatusChanged,
             payload,
-            [groupNames.Devices, groupNames.Admin, groupNames.Stations],
+            [groupNames.Devices, groupNames.Admin],
             ct);
     }
 
@@ -123,8 +124,17 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
         await SendToAsync(
             eventNames.OrderAccepted,
             payload,
-            [groupNames.Person(serverPersonId), groupNames.Admin, groupNames.Stations],
+            [groupNames.Person(serverPersonId), groupNames.Admin],
             ct);
+
+        foreach (Guid locationId in payload.Tickets.Select(ticket => ticket.LocationId).Distinct())
+        {
+            await SendToAsync(
+                eventNames.StationBacklogChanged,
+                new StationBacklogChangedEvent(locationId),
+                [groupNames.Devices, groupNames.Admin],
+                ct);
+        }
     }
 
     public async Task PushCatalogChangedAsync(string version, CancellationToken ct)

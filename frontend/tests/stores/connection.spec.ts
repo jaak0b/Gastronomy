@@ -2,10 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 const startResult = { shouldFail: false }
+const lastUrl = { value: '' }
+const registeredHandlers: { eventName: string; handler: (payload: unknown) => void }[] = []
 
 vi.mock('@microsoft/signalr', () => {
   class HubConnectionBuilder {
-    withUrl() {
+    withUrl(url: string) {
+      lastUrl.value = url
       return this
     }
     withAutomaticReconnect() {
@@ -14,7 +17,17 @@ vi.mock('@microsoft/signalr', () => {
     build() {
       return {
         state: 'Disconnected',
-        on: () => undefined,
+        on: (eventName: string, handler: (payload: unknown) => void) => {
+          registeredHandlers.push({ eventName, handler })
+        },
+        off: (eventName: string, handler: (payload: unknown) => void) => {
+          const index = registeredHandlers.findIndex(
+            (entry) => entry.eventName === eventName && entry.handler === handler,
+          )
+          if (index !== -1) {
+            registeredHandlers.splice(index, 1)
+          }
+        },
         onreconnecting: () => undefined,
         onreconnected: () => undefined,
         onclose: () => undefined,
@@ -32,11 +45,60 @@ vi.mock('@microsoft/signalr', () => {
 
 const { useConnectionStore, POLLING_INTERVAL_MS } = await import('../../src/stores/connection')
 
+describe('the credential the hub is opened with', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    lastUrl.value = ''
+  })
+
+  it('is offered as a device token when a phone connects', async () => {
+    const connection = useConnectionStore()
+
+    await connection.connect({ deviceToken: 'a-token' })
+
+    expect(lastUrl.value).toContain('access_token=a-token')
+  })
+
+})
+
+describe('a handler that is no longer wanted', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    registeredHandlers.length = 0
+  })
+
+  it('can be taken off again, so a screen that is reopened does not answer twice', async () => {
+    const connection = useConnectionStore()
+    await connection.connect({ deviceToken: 'a-token' })
+
+    const stopListening = connection.onEvent('TicketStatusChanged', () => undefined)
+    stopListening()
+
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'TicketStatusChanged')).toEqual(
+      [],
+    )
+  })
+
+  it('is not registered a second time when the same screen is opened again', async () => {
+    const connection = useConnectionStore()
+    const stopListening = connection.onEvent('TicketStatusChanged', () => undefined)
+    stopListening()
+
+    await connection.connect({ deviceToken: 'a-token' })
+
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'TicketStatusChanged')).toEqual(
+      [],
+    )
+  })
+})
+
 describe('the connection store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.useFakeTimers()
     startResult.shouldFail = false
+    lastUrl.value = ''
+    registeredHandlers.length = 0
   })
 
   afterEach(() => {
@@ -50,7 +112,7 @@ describe('the connection store', () => {
       refetchCount += 1
     })
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
 
     expect(refetchCount).toBe(1)
   })
@@ -58,7 +120,7 @@ describe('the connection store', () => {
   it('reports itself connected once the hub is up', async () => {
     const connection = useConnectionStore()
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
 
     expect(connection.state).toBe('connected')
   })
@@ -70,7 +132,7 @@ describe('the connection store', () => {
       refetchCount += 1
     })
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
     await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 4)
 
     expect(refetchCount).toBe(1)
@@ -80,7 +142,7 @@ describe('the connection store', () => {
     startResult.shouldFail = true
     const connection = useConnectionStore()
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
 
     expect(connection.state).toBe('offline')
   })
@@ -93,7 +155,7 @@ describe('the connection store', () => {
       refetchCount += 1
     })
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
     await vi.advanceTimersByTimeAsync(45000)
 
     expect(refetchCount).toBe(3)
@@ -107,7 +169,7 @@ describe('the connection store', () => {
       refetchCount += 1
     })
 
-    await connection.connect('a-token')
+    await connection.connect({ deviceToken: 'a-token' })
     await connection.disconnect()
     await vi.advanceTimersByTimeAsync(45000)
 

@@ -6,7 +6,9 @@ import type { AdminLocation } from '../../../stores/admin/locations'
 
 const props = defineProps<{ location: AdminLocation | null }>()
 const emit = defineEmits<{
-  save: [value: { id?: string; name: string; sortOrder: number; slipLanguage: AppLanguage }]
+  save: [
+    value: { locationId?: string; name: string; sortOrder: number; slipLanguage: AppLanguage },
+  ]
 }>()
 
 const { t } = useI18n()
@@ -16,7 +18,7 @@ const slipLanguage = ref<AppLanguage>(props.location?.slipLanguage ?? 'de')
 
 function save(): void {
   emit('save', {
-    id: props.location?.id,
+    locationId: props.location?.locationId,
     name: name.value,
     sortOrder: sortOrder.value,
     slipLanguage: slipLanguage.value,

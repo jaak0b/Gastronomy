@@ -160,11 +160,11 @@ export interface StationTicketRow {
   globalOrderNumber: number
   sequenceNumber: number
   tableLabel: string
-  createdAtUtc: string
+  orderCreatedAtUtc: string
   status: TicketStatus
   canAcknowledge: boolean
-  refusalReasonKey: string | null
+  canAcknowledgeReasonKey: string | null
   reprintCount: number
   orderNote: string | null
-  lines: { quantity: number; itemName: string; note: string | null }[]
+  lines: { quantity: number; itemName: string; lineNote: string | null }[]
 }

@@ -16,5 +16,4 @@ public sealed record SlipStrings(
     string ItemsTotalPrefix,
     string AlsoGoesToPrefix,
     string ChosenStationWasPrefix,
-    string TestSlipHeader,
-    string StationCardInstructions);
+    string TestSlipHeader);

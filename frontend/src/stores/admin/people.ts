@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
+import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 import { useConnectionStore } from '../connection'
 
 export interface AdminPerson {
-  id: string
+  serverPersonId: string
   name: string
-  hasPhone: boolean
+  isActive: boolean
+  hasDevice: boolean
   lastSeenAtUtc: string | null
   userAgent: string | null
   hasOutstandingInvitation: boolean
@@ -24,6 +26,7 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
   const people = ref<AdminPerson[]>([])
   const loadFailed = ref(false)
   const invitation = ref<Invitation | null>(null)
+  const errorMessage = ref<AdminErrorMessage | null>(null)
   const enrolledName = ref<string | null>(null)
 
   async function load(): Promise<void> {
@@ -41,30 +44,42 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
     people.value = rows
   }
 
-  async function rename(id: string, name: string): Promise<void> {
-    await request(`/api/admin/server-people/${id}`, { method: 'PUT', body: { name } })
-    await load()
+  async function rename(id: string, name: string): Promise<boolean> {
+    return await commit(`/api/admin/server-people/${id}`, 'PUT', { name })
   }
 
-  async function revokeDevice(id: string): Promise<void> {
-    await request(`/api/admin/server-people/${id}/revoke-device`, { method: 'POST' })
-    await load()
+  async function revokeDevice(id: string): Promise<boolean> {
+    return await commit(`/api/admin/server-people/${id}/revoke-device`, 'POST', undefined)
   }
 
-  async function deactivate(id: string): Promise<void> {
-    await request(`/api/admin/server-people/${id}/deactivate`, { method: 'POST' })
+  async function setActive(id: string, isActive: boolean): Promise<boolean> {
+    const action = isActive ? 'activate' : 'deactivate'
+    return await commit(`/api/admin/server-people/${id}/${action}`, 'POST', undefined)
+  }
+
+  async function commit(path: string, method: 'POST' | 'PUT', body: unknown): Promise<boolean> {
+    errorMessage.value = null
+    const result = await request(path, { method, body })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return false
+    }
     await load()
+    return true
   }
 
   async function createInvitation(serverPersonId?: string): Promise<void> {
     enrolledName.value = null
+    errorMessage.value = null
     const result = await request<Invitation>('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: serverPersonId === undefined ? {} : { serverPersonId },
     })
-    if (result.kind === 'ok') {
-      invitation.value = result.data
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return
     }
+    invitation.value = result.data
   }
 
   function closeInvitation(): void {
@@ -84,12 +99,13 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
   return {
     people,
     loadFailed,
+    errorMessage,
     invitation,
     enrolledName,
     load,
     rename,
     revokeDevice,
-    deactivate,
+    setActive,
     createInvitation,
     closeInvitation,
     listen,

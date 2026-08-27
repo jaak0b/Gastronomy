@@ -239,60 +239,11 @@ public class EscPosSlipRendererTest
             "KÜCHE",
             "de",
             new DateTimeOffset(2026, 8, 26, 17, 5, 0, TimeSpan.Zero),
-            TimeZoneInfo.Utc,
-            new Uri("http://192.168.100.123:50000/station/8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"));
+            TimeZoneInfo.Utc);
     }
 
     [Test]
-    public void RenderTestSlip_EmitsGsParenKSequenceInOrder()
-    {
-        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
-
-        AssertSequencesInOrder(
-            slip.Bytes,
-            [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00],
-            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06],
-            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31],
-            [0x1D, 0x28, 0x6B, 0x48, 0x00, 0x31, 0x50, 0x30],
-            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30]);
-    }
-
-    [Test]
-    public void RenderTestSlip_ShortUrl_PLPHEqualsLengthPlusThree()
-    {
-        Uri shortUrl = new("http://a/b");
-        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { StationCardUrl = shortUrl });
-
-        int expectedLength = shortUrl.ToString().Length + 3;
-        AssertSequencesInOrder(
-            slip.Bytes,
-            [0x1D, 0x28, 0x6B, (byte)(expectedLength % 256), (byte)(expectedLength / 256), 0x31, 0x50, 0x30]);
-    }
-
-    [Test]
-    public void RenderTestSlip_69ByteUrl_PLPHEqualsLengthPlusThree()
-    {
-        TestSlipRenderRequest request = GermanTestSlipFixture();
-        Assert.That(request.StationCardUrl.ToString(), Has.Length.EqualTo(69));
-
-        RenderedSlip slip = renderer.RenderTestSlip(request);
-
-        AssertSequencesInOrder(slip.Bytes, [0x1D, 0x28, 0x6B, 0x48, 0x00, 0x31, 0x50, 0x30]);
-    }
-
-    [Test]
-    public void RenderTestSlip_UrlPrintedAsTextUnderneath()
-    {
-        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
-
-        Assert.That(slip.RenderedText, Does.Contain("http://192.168.100.123:50000/station/\r\n8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"));
-        Assert.That(slip.RenderedText, Does.Contain("TESTBON"));
-        Assert.That(slip.RenderedText, Does.Not.Contain("BON 0"));
-        Assert.That(slip.RenderedText, Does.Not.Contain("Bestellung"));
-    }
-
-    [Test]
-    public void RenderTestSlip_German_MatchesStationCardInstructionsText()
+    public void RenderTestSlip_German_NamesTheStationAndCarriesNoAddress()
     {
         RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
 
@@ -302,18 +253,11 @@ public class EscPosSlipRendererTest
             "================================================",
             "TESTBON",
             "26.08.2026, 17:05 Uhr",
-            "------------------------------------------------",
-            "http://192.168.100.123:50000/station/",
-            "8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c",
-            "------------------------------------------------",
-            "Kleben Sie diese Karte in den Deckel des",
-            "Druckers. Wenn der Drucker ausfällt, führt der",
-            "QR-Code zur Notfallseite dieser Station.",
             "================================================")));
     }
 
     [Test]
-    public void RenderTestSlip_English_MatchesStationCardInstructionsText()
+    public void RenderTestSlip_English_NamesTheStationAndCarriesNoAddress()
     {
         RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { LocationName = "KITCHEN", LanguageCode = "en" });
 
@@ -323,13 +267,6 @@ public class EscPosSlipRendererTest
             "================================================",
             "TEST SLIP",
             "26/08/2026, 17:05",
-            "------------------------------------------------",
-            "http://192.168.100.123:50000/station/",
-            "8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c",
-            "------------------------------------------------",
-            "Tape this card inside the printer lid. If the",
-            "printer fails, the QR code opens this station's",
-            "emergency page.",
             "================================================")));
     }
 

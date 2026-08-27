@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request } from '../api/client'
-import type { AppLanguage, PrinterStatusRow, StationTicketRow } from '../core/apiTypes'
+import { useConnectionStore } from './connection'
+import { useSessionStore } from './session'
+import type { PrinterStatusRow, StationTicketRow } from '../core/apiTypes'
 
-export const STATION_LANGUAGE_STORAGE_KEY = 'stationLanguage'
 export const TAKE_DELAY_SECONDS = 10
 
 export interface StationLocation {
@@ -13,47 +14,41 @@ export interface StationLocation {
 }
 
 export const useStationStore = defineStore('station', () => {
-  const accessKey = ref<string | null>(null)
   const locations = ref<StationLocation[]>([])
   const selectedLocationId = ref<string | null>(null)
   const tickets = ref<StationTicketRow[]>([])
   const printer = ref<PrinterStatusRow | null>(null)
-  const keyIsUnknown = ref(false)
+  const loadFailed = ref(false)
   const pendingTicketIds = ref<string[]>([])
   const noticeKeyByTicketId = ref<Record<string, string>>({})
-  const language = ref<AppLanguage>(
-    localStorage.getItem(STATION_LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'de',
-  )
-
   const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-  function setLanguage(next: AppLanguage): void {
-    language.value = next
-    localStorage.setItem(STATION_LANGUAGE_STORAGE_KEY, next)
+  function deviceToken(): string | null {
+    return useSessionStore().deviceToken
   }
 
   async function loadLocations(): Promise<void> {
-    const result = await request<{ locations: StationLocation[] }>(
-      `/api/station/${accessKey.value}/locations`,
-    )
-    if (result.kind === 'error' && result.status === 404) {
-      keyIsUnknown.value = true
+    loadFailed.value = false
+    const result = await request<{ locations: StationLocation[] }>('/api/stations', {
+      token: deviceToken(),
+    })
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
       return
     }
-    if (result.kind === 'ok') {
-      locations.value = result.data.locations
-      if (selectedLocationId.value === null && result.data.locations.length > 0) {
-        selectedLocationId.value = result.data.locations[0].locationId
-      }
+    locations.value = result.data.locations
+    if (selectedLocationId.value === null && result.data.locations.length > 0) {
+      selectedLocationId.value = result.data.locations[0].locationId
     }
   }
 
   async function loadTickets(): Promise<void> {
-    if (accessKey.value === null || selectedLocationId.value === null) {
+    if (selectedLocationId.value === null) {
       return
     }
     const result = await request<{ tickets: StationTicketRow[] }>(
-      `/api/station/${accessKey.value}/tickets?locationId=${selectedLocationId.value}`,
+      `/api/stations/${selectedLocationId.value}/tickets`,
+      { token: deviceToken() },
     )
     if (result.kind === 'ok') {
       tickets.value = result.data.tickets
@@ -61,10 +56,13 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function loadPrinter(): Promise<void> {
-    if (accessKey.value === null) {
+    if (selectedLocationId.value === null) {
       return
     }
-    const result = await request<PrinterStatusRow>(`/api/station/${accessKey.value}/status`)
+    const result = await request<PrinterStatusRow>(
+      `/api/stations/${selectedLocationId.value}/status`,
+      { token: deviceToken() },
+    )
     if (result.kind === 'ok') {
       printer.value = result.data
     }
@@ -80,8 +78,8 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     const result = await request(
-      `/api/station/${accessKey.value}/tickets/${ticket.ticketId}/acknowledge`,
-      { method: 'POST' },
+      `/api/stations/${selectedLocationId.value}/tickets/${ticket.ticketId}/acknowledge`,
+      { method: 'POST', token: deviceToken() },
     )
     if (result.kind === 'error') {
       noticeKeyByTicketId.value = {
@@ -116,8 +114,16 @@ export const useStationStore = defineStore('station', () => {
     pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== ticketId)
   }
 
-  async function open(key: string): Promise<void> {
-    accessKey.value = key
+  async function refresh(): Promise<void> {
+    await loadTickets()
+    await loadPrinter()
+  }
+
+  function listen(): () => void {
+    return useConnectionStore().registerRefetch(refresh)
+  }
+
+  async function open(): Promise<void> {
     await loadLocations()
     await loadTickets()
     await loadPrinter()
@@ -129,16 +135,15 @@ export const useStationStore = defineStore('station', () => {
   }
 
   return {
-    accessKey,
     locations,
     selectedLocationId,
     tickets,
     printer,
-    keyIsUnknown,
+    loadFailed,
     pendingTicketIds,
     noticeKeyByTicketId,
-    language,
-    setLanguage,
+    listen,
+    refresh,
     open,
     selectLocation,
     loadTickets,

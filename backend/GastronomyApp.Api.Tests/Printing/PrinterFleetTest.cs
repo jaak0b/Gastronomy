@@ -58,7 +58,6 @@ public class PrinterFleetTest
             {
                 Id = locationId,
                 Name = name,
-                StationAccessKey = "8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c",
                 SlipLanguage = "de",
                 SortOrder = 1,
                 IsActive = true,
@@ -188,15 +187,49 @@ public class PrinterFleetTest
     public async Task EnqueueAsync_CreatesPrintJobThenEnqueuesOnTheOwningWorker()
     {
         Configure(Entry(kitchenId, "Küche", "10.0.0.5", 9100), Entry(barId, "Theke", "10.0.0.6", 9100));
+        A.CallTo(() => dataAccess.EnsureOpenPrintJobAsync(
+                ticketId,
+                kitchenId,
+                PrintJobKind.Initial,
+                A<CancellationToken>._))
+            .Returns(Task.FromResult(new PrintJobEnsured(true, Guid.NewGuid())));
         PrinterFleet fleet = Fleet();
         await fleet.StartAsync(CancellationToken.None);
 
         await fleet.EnqueueAsync(ticketId, PrintJobKind.Initial, CancellationToken.None);
 
-        A.CallTo(() => dataAccess.CreatePrintJobAsync(ticketId, kitchenId, PrintJobKind.Initial, A<CancellationToken>._))
+        A.CallTo(() => dataAccess.EnsureOpenPrintJobAsync(
+                ticketId,
+                kitchenId,
+                PrintJobKind.Initial,
+                A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
         PrinterWorker owning = fleet.Workers.Single(worker => worker.ServedProductionLocationIds.Contains(kitchenId));
         Assert.That(owning.PendingTicketIds, Does.Contain(ticketId));
+        await fleet.StopAsync(CancellationToken.None);
+    }
+
+    [Test]
+    public async Task EnqueueAsync_APrintIsAlreadyRunningForTheTicket_DoesNotHandItToTheWorkerAgain()
+    {
+        Configure(Entry(kitchenId, "Küche", "10.0.0.5", 9100));
+        A.CallTo(() => dataAccess.EnsureOpenPrintJobAsync(
+                ticketId,
+                kitchenId,
+                PrintJobKind.Initial,
+                A<CancellationToken>._))
+            .Returns(Task.FromResult(new PrintJobEnsured(false, null)));
+        PrinterFleet fleet = Fleet();
+        await fleet.StartAsync(CancellationToken.None);
+
+        PrintJobEnsured ensured = await fleet.EnqueueAsync(ticketId, PrintJobKind.Initial, CancellationToken.None);
+
+        PrinterWorker owning = fleet.Workers.Single(worker => worker.ServedProductionLocationIds.Contains(kitchenId));
+        Assert.Multiple(() =>
+        {
+            Assert.That(ensured.WasCreated, Is.False);
+            Assert.That(owning.PendingTicketIds, Does.Not.Contain(ticketId));
+        });
         await fleet.StopAsync(CancellationToken.None);
     }
 
@@ -240,7 +273,7 @@ public class PrinterFleetTest
     {
         Configure(Entry(kitchenId, "Küche", "10.0.0.5", 9100));
         A.CallTo(() => dataAccess.LoadTestPrintAsync(A<Guid>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new TestPrintLoadResult("Küche", "de", new Uri("http://10.0.0.5:5000/station/8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"))));
+            .Returns(Task.FromResult(new TestPrintLoadResult("Küche", "de")));
         A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new PrintDispatchResult(
                 PrintAttemptOutcome.Confirmed,

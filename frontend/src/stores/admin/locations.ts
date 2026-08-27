@@ -5,7 +5,7 @@ import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminError
 import type { AppLanguage } from '../../core/apiTypes'
 
 export interface AdminLocation {
-  id: string
+  locationId: string
   name: string
   sortOrder: number
   slipLanguage: AppLanguage
@@ -33,12 +33,14 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
   }
 
   async function save(
-    location: Pick<AdminLocation, 'name' | 'sortOrder' | 'slipLanguage'> & { id?: string },
+    location: Pick<AdminLocation, 'name' | 'sortOrder' | 'slipLanguage'> & { locationId?: string },
   ): Promise<void> {
     const path =
-      location.id === undefined ? '/api/admin/locations' : `/api/admin/locations/${location.id}`
+      location.locationId === undefined
+        ? '/api/admin/locations'
+        : `/api/admin/locations/${location.locationId}`
     await request(path, {
-      method: location.id === undefined ? 'POST' : 'PUT',
+      method: location.locationId === undefined ? 'POST' : 'PUT',
       body: {
         name: location.name,
         sortOrder: location.sortOrder,
@@ -48,9 +50,10 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
     await load()
   }
 
-  async function deactivate(id: string): Promise<void> {
+  async function setActive(id: string, isActive: boolean): Promise<void> {
     errorMessage.value = null
-    const result = await request(`/api/admin/locations/${id}/deactivate`, { method: 'POST' })
+    const action = isActive ? 'activate' : 'deactivate'
+    const result = await request(`/api/admin/locations/${id}/${action}`, { method: 'POST' })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return
@@ -58,13 +61,5 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
     await load()
   }
 
-  async function regenerateAccessKey(id: string): Promise<string | null> {
-    const result = await request<{ stationUrl: string }>(
-      `/api/admin/locations/${id}/regenerate-access-key`,
-      { method: 'POST' },
-    )
-    return result.kind === 'ok' ? result.data.stationUrl : null
-  }
-
-  return { locations, loadFailed, errorMessage, load, save, deactivate, regenerateAccessKey }
+  return { locations, loadFailed, errorMessage, load, save, setActive }
 })

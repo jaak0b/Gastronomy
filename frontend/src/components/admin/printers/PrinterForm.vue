@@ -8,7 +8,7 @@ const props = defineProps<{ printer: AdminPrinter }>()
 const emit = defineEmits<{ save: [printer: AdminPrinter] }>()
 
 const { t } = useI18n()
-const transport = ref<TransportKind>(props.printer.transport)
+const transport = ref<TransportKind>(props.printer.transportKind)
 const host = ref(props.printer.host ?? '')
 const port = ref(props.printer.port ?? 9100)
 
@@ -30,7 +30,7 @@ function labelFor(kind: TransportKind): string {
 function save(): void {
   emit('save', {
     ...props.printer,
-    transport: transport.value,
+    transportKind: transport.value,
     host: host.value.trim().length === 0 ? null : host.value.trim(),
     port: port.value,
   })

@@ -155,3 +155,59 @@ describe('every key a screen asks for', () => {
     expect(used.size).toBeGreaterThan(100)
   })
 })
+
+const BACKEND_ROOT = `${process.cwd()}/../backend`
+
+function backendSourceFiles(directory: string): string[] {
+  const found: string[] = []
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === 'bin' || entry.name === 'obj' || entry.name.endsWith('.Tests')) {
+      continue
+    }
+    const full = `${directory}/${entry.name}`
+    if (entry.isDirectory()) {
+      found.push(...backendSourceFiles(full))
+    } else if (entry.name.endsWith('.cs')) {
+      found.push(full)
+    }
+  }
+  return found
+}
+
+function keysTheLaptopCanSend(): Map<string, string> {
+  const sent = new Map<string, string>()
+  for (const file of backendSourceFiles(BACKEND_ROOT)) {
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(
+      /"((?:order|admin|ticket|enrolment|station|session|review)\.[a-zA-Z][\w.]*)"/g,
+    )) {
+      sent.set(match[1], file.slice(BACKEND_ROOT.length + 1))
+    }
+  }
+  return sent
+}
+
+describe('every message the laptop can send back', () => {
+  it('has German wording, because a raw key on a phone helps nobody', () => {
+    const missing = [...keysTheLaptopCanSend().entries()]
+      .filter(([key]) => !german.has(key))
+      .map(([key, file]) => `${key} (${file})`)
+
+    expect(missing).toEqual([])
+  })
+
+  it('has English wording too', () => {
+    const missing = [...keysTheLaptopCanSend().entries()]
+      .filter(([key]) => !english.has(key))
+      .map(([key, file]) => `${key} (${file})`)
+
+    expect(missing).toEqual([])
+  })
+
+  it('is actually found by this check, so it cannot pass by finding nothing', () => {
+    const sent = keysTheLaptopCanSend()
+
+    expect(sent.has('enrolment.codeUnknown')).toBe(true)
+    expect(sent.size).toBeGreaterThan(30)
+  })
+})

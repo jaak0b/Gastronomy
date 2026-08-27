@@ -35,7 +35,7 @@ const rows = computed<ReadinessRow[]>(() => {
     })
   }
   for (const printer of printers.printers) {
-    if (printer.transport === 'Mock') {
+    if (printer.transportKind === 'Mock') {
       readiness.push({
         key: 'admin.overview.missingPrinter',
         parameters: { name: printer.locationName },

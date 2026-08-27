@@ -26,34 +26,6 @@ public sealed class HubConnectionSecurityTest
     }
 
     [Test]
-    public async Task Connect_BogusStationAccessKey_IsRefusedAndReceivesNothing()
-    {
-        TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        await using HubConnection connection = Connect($"hub?stationAccessKey={Guid.NewGuid():N}");
-        connection.On<JsonElement>(
-            "OrderAccepted",
-            payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
-
-        await StartIgnoringRefusalAsync(connection);
-        await PlaceAnOrderAsync();
-
-        Task silence = await Task.WhenAny(heard.Task, Task.Delay(silenceWindow));
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(
-                silence,
-                Is.Not.SameAs(heard.Task),
-                "A connection presenting an unknown station key must receive nothing.");
-            Assert.That(
-                connection.State,
-                Is.Not.EqualTo(HubConnectionState.Connected),
-                "A connection presenting an unknown station key must be refused outright.");
-        });
-    }
-
-    [Test]
     public async Task Connect_ValidStationAccessKey_JoinsTheSiteWideStationGroup()
     {
         TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);

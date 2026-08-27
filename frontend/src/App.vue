@@ -33,7 +33,7 @@ type ScreenName =
   | 'review'
   | 'orders'
   | 'orderDetail'
-  | 'station'
+  | 'stations'
   | 'admin'
 
 const screen = computed<ScreenName>(() => {
@@ -44,13 +44,13 @@ const screen = computed<ScreenName>(() => {
     case 'home':
       return session.isEnrolled ? 'catalog' : 'welcome'
     case 'review':
-      return 'review'
+      return session.isEnrolled ? 'review' : 'welcome'
     case 'orders':
-      return 'orders'
+      return session.isEnrolled ? 'orders' : 'welcome'
     case 'orderDetail':
-      return 'orderDetail'
-    case 'station':
-      return 'station'
+      return session.isEnrolled ? 'orderDetail' : 'welcome'
+    case 'stations':
+      return session.isEnrolled ? 'stations' : 'welcome'
     case 'admin':
       return 'admin'
     default:
@@ -59,11 +59,11 @@ const screen = computed<ScreenName>(() => {
 })
 
 const showsHeader = computed(
-  () => screen.value !== 'station' && screen.value !== 'admin' && session.isEnrolled,
+  () => screen.value !== 'admin' && session.isEnrolled,
 )
 
 onMounted(async () => {
-  if (screen.value === 'station' || screen.value === 'admin') {
+  if (screen.value === 'admin') {
     return
   }
   session.listenForRevocation()
@@ -72,7 +72,7 @@ onMounted(async () => {
   printerStatus.listen()
   await session.loadSession()
   if (session.deviceToken !== null) {
-    await connection.connect(session.deviceToken)
+    await connection.connect({ deviceToken: session.deviceToken })
     await catalog.load()
     await order.loadMine()
     await printerStatus.load()
@@ -89,7 +89,7 @@ onMounted(async () => {
     <Review v-else-if="screen === 'review'" />
     <Orders v-else-if="screen === 'orders'" />
     <OrderDetailPage v-else-if="screen === 'orderDetail'" />
-    <StationPage v-else-if="screen === 'station'" />
+    <StationPage v-else-if="screen === 'stations'" />
     <AdminShell v-else />
   </main>
 </template>

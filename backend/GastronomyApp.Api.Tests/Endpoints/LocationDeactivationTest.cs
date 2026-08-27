@@ -145,6 +145,36 @@ public sealed class LocationDeactivationTest
             $"Settled slips must not block a station. Body: {await response.Content.ReadAsStringAsync()}");
     }
 
+    [Test]
+    public async Task Activate_StationThatWasSwitchedOff_SwitchesItBackOn()
+    {
+        Guid locationId = await CreateStationAsync();
+
+        using (HttpResponseMessage switchedOff = await context.Client.PostAsync(
+            $"/api/admin/locations/{locationId}/deactivate",
+            content: null))
+        {
+            Assert.That(switchedOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/locations/{locationId}/activate",
+            content: null);
+
+        string body = await response.Content.ReadAsStringAsync();
+
+        Assert.That(
+            response.StatusCode,
+            Is.EqualTo(HttpStatusCode.OK),
+            $"A station that was switched off must be switchable back on. Body: {body}");
+
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        ProductionLocation location = await database.ProductionLocations.FirstAsync(
+            candidate => candidate.Id == locationId);
+
+        Assert.That(location.IsActive, Is.True);
+    }
+
     private async Task<Guid> CreateStationAsync()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(

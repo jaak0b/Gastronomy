@@ -23,8 +23,8 @@ public sealed class OrderRoutingResolver
 
         if (candidates.Count == 0)
         {
-            throw new InvalidOperationException(
-                $"The catalog item {catalogItemId} has no active production location assigned to it.");
+            return Result<RoutingDecision, RoutingFailure>.Failed(
+                new RoutingFailure { Reason = RoutingFailureReason.ItemHasNoStation });
         }
 
         if (chosenProductionLocationId is null)

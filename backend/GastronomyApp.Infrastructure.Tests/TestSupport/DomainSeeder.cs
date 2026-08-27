@@ -40,7 +40,6 @@ public sealed class DomainSeeder
         {
             Id = seeded.KitchenLocationId,
             Name = "Kueche",
-            StationAccessKey = Guid.NewGuid().ToString("N"),
             SlipLanguage = "de",
             SortOrder = 1,
             IsActive = true,
@@ -50,7 +49,6 @@ public sealed class DomainSeeder
         {
             Id = seeded.BarLocationId,
             Name = "Theke",
-            StationAccessKey = Guid.NewGuid().ToString("N"),
             SlipLanguage = "de",
             SortOrder = 2,
             IsActive = true,

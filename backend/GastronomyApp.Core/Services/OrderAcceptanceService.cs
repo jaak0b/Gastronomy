@@ -172,6 +172,7 @@ public sealed class OrderAcceptanceService
     {
         return routingFailureReason switch
         {
+            RoutingFailureReason.ItemHasNoStation => OrderValidationFailureReason.ItemHasNoStation,
             RoutingFailureReason.StationRequired => OrderValidationFailureReason.StationRequired,
             RoutingFailureReason.StationNotAssignedToItem => OrderValidationFailureReason.StationNotAssignedToItem,
             _ => new Never().OfType<OrderValidationFailureReason>(routingFailureReason),

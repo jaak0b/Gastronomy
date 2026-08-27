@@ -45,8 +45,12 @@ describe('resolveRoute', () => {
     expect(resolveRoute('/admin/items')).toEqual({ name: 'admin', section: 'items' })
   })
 
-  it('reads a station path as the station page', () => {
-    expect(resolveRoute('/station/abc123')).toEqual({ name: 'station', accessKey: 'abc123' })
+  it('reads the stations path as the station backlog', () => {
+    expect(resolveRoute('/stations')).toEqual({ name: 'stations' })
+  })
+
+  it('no longer honours an old station link that carried a key', () => {
+    expect(resolveRoute('/station/abc123')).toEqual({ name: 'home' })
   })
 })
 
@@ -87,30 +91,39 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
   })
 })
 
-describe('the station page, which authenticates by its own access key', () => {
+describe('the station backlog, which every enrolled phone may open', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ locations: [], tickets: [] }), { status: 200 }),
-      ),
+      vi.fn(async (url: string) => {
+        const payload = url.startsWith('/api/session')
+          ? { deviceId: 'device-1', serverPerson: { id: 'person-1', name: 'Anna' }, language: 'de' }
+          : { locations: [], tickets: [], orders: [], items: [] }
+        return new Response(JSON.stringify(payload), { status: 200 })
+      }),
     )
-    currentRoute.value = { name: 'station', accessKey: 'abc123' }
+    currentRoute.value = { name: 'stations' }
   })
 
-  it('renders without a device token', async () => {
+  it('opens for a phone that is enrolled', async () => {
+    const { useSessionStore } = await import('../../src/stores/session')
+    useSessionStore().deviceToken = 'a-token'
+
     const app = mountApp()
+
     await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
   })
 
-  it('never sends the station to the enrolment screen', async () => {
-    const app = mountApp()
-    await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
+  it('sends a phone that is not enrolled to the welcome screen instead', async () => {
+    const { useSessionStore } = await import('../../src/stores/session')
+    useSessionStore().deviceToken = null
 
-    expect(app.find('.welcome').exists()).toBe(false)
-    expect(app.find('.code-field').exists()).toBe(false)
+    const app = mountApp()
+
+    await vi.waitFor(() => expect(app.find('.welcome').exists()).toBe(true))
+
+    expect(app.find('.station-page').exists()).toBe(false)
   })
 })

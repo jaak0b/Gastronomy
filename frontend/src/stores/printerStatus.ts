@@ -76,7 +76,11 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     const connection = useConnectionStore()
     connection.registerRefetch(load)
     connection.onEvent<
-      Omit<PrinterStatusRow, 'name'> & { locationName: string; waitingTicketCount: number }
+      Omit<PrinterStatusRow, 'name' | 'lastChangedAtUtc'> & {
+        locationName: string
+        waitingTicketCount: number
+        lastChangedAtUtc?: string
+      }
     >('PrinterStatusChanged', (payload) => {
         const existing = locations.value.findIndex(
           (row) => row.locationId === payload.locationId,
@@ -89,7 +93,8 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
           isPaperNearEnd: payload.isPaperNearEnd,
           isCoverOpen: payload.isCoverOpen,
           isFaulty: payload.isFaulty,
-          lastChangedAtUtc: payload.lastChangedAtUtc,
+          lastChangedAtUtc:
+            payload.lastChangedAtUtc ?? locations.value[existing]?.lastChangedAtUtc ?? '',
         }
         if (existing === -1) {
           locations.value = [...locations.value, row]

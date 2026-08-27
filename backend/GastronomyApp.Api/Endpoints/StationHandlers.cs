@@ -1,4 +1,3 @@
-using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
@@ -15,20 +14,17 @@ namespace GastronomyApp.Api.Endpoints;
 public sealed class StationQueryHandler
 {
     private readonly GastronomyAppDbContext dbContext;
-    private readonly StationCallerAccessor callerAccessor;
     private readonly StationPrintabilityReader printabilityReader;
     private readonly StationTicketDescriber ticketDescriber;
     private readonly PrinterStatusReader printerStatusReader;
 
     public StationQueryHandler(
         GastronomyAppDbContext dbContext,
-        StationCallerAccessor callerAccessor,
         StationPrintabilityReader printabilityReader,
         StationTicketDescriber ticketDescriber,
         PrinterStatusReader printerStatusReader)
     {
         this.dbContext = dbContext;
-        this.callerAccessor = callerAccessor;
         this.printabilityReader = printabilityReader;
         this.ticketDescriber = ticketDescriber;
         this.printerStatusReader = printerStatusReader;
@@ -58,27 +54,17 @@ public sealed class StationQueryHandler
         return Results.Ok(new StationLocationListView(views));
     }
 
-    public async Task<IResult> ListTicketsAsync(
-        HttpContext httpContext,
-        Guid? locationId,
-        CancellationToken cancellationToken)
+    public async Task<IResult> ListTicketsAsync(Guid locationId, CancellationToken cancellationToken)
     {
-        Guid selectedLocationId = locationId ?? callerAccessor.Read(httpContext).ProductionLocationId;
-
         return Results.Ok(new StationTicketListView(
-            selectedLocationId,
-            await ticketDescriber.DescribeOpenTicketsAsync(dbContext, selectedLocationId, cancellationToken)));
+            locationId,
+            await ticketDescriber.DescribeOpenTicketsAsync(dbContext, locationId, cancellationToken)));
     }
 
-    public async Task<IResult> StatusAsync(
-        HttpContext httpContext,
-        Guid? locationId,
-        CancellationToken cancellationToken)
+    public async Task<IResult> StatusAsync(Guid locationId, CancellationToken cancellationToken)
     {
-        Guid selectedLocationId = locationId ?? callerAccessor.Read(httpContext).ProductionLocationId;
-
         PrinterStatusListView all = await printerStatusReader.ReadAsync(dbContext, cancellationToken);
-        PrinterStatusView? selected = all.Locations.FirstOrDefault(view => view.LocationId == selectedLocationId);
+        PrinterStatusView? selected = all.Locations.FirstOrDefault(view => view.LocationId == locationId);
 
         return selected is null ? Results.NotFound() : Results.Ok(selected);
     }

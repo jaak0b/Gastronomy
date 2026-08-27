@@ -361,8 +361,7 @@ public sealed class PrinterWorker
             testPrint.ProductionLocationName,
             testPrint.SlipLanguage,
             timeProvider.GetUtcNow(),
-            TimeZoneInfo.Local,
-            testPrint.StationCardUrl));
+            TimeZoneInfo.Local));
 
         int processId = await dataAccess.AllocateProcessIdAsync(endpointKey, cancellationToken);
         PrintDispatchResult dispatch = await session.SendJobAsync(
@@ -405,8 +404,7 @@ public sealed class PrinterWorker
                 ticket.ProductionLocationName,
                 ticket.SlipLanguage,
                 timeProvider.GetUtcNow(),
-                TimeZoneInfo.Local,
-                ticket.StationCardUrl));
+                TimeZoneInfo.Local));
         }
 
         SlipRenderRequest request = new(

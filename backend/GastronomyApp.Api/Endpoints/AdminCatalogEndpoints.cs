@@ -38,6 +38,11 @@ public static class AdminItemEndpoints
             CancellationToken cancellationToken) =>
                 await handler.SetAvailabilityAsync(itemId, request, cancellationToken));
 
+        group.MapPost("/{itemId:guid}/activate", async (
+            Guid itemId,
+            AdminItemHandler handler,
+            CancellationToken cancellationToken) => await handler.ActivateAsync(itemId, cancellationToken));
+
         group.MapPost("/{itemId:guid}/deactivate", async (
             Guid itemId,
             AdminItemHandler handler,
@@ -196,6 +201,23 @@ public sealed class AdminItemHandler
         }
 
         item.IsAvailable = request.IsAvailable;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await PushCatalogChangedAsync(cancellationToken);
+
+        return Results.Ok(new SavedItemView(itemId));
+    }
+
+    public async Task<IResult> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
+    {
+        CatalogItem? item = await dbContext.CatalogItems
+            .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
+
+        if (item is null)
+        {
+            return Results.NotFound();
+        }
+
+        item.IsActive = true;
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushCatalogChangedAsync(cancellationToken);
 

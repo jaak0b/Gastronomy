@@ -77,7 +77,6 @@ public class PrinterWorkerIntegrationTest
         callbacks = new RecordingPrintCallbacks();
         dataAccess = new EfCorePrinterWorkerDataAccess(
             fixture.CreateContext,
-            new Uri("http://10.0.0.5:5000/"),
             timeProvider);
 
         await using GastronomyAppDbContext context = fixture.CreateContext();

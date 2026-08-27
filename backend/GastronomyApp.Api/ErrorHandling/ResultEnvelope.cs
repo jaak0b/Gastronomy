@@ -27,6 +27,8 @@ public sealed class ResultEnvelope
                 Unprocessable("order.stationRequired", failure.OffendingCatalogItemId),
             OrderValidationFailureReason.StationNotAssignedToItem =>
                 Unprocessable("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
+            OrderValidationFailureReason.ItemHasNoStation =>
+                Unprocessable("order.itemHasNoStation", failure.OffendingCatalogItemId),
             _ => new Never().OfType<ProblemDescription>(failure.Reason),
         };
     }
@@ -35,6 +37,7 @@ public sealed class ResultEnvelope
     {
         return failure.Reason switch
         {
+            RoutingFailureReason.ItemHasNoStation => Unprocessable("order.itemHasNoStation", null),
             RoutingFailureReason.StationRequired => Unprocessable("order.stationRequired", null),
             RoutingFailureReason.StationNotAssignedToItem => Unprocessable("order.stationNotAssignedToItem", null),
             _ => new Never().OfType<ProblemDescription>(failure.Reason),

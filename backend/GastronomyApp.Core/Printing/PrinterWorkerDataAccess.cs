@@ -38,12 +38,11 @@ public sealed record TicketLoadResult
     public required IReadOnlyList<TicketLineLoadResult> Lines { get; init; }
     public required IReadOnlyList<string> AlsoGoesToStationNames { get; init; }
     public required string? ChosenStationNameIfDifferent { get; init; }
-    public required Uri StationCardUrl { get; init; }
 }
 
 public sealed record TicketLineLoadResult(int Quantity, string ItemName, string? LineNote);
 
-public sealed record TestPrintLoadResult(string ProductionLocationName, string SlipLanguage, Uri StationCardUrl);
+public sealed record TestPrintLoadResult(string ProductionLocationName, string SlipLanguage);
 
 public sealed record PrintOutcomeApplied
 {
@@ -69,8 +68,16 @@ public sealed record PrintOutcomeApplication
     public PrintFailureReason? FailureReason { get; init; }
 }
 
+public sealed record PrintJobEnsured(bool WasCreated, Guid? PrintJobId);
+
 public interface IPrinterWorkerDataAccess
 {
+    public Task<PrintJobEnsured> EnsureOpenPrintJobAsync(
+        Guid locationTicketId,
+        Guid productionLocationId,
+        PrintJobKind kind,
+        CancellationToken ct);
+
     public Task<TicketLoadResult> LoadTicketForPrintingAsync(Guid locationTicketId, CancellationToken ct);
 
     public Task<ClaimResult> TryClaimAsync(Guid locationTicketId, CancellationToken ct);

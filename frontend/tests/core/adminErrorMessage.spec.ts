@@ -62,8 +62,43 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   })
 })
 
+describe('adminErrorMessage, a refusal the laptop worded itself', () => {
+  it('renders a station that still has open slips', () => {
+    const message = adminErrorMessage({
+      code: 'Conflict',
+      messageKey: 'admin.locationHasOpenTickets',
+      parameters: {},
+      details: null,
+    })
+
+    expect(message.key).toBe('admin.locationHasOpenTickets')
+  })
+
+  it('renders a person who has no phone to revoke', () => {
+    const message = adminErrorMessage({
+      code: 'NotFound',
+      messageKey: 'admin.personHasNoPhone',
+      parameters: {},
+      details: null,
+    })
+
+    expect(message.key).toBe('admin.personHasNoPhone')
+  })
+
+  it('renders a refused printer setting', () => {
+    const message = adminErrorMessage({
+      code: 'ValidationFailed',
+      messageKey: 'admin.unknownTransportKind',
+      parameters: {},
+      details: null,
+    })
+
+    expect(message.key).toBe('admin.unknownTransportKind')
+  })
+})
+
 describe('adminErrorMessage, a key this app does not know', () => {
-  it('falls back to the general message rather than mislabelling the refusal', () => {
+  it('says the action did not happen, rather than blaming the page load', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
       messageKey: 'admin.somethingAddedLater',
@@ -71,7 +106,18 @@ describe('adminErrorMessage, a key this app does not know', () => {
       details: null,
     })
 
-    expect(message.key).toBe('admin.loadFailed')
+    expect(message.key).toBe('admin.actionFailed')
+  })
+
+  it('falls back rather than mislabelling the refusal', () => {
+    const message = adminErrorMessage({
+      code: 'Conflict',
+      messageKey: 'admin.somethingAddedLater',
+      parameters: { count: 4 },
+      details: null,
+    })
+
+    expect(message.key).not.toBe('admin.locations.openTickets')
   })
 
   it('drops the parameters of a key it cannot render', () => {
@@ -88,7 +134,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
   it('falls back when the laptop sent no error body at all', () => {
     const message = adminErrorMessage(null)
 
-    expect(message).toEqual({ key: 'admin.loadFailed', parameters: {}, count: null })
+    expect(message).toEqual({ key: 'admin.actionFailed', parameters: {}, count: null })
   })
 })
 

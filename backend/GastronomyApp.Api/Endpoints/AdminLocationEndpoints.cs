@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
@@ -42,55 +41,26 @@ public static class AdminLocationEndpoints
             AdminLocationHandler handler,
             CancellationToken cancellationToken) => await handler.DeactivateAsync(locationId, cancellationToken));
 
-        group.MapPost("/{locationId:guid}/regenerate-access-key", async (
+        group.MapPost("/{locationId:guid}/activate", async (
             Guid locationId,
             AdminLocationHandler handler,
-            CancellationToken cancellationToken) =>
-                await handler.RegenerateAccessKeyAsync(locationId, cancellationToken));
-
-        group.MapGet("/{locationId:guid}/station-card", async (
-            Guid locationId,
-            AdminLocationHandler handler,
-            CancellationToken cancellationToken) => await handler.StationCardAsync(locationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.ActivateAsync(locationId, cancellationToken));
 
         return routes;
     }
 }
 
-public sealed class StationAccessKeyGenerator
-{
-    private const int KeyLengthCharacters = 32;
-    private const string Alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-    public string Generate()
-    {
-        char[] key = new char[KeyLengthCharacters];
-
-        for (int position = 0; position < KeyLengthCharacters; position++)
-        {
-            key[position] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
-        }
-
-        return new string(key);
-    }
-}
-
-public sealed class BreakGlassUrlBuilder
+public sealed class EnrolmentUrlBuilder
 {
     private readonly ApiHostOptions hostOptions;
     private readonly ReachableHostResolver hostResolver;
     private readonly IServer server;
 
-    public BreakGlassUrlBuilder(ApiHostOptions hostOptions, ReachableHostResolver hostResolver, IServer server)
+    public EnrolmentUrlBuilder(ApiHostOptions hostOptions, ReachableHostResolver hostResolver, IServer server)
     {
         this.hostOptions = hostOptions;
         this.hostResolver = hostResolver;
         this.server = server;
-    }
-
-    public string Build(string accessKey)
-    {
-        return $"{Origin()}/station/{accessKey}";
     }
 
     public string BuildEnrolmentUrl(string qrCodeValue)
@@ -129,21 +99,15 @@ public sealed class AdminLocationHandler
     private const string DefaultSlipLanguage = "de";
 
     private readonly GastronomyAppDbContext dbContext;
-    private readonly StationAccessKeyGenerator accessKeyGenerator;
-    private readonly BreakGlassUrlBuilder urlBuilder;
     private readonly PrinterFleet printerFleet;
     private readonly ResultEnvelope resultEnvelope;
 
     public AdminLocationHandler(
         GastronomyAppDbContext dbContext,
-        StationAccessKeyGenerator accessKeyGenerator,
-        BreakGlassUrlBuilder urlBuilder,
         PrinterFleet printerFleet,
         ResultEnvelope resultEnvelope)
     {
         this.dbContext = dbContext;
-        this.accessKeyGenerator = accessKeyGenerator;
-        this.urlBuilder = urlBuilder;
         this.printerFleet = printerFleet;
         this.resultEnvelope = resultEnvelope;
     }
@@ -178,8 +142,6 @@ public sealed class AdminLocationHandler
                 location.SortOrder,
                 location.SlipLanguage,
                 location.IsActive,
-                location.StationAccessKey,
-                urlBuilder.Build(location.StationAccessKey),
                 configuration?.TransportKind.ToString() ?? TransportKind.Mock.ToString(),
                 configuration?.Host,
                 configuration?.Port ?? 0,
@@ -204,13 +166,11 @@ public sealed class AdminLocationHandler
         }
 
         Guid locationId = Guid.NewGuid();
-        string accessKey = accessKeyGenerator.Generate();
 
         dbContext.ProductionLocations.Add(new ProductionLocation
         {
             Id = locationId,
             Name = request.Name,
-            StationAccessKey = accessKey,
             SlipLanguage = request.SlipLanguage ?? DefaultSlipLanguage,
             SortOrder = request.SortOrder,
             IsActive = true,
@@ -235,7 +195,7 @@ public sealed class AdminLocationHandler
         await printerFleet.ReconcileAsync(cancellationToken);
 
         return Results.Json(
-            new AccessKeyView(locationId, accessKey, urlBuilder.Build(accessKey)),
+            new SavedLocationView(locationId),
             statusCode: StatusCodes.Status201Created);
     }
 
@@ -265,10 +225,24 @@ public sealed class AdminLocationHandler
         location.SlipLanguage = request.SlipLanguage ?? location.SlipLanguage;
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Results.Ok(new AccessKeyView(
-            location.Id,
-            location.StationAccessKey,
-            urlBuilder.Build(location.StationAccessKey)));
+        return Results.Ok(new SavedLocationView(location.Id));
+    }
+
+    public async Task<IResult> ActivateAsync(Guid locationId, CancellationToken cancellationToken)
+    {
+        ProductionLocation? location = await dbContext.ProductionLocations
+            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
+
+        if (location is null)
+        {
+            return Results.NotFound();
+        }
+
+        location.IsActive = true;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await printerFleet.ReconcileAsync(cancellationToken);
+
+        return Results.Ok(new SavedLocationView(location.Id));
     }
 
     public async Task<IResult> DeactivateAsync(Guid locationId, CancellationToken cancellationToken)
@@ -312,46 +286,7 @@ public sealed class AdminLocationHandler
         await dbContext.SaveChangesAsync(cancellationToken);
         await printerFleet.ReconcileAsync(cancellationToken);
 
-        return Results.Ok(new AccessKeyView(
-            location.Id,
-            location.StationAccessKey,
-            urlBuilder.Build(location.StationAccessKey)));
-    }
-
-    public async Task<IResult> RegenerateAccessKeyAsync(Guid locationId, CancellationToken cancellationToken)
-    {
-        ProductionLocation? location = await dbContext.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
-
-        if (location is null)
-        {
-            return Results.NotFound();
-        }
-
-        location.StationAccessKey = accessKeyGenerator.Generate();
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return Results.Ok(new AccessKeyView(
-            location.Id,
-            location.StationAccessKey,
-            urlBuilder.Build(location.StationAccessKey)));
-    }
-
-    public async Task<IResult> StationCardAsync(Guid locationId, CancellationToken cancellationToken)
-    {
-        ProductionLocation? location = await dbContext.ProductionLocations
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
-
-        if (location is null)
-        {
-            return Results.NotFound();
-        }
-
-        return Results.Ok(new StationCardView(
-            location.Id,
-            location.Name,
-            urlBuilder.Build(location.StationAccessKey)));
+        return Results.Ok(new SavedLocationView(location.Id));
     }
 
     private async Task<List<Guid>> StrandedItemIdsAsync(Guid locationId, CancellationToken cancellationToken)

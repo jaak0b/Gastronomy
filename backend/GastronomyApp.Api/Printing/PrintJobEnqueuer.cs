@@ -23,11 +23,11 @@ public sealed class PrintJobEnqueuer
         {
             await printerFleet.EnqueueAsync(locationTicketId, kind, cancellationToken);
         }
-        catch (UnknownLocationTicketException exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogError(
                 exception,
-                "Ticket {TicketId} could not be handed to a printer worker for a {Kind} job, so it stays waiting at its station.",
+                "Ticket {TicketId} could not be handed to a printer worker for a {Kind} job, so it stays waiting at its station until it is handed over again.",
                 locationTicketId,
                 kind);
         }

@@ -85,26 +85,23 @@ public sealed class ApiServiceRegistration
         services.AddScoped<TicketActionHandler>();
         services.AddSingleton<PrinterStatusReader>();
         services.AddSingleton<HealthReporter>();
-        services.AddSingleton<StationAccessKeyGenerator>();
         services.AddSingleton<OutstandingInvitationCache>();
         services.AddScoped<InvitationQrRenderer>();
         services.AddSingleton<LocalNetworkAddressProvider>();
         services.AddSingleton<ReachableHostResolver>();
-        services.AddSingleton<BreakGlassUrlBuilder>();
+        services.AddSingleton<EnrolmentUrlBuilder>();
         services.AddScoped<AdminLocationHandler>();
         services.AddScoped<AdminItemHandler>();
         services.AddScoped<AdminServerPeopleHandler>();
         services.AddScoped<AdminPrinterHandler>();
         services.AddScoped<AdminOrderHandler>();
         services.AddScoped<EnrolmentRedemptionHandler>();
-        services.AddSingleton<StationCallerAccessor>();
         services.AddSingleton<StationPrintabilityReader>();
         services.AddSingleton<StationTicketDescriber>();
         services.AddSingleton<StationShellResponder>();
         services.AddSingleton<ClientRouteFallbackResponder>();
         services.AddScoped<StationQueryHandler>();
         services.AddScoped<StationAcknowledgeHandler>();
-        services.AddScoped<StationAccessKeyMiddleware>();
 
         services.AddSignalR();
         services.AddSingleton<HubConnectionRegistry>();
@@ -131,7 +128,6 @@ public sealed class ApiServiceRegistration
             provider.GetRequiredService<PrinterEndpointKeyBuilder>()));
         services.AddSingleton<IPrinterWorkerDataAccess>(provider => new EfCorePrinterWorkerDataAccess(
             () => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext(),
-            new Uri($"http://{options.BindAddress}:{options.Port}/station/"),
             provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<PrinterFleet>();
         services.AddSingleton<IPrinterFleet>(provider => provider.GetRequiredService<PrinterFleet>());

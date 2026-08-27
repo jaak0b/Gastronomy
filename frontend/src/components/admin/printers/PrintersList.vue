@@ -83,7 +83,7 @@ onMounted(printers.load)
       <button type="button" @click="editing = printer.locationId">{{ t('admin.edit') }}</button>
       <PrinterForm v-if="editing === printer.locationId" :printer="printer" @save="save" />
       <MockFaultPanel
-        v-if="printer.transport === 'Mock'"
+        v-if="printer.transportKind === 'Mock'"
         :mock-folder-path="printer.mockFolderPath"
         @apply="(fault, mode) => printers.setMockFault(printer.locationId, fault, mode)"
       />

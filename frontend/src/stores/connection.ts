@@ -4,6 +4,10 @@ import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@m
 
 export type ConnectionState = 'connected' | 'reconnecting' | 'offline'
 
+export interface HubCredential {
+  deviceToken: string
+}
+
 export const POLLING_INTERVAL_MS = 15000
 export const RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 30000]
 export const RECOVERED_NOTICE_MS = 5000
@@ -28,8 +32,14 @@ export const useConnectionStore = defineStore('connection', () => {
     }, RECOVERED_NOTICE_MS)
   }
 
-  function registerRefetch(callback: () => Promise<void>): void {
+  function registerRefetch(callback: () => Promise<void>): () => void {
     refetchCallbacks.push(callback)
+    return () => {
+      const index = refetchCallbacks.indexOf(callback)
+      if (index !== -1) {
+        refetchCallbacks.splice(index, 1)
+      }
+    }
   }
 
   async function refetchAll(): Promise<void> {
@@ -38,11 +48,19 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  function onEvent<T>(eventName: string, handler: (payload: T) => void): void {
+  function onEvent<T>(eventName: string, handler: (payload: T) => void): () => void {
+    const registered = handler as (payload: unknown) => void
     const handlers = eventHandlers.get(eventName) ?? []
-    handlers.push(handler as (payload: unknown) => void)
+    handlers.push(registered)
     eventHandlers.set(eventName, handlers)
-    connection?.on(eventName, handler as (payload: unknown) => void)
+    connection?.on(eventName, registered)
+    return () => {
+      const remaining = (eventHandlers.get(eventName) ?? []).filter(
+        (candidate) => candidate !== registered,
+      )
+      eventHandlers.set(eventName, remaining)
+      connection?.off(eventName, registered)
+    }
   }
 
   function startPolling(): void {
@@ -62,12 +80,12 @@ export const useConnectionStore = defineStore('connection', () => {
     pollingTimer = null
   }
 
-  async function connect(accessToken: string): Promise<void> {
+  async function connect(credential: HubCredential): Promise<void> {
     if (connection !== null) {
       return
     }
     const built = new HubConnectionBuilder()
-      .withUrl(`/hub?access_token=${encodeURIComponent(accessToken)}`)
+      .withUrl(`/hub?access_token=${encodeURIComponent(credential.deviceToken)}`)
       .withAutomaticReconnect([...RECONNECT_DELAYS_MS])
       .build()
     connection = built

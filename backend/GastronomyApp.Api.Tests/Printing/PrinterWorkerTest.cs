@@ -119,7 +119,6 @@ public class PrinterWorkerTest
             Lines = [new TicketLineLoadResult(2, "Bratwurst", null)],
             AlsoGoesToStationNames = [],
             ChosenStationNameIfDifferent = null,
-            StationCardUrl = new Uri("http://10.0.0.5:5000/station/8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"),
         };
     }
 
@@ -896,7 +895,7 @@ public class PrinterWorkerTest
     public async Task TestPrint_OnASharedEndpoint_PrintsTheRequestedStationsCardNotTheFirstServedOne()
     {
         A.CallTo(() => dataAccess.LoadTestPrintAsync(A<Guid>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new TestPrintLoadResult("Theke", "de", new Uri("http://10.0.0.5:5000/station/abc"))));
+            .Returns(Task.FromResult(new TestPrintLoadResult("Theke", "de")));
         PrinterWorker worker = Worker(served: [locationId, otherLocationId]);
 
         worker.EnqueueTestPrint(otherLocationId, Guid.NewGuid());

@@ -19,8 +19,8 @@ async function save(item: AdminItemDraft): Promise<void> {
   }
 }
 
-async function deactivate(id: string): Promise<void> {
-  await items.deactivate(id)
+async function setActive(id: string, isActive: boolean): Promise<void> {
+  await items.setActive(id, isActive)
 }
 
 onMounted(async () => {
@@ -38,12 +38,13 @@ onMounted(async () => {
     <p v-if="items.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
     <p v-else-if="items.items.length === 0" class="empty">{{ t('admin.items.empty') }}</p>
     <ul>
-      <li v-for="item in items.items" :key="item.id">
+      <li v-for="item in items.items" :key="item.itemId">
         <span class="name">{{ item.name }}</span>
+        <span v-if="!item.isActive" class="off-the-menu">{{ t('admin.items.offTheMenu') }}</span>
         <button
           type="button"
           class="sold-out-toggle"
-          @click="items.setAvailability(item.id, !item.isAvailable)"
+          @click="items.setAvailability(item.itemId, !item.isAvailable)"
         >
           {{ item.isAvailable ? t('admin.items.soldOut') : t('admin.items.soldOutUndo') }}
         </button>
@@ -57,7 +58,7 @@ onMounted(async () => {
       :locations="locations.locations"
       :error-key="items.errorKey"
       @save="save"
-      @deactivate="deactivate"
+      @set-active="setActive"
     />
   </section>
 </template>

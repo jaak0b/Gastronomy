@@ -36,7 +36,6 @@ public sealed class OrderRoutingResolverTest
         {
             Id = id,
             Name = name,
-            StationAccessKey = name,
             SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,
@@ -151,14 +150,18 @@ public sealed class OrderRoutingResolverTest
     }
 
     [Test]
-    public void Resolve_NoActiveCandidate_ThrowsNamingTheItem()
+    public void Resolve_NoActiveCandidate_RefusesWithAStatedReasonRatherThanThrowing()
     {
-        InvalidOperationException? thrown = Assert.Throws<InvalidOperationException>(() => _resolver.Resolve(
+        Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_kitchenId)],
             [],
-            null));
+            null);
 
-        Assert.That(thrown!.Message, Does.Contain(_catalogItemId.ToString()));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Failure.Reason, Is.EqualTo(RoutingFailureReason.ItemHasNoStation));
+        });
     }
 }

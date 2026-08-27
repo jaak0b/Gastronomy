@@ -3,16 +3,19 @@ import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 
 export interface AdminItem {
-  id: string
+  itemId: string
   name: string
   categoryName: string
   priceCents: number
   sortOrder: number
+  isActive: boolean
   isAvailable: boolean
   locationIds: string[]
 }
 
-export type AdminItemDraft = Omit<AdminItem, 'id' | 'isAvailable'> & { id?: string }
+export type AdminItemDraft = Omit<AdminItem, 'itemId' | 'isActive' | 'isAvailable'> & {
+  itemId?: string
+}
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
   const items = ref<AdminItem[]>([])
@@ -40,9 +43,10 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
       errorKey.value = 'admin.items.needsLocation'
       return false
     }
-    const path = item.id === undefined ? '/api/admin/items' : `/api/admin/items/${item.id}`
+    const path =
+      item.itemId === undefined ? '/api/admin/items' : `/api/admin/items/${item.itemId}`
     const result = await request(path, {
-      method: item.id === undefined ? 'POST' : 'PUT',
+      method: item.itemId === undefined ? 'POST' : 'PUT',
       body: {
         name: item.name,
         categoryName: item.categoryName,
@@ -67,9 +71,10 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     await load()
   }
 
-  async function deactivate(id: string): Promise<void> {
+  async function setActive(id: string, isActive: boolean): Promise<void> {
     errorKey.value = null
-    const result = await request(`/api/admin/items/${id}/deactivate`, { method: 'POST' })
+    const action = isActive ? 'activate' : 'deactivate'
+    const result = await request(`/api/admin/items/${id}/${action}`, { method: 'POST' })
     if (result.kind === 'error') {
       errorKey.value = result.body?.messageKey ?? 'admin.items.deactivateBlocked'
       return
@@ -77,5 +82,5 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     await load()
   }
 
-  return { items, loadFailed, errorKey, load, save, setAvailability, deactivate }
+  return { items, loadFailed, errorKey, load, save, setAvailability, setActive }
 })

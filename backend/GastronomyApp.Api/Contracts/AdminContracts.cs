@@ -6,8 +6,6 @@ public sealed record AdminLocationView(
     int SortOrder,
     string SlipLanguage,
     bool IsActive,
-    string AccessKey,
-    string BreakGlassUrl,
     string TransportKind,
     string? Host,
     int Port,
@@ -26,9 +24,7 @@ public sealed record SaveLocationRequest
     public string? SlipLanguage { get; init; }
 }
 
-public sealed record AccessKeyView(Guid LocationId, string AccessKey, string BreakGlassUrl);
-
-public sealed record StationCardView(Guid LocationId, string StationName, string BreakGlassUrl);
+public sealed record SavedLocationView(Guid LocationId);
 
 public sealed record AdminItemView(
     Guid ItemId,
@@ -100,8 +96,13 @@ public sealed record AdminPrinterView(
     bool IsEnabled,
     bool IsOnline,
     bool IsPaperEnd,
+    bool IsPaperNearEnd,
     bool IsCoverOpen,
-    bool IsFaulty);
+    bool IsFaulty,
+    int WaitingTicketCount,
+    DateTime? LastChangedAtUtc,
+    IReadOnlyList<string> SharedWithLocationNames,
+    string? MockFolderPath);
 
 public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printers);
 

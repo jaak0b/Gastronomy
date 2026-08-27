@@ -4,6 +4,7 @@ using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Printing;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +19,7 @@ public sealed class TicketActionHandler
     private readonly OrderStatusProjectionWriter projectionWriter;
     private readonly TicketStateMachine stateMachine;
     private readonly PrintJobEnqueuer printJobEnqueuer;
+    private readonly IPrinterFleet printerFleet;
     private readonly HubNotificationDispatcher dispatcher;
     private readonly ResultEnvelope resultEnvelope;
     private readonly ImmediateTransactionRunner transactionRunner = new();
@@ -28,6 +30,7 @@ public sealed class TicketActionHandler
         OrderStatusProjectionWriter projectionWriter,
         TicketStateMachine stateMachine,
         PrintJobEnqueuer printJobEnqueuer,
+        IPrinterFleet printerFleet,
         HubNotificationDispatcher dispatcher,
         ResultEnvelope resultEnvelope)
     {
@@ -36,6 +39,7 @@ public sealed class TicketActionHandler
         this.projectionWriter = projectionWriter;
         this.stateMachine = stateMachine;
         this.printJobEnqueuer = printJobEnqueuer;
+        this.printerFleet = printerFleet;
         this.dispatcher = dispatcher;
         this.resultEnvelope = resultEnvelope;
     }
@@ -193,28 +197,24 @@ public sealed class TicketActionHandler
                 "ticket.reprintNotAllowed");
         }
 
-        bool jobIsRunning = await dbContext.PrintJobs
-            .AsNoTracking()
-            .AnyAsync(
-                job => job.LocationTicketId == ticketId
-                    && (job.Status == PrintJobStatus.Queued
-                        || job.Status == PrintJobStatus.PreflightCheck
-                        || job.Status == PrintJobStatus.Sending
-                        || job.Status == PrintJobStatus.AwaitingEcho),
-                cancellationToken);
+        PrintJobEnsured ensured;
 
-        if (jobIsRunning)
+        try
+        {
+            ensured = await printerFleet.EnqueueAsync(ticketId, PrintJobKind.Reprint, cancellationToken);
+        }
+        catch (UnknownLocationTicketException)
+        {
+            return Results.NotFound();
+        }
+
+        if (!ensured.WasCreated)
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status409Conflict,
                 "PrintJobAlreadyRunning",
                 "ticket.printJobAlreadyRunning");
         }
-
-        await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(
-            ticketId,
-            PrintJobKind.Reprint,
-            cancellationToken);
 
         LoadedOrder loaded = (await orderReader.LoadAsync(dbContext, orderId, cancellationToken))!;
 

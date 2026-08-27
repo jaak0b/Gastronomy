@@ -150,7 +150,6 @@ public sealed class ApiSeeder
         {
             Id = locationId,
             Name = name,
-            StationAccessKey = locationId.ToString("N"),
             SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,

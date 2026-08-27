@@ -63,7 +63,6 @@ public sealed class AdminEndpointsTest
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
             Assert.That(created.SlipLanguage, Is.EqualTo("de"));
-            Assert.That(created.StationAccessKey, Has.Length.EqualTo(32));
             Assert.That(configuration.TransportKind, Is.EqualTo(TransportKind.Mock));
         });
     }
@@ -82,41 +81,6 @@ public sealed class AdminEndpointsTest
             candidate => candidate.Id == context.World.KitchenLocationId);
 
         Assert.That(location.Name, Is.EqualTo("Kueche innen"));
-    }
-
-    [Test]
-    public async Task RegenerateAccessKey_ExistingStation_ReplacesTheBreakGlassLink()
-    {
-        string oldKey = context.World.KitchenLocationId.ToString("N");
-
-        using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}/regenerate-access-key",
-            content: null);
-
-        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(body.RootElement.GetProperty("accessKey").GetString(), Is.Not.EqualTo(oldKey));
-            Assert.That(body.RootElement.GetProperty("breakGlassUrl").GetString(), Does.Contain("/station/"));
-        });
-    }
-
-    [Test]
-    public async Task GetStationCard_ExistingStation_NamesTheStationAndItsBreakGlassLink()
-    {
-        using HttpResponseMessage response = await context.Client.GetAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}/station-card");
-
-        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(body.RootElement.GetProperty("stationName").GetString(), Is.EqualTo("Kueche"));
-            Assert.That(body.RootElement.GetProperty("breakGlassUrl").GetString(), Does.Contain("/station/"));
-        });
     }
 
     [Test]
@@ -262,22 +226,6 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task GetStationCard_AnyBind_CarriesAnAddressAPhoneCanOpen()
-    {
-        using HttpResponseMessage response = await context.Client.GetAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}/station-card");
-
-        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        string breakGlassUrl = body.RootElement.GetProperty("breakGlassUrl").GetString()!;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(breakGlassUrl, Does.Not.Contain("0.0.0.0"));
-            Assert.That(breakGlassUrl, Does.Not.Contain(":0/"));
-        });
-    }
-
-    [Test]
     public async Task GetPrinters_LoopbackCaller_ReportsConfigurationAndLiveStatus()
     {
         using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/printers");
@@ -288,6 +236,69 @@ public sealed class AdminEndpointsTest
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(body.RootElement.GetProperty("printers").GetArrayLength(), Is.EqualTo(2));
         });
+    }
+
+    [Test]
+    public async Task GetPrinters_LoopbackCaller_CarriesEverythingThePrinterScreenShows()
+    {
+        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/printers");
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement printer = body.RootElement.GetProperty("printers")[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(printer.TryGetProperty("isPaperNearEnd", out _), Is.True);
+            Assert.That(printer.TryGetProperty("waitingTicketCount", out _), Is.True);
+            Assert.That(printer.TryGetProperty("lastChangedAtUtc", out _), Is.True);
+            Assert.That(printer.TryGetProperty("sharedWithLocationNames", out _), Is.True);
+            Assert.That(printer.TryGetProperty("mockFolderPath", out _), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task Activate_ItemTakenOffTheMenu_PutsItBackOnTheMenu()
+    {
+        using (HttpResponseMessage takenOff = await context.Client.PostAsync(
+            $"/api/admin/items/{context.World.BratwurstItemId}/deactivate",
+            content: null))
+        {
+            Assert.That(takenOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/items/{context.World.BratwurstItemId}/activate",
+            content: null);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        CatalogItem item = await database.CatalogItems.FirstAsync(
+            candidate => candidate.Id == context.World.BratwurstItemId);
+
+        Assert.That(item.IsActive, Is.True);
+    }
+
+    [Test]
+    public async Task Activate_ServerPersonTakenOffTheList_PutsThemBackOnTheList()
+    {
+        using (HttpResponseMessage takenOff = await context.Client.PostAsync(
+            $"/api/admin/server-people/{context.World.ServerPersonId}/deactivate",
+            content: null))
+        {
+            Assert.That(takenOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/server-people/{context.World.ServerPersonId}/activate",
+            content: null);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        ServerPerson person = await database.ServerPeople.FirstAsync(
+            candidate => candidate.Id == context.World.ServerPersonId);
+
+        Assert.That(person.IsActive, Is.True);
     }
 
     [Test]
