@@ -6,9 +6,9 @@ import { dialogText, testPlugins, waitForDialog } from '../../support/plugins'
 function mountDialog() {
   return mount(ConfirmDialog, {
     props: {
-      title: 'Station abschalten?',
+      title: 'Ausgabestelle abschalten?',
       body: 'Die bisherigen Bestellungen bleiben gespeichert.',
-      confirmLabel: 'Station abschalten',
+      confirmLabel: 'Ausgabestelle abschalten',
     },
     global: { plugins: testPlugins() },
     attachTo: document.body,
@@ -24,7 +24,7 @@ describe('the question asked before something is switched off', () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.confirm-title')).toBe('Station abschalten?')
+    expect(dialogText('.confirm-title')).toBe('Ausgabestelle abschalten?')
   })
 
   it('says what it means for the data that is already there', async () => {
@@ -38,7 +38,7 @@ describe('the question asked before something is switched off', () => {
     mountDialog()
     await waitForDialog()
 
-    expect(dialogText('.confirm')).toBe('Station abschalten')
+    expect(dialogText('.confirm')).toBe('Ausgabestelle abschalten')
   })
 
   it('offers a way out that is not the action', async () => {

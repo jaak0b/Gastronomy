@@ -78,7 +78,7 @@ public sealed class AdminItemHandler
             .OrderBy(item => item.SortOrder)
             .ToListAsync(cancellationToken);
 
-        List<ItemLocationAssignment> assignments = await dbContext.ItemLocationAssignments
+        List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -95,7 +95,7 @@ public sealed class AdminItemHandler
                 [
                     .. assignments
                         .Where(assignment => assignment.CatalogItemId == item.Id)
-                        .Select(assignment => assignment.ProductionLocationId),
+                        .Select(assignment => assignment.StationId),
                 ])),
         ];
 
@@ -106,7 +106,7 @@ public sealed class AdminItemHandler
     {
         IResult? refusal = Validate(request);
 
-        if (refusal is null && !await AnyStationIsActiveAsync(request.LocationIds!, cancellationToken))
+        if (refusal is null && !await AnyStationIsActiveAsync(request.StationIds!, cancellationToken))
         {
             refusal = ItemHasNoActiveStation();
         }
@@ -129,13 +129,13 @@ public sealed class AdminItemHandler
             IsAvailable = true,
         });
 
-        foreach (Guid locationId in request.LocationIds!)
+        foreach (Guid stationId in request.StationIds!)
         {
-            dbContext.ItemLocationAssignments.Add(new ItemLocationAssignment
+            dbContext.ItemStationAssignments.Add(new ItemStationAssignment
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = itemId,
-                ProductionLocationId = locationId,
+                StationId = stationId,
             });
         }
 
@@ -152,7 +152,7 @@ public sealed class AdminItemHandler
     {
         IResult? refusal = Validate(request);
 
-        if (refusal is null && !await AnyStationIsActiveAsync(request.LocationIds!, cancellationToken))
+        if (refusal is null && !await AnyStationIsActiveAsync(request.StationIds!, cancellationToken))
         {
             refusal = ItemHasNoActiveStation();
         }
@@ -175,19 +175,19 @@ public sealed class AdminItemHandler
         item.PriceCents = request.PriceCents;
         item.SortOrder = request.SortOrder;
 
-        List<ItemLocationAssignment> existing = await dbContext.ItemLocationAssignments
+        List<ItemStationAssignment> existing = await dbContext.ItemStationAssignments
             .Where(assignment => assignment.CatalogItemId == itemId)
             .ToListAsync(cancellationToken);
 
-        dbContext.ItemLocationAssignments.RemoveRange(existing);
+        dbContext.ItemStationAssignments.RemoveRange(existing);
 
-        foreach (Guid locationId in request.LocationIds!)
+        foreach (Guid stationId in request.StationIds!)
         {
-            dbContext.ItemLocationAssignments.Add(new ItemLocationAssignment
+            dbContext.ItemStationAssignments.Add(new ItemStationAssignment
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = itemId,
-                ProductionLocationId = locationId,
+                StationId = stationId,
             });
         }
 
@@ -227,13 +227,13 @@ public sealed class AdminItemHandler
             return Results.NotFound();
         }
 
-        List<Guid> assignedLocationIds = await dbContext.ItemLocationAssignments
+        List<Guid> assignedStationIds = await dbContext.ItemStationAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CatalogItemId == itemId)
-            .Select(assignment => assignment.ProductionLocationId)
+            .Select(assignment => assignment.StationId)
             .ToListAsync(cancellationToken);
 
-        if (!await AnyStationIsActiveAsync(assignedLocationIds, cancellationToken))
+        if (!await AnyStationIsActiveAsync(assignedStationIds, cancellationToken))
         {
             return ItemHasNoActiveStation();
         }
@@ -263,13 +263,13 @@ public sealed class AdminItemHandler
     }
 
     private async Task<bool> AnyStationIsActiveAsync(
-        IReadOnlyCollection<Guid> productionLocationIds,
+        IReadOnlyCollection<Guid> stationIds,
         CancellationToken cancellationToken)
     {
-        return await dbContext.ProductionLocations
+        return await dbContext.Stations
             .AsNoTracking()
             .AnyAsync(
-                location => location.IsActive && productionLocationIds.Contains(location.Id),
+                station => station.IsActive && stationIds.Contains(station.Id),
                 cancellationToken);
     }
 
@@ -291,7 +291,7 @@ public sealed class AdminItemHandler
                 "admin.itemNameMissing");
         }
 
-        if (request.LocationIds is null || request.LocationIds.Count == 0)
+        if (request.StationIds is null || request.StationIds.Count == 0)
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status422UnprocessableEntity,

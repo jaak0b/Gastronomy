@@ -9,8 +9,8 @@ function ticket(
 ): TicketSummary {
   return {
     ticketId: 'ticket-1',
-    locationId: 'location-kueche',
-    locationName: 'Kueche',
+    stationId: 'station-kueche',
+    stationName: 'Kueche',
     sequenceNumber: 42,
     status,
     failureReason,

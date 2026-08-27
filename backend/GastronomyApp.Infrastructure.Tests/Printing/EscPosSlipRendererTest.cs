@@ -44,7 +44,7 @@ public class EscPosSlipRendererTest
     {
         return GermanFixture() with
         {
-            LocationName = "KITCHEN",
+            StationName = "KITCHEN",
             LanguageCode = "en",
             Lines =
             [
@@ -259,7 +259,7 @@ public class EscPosSlipRendererTest
     [Test]
     public void RenderTestSlip_English_NamesTheStationAndCarriesNoAddress()
     {
-        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { LocationName = "KITCHEN", LanguageCode = "en" });
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { StationName = "KITCHEN", LanguageCode = "en" });
 
         Assert.That(slip.RenderedText, Is.EqualTo(Joined(
             "================================================",
@@ -271,9 +271,9 @@ public class EscPosSlipRendererTest
     }
 
     [Test]
-    public void RenderInitialSlip_LongLocationName_WrapsAtTwentyFourColumnsBecauseTheRegionIsDoubleWidth()
+    public void RenderInitialSlip_LongStationName_WrapsAtTwentyFourColumnsBecauseTheRegionIsDoubleWidth()
     {
-        SlipRenderRequest request = GermanFixture() with { LocationName = new string('K', 30) };
+        SlipRenderRequest request = GermanFixture() with { StationName = new string('K', 30) };
 
         RenderedSlip slip = renderer.RenderInitialSlip(request);
 

@@ -19,11 +19,11 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
             .FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<ItemLocationAssignment>> FindAssignmentsAsync(
+    public async Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(
         Guid catalogItemId,
         CancellationToken cancellationToken)
     {
-        return await _dbContext.ItemLocationAssignments
+        return await _dbContext.ItemStationAssignments
             .Where(assignment => assignment.CatalogItemId == catalogItemId)
             .ToListAsync(cancellationToken);
     }

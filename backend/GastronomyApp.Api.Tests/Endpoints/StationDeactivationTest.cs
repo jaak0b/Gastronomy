@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GastronomyApp.Api.Tests.Endpoints;
 
 [TestFixture]
-public sealed class LocationDeactivationTest
+public sealed class StationDeactivationTest
 {
     private OrderTestContext context = null!;
 
@@ -28,10 +28,10 @@ public sealed class LocationDeactivationTest
     [Test]
     public async Task Deactivate_FreshStationThatOnlyEverTestPrinted_ReportsNoOpenSlipsAndSwitchesOff()
     {
-        Guid locationId = await CreateStationAsync();
+        Guid stationId = await CreateStationAsync();
 
         using (HttpResponseMessage testPrint = await context.Client.PostAsync(
-            $"/api/admin/printers/{locationId}/test-print",
+            $"/api/admin/printers/{stationId}/test-print",
             content: null))
         {
             Assert.That(
@@ -41,7 +41,7 @@ public sealed class LocationDeactivationTest
         }
 
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{locationId}/deactivate",
+            $"/api/admin/stations/{stationId}/deactivate",
             content: null);
 
         string body = await response.Content.ReadAsStringAsync();
@@ -52,10 +52,10 @@ public sealed class LocationDeactivationTest
             $"A station with no orders must switch off. Body: {body}");
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ProductionLocation location = await database.ProductionLocations.FirstAsync(
-            candidate => candidate.Id == locationId);
+        Station station = await database.Stations.FirstAsync(
+            candidate => candidate.Id == stationId);
 
-        Assert.That(location.IsActive, Is.False);
+        Assert.That(station.IsActive, Is.False);
     }
 
     [Test]
@@ -67,7 +67,7 @@ public sealed class LocationDeactivationTest
         }
 
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}/deactivate",
+            $"/api/admin/stations/{context.World.KitchenStationId}/deactivate",
             content: null);
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -77,7 +77,7 @@ public sealed class LocationDeactivationTest
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
             Assert.That(
                 body.RootElement.GetProperty("messageKey").GetString(),
-                Is.EqualTo("admin.locationHasOpenTickets"));
+                Is.EqualTo("admin.stationHasOpenTickets"));
             Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(), Is.EqualTo("1"));
         });
     }
@@ -86,7 +86,7 @@ public sealed class LocationDeactivationTest
     public async Task Deactivate_StationWhoseItemsWouldLoseTheirOnlyStation_IsRefusedForThatReason()
     {
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{context.World.BarLocationId}/deactivate",
+            $"/api/admin/stations/{context.World.BarStationId}/deactivate",
             content: null);
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -129,14 +129,14 @@ public sealed class LocationDeactivationTest
                 categoryName = "Essen",
                 priceCents = 350,
                 sortOrder = 1,
-                locationIds = new[] { context.World.BarLocationId },
+                stationIds = new[] { context.World.BarStationId },
             }))
         {
             Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}/deactivate",
+            $"/api/admin/stations/{context.World.KitchenStationId}/deactivate",
             content: null);
 
         Assert.That(
@@ -148,17 +148,17 @@ public sealed class LocationDeactivationTest
     [Test]
     public async Task Activate_StationThatWasSwitchedOff_SwitchesItBackOn()
     {
-        Guid locationId = await CreateStationAsync();
+        Guid stationId = await CreateStationAsync();
 
         using (HttpResponseMessage switchedOff = await context.Client.PostAsync(
-            $"/api/admin/locations/{locationId}/deactivate",
+            $"/api/admin/stations/{stationId}/deactivate",
             content: null))
         {
             Assert.That(switchedOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/locations/{locationId}/activate",
+            $"/api/admin/stations/{stationId}/activate",
             content: null);
 
         string body = await response.Content.ReadAsStringAsync();
@@ -169,22 +169,22 @@ public sealed class LocationDeactivationTest
             $"A station that was switched off must be switchable back on. Body: {body}");
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ProductionLocation location = await database.ProductionLocations.FirstAsync(
-            candidate => candidate.Id == locationId);
+        Station station = await database.Stations.FirstAsync(
+            candidate => candidate.Id == stationId);
 
-        Assert.That(location.IsActive, Is.True);
+        Assert.That(station.IsActive, Is.True);
     }
 
     private async Task<Guid> CreateStationAsync()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            "/api/admin/locations",
+            "/api/admin/stations",
             new { name = "Zelt", sortOrder = 3 });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-        return body.RootElement.GetProperty("locationId").GetGuid();
+        return body.RootElement.GetProperty("stationId").GetGuid();
     }
 }

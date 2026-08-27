@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminLocationsStore } from '../../../stores/admin/locations'
+import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminItemsStore } from '../../../stores/admin/items'
 import { useAdminPrintersStore } from '../../../stores/admin/printers'
 import { request } from '../../../api/client'
 
 const { t } = useI18n()
 const phoneAddress = window.location.origin
-const locations = useAdminLocationsStore()
+const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
 const printers = useAdminPrintersStore()
 
@@ -20,32 +20,32 @@ interface ReadinessRow {
 
 const rows = computed<ReadinessRow[]>(() => {
   const readiness: ReadinessRow[] = []
-  if (locations.locations.length === 0) {
-    readiness.push({ key: 'admin.overview.missingLocation', parameters: {}, count: null })
+  if (stations.stations.length === 0) {
+    readiness.push({ key: 'admin.overview.missingStation', parameters: {}, count: null })
   }
   if (items.items.length === 0) {
     readiness.push({ key: 'admin.overview.missingItems', parameters: {}, count: null })
   }
-  const withoutLocation = items.items.filter((item) => item.locationIds.length === 0).length
-  if (withoutLocation > 0) {
+  const withoutStation = items.items.filter((item) => item.stationIds.length === 0).length
+  if (withoutStation > 0) {
     readiness.push({
-      key: 'admin.overview.itemsWithoutLocation',
-      parameters: { count: withoutLocation },
-      count: withoutLocation,
+      key: 'admin.overview.itemsWithoutStation',
+      parameters: { count: withoutStation },
+      count: withoutStation,
     })
   }
   for (const printer of printers.printers) {
     if (printer.transportKind === 'Mock') {
       readiness.push({
         key: 'admin.overview.missingPrinter',
-        parameters: { name: printer.locationName },
+        parameters: { name: printer.stationName },
         count: null,
       })
     }
     if (printer.isPaperNearEnd) {
       readiness.push({
         key: 'admin.overview.paperNearEnd',
-        parameters: { name: printer.locationName },
+        parameters: { name: printer.stationName },
         count: null,
       })
     }
@@ -81,7 +81,7 @@ async function confirmReset(): Promise<void> {
 }
 
 onMounted(async () => {
-  await locations.load()
+  await stations.load()
   await items.load()
   await printers.load()
 })

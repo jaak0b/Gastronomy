@@ -90,7 +90,7 @@ public sealed class OrderAcceptanceTransactionTest
     }
 
     [Test]
-    public async Task AcceptAsync_MultipleLocations_AllocatesIndependentSequenceNumbers()
+    public async Task AcceptAsync_MultipleStations_AllocatesIndependentSequenceNumbers()
     {
         using SqliteInMemoryFixture fixture = new();
         SeededDomain seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -100,13 +100,13 @@ public sealed class OrderAcceptanceTransactionTest
         Result<OrderAcceptanceResult, OrderValidationFailure> second = await transaction.AcceptAsync(
             BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
-        LocationTicket kitchenTicket = second.Value.Order.Tickets.Single(ticket => ticket.ProductionLocationId == seeded.KitchenLocationId);
-        LocationTicket barTicket = second.Value.Order.Tickets.Single(ticket => ticket.ProductionLocationId == seeded.BarLocationId);
+        LocationTicket kitchenTicket = second.Value.Order.Tickets.Single(ticket => ticket.StationId == seeded.KitchenStationId);
+        LocationTicket barTicket = second.Value.Order.Tickets.Single(ticket => ticket.StationId == seeded.BarStationId);
 
         Assert.Multiple(() =>
         {
-            Assert.That(kitchenTicket.LocationSequenceNumber, Is.EqualTo(2));
-            Assert.That(barTicket.LocationSequenceNumber, Is.EqualTo(2));
+            Assert.That(kitchenTicket.StationSequenceNumber, Is.EqualTo(2));
+            Assert.That(barTicket.StationSequenceNumber, Is.EqualTo(2));
             Assert.That(second.Value.Order.GlobalOrderNumber, Is.EqualTo(2));
         });
     }

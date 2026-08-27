@@ -9,8 +9,8 @@ function basketLine(unitPriceCents: number, quantity: number): BasketLineView {
     unitPriceCents,
     quantity,
     note: null,
-    productionLocationId: null,
-    candidateLocationIds: ['location-1'],
+    stationId: null,
+    candidateStationIds: ['station-1'],
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
   }

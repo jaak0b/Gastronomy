@@ -12,7 +12,7 @@ export interface StationBanner {
 }
 
 export const usePrinterStatusStore = defineStore('printerStatus', () => {
-  const locations = ref<PrinterStatusRow[]>([])
+  const stations = ref<PrinterStatusRow[]>([])
   const waitingCounts = ref<Record<string, number>>({})
 
   function bannerKeyFor(row: PrinterStatusRow): string | null {
@@ -30,12 +30,12 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
 
   const banners = computed<StationBanner[]>(() => {
     const shown: StationBanner[] = []
-    for (const row of locations.value) {
+    for (const row of stations.value) {
       const key = bannerKeyFor(row)
       if (key === null) {
         continue
       }
-      const waiting = waitingCounts.value[row.locationId] ?? 0
+      const waiting = waitingCounts.value[row.stationId] ?? 0
       shown.push({ key, name: row.name, waitingCount: waiting > 0 ? waiting : null })
     }
     return shown
@@ -43,7 +43,7 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
 
   const catalogWarnings = computed<StationBanner[]>(() => {
     const shown: StationBanner[] = []
-    for (const row of locations.value) {
+    for (const row of stations.value) {
       if (row.isFaulty) {
         shown.push({ key: 'header.stationFaulty', name: row.name, waitingCount: null })
         continue
@@ -64,11 +64,11 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     if (session.deviceToken === null) {
       return
     }
-    const result = await request<{ locations: PrinterStatusRow[] }>('/api/printers/status', {
+    const result = await request<{ stations: PrinterStatusRow[] }>('/api/printers/status', {
       token: session.deviceToken,
     })
     if (result.kind === 'ok') {
-      locations.value = result.data.locations
+      stations.value = result.data.stations
     }
   }
 
@@ -77,38 +77,38 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     connection.registerRefetch(load)
     connection.onEvent<
       Omit<PrinterStatusRow, 'name' | 'lastChangedAtUtc'> & {
-        locationName: string
+        stationName: string
         waitingTicketCount: number
         lastChangedAtUtc?: string
       }
     >('PrinterStatusChanged', (payload) => {
-        const existing = locations.value.findIndex(
-          (row) => row.locationId === payload.locationId,
+        const existing = stations.value.findIndex(
+          (row) => row.stationId === payload.stationId,
         )
         const row: PrinterStatusRow = {
-          locationId: payload.locationId,
-          name: payload.locationName,
+          stationId: payload.stationId,
+          name: payload.stationName,
           isOnline: payload.isOnline,
           isPaperEnd: payload.isPaperEnd,
           isPaperNearEnd: payload.isPaperNearEnd,
           isCoverOpen: payload.isCoverOpen,
           isFaulty: payload.isFaulty,
           lastChangedAtUtc:
-            payload.lastChangedAtUtc ?? locations.value[existing]?.lastChangedAtUtc ?? '',
+            payload.lastChangedAtUtc ?? stations.value[existing]?.lastChangedAtUtc ?? '',
         }
         if (existing === -1) {
-          locations.value = [...locations.value, row]
+          stations.value = [...stations.value, row]
         } else {
-          locations.value = locations.value.map((current, index) =>
+          stations.value = stations.value.map((current, index) =>
             index === existing ? row : current,
           )
         }
         waitingCounts.value = {
           ...waitingCounts.value,
-          [payload.locationId]: payload.waitingTicketCount,
+          [payload.stationId]: payload.waitingTicketCount,
         }
     })
   }
 
-  return { locations, waitingCounts, banners, catalogWarnings, load, listen }
+  return { stations, waitingCounts, banners, catalogWarnings, load, listen }
 })

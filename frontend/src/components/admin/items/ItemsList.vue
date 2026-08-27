@@ -2,13 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
-import { useAdminLocationsStore } from '../../../stores/admin/locations'
+import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import ItemForm from './ItemForm.vue'
 
 const { t } = useI18n()
 const items = useAdminItemsStore()
-const locations = useAdminLocationsStore()
+const stations = useAdminStationsStore()
 const editingId = ref<string | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
@@ -37,7 +37,7 @@ async function deactivate(): Promise<void> {
 
 onMounted(async () => {
   await items.load()
-  await locations.load()
+  await stations.load()
 })
 </script>
 
@@ -110,7 +110,7 @@ onMounted(async () => {
         <ItemForm
           v-if="editingId === item.itemId"
           :item="item"
-          :locations="locations.locations"
+          :stations="stations.stations"
           :error-key="items.errorKey"
           @save="save"
         />
@@ -124,7 +124,7 @@ onMounted(async () => {
     <v-card v-if="isCreating" class="item-row mt-3">
       <ItemForm
         :item="null"
-        :locations="locations.locations"
+        :stations="stations.stations"
         :error-key="items.errorKey"
         @save="save"
       />

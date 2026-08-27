@@ -31,28 +31,28 @@ public sealed class PrinterStatusReader
         GastronomyAppDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        List<ProductionLocation> locations = await dbContext.ProductionLocations
+        List<Station> stations = await dbContext.Stations
             .AsNoTracking()
-            .Where(location => location.IsActive)
-            .OrderBy(location => location.SortOrder)
+            .Where(station => station.IsActive)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
-        HashSet<Guid> locationIds = [.. locations.Select(location => location.Id)];
+        HashSet<Guid> stationIds = [.. stations.Select(station => station.Id)];
 
         Dictionary<Guid, PrinterStatus> statuses = await dbContext.PrinterStatuses
             .AsNoTracking()
-            .Where(status => locationIds.Contains(status.ProductionLocationId))
-            .ToDictionaryAsync(status => status.ProductionLocationId, cancellationToken);
+            .Where(status => stationIds.Contains(status.StationId))
+            .ToDictionaryAsync(status => status.StationId, cancellationToken);
 
         List<PrinterStatusView> views = [];
 
-        foreach (ProductionLocation location in locations)
+        foreach (Station station in stations)
         {
-            statuses.TryGetValue(location.Id, out PrinterStatus? status);
+            statuses.TryGetValue(station.Id, out PrinterStatus? status);
 
             views.Add(new PrinterStatusView(
-                location.Id,
-                location.Name,
+                station.Id,
+                station.Name,
                 status?.IsOnline ?? false,
                 status?.IsPaperEnd ?? false,
                 status?.IsPaperNearEnd ?? false,

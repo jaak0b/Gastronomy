@@ -3,7 +3,7 @@ using GastronomyApp.Core.Enums;
 namespace GastronomyApp.Core.Printing;
 
 public sealed record PrinterEndpoint(
-    Guid ProductionLocationId,
+    Guid StationId,
     TransportKind TransportKind,
     string? Host,
     int Port,
@@ -18,10 +18,10 @@ public sealed record PrintPayload(
     ReadOnlyMemory<byte> Bytes,
     string RenderedText,
     PrintJobKind Kind,
-    int LocationSequenceNumber,
+    int StationSequenceNumber,
     int ReprintCount,
-    Guid ProductionLocationId,
-    string ProductionLocationName);
+    Guid StationId,
+    string StationName);
 
 public sealed record PrinterStatusSnapshot(
     bool IsOnline,

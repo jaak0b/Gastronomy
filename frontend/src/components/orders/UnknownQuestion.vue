@@ -11,7 +11,7 @@ const { t } = useI18n()
 
 const action = computed(() =>
   t('ticket.unknown.action', {
-    station: props.ticket.locationName,
+    station: props.ticket.stationName,
     sequence: formatSequenceNumber(props.ticket.sequenceNumber),
   }),
 )

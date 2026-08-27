@@ -26,12 +26,12 @@
     "reconnecting": "Keine Verbindung zum Laptop. Es wird weiter versucht.",
     "backOnline": "Die Verbindung ist wieder da.",
     "attention": "{count} Bestellung muss geprüft werden. | {count} Bestellungen müssen geprüft werden.",
-    "stationPaperOut": "Der Drucker an der Station {name} hat kein Papier.",
-    "stationOffline": "Die Station {name} antwortet gerade nicht.",
-    "stationFaulty": "Sagen Sie an der Station {name} Bescheid. Der Drucker dort nimmt nichts mehr an.",
+    "stationPaperOut": "Der Drucker an der Ausgabestelle {name} hat kein Papier.",
+    "stationOffline": "Die Ausgabestelle {name} antwortet gerade nicht.",
+    "stationFaulty": "Sagen Sie an der Ausgabestelle {name} Bescheid. Der Drucker dort nimmt nichts mehr an.",
     "stationWaiting": "Dort wartet {count} Bon. | Dort warten {count} Bons.",
     "settings": "Einstellungen",
-    "stations": "Stationen"
+    "stations": "Ausgabestellen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -49,8 +49,8 @@
     "basketEmpty": "Noch nichts ausgewählt",
     "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
     "toReview": "Weiter zur Übersicht",
-    "paperWarning": "Nehmen Sie weiter Bestellungen auf. Der Drucker an der Station {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt.",
-    "offlineWarning": "Nehmen Sie weiter Bestellungen auf. Die Station {name} antwortet gerade nicht, und der Bon wird nachgedruckt.",
+    "paperWarning": "Nehmen Sie weiter Bestellungen auf. Der Drucker an der Ausgabestelle {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt.",
+    "offlineWarning": "Nehmen Sie weiter Bestellungen auf. Die Ausgabestelle {name} antwortet gerade nicht, und der Bon wird nachgedruckt.",
     "itemSoldOut": "Fragen Sie den Gast, ob er etwas anderes möchte. {name} ist gerade ausverkauft.",
     "addOne": "Eins mehr",
     "removeOne": "Eins weniger",
@@ -59,8 +59,8 @@
   "line": {
     "whereTitle": "Wo soll {item} zubereitet werden?",
     "whereHelp": "Die Auswahl gilt nur für diese Position.",
-    "station": "Station: {name}",
-    "changeStation": "Station ändern"
+    "station": "Ausgabestelle: {name}",
+    "changeStation": "Ausgabestelle ändern"
   },
   "review": {
     "title": "Bestellung prüfen",
@@ -81,7 +81,7 @@
     "sendFailedDatabase": "Tippen Sie auf \"Noch einmal senden\". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.",
     "tooManyRequests": "Warten Sie einen Moment und tippen Sie dann auf \"Noch einmal senden\". Der Laptop bekommt gerade zu viele Anfragen auf einmal.",
     "retry": "Noch einmal senden",
-    "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Station. Das Senden hat mehrmals nicht geklappt.",
+    "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.",
     "duplicateRisk": "Sehen Sie in Ihren Bestellungen nach, bevor Sie diese noch einmal aufnehmen. Sie wurde bereits gesendet.",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
@@ -92,7 +92,7 @@
     "status": {
       "printing": "Wird gedruckt",
       "printed": "Gedruckt",
-      "handledOnPaper": "Station hat übernommen",
+      "handledOnPaper": "Von der Ausgabestelle übernommen",
       "attention": "Bitte prüfen"
     },
     "ticket": "{station}, Bon {sequence}",
@@ -112,32 +112,32 @@
     "failed": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort antwortet nicht.",
     "failedAfterWaiting": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Bon wartet dort seit {minutes} Minuten auf den Druck.",
     "stationFaulty": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort nimmt nichts mehr an.",
-    "stationDisabled": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Station ist am Laptop ausgeschaltet.",
+    "stationDisabled": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle ist am Laptop ausgeschaltet.",
     "printerError": "Holen Sie jemanden, der sich den Drucker bei {station} ansehen kann. Der Drucker meldet eine Störung.",
-    "testPrinter": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Station steht am Laptop noch auf dem Testdrucker, es liegt also kein Bon auf dem Stapel.",
+    "testPrinter": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle steht am Laptop noch auf dem Testdrucker, es liegt also kein Bon auf dem Stapel.",
     "reprintQueued": "Der Bon wird noch einmal gedruckt. Er trägt wieder dieselbe Nummer und den Vermerk Nachdruck.",
-    "handledOnPaper": "Die Station hat diese Bestellung vom Bildschirm übernommen. Es wird kein Bon mehr gedruckt.",
+    "handledOnPaper": "Die Ausgabestelle hat diese Bestellung vom Bildschirm übernommen. Es wird kein Bon mehr gedruckt.",
     "reprint": "Erneut drucken",
-    "blocked": "Dieser Bon wartet, weil der Drucker der Station gerade nicht drucken kann.",
+    "blocked": "Dieser Bon wartet, weil der Drucker der Ausgabestelle gerade nicht drucken kann.",
     "illegalTransition": "Dieser Bon ist nicht mehr in dem Zustand, den Sie auf dem Bildschirm sehen. Laden Sie die Seite neu.",
     "printJobAlreadyRunning": "Für diesen Bon läuft schon ein Druck. Warten Sie ihn ab, bevor Sie noch einmal drucken.",
-    "printedOnTestPrinter": "Dieser Bon wurde auf dem Testdrucker gedruckt und liegt nicht an der Station.",
+    "printedOnTestPrinter": "Dieser Bon wurde auf dem Testdrucker gedruckt und liegt nicht an der Ausgabestelle.",
     "questionAlreadyAnswered": "Diese Frage hat schon jemand anderes beantwortet.",
     "reprintNotAllowed": "Dieser Bon kann gerade nicht noch einmal gedruckt werden. Das geht erst, wenn er gedruckt wurde oder fehlgeschlagen ist.",
     "resolvedByHuman": "Diesen Bon hat jemand von Hand erledigt.",
     "socketDropped": "Die Verbindung zum Drucker ist abgerissen. Ob der Bon gedruckt wurde, ist offen.",
     "timeout": "Der Drucker hat zu lange nicht geantwortet.",
-    "unknownOutcome": "Ob dieser Bon gedruckt wurde, ist offen. Schauen Sie an der Station nach.",
-    "unreachable": "Der Drucker der Station ist nicht erreichbar."
+    "unknownOutcome": "Ob dieser Bon gedruckt wurde, ist offen. Schauen Sie an der Ausgabestelle nach.",
+    "unreachable": "Der Drucker der Ausgabestelle ist nicht erreichbar."
   },
   "order": {
-    "changedMind": "Sagen Sie der Station Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.",
-    "itemHasNoStation": "Für einen Artikel auf dieser Bestellung ist keine Station eingerichtet. Sagen Sie am Laptop Bescheid und geben Sie die Bestellung so lange persönlich auf.",
+    "changedMind": "Sagen Sie an der Ausgabestelle Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.",
+    "itemHasNoStation": "Für einen Artikel auf dieser Bestellung ist keine Ausgabestelle eingerichtet. Sagen Sie am Laptop Bescheid und geben Sie die Bestellung so lange persönlich auf.",
     "noLines": "Wählen Sie zuerst etwas aus, bevor Sie senden.",
     "notYours": "Diese Bestellung gehört zu einem anderen Telefon. Sie können nur Ihre eigenen Bestellungen ändern.",
     "quantityOutOfRange": "Diese Menge ist zu groß. Tragen Sie eine kleinere Menge ein oder geben Sie zwei Bestellungen auf.",
-    "stationNotAssignedToItem": "Dieser Artikel wird an der gewählten Station nicht gemacht. Wählen Sie eine andere Station.",
-    "stationRequired": "Wählen Sie für diesen Artikel eine Station aus.",
+    "stationNotAssignedToItem": "Dieser Artikel wird an der gewählten Ausgabestelle nicht gemacht. Wählen Sie eine andere Ausgabestelle.",
+    "stationRequired": "Wählen Sie für diesen Artikel eine Ausgabestelle aus.",
     "submissionIdReused": "Diese Bestellung wurde schon einmal gesendet, aber mit anderem Inhalt. Prüfen Sie die Bestellliste, bevor Sie erneut senden.",
     "tableLabelMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
     "tableLabelTooLong": "Dieser Tisch ist zu lang. Schreiben Sie ihn kürzer, zum Beispiel: Tisch 12.",
@@ -148,33 +148,33 @@
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone einrichten.",
-      "missingLocation": "Legen Sie mindestens eine Station an, zum Beispiel Küche und Theke.",
+      "missingStation": "Legen Sie mindestens eine Ausgabestelle an, zum Beispiel Küche und Theke.",
       "missingPrinter": "Tragen Sie für {name} einen Drucker ein. Solange dort der Testdrucker steht, kommt kein Bon auf den Stapel.",
       "missingItems": "Legen Sie die Artikel mit ihren Preisen an.",
-      "itemsWithoutLocation": "Ordnen Sie {count} Artikel einer Station zu. Ohne Station kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Station zu. Ohne Station können sie nicht bestellt werden.",
+      "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
       "paperNearEnd": "Legen Sie bei {name} eine neue Papierrolle bereit. Die eingelegte Rolle geht zu Ende.",
       "openTickets": "Sehen Sie in der Bestellliste nach. {count} Bon wartet noch auf den Druck. | Sehen Sie in der Bestellliste nach. {count} Bons warten noch auf den Druck.",
       "stationBlocked": "Kümmern Sie sich um den Drucker bei {name}. Dort wartet {count} Bon seit {minutes} Minuten. | Kümmern Sie sich um den Drucker bei {name}. Dort warten {count} Bons seit {minutes} Minuten.",
       "address": "Die Telefone erreichen den Laptop unter {url}.",
       "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}."
     },
-    "locations": {
-      "title": "Stationen",
-      "help": "Eine Station ist eine Küche oder eine Theke mit einem eigenen Drucker.",
-      "openTickets": "Diese Station hat noch {count} offenen Bon und kann jetzt nicht abgeschaltet werden. | Diese Station hat noch {count} offene Bons und kann jetzt nicht abgeschaltet werden.",
-      "lastForItems": "Ordnen Sie {names} zuerst eine andere Station zu. Diese Station ist für diese Artikel die einzige.",
-      "new": "Neue Station",
-      "deactivate": "Station abschalten",
-      "empty": "Legen Sie die erste Station an, zum Beispiel Küche oder Theke.",
-      "activate": "Station einschalten",
-      "deactivateTitle": "Station abschalten?",
-      "deactivateBody": "Die Station verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Station später wieder einschalten.",
-      "deactivateConfirm": "Station abschalten"
+    "stations": {
+      "title": "Ausgabestellen",
+      "help": "Eine Ausgabestelle ist eine Küche oder eine Theke mit einem eigenen Drucker.",
+      "openTickets": "Diese Ausgabestelle hat noch {count} offenen Bon und kann jetzt nicht abgeschaltet werden. | Diese Ausgabestelle hat noch {count} offene Bons und kann jetzt nicht abgeschaltet werden.",
+      "lastForItems": "Ordnen Sie {names} zuerst eine andere Ausgabestelle zu. Diese Ausgabestelle ist für diese Artikel die einzige.",
+      "new": "Neue Ausgabestelle",
+      "deactivate": "Ausgabestelle abschalten",
+      "empty": "Legen Sie die erste Ausgabestelle an, zum Beispiel Küche oder Theke.",
+      "activate": "Ausgabestelle einschalten",
+      "deactivateTitle": "Ausgabestelle abschalten?",
+      "deactivateBody": "Die Ausgabestelle verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Ausgabestelle später wieder einschalten.",
+      "deactivateConfirm": "Ausgabestelle abschalten"
     },
     "items": {
       "title": "Artikel",
       "priceHelp": "Preise dienen nur zum Zusammenrechnen. Über die App wird kein Geld bezahlt.",
-      "needsLocation": "Kreuzen Sie mindestens eine Station an. Ohne Station kann dieser Artikel nicht bestellt werden.",
+      "needsStation": "Kreuzen Sie mindestens eine Ausgabestelle an. Ohne Ausgabestelle kann dieser Artikel nicht bestellt werden.",
       "soldOut": "Ausverkauft",
       "soldOutHelp": "Schalten Sie einen Artikel auf ausverkauft, sobald er alle ist. Er bleibt auf den Telefonen stehen, ist aber nicht mehr auswählbar.",
       "soldOutUndo": "Wieder verfügbar",
@@ -192,7 +192,7 @@
     },
     "assignment": {
       "title": "Zuordnung",
-      "help": "Kreuzen Sie an, wo ein Artikel zubereitet werden kann."
+      "help": "Kreuzen Sie die Ausgabestellen an, an denen ein Artikel zubereitet werden kann."
     },
     "tables": {
       "title": "Tische",
@@ -204,12 +204,12 @@
       "kindNetwork": "Netzwerkdrucker",
       "kindMock": "Testdrucker ohne Gerät",
       "kindAgent": "Drucker am Raspberry Pi",
-      "hostHelp": "Tragen Sie die IP-Adresse des Druckers ein oder suchen Sie ihn im Netz. Ein gefundener Drucker, den Sie antippen, stellt diese Station zugleich vom Testdrucker auf einen Netzwerkdrucker um.",
+      "hostHelp": "Tragen Sie die IP-Adresse des Druckers ein oder suchen Sie ihn im Netz. Ein gefundener Drucker, den Sie antippen, stellt diese Ausgabestelle zugleich vom Testdrucker auf einen Netzwerkdrucker um.",
       "search": "Drucker im Netz suchen",
       "searching": "Es wird gesucht. Das dauert etwa eine Minute.",
       "searchNone": "Tragen Sie die Adresse vom Selbsttest des Druckers ein. Es wurde kein Drucker gefunden.",
       "testPrint": "Testbon drucken",
-      "testPrintHelp": "Drucken Sie an jeder Station einen Testbon, bevor die Gäste kommen.",
+      "testPrintHelp": "Drucken Sie an jeder Ausgabestelle einen Testbon, bevor die Gäste kommen.",
       "online": "Antwortet",
       "offline": "Antwortet nicht",
       "paperEnd": "Kein Papier",
@@ -219,11 +219,11 @@
       "reconnect": "Wieder verbinden",
       "reconnectHelp": "Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an.",
       "waiting": "{count} Bon wartet auf diesen Drucker. | {count} Bons warten auf diesen Drucker.",
-      "shared": "Diese Adresse ist auch bei {names} eingetragen. Die Bons dieser Stationen kommen aus demselben Drucker.",
-      "sharedHelp": "Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Station die Adresse eines Druckers ein, der noch arbeitet.",
+      "shared": "Diese Adresse ist auch bei {names} eingetragen. Die Bons dieser Ausgabestellen kommen aus demselben Drucker.",
+      "sharedHelp": "Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Ausgabestelle die Adresse eines Druckers ein, der noch arbeitet.",
       "lastHeard": "Zuletzt gemeldet: {time}",
       "mockFolder": "Die Bons dieses Testdruckers liegen im Ordner {path}.",
-      "mockFolderUnwritable": "Sagen Sie die Bestellungen für {name} an der Station persönlich an. Der Testdrucker dort kann keine Bons ablegen, weil sich in den Ordner {path} nichts schreiben lässt. Reparieren Sie danach im Programmfenster unter Einstellungen die Einrichtung, oder schaffen Sie Platz auf der Festplatte.",
+      "mockFolderUnwritable": "Sagen Sie die Bestellungen für {name} an der Ausgabestelle persönlich an. Der Testdrucker dort kann keine Bons ablegen, weil sich in den Ordner {path} nichts schreiben lässt. Reparieren Sie danach im Programmfenster unter Einstellungen die Einrichtung, oder schaffen Sie Platz auf der Festplatte.",
       "faultTitle": "Störung am Testdrucker simulieren",
       "faultHelp": "Damit führen Sie vor, was am Telefon passiert, wenn ein Drucker ausfällt. Die Auswahl gilt nur für den Testdrucker.",
       "fault": {
@@ -237,7 +237,7 @@
         "once": "Einmal",
         "sticky": "Bis zum Zurücksetzen"
       },
-      "empty": "Legen Sie zuerst eine Station an. Zu jeder Station gehört ein Drucker."
+      "empty": "Legen Sie zuerst eine Ausgabestelle an. Zu jeder Ausgabestelle gehört ein Drucker."
     },
     "staff": {
       "title": "Kellner",
@@ -277,7 +277,7 @@
       "slipIsThere": "Der Bon liegt da",
       "slipIsMissing": "Der Bon fehlt",
       "reprint": "Erneut drucken",
-      "noCancel": "Sagen Sie der Station Bescheid. Eine gesendete Bestellung lässt sich nicht zurücknehmen, weil ihr Bon schon gedruckt wird."
+      "noCancel": "Sagen Sie an der Ausgabestelle Bescheid. Eine gesendete Bestellung lässt sich nicht zurücknehmen, weil ihr Bon schon gedruckt wird."
     },
     "backup": {
       "title": "Datensicherung",
@@ -289,17 +289,17 @@
     "diagnostics": {
       "title": "Technische Angaben",
       "log": "Protokolldatei öffnen",
-      "logHelp": "Hier steht, was das Programm heute Abend getan hat. Diese Datei hilft, wenn eine Station nichts bekommen hat."
+      "logHelp": "Hier steht, was das Programm heute Abend getan hat. Diese Datei hilft, wenn eine Ausgabestelle nichts bekommen hat."
     },
     "save": "Speichern",
     "cancel": "Abbrechen",
     "edit": "Bearbeiten",
     "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
-    "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Station zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Station und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Station zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Station und können nicht bestellt werden.",
-    "stationHasNoPrinterWorker": "Versuchen Sie es gleich noch einmal. Diese Station hat noch keine Verbindung zum Drucker.",
+    "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Ausgabestelle und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.",
+    "stationHasNoPrinterWorker": "Versuchen Sie es gleich noch einmal. Diese Ausgabestelle hat noch keine Verbindung zum Drucker.",
     "numbers": {
       "title": "Laufnummern",
-      "help": "Die Bestellnummer und die Bonnummern jeder Station zählen fortlaufend. Setzen Sie sie vor einem neuen Fest auf 1 zurück.",
+      "help": "Die Bestellnummer und die Bonnummern jeder Ausgabestelle zählen fortlaufend. Setzen Sie sie vor einem neuen Fest auf 1 zurück.",
       "reset": "Laufnummern zurücksetzen",
       "confirm": "Sollen die Laufnummern jetzt auf 1 zurückgesetzt werden? Bereits aufgenommene Bestellungen behalten ihre Nummern.",
       "confirmYes": "Ja, zurücksetzen",
@@ -307,28 +307,28 @@
       "done": "Die Laufnummern beginnen wieder bei 1."
     },
     "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
-    "itemNeedsAStation": "Kreuzen Sie mindestens eine Station an, damit der Artikel bestellt werden kann.",
-    "locationHasOpenTickets": "Diese Station hat noch offene Bons und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bons ab und versuchen Sie es danach erneut.",
-    "locationNameMissing": "Geben Sie der Station einen Namen, bevor Sie sie speichern.",
+    "itemNeedsAStation": "Kreuzen Sie mindestens eine Ausgabestelle an, damit der Artikel bestellt werden kann.",
+    "stationHasOpenTickets": "Diese Ausgabestelle hat noch offene Bons und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bons ab und versuchen Sie es danach erneut.",
+    "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
     "personHasNoPhone": "Für diese Person ist gerade kein Telefon angemeldet. Es gibt also nichts abzumelden.",
     "personNameMissing": "Geben Sie der Person einen Namen, bevor Sie speichern.",
-    "stationIsNotOnTheTestPrinter": "Diese Station druckt nicht in einen Ordner. Störungen zum Ausprobieren gibt es nur bei Stationen, die in einen Ordner drucken.",
+    "stationIsNotOnTheTestPrinter": "Diese Ausgabestelle druckt nicht in einen Ordner. Störungen zum Ausprobieren gibt es nur bei Ausgabestellen, die in einen Ordner drucken.",
     "unknownMockFault": "Diese Störung kennt das Programm nicht. Wählen Sie eine Störung aus der Liste.",
     "unknownTransportKind": "Diese Anschlussart kennt das Programm nicht. Wählen Sie eine Anschlussart aus der Liste.",
     "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
     "deactivate": "Deaktivieren",
     "deactivated": "Deaktiviert",
     "showDeactivated": "Deaktivierte anzeigen",
-    "itemHasNoActiveStation": "Alle Stationen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Station zu, die läuft."
+    "itemHasNoActiveStation": "Alle Ausgabestellen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Ausgabestelle zu, die läuft."
   },
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",
     "warningTitle": "Diese Seite ist nur für den Notfall.",
-    "warningBody": "Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Station den Bonstapel ab.",
+    "warningBody": "Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Ausgabestelle den Bonstapel ab.",
     "empty": "Es liegen keine offenen Bestellungen an. Alle Bons sind gedruckt.",
     "language": "Sprache",
-    "filterLabel": "Station",
-    "filterHelp": "Wählen Sie die Station, deren Bons Sie hier sehen wollen.",
+    "filterLabel": "Ausgabestelle",
+    "filterHelp": "Wählen Sie die Ausgabestelle, deren Bons Sie hier sehen wollen.",
     "row": "Bon {sequence}, Bestellung {order}, {table}",
     "rowTime": "Aufgenommen um {time}",
     "line": "{quantity} x {item}",
@@ -344,8 +344,8 @@
     "reprint": "NACHDRUCK",
     "take": "Übernommen",
     "takeHelp": "Schreiben Sie die Tischnummer auf einen Zettel und legen Sie ihn zum Essen.",
-    "takeUnavailable": "Holen Sie diesen Bon am Drucker. Der Drucker dieser Station arbeitet.",
-    "takeRefused": "Holen Sie den Bon am Drucker. Der Drucker dieser Station druckt wieder, deshalb wurde dieser Bon nicht übernommen.",
+    "takeUnavailable": "Holen Sie diesen Bon am Drucker. Der Drucker dieser Ausgabestelle arbeitet.",
+    "takeRefused": "Holen Sie den Bon am Drucker. Der Drucker dieser Ausgabestelle druckt wieder, deshalb wurde dieser Bon nicht übernommen.",
     "undo": "Rückgängig",
     "takenPending": "Tippen Sie auf \"Rückgängig\", wenn Sie sich vertippt haben. Dieser Bon wird in {seconds} Sekunden übernommen.",
     "alreadyTaken": "Dieser Bon wurde gerade von jemand anderem übernommen. Sprechen Sie sich ab, damit die Bestellung nur einmal gemacht wird.",

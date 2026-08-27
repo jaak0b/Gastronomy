@@ -10,7 +10,7 @@ public class NetworkPrinterTransportTest
 {
     private FakeEscPosPrinterServer server = null!;
     private NetworkPrinterTransport transport = null!;
-    private Guid locationId;
+    private Guid stationId;
 
     [SetUp]
     public async Task SetUp()
@@ -18,7 +18,7 @@ public class NetworkPrinterTransportTest
         server = new FakeEscPosPrinterServer(0);
         await server.StartAsync(CancellationToken.None);
         transport = new NetworkPrinterTransport(TimeProvider.System);
-        locationId = Guid.NewGuid();
+        stationId = Guid.NewGuid();
     }
 
     [TearDown]
@@ -30,7 +30,7 @@ public class NetworkPrinterTransportTest
     private PrinterEndpoint Endpoint(TimeSpan? jobTimeout = null, TimeSpan? heartbeat = null, TimeSpan? statusQueryTimeout = null)
     {
         return new PrinterEndpoint(
-            locationId,
+            stationId,
             TransportKind.Network,
             "127.0.0.1",
             server.Port,
@@ -44,7 +44,7 @@ public class NetworkPrinterTransportTest
     private PrintPayload Payload(int processId = 7, int sizeInBytes = 64)
     {
         byte[] bytes = Encoding.ASCII.GetBytes(new string('X', sizeInBytes));
-        return new PrintPayload(processId, bytes, new string('X', sizeInBytes), PrintJobKind.Initial, 42, 0, locationId, "Kueche");
+        return new PrintPayload(processId, bytes, new string('X', sizeInBytes), PrintJobKind.Initial, 42, 0, stationId, "Kueche");
     }
 
     private async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)

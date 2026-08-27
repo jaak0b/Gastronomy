@@ -13,7 +13,7 @@ const connection = useConnectionStore()
 
 const selectedName = computed(
   () =>
-    station.locations.find((location) => location.locationId === station.selectedLocationId)
+    station.stations.find((candidate) => candidate.stationId === station.selectedStationId)
       ?.name ?? '',
 )
 
@@ -60,9 +60,9 @@ onUnmounted(() => {
     <h1 class="text-h5 mb-2">{{ t('station.title', { name: selectedName }) }}</h1>
     <StationWarning />
     <StationFilter
-      :locations="station.locations"
-      :selected-location-id="station.selectedLocationId"
-      @select="station.selectLocation"
+      :stations="station.stations"
+      :selected-station-id="station.selectedStationId"
+      @select="station.selectStation"
     />
     <v-alert v-if="printerIsBack" class="printer-back mb-2" type="success" variant="tonal">
       {{ t('station.printerBack') }}

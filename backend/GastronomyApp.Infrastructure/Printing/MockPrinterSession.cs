@@ -45,9 +45,9 @@ public sealed class MockPrinterSession : IPrinterSession
         cancellationToken.ThrowIfCancellationRequested();
         PrinterStatusSnapshot snapshot = CurrentStatus(Probe());
 
-        if (SurfacesInStatus(faultRegistry.GetArmedFault(endpoint.ProductionLocationId)))
+        if (SurfacesInStatus(faultRegistry.GetArmedFault(endpoint.StationId)))
         {
-            faultRegistry.ClearIfOnce(endpoint.ProductionLocationId);
+            faultRegistry.ClearIfOnce(endpoint.StationId);
         }
 
         return Task.FromResult(snapshot);
@@ -56,14 +56,14 @@ public sealed class MockPrinterSession : IPrinterSession
     public async Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        MockFault fault = faultRegistry.GetArmedFault(endpoint.ProductionLocationId);
+        MockFault fault = faultRegistry.GetArmedFault(endpoint.StationId);
         MockFolderProbeResult probe = Probe();
 
         PrintDispatchResult result = probe.IsWritable
             ? await DispatchAsync(payload, fault, probe, cancellationToken)
             : new PrintDispatchResult(PrintAttemptOutcome.PrinterError, 0, CurrentStatus(probe), probe.Detail);
 
-        faultRegistry.ClearIfOnce(endpoint.ProductionLocationId);
+        faultRegistry.ClearIfOnce(endpoint.StationId);
         statusChannel.Writer.TryWrite(result.StatusAtEnd);
         return result;
     }
@@ -135,26 +135,26 @@ public sealed class MockPrinterSession : IPrinterSession
 
     private string SlipFilePath(PrintPayload payload)
     {
-        string folderName = LocationFolderName(payload);
+        string folderName = StationFolderName(payload);
         string folder = Path.Combine(slipRootFolder, folderName);
         Directory.CreateDirectory(folder);
 
         string fileName = payload.Kind == PrintJobKind.Test
             ? $"{sessionStartStamp}_{folderName}_test-{payload.ProcessId.ToString(CultureInfo.InvariantCulture)}.txt"
-            : $"{sessionStartStamp}_{folderName}_slip-{payload.LocationSequenceNumber.ToString("D3", CultureInfo.InvariantCulture)}_print-{(payload.ReprintCount + 1).ToString(CultureInfo.InvariantCulture)}.txt";
+            : $"{sessionStartStamp}_{folderName}_slip-{payload.StationSequenceNumber.ToString("D3", CultureInfo.InvariantCulture)}_print-{(payload.ReprintCount + 1).ToString(CultureInfo.InvariantCulture)}.txt";
 
         return Path.Combine(folder, fileName);
     }
 
-    private string LocationFolderName(PrintPayload payload)
+    private string StationFolderName(PrintPayload payload)
     {
-        return $"{Sanitise(payload.ProductionLocationName)}-{payload.ProductionLocationId.ToString("D")[..8]}";
+        return $"{Sanitise(payload.StationName)}-{payload.StationId.ToString("D")[..8]}";
     }
 
-    private string Sanitise(string locationName)
+    private string Sanitise(string stationName)
     {
-        StringBuilder builder = new(locationName.Length);
-        foreach (char character in locationName)
+        StringBuilder builder = new(stationName.Length);
+        foreach (char character in stationName)
         {
             bool keep = char.IsAsciiLetterOrDigit(character) || character == '-' || character == '_';
             builder.Append(keep ? character : '_');
@@ -181,7 +181,7 @@ public sealed class MockPrinterSession : IPrinterSession
 
     private PrinterStatusSnapshot CurrentStatus(MockFolderProbeResult probe)
     {
-        MockFault fault = faultRegistry.GetArmedFault(endpoint.ProductionLocationId);
+        MockFault fault = faultRegistry.GetArmedFault(endpoint.StationId);
 
         return new PrinterStatusSnapshot(
             probe.IsWritable,
@@ -189,7 +189,7 @@ public sealed class MockPrinterSession : IPrinterSession
             false,
             fault == MockFault.CoverOpen,
             !probe.IsWritable,
-            probe.IsWritable ? probe.LocationFolderPath : probe.Detail,
+            probe.IsWritable ? probe.StationFolderPath : probe.Detail,
             timeProvider.GetUtcNow());
     }
 }

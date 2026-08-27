@@ -20,19 +20,19 @@ public sealed class OrderRoutingResolverTest
         _resolver = new OrderRoutingResolver();
     }
 
-    private ItemLocationAssignment AssignmentTo(Guid productionLocationId)
+    private ItemStationAssignment AssignmentTo(Guid stationId)
     {
-        return new ItemLocationAssignment
+        return new ItemStationAssignment
         {
             Id = Guid.NewGuid(),
             CatalogItemId = _catalogItemId,
-            ProductionLocationId = productionLocationId,
+            StationId = stationId,
         };
     }
 
-    private ProductionLocation LocationOf(Guid id, string name, int sortOrder)
+    private Station StationOf(Guid id, string name, int sortOrder)
     {
-        return new ProductionLocation
+        return new Station
         {
             Id = id,
             Name = name,
@@ -47,14 +47,14 @@ public sealed class OrderRoutingResolverTest
         Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_kitchenId)],
-            [LocationOf(_kitchenId, "Kueche", 1)],
+            [StationOf(_kitchenId, "Kueche", 1)],
             null);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.ResolvedProductionLocationId, Is.EqualTo(_kitchenId));
-            Assert.That(result.Value.ChosenProductionLocationId, Is.Null);
+            Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_kitchenId));
+            Assert.That(result.Value.ChosenStationId, Is.Null);
             Assert.That(result.Value.FellBackFromStaleChoice, Is.False);
         });
     }
@@ -65,7 +65,7 @@ public sealed class OrderRoutingResolverTest
         Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-            [LocationOf(_barIndoorId, "Theke innen", 1), LocationOf(_barOutdoorId, "Theke aussen", 2)],
+            [StationOf(_barIndoorId, "Theke innen", 1), StationOf(_barOutdoorId, "Theke aussen", 2)],
             null);
 
         Assert.Multiple(() =>
@@ -82,9 +82,9 @@ public sealed class OrderRoutingResolverTest
             _catalogItemId,
             [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
             [
-                LocationOf(_barIndoorId, "Theke innen", 1),
-                LocationOf(_barOutdoorId, "Theke aussen", 2),
-                LocationOf(_kitchenId, "Kueche", 3),
+                StationOf(_barIndoorId, "Theke innen", 1),
+                StationOf(_barOutdoorId, "Theke aussen", 2),
+                StationOf(_kitchenId, "Kueche", 3),
             ],
             _kitchenId);
 
@@ -101,14 +101,14 @@ public sealed class OrderRoutingResolverTest
         Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-            [LocationOf(_barIndoorId, "Theke innen", 1), LocationOf(_barOutdoorId, "Theke aussen", 2)],
+            [StationOf(_barIndoorId, "Theke innen", 1), StationOf(_barOutdoorId, "Theke aussen", 2)],
             _barOutdoorId);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.ResolvedProductionLocationId, Is.EqualTo(_barOutdoorId));
-            Assert.That(result.Value.ChosenProductionLocationId, Is.EqualTo(_barOutdoorId));
+            Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_barOutdoorId));
+            Assert.That(result.Value.ChosenStationId, Is.EqualTo(_barOutdoorId));
             Assert.That(result.Value.FellBackFromStaleChoice, Is.False);
         });
     }
@@ -119,14 +119,14 @@ public sealed class OrderRoutingResolverTest
         Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId), AssignmentTo(_kitchenId)],
-            [LocationOf(_kitchenId, "Kueche", 7), LocationOf(_barIndoorId, "Theke innen", 3)],
+            [StationOf(_kitchenId, "Kueche", 7), StationOf(_barIndoorId, "Theke innen", 3)],
             _barOutdoorId);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.ResolvedProductionLocationId, Is.EqualTo(_barIndoorId));
-            Assert.That(result.Value.ChosenProductionLocationId, Is.EqualTo(_barOutdoorId));
+            Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_barIndoorId));
+            Assert.That(result.Value.ChosenStationId, Is.EqualTo(_barOutdoorId));
             Assert.That(result.Value.FellBackFromStaleChoice, Is.True);
         });
     }
@@ -137,14 +137,14 @@ public sealed class OrderRoutingResolverTest
         Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(
             _catalogItemId,
             [AssignmentTo(_kitchenId)],
-            [LocationOf(_kitchenId, "Kueche", 1)],
+            [StationOf(_kitchenId, "Kueche", 1)],
             _kitchenId);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.ResolvedProductionLocationId, Is.EqualTo(_kitchenId));
-            Assert.That(result.Value.ChosenProductionLocationId, Is.EqualTo(_kitchenId));
+            Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_kitchenId));
+            Assert.That(result.Value.ChosenStationId, Is.EqualTo(_kitchenId));
         });
     }
 

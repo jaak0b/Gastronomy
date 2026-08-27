@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    [Migration("20260827193411_InitialCreate")]
+    [Migration("20260827202011_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -168,7 +168,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("EnrolmentInvitations");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.ItemLocationAssignment", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.ItemStationAssignment", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
@@ -176,15 +176,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ProductionLocationId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CatalogItemId", "ProductionLocationId")
+                    b.HasIndex("CatalogItemId", "StationId")
                         .IsUnique();
 
-                    b.ToTable("ItemLocationAssignments");
+                    b.ToTable("ItemStationAssignments");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.LocationTicket", b =>
@@ -195,13 +195,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LocationSequenceNumber")
-                        .HasColumnType("INTEGER");
-
                     b.Property<Guid>("OrderId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ProductionLocationId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ReprintCount")
@@ -214,6 +208,12 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime?>("ResolvedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("StationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StationSequenceNumber")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(24)
@@ -221,7 +221,7 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId", "ProductionLocationId")
+                    b.HasIndex("OrderId", "StationId")
                         .IsUnique();
 
                     b.ToTable("LocationTickets");
@@ -233,7 +233,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ProductionLocationId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PrinterEndpointKey")
@@ -243,7 +243,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int>("NextValue")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("CounterKind", "ProductionLocationId", "PrinterEndpointKey");
+                    b.HasKey("CounterKind", "StationId", "PrinterEndpointKey");
 
                     b.ToTable("NumberCounters");
                 });
@@ -301,7 +301,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("ChosenProductionLocationId")
+                    b.Property<Guid?>("ChosenStationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ItemNameSnapshot")
@@ -402,10 +402,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int?>("ProcessId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("ProductionLocationId")
+                    b.Property<Guid?>("RequestedByDeviceId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("RequestedByDeviceId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -420,7 +420,7 @@ namespace GastronomyApp.Infrastructure.Migrations
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.PrinterConfiguration", b =>
                 {
-                    b.Property<Guid>("ProductionLocationId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AgentIdentifier")
@@ -459,14 +459,14 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ProductionLocationId");
+                    b.HasKey("StationId");
 
                     b.ToTable("PrinterConfigurations");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.PrinterStatus", b =>
                 {
-                    b.Property<Guid>("ProductionLocationId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsCoverOpen")
@@ -498,30 +498,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("LastHeardFromAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ProductionLocationId");
+                    b.HasKey("StationId");
 
                     b.ToTable("PrinterStatuses");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.ProductionLocation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ProductionLocations");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
@@ -543,6 +522,27 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("StaffMembers");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Station", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Stations");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.TableSuggestion", b =>

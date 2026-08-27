@@ -10,7 +10,7 @@ public interface IPrintCallbacks
 
     public Task OnOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct);
 
-    public Task OnPrinterStatusChangedAsync(Guid productionLocationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct);
+    public Task OnPrinterStatusChangedAsync(Guid stationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct);
 }
 
 public sealed record PrinterWorkerDomainServices(

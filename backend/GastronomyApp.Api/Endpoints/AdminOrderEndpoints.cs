@@ -17,9 +17,9 @@ public static class AdminOrderEndpoints
 
         group.MapGet(string.Empty, async (
             string? status,
-            Guid? locationId,
+            Guid? stationId,
             AdminOrderHandler handler,
-            CancellationToken cancellationToken) => await handler.ListAsync(status, locationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.ListAsync(status, stationId, cancellationToken));
 
         group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/resolve", async (
             Guid orderId,
@@ -60,7 +60,7 @@ public sealed class AdminOrderHandler
 
     public async Task<IResult> ListAsync(
         string? status,
-        Guid? locationId,
+        Guid? stationId,
         CancellationToken cancellationToken)
     {
         IQueryable<Order> query = dbContext.Orders.AsNoTracking();
@@ -70,16 +70,16 @@ public sealed class AdminOrderHandler
             query = query.Where(order => order.Status == parsedStatus);
         }
 
-        if (locationId is not null)
+        if (stationId is not null)
         {
-            List<Guid> orderIdsAtLocation = await dbContext.LocationTickets
+            List<Guid> orderIdsAtStation = await dbContext.LocationTickets
                 .AsNoTracking()
-                .Where(ticket => ticket.ProductionLocationId == locationId)
+                .Where(ticket => ticket.StationId == stationId)
                 .Select(ticket => ticket.OrderId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
-            query = query.Where(order => orderIdsAtLocation.Contains(order.Id));
+            query = query.Where(order => orderIdsAtStation.Contains(order.Id));
         }
 
         List<Order> orders = await query

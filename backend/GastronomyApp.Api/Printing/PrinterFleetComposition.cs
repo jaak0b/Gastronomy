@@ -20,9 +20,9 @@ public sealed class DatabasePrinterConfigurationSource : IPrinterConfigurationSo
     {
         await using GastronomyAppDbContext context = await contextFactory.CreateDbContextAsync(ct);
 
-        List<ProductionLocation> locations = await context.ProductionLocations
-            .Where(location => location.IsActive)
-            .OrderBy(location => location.SortOrder)
+        List<Station> stations = await context.Stations
+            .Where(station => station.IsActive)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(ct);
 
         List<PrinterConfiguration> configurations = await context.PrinterConfigurations
@@ -31,14 +31,14 @@ public sealed class DatabasePrinterConfigurationSource : IPrinterConfigurationSo
 
         List<PrinterConfigurationEntry> entries = [];
 
-        foreach (ProductionLocation location in locations)
+        foreach (Station station in stations)
         {
             PrinterConfiguration? configuration = configurations
-                .FirstOrDefault(candidate => candidate.ProductionLocationId == location.Id);
+                .FirstOrDefault(candidate => candidate.StationId == station.Id);
 
             if (configuration is not null)
             {
-                entries.Add(new PrinterConfigurationEntry(location, configuration));
+                entries.Add(new PrinterConfigurationEntry(station, configuration));
             }
         }
 

@@ -50,13 +50,13 @@ function addItem(item: CatalogItem): void {
     catalogItemId: item.id,
     quantity: 1,
     note: null,
-    productionLocationId: item.locationIds[0] ?? null,
+    stationId: item.stationIds[0] ?? null,
     name: item.name,
     unitPriceCents: item.priceCents,
   })
 }
 
-function chooseStation(locationId: string): void {
+function chooseStation(stationId: string): void {
   const item = itemAwaitingStation.value
   if (item === null) {
     return
@@ -65,7 +65,7 @@ function chooseStation(locationId: string): void {
     catalogItemId: item.id,
     quantity: 1,
     note: null,
-    productionLocationId: locationId,
+    stationId: stationId,
     name: item.name,
     unitPriceCents: item.priceCents,
   })
@@ -115,7 +115,7 @@ function removeItem(item: CatalogItem): void {
     <LineStationSheet
       v-if="itemAwaitingStation !== null"
       :item="itemAwaitingStation"
-      :location-name-for="catalog.locationName"
+      :station-name-for="catalog.stationName"
       @choose="chooseStation"
     />
     <BasketBar

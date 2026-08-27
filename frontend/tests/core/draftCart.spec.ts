@@ -20,7 +20,7 @@ function bratwurstLine(): DraftLine {
     catalogItemId: 'item-1',
     quantity: 1,
     note: null,
-    productionLocationId: null,
+    stationId: null,
     name: 'Bratwurst',
     unitPriceCents: 350,
   }
@@ -71,7 +71,7 @@ describe('loadDraft', () => {
           catalogItemId: 'item-1',
           quantity: 1,
           note: null,
-          productionLocationId: null,
+          stationId: null,
           name: 'Bratwurst',
           unitPriceCents: 350,
         },
@@ -83,7 +83,7 @@ describe('loadDraft', () => {
   it('reads a draft written before lines carried a name and a price without crashing', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
-      '{"tableLabel":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","quantity":2,"note":null,"productionLocationId":null}]}',
+      '{"tableLabel":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","quantity":2,"note":null,"stationId":null}]}',
     )
 
     const draft = loadDraft()
@@ -93,7 +93,7 @@ describe('loadDraft', () => {
         catalogItemId: 'item-1',
         quantity: 2,
         note: null,
-        productionLocationId: null,
+        stationId: null,
         name: '',
         unitPriceCents: 0,
       },
@@ -133,8 +133,8 @@ describe('the stored draft shape', () => {
       'catalogItemId',
       'name',
       'note',
-      'productionLocationId',
       'quantity',
+      'stationId',
       'unitPriceCents',
     ])
   })
@@ -165,7 +165,7 @@ describe('draft mutators', () => {
         catalogItemId: 'item-1',
         quantity: 1,
         note: null,
-        productionLocationId: null,
+        stationId: null,
         name: 'Bratwurst',
         unitPriceCents: 350,
       },
@@ -215,18 +215,18 @@ describe('draft mutators', () => {
   it('persists the station chosen for a line', () => {
     const draft = addLine(emptyDraft(), bratwurstLine())
 
-    setLineStation(draft, 0, 'location-2')
+    setLineStation(draft, 0, 'station-2')
 
-    expect(loadDraft().lines[0].productionLocationId).toBe('location-2')
+    expect(loadDraft().lines[0].stationId).toBe('station-2')
   })
 
   it('leaves the next line without a station after one line got a choice', () => {
     const first = addLine(emptyDraft(), bratwurstLine())
-    const chosen = setLineStation(first, 0, 'location-2')
+    const chosen = setLineStation(first, 0, 'station-2')
 
     const second = addLine(chosen, bratwurstLine())
 
-    expect(second.lines[1].productionLocationId).toBeNull()
+    expect(second.lines[1].stationId).toBeNull()
   })
 
   it('persists the table', () => {

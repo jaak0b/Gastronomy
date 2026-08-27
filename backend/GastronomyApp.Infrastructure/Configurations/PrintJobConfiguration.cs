@@ -11,7 +11,7 @@ public sealed class PrintJobConfiguration : IEntityTypeConfiguration<PrintJob>
         builder.HasKey(job => job.Id);
         builder.Property(job => job.Id).ValueGeneratedNever();
         builder.Property(job => job.LocationTicketId).IsRequired(false);
-        builder.Property(job => job.ProductionLocationId).IsRequired();
+        builder.Property(job => job.StationId).IsRequired();
         builder.Property(job => job.Kind).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(job => job.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(job => job.ProcessId).IsRequired(false);

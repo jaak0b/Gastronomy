@@ -9,7 +9,7 @@ const EMPTY_CATALOG: Catalog = {
   version: '',
   categories: [],
   items: [],
-  locations: [],
+  stations: [],
   tableSuggestions: [],
 }
 
@@ -32,8 +32,8 @@ export const useCatalogStore = defineStore('catalog', () => {
       .sort((left, right) => left.sortOrder - right.sortOrder)
   }
 
-  function locationName(locationId: string): string {
-    return catalog.value.locations.find((location) => location.id === locationId)?.name ?? ''
+  function stationName(stationId: string): string {
+    return catalog.value.stations.find((station) => station.id === stationId)?.name ?? ''
   }
 
   async function load(): Promise<void> {
@@ -55,5 +55,5 @@ export const useCatalogStore = defineStore('catalog', () => {
     })
   }
 
-  return { catalog, categories, tableSuggestions, itemsInCategory, locationName, load, listen }
+  return { catalog, categories, tableSuggestions, itemsInCategory, stationName, load, listen }
 })

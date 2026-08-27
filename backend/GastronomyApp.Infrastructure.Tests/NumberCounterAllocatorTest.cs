@@ -67,19 +67,19 @@ public sealed class NumberCounterAllocatorTest
     }
 
     [Test]
-    public async Task AllocateLocationSequenceNumberAsync_TwoLocations_CountIndependently()
+    public async Task AllocateStationSequenceNumberAsync_TwoStations_CountIndependently()
     {
         using SqliteInMemoryFixture fixture = new();
         NumberCounterAllocator allocator = new(fixture.DbContext);
         Guid eventSessionId = Guid.NewGuid();
-        Guid firstLocationId = Guid.NewGuid();
-        Guid secondLocationId = Guid.NewGuid();
+        Guid firstStationId = Guid.NewGuid();
+        Guid secondStationId = Guid.NewGuid();
 
-        await allocator.AllocateLocationSequenceNumberAsync(firstLocationId, TestContext.CurrentContext.CancellationToken);
-        await allocator.AllocateLocationSequenceNumberAsync(firstLocationId, TestContext.CurrentContext.CancellationToken);
-        int secondLocationFirstNumber = await allocator.AllocateLocationSequenceNumberAsync(secondLocationId, TestContext.CurrentContext.CancellationToken);
+        await allocator.AllocateStationSequenceNumberAsync(firstStationId, TestContext.CurrentContext.CancellationToken);
+        await allocator.AllocateStationSequenceNumberAsync(firstStationId, TestContext.CurrentContext.CancellationToken);
+        int secondStationFirstNumber = await allocator.AllocateStationSequenceNumberAsync(secondStationId, TestContext.CurrentContext.CancellationToken);
 
-        Assert.That(secondLocationFirstNumber, Is.EqualTo(1));
+        Assert.That(secondStationFirstNumber, Is.EqualTo(1));
     }
 
     [Test]

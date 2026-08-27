@@ -10,7 +10,7 @@ export interface AdminItem {
   sortOrder: number
   isActive: boolean
   isAvailable: boolean
-  locationIds: string[]
+  stationIds: string[]
 }
 
 export type AdminItemDraft = Omit<AdminItem, 'itemId' | 'isActive' | 'isAvailable'> & {
@@ -39,8 +39,8 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   async function save(item: AdminItemDraft): Promise<boolean> {
     errorKey.value = null
-    if (item.locationIds.length === 0) {
-      errorKey.value = 'admin.items.needsLocation'
+    if (item.stationIds.length === 0) {
+      errorKey.value = 'admin.items.needsStation'
       return false
     }
     const path =
@@ -52,11 +52,11 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
         categoryName: item.categoryName,
         priceCents: item.priceCents,
         sortOrder: item.sortOrder,
-        locationIds: item.locationIds,
+        stationIds: item.stationIds,
       },
     })
     if (result.kind === 'error') {
-      errorKey.value = result.body?.messageKey ?? 'admin.items.needsLocation'
+      errorKey.value = result.body?.messageKey ?? 'admin.items.needsStation'
       return false
     }
     await load()

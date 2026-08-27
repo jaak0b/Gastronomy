@@ -86,7 +86,7 @@ export function messageForTicket(
   ticket: TicketSummary,
   orderNumber: number,
 ): TicketMessage | null {
-  const station = ticket.locationName
+  const station = ticket.stationName
   switch (ticket.status) {
     case 'Queued':
     case 'Printing':

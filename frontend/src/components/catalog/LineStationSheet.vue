@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { CatalogItem } from '../../core/apiTypes'
-import { candidateLocations } from '../../core/routingPreview'
+import { candidateStations } from '../../core/routingPreview'
 
 const props = defineProps<{
   item: CatalogItem
-  locationNameFor: (locationId: string) => string
+  stationNameFor: (stationId: string) => string
 }>()
-defineEmits<{ choose: [locationId: string] }>()
+defineEmits<{ choose: [stationId: string] }>()
 
 const { t } = useI18n()
-const choices = candidateLocations(props.item)
+const choices = candidateStations(props.item)
 </script>
 
 <template>
@@ -20,14 +20,14 @@ const choices = candidateLocations(props.item)
       <v-card-text>{{ t('line.whereHelp') }}</v-card-text>
       <v-card-actions class="flex-column align-stretch">
         <v-btn
-          v-for="locationId in choices"
-          :key="locationId"
+          v-for="stationId in choices"
+          :key="stationId"
           class="station-choice mb-2"
           variant="tonal"
           block
-          @click="$emit('choose', locationId)"
+          @click="$emit('choose', stationId)"
         >
-          {{ locationNameFor(locationId) }}
+          {{ stationNameFor(stationId) }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -23,7 +23,7 @@ public sealed class OrderAcceptanceServiceTest
 
     private IOrderRepository _orderRepository = null!;
     private ICatalogItemRepository _catalogItemRepository = null!;
-    private IProductionLocationRepository _productionLocationRepository = null!;
+    private IStationRepository _stationRepository = null!;
     private INumberAllocator _numberAllocator = null!;
     private IClock _clock = null!;
     private OrderAcceptanceService _service = null!;
@@ -33,22 +33,22 @@ public sealed class OrderAcceptanceServiceTest
     {
         _orderRepository = A.Fake<IOrderRepository>();
         _catalogItemRepository = A.Fake<ICatalogItemRepository>();
-        _productionLocationRepository = A.Fake<IProductionLocationRepository>();
+        _stationRepository = A.Fake<IStationRepository>();
         _numberAllocator = A.Fake<INumberAllocator>();
         _clock = A.Fake<IClock>();
 
         A.CallTo(() => _clock.UtcNow).Returns(_now);
         A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._))
             .Returns(Task.FromResult<Order?>(null));
-        A.CallTo(() => _productionLocationRepository.FindActiveAsync(A<CancellationToken>._))
-            .Returns(Task.FromResult<IReadOnlyCollection<ProductionLocation>>(
+        A.CallTo(() => _stationRepository.FindActiveAsync(A<CancellationToken>._))
+            .Returns(Task.FromResult<IReadOnlyCollection<Station>>(
             [
-                LocationOf(_kitchenId, "Kueche", 1),
-                LocationOf(_barIndoorId, "Theke innen", 2),
+                StationOf(_kitchenId, "Kueche", 1),
+                StationOf(_barIndoorId, "Theke innen", 2),
             ]));
         A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<CancellationToken>._))
             .Returns(Task.FromResult(137));
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateStationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
             .Returns(Task.FromResult(42));
 
         GivenCatalogItem(_bratwurstId, "Bratwurst", 350, [_kitchenId]);
@@ -57,16 +57,16 @@ public sealed class OrderAcceptanceServiceTest
         _service = new OrderAcceptanceService(
             _orderRepository,
             _catalogItemRepository,
-            _productionLocationRepository,
+            _stationRepository,
             _numberAllocator,
             new OrderRoutingResolver(),
             new OrderTotalCalculator(),
             _clock);
     }
 
-    private ProductionLocation LocationOf(Guid id, string name, int sortOrder)
+    private Station StationOf(Guid id, string name, int sortOrder)
     {
-        return new ProductionLocation
+        return new Station
         {
             Id = id,
             Name = name,
@@ -75,7 +75,7 @@ public sealed class OrderAcceptanceServiceTest
         };
     }
 
-    private void GivenCatalogItem(Guid id, string name, int priceCents, IReadOnlyCollection<Guid> locationIds)
+    private void GivenCatalogItem(Guid id, string name, int priceCents, IReadOnlyCollection<Guid> stationIds)
     {
         CatalogItem item = new()
         {
@@ -90,22 +90,22 @@ public sealed class OrderAcceptanceServiceTest
 
         A.CallTo(() => _catalogItemRepository.FindByIdAsync(id, A<CancellationToken>._))
             .Returns(Task.FromResult<CatalogItem?>(item));
-        GivenAssignments(id, locationIds);
+        GivenAssignments(id, stationIds);
     }
 
-    private void GivenAssignments(Guid catalogItemId, IReadOnlyCollection<Guid> locationIds)
+    private void GivenAssignments(Guid catalogItemId, IReadOnlyCollection<Guid> stationIds)
     {
-        List<ItemLocationAssignment> assignments = locationIds
-            .Select(locationId => new ItemLocationAssignment
+        List<ItemStationAssignment> assignments = stationIds
+            .Select(stationId => new ItemStationAssignment
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = catalogItemId,
-                ProductionLocationId = locationId,
+                StationId = stationId,
             })
             .ToList();
 
         A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(catalogItemId, A<CancellationToken>._))
-            .Returns(Task.FromResult<IReadOnlyCollection<ItemLocationAssignment>>(assignments));
+            .Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
     }
 
     private OrderAcceptanceRequest RequestWith(
@@ -123,14 +123,14 @@ public sealed class OrderAcceptanceServiceTest
         };
     }
 
-    private OrderAcceptanceLineRequest LineFor(Guid catalogItemId, int quantity, Guid? productionLocationId = null)
+    private OrderAcceptanceLineRequest LineFor(Guid catalogItemId, int quantity, Guid? stationId = null)
     {
         return new OrderAcceptanceLineRequest
         {
             CatalogItemId = catalogItemId,
             Quantity = quantity,
             Note = null,
-            ProductionLocationId = productionLocationId,
+            StationId = stationId,
         };
     }
 
@@ -279,11 +279,11 @@ public sealed class OrderAcceptanceServiceTest
     public async Task AcceptAsync_MoreThanOneCandidateAndNoStationChosen_FailsWithStationRequired()
     {
         GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
-        A.CallTo(() => _productionLocationRepository.FindActiveAsync(A<CancellationToken>._))
-            .Returns(Task.FromResult<IReadOnlyCollection<ProductionLocation>>(
+        A.CallTo(() => _stationRepository.FindActiveAsync(A<CancellationToken>._))
+            .Returns(Task.FromResult<IReadOnlyCollection<Station>>(
             [
-                LocationOf(_barIndoorId, "Theke innen", 2),
-                LocationOf(_barOutdoorId, "Theke aussen", 3),
+                StationOf(_barIndoorId, "Theke innen", 2),
+                StationOf(_barOutdoorId, "Theke aussen", 3),
             ]));
 
         Result<OrderAcceptanceResult, OrderValidationFailure> result =
@@ -379,13 +379,13 @@ public sealed class OrderAcceptanceServiceTest
 
         A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateStationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
             .MustHaveHappenedTwiceExactly();
         A.CallTo(() => _orderRepository.AddAsync(order, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     }
 
     [Test]
-    public async Task AcceptAsync_TwoLinesAtOneLocation_AllocatesOneSequenceNumberForOneTicket()
+    public async Task AcceptAsync_TwoLinesAtOneStation_AllocatesOneSequenceNumberForOneTicket()
     {
         GivenCatalogItem(_beerId, "Bier", 400, [_kitchenId]);
 
@@ -402,16 +402,16 @@ public sealed class OrderAcceptanceServiceTest
             Assert.That(order.Lines.Select(line => line.LocationTicketId).Distinct().Count(), Is.EqualTo(1));
             Assert.That(order.Lines[0].LocationTicketId, Is.EqualTo(order.Tickets[0].Id));
         });
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateStationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
 
     [Test]
-    public async Task AcceptAsync_LinesAtTwoLocations_CreatesOneTicketPerLocationWithItsOwnSequenceNumber()
+    public async Task AcceptAsync_LinesAtTwoStations_CreatesOneTicketPerStationWithItsOwnSequenceNumber()
     {
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateStationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
             .Returns(Task.FromResult(42));
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_barIndoorId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateStationSequenceNumberAsync(_barIndoorId, A<CancellationToken>._))
             .Returns(Task.FromResult(7));
 
         Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(
@@ -419,13 +419,13 @@ public sealed class OrderAcceptanceServiceTest
             CancellationToken.None);
 
         Order order = result.Value.Order;
-        LocationTicket kitchenTicket = order.Tickets.Single(ticket => ticket.ProductionLocationId == _kitchenId);
-        LocationTicket barTicket = order.Tickets.Single(ticket => ticket.ProductionLocationId == _barIndoorId);
+        LocationTicket kitchenTicket = order.Tickets.Single(ticket => ticket.StationId == _kitchenId);
+        LocationTicket barTicket = order.Tickets.Single(ticket => ticket.StationId == _barIndoorId);
 
         Assert.Multiple(() =>
         {
-            Assert.That(kitchenTicket.LocationSequenceNumber, Is.EqualTo(42));
-            Assert.That(barTicket.LocationSequenceNumber, Is.EqualTo(7));
+            Assert.That(kitchenTicket.StationSequenceNumber, Is.EqualTo(42));
+            Assert.That(barTicket.StationSequenceNumber, Is.EqualTo(7));
             Assert.That(order.TotalCents, Is.EqualTo(1100));
         });
     }
@@ -461,7 +461,7 @@ public sealed class OrderAcceptanceServiceTest
     }
 
     [Test]
-    public async Task AcceptAsync_StaleChosenLocation_RoutesToTheFallbackAndKeepsTheChoice()
+    public async Task AcceptAsync_StaleChosenStation_RoutesToTheFallbackAndKeepsTheChoice()
     {
         GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
 
@@ -474,8 +474,8 @@ public sealed class OrderAcceptanceServiceTest
         Assert.Multiple(() =>
         {
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(order.Tickets[0].ProductionLocationId, Is.EqualTo(_barIndoorId));
-            Assert.That(order.Lines[0].ChosenProductionLocationId, Is.EqualTo(_barOutdoorId));
+            Assert.That(order.Tickets[0].StationId, Is.EqualTo(_barIndoorId));
+            Assert.That(order.Lines[0].ChosenStationId, Is.EqualTo(_barOutdoorId));
         });
     }
 
@@ -595,11 +595,11 @@ public sealed class OrderAcceptanceServiceTest
     private Guid AmbiguouslyRoutedItemId()
     {
         GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
-        A.CallTo(() => _productionLocationRepository.FindActiveAsync(A<CancellationToken>._))
-            .Returns(Task.FromResult<IReadOnlyCollection<ProductionLocation>>(
+        A.CallTo(() => _stationRepository.FindActiveAsync(A<CancellationToken>._))
+            .Returns(Task.FromResult<IReadOnlyCollection<Station>>(
             [
-                LocationOf(_barIndoorId, "Theke innen", 2),
-                LocationOf(_barOutdoorId, "Theke aussen", 3),
+                StationOf(_barIndoorId, "Theke innen", 2),
+                StationOf(_barOutdoorId, "Theke aussen", 3),
             ]));
 
         return _beerId;
@@ -608,8 +608,8 @@ public sealed class OrderAcceptanceServiceTest
     private Guid ItemWithNoActiveStationId()
     {
         GivenAssignments(_beerId, [_barIndoorId]);
-        A.CallTo(() => _productionLocationRepository.FindActiveAsync(A<CancellationToken>._))
-            .Returns(Task.FromResult<IReadOnlyCollection<ProductionLocation>>([]));
+        A.CallTo(() => _stationRepository.FindActiveAsync(A<CancellationToken>._))
+            .Returns(Task.FromResult<IReadOnlyCollection<Station>>([]));
 
         return _beerId;
     }

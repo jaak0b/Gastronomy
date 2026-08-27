@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminLocationsStore } from '../../../stores/admin/locations'
+import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
-import LocationForm from './LocationForm.vue'
+import StationForm from './StationForm.vue'
 
 const { t } = useI18n()
-const locations = useAdminLocationsStore()
+const stations = useAdminStationsStore()
 const editingId = ref<string | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 
 const shown = computed(() =>
-  locations.locations.filter((location) => showsDeactivated.value || location.isActive),
+  stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
 
 const refusal = computed(() => {
-  const message = locations.errorMessage
+  const message = stations.errorMessage
   if (message === null) {
     return null
   }
@@ -26,36 +26,36 @@ const refusal = computed(() => {
     : t(message.key, message.parameters, message.count)
 })
 
-async function save(value: Parameters<typeof locations.save>[0]): Promise<void> {
-  await locations.save(value)
+async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
+  await stations.save(value)
   editingId.value = null
   isCreating.value = false
 }
 
 async function deactivate(): Promise<void> {
-  const locationId = askingAboutId.value
+  const stationId = askingAboutId.value
   askingAboutId.value = null
-  if (locationId !== null) {
-    await locations.setActive(locationId, false)
+  if (stationId !== null) {
+    await stations.setActive(stationId, false)
   }
 }
 
-onMounted(locations.load)
+onMounted(stations.load)
 </script>
 
 <template>
-  <v-container class="admin-locations">
-    <h1 class="text-h5 mb-2">{{ t('admin.locations.title') }}</h1>
-    <p class="help text-medium-emphasis mb-4">{{ t('admin.locations.help') }}</p>
+  <v-container class="admin-stations">
+    <h1 class="text-h5 mb-2">{{ t('admin.stations.title') }}</h1>
+    <p class="help text-medium-emphasis mb-4">{{ t('admin.stations.help') }}</p>
 
     <v-alert v-if="refusal !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{ refusal }}
     </v-alert>
-    <v-alert v-if="locations.loadFailed" class="error" type="error" variant="tonal">
+    <v-alert v-if="stations.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-    <v-alert v-else-if="locations.locations.length === 0" class="empty" type="info" variant="tonal">
-      {{ t('admin.locations.empty') }}
+    <v-alert v-else-if="stations.stations.length === 0" class="empty" type="info" variant="tonal">
+      {{ t('admin.stations.empty') }}
     </v-alert>
 
     <v-checkbox
@@ -64,60 +64,60 @@ onMounted(locations.load)
       :label="t('admin.showDeactivated')"
     />
 
-    <v-card v-for="location in shown" :key="location.locationId" class="station-row mb-2">
+    <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2">
       <div class="d-flex align-center ga-2 px-4 py-2">
-        <span class="name text-h6">{{ location.name }}</span>
-        <v-chip v-if="!location.isActive" class="deactivated" size="small" color="grey">
+        <span class="name text-h6">{{ station.name }}</span>
+        <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
           {{ t('admin.deactivated') }}
         </v-chip>
         <v-spacer />
         <v-btn
           class="edit"
           variant="text"
-          @click="editingId = editingId === location.locationId ? null : location.locationId"
+          @click="editingId = editingId === station.stationId ? null : station.stationId"
         >
           {{ t('admin.edit') }}
         </v-btn>
         <v-btn
-          v-if="location.isActive"
+          v-if="station.isActive"
           class="deactivate"
           icon="mdi-delete"
           variant="text"
           color="error"
           :aria-label="t('admin.deactivate')"
-          @click="askingAboutId = location.locationId"
+          @click="askingAboutId = station.stationId"
         />
         <v-btn
           v-else
           class="reactivate"
           variant="text"
-          @click="locations.setActive(location.locationId, true)"
+          @click="stations.setActive(station.stationId, true)"
         >
-          {{ t('admin.locations.activate') }}
+          {{ t('admin.stations.activate') }}
         </v-btn>
       </div>
       <v-expand-transition>
-        <LocationForm
-          v-if="editingId === location.locationId"
-          :location="location"
+        <StationForm
+          v-if="editingId === station.stationId"
+          :station="station"
           @save="save"
         />
       </v-expand-transition>
     </v-card>
 
     <v-btn class="new-station" color="primary" @click="isCreating = true">
-      {{ t('admin.locations.new') }}
+      {{ t('admin.stations.new') }}
     </v-btn>
 
     <v-card v-if="isCreating" class="station-row mb-2">
-      <LocationForm :location="null" @save="save" />
+      <StationForm :station="null" @save="save" />
     </v-card>
 
     <ConfirmDialog
       v-if="askingAboutId !== null"
-      :title="t('admin.locations.deactivateTitle')"
-      :body="t('admin.locations.deactivateBody')"
-      :confirm-label="t('admin.locations.deactivateConfirm')"
+      :title="t('admin.stations.deactivateTitle')"
+      :body="t('admin.stations.deactivateBody')"
+      :confirm-label="t('admin.stations.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />

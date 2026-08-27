@@ -8,8 +8,8 @@ public sealed class PrinterConfigurationConfiguration : IEntityTypeConfiguration
 {
     public void Configure(EntityTypeBuilder<PrinterConfiguration> builder)
     {
-        builder.HasKey(configuration => configuration.ProductionLocationId);
-        builder.Property(configuration => configuration.ProductionLocationId).ValueGeneratedNever();
+        builder.HasKey(configuration => configuration.StationId);
+        builder.Property(configuration => configuration.StationId).ValueGeneratedNever();
         builder.Property(configuration => configuration.TransportKind).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(configuration => configuration.Host).IsRequired(false).HasMaxLength(64);
         builder.Property(configuration => configuration.Port).IsRequired();

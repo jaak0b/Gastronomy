@@ -20,8 +20,8 @@ public class PrinterWorkerTest
     private IPrinterSession session = null!;
     private RetryPolicy retryPolicy = null!;
     private TestTimeProvider timeProvider = null!;
-    private Guid locationId;
-    private Guid otherLocationId;
+    private Guid stationId;
+    private Guid otherStationId;
     private Guid ticketId;
     private Guid orderId;
     private Guid printJobId;
@@ -29,8 +29,8 @@ public class PrinterWorkerTest
     [SetUp]
     public void SetUp()
     {
-        locationId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        otherLocationId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        stationId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        otherStationId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         ticketId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         orderId = Guid.Parse("44444444-4444-4444-4444-444444444444");
         printJobId = Guid.Parse("55555555-5555-5555-5555-555555555555");
@@ -81,7 +81,7 @@ public class PrinterWorkerTest
     private PrinterEndpoint Endpoint(TransportKind kind = TransportKind.Mock)
     {
         return new PrinterEndpoint(
-            locationId,
+            stationId,
             kind,
             "10.0.0.5",
             9100,
@@ -94,7 +94,7 @@ public class PrinterWorkerTest
 
     private TicketLoadResult Ticket(
         Guid? id = null,
-        Guid? location = null,
+        Guid? station = null,
         DateTime? createdAtUtc = null,
         PrintJobKind kind = PrintJobKind.Initial,
         LocationTicketStatus status = LocationTicketStatus.Queued)
@@ -103,14 +103,14 @@ public class PrinterWorkerTest
         {
             LocationTicketId = id ?? ticketId,
             OrderId = orderId,
-            ProductionLocationId = location ?? locationId,
+            StationId = station ?? stationId,
             PrintJobId = printJobId,
             Kind = kind,
             CreatedAtUtc = createdAtUtc ?? new DateTime(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc),
             Status = status,
             ReprintCount = 0,
-            LocationSequenceNumber = 42,
-            ProductionLocationName = "Küche",
+            StationSequenceNumber = 42,
+            StationName = "Küche",
             GlobalOrderNumber = 137,
             TableLabel = "12",
             StaffMemberName = "Anna",
@@ -128,7 +128,7 @@ public class PrinterWorkerTest
     {
         return new PrinterWorker(
             endpoint ?? Endpoint(),
-            served ?? [locationId],
+            served ?? [stationId],
             transport,
             dataAccess,
             callbacks,
@@ -154,7 +154,7 @@ public class PrinterWorkerTest
             .Invokes((PrintPayload payload, CancellationToken _) => sent = payload);
         PrinterWorker worker = Worker();
 
-        worker.EnqueueTestPrint(locationId, Guid.NewGuid());
+        worker.EnqueueTestPrint(stationId, Guid.NewGuid());
         await worker.RunOnceAsync(CancellationToken.None);
 
         Assert.That(sent!.RenderedText, Does.Contain("TEST SLIP"));
@@ -169,7 +169,7 @@ public class PrinterWorkerTest
             .Invokes((PrintPayload payload, CancellationToken _) => sent = payload);
         PrinterWorker worker = Worker();
 
-        worker.EnqueueTestPrint(locationId, Guid.NewGuid());
+        worker.EnqueueTestPrint(stationId, Guid.NewGuid());
         await worker.RunOnceAsync(CancellationToken.None);
 
         Assert.That(sent!.RenderedText, Does.Contain("TESTBON"));
@@ -254,7 +254,7 @@ public class PrinterWorkerTest
         await worker.RunOnceAsync(CancellationToken.None);
 
         A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(
-                locationId,
+                stationId,
                 A<PrinterStatusSnapshot>.That.Matches(snapshot => !snapshot.IsOnline),
                 false,
                 A<int>._,
@@ -356,7 +356,7 @@ public class PrinterWorkerTest
     }
 
     [Test]
-    public async Task RunAsync_AllocatesProcessIdFromEndpointKeyedCounter_NotLocationKeyed()
+    public async Task RunAsync_AllocatesProcessIdFromEndpointKeyedCounter_NotStationKeyed()
     {
         PrinterWorker worker = Worker();
         worker.Enqueue(ticketId);
@@ -365,7 +365,7 @@ public class PrinterWorkerTest
 
         A.CallTo(() => dataAccess.AllocateProcessIdAsync("Mock|10.0.0.5|9100|", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => dataAccess.AllocateProcessIdAsync(
-                A<string>.That.Matches(key => key.Contains(locationId.ToString(), StringComparison.OrdinalIgnoreCase)),
+                A<string>.That.Matches(key => key.Contains(stationId.ToString(), StringComparison.OrdinalIgnoreCase)),
                 A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -503,7 +503,7 @@ public class PrinterWorkerTest
 
         Assert.That(worker.PendingTicketIds, Is.EqualTo(new[] { first, second }));
         A.CallTo(() => dataAccess.LoadRecoverableTicketIdsAsync(
-                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(locationId)),
+                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(stationId)),
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
@@ -516,7 +516,7 @@ public class PrinterWorkerTest
         await worker.RecoverAtStartupAsync(CancellationToken.None);
 
         A.CallTo(() => dataAccess.MarkPrintingTicketsUnknownAsync(
-                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(locationId)),
+                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(stationId)),
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
@@ -548,7 +548,7 @@ public class PrinterWorkerTest
         await worker.HeartbeatAsync(CancellationToken.None);
 
         A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(
-                locationId,
+                stationId,
                 A<PrinterStatusSnapshot>.That.Matches(snapshot => !snapshot.IsOnline),
                 false,
                 A<int>._,
@@ -634,7 +634,7 @@ public class PrinterWorkerTest
     {
         A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new PrintDispatchResult(PrintAttemptOutcome.Timeout, 300, CleanStatus(), "unknown")));
-        PrinterWorker worker = Worker(served: [locationId, otherLocationId]);
+        PrinterWorker worker = Worker(served: [stationId, otherStationId]);
         worker.Enqueue(ticketId);
         worker.Enqueue(Guid.Parse("dddddddd-0000-0000-0000-000000000002"));
 
@@ -642,12 +642,12 @@ public class PrinterWorkerTest
         await worker.RunOnceAsync(CancellationToken.None);
 
         A.CallTo(() => dataAccess.FailAllWaitingAtEndpointAsync(
-                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(locationId) && ids.Contains(otherLocationId)),
+                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(stationId) && ids.Contains(otherStationId)),
                 PrintFailureReason.StationFaulty,
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
-        A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(locationId, A<PrinterStatusSnapshot>._, true, A<int>._, A<CancellationToken>._)).MustHaveHappened();
-        A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(otherLocationId, A<PrinterStatusSnapshot>._, true, A<int>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(stationId, A<PrinterStatusSnapshot>._, true, A<int>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => callbacks.OnPrinterStatusChangedAsync(otherStationId, A<PrinterStatusSnapshot>._, true, A<int>._, A<CancellationToken>._)).MustHaveHappened();
         Assert.That(worker.IsFaulty, Is.True);
     }
 
@@ -701,7 +701,7 @@ public class PrinterWorkerTest
     {
         A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new PrintDispatchResult(PrintAttemptOutcome.Timeout, 300, CleanStatus(), "unknown")));
-        PrinterWorker worker = Worker(served: [locationId, otherLocationId]);
+        PrinterWorker worker = Worker(served: [stationId, otherStationId]);
         worker.Enqueue(Guid.Parse("ffffffff-0000-0000-0000-000000000001"));
         worker.Enqueue(Guid.Parse("ffffffff-0000-0000-0000-000000000002"));
         await worker.RunOnceAsync(CancellationToken.None);
@@ -710,9 +710,9 @@ public class PrinterWorkerTest
         IReadOnlyList<Guid> cleared = await worker.ReconnectAsync(CancellationToken.None);
 
         Assert.That(worker.IsFaulty, Is.False);
-        Assert.That(cleared, Is.EquivalentTo(new[] { locationId, otherLocationId }));
+        Assert.That(cleared, Is.EquivalentTo(new[] { stationId, otherStationId }));
         A.CallTo(() => dataAccess.ClearFaultyAtEndpointAsync(
-                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(locationId) && ids.Contains(otherLocationId)),
+                A<IReadOnlyCollection<Guid>>.That.Matches(ids => ids.Contains(stationId) && ids.Contains(otherStationId)),
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
@@ -742,7 +742,7 @@ public class PrinterWorkerTest
             .Returns(Task.FromResult(new PrintDispatchResult(PrintAttemptOutcome.Unreachable, 0, CleanStatus(), "unreachable")));
         A.CallTo(() => dataAccess.LoadTicketForPrintingAsync(A<Guid>._, A<CancellationToken>._))
             .ReturnsLazily((Guid id, CancellationToken _) => Task.FromResult(Ticket(id, createdAtUtc: new DateTime(2026, 8, 26, 19, 30, 0, DateTimeKind.Utc))));
-        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(locationId, A<TransportKind>._, A<CancellationToken>._))
+        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(stationId, A<TransportKind>._, A<CancellationToken>._))
             .Returns(Task.FromResult<IReadOnlyList<SuspensionPeriod>>(
             [
                 new SuspensionPeriod
@@ -757,7 +757,7 @@ public class PrinterWorkerTest
 
         await worker.RunOnceAsync(CancellationToken.None);
 
-        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(locationId, A<TransportKind>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(stationId, A<TransportKind>._, A<CancellationToken>._)).MustHaveHappened();
         A.CallTo(() => dataAccess.FailTicketAsync(A<Guid>._, A<Guid>._, A<PrintFailureReason>._, A<CancellationToken>._)).MustNotHaveHappened();
         Assert.That(worker.PendingTicketIds, Does.Contain(ticketId));
     }
@@ -784,7 +784,7 @@ public class PrinterWorkerTest
     {
         A.CallTo(() => dataAccess.LoadTicketForPrintingAsync(A<Guid>._, A<CancellationToken>._))
             .ReturnsLazily((Guid id, CancellationToken _) => Task.FromResult(Ticket(id, createdAtUtc: new DateTime(2026, 8, 26, 19, 0, 0, DateTimeKind.Utc))));
-        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(locationId, A<TransportKind>._, A<CancellationToken>._))
+        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(stationId, A<TransportKind>._, A<CancellationToken>._))
             .Returns(Task.FromResult<IReadOnlyList<SuspensionPeriod>>(
             [
                 new SuspensionPeriod
@@ -859,7 +859,7 @@ public class PrinterWorkerTest
 
         await worker.RunOnceAsync(CancellationToken.None);
 
-        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(locationId, TransportKind.Network, A<CancellationToken>._))
+        A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(stationId, TransportKind.Network, A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -894,7 +894,7 @@ public class PrinterWorkerTest
 
         A.CallTo(() => session.QueryStatusAsync(A<CancellationToken>._)).MustHaveHappenedTwiceOrMore();
         A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => dataAccess.WritePrinterStatusAsync(locationId, A<PrinterStatusSnapshot>._, A<CancellationToken>._))
+        A.CallTo(() => dataAccess.WritePrinterStatusAsync(stationId, A<PrinterStatusSnapshot>._, A<CancellationToken>._))
             .MustHaveHappenedTwiceOrMore();
     }
 
@@ -929,14 +929,14 @@ public class PrinterWorkerTest
     {
         A.CallTo(() => dataAccess.LoadTestPrintAsync(A<Guid>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new TestPrintLoadResult("Theke")));
-        PrinterWorker worker = Worker(served: [locationId, otherLocationId]);
+        PrinterWorker worker = Worker(served: [stationId, otherStationId]);
 
-        worker.EnqueueTestPrint(otherLocationId, Guid.NewGuid());
+        worker.EnqueueTestPrint(otherStationId, Guid.NewGuid());
         await worker.RunOnceAsync(CancellationToken.None);
 
-        A.CallTo(() => dataAccess.LoadTestPrintAsync(otherLocationId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => dataAccess.LoadTestPrintAsync(otherStationId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => session.SendJobAsync(
-                A<PrintPayload>.That.Matches(payload => payload.ProductionLocationId == otherLocationId),
+                A<PrintPayload>.That.Matches(payload => payload.StationId == otherStationId),
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
@@ -949,7 +949,7 @@ public class PrinterWorkerTest
         Guid testJobId = Guid.Parse("14141414-0000-0000-0000-000000000001");
         PrinterWorker worker = Worker();
 
-        worker.EnqueueTestPrint(locationId, testJobId);
+        worker.EnqueueTestPrint(stationId, testJobId);
         await worker.RunOnceAsync(CancellationToken.None);
 
         A.CallTo(() => dataAccess.RecordAttemptAsync(

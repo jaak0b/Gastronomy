@@ -28,36 +28,36 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task GetLocations_LoopbackCaller_ListsEveryLocationWithItsPrinterConfigurationAndStatus()
+    public async Task GetStations_LoopbackCaller_ListsEveryStationWithItsPrinterConfigurationAndStatus()
     {
-        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/locations");
+        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/stations");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement locations = body.RootElement.GetProperty("locations");
+        JsonElement stations = body.RootElement.GetProperty("stations");
 
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(locations.GetArrayLength(), Is.EqualTo(2));
-            Assert.That(locations[0].GetProperty("transportKind").GetString(), Is.EqualTo("Mock"));
-            Assert.That(locations[0].GetProperty("isOnline").GetBoolean(), Is.True);
+            Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
+            Assert.That(stations[0].GetProperty("transportKind").GetString(), Is.EqualTo("Mock"));
+            Assert.That(stations[0].GetProperty("isOnline").GetBoolean(), Is.True);
         });
     }
 
     [Test]
-    public async Task PostLocation_NewStation_CreatesItWithAMockPrinterAndAFreshAccessKey()
+    public async Task PostStation_NewStation_CreatesItWithAMockPrinterAndAFreshAccessKey()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            "/api/admin/locations",
+            "/api/admin/stations",
             new { name = "Zelt", sortOrder = 3, });
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Guid locationId = body.RootElement.GetProperty("locationId").GetGuid();
+        Guid stationId = body.RootElement.GetProperty("stationId").GetGuid();
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ProductionLocation created = await database.ProductionLocations.FirstAsync(
-            location => location.Id == locationId);
+        Station created = await database.Stations.FirstAsync(
+            station => station.Id == stationId);
         PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-            candidate => candidate.ProductionLocationId == locationId);
+            candidate => candidate.StationId == stationId);
 
         Assert.Multiple(() =>
         {
@@ -67,23 +67,23 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task PutLocation_RenamedStation_StoresTheNewName()
+    public async Task PutStation_RenamedStation_StoresTheNewName()
     {
         using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
-            $"/api/admin/locations/{context.World.KitchenLocationId}",
+            $"/api/admin/stations/{context.World.KitchenStationId}",
             new { name = "Kueche innen", sortOrder = 1, });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ProductionLocation location = await database.ProductionLocations.FirstAsync(
-            candidate => candidate.Id == context.World.KitchenLocationId);
+        Station station = await database.Stations.FirstAsync(
+            candidate => candidate.Id == context.World.KitchenStationId);
 
-        Assert.That(location.Name, Is.EqualTo("Kueche innen"));
+        Assert.That(station.Name, Is.EqualTo("Kueche innen"));
     }
 
     [Test]
-    public async Task PostItem_EmptyLocationList_IsRefusedAsUnprocessable()
+    public async Task PostItem_EmptyStationList_IsRefusedAsUnprocessable()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/items",
@@ -93,14 +93,14 @@ public sealed class AdminEndpointsTest
                 categoryName = "Essen",
                 priceCents = 250,
                 sortOrder = 3,
-                locationIds = Array.Empty<Guid>(),
+                stationIds = Array.Empty<Guid>(),
             });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
     }
 
     [Test]
-    public async Task PostItem_WithLocations_CreatesItAndItsAssignments()
+    public async Task PostItem_WithStations_CreatesItAndItsAssignments()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/items",
@@ -110,14 +110,14 @@ public sealed class AdminEndpointsTest
                 categoryName = "Essen",
                 priceCents = 250,
                 sortOrder = 3,
-                locationIds = new[] { context.World.KitchenLocationId },
+                stationIds = new[] { context.World.KitchenStationId },
             });
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Guid itemId = body.RootElement.GetProperty("itemId").GetGuid();
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        int assignments = await database.ItemLocationAssignments.CountAsync(
+        int assignments = await database.ItemStationAssignments.CountAsync(
             assignment => assignment.CatalogItemId == itemId);
 
         Assert.Multiple(() =>
@@ -249,7 +249,7 @@ public sealed class AdminEndpointsTest
             Assert.That(printer.TryGetProperty("isPaperNearEnd", out _), Is.True);
             Assert.That(printer.TryGetProperty("waitingTicketCount", out _), Is.True);
             Assert.That(printer.TryGetProperty("lastChangedAtUtc", out _), Is.True);
-            Assert.That(printer.TryGetProperty("sharedWithLocationNames", out _), Is.True);
+            Assert.That(printer.TryGetProperty("sharedWithStationNames", out _), Is.True);
             Assert.That(printer.TryGetProperty("mockFolderPath", out _), Is.True);
         });
     }
@@ -341,9 +341,9 @@ public sealed class AdminEndpointsTest
     {
         await using (GastronomyAppDbContext database = context.Factory.CreateContext())
         {
-            await database.ProductionLocations
-                .Where(location => location.Id == context.World.BarLocationId)
-                .ExecuteUpdateAsync(location => location.SetProperty(entry => entry.IsActive, false));
+            await database.Stations
+                .Where(station => station.Id == context.World.BarStationId)
+                .ExecuteUpdateAsync(station => station.SetProperty(entry => entry.IsActive, false));
         }
 
         using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
@@ -354,7 +354,7 @@ public sealed class AdminEndpointsTest
                 categoryName = "Essen",
                 priceCents = 350,
                 sortOrder = 1,
-                locationIds = new[] { context.World.BarLocationId },
+                stationIds = new[] { context.World.BarStationId },
             });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
@@ -363,24 +363,24 @@ public sealed class AdminEndpointsTest
     private async Task SwitchOffEveryStationOfBratwurstAsync()
     {
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        List<Guid> stationIds = await database.ItemLocationAssignments
+        List<Guid> stationIds = await database.ItemStationAssignments
             .Where(assignment => assignment.CatalogItemId == context.World.BratwurstItemId)
-            .Select(assignment => assignment.ProductionLocationId)
+            .Select(assignment => assignment.StationId)
             .ToListAsync();
 
         await database.CatalogItems
             .Where(item => item.Id == context.World.BratwurstItemId)
             .ExecuteUpdateAsync(item => item.SetProperty(entry => entry.IsActive, false));
-        await database.ProductionLocations
-            .Where(location => stationIds.Contains(location.Id))
-            .ExecuteUpdateAsync(location => location.SetProperty(entry => entry.IsActive, false));
+        await database.Stations
+            .Where(station => stationIds.Contains(station.Id))
+            .ExecuteUpdateAsync(station => station.SetProperty(entry => entry.IsActive, false));
     }
 
     [Test]
     public async Task PostMockFault_MockStation_ArmsTheFault()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            $"/api/admin/mock/{context.World.KitchenLocationId}/fault",
+            $"/api/admin/mock/{context.World.KitchenStationId}/fault",
             new { fault = "PaperEnd", mode = "Sticky" });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -388,7 +388,7 @@ public sealed class AdminEndpointsTest
         IMockFaultRegistry registry = context.Factory.Services.GetRequiredService<IMockFaultRegistry>();
 
         Assert.That(
-            registry.GetArmedFault(context.World.KitchenLocationId),
+            registry.GetArmedFault(context.World.KitchenStationId),
             Is.EqualTo(MockFault.PaperEnd));
     }
 
@@ -398,7 +398,7 @@ public sealed class AdminEndpointsTest
         await using (GastronomyAppDbContext database = context.Factory.CreateContext())
         {
             PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-                candidate => candidate.ProductionLocationId == context.World.KitchenLocationId);
+                candidate => candidate.StationId == context.World.KitchenStationId);
             configuration.TransportKind = TransportKind.Network;
             configuration.Host = "192.0.2.10";
             configuration.Port = 9100;
@@ -406,7 +406,7 @@ public sealed class AdminEndpointsTest
         }
 
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            $"/api/admin/mock/{context.World.KitchenLocationId}/fault",
+            $"/api/admin/mock/{context.World.KitchenStationId}/fault",
             new { fault = "PaperEnd", mode = "Sticky" });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));

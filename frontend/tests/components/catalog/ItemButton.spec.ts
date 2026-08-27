@@ -14,7 +14,7 @@ function item(isAvailable: boolean): CatalogItem {
     priceCents: 350,
     sortOrder: 1,
     isAvailable,
-    locationIds: ['location-kueche'],
+    stationIds: ['station-kueche'],
   }
 }
 

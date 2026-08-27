@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useAdminLocationsStore } from '../../src/stores/admin/locations'
+import { useAdminStationsStore } from '../../src/stores/admin/stations'
 
-const BACKEND_LOCATION = {
-  locationId: '11111111-1111-1111-1111-111111111111',
+const BACKEND_STATION = {
+  stationId: '11111111-1111-1111-1111-111111111111',
   name: 'Küche',
   sortOrder: 1,
   isActive: true,
@@ -47,19 +47,19 @@ describe('the station list the admin configures', () => {
   })
 
   it('updates an edited station instead of creating a second one beside it', async () => {
-    const calls = stubFetch(() => ({ status: 200, payload: { locations: [BACKEND_LOCATION] } }))
-    const locations = useAdminLocationsStore()
-    await locations.load()
+    const calls = stubFetch(() => ({ status: 200, payload: { stations: [BACKEND_STATION] } }))
+    const stations = useAdminStationsStore()
+    await stations.load()
 
-    await locations.save({
-      locationId: locations.locations[0].locationId,
+    await stations.save({
+      stationId: stations.stations[0].stationId,
       name: 'Küche hinten',
       sortOrder: 1,
     })
 
     const write = calls.find((call) => call.method !== 'GET')
     expect(write).toEqual({
-      url: `/api/admin/locations/${BACKEND_LOCATION.locationId}`,
+      url: `/api/admin/stations/${BACKEND_STATION.stationId}`,
       method: 'PUT',
     })
   })

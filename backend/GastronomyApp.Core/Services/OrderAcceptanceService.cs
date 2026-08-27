@@ -10,7 +10,7 @@ public sealed record OrderAcceptanceLineRequest
     public required Guid CatalogItemId { get; init; }
     public required int Quantity { get; init; }
     public string? Note { get; init; }
-    public Guid? ProductionLocationId { get; init; }
+    public Guid? StationId { get; init; }
 }
 
 public sealed record OrderAcceptanceRequest
@@ -31,7 +31,7 @@ public sealed class OrderAcceptanceService
 
     private readonly IOrderRepository _orderRepository;
     private readonly ICatalogItemRepository _catalogItemRepository;
-    private readonly IProductionLocationRepository _productionLocationRepository;
+    private readonly IStationRepository _stationRepository;
     private readonly INumberAllocator _numberAllocator;
     private readonly OrderRoutingResolver _routingResolver;
     private readonly OrderTotalCalculator _totalCalculator;
@@ -40,7 +40,7 @@ public sealed class OrderAcceptanceService
     public OrderAcceptanceService(
         IOrderRepository orderRepository,
         ICatalogItemRepository catalogItemRepository,
-        IProductionLocationRepository productionLocationRepository,
+        IStationRepository stationRepository,
         INumberAllocator numberAllocator,
         OrderRoutingResolver routingResolver,
         OrderTotalCalculator totalCalculator,
@@ -48,7 +48,7 @@ public sealed class OrderAcceptanceService
     {
         _orderRepository = orderRepository;
         _catalogItemRepository = catalogItemRepository;
-        _productionLocationRepository = productionLocationRepository;
+        _stationRepository = stationRepository;
         _numberAllocator = numberAllocator;
         _routingResolver = routingResolver;
         _totalCalculator = totalCalculator;
@@ -76,8 +76,8 @@ public sealed class OrderAcceptanceService
             });
         }
 
-        IReadOnlyCollection<ProductionLocation> activeLocations =
-            await _productionLocationRepository.FindActiveAsync(cancellationToken);
+        IReadOnlyCollection<Station> activeStations =
+            await _stationRepository.FindActiveAsync(cancellationToken);
 
         List<ResolvedLine> resolvedLines = [];
         foreach (OrderAcceptanceLineRequest lineRequest in request.Lines)
@@ -93,14 +93,14 @@ public sealed class OrderAcceptanceService
                 });
             }
 
-            IReadOnlyCollection<ItemLocationAssignment> assignments =
+            IReadOnlyCollection<ItemStationAssignment> assignments =
                 await _catalogItemRepository.FindAssignmentsAsync(lineRequest.CatalogItemId, cancellationToken);
 
             Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(
                 lineRequest.CatalogItemId,
                 assignments,
-                activeLocations,
-                lineRequest.ProductionLocationId);
+                activeStations,
+                lineRequest.StationId);
 
             if (!routing.IsSuccess)
             {
@@ -202,30 +202,30 @@ public sealed class OrderAcceptanceService
             CreatedAtUtc = createdAtUtc,
         };
 
-        Dictionary<Guid, LocationTicket> ticketsByLocationId = [];
+        Dictionary<Guid, LocationTicket> ticketsByStationId = [];
 
         foreach (ResolvedLine resolvedLine in resolvedLines)
         {
-            Guid resolvedLocationId = resolvedLine.Decision.ResolvedProductionLocationId;
+            Guid resolvedStationId = resolvedLine.Decision.ResolvedStationId;
 
-            if (!ticketsByLocationId.TryGetValue(resolvedLocationId, out LocationTicket? ticket))
+            if (!ticketsByStationId.TryGetValue(resolvedStationId, out LocationTicket? ticket))
             {
-                int locationSequenceNumber = await _numberAllocator.AllocateLocationSequenceNumberAsync(
-                    resolvedLocationId,
+                int stationSequenceNumber = await _numberAllocator.AllocateStationSequenceNumberAsync(
+                    resolvedStationId,
                     cancellationToken);
 
                 ticket = new LocationTicket
                 {
                     Id = Guid.NewGuid(),
                     OrderId = order.Id,
-                    ProductionLocationId = resolvedLocationId,
-                    LocationSequenceNumber = locationSequenceNumber,
+                    StationId = resolvedStationId,
+                    StationSequenceNumber = stationSequenceNumber,
                     Status = LocationTicketStatus.Queued,
                     ReprintCount = 0,
                     CreatedAtUtc = createdAtUtc,
                 };
 
-                ticketsByLocationId.Add(resolvedLocationId, ticket);
+                ticketsByStationId.Add(resolvedStationId, ticket);
                 order.Tickets.Add(ticket);
             }
 
@@ -235,7 +235,7 @@ public sealed class OrderAcceptanceService
                 OrderId = order.Id,
                 LocationTicketId = ticket.Id,
                 CatalogItemId = resolvedLine.CatalogItem.Id,
-                ChosenProductionLocationId = resolvedLine.Decision.ChosenProductionLocationId,
+                ChosenStationId = resolvedLine.Decision.ChosenStationId,
                 ItemNameSnapshot = resolvedLine.CatalogItem.Name,
                 UnitPriceCentsSnapshot = resolvedLine.CatalogItem.PriceCents,
                 Quantity = resolvedLine.Request.Quantity,

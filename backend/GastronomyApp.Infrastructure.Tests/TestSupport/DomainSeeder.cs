@@ -6,8 +6,8 @@ public sealed record SeededDomain
 {
     public required Guid StaffMemberId { get; init; }
     public required Guid DeviceId { get; init; }
-    public required Guid KitchenLocationId { get; init; }
-    public required Guid BarLocationId { get; init; }
+    public required Guid KitchenStationId { get; init; }
+    public required Guid BarStationId { get; init; }
     public required Guid SausageItemId { get; init; }
     public required Guid LemonadeItemId { get; init; }
 }
@@ -20,8 +20,8 @@ public sealed class DomainSeeder
         {
             StaffMemberId = Guid.NewGuid(),
             DeviceId = Guid.NewGuid(),
-            KitchenLocationId = Guid.NewGuid(),
-            BarLocationId = Guid.NewGuid(),
+            KitchenStationId = Guid.NewGuid(),
+            BarStationId = Guid.NewGuid(),
             SausageItemId = Guid.NewGuid(),
             LemonadeItemId = Guid.NewGuid(),
         };
@@ -36,17 +36,17 @@ public sealed class DomainSeeder
             CreatedAtUtc = now,
         });
 
-        dbContext.ProductionLocations.Add(new ProductionLocation
+        dbContext.Stations.Add(new Station
         {
-            Id = seeded.KitchenLocationId,
+            Id = seeded.KitchenStationId,
             Name = "Kueche",
             SortOrder = 1,
             IsActive = true,
         });
 
-        dbContext.ProductionLocations.Add(new ProductionLocation
+        dbContext.Stations.Add(new Station
         {
-            Id = seeded.BarLocationId,
+            Id = seeded.BarStationId,
             Name = "Theke",
             SortOrder = 2,
             IsActive = true,
@@ -74,18 +74,18 @@ public sealed class DomainSeeder
             IsAvailable = true,
         });
 
-        dbContext.ItemLocationAssignments.Add(new ItemLocationAssignment
+        dbContext.ItemStationAssignments.Add(new ItemStationAssignment
         {
             Id = Guid.NewGuid(),
             CatalogItemId = seeded.SausageItemId,
-            ProductionLocationId = seeded.KitchenLocationId,
+            StationId = seeded.KitchenStationId,
         });
 
-        dbContext.ItemLocationAssignments.Add(new ItemLocationAssignment
+        dbContext.ItemStationAssignments.Add(new ItemStationAssignment
         {
             Id = Guid.NewGuid(),
             CatalogItemId = seeded.LemonadeItemId,
-            ProductionLocationId = seeded.BarLocationId,
+            StationId = seeded.BarStationId,
         });
 
         await dbContext.SaveChangesAsync(cancellationToken);

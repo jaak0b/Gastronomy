@@ -5,7 +5,7 @@ using GastronomyApp.Core.Printing;
 
 namespace GastronomyApp.Infrastructure.Printing;
 
-public sealed record MockFolderProbeResult(bool IsWritable, string LocationFolderPath, string Detail);
+public sealed record MockFolderProbeResult(bool IsWritable, string StationFolderPath, string Detail);
 
 public sealed class MockPrinterTransport : IPrinterTransport
 {
@@ -32,15 +32,15 @@ public sealed class MockPrinterTransport : IPrinterTransport
 
     public async Task<IPrinterSession> ConnectAsync(PrinterEndpoint endpoint, CancellationToken cancellationToken)
     {
-        if (faultRegistry.GetArmedFault(endpoint.ProductionLocationId) == MockFault.ConnectTimeout)
+        if (faultRegistry.GetArmedFault(endpoint.StationId) == MockFault.ConnectTimeout)
         {
             await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
-        if (!openSessions.TryAdd(endpoint.ProductionLocationId, true))
+        if (!openSessions.TryAdd(endpoint.StationId, true))
         {
             throw new InvalidOperationException(
-                $"A mock printer session is already open for production location {endpoint.ProductionLocationId}.");
+                $"A mock printer session is already open for station {endpoint.StationId}.");
         }
 
         return new MockPrinterSession(
@@ -49,7 +49,7 @@ public sealed class MockPrinterTransport : IPrinterTransport
             sessionStartStamp,
             faultRegistry,
             timeProvider,
-            () => openSessions.TryRemove(endpoint.ProductionLocationId, out _));
+            () => openSessions.TryRemove(endpoint.StationId, out _));
     }
 
     public string SlipRootFolderPath => SlipRootFolder();

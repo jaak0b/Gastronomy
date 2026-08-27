@@ -5,7 +5,7 @@ public sealed record OrderLineRequest
     public required Guid CatalogItemId { get; init; }
     public required int Quantity { get; init; }
     public string? Note { get; init; }
-    public Guid? ProductionLocationId { get; init; }
+    public Guid? StationId { get; init; }
 }
 
 public sealed record PlaceOrderRequest
@@ -19,8 +19,8 @@ public sealed record PlaceOrderRequest
 
 public sealed record OrderTicketView(
     Guid TicketId,
-    Guid LocationId,
-    string LocationName,
+    Guid StationId,
+    string StationName,
     int SequenceNumber,
     string Status,
     IReadOnlyList<Guid> LineIds);
@@ -36,7 +36,7 @@ public sealed record PlacedOrderView(
 
 public sealed record OrderListTicketView(
     Guid TicketId,
-    string LocationName,
+    string StationName,
     int SequenceNumber,
     string Status,
     string? FailureReason,
@@ -60,7 +60,7 @@ public sealed record OrderDetailLineView(
     int Quantity,
     int UnitPriceCents,
     string? Note,
-    string LocationName);
+    string StationName);
 
 public sealed record OrderDetailView(
     Guid OrderId,
@@ -79,7 +79,7 @@ public sealed record ResolveTicketRequest
 }
 
 public sealed record PrinterStatusView(
-    Guid LocationId,
+    Guid StationId,
     string Name,
     bool IsOnline,
     bool IsPaperEnd,
@@ -88,4 +88,4 @@ public sealed record PrinterStatusView(
     bool IsFaulty,
     DateTime LastChangedAtUtc);
 
-public sealed record PrinterStatusListView(IReadOnlyList<PrinterStatusView> Locations);
+public sealed record PrinterStatusListView(IReadOnlyList<PrinterStatusView> Stations);

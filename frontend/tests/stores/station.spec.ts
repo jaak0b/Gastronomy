@@ -25,7 +25,7 @@ describe('the ten second delay before a slip is taken', () => {
       }),
     )
     const station = useStationStore()
-    station.selectedLocationId = 'location-kueche'
+    station.selectedStationId = 'station-kueche'
     station.tickets = [
       {
         ticketId: 'ticket-1',
@@ -67,7 +67,7 @@ describe('the ten second delay before a slip is taken', () => {
     station.beginTake('ticket-1')
     await vi.advanceTimersByTimeAsync(10000)
 
-    expect(fetchCalls).toContain('/api/stations/location-kueche/tickets/ticket-1/acknowledge')
+    expect(fetchCalls).toContain('/api/stations/station-kueche/tickets/ticket-1/acknowledge')
   })
 
   it('never reaches the acknowledge endpoint when the cook taps undo', async () => {
@@ -106,12 +106,12 @@ describe('a station screen that lost the hub and got it back', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ tickets: [], locations: [] }), { status: 200 })
+        return new Response(JSON.stringify({ tickets: [], stations: [] }), { status: 200 })
       }),
     )
     const station = useStationStore()
     const connection = useConnectionStore()
-    station.selectedLocationId = 'location-kueche'
+    station.selectedStationId = 'station-kueche'
     station.listen()
     urls.length = 0
 
@@ -126,12 +126,12 @@ describe('a station screen that lost the hub and got it back', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ tickets: [], locations: [] }), { status: 200 })
+        return new Response(JSON.stringify({ tickets: [], stations: [] }), { status: 200 })
       }),
     )
     const station = useStationStore()
     const connection = useConnectionStore()
-    station.selectedLocationId = 'location-kueche'
+    station.selectedStationId = 'station-kueche'
     station.listen()
     urls.length = 0
 

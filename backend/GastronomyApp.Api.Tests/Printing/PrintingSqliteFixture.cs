@@ -59,17 +59,17 @@ public sealed class PrintingSeeder
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task SeedLocationAsync(
+    public async Task SeedStationAsync(
         GastronomyAppDbContext context,
-        Guid locationId,
+        Guid stationId,
         string name,
         string host,
         int port,
         CancellationToken cancellationToken)
     {
-        context.ProductionLocations.Add(new ProductionLocation
+        context.Stations.Add(new Station
         {
-            Id = locationId,
+            Id = stationId,
             Name = name,
             SortOrder = 1,
             IsActive = true,
@@ -77,7 +77,7 @@ public sealed class PrintingSeeder
 
         context.PrinterConfigurations.Add(new PrinterConfiguration
         {
-            ProductionLocationId = locationId,
+            StationId = stationId,
             TransportKind = TransportKind.Mock,
             Host = host,
             Port = port,
@@ -92,7 +92,7 @@ public sealed class PrintingSeeder
 
         context.PrinterStatuses.Add(new PrinterStatus
         {
-            ProductionLocationId = locationId,
+            StationId = stationId,
             IsOnline = true,
             IsPaperEnd = false,
             IsPaperNearEnd = false,
@@ -109,7 +109,7 @@ public sealed class PrintingSeeder
 
     public async Task<SeededTicket> SeedOrderAsync(
         GastronomyAppDbContext context,
-        Guid locationId,
+        Guid stationId,
         int globalOrderNumber,
         int sequenceNumber,
         int minutesAfterBaseline,
@@ -138,8 +138,8 @@ public sealed class PrintingSeeder
         {
             Id = ticketId,
             OrderId = orderId,
-            ProductionLocationId = locationId,
-            LocationSequenceNumber = sequenceNumber,
+            StationId = stationId,
+            StationSequenceNumber = sequenceNumber,
             Status = status,
             ReprintCount = 0,
             CreatedAtUtc = createdAtUtc,
@@ -151,7 +151,7 @@ public sealed class PrintingSeeder
             OrderId = orderId,
             LocationTicketId = ticketId,
             CatalogItemId = Guid.NewGuid(),
-            ChosenProductionLocationId = null,
+            ChosenStationId = null,
             ItemNameSnapshot = "Bratwurst mit Brot",
             UnitPriceCentsSnapshot = 350,
             Quantity = 2,

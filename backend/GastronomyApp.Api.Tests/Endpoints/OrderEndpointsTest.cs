@@ -43,8 +43,8 @@ public sealed class OrderEndpointsTest
 
         Assert.Multiple(() =>
         {
-            Assert.That(ticket.GetProperty("locationId").GetGuid(), Is.EqualTo(context.World.KitchenLocationId));
-            Assert.That(ticket.GetProperty("locationName").GetString(), Is.EqualTo("Kueche"));
+            Assert.That(ticket.GetProperty("stationId").GetGuid(), Is.EqualTo(context.World.KitchenStationId));
+            Assert.That(ticket.GetProperty("stationName").GetString(), Is.EqualTo("Kueche"));
             Assert.That(ticket.GetProperty("sequenceNumber").GetInt32(), Is.EqualTo(1));
             Assert.That(ticket.GetProperty("lineIds").GetArrayLength(), Is.EqualTo(1));
         });
@@ -220,7 +220,7 @@ public sealed class OrderEndpointsTest
     }
 
     [Test]
-    public async Task GetPrinterStatus_SeededLocations_ReportsEveryLocation()
+    public async Task GetPrinterStatus_SeededStations_ReportsEveryStation()
     {
         using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, "/api/printers/status");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -228,7 +228,7 @@ public sealed class OrderEndpointsTest
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(body.RootElement.GetProperty("locations").GetArrayLength(), Is.EqualTo(2));
+            Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(2));
         });
     }
 }

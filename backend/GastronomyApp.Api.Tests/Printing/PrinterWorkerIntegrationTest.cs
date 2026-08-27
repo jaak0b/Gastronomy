@@ -21,7 +21,7 @@ public sealed class RecordingPrintCallbacks : IPrintCallbacks
 
     public List<OrderStatus> OrderStatusChanges { get; } = [];
 
-    public List<Guid> FaultyPrinterLocations { get; } = [];
+    public List<Guid> FaultyPrinterStations { get; } = [];
 
     public int PrinterStatusChangeCount { get; private set; }
 
@@ -37,12 +37,12 @@ public sealed class RecordingPrintCallbacks : IPrintCallbacks
         return Task.CompletedTask;
     }
 
-    public Task OnPrinterStatusChangedAsync(Guid productionLocationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct)
+    public Task OnPrinterStatusChangedAsync(Guid stationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct)
     {
         PrinterStatusChangeCount++;
         if (isFaulty)
         {
-            FaultyPrinterLocations.Add(productionLocationId);
+            FaultyPrinterStations.Add(stationId);
         }
 
         return Task.CompletedTask;
@@ -82,8 +82,8 @@ public class PrinterWorkerIntegrationTest
 
         await using GastronomyAppDbContext context = fixture.CreateContext();
         await seeder.SeedSessionAsync(context, true, CancellationToken.None);
-        await seeder.SeedLocationAsync(context, kitchenId, "Küche", "10.0.0.5", 9100, CancellationToken.None);
-        await seeder.SeedLocationAsync(context, barId, "Theke", "10.0.0.5", 9100, CancellationToken.None);
+        await seeder.SeedStationAsync(context, kitchenId, "Küche", "10.0.0.5", 9100, CancellationToken.None);
+        await seeder.SeedStationAsync(context, barId, "Theke", "10.0.0.5", 9100, CancellationToken.None);
     }
 
     [TearDown]
@@ -98,9 +98,9 @@ public class PrinterWorkerIntegrationTest
 
     private PrinterWorker Worker(params Guid[] served)
     {
-        Guid[] locations = served.Length == 0 ? [kitchenId] : served;
+        Guid[] stations = served.Length == 0 ? [kitchenId] : served;
         PrinterEndpoint endpoint = new(
-            locations[0],
+            stations[0],
             TransportKind.Mock,
             "10.0.0.5",
             9100,
@@ -112,7 +112,7 @@ public class PrinterWorkerIntegrationTest
 
         return new PrinterWorker(
             endpoint,
-            locations,
+            stations,
             mockTransport,
             dataAccess,
             callbacks,
@@ -136,25 +136,25 @@ public class PrinterWorkerIntegrationTest
         return ticket.Status;
     }
 
-    private string[] SlipFiles(Guid locationId, string name)
+    private string[] SlipFiles(Guid stationId, string name)
     {
-        string folder = Path.Combine(dataDirectory, "mock-slips", $"{name}-{locationId.ToString("D")[..8]}");
+        string folder = Path.Combine(dataDirectory, "mock-slips", $"{name}-{stationId.ToString("D")[..8]}");
         return Directory.Exists(folder) ? Directory.GetFiles(folder).Order().ToArray() : [];
     }
 
-    private async Task<SeededTicket> QueueTicketAsync(Guid locationId, int orderNumber, int sequenceNumber, int minutesAfterBaseline)
+    private async Task<SeededTicket> QueueTicketAsync(Guid stationId, int orderNumber, int sequenceNumber, int minutesAfterBaseline)
     {
         await using GastronomyAppDbContext context = fixture.CreateContext();
         SeededTicket seeded = await seeder.SeedOrderAsync(
             context,
-            locationId,
+            stationId,
             orderNumber,
             sequenceNumber,
             minutesAfterBaseline,
             LocationTicketStatus.Queued,
             CancellationToken.None);
 
-        await dataAccess.CreatePrintJobAsync(seeded.TicketId, locationId, PrintJobKind.Initial, CancellationToken.None);
+        await dataAccess.CreatePrintJobAsync(seeded.TicketId, stationId, PrintJobKind.Initial, CancellationToken.None);
         return seeded;
     }
 
@@ -242,7 +242,7 @@ public class PrinterWorkerIntegrationTest
             Assert.That(statuses.All(status => status.IsFaulty), Is.True);
         }
 
-        Assert.That(callbacks.FaultyPrinterLocations, Is.EquivalentTo(new[] { kitchenId, barId }));
+        Assert.That(callbacks.FaultyPrinterStations, Is.EquivalentTo(new[] { kitchenId, barId }));
 
         registry.Arm(kitchenId, MockFault.None, MockFaultMode.Sticky);
         registry.Arm(barId, MockFault.None, MockFaultMode.Sticky);
@@ -265,7 +265,7 @@ public class PrinterWorkerIntegrationTest
     }
 
     [Test]
-    public async Task SharedEndpointInterleaving_PreservesPerLocationSequenceOrder()
+    public async Task SharedEndpointInterleaving_PreservesPerStationSequenceOrder()
     {
         SeededTicket kitchenFirst = await QueueTicketAsync(kitchenId, 137, 42, 0);
         SeededTicket barFirst = await QueueTicketAsync(barId, 138, 11, 1);
@@ -314,7 +314,7 @@ public class PrinterWorkerIntegrationTest
         LocationTicket ticket = await context.LocationTickets.SingleAsync(candidate => candidate.Id == seeded.TicketId);
 
         Assert.That(ticket.ReprintCount, Is.EqualTo(1));
-        Assert.That(ticket.LocationSequenceNumber, Is.EqualTo(42));
+        Assert.That(ticket.StationSequenceNumber, Is.EqualTo(42));
 
         string[] files = SlipFiles(kitchenId, "K_che");
         Assert.That(files.Select(Path.GetFileName).ToArray(), Is.EqualTo(new[]
@@ -383,7 +383,7 @@ public class PrinterWorkerIntegrationTest
     {
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.ProductionLocationId == kitchenId);
+            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.StationId == kitchenId);
             status.IsInErrorState = true;
             await context.SaveChangesAsync();
         }
@@ -404,21 +404,21 @@ public class PrinterWorkerIntegrationTest
     [Test]
     public async Task LoadSuspensionPeriodsAsync_StationSwitchedOffWithNoStatusRow_StillSuspends()
     {
-        Guid quietLocationId = Guid.NewGuid();
+        Guid quietStationId = Guid.NewGuid();
 
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            await seeder.SeedLocationAsync(context, quietLocationId, "Zelt", "10.0.0.9", 9100, CancellationToken.None);
-            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.ProductionLocationId == quietLocationId);
+            await seeder.SeedStationAsync(context, quietStationId, "Zelt", "10.0.0.9", 9100, CancellationToken.None);
+            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.StationId == quietStationId);
             context.PrinterStatuses.Remove(status);
             PrinterConfiguration configuration = await context.PrinterConfigurations
-                .SingleAsync(candidate => candidate.ProductionLocationId == quietLocationId);
+                .SingleAsync(candidate => candidate.StationId == quietStationId);
             configuration.IsEnabled = false;
             await context.SaveChangesAsync();
         }
 
         IReadOnlyList<SuspensionPeriod> periods = await dataAccess.LoadSuspensionPeriodsAsync(
-            quietLocationId,
+            quietStationId,
             TransportKind.Mock,
             CancellationToken.None);
 

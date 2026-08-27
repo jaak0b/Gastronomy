@@ -12,7 +12,7 @@ public sealed class OrderAcceptanceComposition
         OrderAcceptanceService acceptanceService = new(
             orderRepository,
             new CatalogItemRepository(dbContext),
-            new ProductionLocationRepository(dbContext),
+            new StationRepository(dbContext),
             new NumberCounterAllocator(dbContext),
             new OrderRoutingResolver(),
             new OrderTotalCalculator(),

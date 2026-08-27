@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Printing;
 
-public sealed record PrinterConfigurationEntry(ProductionLocation Location, PrinterConfiguration Configuration);
+public sealed record PrinterConfigurationEntry(Station Station, PrinterConfiguration Configuration);
 
 public interface IPrinterConfigurationSource
 {
@@ -24,9 +24,9 @@ public interface IPrinterFleet
 {
     public Task<PrintJobEnsured> EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
 
-    public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid stationId, CancellationToken cancellationToken);
 
-    public Task TestPrintAsync(Guid productionLocationId, CancellationToken cancellationToken);
+    public Task TestPrintAsync(Guid stationId, CancellationToken cancellationToken);
 }
 
 public sealed class UnknownLocationTicketException : Exception
@@ -155,12 +155,12 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
         foreach (KeyValuePair<string, List<PrinterConfigurationEntry>> group in grouped)
         {
-            Guid[] served = [.. group.Value.Select(entry => entry.Location.Id)];
+            Guid[] served = [.. group.Value.Select(entry => entry.Station.Id)];
             bool exists;
             lock (guard)
             {
                 exists = workers.TryGetValue(group.Key, out RunningWorker? running)
-                    && running.Worker.ServedProductionLocationIds.OrderBy(id => id).SequenceEqual(served.OrderBy(id => id));
+                    && running.Worker.ServedStationIds.OrderBy(id => id).SequenceEqual(served.OrderBy(id => id));
             }
 
             if (exists)
@@ -192,8 +192,8 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         PrintJobKind kind,
         CancellationToken cancellationToken)
     {
-        Guid? productionLocationId = await dataAccess.ResolveProductionLocationAsync(locationTicketId, cancellationToken);
-        if (productionLocationId is null)
+        Guid? stationId = await dataAccess.ResolveStationAsync(locationTicketId, cancellationToken);
+        if (stationId is null)
         {
             throw new UnknownLocationTicketException(
                 $"There is no location ticket with id {locationTicketId}, so no print job was created.");
@@ -201,36 +201,36 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
         PrintJobEnsured ensured = await dataAccess.EnsureOpenPrintJobAsync(
             locationTicketId,
-            productionLocationId.Value,
+            stationId.Value,
             kind,
             cancellationToken);
 
         if (ensured.WasCreated)
         {
-            WorkerFor(productionLocationId.Value).Enqueue(locationTicketId);
+            WorkerFor(stationId.Value).Enqueue(locationTicketId);
         }
 
         return ensured;
     }
 
-    public async Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Guid>> ReconnectAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        return await WorkerFor(productionLocationId).ReconnectAsync(cancellationToken);
+        return await WorkerFor(stationId).ReconnectAsync(cancellationToken);
     }
 
-    public async Task TestPrintAsync(Guid productionLocationId, CancellationToken cancellationToken)
+    public async Task TestPrintAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        Guid printJobId = await dataAccess.CreatePrintJobAsync(null, productionLocationId, PrintJobKind.Test, cancellationToken);
-        WorkerFor(productionLocationId).EnqueueTestPrint(productionLocationId, printJobId);
+        Guid printJobId = await dataAccess.CreatePrintJobAsync(null, stationId, PrintJobKind.Test, cancellationToken);
+        WorkerFor(stationId).EnqueueTestPrint(stationId, printJobId);
     }
 
-    private PrinterWorker WorkerFor(Guid productionLocationId)
+    private PrinterWorker WorkerFor(Guid stationId)
     {
         lock (guard)
         {
             foreach (RunningWorker running in workers.Values)
             {
-                if (running.Worker.ServedProductionLocationIds.Contains(productionLocationId))
+                if (running.Worker.ServedStationIds.Contains(stationId))
                 {
                     return running.Worker;
                 }
@@ -238,14 +238,14 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         }
 
         throw new UnknownLocationTicketException(
-            $"No printer worker serves production location {productionLocationId}.");
+            $"No printer worker serves station {stationId}.");
     }
 
     private void StartWorker(string key, IReadOnlyList<PrinterConfigurationEntry> group, Guid[] served)
     {
         PrinterConfiguration configuration = group[0].Configuration;
         PrinterEndpoint endpoint = new(
-            group[0].Location.Id,
+            group[0].Station.Id,
             configuration.TransportKind,
             configuration.Host,
             configuration.Port,

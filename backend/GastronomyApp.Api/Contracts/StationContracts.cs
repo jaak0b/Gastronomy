@@ -1,16 +1,16 @@
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record StationLocationView(Guid LocationId, string Name, int SortOrder, bool CanPrintRightNow);
+public sealed record StationView(Guid StationId, string Name, int SortOrder, bool CanPrintRightNow);
 
-public sealed record StationLocationListView(IReadOnlyList<StationLocationView> Locations);
+public sealed record StationListView(IReadOnlyList<StationView> Stations);
 
 public sealed record StationTicketLineView(int Quantity, string ItemName, string? LineNote);
 
 public sealed record StationTicketView(
     Guid TicketId,
     Guid OrderId,
-    Guid LocationId,
-    string LocationName,
+    Guid StationId,
+    string StationName,
     int SequenceNumber,
     int GlobalOrderNumber,
     string TableLabel,
@@ -22,4 +22,4 @@ public sealed record StationTicketView(
     string? CanAcknowledgeReasonKey,
     IReadOnlyList<StationTicketLineView> Lines);
 
-public sealed record StationTicketListView(Guid LocationId, IReadOnlyList<StationTicketView> Tickets);
+public sealed record StationTicketListView(Guid StationId, IReadOnlyList<StationTicketView> Tickets);

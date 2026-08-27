@@ -28,21 +28,21 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         LocationTicket ticket = await context.LocationTickets.AsNoTracking()
             .SingleAsync(candidate => candidate.Id == locationTicketId, ct);
         Order order = await context.Orders.AsNoTracking().SingleAsync(candidate => candidate.Id == ticket.OrderId, ct);
-        ProductionLocation location = await context.ProductionLocations.AsNoTracking()
-            .SingleAsync(candidate => candidate.Id == ticket.ProductionLocationId, ct);
+        Station station = await context.Stations.AsNoTracking()
+            .SingleAsync(candidate => candidate.Id == ticket.StationId, ct);
 
         List<OrderLine> lines = await context.OrderLines.AsNoTracking()
             .Where(line => line.LocationTicketId == locationTicketId)
             .ToListAsync(ct);
 
-        List<Guid> siblingLocationIds = await context.LocationTickets.AsNoTracking()
+        List<Guid> siblingStationIds = await context.LocationTickets.AsNoTracking()
             .Where(candidate => candidate.OrderId == ticket.OrderId && candidate.Id != locationTicketId)
-            .Select(candidate => candidate.ProductionLocationId)
+            .Select(candidate => candidate.StationId)
             .Distinct()
             .ToListAsync(ct);
 
-        List<string> siblingNames = await context.ProductionLocations.AsNoTracking()
-            .Where(candidate => siblingLocationIds.Contains(candidate.Id))
+        List<string> siblingNames = await context.Stations.AsNoTracking()
+            .Where(candidate => siblingStationIds.Contains(candidate.Id))
             .OrderBy(candidate => candidate.SortOrder)
             .Select(candidate => candidate.Name)
             .ToListAsync(ct);
@@ -51,12 +51,12 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             .SingleOrDefaultAsync(candidate => candidate.Id == order.StaffMemberId, ct);
 
         Guid? chosenElsewhere = lines
-            .Select(line => line.ChosenProductionLocationId)
-            .FirstOrDefault(chosen => chosen is not null && chosen != ticket.ProductionLocationId);
+            .Select(line => line.ChosenStationId)
+            .FirstOrDefault(chosen => chosen is not null && chosen != ticket.StationId);
 
         string? chosenName = chosenElsewhere is null
             ? null
-            : await context.ProductionLocations.AsNoTracking()
+            : await context.Stations.AsNoTracking()
                 .Where(candidate => candidate.Id == chosenElsewhere.Value)
                 .Select(candidate => candidate.Name)
                 .SingleOrDefaultAsync(ct);
@@ -67,14 +67,14 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         {
             LocationTicketId = ticket.Id,
             OrderId = ticket.OrderId,
-            ProductionLocationId = ticket.ProductionLocationId,
+            StationId = ticket.StationId,
             PrintJobId = job?.Id ?? Guid.Empty,
             Kind = job?.Kind ?? PrintJobKind.Initial,
             CreatedAtUtc = ticket.CreatedAtUtc,
             Status = ticket.Status,
             ReprintCount = ticket.ReprintCount,
-            LocationSequenceNumber = ticket.LocationSequenceNumber,
-            ProductionLocationName = location.Name,
+            StationSequenceNumber = ticket.StationSequenceNumber,
+            StationName = station.Name,
             GlobalOrderNumber = order.GlobalOrderNumber,
             TableLabel = order.TableLabel,
             StaffMemberName = staffMember?.Name ?? string.Empty,
@@ -101,7 +101,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
                 PrinterStatus? status = await context.PrinterStatuses
                     .SingleOrDefaultAsync(
-                        candidate => candidate.ProductionLocationId == ticket.ProductionLocationId,
+                        candidate => candidate.StationId == ticket.StationId,
                         transactionCancellationToken);
 
                 if (status is not null && status.IsFaulty)
@@ -194,26 +194,26 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             ct);
     }
 
-    public async Task<IReadOnlyList<Guid>> LoadRecoverableTicketIdsAsync(IReadOnlyCollection<Guid> servedLocationIds, CancellationToken ct)
+    public async Task<IReadOnlyList<Guid>> LoadRecoverableTicketIdsAsync(IReadOnlyCollection<Guid> servedStationIds, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
-        List<Guid> ids = servedLocationIds.ToList();
+        List<Guid> ids = servedStationIds.ToList();
 
         return await context.LocationTickets.AsNoTracking()
-            .Where(ticket => ids.Contains(ticket.ProductionLocationId)
+            .Where(ticket => ids.Contains(ticket.StationId)
                 && (ticket.Status == LocationTicketStatus.Queued || ticket.Status == LocationTicketStatus.Blocked))
             .OrderBy(ticket => ticket.CreatedAtUtc)
             .Select(ticket => ticket.Id)
             .ToListAsync(ct);
     }
 
-    public async Task MarkPrintingTicketsUnknownAsync(IReadOnlyCollection<Guid> servedLocationIds, CancellationToken ct)
+    public async Task MarkPrintingTicketsUnknownAsync(IReadOnlyCollection<Guid> servedStationIds, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
-        List<Guid> ids = servedLocationIds.ToList();
+        List<Guid> ids = servedStationIds.ToList();
 
         List<LocationTicket> printing = await context.LocationTickets
-            .Where(ticket => ids.Contains(ticket.ProductionLocationId) && ticket.Status == LocationTicketStatus.Printing)
+            .Where(ticket => ids.Contains(ticket.StationId) && ticket.Status == LocationTicketStatus.Printing)
             .ToListAsync(ct);
 
         foreach (LocationTicket ticket in printing)
@@ -224,19 +224,19 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task<int> CountWaitingTicketsAsync(Guid productionLocationId, CancellationToken ct)
+    public async Task<int> CountWaitingTicketsAsync(Guid stationId, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
 
         return await context.LocationTickets.AsNoTracking()
             .CountAsync(
-                ticket => ticket.ProductionLocationId == productionLocationId
+                ticket => ticket.StationId == stationId
                     && (ticket.Status == LocationTicketStatus.Queued || ticket.Status == LocationTicketStatus.Blocked),
                 ct);
     }
 
     public async Task FailAllWaitingAtEndpointAsync(
-        IReadOnlyCollection<Guid> servedLocationIds,
+        IReadOnlyCollection<Guid> servedStationIds,
         PrintFailureReason failureReason,
         CancellationToken ct)
     {
@@ -244,11 +244,11 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction =
             await context.Database.BeginTransactionAsync(ct);
 
-        List<Guid> ids = servedLocationIds.ToList();
+        List<Guid> ids = servedStationIds.ToList();
         DateTime now = timeProvider.GetUtcNow().UtcDateTime;
 
         List<PrinterStatus> statuses = await context.PrinterStatuses
-            .Where(status => ids.Contains(status.ProductionLocationId))
+            .Where(status => ids.Contains(status.StationId))
             .ToListAsync(ct);
 
         foreach (PrinterStatus status in statuses)
@@ -259,7 +259,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         }
 
         List<LocationTicket> waiting = await context.LocationTickets
-            .Where(ticket => ids.Contains(ticket.ProductionLocationId)
+            .Where(ticket => ids.Contains(ticket.StationId)
                 && (ticket.Status == LocationTicketStatus.Queued || ticket.Status == LocationTicketStatus.Blocked))
             .ToListAsync(ct);
 
@@ -284,13 +284,13 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         await transaction.CommitAsync(ct);
     }
 
-    public async Task ClearFaultyAtEndpointAsync(IReadOnlyCollection<Guid> servedLocationIds, CancellationToken ct)
+    public async Task ClearFaultyAtEndpointAsync(IReadOnlyCollection<Guid> servedStationIds, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
-        List<Guid> ids = servedLocationIds.ToList();
+        List<Guid> ids = servedStationIds.ToList();
 
         List<PrinterStatus> statuses = await context.PrinterStatuses
-            .Where(status => ids.Contains(status.ProductionLocationId))
+            .Where(status => ids.Contains(status.StationId))
             .ToListAsync(ct);
 
         foreach (PrinterStatus status in statuses)
@@ -347,19 +347,19 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task WritePrinterStatusAsync(Guid productionLocationId, PrinterStatusSnapshot snapshot, CancellationToken ct)
+    public async Task WritePrinterStatusAsync(Guid stationId, PrinterStatusSnapshot snapshot, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
         DateTime now = timeProvider.GetUtcNow().UtcDateTime;
 
         PrinterStatus? status = await context.PrinterStatuses
-            .SingleOrDefaultAsync(candidate => candidate.ProductionLocationId == productionLocationId, ct);
+            .SingleOrDefaultAsync(candidate => candidate.StationId == stationId, ct);
 
         if (status is null)
         {
             context.PrinterStatuses.Add(new PrinterStatus
             {
-                ProductionLocationId = productionLocationId,
+                StationId = stationId,
                 IsOnline = snapshot.IsOnline,
                 IsPaperEnd = snapshot.IsPaperEnd,
                 IsPaperNearEnd = snapshot.IsPaperNearEnd,
@@ -397,16 +397,16 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
     }
 
     public async Task<IReadOnlyList<SuspensionPeriod>> LoadSuspensionPeriodsAsync(
-        Guid productionLocationId,
+        Guid stationId,
         TransportKind transportKind,
         CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
 
         PrinterStatus? status = await context.PrinterStatuses.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.ProductionLocationId == productionLocationId, ct);
+            .SingleOrDefaultAsync(candidate => candidate.StationId == stationId, ct);
         PrinterConfiguration? configuration = await context.PrinterConfigurations.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.ProductionLocationId == productionLocationId, ct);
+            .SingleOrDefaultAsync(candidate => candidate.StationId == stationId, ct);
 
         bool stationSwitchedOff = configuration is not null && !configuration.IsEnabled;
         bool folderUnwritable = transportKind == TransportKind.Mock && status is not null && status.IsInErrorState;
@@ -472,7 +472,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
     public async Task<PrintJobEnsured> EnsureOpenPrintJobAsync(
         Guid locationTicketId,
-        Guid productionLocationId,
+        Guid stationId,
         PrintJobKind kind,
         CancellationToken ct)
     {
@@ -507,7 +507,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
                 {
                     Id = jobId,
                     LocationTicketId = locationTicketId,
-                    ProductionLocationId = productionLocationId,
+                    StationId = stationId,
                     Kind = kind,
                     Status = PrintJobStatus.Queued,
                     ProcessId = null,
@@ -537,7 +537,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
     public async Task<Guid> CreatePrintJobAsync(
         Guid? locationTicketId,
-        Guid productionLocationId,
+        Guid stationId,
         PrintJobKind kind,
         CancellationToken ct)
     {
@@ -549,7 +549,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         {
             Id = jobId,
             LocationTicketId = locationTicketId,
-            ProductionLocationId = productionLocationId,
+            StationId = stationId,
             Kind = kind,
             Status = PrintJobStatus.Queued,
             ProcessId = null,
@@ -570,22 +570,22 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         return jobId;
     }
 
-    public async Task<TestPrintLoadResult> LoadTestPrintAsync(Guid productionLocationId, CancellationToken ct)
+    public async Task<TestPrintLoadResult> LoadTestPrintAsync(Guid stationId, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
-        ProductionLocation location = await context.ProductionLocations.AsNoTracking()
-            .SingleAsync(candidate => candidate.Id == productionLocationId, ct);
+        Station station = await context.Stations.AsNoTracking()
+            .SingleAsync(candidate => candidate.Id == stationId, ct);
 
-        return new TestPrintLoadResult(location.Name);
+        return new TestPrintLoadResult(station.Name);
     }
 
-    public async Task<Guid?> ResolveProductionLocationAsync(Guid locationTicketId, CancellationToken ct)
+    public async Task<Guid?> ResolveStationAsync(Guid locationTicketId, CancellationToken ct)
     {
         await using GastronomyAppDbContext context = contextFactory();
 
         return await context.LocationTickets.AsNoTracking()
             .Where(ticket => ticket.Id == locationTicketId)
-            .Select(ticket => (Guid?)ticket.ProductionLocationId)
+            .Select(ticket => (Guid?)ticket.StationId)
             .SingleOrDefaultAsync(ct);
     }
 

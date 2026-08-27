@@ -7,18 +7,18 @@ public sealed class OrderRoutingResolver
 {
     public Result<RoutingDecision, RoutingFailure> Resolve(
         Guid catalogItemId,
-        IReadOnlyCollection<ItemLocationAssignment> assignments,
-        IReadOnlyCollection<ProductionLocation> activeLocations,
-        Guid? chosenProductionLocationId)
+        IReadOnlyCollection<ItemStationAssignment> assignments,
+        IReadOnlyCollection<Station> activeStations,
+        Guid? chosenStationId)
     {
-        HashSet<Guid> assignedLocationIds = assignments
+        HashSet<Guid> assignedStationIds = assignments
             .Where(assignment => assignment.CatalogItemId == catalogItemId)
-            .Select(assignment => assignment.ProductionLocationId)
+            .Select(assignment => assignment.StationId)
             .ToHashSet();
 
-        List<ProductionLocation> candidates = activeLocations
-            .Where(location => location.IsActive && assignedLocationIds.Contains(location.Id))
-            .OrderBy(location => location.SortOrder)
+        List<Station> candidates = activeStations
+            .Where(station => station.IsActive && assignedStationIds.Contains(station.Id))
+            .OrderBy(station => station.SortOrder)
             .ToList();
 
         if (candidates.Count == 0)
@@ -27,7 +27,7 @@ public sealed class OrderRoutingResolver
                 new RoutingFailure { Reason = RoutingFailureReason.ItemHasNoStation });
         }
 
-        if (chosenProductionLocationId is null)
+        if (chosenStationId is null)
         {
             if (candidates.Count > 1)
             {
@@ -37,15 +37,15 @@ public sealed class OrderRoutingResolver
 
             return Result<RoutingDecision, RoutingFailure>.Success(new RoutingDecision
             {
-                ResolvedProductionLocationId = candidates[0].Id,
-                ChosenProductionLocationId = null,
+                ResolvedStationId = candidates[0].Id,
+                ChosenStationId = null,
                 FellBackFromStaleChoice = false,
             });
         }
 
-        Guid chosenId = chosenProductionLocationId.Value;
+        Guid chosenId = chosenStationId.Value;
 
-        if (!assignedLocationIds.Contains(chosenId))
+        if (!assignedStationIds.Contains(chosenId))
         {
             return Result<RoutingDecision, RoutingFailure>.Failed(
                 new RoutingFailure { Reason = RoutingFailureReason.StationNotAssignedToItem });
@@ -55,8 +55,8 @@ public sealed class OrderRoutingResolver
 
         return Result<RoutingDecision, RoutingFailure>.Success(new RoutingDecision
         {
-            ResolvedProductionLocationId = chosenIsStillActive ? chosenId : candidates[0].Id,
-            ChosenProductionLocationId = chosenId,
+            ResolvedStationId = chosenIsStillActive ? chosenId : candidates[0].Id,
+            ChosenStationId = chosenId,
             FellBackFromStaleChoice = !chosenIsStillActive,
         });
     }

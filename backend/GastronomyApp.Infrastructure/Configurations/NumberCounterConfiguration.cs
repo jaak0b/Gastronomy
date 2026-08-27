@@ -11,7 +11,7 @@ public sealed class NumberCounterConfiguration : IEntityTypeConfiguration<Number
         builder.HasKey(counter => new
         {
             counter.CounterKind,
-            counter.ProductionLocationId,
+            counter.StationId,
             counter.PrinterEndpointKey,
         });
         builder.Property(counter => counter.CounterKind).IsRequired().HasConversion<string>().HasMaxLength(20);

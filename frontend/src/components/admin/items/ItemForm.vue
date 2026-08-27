@@ -4,12 +4,12 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../../core/apiTypes'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
-import type { AdminLocation } from '../../../stores/admin/locations'
+import type { AdminStation } from '../../../stores/admin/stations'
 import AssignmentEditor from './AssignmentEditor.vue'
 
 const props = defineProps<{
   item: AdminItem | null
-  locations: AdminLocation[]
+  stations: AdminStation[]
   errorKey: string | null
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft] }>()
@@ -22,12 +22,12 @@ const priceText = ref(
 )
 const priceIsUnreadable = ref(false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
-const locationIds = ref<string[]>([...(props.item?.locationIds ?? [])])
+const stationIds = ref<string[]>([...(props.item?.stationIds ?? [])])
 
-function toggle(locationId: string): void {
-  locationIds.value = locationIds.value.includes(locationId)
-    ? locationIds.value.filter((id) => id !== locationId)
-    : [...locationIds.value, locationId]
+function toggle(stationId: string): void {
+  stationIds.value = stationIds.value.includes(stationId)
+    ? stationIds.value.filter((id) => id !== stationId)
+    : [...stationIds.value, stationId]
 }
 
 function save(): void {
@@ -42,7 +42,7 @@ function save(): void {
     categoryName: categoryName.value,
     priceCents,
     sortOrder: sortOrder.value,
-    locationIds: locationIds.value,
+    stationIds: stationIds.value,
   })
 }
 </script>
@@ -64,8 +64,8 @@ function save(): void {
         <p class="help text-medium-emphasis">{{ t('admin.items.priceHelp') }}</p>
         <AssignmentEditor
           :item-name="name"
-          :locations="locations"
-          :selected-location-ids="locationIds"
+          :stations="stations"
+          :selected-station-ids="stationIds"
           @toggle="toggle"
         />
         <v-alert v-if="errorKey !== null" class="error" type="error" variant="tonal">

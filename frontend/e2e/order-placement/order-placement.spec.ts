@@ -50,14 +50,14 @@ test('a server enrols a phone, builds an order, sends it, and finds it in the or
   const orderRow = page.locator('.order-row', { hasText: `Bestellung ${orderNumber}, Tisch 12` })
   await expect(orderRow).toBeVisible()
   await expect(orderRow.locator('.status')).toHaveText(
-    /^(Wird gedruckt|Gedruckt|Station hat übernommen|Bitte prüfen)$/,
+    /^(Wird gedruckt|Gedruckt|Von der Ausgabestelle übernommen|Bitte prüfen)$/,
   )
 
   await orderRow.click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Bestellung ${orderNumber}`)
   await expect(page.locator('.ticket-chip .label').first()).toHaveText(/^Küche, Bon \d{3}$/)
   await expect(page.locator('.changed-mind')).toHaveText(
-    'Sagen Sie der Station Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.',
+    'Sagen Sie an der Ausgabestelle Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.',
   )
 
   await page.goto(`${BASE_URL}/`)

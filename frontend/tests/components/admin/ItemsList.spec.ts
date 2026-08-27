@@ -17,15 +17,15 @@ const ONE_ITEM = {
       sortOrder: 1,
       isActive: true,
       isAvailable: true,
-      locationIds: [STATION_ID],
+      stationIds: [STATION_ID],
     },
   ],
 }
 
 const ONE_STATION = {
-  locations: [
+  stations: [
     {
-      locationId: STATION_ID,
+      stationId: STATION_ID,
       name: 'Küche',
       sortOrder: 1,
       isActive: true,

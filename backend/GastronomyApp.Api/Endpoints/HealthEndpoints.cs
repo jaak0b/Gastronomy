@@ -27,18 +27,18 @@ public sealed class HealthReporter
 {
     public async Task<HealthView> ReportAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
     {
-        List<Guid> activeLocationIds = await dbContext.ProductionLocations
+        List<Guid> activeStationIds = await dbContext.Stations
             .AsNoTracking()
-            .Where(location => location.IsActive)
-            .Select(location => location.Id)
+            .Where(station => station.IsActive)
+            .Select(station => station.Id)
             .ToListAsync(cancellationToken);
 
         int printersOnline = await dbContext.PrinterStatuses
             .AsNoTracking()
             .CountAsync(
-                status => activeLocationIds.Contains(status.ProductionLocationId) && status.IsOnline,
+                status => activeStationIds.Contains(status.StationId) && status.IsOnline,
                 cancellationToken);
 
-        return new HealthView("ok", printersOnline, activeLocationIds.Count);
+        return new HealthView("ok", printersOnline, activeStationIds.Count);
     }
 }

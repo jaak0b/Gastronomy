@@ -48,9 +48,9 @@ public sealed class StationEndpointsTest
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(body.RootElement.GetProperty("locations").GetArrayLength(), Is.EqualTo(2));
+            Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(2));
             Assert.That(
-                body.RootElement.GetProperty("locations")[0].GetProperty("canPrintRightNow").GetBoolean(),
+                body.RootElement.GetProperty("stations")[0].GetProperty("canPrintRightNow").GetBoolean(),
                 Is.True);
         });
     }
@@ -58,7 +58,7 @@ public sealed class StationEndpointsTest
     [Test]
     public async Task GetTickets_HealthyStation_ListsTheOpenTicketWithItsAcknowledgeDecision()
     {
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenLocationId}/tickets");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/tickets");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement tickets = body.RootElement.GetProperty("tickets");
 
@@ -80,7 +80,7 @@ public sealed class StationEndpointsTest
     {
         await SetTicketStatusAsync(LocationTicketStatus.Printed);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenLocationId}/tickets");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/tickets");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.That(body.RootElement.GetProperty("tickets").GetArrayLength(), Is.EqualTo(0));
@@ -91,7 +91,7 @@ public sealed class StationEndpointsTest
     {
         using HttpResponseMessage response = await context.SendAsync(
             HttpMethod.Get,
-            $"/api/stations/{context.World.BarLocationId}/tickets");
+            $"/api/stations/{context.World.BarStationId}/tickets");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.That(body.RootElement.GetProperty("tickets").GetArrayLength(), Is.EqualTo(0));
@@ -100,7 +100,7 @@ public sealed class StationEndpointsTest
     [Test]
     public async Task Acknowledge_HealthyStationPrinter_IsRefused()
     {
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -122,7 +122,7 @@ public sealed class StationEndpointsTest
         await SetTicketStatusAsync(LocationTicketStatus.Printing);
         await ApplyStationConditionAsync(condition);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
     }
@@ -137,7 +137,7 @@ public sealed class StationEndpointsTest
     {
         await ApplyStationConditionAsync(condition);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -157,12 +157,12 @@ public sealed class StationEndpointsTest
     {
         await ApplyStationConditionAsync("IsPaperEnd");
 
-        using (HttpResponseMessage first = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge"))
+        using (HttpResponseMessage first = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge"))
         {
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
-        using HttpResponseMessage second = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage second = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
 
         JsonDocument body = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
 
@@ -178,7 +178,7 @@ public sealed class StationEndpointsTest
     {
         await SetTicketStatusAsync(LocationTicketStatus.Failed);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -188,11 +188,11 @@ public sealed class StationEndpointsTest
     {
         using HttpResponseMessage stations = await context.Client.GetAsync("/api/stations");
         using HttpResponseMessage tickets = await context.Client.GetAsync(
-            $"/api/stations/{context.World.KitchenLocationId}/tickets");
+            $"/api/stations/{context.World.KitchenStationId}/tickets");
         using HttpResponseMessage status = await context.Client.GetAsync(
-            $"/api/stations/{context.World.KitchenLocationId}/status");
+            $"/api/stations/{context.World.KitchenStationId}/status");
         using HttpResponseMessage acknowledge = await context.Client.PostAsync(
-            $"/api/stations/{context.World.KitchenLocationId}/tickets/{ticketId}/acknowledge",
+            $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge",
             content: null);
 
         Assert.Multiple(() =>
@@ -216,9 +216,9 @@ public sealed class StationEndpointsTest
     {
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
         PrinterStatus status = await database.PrinterStatuses.FirstAsync(
-            candidate => candidate.ProductionLocationId == context.World.KitchenLocationId);
+            candidate => candidate.StationId == context.World.KitchenStationId);
         PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-            candidate => candidate.ProductionLocationId == context.World.KitchenLocationId);
+            candidate => candidate.StationId == context.World.KitchenStationId);
 
         switch (condition)
         {

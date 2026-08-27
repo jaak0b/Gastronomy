@@ -70,8 +70,8 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = setLineNote(draft.value, index, note)
   }
 
-  function chooseStation(index: number, locationId: string | null): void {
-    draft.value = setLineStation(draft.value, index, locationId)
+  function chooseStation(index: number, stationId: string | null): void {
+    draft.value = setLineStation(draft.value, index, stationId)
   }
 
   function setTable(tableLabel: string): void {

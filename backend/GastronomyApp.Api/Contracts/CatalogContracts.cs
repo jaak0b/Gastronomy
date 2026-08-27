@@ -9,9 +9,9 @@ public sealed record CatalogItemView(
     int PriceCents,
     int SortOrder,
     bool IsAvailable,
-    IReadOnlyList<Guid> LocationIds);
+    IReadOnlyList<Guid> StationIds);
 
-public sealed record CatalogLocationView(Guid Id, string Name, int SortOrder);
+public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);
 
 public sealed record TableSuggestionView(string Label, int SortOrder);
 
@@ -19,5 +19,5 @@ public sealed record CatalogView(
     string Version,
     IReadOnlyList<CatalogCategoryView> Categories,
     IReadOnlyList<CatalogItemView> Items,
-    IReadOnlyList<CatalogLocationView> Locations,
+    IReadOnlyList<CatalogStationView> Stations,
     IReadOnlyList<TableSuggestionView> TableSuggestions);

@@ -5,7 +5,7 @@ import { currentRoute, navigate, type AdminSection } from '../../router'
 import { assertNever } from '../../core/assertNever'
 import { request } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
-import LocationsList from '../../components/admin/locations/LocationsList.vue'
+import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import PrintersList from '../../components/admin/printers/PrintersList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
@@ -24,7 +24,7 @@ const section = computed<AdminSection>(() => {
 
 const sections: AdminSection[] = [
   'overview',
-  'locations',
+  'stations',
   'items',
   'printers',
   'staff',
@@ -34,8 +34,8 @@ function titleFor(value: AdminSection): string {
   switch (value) {
     case 'overview':
       return t('admin.overview.title')
-    case 'locations':
-      return t('admin.locations.title')
+    case 'stations':
+      return t('admin.stations.title')
     case 'items':
       return t('admin.items.title')
     case 'printers':
@@ -47,7 +47,7 @@ function titleFor(value: AdminSection): string {
   }
 }
 
-void request('/api/admin/locations').then((result) => {
+void request('/api/admin/stations').then((result) => {
   isReachable.value = !(result.kind === 'error' && result.status === 404)
 })
 </script>
@@ -69,7 +69,7 @@ void request('/api/admin/locations').then((result) => {
       </v-tabs>
     </v-toolbar>
     <AdminOverview v-if="section === 'overview'" />
-    <LocationsList v-else-if="section === 'locations'" />
+    <StationsList v-else-if="section === 'stations'" />
     <ItemsList v-else-if="section === 'items'" />
     <PrintersList v-else-if="section === 'printers'" />
     <StaffList v-else />

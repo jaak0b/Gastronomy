@@ -11,7 +11,7 @@ public sealed record LoadedOrder(
     Order Order,
     IReadOnlyList<OrderLine> Lines,
     IReadOnlyList<LocationTicket> Tickets,
-    IReadOnlyDictionary<Guid, string> LocationNames);
+    IReadOnlyDictionary<Guid, string> StationNames);
 
 public sealed class OrderReader
 {
@@ -57,9 +57,9 @@ public sealed class OrderReader
         [
             .. loaded.Tickets.Select(ticket => new OrderTicketView(
                 ticket.Id,
-                ticket.ProductionLocationId,
-                loaded.LocationNames.TryGetValue(ticket.ProductionLocationId, out string? name) ? name : string.Empty,
-                ticket.LocationSequenceNumber,
+                ticket.StationId,
+                loaded.StationNames.TryGetValue(ticket.StationId, out string? name) ? name : string.Empty,
+                ticket.StationSequenceNumber,
                 ticket.Status.ToString(),
                 [
                     .. loaded.Lines
@@ -83,18 +83,18 @@ public sealed class OrderReader
         List<LocationTicket> tickets = await context.LocationTickets
             .AsNoTracking()
             .Where(ticket => ticket.OrderId == order.Id)
-            .OrderBy(ticket => ticket.LocationSequenceNumber)
+            .OrderBy(ticket => ticket.StationSequenceNumber)
             .ThenBy(ticket => ticket.Id)
             .ToListAsync(cancellationToken);
 
-        HashSet<Guid> locationIds = [.. tickets.Select(ticket => ticket.ProductionLocationId)];
+        HashSet<Guid> stationIds = [.. tickets.Select(ticket => ticket.StationId)];
 
-        Dictionary<Guid, string> locationNames = await context.ProductionLocations
+        Dictionary<Guid, string> stationNames = await context.Stations
             .AsNoTracking()
-            .Where(location => locationIds.Contains(location.Id))
-            .ToDictionaryAsync(location => location.Id, location => location.Name, cancellationToken);
+            .Where(station => stationIds.Contains(station.Id))
+            .ToDictionaryAsync(station => station.Id, station => station.Name, cancellationToken);
 
-        return new LoadedOrder(order, lines, tickets, locationNames);
+        return new LoadedOrder(order, lines, tickets, stationNames);
     }
 }
 

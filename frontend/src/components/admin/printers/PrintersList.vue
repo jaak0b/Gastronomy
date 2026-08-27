@@ -59,9 +59,9 @@ onMounted(printers.load)
       {{ t('admin.printers.empty') }}
     </v-alert>
 
-    <v-card v-for="printer in printers.printers" :key="printer.locationId" class="printer-row mb-3">
+    <v-card v-for="printer in printers.printers" :key="printer.stationId" class="printer-row mb-3">
       <v-card-item>
-        <v-card-title>{{ printer.locationName }}</v-card-title>
+        <v-card-title>{{ printer.stationName }}</v-card-title>
         <v-card-subtitle class="status">{{ t(statusKey(printer)) }}</v-card-subtitle>
       </v-card-item>
       <v-card-text>
@@ -77,27 +77,27 @@ onMounted(printers.load)
         <p v-if="printer.lastChangedAtUtc !== null" class="last-heard text-medium-emphasis">
           {{ t('admin.printers.lastHeard', { time: printer.lastChangedAtUtc }) }}
         </p>
-        <p v-if="printer.sharedWithLocationNames.length > 0" class="shared text-medium-emphasis">
-          {{ t('admin.printers.shared', { names: printer.sharedWithLocationNames.join(', ') }) }}
+        <p v-if="printer.sharedWithStationNames.length > 0" class="shared text-medium-emphasis">
+          {{ t('admin.printers.shared', { names: printer.sharedWithStationNames.join(', ') }) }}
         </p>
         <p class="help text-medium-emphasis">{{ t('admin.printers.reconnectHelp') }}</p>
       </v-card-text>
       <v-card-actions>
-        <v-btn class="test-print" variant="text" @click="printers.testPrint(printer.locationId)">
+        <v-btn class="test-print" variant="text" @click="printers.testPrint(printer.stationId)">
           {{ t('admin.printers.testPrint') }}
         </v-btn>
-        <v-btn class="reconnect" variant="text" @click="printers.reconnect(printer.locationId)">
+        <v-btn class="reconnect" variant="text" @click="printers.reconnect(printer.stationId)">
           {{ t('admin.printers.reconnect') }}
         </v-btn>
-        <v-btn class="edit" variant="text" @click="editing = printer.locationId">
+        <v-btn class="edit" variant="text" @click="editing = printer.stationId">
           {{ t('admin.edit') }}
         </v-btn>
       </v-card-actions>
-      <PrinterForm v-if="editing === printer.locationId" :printer="printer" @save="save" />
+      <PrinterForm v-if="editing === printer.stationId" :printer="printer" @save="save" />
       <MockFaultPanel
         v-if="printer.transportKind === 'Mock'"
         :mock-folder-path="printer.mockFolderPath"
-        @apply="(fault, mode) => printers.setMockFault(printer.locationId, fault, mode)"
+        @apply="(fault, mode) => printers.setMockFault(printer.stationId, fault, mode)"
       />
     </v-card>
   </v-container>

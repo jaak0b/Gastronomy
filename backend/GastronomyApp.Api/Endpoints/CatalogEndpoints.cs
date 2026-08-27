@@ -36,12 +36,12 @@ public sealed class CatalogReader
 
     public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
     {
-        List<ProductionLocation> locations = await dbContext.ProductionLocations
-            .Where(location => location.IsActive)
-            .OrderBy(location => location.SortOrder)
+        List<Station> stations = await dbContext.Stations
+            .Where(station => station.IsActive)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
-        HashSet<Guid> activeLocationIds = [.. locations.Select(location => location.Id)];
+        HashSet<Guid> activeStationIds = [.. stations.Select(station => station.Id)];
 
         List<CatalogItem> items = await dbContext.CatalogItems
             .Where(item => item.IsActive)
@@ -50,7 +50,7 @@ public sealed class CatalogReader
 
         HashSet<Guid> itemIds = [.. items.Select(item => item.Id)];
 
-        List<ItemLocationAssignment> assignments = await dbContext.ItemLocationAssignments
+        List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
             .Where(assignment => itemIds.Contains(assignment.CatalogItemId))
             .ToListAsync(cancellationToken);
 
@@ -71,8 +71,8 @@ public sealed class CatalogReader
                     .. assignments
                         .Where(assignment =>
                             assignment.CatalogItemId == item.Id
-                            && activeLocationIds.Contains(assignment.ProductionLocationId))
-                        .Select(assignment => assignment.ProductionLocationId),
+                            && activeStationIds.Contains(assignment.StationId))
+                        .Select(assignment => assignment.StationId),
                 ])),
         ];
 
@@ -88,7 +88,7 @@ public sealed class CatalogReader
             timeProvider.GetUtcNow().ToString("O"),
             categories,
             itemViews,
-            [.. locations.Select(location => new CatalogLocationView(location.Id, location.Name, location.SortOrder))],
+            [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))],
             [.. tableSuggestions.Select(suggestion => new TableSuggestionView(suggestion.Label, suggestion.SortOrder))]);
     }
 }

@@ -1,5 +1,5 @@
 import type { Catalog, CatalogItem, DraftOrder } from './apiTypes'
-import { candidateLocations } from './routingPreview'
+import { candidateStations } from './routingPreview'
 import { saveDraft } from './draftCart'
 
 export interface BasketLineView {
@@ -8,8 +8,8 @@ export interface BasketLineView {
   unitPriceCents: number
   quantity: number
   note: string | null
-  productionLocationId: string | null
-  candidateLocationIds: string[]
+  stationId: string | null
+  candidateStationIds: string[]
   isSoldOut: boolean
   isNoLongerOnTheMenu: boolean
 }
@@ -28,8 +28,8 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         unitPriceCents: line.unitPriceCents,
         quantity: line.quantity,
         note: line.note,
-        productionLocationId: line.productionLocationId,
-        candidateLocationIds: [],
+        stationId: line.stationId,
+        candidateStationIds: [],
         isSoldOut: false,
         isNoLongerOnTheMenu: true,
       }
@@ -40,8 +40,8 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       unitPriceCents: item.priceCents,
       quantity: line.quantity,
       note: line.note,
-      productionLocationId: line.productionLocationId,
-      candidateLocationIds: candidateLocations(item),
+      stationId: line.stationId,
+      candidateStationIds: candidateStations(item),
       isSoldOut: !item.isAvailable,
       isNoLongerOnTheMenu: false,
     }

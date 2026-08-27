@@ -13,7 +13,7 @@ public sealed class LoopbackAdminGateTest
     [TestCase("::1")]
     public async Task InvokeAsync_AdminPathFromTheLaptopItself_ReachesTheEndpoint(string remoteAddress)
     {
-        DefaultHttpContext context = ContextFor("/api/admin/locations", remoteAddress);
+        DefaultHttpContext context = ContextFor("/api/admin/stations", remoteAddress);
         bool reachedTheEndpoint = false;
 
         await middleware.InvokeAsync(
@@ -30,7 +30,7 @@ public sealed class LoopbackAdminGateTest
     [Test]
     public async Task InvokeAsync_AdminPathFromAnyOtherAddress_AnswersNotFound()
     {
-        DefaultHttpContext context = ContextFor("/api/admin/locations", "203.0.113.9");
+        DefaultHttpContext context = ContextFor("/api/admin/stations", "203.0.113.9");
         bool reachedTheEndpoint = false;
 
         await middleware.InvokeAsync(

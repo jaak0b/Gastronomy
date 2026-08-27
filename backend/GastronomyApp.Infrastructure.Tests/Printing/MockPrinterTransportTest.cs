@@ -12,7 +12,7 @@ public class MockPrinterTransportTest
     private InMemoryMockFaultRegistry registry = null!;
     private TestTimeProvider timeProvider = null!;
     private MockPrinterTransport transport = null!;
-    private Guid locationId;
+    private Guid stationId;
 
     [SetUp]
     public void SetUp()
@@ -21,7 +21,7 @@ public class MockPrinterTransportTest
         Directory.CreateDirectory(dataDirectory);
         registry = new InMemoryMockFaultRegistry();
         timeProvider = new TestTimeProvider(new DateTimeOffset(2026, 8, 26, 17, 5, 9, TimeSpan.Zero));
-        locationId = Guid.Parse("8f2a1c4b-9d0e-7f6a-3b2c-1d0e9f8a7b6c");
+        stationId = Guid.Parse("8f2a1c4b-9d0e-7f6a-3b2c-1d0e9f8a7b6c");
         transport = new MockPrinterTransport(dataDirectory, registry, timeProvider);
     }
 
@@ -37,7 +37,7 @@ public class MockPrinterTransportTest
     private PrinterEndpoint Endpoint(Guid? id = null)
     {
         return new PrinterEndpoint(
-            id ?? locationId,
+            id ?? stationId,
             TransportKind.Mock,
             null,
             0,
@@ -64,13 +64,13 @@ public class MockPrinterTransportTest
             kind,
             sequenceNumber,
             reprintCount,
-            id ?? locationId,
+            id ?? stationId,
             name);
     }
 
-    private string LocationFolder(Guid? id = null, string name = "K_che")
+    private string StationFolder(Guid? id = null, string name = "K_che")
     {
-        Guid effective = id ?? locationId;
+        Guid effective = id ?? stationId;
         return Path.Combine(dataDirectory, "mock-slips", $"{name}-{effective.ToString("D")[..8]}");
     }
 
@@ -90,7 +90,7 @@ public class MockPrinterTransportTest
         Assert.That(result.Outcome, Is.EqualTo(PrintAttemptOutcome.Confirmed));
         Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
 
-        string[] files = FilesIn(LocationFolder());
+        string[] files = FilesIn(StationFolder());
         Assert.That(files, Has.Length.EqualTo(1));
         Assert.That(Path.GetFileName(files[0]), Is.EqualTo("20260826-170509_K_che-8f2a1c4b_slip-042_print-1.txt"));
 
@@ -101,7 +101,7 @@ public class MockPrinterTransportTest
     [Test]
     public async Task SendJobAsync_PaperEndArmed_ReturnsBlockedWithZeroBytesAndNoFile()
     {
-        registry.Arm(locationId, MockFault.PaperEnd, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.PaperEnd, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -109,13 +109,13 @@ public class MockPrinterTransportTest
         Assert.That(result.Outcome, Is.EqualTo(PrintAttemptOutcome.Blocked));
         Assert.That(result.BytesWritten, Is.Zero);
         Assert.That(result.StatusAtEnd.IsPaperEnd, Is.True);
-        Assert.That(FilesIn(LocationFolder()), Is.Empty);
+        Assert.That(FilesIn(StationFolder()), Is.Empty);
     }
 
     [Test]
     public async Task SendJobAsync_CoverOpenArmed_ReturnsBlockedWithZeroBytesAndNoFile()
     {
-        registry.Arm(locationId, MockFault.CoverOpen, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.CoverOpen, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -123,13 +123,13 @@ public class MockPrinterTransportTest
         Assert.That(result.Outcome, Is.EqualTo(PrintAttemptOutcome.Blocked));
         Assert.That(result.BytesWritten, Is.Zero);
         Assert.That(result.StatusAtEnd.IsCoverOpen, Is.True);
-        Assert.That(FilesIn(LocationFolder()), Is.Empty);
+        Assert.That(FilesIn(StationFolder()), Is.Empty);
     }
 
     [Test]
     public async Task ConnectAsync_ConnectTimeoutArmed_NeverCompletes()
     {
-        registry.Arm(locationId, MockFault.ConnectTimeout, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.ConnectTimeout, MockFaultMode.Sticky);
         using CancellationTokenSource cancellation = new();
 
         Task<IPrinterSession> connect = transport.ConnectAsync(Endpoint(), cancellation.Token);
@@ -142,20 +142,20 @@ public class MockPrinterTransportTest
     [Test]
     public async Task SendJobAsync_DropSocketEarlyArmed_ReturnsSocketDroppedZeroBytesNoFileWritten()
     {
-        registry.Arm(locationId, MockFault.DropSocketEarly, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.DropSocketEarly, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
 
         Assert.That(result.Outcome, Is.EqualTo(PrintAttemptOutcome.SocketDropped));
         Assert.That(result.BytesWritten, Is.Zero);
-        Assert.That(FilesIn(LocationFolder()), Is.Empty);
+        Assert.That(FilesIn(StationFolder()), Is.Empty);
     }
 
     [Test]
     public async Task SendJobAsync_DropSocketMidJobArmed_WritesPartialFileAndReturnsSocketDroppedWithPartialBytes()
     {
-        registry.Arm(locationId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
         PrintPayload payload = Payload(renderedText: new string('X', 100));
 
@@ -165,7 +165,7 @@ public class MockPrinterTransportTest
         Assert.That(result.BytesWritten, Is.GreaterThan(0));
         Assert.That(result.BytesWritten, Is.LessThan(payload.Bytes.Length));
 
-        string[] files = FilesIn(LocationFolder());
+        string[] files = FilesIn(StationFolder());
         Assert.That(files, Has.Length.EqualTo(1));
         string content = await File.ReadAllTextAsync(files[0]);
         Assert.That(content, Has.Length.EqualTo(50));
@@ -174,7 +174,7 @@ public class MockPrinterTransportTest
     [Test]
     public async Task SendJobAsync_UnknownOutcomeArmed_AcceptsPayloadWritesNoFileNeverEchoesReturnsTimeout()
     {
-        registry.Arm(locationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
         PrintPayload payload = Payload();
 
@@ -182,13 +182,13 @@ public class MockPrinterTransportTest
 
         Assert.That(result.Outcome, Is.EqualTo(PrintAttemptOutcome.Timeout));
         Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
-        Assert.That(FilesIn(LocationFolder()), Is.Empty);
+        Assert.That(FilesIn(StationFolder()), Is.Empty);
     }
 
     [Test]
     public async Task Arm_OnceMode_ClearsAfterOneUseAndSubsequentJobSucceeds()
     {
-        registry.Arm(locationId, MockFault.PaperEnd, MockFaultMode.Once);
+        registry.Arm(stationId, MockFault.PaperEnd, MockFaultMode.Once);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrintDispatchResult first = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -201,7 +201,7 @@ public class MockPrinterTransportTest
     [Test]
     public async Task Arm_StickyMode_StaysArmedAcrossMultipleJobs()
     {
-        registry.Arm(locationId, MockFault.PaperEnd, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.PaperEnd, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrintDispatchResult first = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -219,13 +219,13 @@ public class MockPrinterTransportTest
         await session.SendJobAsync(Payload(renderedText: "original"), CancellationToken.None);
         await session.SendJobAsync(Payload(PrintJobKind.Reprint, reprintCount: 1, renderedText: "reprint"), CancellationToken.None);
 
-        string[] files = FilesIn(LocationFolder()).Select(Path.GetFileName).OfType<string>().Order().ToArray();
+        string[] files = FilesIn(StationFolder()).Select(Path.GetFileName).OfType<string>().Order().ToArray();
         Assert.That(files, Is.EqualTo(new[]
         {
             "20260826-170509_K_che-8f2a1c4b_slip-042_print-1.txt",
             "20260826-170509_K_che-8f2a1c4b_slip-042_print-2.txt",
         }));
-        Assert.That(await File.ReadAllTextAsync(Path.Combine(LocationFolder(), files[0])), Is.EqualTo("original"));
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(StationFolder(), files[0])), Is.EqualTo("original"));
     }
 
     [Test]
@@ -243,11 +243,11 @@ public class MockPrinterTransportTest
             await second.SendJobAsync(Payload(), CancellationToken.None);
         }
 
-        Assert.That(FilesIn(LocationFolder()), Has.Length.EqualTo(2));
+        Assert.That(FilesIn(StationFolder()), Has.Length.EqualTo(2));
     }
 
     [Test]
-    public async Task SendJobAsync_TwoLocationsSameName_KeptApartByIdSuffix()
+    public async Task SendJobAsync_TwoStationsSameName_KeptApartByIdSuffix()
     {
         Guid otherId = Guid.Parse("11112222-3333-4444-5555-666677778888");
 
@@ -261,8 +261,8 @@ public class MockPrinterTransportTest
             await second.SendJobAsync(Payload(id: otherId, name: "Theke"), CancellationToken.None);
         }
 
-        Assert.That(FilesIn(LocationFolder(name: "Theke")), Has.Length.EqualTo(1));
-        Assert.That(FilesIn(LocationFolder(otherId, "Theke")), Has.Length.EqualTo(1));
+        Assert.That(FilesIn(StationFolder(name: "Theke")), Has.Length.EqualTo(1));
+        Assert.That(FilesIn(StationFolder(otherId, "Theke")), Has.Length.EqualTo(1));
     }
 
     [Test]
@@ -291,7 +291,7 @@ public class MockPrinterTransportTest
 
         await session.SendJobAsync(Payload(PrintJobKind.Test, processId: 314), CancellationToken.None);
 
-        string[] files = FilesIn(LocationFolder());
+        string[] files = FilesIn(StationFolder());
         Assert.That(Path.GetFileName(files[0]), Is.EqualTo("20260826-170509_K_che-8f2a1c4b_test-314.txt"));
     }
 
@@ -303,7 +303,7 @@ public class MockPrinterTransportTest
 
         await session.SendJobAsync(Payload(PrintJobKind.Test, renderedText: $"TESTBON\r\n{url}\r\n"), CancellationToken.None);
 
-        string content = await File.ReadAllTextAsync(FilesIn(LocationFolder())[0]);
+        string content = await File.ReadAllTextAsync(FilesIn(StationFolder())[0]);
         Assert.That(content, Does.Contain(url));
     }
 
@@ -322,7 +322,7 @@ public class MockPrinterTransportTest
     [Test]
     public async Task StatusStream_UnknownOutcomeArmed_HoldsJobUntilJobTimeoutSecondsExpires()
     {
-        registry.Arm(locationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -352,38 +352,38 @@ public class MockPrinterTransportTest
     [TestCase(MockFault.UnknownOutcome)]
     public void AllSevenFaults_ArmableThroughRegistryInBothOnceAndStickyModes(MockFault fault)
     {
-        registry.Arm(locationId, fault, MockFaultMode.Once);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(fault));
-        registry.ClearIfOnce(locationId);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(MockFault.None));
+        registry.Arm(stationId, fault, MockFaultMode.Once);
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(fault));
+        registry.ClearIfOnce(stationId);
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(MockFault.None));
 
-        registry.Arm(locationId, fault, MockFaultMode.Sticky);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(fault));
-        registry.ClearIfOnce(locationId);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(fault));
+        registry.Arm(stationId, fault, MockFaultMode.Sticky);
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(fault));
+        registry.ClearIfOnce(stationId);
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(fault));
 
-        registry.Arm(locationId, MockFault.None, MockFaultMode.Sticky);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(MockFault.None));
+        registry.Arm(stationId, MockFault.None, MockFaultMode.Sticky);
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(MockFault.None));
     }
 
     [Test]
     public async Task QueryStatusAsync_OnceModeFaultConsumedAtPreflight_ClearsSoTheNextJobSucceeds()
     {
-        registry.Arm(locationId, MockFault.PaperEnd, MockFaultMode.Once);
+        registry.Arm(stationId, MockFault.PaperEnd, MockFaultMode.Once);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         PrinterStatusSnapshot preflight = await session.QueryStatusAsync(CancellationToken.None);
         PrintDispatchResult afterPreflight = await session.SendJobAsync(Payload(), CancellationToken.None);
 
         Assert.That(preflight.IsPaperEnd, Is.True);
-        Assert.That(registry.GetArmedFault(locationId), Is.EqualTo(MockFault.None));
+        Assert.That(registry.GetArmedFault(stationId), Is.EqualTo(MockFault.None));
         Assert.That(afterPreflight.Outcome, Is.EqualTo(PrintAttemptOutcome.Confirmed));
     }
 
     [Test]
     public async Task SendJobAsync_UnknownOutcomeArmed_HoldsTheJobForTheEndpointJobTimeout()
     {
-        registry.Arm(locationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
 
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -397,7 +397,7 @@ public class MockPrinterTransportTest
     [Test]
     public async Task SendJobAsync_DropSocketMidJob_ReportsExactlyTheBytesTheFileReceived()
     {
-        registry.Arm(locationId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
+        registry.Arm(stationId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
         await using IPrinterSession session = await transport.ConnectAsync(Endpoint(), CancellationToken.None);
         PrintPayload payload = new(
             7,
@@ -406,12 +406,12 @@ public class MockPrinterTransportTest
             PrintJobKind.Initial,
             42,
             0,
-            locationId,
+            stationId,
             "Küche");
 
         PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
 
-        long fileLength = new FileInfo(FilesIn(LocationFolder())[0]).Length;
+        long fileLength = new FileInfo(FilesIn(StationFolder())[0]).Length;
         Assert.That(result.BytesWritten, Is.EqualTo((int)fileLength));
         Assert.That(result.BytesWritten, Is.GreaterThan(0));
     }

@@ -5,13 +5,13 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('renders an open-slips refusal as an open-slips message', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.locations.openTickets',
+      messageKey: 'admin.stations.openTickets',
       parameters: { count: 3 },
       details: null,
     })
 
     expect(message).toEqual({
-      key: 'admin.locations.openTickets',
+      key: 'admin.stations.openTickets',
       parameters: { count: 3 },
       count: 3,
     })
@@ -66,12 +66,12 @@ describe('adminErrorMessage, a refusal the laptop worded itself', () => {
   it('renders a station that still has open slips', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.locationHasOpenTickets',
+      messageKey: 'admin.stationHasOpenTickets',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('admin.locationHasOpenTickets')
+    expect(message.key).toBe('admin.stationHasOpenTickets')
   })
 
   it('renders a person who has no phone to revoke', () => {
@@ -117,7 +117,7 @@ describe('adminErrorMessage, a key this app does not know', () => {
       details: null,
     })
 
-    expect(message.key).not.toBe('admin.locations.openTickets')
+    expect(message.key).not.toBe('admin.stations.openTickets')
   })
 
   it('drops the parameters of a key it cannot render', () => {

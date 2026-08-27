@@ -53,8 +53,8 @@ public sealed class OrderQueryHandler
 
     public async Task<OrderDetailView> DescribeDetailAsync(LoadedOrder loaded, CancellationToken cancellationToken)
     {
-        Dictionary<Guid, Guid> ticketLocations = loaded.Tickets
-            .ToDictionary(ticket => ticket.Id, ticket => ticket.ProductionLocationId);
+        Dictionary<Guid, Guid> ticketStations = loaded.Tickets
+            .ToDictionary(ticket => ticket.Id, ticket => ticket.StationId);
 
         await Task.CompletedTask;
 
@@ -67,7 +67,7 @@ public sealed class OrderQueryHandler
                 line.Quantity,
                 line.UnitPriceCentsSnapshot,
                 line.Note,
-                LocationNameFor(loaded, ticketLocations, line.LocationTicketId))),
+                StationNameFor(loaded, ticketStations, line.LocationTicketId))),
         ];
 
         return new OrderDetailView(
@@ -86,12 +86,12 @@ public sealed class OrderQueryHandler
         LoadedOrder loaded,
         CancellationToken cancellationToken)
     {
-        HashSet<Guid> locationIds = [.. loaded.Tickets.Select(ticket => ticket.ProductionLocationId)];
+        HashSet<Guid> stationIds = [.. loaded.Tickets.Select(ticket => ticket.StationId)];
 
         Dictionary<Guid, PrinterStatus> printerStatuses = await dbContext.PrinterStatuses
             .AsNoTracking()
-            .Where(status => locationIds.Contains(status.ProductionLocationId))
-            .ToDictionaryAsync(status => status.ProductionLocationId, cancellationToken);
+            .Where(status => stationIds.Contains(status.StationId))
+            .ToDictionaryAsync(status => status.StationId, cancellationToken);
 
         HashSet<Guid> ticketIds = [.. loaded.Tickets.Select(ticket => ticket.Id)];
 
@@ -106,11 +106,11 @@ public sealed class OrderQueryHandler
         [
             .. loaded.Tickets.Select(ticket => new OrderListTicketView(
                 ticket.Id,
-                loaded.LocationNames.TryGetValue(ticket.ProductionLocationId, out string? name) ? name : string.Empty,
-                ticket.LocationSequenceNumber,
+                loaded.StationNames.TryGetValue(ticket.StationId, out string? name) ? name : string.Empty,
+                ticket.StationSequenceNumber,
                 ticket.Status.ToString(),
                 latestJobs.TryGetValue(ticket.Id, out PrintJob? job) ? job.FailureReason?.ToString() : null,
-                !printerStatuses.TryGetValue(ticket.ProductionLocationId, out PrinterStatus? status)
+                !printerStatuses.TryGetValue(ticket.StationId, out PrinterStatus? status)
                     || !status.IsPaperEnd)),
         ];
 
@@ -124,16 +124,16 @@ public sealed class OrderQueryHandler
             tickets);
     }
 
-    private string LocationNameFor(
+    private string StationNameFor(
         LoadedOrder loaded,
-        IReadOnlyDictionary<Guid, Guid> ticketLocations,
+        IReadOnlyDictionary<Guid, Guid> ticketStations,
         Guid locationTicketId)
     {
-        if (!ticketLocations.TryGetValue(locationTicketId, out Guid locationId))
+        if (!ticketStations.TryGetValue(locationTicketId, out Guid stationId))
         {
             return string.Empty;
         }
 
-        return loaded.LocationNames.TryGetValue(locationId, out string? name) ? name : string.Empty;
+        return loaded.StationNames.TryGetValue(stationId, out string? name) ? name : string.Empty;
     }
 }

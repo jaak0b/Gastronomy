@@ -9,10 +9,10 @@ const PLURAL_KEYS = [
   'header.attention',
   'header.stationWaiting',
   'catalog.basketSummary',
-  'admin.overview.itemsWithoutLocation',
+  'admin.overview.itemsWithoutStation',
   'admin.overview.openTickets',
   'admin.overview.stationBlocked',
-  'admin.locations.openTickets',
+  'admin.stations.openTickets',
   'admin.printers.waiting',
   'admin.itemsWouldHaveNoStation',
 ]

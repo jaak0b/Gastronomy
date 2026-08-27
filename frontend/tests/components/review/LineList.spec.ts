@@ -6,10 +6,10 @@ import type { BasketLineView } from '../../../src/core/basket'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
-const LOCATION_NAMES: Record<string, string> = {
-  'location-theke-innen': 'Theke innen',
-  'location-theke-aussen': 'Theke aussen',
-  'location-kueche': 'Küche',
+const STATION_NAMES: Record<string, string> = {
+  'station-theke-innen': 'Theke innen',
+  'station-theke-aussen': 'Theke aussen',
+  'station-kueche': 'Küche',
 }
 
 function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
@@ -19,8 +19,8 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     unitPriceCents: 350,
     quantity: 2,
     note: null,
-    productionLocationId: null,
-    candidateLocationIds: ['location-kueche'],
+    stationId: null,
+    candidateStationIds: ['station-kueche'],
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     ...overrides,
@@ -33,7 +33,7 @@ function mountList(lines: BasketLineView[]) {
     props: {
       lines,
       language: 'de' as const,
-      locationNameFor: (locationId: string) => LOCATION_NAMES[locationId] ?? '',
+      stationNameFor: (stationId: string) => STATION_NAMES[stationId] ?? '',
     },
     global: { plugins: [i18n] },
   })
@@ -81,23 +81,23 @@ describe('the station a line goes to', () => {
   it('names the chosen station on a line that had a choice', () => {
     const list = mountList([
       line({
-        candidateLocationIds: ['location-theke-innen', 'location-theke-aussen'],
-        productionLocationId: 'location-theke-aussen',
+        candidateStationIds: ['station-theke-innen', 'station-theke-aussen'],
+        stationId: 'station-theke-aussen',
       }),
     ])
 
-    expect(list.get('.line-station').text()).toBe('Station: Theke aussen')
+    expect(list.get('.line-station').text()).toBe('Ausgabestelle: Theke aussen')
   })
 
   it('offers to change the station on a line that had a choice', () => {
     const list = mountList([
       line({
-        candidateLocationIds: ['location-theke-innen', 'location-theke-aussen'],
-        productionLocationId: 'location-theke-innen',
+        candidateStationIds: ['station-theke-innen', 'station-theke-aussen'],
+        stationId: 'station-theke-innen',
       }),
     ])
 
-    expect(list.get('.change-station').text()).toBe('Station ändern')
+    expect(list.get('.change-station').text()).toBe('Ausgabestelle ändern')
   })
 
   it('stays invisible on a line only one station can prepare', () => {

@@ -3,45 +3,45 @@ import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 
-export interface AdminLocation {
-  locationId: string
+export interface AdminStation {
+  stationId: string
   name: string
   sortOrder: number
   isActive: boolean
 }
 
-export const useAdminLocationsStore = defineStore('adminLocations', () => {
-  const locations = ref<AdminLocation[]>([])
+export const useAdminStationsStore = defineStore('adminStations', () => {
+  const stations = ref<AdminStation[]>([])
   const loadFailed = ref(false)
   const errorMessage = ref<AdminErrorMessage | null>(null)
 
   async function load(): Promise<void> {
     loadFailed.value = false
-    const result = await request<unknown>('/api/admin/locations')
+    const result = await request<unknown>('/api/admin/stations')
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminLocation>(result.data, 'locations')
+    const rows = listFrom<AdminStation>(result.data, 'stations')
     if (rows === null) {
       loadFailed.value = true
       return
     }
-    locations.value = rows
+    stations.value = rows
   }
 
   async function save(
-    location: Pick<AdminLocation, 'name' | 'sortOrder'> & { locationId?: string },
+    station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
   ): Promise<void> {
     const path =
-      location.locationId === undefined
-        ? '/api/admin/locations'
-        : `/api/admin/locations/${location.locationId}`
+      station.stationId === undefined
+        ? '/api/admin/stations'
+        : `/api/admin/stations/${station.stationId}`
     await request(path, {
-      method: location.locationId === undefined ? 'POST' : 'PUT',
+      method: station.stationId === undefined ? 'POST' : 'PUT',
       body: {
-        name: location.name,
-        sortOrder: location.sortOrder,
+        name: station.name,
+        sortOrder: station.sortOrder,
       },
     })
     await load()
@@ -50,7 +50,7 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
   async function setActive(id: string, isActive: boolean): Promise<void> {
     errorMessage.value = null
     const action = isActive ? 'activate' : 'deactivate'
-    const result = await request(`/api/admin/locations/${id}/${action}`, { method: 'POST' })
+    const result = await request(`/api/admin/stations/${id}/${action}`, { method: 'POST' })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return
@@ -58,5 +58,5 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
     await load()
   }
 
-  return { locations, loadFailed, errorMessage, load, save, setActive }
+  return { stations, loadFailed, errorMessage, load, save, setActive }
 })

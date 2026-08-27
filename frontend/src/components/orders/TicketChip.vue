@@ -10,7 +10,7 @@ const { t } = useI18n()
 
 const label = computed(() =>
   t('orders.ticket', {
-    station: props.ticket.locationName,
+    station: props.ticket.stationName,
     sequence: formatSequenceNumber(props.ticket.sequenceNumber),
   }),
 )

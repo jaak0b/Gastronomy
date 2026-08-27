@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { StationLocation } from '../../stores/station'
+import type { Station } from '../../stores/station'
 
-defineProps<{ locations: StationLocation[]; selectedLocationId: string | null }>()
-defineEmits<{ select: [locationId: string] }>()
+defineProps<{ stations: Station[]; selectedStationId: string | null }>()
+defineEmits<{ select: [stationId: string] }>()
 
 const { t } = useI18n()
 </script>
@@ -13,8 +13,8 @@ const { t } = useI18n()
     <v-select
       class="station-select"
       :label="t('station.filterLabel')"
-      :model-value="selectedLocationId"
-      :items="locations.map((location) => ({ title: location.name, value: location.locationId }))"
+      :model-value="selectedStationId"
+      :items="stations.map((station) => ({ title: station.name, value: station.stationId }))"
       @update:model-value="$emit('select', $event)"
     />
     <p class="help text-medium-emphasis">{{ t('station.filterHelp') }}</p>

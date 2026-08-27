@@ -27,13 +27,13 @@ public sealed class NumberCounterAllocator : INumberAllocator
             cancellationToken);
     }
 
-    public Task<int> AllocateLocationSequenceNumberAsync(
-        Guid productionLocationId,
+    public Task<int> AllocateStationSequenceNumberAsync(
+        Guid stationId,
         CancellationToken cancellationToken)
     {
         return AllocateAsync(
-            NumberCounterKind.LocationSequence,
-            productionLocationId,
+            NumberCounterKind.StationSequence,
+            stationId,
             string.Empty,
             UnboundedMaximumValue,
             cancellationToken);
@@ -53,7 +53,7 @@ public sealed class NumberCounterAllocator : INumberAllocator
     {
         List<NumberCounter> counters = await _dbContext.NumberCounters
             .Where(candidate => candidate.CounterKind == NumberCounterKind.GlobalOrder
-                || candidate.CounterKind == NumberCounterKind.LocationSequence)
+                || candidate.CounterKind == NumberCounterKind.StationSequence)
             .ToListAsync(cancellationToken);
 
         _dbContext.NumberCounters.RemoveRange(counters);
@@ -62,14 +62,14 @@ public sealed class NumberCounterAllocator : INumberAllocator
 
     private async Task<int> AllocateAsync(
         NumberCounterKind counterKind,
-        Guid productionLocationId,
+        Guid stationId,
         string printerEndpointKey,
         int maximumValue,
         CancellationToken cancellationToken)
     {
         NumberCounter? counter = await _dbContext.NumberCounters.FirstOrDefaultAsync(
             candidate => candidate.CounterKind == counterKind
-                && candidate.ProductionLocationId == productionLocationId
+                && candidate.StationId == stationId
                 && candidate.PrinterEndpointKey == printerEndpointKey,
             cancellationToken);
 
@@ -78,7 +78,7 @@ public sealed class NumberCounterAllocator : INumberAllocator
             _dbContext.NumberCounters.Add(new NumberCounter
             {
                 CounterKind = counterKind,
-                ProductionLocationId = productionLocationId,
+                StationId = stationId,
                 PrinterEndpointKey = printerEndpointKey,
                 NextValue = 2,
             });

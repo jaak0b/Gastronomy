@@ -15,36 +15,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public static class AdminLocationEndpoints
+public static class AdminStationEndpoints
 {
-    public static IEndpointRouteBuilder MapAdminLocationEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapAdminStationEndpoints(this IEndpointRouteBuilder routes)
     {
-        RouteGroupBuilder group = routes.MapGroup("/api/admin/locations");
+        RouteGroupBuilder group = routes.MapGroup("/api/admin/stations");
 
         group.MapGet(string.Empty, async (
-            AdminLocationHandler handler,
+            AdminStationHandler handler,
             CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
         group.MapPost(string.Empty, async (
-            SaveLocationRequest request,
-            AdminLocationHandler handler,
+            SaveStationRequest request,
+            AdminStationHandler handler,
             CancellationToken cancellationToken) => await handler.CreateAsync(request, cancellationToken));
 
-        group.MapPut("/{locationId:guid}", async (
-            Guid locationId,
-            SaveLocationRequest request,
-            AdminLocationHandler handler,
-            CancellationToken cancellationToken) => await handler.UpdateAsync(locationId, request, cancellationToken));
+        group.MapPut("/{stationId:guid}", async (
+            Guid stationId,
+            SaveStationRequest request,
+            AdminStationHandler handler,
+            CancellationToken cancellationToken) => await handler.UpdateAsync(stationId, request, cancellationToken));
 
-        group.MapPost("/{locationId:guid}/deactivate", async (
-            Guid locationId,
-            AdminLocationHandler handler,
-            CancellationToken cancellationToken) => await handler.DeactivateAsync(locationId, cancellationToken));
+        group.MapPost("/{stationId:guid}/deactivate", async (
+            Guid stationId,
+            AdminStationHandler handler,
+            CancellationToken cancellationToken) => await handler.DeactivateAsync(stationId, cancellationToken));
 
-        group.MapPost("/{locationId:guid}/activate", async (
-            Guid locationId,
-            AdminLocationHandler handler,
-            CancellationToken cancellationToken) => await handler.ActivateAsync(locationId, cancellationToken));
+        group.MapPost("/{stationId:guid}/activate", async (
+            Guid stationId,
+            AdminStationHandler handler,
+            CancellationToken cancellationToken) => await handler.ActivateAsync(stationId, cancellationToken));
 
         return routes;
     }
@@ -94,14 +94,14 @@ public sealed class EnrolmentUrlBuilder
     }
 }
 
-public sealed class AdminLocationHandler
+public sealed class AdminStationHandler
 {
 
     private readonly GastronomyAppDbContext dbContext;
     private readonly PrinterFleet printerFleet;
     private readonly ResultEnvelope resultEnvelope;
 
-    public AdminLocationHandler(
+    public AdminStationHandler(
         GastronomyAppDbContext dbContext,
         PrinterFleet printerFleet,
         ResultEnvelope resultEnvelope)
@@ -113,9 +113,9 @@ public sealed class AdminLocationHandler
 
     public async Task<IResult> ListAsync(CancellationToken cancellationToken)
     {
-        List<ProductionLocation> locations = await dbContext.ProductionLocations
+        List<Station> stations = await dbContext.Stations
             .AsNoTracking()
-            .OrderBy(location => location.SortOrder)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
         List<PrinterConfiguration> configurations = await dbContext.PrinterConfigurations
@@ -126,20 +126,20 @@ public sealed class AdminLocationHandler
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        List<AdminLocationView> views = [];
+        List<AdminStationView> views = [];
 
-        foreach (ProductionLocation location in locations)
+        foreach (Station station in stations)
         {
             PrinterConfiguration? configuration = configurations.FirstOrDefault(
-                candidate => candidate.ProductionLocationId == location.Id);
+                candidate => candidate.StationId == station.Id);
             PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.ProductionLocationId == location.Id);
+                candidate => candidate.StationId == station.Id);
 
-            views.Add(new AdminLocationView(
-                location.Id,
-                location.Name,
-                location.SortOrder,
-                location.IsActive,
+            views.Add(new AdminStationView(
+                station.Id,
+                station.Name,
+                station.SortOrder,
+                station.IsActive,
                 configuration?.TransportKind.ToString() ?? TransportKind.Mock.ToString(),
                 configuration?.Host,
                 configuration?.Port ?? 0,
@@ -150,24 +150,24 @@ public sealed class AdminLocationHandler
                 status?.IsFaulty ?? false));
         }
 
-        return Results.Ok(new AdminLocationListView(views));
+        return Results.Ok(new AdminStationListView(views));
     }
 
-    public async Task<IResult> CreateAsync(SaveLocationRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> CreateAsync(SaveStationRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status400BadRequest,
                 "ValidationFailed",
-                "admin.locationNameMissing");
+                "admin.stationNameMissing");
         }
 
-        Guid locationId = Guid.NewGuid();
+        Guid stationId = Guid.NewGuid();
 
-        dbContext.ProductionLocations.Add(new ProductionLocation
+        dbContext.Stations.Add(new Station
         {
-            Id = locationId,
+            Id = stationId,
             Name = request.Name,
             SortOrder = request.SortOrder,
             IsActive = true,
@@ -175,7 +175,7 @@ public sealed class AdminLocationHandler
 
         dbContext.PrinterConfigurations.Add(new PrinterConfiguration
         {
-            ProductionLocationId = locationId,
+            StationId = stationId,
             TransportKind = TransportKind.Mock,
             Host = null,
             Port = 0,
@@ -192,13 +192,13 @@ public sealed class AdminLocationHandler
         await printerFleet.ReconcileAsync(cancellationToken);
 
         return Results.Json(
-            new SavedLocationView(locationId),
+            new SavedStationView(stationId),
             statusCode: StatusCodes.Status201Created);
     }
 
     public async Task<IResult> UpdateAsync(
-        Guid locationId,
-        SaveLocationRequest request,
+        Guid stationId,
+        SaveStationRequest request,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -206,53 +206,53 @@ public sealed class AdminLocationHandler
             return resultEnvelope.Problem(
                 StatusCodes.Status400BadRequest,
                 "ValidationFailed",
-                "admin.locationNameMissing");
+                "admin.stationNameMissing");
         }
 
-        ProductionLocation? location = await dbContext.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
+        Station? station = await dbContext.Stations
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
-        if (location is null)
+        if (station is null)
         {
             return Results.NotFound();
         }
 
-        location.Name = request.Name;
-        location.SortOrder = request.SortOrder;
+        station.Name = request.Name;
+        station.SortOrder = request.SortOrder;
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Results.Ok(new SavedLocationView(location.Id));
+        return Results.Ok(new SavedStationView(station.Id));
     }
 
-    public async Task<IResult> ActivateAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        ProductionLocation? location = await dbContext.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
+        Station? station = await dbContext.Stations
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
-        if (location is null)
+        if (station is null)
         {
             return Results.NotFound();
         }
 
-        location.IsActive = true;
+        station.IsActive = true;
         await dbContext.SaveChangesAsync(cancellationToken);
         await printerFleet.ReconcileAsync(cancellationToken);
 
-        return Results.Ok(new SavedLocationView(location.Id));
+        return Results.Ok(new SavedStationView(station.Id));
     }
 
-    public async Task<IResult> DeactivateAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        ProductionLocation? location = await dbContext.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
+        Station? station = await dbContext.Stations
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
-        if (location is null)
+        if (station is null)
         {
             return Results.NotFound();
         }
 
         int openTickets = await dbContext.LocationTickets.CountAsync(
-            ticket => ticket.ProductionLocationId == locationId
+            ticket => ticket.StationId == stationId
                 && ticket.Status != LocationTicketStatus.Printed
                 && ticket.Status != LocationTicketStatus.PrintedOnTestPrinter
                 && ticket.Status != LocationTicketStatus.HandledOnPaper,
@@ -262,12 +262,12 @@ public sealed class AdminLocationHandler
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status409Conflict,
-                "LocationHasOpenTickets",
-                "admin.locationHasOpenTickets",
+                "StationHasOpenTickets",
+                "admin.stationHasOpenTickets",
                 new Dictionary<string, string> { ["count"] = openTickets.ToString() });
         }
 
-        List<Guid> strandedItemIds = await StrandedItemIdsAsync(locationId, cancellationToken);
+        List<Guid> strandedItemIds = await StrandedItemIdsAsync(stationId, cancellationToken);
 
         if (strandedItemIds.Count > 0)
         {
@@ -278,31 +278,31 @@ public sealed class AdminLocationHandler
                 new Dictionary<string, string> { ["count"] = strandedItemIds.Count.ToString() });
         }
 
-        location.IsActive = false;
+        station.IsActive = false;
         await dbContext.SaveChangesAsync(cancellationToken);
         await printerFleet.ReconcileAsync(cancellationToken);
 
-        return Results.Ok(new SavedLocationView(location.Id));
+        return Results.Ok(new SavedStationView(station.Id));
     }
 
-    private async Task<List<Guid>> StrandedItemIdsAsync(Guid locationId, CancellationToken cancellationToken)
+    private async Task<List<Guid>> StrandedItemIdsAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        List<Guid> activeOtherLocationIds = await dbContext.ProductionLocations
+        List<Guid> activeOtherStationIds = await dbContext.Stations
             .AsNoTracking()
-            .Where(location => location.IsActive && location.Id != locationId)
-            .Select(location => location.Id)
+            .Where(station => station.IsActive && station.Id != stationId)
+            .Select(station => station.Id)
             .ToListAsync(cancellationToken);
 
-        List<Guid> assignedItemIds = await dbContext.ItemLocationAssignments
+        List<Guid> assignedItemIds = await dbContext.ItemStationAssignments
             .AsNoTracking()
-            .Where(assignment => assignment.ProductionLocationId == locationId)
+            .Where(assignment => assignment.StationId == stationId)
             .Select(assignment => assignment.CatalogItemId)
             .ToListAsync(cancellationToken);
 
-        List<Guid> itemIdsWithAnotherStation = await dbContext.ItemLocationAssignments
+        List<Guid> itemIdsWithAnotherStation = await dbContext.ItemStationAssignments
             .AsNoTracking()
             .Where(assignment => assignedItemIds.Contains(assignment.CatalogItemId)
-                && activeOtherLocationIds.Contains(assignment.ProductionLocationId))
+                && activeOtherStationIds.Contains(assignment.StationId))
             .Select(assignment => assignment.CatalogItemId)
             .Distinct()
             .ToListAsync(cancellationToken);

@@ -41,8 +41,8 @@ function mountRow(ticket: StationTicketRow, isPending = false) {
 const BACKEND_TICKET = {
   ticketId: 'ticket-1',
   orderId: 'order-1',
-  locationId: 'location-kueche',
-  locationName: 'Küche',
+  stationId: 'station-kueche',
+  stationName: 'Küche',
   sequenceNumber: 42,
   globalOrderNumber: 137,
   tableLabel: 'Tisch 12',
@@ -129,7 +129,7 @@ describe('StationTicketRow, the button that is dangerous', () => {
     const ticket = mountRow(row({ canAcknowledge: false }))
 
     expect(ticket.get('.take-unavailable').text()).toBe(
-      'Holen Sie diesen Bon am Drucker. Der Drucker dieser Station arbeitet.',
+      'Holen Sie diesen Bon am Drucker. Der Drucker dieser Ausgabestelle arbeitet.',
     )
   })
 

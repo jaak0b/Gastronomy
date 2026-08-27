@@ -2,7 +2,7 @@ import { ref, type Ref } from 'vue'
 
 export type AdminSection =
   | 'overview'
-  | 'locations'
+  | 'stations'
   | 'items'
   | 'printers'
   | 'staff'
@@ -18,7 +18,7 @@ export type AppRoute =
 
 const ADMIN_SECTIONS: AdminSection[] = [
   'overview',
-  'locations',
+  'stations',
   'items',
   'printers',
   'staff',

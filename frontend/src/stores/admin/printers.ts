@@ -17,8 +17,8 @@ export type MockFault =
 export type MockFaultMode = 'Once' | 'Sticky'
 
 export interface AdminPrinter {
-  locationId: string
-  locationName: string
+  stationId: string
+  stationName: string
   transportKind: TransportKind
   host: string | null
   port: number
@@ -36,7 +36,7 @@ export interface AdminPrinter {
   isFaulty: boolean
   waitingTicketCount: number
   lastChangedAtUtc: string | null
-  sharedWithLocationNames: string[]
+  sharedWithStationNames: string[]
   mockFolderPath: string | null
 }
 
@@ -62,7 +62,7 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
 
   async function save(printer: AdminPrinter): Promise<void> {
     errorMessage.value = null
-    const result = await request(`/api/admin/printers/${printer.locationId}`, {
+    const result = await request(`/api/admin/printers/${printer.stationId}`, {
       method: 'PUT',
       body: {
         transportKind: printer.transportKind,
@@ -84,17 +84,17 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
     await load()
   }
 
-  async function testPrint(locationId: string): Promise<void> {
+  async function testPrint(stationId: string): Promise<void> {
     errorMessage.value = null
-    const result = await request(`/api/admin/printers/${locationId}/test-print`, { method: 'POST' })
+    const result = await request(`/api/admin/printers/${stationId}/test-print`, { method: 'POST' })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
     }
   }
 
-  async function reconnect(locationId: string): Promise<void> {
+  async function reconnect(stationId: string): Promise<void> {
     errorMessage.value = null
-    const result = await request(`/api/admin/printers/${locationId}/reconnect`, { method: 'POST' })
+    const result = await request(`/api/admin/printers/${stationId}/reconnect`, { method: 'POST' })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return
@@ -103,12 +103,12 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
   }
 
   async function setMockFault(
-    locationId: string,
+    stationId: string,
     fault: MockFault,
     mode: MockFaultMode,
   ): Promise<void> {
     errorMessage.value = null
-    const result = await request(`/api/admin/mock/${locationId}/fault`, {
+    const result = await request(`/api/admin/mock/${stationId}/fault`, {
       method: 'POST',
       body: { fault, mode },
     })

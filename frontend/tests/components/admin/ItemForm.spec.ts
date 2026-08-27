@@ -4,12 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
 import type { AdminItem } from '../../../src/stores/admin/items'
-import type { AdminLocation } from '../../../src/stores/admin/locations'
+import type { AdminStation } from '../../../src/stores/admin/stations'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
-const LOCATIONS: AdminLocation[] = [
-  { id: 'location-kueche', name: 'Küche', sortOrder: 1, isActive: true },
+const STATIONS: AdminStation[] = [
+  { id: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true },
 ]
 
 const BRATWURST: AdminItem = {
@@ -19,13 +19,13 @@ const BRATWURST: AdminItem = {
   priceCents: 350,
   sortOrder: 1,
   isAvailable: true,
-  locationIds: ['location-kueche'],
+  stationIds: ['station-kueche'],
 }
 
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemForm, {
-    props: { item, locations: LOCATIONS, errorKey: null },
+    props: { item, stations: STATIONS, errorKey: null },
     global: { plugins: [i18n] },
   })
 }

@@ -20,14 +20,14 @@ public static class AdminNumbersEndpoints
             INumberAllocator numberAllocator,
             CancellationToken cancellationToken) =>
         {
-            int locationCounters = await dbContext.NumberCounters
+            int stationCounters = await dbContext.NumberCounters
                 .CountAsync(
-                    counter => counter.CounterKind == NumberCounterKind.LocationSequence,
+                    counter => counter.CounterKind == NumberCounterKind.StationSequence,
                     cancellationToken);
 
             await numberAllocator.ResetOrderAndSlipNumbersAsync(cancellationToken);
 
-            return Results.Ok(new ResetNumbersView(locationCounters));
+            return Results.Ok(new ResetNumbersView(stationCounters));
         });
     }
 }

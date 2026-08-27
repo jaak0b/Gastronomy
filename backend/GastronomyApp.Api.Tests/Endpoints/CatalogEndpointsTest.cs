@@ -45,7 +45,7 @@ public sealed class CatalogEndpointsTest
             Assert.That(body.RootElement.GetProperty("version").GetString(), Is.Not.Empty);
             Assert.That(body.RootElement.GetProperty("categories").GetArrayLength(), Is.EqualTo(2));
             Assert.That(body.RootElement.GetProperty("items").GetArrayLength(), Is.EqualTo(2));
-            Assert.That(body.RootElement.GetProperty("locations").GetArrayLength(), Is.EqualTo(2));
+            Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(2));
             Assert.That(body.RootElement.GetProperty("tableSuggestions").GetArrayLength(), Is.EqualTo(1));
         });
 
@@ -54,7 +54,7 @@ public sealed class CatalogEndpointsTest
         Assert.Multiple(() =>
         {
             Assert.That(item.GetProperty("priceCents").GetInt32(), Is.EqualTo(350));
-            Assert.That(item.GetProperty("locationIds").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(item.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
             Assert.That(item.GetProperty("isAvailable").GetBoolean(), Is.True);
         });
     }

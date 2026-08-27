@@ -1,9 +1,9 @@
 import type { CatalogItem } from './apiTypes'
 
-export function candidateLocations(item: CatalogItem): string[] {
-  return [...item.locationIds]
+export function candidateStations(item: CatalogItem): string[] {
+  return [...item.stationIds]
 }
 
 export function needsStationChoice(item: CatalogItem): boolean {
-  return candidateLocations(item).length > 1
+  return candidateStations(item).length > 1
 }

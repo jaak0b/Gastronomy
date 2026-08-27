@@ -29,7 +29,7 @@ public sealed class HubConnectionSecurityTest
     public async Task Connect_ValidStationAccessKey_JoinsTheSiteWideStationGroup()
     {
         TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        string accessKey = context.World.KitchenLocationId.ToString("N");
+        string accessKey = context.World.KitchenStationId.ToString("N");
 
         await using HubConnection connection = Connect($"hub?stationAccessKey={accessKey}");
         connection.On<JsonElement>(

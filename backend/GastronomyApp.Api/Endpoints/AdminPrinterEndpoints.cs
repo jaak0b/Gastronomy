@@ -23,28 +23,28 @@ public static class AdminPrinterEndpoints
             AdminPrinterHandler handler,
             CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-        group.MapPut("/{locationId:guid}", async (
-            Guid locationId,
+        group.MapPut("/{stationId:guid}", async (
+            Guid stationId,
             SavePrinterRequest request,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.SaveAsync(locationId, request, cancellationToken));
+            CancellationToken cancellationToken) => await handler.SaveAsync(stationId, request, cancellationToken));
 
-        group.MapPost("/{locationId:guid}/test-print", async (
-            Guid locationId,
+        group.MapPost("/{stationId:guid}/test-print", async (
+            Guid stationId,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.TestPrintAsync(locationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.TestPrintAsync(stationId, cancellationToken));
 
-        group.MapPost("/{locationId:guid}/reconnect", async (
-            Guid locationId,
+        group.MapPost("/{stationId:guid}/reconnect", async (
+            Guid stationId,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.ReconnectAsync(locationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.ReconnectAsync(stationId, cancellationToken));
 
-        routes.MapPost("/api/admin/mock/{locationId:guid}/fault", async (
-            Guid locationId,
+        routes.MapPost("/api/admin/mock/{stationId:guid}/fault", async (
+            Guid stationId,
             ArmMockFaultRequest request,
             AdminPrinterHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.ArmMockFaultAsync(locationId, request, cancellationToken));
+                await handler.ArmMockFaultAsync(stationId, request, cancellationToken));
 
         return routes;
     }
@@ -80,9 +80,9 @@ public sealed class AdminPrinterHandler
 
     public async Task<IResult> ListAsync(CancellationToken cancellationToken)
     {
-        List<ProductionLocation> locations = await dbContext.ProductionLocations
+        List<Station> stations = await dbContext.Stations
             .AsNoTracking()
-            .OrderBy(location => location.SortOrder)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
         List<PrinterConfiguration> configurations = await dbContext.PrinterConfigurations
@@ -95,10 +95,10 @@ public sealed class AdminPrinterHandler
 
         List<AdminPrinterView> views = [];
 
-        foreach (ProductionLocation location in locations)
+        foreach (Station station in stations)
         {
             PrinterConfiguration? configuration = configurations.FirstOrDefault(
-                candidate => candidate.ProductionLocationId == location.Id);
+                candidate => candidate.StationId == station.Id);
 
             if (configuration is null)
             {
@@ -106,27 +106,27 @@ public sealed class AdminPrinterHandler
             }
 
             PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.ProductionLocationId == location.Id);
+                candidate => candidate.StationId == station.Id);
 
-            IReadOnlyList<string> sharedWithLocationNames = configurations
-                .Where(candidate => candidate.ProductionLocationId != location.Id
+            IReadOnlyList<string> sharedWithStationNames = configurations
+                .Where(candidate => candidate.StationId != station.Id
                     && candidate.TransportKind == configuration.TransportKind
                     && candidate.Host == configuration.Host
                     && candidate.Port == configuration.Port)
                 .Join(
-                    locations,
-                    candidate => candidate.ProductionLocationId,
+                    stations,
+                    candidate => candidate.StationId,
                     sharing => sharing.Id,
                     (candidate, sharing) => sharing.Name)
                 .ToList();
 
             int waitingTicketCount = await printerWorkerDataAccess.CountWaitingTicketsAsync(
-                location.Id,
+                station.Id,
                 cancellationToken);
 
             views.Add(new AdminPrinterView(
-                location.Id,
-                location.Name,
+                station.Id,
+                station.Name,
                 configuration.TransportKind.ToString(),
                 configuration.Host,
                 configuration.Port,
@@ -144,7 +144,7 @@ public sealed class AdminPrinterHandler
                 status?.IsFaulty ?? false,
                 waitingTicketCount,
                 status?.LastChangedAtUtc,
-                sharedWithLocationNames,
+                sharedWithStationNames,
                 configuration.TransportKind == TransportKind.Mock
                     ? mockPrinterTransport.SlipRootFolderPath
                     : null));
@@ -154,7 +154,7 @@ public sealed class AdminPrinterHandler
     }
 
     public async Task<IResult> SaveAsync(
-        Guid locationId,
+        Guid stationId,
         SavePrinterRequest request,
         CancellationToken cancellationToken)
     {
@@ -167,7 +167,7 @@ public sealed class AdminPrinterHandler
         }
 
         PrinterConfiguration? configuration = await dbContext.PrinterConfigurations
-            .FirstOrDefaultAsync(candidate => candidate.ProductionLocationId == locationId, cancellationToken);
+            .FirstOrDefaultAsync(candidate => candidate.StationId == stationId, cancellationToken);
 
         if (configuration is null)
         {
@@ -188,48 +188,48 @@ public sealed class AdminPrinterHandler
         await dbContext.SaveChangesAsync(cancellationToken);
         await fleet.ReconcileAsync(cancellationToken);
 
-        List<Guid> sharingLocationIds = await dbContext.PrinterConfigurations
+        List<Guid> sharingStationIds = await dbContext.PrinterConfigurations
             .AsNoTracking()
             .Where(candidate => candidate.TransportKind == transportKind
                 && candidate.Host == request.Host
                 && candidate.Port == request.Port)
-            .Select(candidate => candidate.ProductionLocationId)
+            .Select(candidate => candidate.StationId)
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(new SharedEndpointView(locationId, sharingLocationIds));
+        return Results.Ok(new SharedEndpointView(stationId, sharingStationIds));
     }
 
-    public async Task<IResult> TestPrintAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> TestPrintAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        if (!await LocationExistsAsync(locationId, cancellationToken))
+        if (!await StationExistsAsync(stationId, cancellationToken))
         {
             return Results.NotFound();
         }
 
         try
         {
-            await printerFleet.TestPrintAsync(locationId, cancellationToken);
+            await printerFleet.TestPrintAsync(stationId, cancellationToken);
         }
         catch (UnknownLocationTicketException)
         {
             return NoWorkerServesThisStation();
         }
 
-        return Results.Json(new SharedEndpointView(locationId, []), statusCode: StatusCodes.Status202Accepted);
+        return Results.Json(new SharedEndpointView(stationId, []), statusCode: StatusCodes.Status202Accepted);
     }
 
-    public async Task<IResult> ReconnectAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> ReconnectAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        if (!await LocationExistsAsync(locationId, cancellationToken))
+        if (!await StationExistsAsync(stationId, cancellationToken))
         {
             return Results.NotFound();
         }
 
-        IReadOnlyList<Guid> clearedLocationIds;
+        IReadOnlyList<Guid> clearedStationIds;
 
         try
         {
-            clearedLocationIds = await printerFleet.ReconnectAsync(locationId, cancellationToken);
+            clearedStationIds = await printerFleet.ReconnectAsync(stationId, cancellationToken);
         }
         catch (UnknownLocationTicketException)
         {
@@ -237,18 +237,18 @@ public sealed class AdminPrinterHandler
         }
 
         return Results.Json(
-            new ReconnectedView(locationId, clearedLocationIds),
+            new ReconnectedView(stationId, clearedStationIds),
             statusCode: StatusCodes.Status202Accepted);
     }
 
     public async Task<IResult> ArmMockFaultAsync(
-        Guid locationId,
+        Guid stationId,
         ArmMockFaultRequest request,
         CancellationToken cancellationToken)
     {
         PrinterConfiguration? configuration = await dbContext.PrinterConfigurations
             .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.ProductionLocationId == locationId, cancellationToken);
+            .FirstOrDefaultAsync(candidate => candidate.StationId == stationId, cancellationToken);
 
         if (configuration is null)
         {
@@ -271,9 +271,9 @@ public sealed class AdminPrinterHandler
                 "admin.unknownMockFault");
         }
 
-        mockFaultRegistry.Arm(locationId, fault, mode);
+        mockFaultRegistry.Arm(stationId, fault, mode);
 
-        return Results.Ok(new ArmedMockFaultView(locationId, fault.ToString(), mode.ToString()));
+        return Results.Ok(new ArmedMockFaultView(stationId, fault.ToString(), mode.ToString()));
     }
 
     private IResult NoWorkerServesThisStation()
@@ -284,12 +284,12 @@ public sealed class AdminPrinterHandler
             "admin.stationHasNoPrinterWorker");
     }
 
-    private Task<bool> LocationExistsAsync(Guid locationId, CancellationToken cancellationToken)
+    private Task<bool> StationExistsAsync(Guid stationId, CancellationToken cancellationToken)
     {
-        return dbContext.ProductionLocations.AnyAsync(
-            location => location.Id == locationId,
+        return dbContext.Stations.AnyAsync(
+            station => station.Id == stationId,
             cancellationToken);
     }
 }
 
-public sealed record ArmedMockFaultView(Guid LocationId, string Fault, string Mode);
+public sealed record ArmedMockFaultView(Guid StationId, string Fault, string Mode);

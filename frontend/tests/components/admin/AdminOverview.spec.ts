@@ -19,7 +19,7 @@ describe('the address the phones connect to', () => {
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ locations: [], items: [], printers: [] }), { status: 200 }),
+          new Response(JSON.stringify({ stations: [], items: [], printers: [] }), { status: 200 }),
       ),
     )
   })

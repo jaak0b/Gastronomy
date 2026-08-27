@@ -148,17 +148,17 @@
     "overview": {
       "title": "Overview",
       "ready": "Everything is set up. You can now set up the phones.",
-      "missingLocation": "Create at least one station, for example Kitchen and Bar.",
+      "missingStation": "Create at least one station, for example Kitchen and Bar.",
       "missingPrinter": "Set up a printer for {name}. While the test printer is set there, no slip reaches the pile.",
       "missingItems": "Create the items with their prices.",
-      "itemsWithoutLocation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
+      "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
       "paperNearEnd": "Put a new paper roll ready at {name}. The roll in the printer is running out.",
       "openTickets": "Check the order list. {count} slip is still waiting to print. | Check the order list. {count} slips are still waiting to print.",
       "stationBlocked": "Sort out the printer at {name}. {count} slip has been waiting there for {minutes} minutes. | Sort out the printer at {name}. {count} slips have been waiting there for {minutes} minutes.",
       "address": "Phones reach the laptop at {url}.",
       "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}."
     },
-    "locations": {
+    "stations": {
       "title": "Stations",
       "help": "A station is a kitchen or a bar with its own printer.",
       "openTickets": "This station still has {count} open slip and cannot be switched off right now. | This station still has {count} open slips and cannot be switched off right now.",
@@ -174,7 +174,7 @@
     "items": {
       "title": "Items",
       "priceHelp": "Prices are only there for adding up. No money is paid through the app.",
-      "needsLocation": "Tick at least one station. Without one this item cannot be ordered.",
+      "needsStation": "Tick at least one station. Without one this item cannot be ordered.",
       "soldOut": "Sold out",
       "soldOutHelp": "Switch an item to sold out as soon as it has run out. It stays on the phones and can no longer be chosen.",
       "soldOutUndo": "Available again",
@@ -192,7 +192,7 @@
     },
     "assignment": {
       "title": "Assignment",
-      "help": "Tick where an item can be prepared."
+      "help": "Tick the stations where an item can be prepared."
     },
     "tables": {
       "title": "Tables",
@@ -308,8 +308,8 @@
     },
     "itemNameMissing": "Give the item a name before you save it.",
     "itemNeedsAStation": "Tick at least one station so the item can be ordered.",
-    "locationHasOpenTickets": "This station still has open slips and cannot be switched off yet. Work through the slips and try again afterwards.",
-    "locationNameMissing": "Give the station a name before you save it.",
+    "stationHasOpenTickets": "This station still has open slips and cannot be switched off yet. Work through the slips and try again afterwards.",
+    "stationNameMissing": "Give the station a name before you save it.",
     "personHasNoPhone": "No phone is enrolled for this person, so there is nothing to revoke.",
     "personNameMissing": "Give the person a name before you save.",
     "stationIsNotOnTheTestPrinter": "This station does not print to a folder. Practice faults are only available for stations that print to a folder.",

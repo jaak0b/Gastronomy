@@ -27,7 +27,7 @@ export function buildSubmitRequest(
       catalogItemId: line.catalogItemId,
       quantity: line.quantity,
       note: line.note,
-      productionLocationId: line.productionLocationId,
+      stationId: line.stationId,
     })),
   }
 }

@@ -11,8 +11,8 @@ public sealed record TicketStatusChangedEvent(
     Guid OrderId,
     int GlobalOrderNumber,
     Guid TicketId,
-    Guid LocationId,
-    string LocationName,
+    Guid StationId,
+    string StationName,
     int SequenceNumber,
     string Status,
     string? FailureReason,
@@ -22,11 +22,11 @@ public sealed record TicketStatusChangedEvent(
 
 public sealed record OrderStatusChangedEvent(Guid OrderId, string Status);
 
-public sealed record StationBacklogChangedEvent(Guid LocationId);
+public sealed record StationBacklogChangedEvent(Guid StationId);
 
 public sealed record PrinterStatusChangedEvent(
-    Guid LocationId,
-    string LocationName,
+    Guid StationId,
+    string StationName,
     bool IsOnline,
     bool IsPaperEnd,
     bool IsPaperNearEnd,

@@ -119,8 +119,8 @@ public sealed class OrderPlacementScenarioTest
 
         Assert.Multiple(() =>
         {
-            Assert.That(bratwurst.GetProperty("locationIds").GetArrayLength(), Is.EqualTo(1));
-            Assert.That(beer.GetProperty("locationIds").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(bratwurst.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(beer.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
         });
 
         return new CatalogSelection(

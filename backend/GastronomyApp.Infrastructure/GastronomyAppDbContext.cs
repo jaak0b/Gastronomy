@@ -11,11 +11,11 @@ public sealed class GastronomyAppDbContext : DbContext
     }
 
 
-    public DbSet<ProductionLocation> ProductionLocations => Set<ProductionLocation>();
+    public DbSet<Station> Stations => Set<Station>();
 
     public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
 
-    public DbSet<ItemLocationAssignment> ItemLocationAssignments => Set<ItemLocationAssignment>();
+    public DbSet<ItemStationAssignment> ItemStationAssignments => Set<ItemStationAssignment>();
 
     public DbSet<TableSuggestion> TableSuggestions => Set<TableSuggestion>();
 

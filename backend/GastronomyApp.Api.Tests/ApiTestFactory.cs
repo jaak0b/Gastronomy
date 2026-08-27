@@ -108,8 +108,8 @@ public sealed class ApiTestFactory : IAsyncDisposable
 public sealed record SeededWorld(
     Guid EventSessionId,
     Guid StaffMemberId,
-    Guid KitchenLocationId,
-    Guid BarLocationId,
+    Guid KitchenStationId,
+    Guid BarStationId,
     Guid BratwurstItemId,
     Guid BeerItemId);
 
@@ -136,11 +136,11 @@ public sealed class ApiSeeder
             CreatedAtUtc = baseline,
         });
 
-        AddLocation(context, world.KitchenLocationId, "Kueche", 1);
-        AddLocation(context, world.BarLocationId, "Bar", 2);
+        AddStation(context, world.KitchenStationId, "Kueche", 1);
+        AddStation(context, world.BarStationId, "Bar", 2);
 
-        AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenLocationId);
-        AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarLocationId);
+        AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenStationId);
+        AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarStationId);
 
         context.TableSuggestions.Add(new TableSuggestion
         {
@@ -153,11 +153,11 @@ public sealed class ApiSeeder
         return world;
     }
 
-    private void AddLocation(GastronomyAppDbContext context, Guid locationId, string name, int sortOrder)
+    private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
     {
-        context.ProductionLocations.Add(new ProductionLocation
+        context.Stations.Add(new Station
         {
-            Id = locationId,
+            Id = stationId,
             Name = name,
             SortOrder = sortOrder,
             IsActive = true,
@@ -165,7 +165,7 @@ public sealed class ApiSeeder
 
         context.PrinterConfigurations.Add(new PrinterConfiguration
         {
-            ProductionLocationId = locationId,
+            StationId = stationId,
             TransportKind = TransportKind.Mock,
             Host = null,
             Port = 0,
@@ -180,7 +180,7 @@ public sealed class ApiSeeder
 
         context.PrinterStatuses.Add(new PrinterStatus
         {
-            ProductionLocationId = locationId,
+            StationId = stationId,
             IsOnline = true,
             IsPaperEnd = false,
             IsPaperNearEnd = false,
@@ -200,7 +200,7 @@ public sealed class ApiSeeder
         string categoryName,
         int priceCents,
         int sortOrder,
-        Guid locationId)
+        Guid stationId)
     {
         context.CatalogItems.Add(new CatalogItem
         {
@@ -213,11 +213,11 @@ public sealed class ApiSeeder
             IsAvailable = true,
         });
 
-        context.ItemLocationAssignments.Add(new ItemLocationAssignment
+        context.ItemStationAssignments.Add(new ItemStationAssignment
         {
             Id = Guid.NewGuid(),
             CatalogItemId = itemId,
-            ProductionLocationId = locationId,
+            StationId = stationId,
         });
     }
 }

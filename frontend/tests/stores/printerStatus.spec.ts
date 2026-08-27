@@ -7,9 +7,9 @@ import { useSessionStore } from '../../src/stores/session'
 const KITCHEN_ID = '11111111-1111-1111-1111-111111111111'
 
 const REST_STATUS = {
-  locations: [
+  stations: [
     {
-      locationId: KITCHEN_ID,
+      stationId: KITCHEN_ID,
       name: 'Küche',
       isOnline: true,
       isPaperEnd: false,
@@ -22,8 +22,8 @@ const REST_STATUS = {
 }
 
 const PUSHED_STATUS = {
-  locationId: KITCHEN_ID,
-  locationName: 'Küche',
+  stationId: KITCHEN_ID,
+  stationName: 'Küche',
   isOnline: true,
   isPaperEnd: true,
   isPaperNearEnd: false,
@@ -72,7 +72,7 @@ describe('a printer status that arrives over the live connection', () => {
   it('takes the time the push carried', async () => {
     const printerStatus = await pushOneStatus()
 
-    expect(printerStatus.locations[0].lastChangedAtUtc).toBe('2026-08-27T19:30:00Z')
+    expect(printerStatus.stations[0].lastChangedAtUtc).toBe('2026-08-27T19:30:00Z')
   })
 
   it('keeps the time it already knew when a push carries none, rather than forgetting it', async () => {
@@ -81,12 +81,12 @@ describe('a printer status that arrives over the live connection', () => {
 
     const printerStatus = await pushOneStatus(withoutTime)
 
-    expect(printerStatus.locations[0].lastChangedAtUtc).toBe('2026-08-27T18:00:00Z')
+    expect(printerStatus.stations[0].lastChangedAtUtc).toBe('2026-08-27T18:00:00Z')
   })
 
   it('still applies the state the push carried', async () => {
     const printerStatus = await pushOneStatus()
 
-    expect(printerStatus.locations[0].isPaperEnd).toBe(true)
+    expect(printerStatus.stations[0].isPaperEnd).toBe(true)
   })
 })

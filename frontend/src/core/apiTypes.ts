@@ -5,7 +5,7 @@ export interface CatalogItem {
   priceCents: number
   sortOrder: number
   isAvailable: boolean
-  locationIds: string[]
+  stationIds: string[]
 }
 
 export interface CatalogCategory {
@@ -13,7 +13,7 @@ export interface CatalogCategory {
   sortOrder: number
 }
 
-export interface CatalogLocation {
+export interface CatalogStation {
   id: string
   name: string
   sortOrder: number
@@ -28,7 +28,7 @@ export interface Catalog {
   version: string
   categories: CatalogCategory[]
   items: CatalogItem[]
-  locations: CatalogLocation[]
+  stations: CatalogStation[]
   tableSuggestions: TableSuggestion[]
 }
 
@@ -36,7 +36,7 @@ export interface DraftLine {
   catalogItemId: string
   quantity: number
   note: string | null
-  productionLocationId: string | null
+  stationId: string | null
   name: string
   unitPriceCents: number
 }
@@ -75,7 +75,7 @@ export interface OrderSubmitLine {
   catalogItemId: string
   quantity: number
   note: string | null
-  productionLocationId: string | null
+  stationId: string | null
 }
 
 export interface OrderSubmitRequest {
@@ -88,8 +88,8 @@ export interface OrderSubmitRequest {
 
 export interface TicketSummary {
   ticketId: string
-  locationId: string
-  locationName: string
+  stationId: string
+  stationName: string
   sequenceNumber: number
   status: TicketStatus
   failureReason: PrintFailureReason | null
@@ -115,8 +115,8 @@ export interface OrderSubmitResponse {
   createdAtUtc: string
   tickets: {
     ticketId: string
-    locationId: string
-    locationName: string
+    stationId: string
+    stationName: string
     sequenceNumber: number
     status: TicketStatus
     lineIds: string[]
@@ -144,7 +144,7 @@ export interface RedeemResponse {
 }
 
 export interface PrinterStatusRow {
-  locationId: string
+  stationId: string
   name: string
   isOnline: boolean
   isPaperEnd: boolean

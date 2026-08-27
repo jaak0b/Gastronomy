@@ -13,7 +13,7 @@ public sealed class OrderLineConfiguration : IEntityTypeConfiguration<OrderLine>
         builder.Property(line => line.OrderId).IsRequired();
         builder.Property(line => line.LocationTicketId).IsRequired();
         builder.Property(line => line.CatalogItemId).IsRequired();
-        builder.Property(line => line.ChosenProductionLocationId).IsRequired(false);
+        builder.Property(line => line.ChosenStationId).IsRequired(false);
         builder.Property(line => line.ItemNameSnapshot).IsRequired().HasMaxLength(60);
         builder.Property(line => line.UnitPriceCentsSnapshot).IsRequired();
         builder.Property(line => line.Quantity).IsRequired();

@@ -18,8 +18,8 @@ function toDraftLine(value: unknown): DraftLine | null {
     catalogItemId: candidate.catalogItemId,
     quantity: candidate.quantity,
     note: typeof candidate.note === 'string' ? candidate.note : null,
-    productionLocationId:
-      typeof candidate.productionLocationId === 'string' ? candidate.productionLocationId : null,
+    stationId:
+      typeof candidate.stationId === 'string' ? candidate.stationId : null,
     name: typeof candidate.name === 'string' ? candidate.name : '',
     unitPriceCents: typeof candidate.unitPriceCents === 'number' ? candidate.unitPriceCents : 0,
   }
@@ -72,7 +72,7 @@ export function saveDraft(draft: DraftOrder): void {
         catalogItemId: line.catalogItemId,
         quantity: line.quantity,
         note: line.note,
-        productionLocationId: line.productionLocationId,
+        stationId: line.stationId,
         name: line.name,
         unitPriceCents: line.unitPriceCents,
       })),
@@ -125,12 +125,12 @@ export function setLineNote(draft: DraftOrder, index: number, note: string | nul
 export function setLineStation(
   draft: DraftOrder,
   index: number,
-  locationId: string | null,
+  stationId: string | null,
 ): DraftOrder {
   return withLines(
     draft,
     draft.lines.map((line, position) =>
-      position === index ? { ...line, productionLocationId: locationId } : line,
+      position === index ? { ...line, stationId: stationId } : line,
     ),
   )
 }

@@ -42,8 +42,8 @@ function mountPrinters() {
 const ONE_PRINTER = JSON.stringify({
   printers: [
     {
-      locationId: 'location-kueche',
-      locationName: 'Küche',
+      stationId: 'station-kueche',
+      stationName: 'Küche',
       transportKind: 'Mock',
       host: null,
       port: 9100,
@@ -61,7 +61,7 @@ const ONE_PRINTER = JSON.stringify({
       isFaulty: false,
       waitingTicketCount: 0,
       lastChangedAtUtc: null,
-      sharedWithLocationNames: [],
+      sharedWithStationNames: [],
       mockFolderPath: null,
     },
   ],
@@ -144,7 +144,7 @@ describe('the printers page', () => {
     const page = mountPrinters()
 
     expect(page.get('.help').text()).toBe(
-      'Drucken Sie an jeder Station einen Testbon, bevor die Gäste kommen.',
+      'Drucken Sie an jeder Ausgabestelle einen Testbon, bevor die Gäste kommen.',
     )
   })
 
@@ -164,7 +164,7 @@ describe('the printers page', () => {
     await vi.waitFor(() => expect(page.find('.empty').exists()).toBe(true))
 
     expect(page.get('.empty').text()).toBe(
-      'Legen Sie zuerst eine Station an. Zu jeder Station gehört ein Drucker.',
+      'Legen Sie zuerst eine Ausgabestelle an. Zu jeder Ausgabestelle gehört ein Drucker.',
     )
   })
 

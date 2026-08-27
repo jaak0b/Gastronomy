@@ -23,7 +23,7 @@ public sealed class NetworkPrinterTransport : IPrinterTransport
         if (endpoint.Host is null)
         {
             throw new InvalidOperationException(
-                $"Production location {endpoint.ProductionLocationId} has no host configured for a network printer.");
+                $"Station {endpoint.StationId} has no host configured for a network printer.");
         }
 
         TcpClient client = new();

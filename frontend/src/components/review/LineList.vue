@@ -6,15 +6,15 @@ import type { BasketLineView } from '../../core/basket'
 import { formatPrice, lineTotalCents } from '../../core/totals'
 
 interface StationGroup {
-  locationId: string | null
-  locationName: string
+  stationId: string | null
+  stationName: string
   lines: { line: BasketLineView; index: number }[]
 }
 
 const props = defineProps<{
   lines: BasketLineView[]
   language: AppLanguage
-  locationNameFor: (locationId: string) => string
+  stationNameFor: (stationId: string) => string
 }>()
 defineEmits<{
   changeQuantity: [index: number, quantity: number]
@@ -24,30 +24,30 @@ defineEmits<{
 
 const { t } = useI18n()
 
-function routedLocationId(line: BasketLineView): string | null {
-  if (line.productionLocationId !== null) {
-    return line.productionLocationId
+function routedStationId(line: BasketLineView): string | null {
+  if (line.stationId !== null) {
+    return line.stationId
   }
-  return line.candidateLocationIds.length === 1 ? line.candidateLocationIds[0] : null
+  return line.candidateStationIds.length === 1 ? line.candidateStationIds[0] : null
 }
 
 const groups = computed<StationGroup[]>(() => {
-  const byLocation = new Map<string, StationGroup>()
+  const byStation = new Map<string, StationGroup>()
   props.lines.forEach((line, index) => {
-    const locationId = routedLocationId(line)
-    const groupKey = locationId ?? ''
-    const existing = byLocation.get(groupKey)
+    const stationId = routedStationId(line)
+    const groupKey = stationId ?? ''
+    const existing = byStation.get(groupKey)
     if (existing === undefined) {
-      byLocation.set(groupKey, {
-        locationId,
-        locationName: locationId === null ? '' : props.locationNameFor(locationId),
+      byStation.set(groupKey, {
+        stationId,
+        stationName: stationId === null ? '' : props.stationNameFor(stationId),
         lines: [{ line, index }],
       })
     } else {
       existing.lines.push({ line, index })
     }
   })
-  return [...byLocation.values()]
+  return [...byStation.values()]
 })
 
 function priceOf(line: BasketLineView): string {
@@ -59,14 +59,14 @@ function nameOf(line: BasketLineView): string {
 }
 
 function stationLabelFor(line: BasketLineView): string | null {
-  if (line.candidateLocationIds.length <= 1) {
+  if (line.candidateStationIds.length <= 1) {
     return null
   }
-  const locationId = routedLocationId(line)
-  if (locationId === null) {
+  const stationId = routedStationId(line)
+  if (stationId === null) {
     return null
   }
-  return t('line.station', { name: props.locationNameFor(locationId) })
+  return t('line.station', { name: props.stationNameFor(stationId) })
 }
 
 function noteInput(event: Event): string | null {
@@ -77,9 +77,9 @@ function noteInput(event: Event): string | null {
 
 <template>
   <div class="line-list">
-    <section v-for="group in groups" :key="group.locationId ?? group.locationName" class="group">
-      <h3 v-if="group.locationId !== null" class="text-subtitle-1 mt-4">
-        {{ t('review.goesTo', { name: group.locationName }) }}
+    <section v-for="group in groups" :key="group.stationId ?? group.stationName" class="group">
+      <h3 v-if="group.stationId !== null" class="text-subtitle-1 mt-4">
+        {{ t('review.goesTo', { name: group.stationName }) }}
       </h3>
       <v-card
         v-for="entry in group.lines"
@@ -141,7 +141,7 @@ function noteInput(event: Event): string | null {
             @click="$emit('changeQuantity', entry.index, entry.line.quantity + 1)"
           />
           <v-btn
-            v-if="entry.line.candidateLocationIds.length > 1"
+            v-if="entry.line.candidateStationIds.length > 1"
             class="change-station"
             variant="text"
             @click="$emit('changeStation', entry.index)"

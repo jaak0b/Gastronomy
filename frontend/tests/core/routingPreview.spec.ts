@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { candidateLocations, needsStationChoice } from '../../src/core/routingPreview'
+import { candidateStations, needsStationChoice } from '../../src/core/routingPreview'
 import type { CatalogItem } from '../../src/core/apiTypes'
 
-function itemWith(locationIds: string[]): CatalogItem {
+function itemWith(stationIds: string[]): CatalogItem {
   return {
     id: 'item-1',
     name: 'Bier',
@@ -10,27 +10,27 @@ function itemWith(locationIds: string[]): CatalogItem {
     priceCents: 420,
     sortOrder: 1,
     isAvailable: true,
-    locationIds,
+    stationIds,
   }
 }
 
-describe('candidateLocations', () => {
+describe('candidateStations', () => {
   it('names the one station that can prepare the item', () => {
-    const candidates = candidateLocations(itemWith(['location-kueche']))
+    const candidates = candidateStations(itemWith(['station-kueche']))
 
-    expect(candidates).toEqual(['location-kueche'])
+    expect(candidates).toEqual(['station-kueche'])
   })
 
   it('names every station that can prepare the item', () => {
-    const candidates = candidateLocations(
-      itemWith(['location-theke-innen', 'location-theke-aussen']),
+    const candidates = candidateStations(
+      itemWith(['station-theke-innen', 'station-theke-aussen']),
     )
 
-    expect(candidates).toEqual(['location-theke-innen', 'location-theke-aussen'])
+    expect(candidates).toEqual(['station-theke-innen', 'station-theke-aussen'])
   })
 
   it('names no station for an item nobody was assigned to prepare', () => {
-    const candidates = candidateLocations(itemWith([]))
+    const candidates = candidateStations(itemWith([]))
 
     expect(candidates).toEqual([])
   })
@@ -38,13 +38,13 @@ describe('candidateLocations', () => {
 
 describe('needsStationChoice', () => {
   it('never asks when exactly one station can prepare the item', () => {
-    const asks = needsStationChoice(itemWith(['location-kueche']))
+    const asks = needsStationChoice(itemWith(['station-kueche']))
 
     expect(asks).toBe(false)
   })
 
   it('asks when two stations can prepare the item', () => {
-    const asks = needsStationChoice(itemWith(['location-theke-innen', 'location-theke-aussen']))
+    const asks = needsStationChoice(itemWith(['station-theke-innen', 'station-theke-aussen']))
 
     expect(asks).toBe(true)
   })

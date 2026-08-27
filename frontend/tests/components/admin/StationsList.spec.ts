@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import LocationsList from '../../../src/components/admin/locations/LocationsList.vue'
+import StationsList from '../../../src/components/admin/stations/StationsList.vue'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STATION_ID = '11111111-1111-1111-1111-111111111111'
 
 const ONE_STATION = JSON.stringify({
-  locations: [
+  stations: [
     {
-      locationId: STATION_ID,
+      stationId: STATION_ID,
       name: 'Küche',
       sortOrder: 1,
       isActive: true,
@@ -43,7 +43,7 @@ function refuseDeactivationWith(messageKey: string, parameters: Record<string, u
 }
 
 function mountList() {
-  return mount(LocationsList, { global: { plugins: testPlugins() }, attachTo: document.body })
+  return mount(StationsList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
 
@@ -55,7 +55,7 @@ async function deactivateFirstStation(list: ReturnType<typeof mountList>) {
 }
 
 const ONE_STATION_SWITCHED_OFF = JSON.stringify({
-  locations: [{ ...JSON.parse(ONE_STATION).locations[0], isActive: false }],
+  stations: [{ ...JSON.parse(ONE_STATION).stations[0], isActive: false }],
 })
 
 describe('switching a station off', () => {
@@ -129,7 +129,7 @@ describe('switching a station off', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
+      expect(urls).toContain(`/api/admin/stations/${STATION_ID}/deactivate`),
     )
   })
 })
@@ -176,7 +176,7 @@ describe('a station that is switched off', () => {
     await list.get('.show-deactivated input').setValue(true)
     await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
 
-    expect(list.get('.reactivate').text()).toBe('Station einschalten')
+    expect(list.get('.reactivate').text()).toBe('Ausgabestelle einschalten')
   })
 
   it('switches it back on at its own address', async () => {
@@ -195,7 +195,7 @@ describe('a station that is switched off', () => {
     await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.reactivate').trigger('click')
 
-    await vi.waitFor(() => expect(urls).toContain(`/api/admin/locations/${STATION_ID}/activate`))
+    await vi.waitFor(() => expect(urls).toContain(`/api/admin/stations/${STATION_ID}/activate`))
   })
 })
 
@@ -220,7 +220,7 @@ describe('the buttons beside a station', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
+      expect(urls).toContain(`/api/admin/stations/${STATION_ID}/deactivate`),
     )
   })
 
@@ -239,7 +239,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Ordnen Sie 2 Artikeln zuerst eine andere Station zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Station und können nicht bestellt werden.',
+      'Ordnen Sie 2 Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.',
     )
   })
 
@@ -259,18 +259,18 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Ordnen Sie 1 Artikel zuerst einer anderen Station zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Station und kann nicht bestellt werden.',
+      'Ordnen Sie 1 Artikel zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Ausgabestelle und kann nicht bestellt werden.',
     )
   })
 
   it('says open slips when open slips really are the reason', async () => {
-    refuseDeactivationWith('admin.locations.openTickets', { count: 3 })
+    refuseDeactivationWith('admin.stations.openTickets', { count: 3 })
 
     const list = mountList()
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Diese Station hat noch 3 offene Bons und kann jetzt nicht abgeschaltet werden.',
+      'Diese Ausgabestelle hat noch 3 offene Bons und kann jetzt nicht abgeschaltet werden.',
     )
   })
 

@@ -12,7 +12,7 @@ namespace GastronomyApp.Api.Printing;
 
 public sealed record PreflightResult(bool IsBlocking, PrinterStatusSnapshot Snapshot, PrintFailureReason? BlockingReason);
 
-public sealed record PendingTestPrint(Guid ProductionLocationId, Guid PrintJobId);
+public sealed record PendingTestPrint(Guid StationId, Guid PrintJobId);
 
 public sealed class PrinterWorker
 {
@@ -42,7 +42,7 @@ public sealed class PrinterWorker
 
     public PrinterWorker(
         PrinterEndpoint endpoint,
-        IReadOnlyCollection<Guid> servedProductionLocationIds,
+        IReadOnlyCollection<Guid> servedStationIds,
         IPrinterTransport transport,
         IPrinterWorkerDataAccess dataAccess,
         IPrintCallbacks callbacks,
@@ -61,7 +61,7 @@ public sealed class PrinterWorker
         this.domainServices = domainServices;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        ServedProductionLocationIds = [.. servedProductionLocationIds];
+        ServedStationIds = [.. servedStationIds];
         lastHeartbeatAtUtc = timeProvider.GetUtcNow();
         endpointKey = domainServices.EndpointKeyBuilder.Build(
             endpoint.TransportKind,
@@ -70,7 +70,7 @@ public sealed class PrinterWorker
             endpoint.AgentIdentifier ?? string.Empty);
     }
 
-    public Guid[] ServedProductionLocationIds { get; }
+    public Guid[] ServedStationIds { get; }
 
     public PrinterEndpoint Endpoint
     {
@@ -109,13 +109,13 @@ public sealed class PrinterWorker
         }
     }
 
-    public void EnqueueTestPrint(Guid productionLocationId, Guid printJobId)
+    public void EnqueueTestPrint(Guid stationId, Guid printJobId)
     {
         lock (guard)
         {
             if (!pendingTestPrints.Any(candidate => candidate.PrintJobId == printJobId))
             {
-                pendingTestPrints.Add(new PendingTestPrint(productionLocationId, printJobId));
+                pendingTestPrints.Add(new PendingTestPrint(stationId, printJobId));
             }
         }
     }
@@ -143,8 +143,8 @@ public sealed class PrinterWorker
 
     public async Task RecoverAtStartupAsync(CancellationToken cancellationToken)
     {
-        await dataAccess.MarkPrintingTicketsUnknownAsync(ServedProductionLocationIds, cancellationToken);
-        IReadOnlyList<Guid> recoverable = await dataAccess.LoadRecoverableTicketIdsAsync(ServedProductionLocationIds, cancellationToken);
+        await dataAccess.MarkPrintingTicketsUnknownAsync(ServedStationIds, cancellationToken);
+        IReadOnlyList<Guid> recoverable = await dataAccess.LoadRecoverableTicketIdsAsync(ServedStationIds, cancellationToken);
         foreach (Guid locationTicketId in recoverable)
         {
             Enqueue(locationTicketId);
@@ -157,14 +157,14 @@ public sealed class PrinterWorker
         reconnectBackoff.Reset();
         reconnectNotBeforeUtc = null;
         await CloseSessionAsync();
-        await dataAccess.ClearFaultyAtEndpointAsync(ServedProductionLocationIds, cancellationToken);
+        await dataAccess.ClearFaultyAtEndpointAsync(ServedStationIds, cancellationToken);
 
-        foreach (Guid productionLocationId in ServedProductionLocationIds)
+        foreach (Guid stationId in ServedStationIds)
         {
-            await PushPrinterStatusAsync(productionLocationId, CurrentStatusOrOffline(), false, cancellationToken);
+            await PushPrinterStatusAsync(stationId, CurrentStatusOrOffline(), false, cancellationToken);
         }
 
-        return ServedProductionLocationIds;
+        return ServedStationIds;
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -306,10 +306,10 @@ public sealed class PrinterWorker
             slip.Bytes,
             slip.RenderedText,
             ticket.Kind,
-            ticket.LocationSequenceNumber,
+            ticket.StationSequenceNumber,
             ticket.ReprintCount,
-            ticket.ProductionLocationId,
-            ticket.ProductionLocationName);
+            ticket.StationId,
+            ticket.StationName);
 
         PrintDispatchResult dispatch;
         try
@@ -340,7 +340,7 @@ public sealed class PrinterWorker
             pendingTestPrints.RemoveAt(0);
         }
 
-        Guid productionLocationId = pending.ProductionLocationId;
+        Guid stationId = pending.StationId;
         DateTimeOffset startedAt = timeProvider.GetUtcNow();
         IPrinterSession? session = await EnsureSessionAsync(cancellationToken);
         if (session is null)
@@ -361,23 +361,23 @@ public sealed class PrinterWorker
             return true;
         }
 
-        TestPrintLoadResult testPrint = await dataAccess.LoadTestPrintAsync(productionLocationId, cancellationToken);
+        TestPrintLoadResult testPrint = await dataAccess.LoadTestPrintAsync(stationId, cancellationToken);
         RenderedSlip slip = renderer.RenderTestSlip(new TestSlipRenderRequest(
-            testPrint.ProductionLocationName,
+            testPrint.StationName,
             language.Current,
             timeProvider.GetUtcNow(),
             TimeZoneInfo.Local));
 
         int processId = await dataAccess.AllocateProcessIdAsync(endpointKey, cancellationToken);
         PrintDispatchResult dispatch = await session.SendJobAsync(
-            new PrintPayload(processId, slip.Bytes, slip.RenderedText, PrintJobKind.Test, 0, 0, productionLocationId, testPrint.ProductionLocationName),
+            new PrintPayload(processId, slip.Bytes, slip.RenderedText, PrintJobKind.Test, 0, 0, stationId, testPrint.StationName),
             cancellationToken);
 
         await dataAccess.RecordAttemptAsync(
             BuildAttempt(pending.PrintJobId, dispatch.Outcome, PrintAttemptPhase.AwaitingEcho, dispatch.BytesWritten, dispatch.StatusAtEnd, dispatch.Detail, startedAt, timeProvider.GetUtcNow()),
             cancellationToken);
-        await dataAccess.WritePrinterStatusAsync(productionLocationId, dispatch.StatusAtEnd, cancellationToken);
-        await PushPrinterStatusAsync(productionLocationId, dispatch.StatusAtEnd, false, cancellationToken);
+        await dataAccess.WritePrinterStatusAsync(stationId, dispatch.StatusAtEnd, cancellationToken);
+        await PushPrinterStatusAsync(stationId, dispatch.StatusAtEnd, false, cancellationToken);
         return true;
     }
 
@@ -406,16 +406,16 @@ public sealed class PrinterWorker
         if (ticket.Kind == PrintJobKind.Test)
         {
             return renderer.RenderTestSlip(new TestSlipRenderRequest(
-                ticket.ProductionLocationName,
+                ticket.StationName,
                 language.Current,
                 timeProvider.GetUtcNow(),
                 TimeZoneInfo.Local));
         }
 
         SlipRenderRequest request = new(
-            ticket.ProductionLocationName,
+            ticket.StationName,
             language.Current,
-            ticket.LocationSequenceNumber,
+            ticket.StationSequenceNumber,
             ticket.GlobalOrderNumber,
             ticket.TableLabel,
             ticket.StaffMemberName,
@@ -553,13 +553,13 @@ public sealed class PrinterWorker
             },
             cancellationToken);
 
-        await dataAccess.WritePrinterStatusAsync(ticket.ProductionLocationId, dispatch.StatusAtEnd, cancellationToken);
+        await dataAccess.WritePrinterStatusAsync(ticket.StationId, dispatch.StatusAtEnd, cancellationToken);
         await callbacks.OnTicketStatusChangedAsync(ticket.OrderId, ticket.LocationTicketId, applied.TicketStatus, null, cancellationToken);
-        await PushPrinterStatusAsync(ticket.ProductionLocationId, dispatch.StatusAtEnd, false, cancellationToken);
+        await PushPrinterStatusAsync(ticket.StationId, dispatch.StatusAtEnd, false, cancellationToken);
 
         if (mapping.JobStatus == PrintJobStatus.Unknown)
         {
-            await ReQueryAfterUnknownAsync(ticket.ProductionLocationId, cancellationToken);
+            await ReQueryAfterUnknownAsync(ticket.StationId, cancellationToken);
         }
 
         bool stillWaiting = !applied.TicketWasTakenByHuman
@@ -579,7 +579,7 @@ public sealed class PrinterWorker
         await TripBreakerIfNeededAsync(dispatch, mapping, cancellationToken);
     }
 
-    private async Task ReQueryAfterUnknownAsync(Guid productionLocationId, CancellationToken cancellationToken)
+    private async Task ReQueryAfterUnknownAsync(Guid stationId, CancellationToken cancellationToken)
     {
         if (openSession is null)
         {
@@ -590,8 +590,8 @@ public sealed class PrinterWorker
         {
             PrinterStatusSnapshot reQueried = await openSession.QueryStatusAsync(cancellationToken);
             AcceptStatusSnapshot(reQueried);
-            await dataAccess.WritePrinterStatusAsync(productionLocationId, reQueried, cancellationToken);
-            await PushPrinterStatusAsync(productionLocationId, reQueried, false, cancellationToken);
+            await dataAccess.WritePrinterStatusAsync(stationId, reQueried, cancellationToken);
+            await PushPrinterStatusAsync(stationId, reQueried, false, cancellationToken);
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException)
         {
@@ -632,7 +632,7 @@ public sealed class PrinterWorker
         CancellationToken cancellationToken)
     {
         IReadOnlyList<SuspensionPeriod> suspensions =
-            await dataAccess.LoadSuspensionPeriodsAsync(ticket.ProductionLocationId, transport.Kind, cancellationToken);
+            await dataAccess.LoadSuspensionPeriodsAsync(ticket.StationId, transport.Kind, cancellationToken);
 
         GiveUpWindowEvaluation evaluation = domainServices.GiveUpWindowCalculator.Evaluate(
             ticket.CreatedAtUtc,
@@ -682,16 +682,16 @@ public sealed class PrinterWorker
         }
 
         logger.LogError("Printer endpoint {EndpointKey} stopped making sense and its circuit breaker tripped.", endpointKey);
-        await dataAccess.FailAllWaitingAtEndpointAsync(ServedProductionLocationIds, PrintFailureReason.StationFaulty, cancellationToken);
+        await dataAccess.FailAllWaitingAtEndpointAsync(ServedStationIds, PrintFailureReason.StationFaulty, cancellationToken);
 
         lock (guard)
         {
             pending.Clear();
         }
 
-        foreach (Guid productionLocationId in ServedProductionLocationIds)
+        foreach (Guid stationId in ServedStationIds)
         {
-            await PushPrinterStatusAsync(productionLocationId, dispatch.StatusAtEnd, true, cancellationToken);
+            await PushPrinterStatusAsync(stationId, dispatch.StatusAtEnd, true, cancellationToken);
         }
     }
 
@@ -714,21 +714,21 @@ public sealed class PrinterWorker
         PrinterStatusSnapshot offline = new(false, false, false, false, false, detail, timeProvider.GetUtcNow());
         cachedStatus = null;
 
-        foreach (Guid productionLocationId in ServedProductionLocationIds)
+        foreach (Guid stationId in ServedStationIds)
         {
-            await dataAccess.WritePrinterStatusAsync(productionLocationId, offline, cancellationToken);
-            await PushPrinterStatusAsync(productionLocationId, offline, false, cancellationToken);
+            await dataAccess.WritePrinterStatusAsync(stationId, offline, cancellationToken);
+            await PushPrinterStatusAsync(stationId, offline, false, cancellationToken);
         }
     }
 
     private async Task PushPrinterStatusAsync(
-        Guid productionLocationId,
+        Guid stationId,
         PrinterStatusSnapshot snapshot,
         bool isFaulty,
         CancellationToken cancellationToken)
     {
-        int waiting = await dataAccess.CountWaitingTicketsAsync(productionLocationId, cancellationToken);
-        await callbacks.OnPrinterStatusChangedAsync(productionLocationId, snapshot, isFaulty, waiting, cancellationToken);
+        int waiting = await dataAccess.CountWaitingTicketsAsync(stationId, cancellationToken);
+        await callbacks.OnPrinterStatusChangedAsync(stationId, snapshot, isFaulty, waiting, cancellationToken);
     }
 
     private PrintAttempt BuildAttempt(

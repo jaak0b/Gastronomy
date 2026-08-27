@@ -9,8 +9,8 @@ import en from '../../../src/locales/en.json'
 function ticket(printerHasPaper: boolean | null): TicketSummary {
   return {
     ticketId: 'ticket-1',
-    locationId: 'location-kueche',
-    locationName: 'Küche',
+    stationId: 'station-kueche',
+    stationName: 'Küche',
     sequenceNumber: 42,
     status: 'Unknown',
     failureReason: 'SocketDropped',

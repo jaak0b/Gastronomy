@@ -5,8 +5,8 @@ import type { OrderStatus, OrderSummary, TicketStatus } from '../../src/core/api
 function ticket(status: TicketStatus, sequenceNumber: number) {
   return {
     ticketId: `ticket-${sequenceNumber}`,
-    locationId: 'location-kueche',
-    locationName: 'Kueche',
+    stationId: 'station-kueche',
+    stationName: 'Kueche',
     sequenceNumber,
     status,
     failureReason: null,

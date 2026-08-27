@@ -63,7 +63,7 @@ describe('buildSubmitRequest', () => {
       catalogItemId: 'item-1',
       quantity: 2,
       note: 'ohne Zwiebeln',
-      productionLocationId: 'location-2',
+      stationId: 'station-2',
       name: 'Bratwurst',
       unitPriceCents: 350,
     })
@@ -81,7 +81,7 @@ describe('buildSubmitRequest', () => {
           catalogItemId: 'item-1',
           quantity: 2,
           note: 'ohne Zwiebeln',
-          productionLocationId: 'location-2',
+          stationId: 'station-2',
         },
       ],
     })
@@ -92,7 +92,7 @@ describe('buildSubmitRequest', () => {
       catalogItemId: 'item-1',
       quantity: 1,
       note: null,
-      productionLocationId: null,
+      stationId: null,
       name: 'Bratwurst',
       unitPriceCents: 350,
     })
@@ -103,8 +103,8 @@ describe('buildSubmitRequest', () => {
     expect(Object.keys(request.lines[0]).sort()).toEqual([
       'catalogItemId',
       'note',
-      'productionLocationId',
       'quantity',
+      'stationId',
     ])
   })
 

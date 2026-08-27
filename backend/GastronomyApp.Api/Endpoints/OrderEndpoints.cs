@@ -132,7 +132,7 @@ public sealed class OrderPlacementHandler
                     CatalogItemId = line.CatalogItemId,
                     Quantity = line.Quantity,
                     Note = line.Note,
-                    ProductionLocationId = line.ProductionLocationId,
+                    StationId = line.StationId,
                 }),
             ],
         };
@@ -237,7 +237,7 @@ public sealed class SubmissionComparison
                 candidate.CatalogItemId == line.CatalogItemId
                 && candidate.Quantity == line.Quantity
                 && string.Equals(candidate.Note ?? string.Empty, line.Note ?? string.Empty, StringComparison.Ordinal)
-                && candidate.ChosenProductionLocationId == line.ProductionLocationId);
+                && candidate.ChosenStationId == line.StationId);
 
             if (match is null)
             {

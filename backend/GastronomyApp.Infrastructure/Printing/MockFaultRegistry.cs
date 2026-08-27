@@ -23,32 +23,32 @@ public sealed record ArmedMockFault(MockFault Fault, MockFaultMode Mode);
 
 public interface IMockFaultRegistry
 {
-    public MockFault GetArmedFault(Guid productionLocationId);
+    public MockFault GetArmedFault(Guid stationId);
 
-    public void Arm(Guid productionLocationId, MockFault fault, MockFaultMode mode);
+    public void Arm(Guid stationId, MockFault fault, MockFaultMode mode);
 
-    public void ClearIfOnce(Guid productionLocationId);
+    public void ClearIfOnce(Guid stationId);
 }
 
 public sealed class InMemoryMockFaultRegistry : IMockFaultRegistry
 {
     private readonly ConcurrentDictionary<Guid, ArmedMockFault> armed = new();
 
-    public MockFault GetArmedFault(Guid productionLocationId)
+    public MockFault GetArmedFault(Guid stationId)
     {
-        return armed.TryGetValue(productionLocationId, out ArmedMockFault? entry) ? entry.Fault : MockFault.None;
+        return armed.TryGetValue(stationId, out ArmedMockFault? entry) ? entry.Fault : MockFault.None;
     }
 
-    public void Arm(Guid productionLocationId, MockFault fault, MockFaultMode mode)
+    public void Arm(Guid stationId, MockFault fault, MockFaultMode mode)
     {
-        armed[productionLocationId] = new ArmedMockFault(fault, mode);
+        armed[stationId] = new ArmedMockFault(fault, mode);
     }
 
-    public void ClearIfOnce(Guid productionLocationId)
+    public void ClearIfOnce(Guid stationId)
     {
-        if (armed.TryGetValue(productionLocationId, out ArmedMockFault? entry) && entry.Mode == MockFaultMode.Once)
+        if (armed.TryGetValue(stationId, out ArmedMockFault? entry) && entry.Mode == MockFaultMode.Once)
         {
-            armed[productionLocationId] = new ArmedMockFault(MockFault.None, MockFaultMode.Sticky);
+            armed[stationId] = new ArmedMockFault(MockFault.None, MockFaultMode.Sticky);
         }
     }
 }

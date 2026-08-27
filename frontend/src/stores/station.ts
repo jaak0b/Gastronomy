@@ -7,15 +7,15 @@ import type { PrinterStatusRow, StationTicketRow } from '../core/apiTypes'
 
 export const TAKE_DELAY_SECONDS = 10
 
-export interface StationLocation {
-  locationId: string
+export interface Station {
+  stationId: string
   name: string
   canPrint: boolean
 }
 
 export const useStationStore = defineStore('station', () => {
-  const locations = ref<StationLocation[]>([])
-  const selectedLocationId = ref<string | null>(null)
+  const stations = ref<Station[]>([])
+  const selectedStationId = ref<string | null>(null)
   const tickets = ref<StationTicketRow[]>([])
   const printer = ref<PrinterStatusRow | null>(null)
   const loadFailed = ref(false)
@@ -27,27 +27,27 @@ export const useStationStore = defineStore('station', () => {
     return useSessionStore().deviceToken
   }
 
-  async function loadLocations(): Promise<void> {
+  async function loadStations(): Promise<void> {
     loadFailed.value = false
-    const result = await request<{ locations: StationLocation[] }>('/api/stations', {
+    const result = await request<{ stations: Station[] }>('/api/stations', {
       token: deviceToken(),
     })
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
     }
-    locations.value = result.data.locations
-    if (selectedLocationId.value === null && result.data.locations.length > 0) {
-      selectedLocationId.value = result.data.locations[0].locationId
+    stations.value = result.data.stations
+    if (selectedStationId.value === null && result.data.stations.length > 0) {
+      selectedStationId.value = result.data.stations[0].stationId
     }
   }
 
   async function loadTickets(): Promise<void> {
-    if (selectedLocationId.value === null) {
+    if (selectedStationId.value === null) {
       return
     }
     const result = await request<{ tickets: StationTicketRow[] }>(
-      `/api/stations/${selectedLocationId.value}/tickets`,
+      `/api/stations/${selectedStationId.value}/tickets`,
       { token: deviceToken() },
     )
     if (result.kind === 'ok') {
@@ -56,11 +56,11 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function loadPrinter(): Promise<void> {
-    if (selectedLocationId.value === null) {
+    if (selectedStationId.value === null) {
       return
     }
     const result = await request<PrinterStatusRow>(
-      `/api/stations/${selectedLocationId.value}/status`,
+      `/api/stations/${selectedStationId.value}/status`,
       { token: deviceToken() },
     )
     if (result.kind === 'ok') {
@@ -78,7 +78,7 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     const result = await request(
-      `/api/stations/${selectedLocationId.value}/tickets/${ticket.ticketId}/acknowledge`,
+      `/api/stations/${selectedStationId.value}/tickets/${ticket.ticketId}/acknowledge`,
       { method: 'POST', token: deviceToken() },
     )
     if (result.kind === 'error') {
@@ -124,19 +124,19 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function open(): Promise<void> {
-    await loadLocations()
+    await loadStations()
     await loadTickets()
     await loadPrinter()
   }
 
-  async function selectLocation(locationId: string): Promise<void> {
-    selectedLocationId.value = locationId
+  async function selectStation(stationId: string): Promise<void> {
+    selectedStationId.value = stationId
     await loadTickets()
   }
 
   return {
-    locations,
-    selectedLocationId,
+    stations,
+    selectedStationId,
     tickets,
     printer,
     loadFailed,
@@ -145,7 +145,7 @@ export const useStationStore = defineStore('station', () => {
     listen,
     refresh,
     open,
-    selectLocation,
+    selectStation,
     loadTickets,
     loadPrinter,
     isPending,

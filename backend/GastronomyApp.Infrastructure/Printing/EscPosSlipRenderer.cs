@@ -6,9 +6,9 @@ namespace GastronomyApp.Infrastructure.Printing;
 public sealed record SlipLine(int Quantity, string ItemName, string? LineNote);
 
 public sealed record SlipRenderRequest(
-    string LocationName,
+    string StationName,
     string LanguageCode,
-    int LocationSequenceNumber,
+    int StationSequenceNumber,
     int GlobalOrderNumber,
     string TableName,
     string StaffMemberName,
@@ -20,7 +20,7 @@ public sealed record SlipRenderRequest(
     string? ChosenStationNameIfDifferent);
 
 public sealed record TestSlipRenderRequest(
-    string LocationName,
+    string StationName,
     string LanguageCode,
     DateTimeOffset PrintedAtUtc,
     TimeZoneInfo DisplayTimeZone);
@@ -79,7 +79,7 @@ public sealed class EscPosSlipRenderer
         List<SlipSegment> segments =
         [
             new SlipSegment(NormalText(), [MajorSeparator()]),
-            new SlipSegment(LargeText(), WrapLarge(request.LocationName)),
+            new SlipSegment(LargeText(), WrapLarge(request.StationName)),
             new SlipSegment(NormalText(), [MajorSeparator()]),
             new SlipSegment(LargeText(), WrapLarge(strings.TestSlipHeader)),
             new SlipSegment(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()]),
@@ -105,9 +105,9 @@ public sealed class EscPosSlipRenderer
                 ]));
         }
 
-        segments.Add(new SlipSegment(LargeText(), WrapLarge(request.LocationName)));
+        segments.Add(new SlipSegment(LargeText(), WrapLarge(request.StationName)));
         segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
-        segments.Add(new SlipSegment(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.LocationSequenceNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
+        segments.Add(new SlipSegment(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.StationSequenceNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
         segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
         segments.Add(new SlipSegment(EmphasisedText(), Wrap($"{strings.OrderNumberPrefix} {request.GlobalOrderNumber.ToString(CultureInfo.InvariantCulture)}")));
 

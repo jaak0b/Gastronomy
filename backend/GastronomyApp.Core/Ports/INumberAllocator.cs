@@ -4,7 +4,7 @@ public interface INumberAllocator
 {
     public Task<int> AllocateGlobalOrderNumberAsync(CancellationToken cancellationToken);
 
-    public Task<int> AllocateLocationSequenceNumberAsync(Guid productionLocationId, CancellationToken cancellationToken);
+    public Task<int> AllocateStationSequenceNumberAsync(Guid stationId, CancellationToken cancellationToken);
 
     public Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
 

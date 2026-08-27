@@ -42,11 +42,11 @@ const itemAwaitingStation = computed(() => {
 
 const totalChanged = computed(() => order.acceptedTotalChangedTo)
 
-function chooseStation(locationId: string): void {
+function chooseStation(stationId: string): void {
   if (lineAwaitingStation.value === null) {
     return
   }
-  order.chooseStation(lineAwaitingStation.value, locationId)
+  order.chooseStation(lineAwaitingStation.value, stationId)
   lineAwaitingStation.value = null
 }
 
@@ -66,7 +66,7 @@ function backToItems(): void {
     <LineList
       :lines="order.basketLines"
       :language="session.language"
-      :location-name-for="catalog.locationName"
+      :station-name-for="catalog.stationName"
       @change-quantity="order.changeQuantity"
       @change-station="(index) => (lineAwaitingStation = index)"
       @change-note="order.noteLine"
@@ -74,7 +74,7 @@ function backToItems(): void {
     <LineStationSheet
       v-if="itemAwaitingStation !== null"
       :item="itemAwaitingStation"
-      :location-name-for="catalog.locationName"
+      :station-name-for="catalog.stationName"
       @choose="chooseStation"
     />
     <TableField v-model="tableLabel" :suggestions="catalog.tableSuggestions" />

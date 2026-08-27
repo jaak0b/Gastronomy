@@ -30,41 +30,41 @@ public sealed class StationQueryHandler
         this.printerStatusReader = printerStatusReader;
     }
 
-    public async Task<IResult> ListLocationsAsync(CancellationToken cancellationToken)
+    public async Task<IResult> ListStationsAsync(CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<Guid, StationPrintability> printability =
             await printabilityReader.ReadAsync(dbContext, cancellationToken);
 
-        List<ProductionLocation> locations = await dbContext.ProductionLocations
+        List<Station> stations = await dbContext.Stations
             .AsNoTracking()
-            .Where(location => location.IsActive)
-            .OrderBy(location => location.SortOrder)
+            .Where(station => station.IsActive)
+            .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
-        List<StationLocationView> views =
+        List<StationView> views =
         [
-            .. locations.Select(location => new StationLocationView(
-                location.Id,
-                location.Name,
-                location.SortOrder,
-                printability.TryGetValue(location.Id, out StationPrintability? station)
-                    && printabilityReader.CanPrintRightNow(station))),
+            .. stations.Select(station => new StationView(
+                station.Id,
+                station.Name,
+                station.SortOrder,
+                printability.TryGetValue(station.Id, out StationPrintability? stationPrintability)
+                    && printabilityReader.CanPrintRightNow(stationPrintability))),
         ];
 
-        return Results.Ok(new StationLocationListView(views));
+        return Results.Ok(new StationListView(views));
     }
 
-    public async Task<IResult> ListTicketsAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> ListTicketsAsync(Guid stationId, CancellationToken cancellationToken)
     {
         return Results.Ok(new StationTicketListView(
-            locationId,
-            await ticketDescriber.DescribeOpenTicketsAsync(dbContext, locationId, cancellationToken)));
+            stationId,
+            await ticketDescriber.DescribeOpenTicketsAsync(dbContext, stationId, cancellationToken)));
     }
 
-    public async Task<IResult> StatusAsync(Guid locationId, CancellationToken cancellationToken)
+    public async Task<IResult> StatusAsync(Guid stationId, CancellationToken cancellationToken)
     {
         PrinterStatusListView all = await printerStatusReader.ReadAsync(dbContext, cancellationToken);
-        PrinterStatusView? selected = all.Locations.FirstOrDefault(view => view.LocationId == locationId);
+        PrinterStatusView? selected = all.Stations.FirstOrDefault(view => view.StationId == stationId);
 
         return selected is null ? Results.NotFound() : Results.Ok(selected);
     }
@@ -85,23 +85,23 @@ public sealed class StationTicketDescriber
 
     public async Task<IReadOnlyList<StationTicketView>> DescribeOpenTicketsAsync(
         GastronomyAppDbContext dbContext,
-        Guid locationId,
+        Guid stationId,
         CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<Guid, StationPrintability> printability =
             await printabilityReader.ReadAsync(dbContext, cancellationToken);
 
-        ProductionLocation? location = await dbContext.ProductionLocations
+        Station? station = await dbContext.Stations
             .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationId, cancellationToken);
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
         List<LocationTicket> tickets = await dbContext.LocationTickets
             .AsNoTracking()
-            .Where(ticket => ticket.ProductionLocationId == locationId
+            .Where(ticket => ticket.StationId == stationId
                 && ticket.Status != LocationTicketStatus.Printed
                 && ticket.Status != LocationTicketStatus.PrintedOnTestPrinter
                 && ticket.Status != LocationTicketStatus.HandledOnPaper)
-            .OrderBy(ticket => ticket.LocationSequenceNumber)
+            .OrderBy(ticket => ticket.StationSequenceNumber)
             .ToListAsync(cancellationToken);
 
         HashSet<Guid> orderIds = [.. tickets.Select(ticket => ticket.OrderId)];
@@ -127,16 +127,16 @@ public sealed class StationTicketDescriber
                 continue;
             }
 
-            printability.TryGetValue(locationId, out StationPrintability? station);
-            StationPrintability resolved = station ?? UnknownStation();
+            printability.TryGetValue(stationId, out StationPrintability? stationPrintability);
+            StationPrintability resolved = stationPrintability ?? UnknownStation();
             bool canAcknowledge = acknowledgePolicy.CanAcknowledge(ticket.Status, resolved);
 
             views.Add(new StationTicketView(
                 ticket.Id,
                 order.Id,
-                locationId,
-                location?.Name ?? string.Empty,
-                ticket.LocationSequenceNumber,
+                stationId,
+                station?.Name ?? string.Empty,
+                ticket.StationSequenceNumber,
                 order.GlobalOrderNumber,
                 order.TableLabel,
                 order.Note,
@@ -220,7 +220,7 @@ public sealed class StationAcknowledgeHandler
         IReadOnlyDictionary<Guid, StationPrintability> printability =
             await printabilityReader.ReadAsync(dbContext, cancellationToken);
 
-        if (!printability.TryGetValue(ticket.ProductionLocationId, out StationPrintability? station))
+        if (!printability.TryGetValue(ticket.StationId, out StationPrintability? station))
         {
             return Results.NotFound();
         }

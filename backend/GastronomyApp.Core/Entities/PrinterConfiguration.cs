@@ -4,7 +4,7 @@ namespace GastronomyApp.Core.Entities;
 
 public sealed class PrinterConfiguration
 {
-    public required Guid ProductionLocationId { get; set; }
+    public required Guid StationId { get; set; }
     public required TransportKind TransportKind { get; set; }
     public string? Host { get; set; }
     public required int Port { get; set; }

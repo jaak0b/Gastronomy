@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { AdminLocation } from '../../../stores/admin/locations'
+import type { AdminStation } from '../../../stores/admin/stations'
 
 const props = defineProps<{
   itemName: string
-  locations: AdminLocation[]
-  selectedLocationIds: string[]
+  stations: AdminStation[]
+  selectedStationIds: string[]
 }>()
-const emit = defineEmits<{ toggle: [locationId: string] }>()
+const emit = defineEmits<{ toggle: [stationId: string] }>()
 
 const { t } = useI18n()
 
@@ -18,11 +18,11 @@ const { t } = useI18n()
     <div class="text-subtitle-1">{{ t('admin.assignment.title') }}</div>
     <p class="help text-medium-emphasis">{{ t('admin.assignment.help') }}</p>
     <v-checkbox
-      v-for="location in locations"
-      :key="location.locationId"
-      :label="location.name"
-      :model-value="selectedLocationIds.includes(location.locationId)"
-      @update:model-value="emit('toggle', location.locationId)"
+      v-for="station in stations"
+      :key="station.stationId"
+      :label="station.name"
+      :model-value="selectedStationIds.includes(station.stationId)"
+      @update:model-value="emit('toggle', station.stationId)"
     />
   </v-sheet>
 </template>

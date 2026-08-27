@@ -19,26 +19,26 @@ public static class StationEndpoints
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.ListLocationsAsync(cancellationToken);
+            return await handler.ListStationsAsync(cancellationToken);
         });
 
-        group.MapGet("/{locationId:guid}/tickets", async (
-            Guid locationId,
+        group.MapGet("/{stationId:guid}/tickets", async (
+            Guid stationId,
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.ListTicketsAsync(locationId, cancellationToken);
+            return await handler.ListTicketsAsync(stationId, cancellationToken);
         });
 
-        group.MapGet("/{locationId:guid}/status", async (
-            Guid locationId,
+        group.MapGet("/{stationId:guid}/status", async (
+            Guid stationId,
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.StatusAsync(locationId, cancellationToken);
+            return await handler.StatusAsync(stationId, cancellationToken);
         });
 
-        group.MapPost("/{locationId:guid}/tickets/{ticketId:guid}/acknowledge", async (
+        group.MapPost("/{stationId:guid}/tickets/{ticketId:guid}/acknowledge", async (
             Guid ticketId,
             StationAcknowledgeHandler handler,
             CancellationToken cancellationToken) =>
@@ -93,7 +93,7 @@ public sealed class ClientRouteFallbackResponder
     }
 }
 
-public sealed record StationPrintabilityRow(Guid LocationId, StationPrintability Printability);
+public sealed record StationPrintabilityRow(Guid StationId, StationPrintability Printability);
 
 public sealed class StationPrintabilityReader
 {
@@ -111,9 +111,9 @@ public sealed class StationPrintabilityReader
         foreach (PrinterConfiguration configuration in configurations)
         {
             PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.ProductionLocationId == configuration.ProductionLocationId);
+                candidate => candidate.StationId == configuration.StationId);
 
-            printability[configuration.ProductionLocationId] = new StationPrintability
+            printability[configuration.StationId] = new StationPrintability
             {
                 IsFaulty = status?.IsFaulty ?? true,
                 IsOnline = status?.IsOnline ?? false,

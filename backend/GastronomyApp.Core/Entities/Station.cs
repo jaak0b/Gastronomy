@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public sealed class ProductionLocation
+public sealed class Station
 {
     public required Guid Id { get; set; }
     public required string Name { get; set; }

@@ -75,16 +75,16 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ItemLocationAssignments",
+                name: "ItemStationAssignments",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false)
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ItemLocationAssignments", x => x.Id);
+                    table.PrimaryKey("PK_ItemStationAssignments", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -92,13 +92,13 @@ namespace GastronomyApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     CounterKind = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     PrinterEndpointKey = table.Column<string>(type: "TEXT", maxLength: 96, nullable: false),
                     NextValue = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_NumberCounters", x => new { x.CounterKind, x.ProductionLocationId, x.PrinterEndpointKey });
+                    table.PrimaryKey("PK_NumberCounters", x => new { x.CounterKind, x.StationId, x.PrinterEndpointKey });
                 });
 
             migrationBuilder.CreateTable(
@@ -145,7 +145,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "PrinterConfigurations",
                 columns: table => new
                 {
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     TransportKind = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Host = table.Column<string>(type: "TEXT", maxLength: 64, nullable: true),
                     Port = table.Column<int>(type: "INTEGER", nullable: false),
@@ -159,14 +159,14 @@ namespace GastronomyApp.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PrinterConfigurations", x => x.ProductionLocationId);
+                    table.PrimaryKey("PK_PrinterConfigurations", x => x.StationId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "PrinterStatuses",
                 columns: table => new
                 {
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     IsOnline = table.Column<bool>(type: "INTEGER", nullable: false),
                     IsPaperEnd = table.Column<bool>(type: "INTEGER", nullable: false),
                     IsPaperNearEnd = table.Column<bool>(type: "INTEGER", nullable: false),
@@ -179,7 +179,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PrinterStatuses", x => x.ProductionLocationId);
+                    table.PrimaryKey("PK_PrinterStatuses", x => x.StationId);
                 });
 
             migrationBuilder.CreateTable(
@@ -188,7 +188,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     LocationTicketId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Kind = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     ProcessId = table.Column<int>(type: "INTEGER", nullable: true),
@@ -203,20 +203,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductionLocations",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
-                    SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionLocations", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "StaffMembers",
                 columns: table => new
                 {
@@ -228,6 +214,20 @@ namespace GastronomyApp.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_StaffMembers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Stations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Stations", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -249,8 +249,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    LocationSequenceNumber = table.Column<int>(type: "INTEGER", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationSequenceNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 24, nullable: false),
                     ReprintCount = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -276,7 +276,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
                     LocationTicketId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ChosenProductionLocationId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ChosenStationId = table.Column<Guid>(type: "TEXT", nullable: true),
                     ItemNameSnapshot = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
                     UnitPriceCentsSnapshot = table.Column<int>(type: "INTEGER", nullable: false),
                     Quantity = table.Column<int>(type: "INTEGER", nullable: false),
@@ -306,15 +306,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ItemLocationAssignments_CatalogItemId_ProductionLocationId",
-                table: "ItemLocationAssignments",
-                columns: new[] { "CatalogItemId", "ProductionLocationId" },
+                name: "IX_ItemStationAssignments_CatalogItemId_StationId",
+                table: "ItemStationAssignments",
+                columns: new[] { "CatalogItemId", "StationId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LocationTickets_OrderId_ProductionLocationId",
+                name: "IX_LocationTickets_OrderId_StationId",
                 table: "LocationTickets",
-                columns: new[] { "OrderId", "ProductionLocationId" },
+                columns: new[] { "OrderId", "StationId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -342,7 +342,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "EnrolmentInvitations");
 
             migrationBuilder.DropTable(
-                name: "ItemLocationAssignments");
+                name: "ItemStationAssignments");
 
             migrationBuilder.DropTable(
                 name: "LocationTickets");
@@ -366,10 +366,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "PrintJobs");
 
             migrationBuilder.DropTable(
-                name: "ProductionLocations");
+                name: "StaffMembers");
 
             migrationBuilder.DropTable(
-                name: "StaffMembers");
+                name: "Stations");
 
             migrationBuilder.DropTable(
                 name: "TableSuggestions");

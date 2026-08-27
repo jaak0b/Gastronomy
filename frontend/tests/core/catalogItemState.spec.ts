@@ -11,7 +11,7 @@ function item(id: string, isAvailable: boolean): CatalogItem {
     priceCents: 350,
     sortOrder: 1,
     isAvailable,
-    locationIds: ['location-kueche'],
+    stationIds: ['station-kueche'],
   }
 }
 
@@ -20,7 +20,7 @@ function catalogWith(items: CatalogItem[]): Catalog {
     version: '7',
     categories: [{ name: 'Essen', sortOrder: 1 }],
     items,
-    locations: [{ id: 'location-kueche', name: 'Kueche', sortOrder: 1 }],
+    stations: [{ id: 'station-kueche', name: 'Kueche', sortOrder: 1 }],
     tableSuggestions: [],
   }
 }
@@ -32,8 +32,8 @@ function line(catalogItemId: string): BasketLineView {
     unitPriceCents: 350,
     quantity: 1,
     note: null,
-    productionLocationId: null,
-    candidateLocationIds: ['location-kueche'],
+    stationId: null,
+    candidateStationIds: ['station-kueche'],
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
   }

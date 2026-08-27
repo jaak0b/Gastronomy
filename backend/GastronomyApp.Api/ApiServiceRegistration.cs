@@ -51,7 +51,7 @@ public sealed class ApiServiceRegistration
 
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
-        services.AddScoped<IProductionLocationRepository, ProductionLocationRepository>();
+        services.AddScoped<IStationRepository, StationRepository>();
         services.AddScoped<INumberAllocator, NumberCounterAllocator>();
 
         services.AddSingleton<OrderRoutingResolver>();
@@ -90,7 +90,7 @@ public sealed class ApiServiceRegistration
         services.AddSingleton<LocalNetworkAddressProvider>();
         services.AddSingleton<ReachableHostResolver>();
         services.AddSingleton<EnrolmentUrlBuilder>();
-        services.AddScoped<AdminLocationHandler>();
+        services.AddScoped<AdminStationHandler>();
         services.AddScoped<AdminItemHandler>();
         services.AddScoped<AdminStaffMembersHandler>();
         services.AddScoped<AdminPrinterHandler>();

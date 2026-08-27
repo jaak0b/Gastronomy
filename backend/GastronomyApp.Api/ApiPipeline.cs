@@ -27,7 +27,7 @@ public sealed class ApiPipeline
         app.MapStationEndpoints();
         app.MapHealthEndpoints();
         app.MapLanguageEndpoints();
-        app.MapAdminLocationEndpoints();
+        app.MapAdminStationEndpoints();
         app.MapAdminItemEndpoints();
         app.MapAdminStaffMembersEndpoints();
         app.MapAdminPrinterEndpoints();

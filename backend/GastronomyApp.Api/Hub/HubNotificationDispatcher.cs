@@ -44,21 +44,21 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             return;
         }
 
-        ProductionLocation? location = await context.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == ticket.ProductionLocationId, ct);
+        Station? station = await context.Stations
+            .FirstOrDefaultAsync(candidate => candidate.Id == ticket.StationId, ct);
 
         PrinterStatus? printerStatus = await context.PrinterStatuses
-            .FirstOrDefaultAsync(candidate => candidate.ProductionLocationId == ticket.ProductionLocationId, ct);
+            .FirstOrDefaultAsync(candidate => candidate.StationId == ticket.StationId, ct);
 
-        TicketMessage message = failureMessages.Describe(newStatus, failureReason, location?.Name ?? string.Empty);
+        TicketMessage message = failureMessages.Describe(newStatus, failureReason, station?.Name ?? string.Empty);
 
         TicketStatusChangedEvent payload = new(
             order.Id,
             order.GlobalOrderNumber,
             ticket.Id,
-            ticket.ProductionLocationId,
-            location?.Name ?? string.Empty,
-            ticket.LocationSequenceNumber,
+            ticket.StationId,
+            station?.Name ?? string.Empty,
+            ticket.StationSequenceNumber,
             newStatus.ToString(),
             failureReason?.ToString(),
             printerStatus is not null && !printerStatus.IsPaperEnd,
@@ -90,19 +90,19 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
     }
 
     public async Task OnPrinterStatusChangedAsync(
-        Guid productionLocationId,
+        Guid stationId,
         PrinterStatusSnapshot snapshot,
         bool isFaulty,
         int waitingTicketCount,
         CancellationToken ct)
     {
         await using GastronomyAppDbContext context = await contextFactory.CreateDbContextAsync(ct);
-        ProductionLocation? location = await context.ProductionLocations
-            .FirstOrDefaultAsync(candidate => candidate.Id == productionLocationId, ct);
+        Station? station = await context.Stations
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, ct);
 
         PrinterStatusChangedEvent payload = new(
-            productionLocationId,
-            location?.Name ?? string.Empty,
+            stationId,
+            station?.Name ?? string.Empty,
             snapshot.IsOnline,
             snapshot.IsPaperEnd,
             snapshot.IsPaperNearEnd,
@@ -127,11 +127,11 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             [groupNames.StaffMember(staffMemberId), groupNames.Admin],
             ct);
 
-        foreach (Guid locationId in payload.Tickets.Select(ticket => ticket.LocationId).Distinct())
+        foreach (Guid stationId in payload.Tickets.Select(ticket => ticket.StationId).Distinct())
         {
             await SendToAsync(
                 eventNames.StationBacklogChanged,
-                new StationBacklogChangedEvent(locationId),
+                new StationBacklogChangedEvent(stationId),
                 [groupNames.Devices, groupNames.Admin],
                 ct);
         }
@@ -180,9 +180,9 @@ public sealed class TicketFailureMessages
     public TicketMessage Describe(
         LocationTicketStatus status,
         PrintFailureReason? failureReason,
-        string locationName)
+        string stationName)
     {
-        Dictionary<string, string> parameters = new() { ["station"] = locationName };
+        Dictionary<string, string> parameters = new() { ["station"] = stationName };
 
         if (failureReason is not null)
         {

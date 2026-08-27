@@ -46,7 +46,7 @@ describe('SendFailurePanel', () => {
     })
 
     expect(panel.get('.paper-fallback').text()).toBe(
-      'Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Station. Das Senden hat mehrmals nicht geklappt.',
+      'Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.',
     )
   })
 

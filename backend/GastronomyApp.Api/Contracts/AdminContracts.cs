@@ -1,7 +1,7 @@
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record AdminLocationView(
-    Guid LocationId,
+public sealed record AdminStationView(
+    Guid StationId,
     string Name,
     int SortOrder,
     bool IsActive,
@@ -14,15 +14,15 @@ public sealed record AdminLocationView(
     bool IsCoverOpen,
     bool IsFaulty);
 
-public sealed record AdminLocationListView(IReadOnlyList<AdminLocationView> Locations);
+public sealed record AdminStationListView(IReadOnlyList<AdminStationView> Stations);
 
-public sealed record SaveLocationRequest
+public sealed record SaveStationRequest
 {
     public required string? Name { get; init; }
     public required int SortOrder { get; init; }
 }
 
-public sealed record SavedLocationView(Guid LocationId);
+public sealed record SavedStationView(Guid StationId);
 
 public sealed record AdminItemView(
     Guid ItemId,
@@ -32,7 +32,7 @@ public sealed record AdminItemView(
     int SortOrder,
     bool IsActive,
     bool IsAvailable,
-    IReadOnlyList<Guid> LocationIds);
+    IReadOnlyList<Guid> StationIds);
 
 public sealed record AdminItemListView(IReadOnlyList<AdminItemView> Items);
 
@@ -42,7 +42,7 @@ public sealed record SaveItemRequest
     public required string? CategoryName { get; init; }
     public required int PriceCents { get; init; }
     public required int SortOrder { get; init; }
-    public required IReadOnlyList<Guid>? LocationIds { get; init; }
+    public required IReadOnlyList<Guid>? StationIds { get; init; }
 }
 
 public sealed record SetAvailabilityRequest
@@ -80,8 +80,8 @@ public sealed record InvitationView(
     IReadOnlyList<string> AvailableAddresses);
 
 public sealed record AdminPrinterView(
-    Guid LocationId,
-    string LocationName,
+    Guid StationId,
+    string StationName,
     string TransportKind,
     string? Host,
     int Port,
@@ -99,7 +99,7 @@ public sealed record AdminPrinterView(
     bool IsFaulty,
     int WaitingTicketCount,
     DateTime? LastChangedAtUtc,
-    IReadOnlyList<string> SharedWithLocationNames,
+    IReadOnlyList<string> SharedWithStationNames,
     string? MockFolderPath);
 
 public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printers);
@@ -118,9 +118,9 @@ public sealed record SavePrinterRequest
     public required bool IsEnabled { get; init; }
 }
 
-public sealed record SharedEndpointView(Guid LocationId, IReadOnlyList<Guid> LocationsSharingThisEndpoint);
+public sealed record SharedEndpointView(Guid StationId, IReadOnlyList<Guid> StationsSharingThisEndpoint);
 
-public sealed record ReconnectedView(Guid LocationId, IReadOnlyList<Guid> ClearedLocationIds);
+public sealed record ReconnectedView(Guid StationId, IReadOnlyList<Guid> ClearedStationIds);
 
 public sealed record ArmMockFaultRequest
 {
@@ -128,4 +128,4 @@ public sealed record ArmMockFaultRequest
     public required string? Mode { get; init; }
 }
 
-public sealed record ResetNumbersView(int LocationCountersCleared);
+public sealed record ResetNumbersView(int StationCountersCleared);

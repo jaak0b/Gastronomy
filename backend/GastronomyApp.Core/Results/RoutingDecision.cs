@@ -2,8 +2,8 @@ namespace GastronomyApp.Core.Results;
 
 public sealed record RoutingDecision
 {
-    public required Guid ResolvedProductionLocationId { get; init; }
-    public required Guid? ChosenProductionLocationId { get; init; }
+    public required Guid ResolvedStationId { get; init; }
+    public required Guid? ChosenStationId { get; init; }
     public required bool FellBackFromStaleChoice { get; init; }
 }
 

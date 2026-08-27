@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record OrderLineBody(Guid CatalogItemId, int Quantity, string? Note, Guid? ProductionLocationId);
+public sealed record OrderLineBody(Guid CatalogItemId, int Quantity, string? Note, Guid? StationId);
 
 public sealed record OrderBody(
     Guid ClientOrderId,
