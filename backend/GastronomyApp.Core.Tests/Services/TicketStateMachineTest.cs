@@ -28,6 +28,7 @@ public sealed class TicketStateMachineTest
             (LocationTicketStatus.Printing, LocationTicketStatus.Printed),
             (LocationTicketStatus.Printing, LocationTicketStatus.PrintedOnTestPrinter),
             (LocationTicketStatus.Printing, LocationTicketStatus.Queued),
+            (LocationTicketStatus.Printing, LocationTicketStatus.Blocked),
             (LocationTicketStatus.Printing, LocationTicketStatus.Unknown),
             (LocationTicketStatus.Queued, LocationTicketStatus.Blocked),
             (LocationTicketStatus.Queued, LocationTicketStatus.Failed),
@@ -180,6 +181,14 @@ public sealed class TicketStateMachineTest
     {
         Assert.That(
             _stateMachine.CanTransition(LocationTicketStatus.PrintedOnTestPrinter, LocationTicketStatus.Queued),
+            Is.True);
+    }
+
+    [Test]
+    public void CanTransition_PrintingToBlocked_PreflightFoundPaperEndOrCoverOpenAfterTheClaim_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(LocationTicketStatus.Printing, LocationTicketStatus.Blocked),
             Is.True);
     }
 

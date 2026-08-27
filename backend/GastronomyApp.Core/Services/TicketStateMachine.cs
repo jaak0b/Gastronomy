@@ -16,6 +16,7 @@ public sealed class TicketStateMachine
             (LocationTicketStatus.Printing, LocationTicketStatus.PrintedOnTestPrinter) => true,
             (LocationTicketStatus.Printing, LocationTicketStatus.Unknown) => true,
             (LocationTicketStatus.Printing, LocationTicketStatus.Queued) => true,
+            (LocationTicketStatus.Printing, LocationTicketStatus.Blocked) => true,
             (LocationTicketStatus.Blocked, LocationTicketStatus.Queued) => true,
             (LocationTicketStatus.Blocked, LocationTicketStatus.Failed) => true,
             (LocationTicketStatus.Blocked, LocationTicketStatus.HandledOnPaper) => true,
