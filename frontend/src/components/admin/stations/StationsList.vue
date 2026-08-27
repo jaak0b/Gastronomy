@@ -54,9 +54,6 @@ onMounted(stations.load)
     <v-alert v-if="stations.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-    <v-alert v-else-if="stations.stations.length === 0" class="empty" type="info" variant="tonal">
-      {{ t('admin.stations.empty') }}
-    </v-alert>
 
     <v-checkbox
       v-model="showsDeactivated"

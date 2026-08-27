@@ -65,9 +65,6 @@ onMounted(async () => {
     <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-    <v-alert v-else-if="staff.staffMembers.length === 0" class="empty" type="info" variant="tonal">
-      {{ t('admin.staff.empty') }}
-    </v-alert>
 
     <v-checkbox
       v-model="showsDeactivated"

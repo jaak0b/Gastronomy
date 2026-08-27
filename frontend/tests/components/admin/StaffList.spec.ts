@@ -268,3 +268,19 @@ describe('a staff member in the admin list', () => {
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
   })
 })
+
+describe('the staff list before anyone is on it', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('leaves the page to the button instead of stating that the list is empty', async () => {
+    stubFetchWith({ staffMembers: [] })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.new-staff-member').exists()).toBe(true))
+
+    expect(list.find('.empty').exists()).toBe(false)
+  })
+})

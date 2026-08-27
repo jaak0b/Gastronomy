@@ -214,3 +214,19 @@ describe('the station checkboxes on an item', () => {
   })
 
 })
+
+describe('the item list before anything is on the menu', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('leaves the page to the button instead of stating that the list is empty', async () => {
+    stubFetchWith({ items: [] })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.new-item').exists()).toBe(true))
+
+    expect(list.find('.empty').exists()).toBe(false)
+  })
+})

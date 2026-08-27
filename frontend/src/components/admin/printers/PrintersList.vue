@@ -55,9 +55,6 @@ onMounted(printers.load)
     <v-alert v-if="printers.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-    <v-alert v-else-if="printers.printers.length === 0" class="empty" type="info" variant="tonal">
-      {{ t('admin.printers.empty') }}
-    </v-alert>
 
     <v-card v-for="printer in printers.printers" :key="printer.stationId" class="printer-row mb-3">
       <v-card-item>

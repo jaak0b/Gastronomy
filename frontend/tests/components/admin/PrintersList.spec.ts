@@ -157,15 +157,13 @@ describe('the printers page', () => {
     expect(page.get('.printer-row .v-card-title').text()).toBe('Küche')
   })
 
-  it('says why the page is empty when no station has been created yet', async () => {
+  it('leaves the page to the button instead of stating that the list is empty', async () => {
     respondWith(JSON.stringify({ printers: [] }))
 
     const page = mountPrinters()
-    await vi.waitFor(() => expect(page.find('.empty').exists()).toBe(true))
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
-    expect(page.get('.empty').text()).toBe(
-      'Legen Sie zuerst eine Ausgabestelle an. Zu jeder Ausgabestelle gehört ein Drucker.',
-    )
+    expect(page.find('.empty').exists()).toBe(false)
   })
 
   it('says the load failed rather than showing nothing at all', async () => {

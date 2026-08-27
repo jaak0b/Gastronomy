@@ -285,3 +285,22 @@ describe('a station the laptop refuses to switch off', () => {
     )
   })
 })
+
+describe('the station list before any station exists', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('leaves the page to the button instead of stating that the list is empty', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ stations: [] }), { status: 200 })),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.new-station').exists()).toBe(true))
+
+    expect(list.find('.empty').exists()).toBe(false)
+  })
+})

@@ -165,7 +165,6 @@
       "lastForItems": "Ordnen Sie {names} zuerst eine andere Ausgabestelle zu. Diese Ausgabestelle ist für diese Artikel die einzige.",
       "new": "Neue Ausgabestelle",
       "deactivate": "Ausgabestelle abschalten",
-      "empty": "Legen Sie die erste Ausgabestelle an, zum Beispiel Küche oder Theke.",
       "activate": "Ausgabestelle einschalten",
       "deactivateTitle": "Ausgabestelle abschalten?",
       "deactivateBody": "Die Ausgabestelle verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Ausgabestelle später wieder einschalten.",
@@ -184,7 +183,6 @@
       "category": "Kategorie",
       "price": "Preis in Euro",
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
-      "empty": "Legen Sie den ersten Artikel mit seinem Preis an.",
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",
       "deactivateBody": "Der Artikel verschwindet von den Telefonen und kann nicht mehr bestellt werden. Die bisherigen Bestellungen bleiben gespeichert. Sie können ihn später wieder aktivieren.",
@@ -236,14 +234,12 @@
         "unknown": "Drucker meldet nicht, ob er gedruckt hat",
         "once": "Einmal",
         "sticky": "Bis zum Zurücksetzen"
-      },
-      "empty": "Legen Sie zuerst eine Ausgabestelle an. Zu jeder Ausgabestelle gehört ein Drucker."
+      }
     },
     "staff": {
       "title": "Kellner",
       "help": "Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon.",
       "new": "Neuer Kellner",
-      "empty": "Hier steht noch niemand. Tippen Sie auf \"Neuer Kellner\" und lassen Sie den ersten Kellner den QR-Code scannen.",
       "noPhone": "Kein Telefon eingerichtet",
       "lastSeen": "Zuletzt gesehen: {time}",
       "newCode": "Neuen QR-Code erstellen",

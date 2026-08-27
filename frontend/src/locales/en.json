@@ -165,7 +165,6 @@
       "lastForItems": "Give {names} a different station first. This station is the only one for those items.",
       "new": "New station",
       "deactivate": "Switch this station off",
-      "empty": "Create the first station, for example Kitchen or Bar.",
       "activate": "Switch this station on",
       "deactivateTitle": "Switch this station off?",
       "deactivateBody": "The station disappears from the list and takes no more orders. The orders placed so far stay saved. You can switch the station back on later.",
@@ -184,7 +183,6 @@
       "category": "Category",
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
-      "empty": "Create the first item with its price.",
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",
       "deactivateBody": "The item disappears from the phones and can no longer be ordered. The orders placed so far stay saved. You can activate it again later.",
@@ -236,14 +234,12 @@
         "unknown": "The printer does not report whether it printed",
         "once": "Once",
         "sticky": "Until it is reset"
-      },
-      "empty": "Create a station first. Every station has one printer."
+      }
     },
     "staff": {
       "title": "Waiters",
       "help": "Set the phones up one after another. A waiter has exactly one phone.",
       "new": "New waiter",
-      "empty": "Nobody is in this list yet. Tap \"New waiter\" and let the first waiter scan the QR code.",
       "noPhone": "No phone set up",
       "lastSeen": "Last seen at {time}",
       "newCode": "Create a new QR code",
