@@ -19,7 +19,6 @@ export const i18n = createI18n({
 
 export const vuetify = createVuetify({
   defaults: {
-    global: { size: 'large' },
     VBtn: { size: 'large', variant: 'flat' },
     VTextField: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
     VSelect: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
