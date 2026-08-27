@@ -26,7 +26,8 @@ public sealed record EnrolmentRedemptionRequest(
 public sealed record EnrolmentRedemptionResult(
     EnrolmentRedemptionOutcome Outcome,
     Device? Device,
-    ServerPerson? ServerPerson);
+    ServerPerson? ServerPerson,
+    string? PlaintextToken);
 
 public interface IEnrolmentInvitationStore
 {

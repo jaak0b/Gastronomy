@@ -1,0 +1,116 @@
+using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.RateLimiting;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Infrastructure.Ports;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+
+namespace GastronomyApp.Api.Endpoints;
+
+public static class EnrolmentEndpoints
+{
+    public static IEndpointRouteBuilder MapEnrolmentEndpoints(this IEndpointRouteBuilder routes)
+    {
+        routes.MapPost("/api/enrolment/redeem", async (
+            RedeemEnrolmentRequest request,
+            HttpContext httpContext,
+            EnrolmentRedemptionHandler handler,
+            CancellationToken cancellationToken) => await handler.RedeemAsync(request, httpContext, cancellationToken))
+            .AllowAnonymous()
+            .RequireRateLimiting(new RateLimitPolicyNames().PerAddress);
+
+        return routes;
+    }
+}
+
+public sealed class EnrolmentRedemptionHandler
+{
+    private const string AcceptLanguageHeaderName = "Accept-Language";
+
+    private readonly IEnrolmentInvitationStore invitationStore;
+    private readonly HubNotificationDispatcher dispatcher;
+    private readonly ResultEnvelope resultEnvelope;
+
+    public EnrolmentRedemptionHandler(
+        IEnrolmentInvitationStore invitationStore,
+        HubNotificationDispatcher dispatcher,
+        ResultEnvelope resultEnvelope)
+    {
+        this.invitationStore = invitationStore;
+        this.dispatcher = dispatcher;
+        this.resultEnvelope = resultEnvelope;
+    }
+
+    public async Task<IResult> RedeemAsync(
+        RedeemEnrolmentRequest request,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        bool hasQrCode = !string.IsNullOrWhiteSpace(request.Code);
+        bool hasSixDigitCode = !string.IsNullOrWhiteSpace(request.SixDigitCode);
+
+        if (hasQrCode == hasSixDigitCode)
+        {
+            return resultEnvelope.Problem(
+                StatusCodes.Status400BadRequest,
+                "ValidationFailed",
+                "enrolment.oneCodeFormRequired");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return resultEnvelope.Problem(
+                StatusCodes.Status400BadRequest,
+                "ValidationFailed",
+                "enrolment.nameMissing");
+        }
+
+        EnrolmentRedemptionResult redemption = await invitationStore.RedeemAsync(
+            new EnrolmentRedemptionRequest(
+                hasQrCode ? request.Code : null,
+                hasSixDigitCode ? request.SixDigitCode : null,
+                request.Name.Trim(),
+                request.UserAgent ?? string.Empty,
+                httpContext.Request.Headers[AcceptLanguageHeaderName].ToString()),
+            cancellationToken);
+
+        return redemption.Outcome switch
+        {
+            EnrolmentRedemptionOutcome.Redeemed => await CompletedAsync(redemption, cancellationToken),
+            EnrolmentRedemptionOutcome.CodeInvalid => resultEnvelope.Problem(
+                StatusCodes.Status404NotFound,
+                "EnrolmentCodeUnknown",
+                "enrolment.codeUnknown"),
+            EnrolmentRedemptionOutcome.CodeExpired => resultEnvelope.Problem(
+                StatusCodes.Status410Gone,
+                "EnrolmentCodeNoLongerValid",
+                "enrolment.codeNoLongerValid"),
+            EnrolmentRedemptionOutcome.SixDigitAttemptsExhausted => resultEnvelope.Problem(
+                StatusCodes.Status422UnprocessableEntity,
+                "SixDigitCodeRetired",
+                "enrolment.sixDigitCodeRetired"),
+            _ => new GastronomyApp.Core.Services.Never().OfType<IResult>(redemption.Outcome),
+        };
+    }
+
+    private async Task<IResult> CompletedAsync(
+        EnrolmentRedemptionResult redemption,
+        CancellationToken cancellationToken)
+    {
+        Device device = redemption.Device!;
+        ServerPerson person = redemption.ServerPerson!;
+
+        await dispatcher.PushEnrolmentCompletedAsync(
+            new EnrolmentCompletedEvent(person.Id, person.Name, device.Id),
+            cancellationToken);
+
+        return Results.Ok(new RedeemedEnrolmentView(
+            device.Id,
+            redemption.PlaintextToken!,
+            new ServerPersonView(person.Id, person.Name),
+            device.Language));
+    }
+}

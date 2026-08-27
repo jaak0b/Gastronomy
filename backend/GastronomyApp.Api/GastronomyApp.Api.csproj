@@ -3,6 +3,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\GastronomyApp.Core\GastronomyApp.Core.csproj" />
     <ProjectReference Include="..\GastronomyApp.Infrastructure\GastronomyApp.Infrastructure.csproj" />
   </ItemGroup>

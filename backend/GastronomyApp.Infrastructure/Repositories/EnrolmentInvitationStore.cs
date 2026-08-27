@@ -141,7 +141,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
             return new TransactionOutcome<EnrolmentRedemptionResult>
             {
-                Value = new EnrolmentRedemptionResult(EnrolmentRedemptionOutcome.CodeInvalid, null, null),
+                Value = new EnrolmentRedemptionResult(EnrolmentRedemptionOutcome.CodeInvalid, null, null, null),
                 ShouldCommit = true,
             };
         }
@@ -172,7 +172,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     {
         return new TransactionOutcome<EnrolmentRedemptionResult>
         {
-            Value = new EnrolmentRedemptionResult(outcome, null, null),
+            Value = new EnrolmentRedemptionResult(outcome, null, null, null),
             ShouldCommit = false,
         };
     }
@@ -199,7 +199,11 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
         return new TransactionOutcome<EnrolmentRedemptionResult>
         {
-            Value = new EnrolmentRedemptionResult(EnrolmentRedemptionOutcome.Redeemed, issued.Device, serverPerson),
+            Value = new EnrolmentRedemptionResult(
+                EnrolmentRedemptionOutcome.Redeemed,
+                issued.Device,
+                serverPerson,
+                issued.PlaintextToken),
             ShouldCommit = true,
         };
     }
