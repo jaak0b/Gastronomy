@@ -1,0 +1,385 @@
+using System.Text;
+using GastronomyApp.Infrastructure.Localization;
+using GastronomyApp.Infrastructure.Printing;
+
+namespace GastronomyApp.Infrastructure.Tests.Printing;
+
+public class EscPosSlipRendererTest
+{
+    private EscPosSlipRenderer renderer = null!;
+
+    [SetUp]
+    public void SetUp()
+    {
+        renderer = new EscPosSlipRenderer(new ResxSlipTextProvider());
+    }
+
+    private string Joined(params string[] lines)
+    {
+        return string.Join("\r\n", lines) + "\r\n";
+    }
+
+    private SlipRenderRequest GermanFixture()
+    {
+        return new SlipRenderRequest(
+            "KÜCHE",
+            "de",
+            42,
+            137,
+            "12",
+            "Anna",
+            new DateTimeOffset(2026, 8, 26, 19, 42, 0, TimeSpan.Zero),
+            TimeZoneInfo.Utc,
+            [
+                new SlipLine(2, "Bratwurst mit Brot", null),
+                new SlipLine(1, "Pommes groß", "ohne Ketchup"),
+                new SlipLine(3, "Kartoffelsalat", null),
+            ],
+            "Ein Teller extra für ein Kind.",
+            ["Theke"],
+            null);
+    }
+
+    private SlipRenderRequest EnglishFixture()
+    {
+        return GermanFixture() with
+        {
+            LocationName = "KITCHEN",
+            LanguageCode = "en",
+            Lines =
+            [
+                new SlipLine(2, "Sausage with bread", null),
+                new SlipLine(1, "Chips, large", "no ketchup"),
+                new SlipLine(3, "Potato salad", null),
+            ],
+            OrderNote = "One extra plate for a child.",
+            AlsoGoesToStationNames = ["Bar"],
+        };
+    }
+
+    private bool ContainsSequence(ReadOnlyMemory<byte> haystack, byte[] needle, int startIndex, out int foundAt)
+    {
+        ReadOnlySpan<byte> span = haystack.Span;
+        for (int index = startIndex; index + needle.Length <= span.Length; index++)
+        {
+            if (span.Slice(index, needle.Length).SequenceEqual(needle))
+            {
+                foundAt = index;
+                return true;
+            }
+        }
+
+        foundAt = -1;
+        return false;
+    }
+
+    private void AssertSequencesInOrder(ReadOnlyMemory<byte> bytes, params byte[][] sequences)
+    {
+        int cursor = 0;
+        foreach (byte[] sequence in sequences)
+        {
+            bool found = ContainsSequence(bytes, sequence, cursor, out int foundAt);
+            Assert.That(found, Is.True, $"missing sequence {Convert.ToHexString(sequence)} after index {cursor}");
+            cursor = foundAt + sequence.Length;
+        }
+    }
+
+    [Test]
+    public void RenderInitialSlip_GermanFixture_MatchesSpecExample()
+    {
+        RenderedSlip slip = renderer.RenderInitialSlip(GermanFixture());
+
+        Assert.That(slip.RenderedText, Is.EqualTo(Joined(
+            "================================================",
+            "KÜCHE",
+            "================================================",
+            "BON 042",
+            "================================================",
+            "Bestellung 137",
+            "Tisch 12",
+            "Bedienung: Anna",
+            "26.08.2026, 19:42 Uhr",
+            "------------------------------------------------",
+            "2 x Bratwurst mit Brot",
+            "1 x Pommes groß",
+            "    Hinweis: ohne Ketchup",
+            "3 x Kartoffelsalat",
+            "------------------------------------------------",
+            "Artikel gesamt: 6",
+            "Hinweis: Ein Teller extra für ein Kind.",
+            "Diese Bestellung geht auch an: Theke",
+            "================================================")));
+
+        AssertSequencesInOrder(
+            slip.Bytes,
+            [0x1B, 0x40],
+            [0x1B, 0x74, 0x13],
+            [0x1D, 0x61, 0x0F],
+            [0x1B, 0x61, 0x01],
+            [0x1D, 0x21, 0x11],
+            [0x1B, 0x45, 0x01],
+            [0x1B, 0x61, 0x00],
+            [0x1B, 0x64, 0x04],
+            [0x1D, 0x56, 0x42, 0x03]);
+    }
+
+    [Test]
+    public void RenderInitialSlip_EnglishFixture_MatchesSpecExample()
+    {
+        RenderedSlip slip = renderer.RenderInitialSlip(EnglishFixture());
+
+        Assert.That(slip.RenderedText, Is.EqualTo(Joined(
+            "================================================",
+            "KITCHEN",
+            "================================================",
+            "SLIP 042",
+            "================================================",
+            "Order 137",
+            "Table 12",
+            "Server: Anna",
+            "26/08/2026, 19:42",
+            "------------------------------------------------",
+            "2 x Sausage with bread",
+            "1 x Chips, large",
+            "    Note: no ketchup",
+            "3 x Potato salad",
+            "------------------------------------------------",
+            "Items in total: 6",
+            "Note: One extra plate for a child.",
+            "This order also goes to: Bar",
+            "================================================")));
+    }
+
+    [Test]
+    public void RenderInitialSlip_Umlauts_EncodedAsPc858()
+    {
+        SlipRenderRequest request = GermanFixture() with
+        {
+            Lines = [new SlipLine(1, "äöüÄÖÜß€", null)],
+        };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        AssertSequencesInOrder(
+            slip.Bytes,
+            [0x84, 0x94, 0x81, 0x8E, 0x99, 0x9A, 0xE1, 0xD5]);
+        Assert.That(ContainsSequence(slip.Bytes, Encoding.UTF8.GetBytes("ä"), 0, out _), Is.False);
+    }
+
+    [Test]
+    public void RenderInitialSlip_LongItemName_WrapsIndentedContinuationLine()
+    {
+        string longName = new('A', 60);
+        SlipRenderRequest request = GermanFixture() with { Lines = [new SlipLine(1, longName, null)] };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        Assert.That(slip.RenderedText, Does.Contain("1 x " + new string('A', 44) + "\r\n    " + new string('A', 16) + "\r\n"));
+    }
+
+    [Test]
+    public void RenderInitialSlip_LongTableOrServerName_WrapsSameWay()
+    {
+        SlipRenderRequest request = GermanFixture() with
+        {
+            TableName = new string('T', 60),
+            ServerName = new string('S', 60),
+        };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        Assert.That(slip.RenderedText, Does.Contain("Tisch " + new string('T', 42) + "\r\n    " + new string('T', 18)));
+        Assert.That(slip.RenderedText, Does.Contain("Bedienung: " + new string('S', 37) + "\r\n    " + new string('S', 23)));
+    }
+
+    [Test]
+    public void RenderInitialSlip_ChosenStationDiffers_FootersChosenStationLine()
+    {
+        RenderedSlip german = renderer.RenderInitialSlip(GermanFixture() with { ChosenStationNameIfDifferent = "Theke Zelt" });
+        RenderedSlip english = renderer.RenderInitialSlip(EnglishFixture() with { ChosenStationNameIfDifferent = "Bar marquee" });
+
+        Assert.That(german.RenderedText, Does.Contain("Gewählt war: Theke Zelt"));
+        Assert.That(english.RenderedText, Does.Contain("Chosen station was: Bar marquee"));
+    }
+
+    [Test]
+    public void RenderReprintSlip_German_PrependsReprintBannerWithReprintTime()
+    {
+        RenderedSlip slip = renderer.RenderReprintSlip(
+            GermanFixture(),
+            new DateTimeOffset(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
+            TimeZoneInfo.Utc);
+
+        Assert.That(slip.RenderedText, Does.StartWith(Joined(
+            "================================================",
+            "NACHDRUCK",
+            "Nachdruck um 20:31 Uhr",
+            "================================================",
+            "KÜCHE",
+            "================================================",
+            "BON 042",
+            "================================================",
+            "Bestellung 137",
+            "Tisch 12")));
+        Assert.That(slip.RenderedText, Does.Contain("26.08.2026, 19:42 Uhr"));
+        Assert.That(slip.RenderedText, Does.Not.Contain("26.08.2026, 20:31 Uhr"));
+    }
+
+    [Test]
+    public void RenderInitialSlip_FooterCountsUnits_NotLines()
+    {
+        RenderedSlip slip = renderer.RenderInitialSlip(GermanFixture());
+
+        Assert.That(slip.RenderedText, Does.Contain("Artikel gesamt: 6"));
+    }
+
+    private TestSlipRenderRequest GermanTestSlipFixture()
+    {
+        return new TestSlipRenderRequest(
+            "KÜCHE",
+            "de",
+            new DateTimeOffset(2026, 8, 26, 17, 5, 0, TimeSpan.Zero),
+            TimeZoneInfo.Utc,
+            new Uri("http://192.168.100.123:50000/station/8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"));
+    }
+
+    [Test]
+    public void RenderTestSlip_EmitsGsParenKSequenceInOrder()
+    {
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
+
+        AssertSequencesInOrder(
+            slip.Bytes,
+            [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00],
+            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06],
+            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31],
+            [0x1D, 0x28, 0x6B, 0x48, 0x00, 0x31, 0x50, 0x30],
+            [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30]);
+    }
+
+    [Test]
+    public void RenderTestSlip_ShortUrl_PLPHEqualsLengthPlusThree()
+    {
+        Uri shortUrl = new("http://a/b");
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { StationCardUrl = shortUrl });
+
+        int expectedLength = shortUrl.ToString().Length + 3;
+        AssertSequencesInOrder(
+            slip.Bytes,
+            [0x1D, 0x28, 0x6B, (byte)(expectedLength % 256), (byte)(expectedLength / 256), 0x31, 0x50, 0x30]);
+    }
+
+    [Test]
+    public void RenderTestSlip_69ByteUrl_PLPHEqualsLengthPlusThree()
+    {
+        TestSlipRenderRequest request = GermanTestSlipFixture();
+        Assert.That(request.StationCardUrl.ToString(), Has.Length.EqualTo(69));
+
+        RenderedSlip slip = renderer.RenderTestSlip(request);
+
+        AssertSequencesInOrder(slip.Bytes, [0x1D, 0x28, 0x6B, 0x48, 0x00, 0x31, 0x50, 0x30]);
+    }
+
+    [Test]
+    public void RenderTestSlip_UrlPrintedAsTextUnderneath()
+    {
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
+
+        Assert.That(slip.RenderedText, Does.Contain("http://192.168.100.123:50000/station/\r\n8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c"));
+        Assert.That(slip.RenderedText, Does.Contain("TESTBON"));
+        Assert.That(slip.RenderedText, Does.Not.Contain("BON 0"));
+        Assert.That(slip.RenderedText, Does.Not.Contain("Bestellung"));
+    }
+
+    [Test]
+    public void RenderTestSlip_German_MatchesStationCardInstructionsText()
+    {
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture());
+
+        Assert.That(slip.RenderedText, Is.EqualTo(Joined(
+            "================================================",
+            "KÜCHE",
+            "================================================",
+            "TESTBON",
+            "26.08.2026, 17:05 Uhr",
+            "------------------------------------------------",
+            "http://192.168.100.123:50000/station/",
+            "8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c",
+            "------------------------------------------------",
+            "Kleben Sie diese Karte in den Deckel des",
+            "Druckers. Wenn der Drucker ausfällt, führt der",
+            "QR-Code zur Notfallseite dieser Station.",
+            "================================================")));
+    }
+
+    [Test]
+    public void RenderTestSlip_English_MatchesStationCardInstructionsText()
+    {
+        RenderedSlip slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { LocationName = "KITCHEN", LanguageCode = "en" });
+
+        Assert.That(slip.RenderedText, Is.EqualTo(Joined(
+            "================================================",
+            "KITCHEN",
+            "================================================",
+            "TEST SLIP",
+            "26/08/2026, 17:05",
+            "------------------------------------------------",
+            "http://192.168.100.123:50000/station/",
+            "8f2a1c4b9d0e7f6a3b2c1d0e9f8a7b6c",
+            "------------------------------------------------",
+            "Tape this card inside the printer lid. If the",
+            "printer fails, the QR code opens this station's",
+            "emergency page.",
+            "================================================")));
+    }
+
+    [Test]
+    public void RenderInitialSlip_LongLocationName_WrapsAtTwentyFourColumnsBecauseTheRegionIsDoubleWidth()
+    {
+        SlipRenderRequest request = GermanFixture() with { LocationName = new string('K', 30) };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        Assert.That(slip.RenderedText, Does.Contain(new string('K', 24) + "\r\n    " + new string('K', 6) + "\r\n"));
+    }
+
+    [Test]
+    public void RenderReprintSlip_NormalSizeRegions_StillWrapAtFortyEightColumns()
+    {
+        SlipRenderRequest request = GermanFixture() with { TableName = new string('T', 60) };
+
+        RenderedSlip slip = renderer.RenderReprintSlip(
+            request,
+            new DateTimeOffset(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
+            TimeZoneInfo.Utc);
+
+        Assert.That(slip.RenderedText, Does.Contain("Tisch " + new string('T', 42) + "\r\n    " + new string('T', 18)));
+    }
+
+    [Test]
+    public void RenderInitialSlip_CharacterOutsidePc858_TransliteratesRatherThanDroppingIt()
+    {
+        SlipRenderRequest request = GermanFixture() with
+        {
+            Lines = [new SlipLine(1, "Pierogi \u0142ososiowe \u2013 Cr\u0113me", null)],
+        };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        Assert.That(slip.RenderedText, Does.Contain("Pierogi lososiowe - Creme"));
+        Assert.That(ContainsSequence(slip.Bytes, [0x3F], 0, out _), Is.False);
+    }
+
+    [Test]
+    public void RenderInitialSlip_CharacterWithNoTransliteration_FallsBackToQuestionMark()
+    {
+        SlipRenderRequest request = GermanFixture() with
+        {
+            Lines = [new SlipLine(1, "Wasabi \u3042", null)],
+        };
+
+        RenderedSlip slip = renderer.RenderInitialSlip(request);
+
+        Assert.That(slip.RenderedText, Does.Contain("Wasabi ?"));
+    }
+}
