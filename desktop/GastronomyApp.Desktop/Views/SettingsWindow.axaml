@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
+        xmlns:svc="using:GastronomyApp.Desktop.Services"
+        x:Class="GastronomyApp.Desktop.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Width="620"
+        Height="700"
+        Title="{Binding Title}">
+
+    <ScrollViewer>
+        <StackPanel Margin="24" Spacing="14">
+
+            <TextBlock Text="{Binding PortLabel}" FontWeight="Bold" />
+            <NumericUpDown Value="{Binding Port}"
+                           IsEnabled="{Binding AreAddressFieldsEnabled, FallbackValue=False}"
+                           Minimum="1"
+                           Maximum="65535"
+                           FormatString="0" />
+            <TextBlock Text="{Binding PortHelpText}" TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding BindAddressLabel}" FontWeight="Bold" />
+            <TextBox Text="{Binding BindAddress}"
+                     IsEnabled="{Binding AreAddressFieldsEnabled, FallbackValue=False}" />
+            <TextBlock Text="{Binding BindAddressHelpText}" TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding AddressLockedText, FallbackValue=''}"
+                       IsVisible="{Binding AddressLockedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding DataFolderLabel}" FontWeight="Bold" />
+            <TextBox Text="{Binding DataDirectory}"
+                     IsEnabled="{Binding IsDataFolderEnabled, FallbackValue=False}" />
+            <TextBlock Text="{Binding DataFolderHelpText}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding DataFolderLockedText, FallbackValue=''}"
+                       IsVisible="{Binding DataFolderLockedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding DataFolderRestartText, FallbackValue=''}"
+                       IsVisible="{Binding DataFolderRestartText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                       TextWrapping="Wrap" />
+
+            <StackPanel IsVisible="{Binding IsNetworkSelectorVisible, FallbackValue=False}" Spacing="8">
+                <TextBlock Text="{Binding NetworkLabel}" FontWeight="Bold" />
+                <ComboBox ItemsSource="{Binding Networks}"
+                          SelectedItem="{Binding SelectedNetwork}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="svc:NetworkAddressOption">
+                            <TextBlock Text="{Binding InterfaceName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{Binding NetworkHelpText}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="{Binding OpenDataFolderLabel}" Command="{Binding OpenDataFolderCommand}" />
+                <Button Content="{Binding RepairSetupLabel}" Command="{Binding RepairSetupCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding RepairSetupHelpText}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding RepairDeclinedText, FallbackValue=''}"
+                       IsVisible="{Binding RepairDeclinedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                       TextWrapping="Wrap" />
+
+        </StackPanel>
+    </ScrollViewer>
+
+</Window>

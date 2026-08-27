@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="desktop.windowTitle" xml:space="preserve">
+    <value>Ordering system</value>
+  </data>
+  <data name="desktop.addressLabel" xml:space="preserve">
+    <value>Address for the phones</value>
+  </data>
+  <data name="desktop.address" xml:space="preserve">
+    <value>Phones reach the laptop at {url}.</value>
+  </data>
+  <data name="desktop.qrHelp" xml:space="preserve">
+    <value>Scan the code with a phone to check that the phones reach the laptop.</value>
+  </data>
+  <data name="desktop.status.running" xml:space="preserve">
+    <value>The program is taking orders.</value>
+  </data>
+  <data name="desktop.status.stopped" xml:space="preserve">
+    <value>The program is not taking orders.</value>
+  </data>
+  <data name="desktop.attention.none" xml:space="preserve">
+    <value>Everything is in order.</value>
+  </data>
+  <data name="desktop.attention.some" xml:space="preserve">
+    <value>Open the admin pages. Something there needs you to deal with it.</value>
+  </data>
+  <data name="desktop.phones.none" xml:space="preserve">
+    <value>No phone has connected yet.</value>
+  </data>
+  <data name="desktop.phones.one" xml:space="preserve">
+    <value>One phone is set up.</value>
+  </data>
+  <data name="desktop.phones.many" xml:space="preserve">
+    <value>{count} phones are set up.</value>
+  </data>
+  <data name="desktop.button.admin" xml:space="preserve">
+    <value>Open the admin pages</value>
+  </data>
+  <data name="desktop.button.settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="desktop.button.quit" xml:space="preserve">
+    <value>Quit the program</value>
+  </data>
+  <data name="desktop.minimised" xml:space="preserve">
+    <value>The program keeps running and keeps taking orders. You get it back from the taskbar.</value>
+  </data>
+  <data name="desktop.quit.title" xml:space="preserve">
+    <value>Really quit the program?</value>
+  </data>
+  <data name="desktop.quit.body" xml:space="preserve">
+    <value>Phones can no longer place orders afterwards.</value>
+  </data>
+  <data name="desktop.quit.confirm" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+  <data name="desktop.quit.cancel" xml:space="preserve">
+    <value>Keep it running</value>
+  </data>
+  <data name="desktop.error.portInUse" xml:space="preserve">
+    <value>Choose a different port in the settings. Port {port} is already being used by another program.</value>
+  </data>
+  <data name="desktop.error.dataFolderRepair" xml:space="preserve">
+    <value>In the settings, click "Repair the setup". Nothing can be written into the folder {path}. Windows asks you once while it happens.</value>
+  </data>
+  <data name="desktop.error.noNetwork" xml:space="preserve">
+    <value>Connect the laptop to the WiFi the phones are on. The laptop is not on any network at the moment.</value>
+  </data>
+  <data name="desktop.error.startFailed" xml:space="preserve">
+    <value>The server could not be started. Quit the program and start it again. If that does not help, open the settings and choose "Repair the setup".</value>
+  </data>
+  <data name="desktop.settings.title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="desktop.settings.port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="desktop.settings.portHelp" xml:space="preserve">
+    <value>Change the port only when the program reports that it is taken. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again.</value>
+  </data>
+  <data name="desktop.settings.bindAddress" xml:space="preserve">
+    <value>Address the program answers on</value>
+  </data>
+  <data name="desktop.settings.bindAddressHelp" xml:space="preserve">
+    <value>Change this address only before the first phones are set up. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again.</value>
+  </data>
+  <data name="desktop.settings.addressLocked" xml:space="preserve">
+    <value>The port and the address can only be changed after the event. Otherwise the phones that are set up would no longer reach the laptop.</value>
+  </data>
+  <data name="desktop.settings.dataFolder" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="desktop.settings.dataFolderHelp" xml:space="preserve">
+    <value>The database and the backup files are here.</value>
+  </data>
+  <data name="desktop.settings.dataFolderLocked" xml:space="preserve">
+    <value>The data folder can only be changed after the event. This folder holds the orders from the evening that is running.</value>
+  </data>
+  <data name="desktop.settings.dataFolderRestart" xml:space="preserve">
+    <value>Restart the program so the new folder takes effect. The database you have so far stays where it is.</value>
+  </data>
+  <data name="desktop.settings.openDataFolder" xml:space="preserve">
+    <value>Open the data folder</value>
+  </data>
+  <data name="desktop.settings.network" xml:space="preserve">
+    <value>Network whose address is shown</value>
+  </data>
+  <data name="desktop.settings.networkHelp" xml:space="preserve">
+    <value>Choose the WiFi the phones are on. The laptop is on more than one network.</value>
+  </data>
+  <data name="desktop.settings.repairSetup" xml:space="preserve">
+    <value>Repair the setup</value>
+  </data>
+  <data name="desktop.settings.repairSetupHelp" xml:space="preserve">
+    <value>Use this when the phones cannot reach the laptop, or the program cannot write into its data folder. Windows asks you once while it happens.</value>
+  </data>
+  <data name="desktop.settings.repairDeclined" xml:space="preserve">
+    <value>In the Windows settings, open "Firewall &amp; network protection" and allow this program the incoming connection on the private network. For the data folder you need somebody who can confirm the question Windows asks.</value>
+  </data>
+  <data name="desktop.firstRun.title" xml:space="preserve">
+    <value>One-time setup</value>
+  </data>
+  <data name="desktop.firstRun.body" xml:space="preserve">
+    <value>Confirm the question Windows asks. The program allows access from the network and creates its data folder.</value>
+  </data>
+  <data name="desktop.firstRun.declined" xml:space="preserve">
+    <value>The program runs anyway. If the phones cannot reach the laptop later, do this in the settings under "Repair the setup".</value>
+  </data>
+</root>

@@ -1,20 +1,63 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="GastronomyApp.Desktop.Views.MainWindow"
-        x:DataType="vm:MainViewModel"
+        x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="GastronomyApp">
+        Width="760"
+        Height="620"
+        Title="{Binding WindowTitle}">
 
-    <Design.DataContext>
-        <vm:MainViewModel />
-    </Design.DataContext>
+    <ScrollViewer>
+        <StackPanel Margin="28" Spacing="18">
 
-    <TextBox Text="{Binding Greeting}"
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center" />
+            <TextBlock Text="{Binding AddressLabel}" FontSize="16" />
+
+            <TextBlock Text="{Binding AddressUrl}" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding AddressText}" TextWrapping="Wrap" />
+
+            <StackPanel Orientation="Horizontal" Spacing="18">
+                <Border Name="QrBorder" Padding="10" Background="White">
+                    <Canvas Name="QrCanvas" Width="220" Height="220" />
+                </Border>
+                <TextBlock Text="{Binding QrHelpText}" TextWrapping="Wrap" Width="380" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusText}" FontSize="18" />
+
+            <TextBlock Text="{Binding AttentionText}" TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding PhonesText}" TextWrapping="Wrap" />
+
+            <Border IsVisible="{Binding HasNotice, FallbackValue=False}"
+                    Padding="14"
+                    CornerRadius="6"
+                    Background="#EEF2F7">
+                <TextBlock Text="{Binding NoticeText, FallbackValue=''}" TextWrapping="Wrap" />
+            </Border>
+
+            <Border IsVisible="{Binding HasError, FallbackValue=False}"
+                    Padding="14"
+                    CornerRadius="6"
+                    Background="#FFF4E5">
+                <TextBlock Text="{Binding ErrorMessage, FallbackValue=''}" TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Button Content="{Binding AdminButtonLabel}"
+                        Command="{Binding OpenAdminPagesCommand}"
+                        FontSize="18"
+                        Padding="22,12" />
+                <Button Content="{Binding SettingsButtonLabel}"
+                        Command="{Binding OpenSettingsCommand}"
+                        Padding="16,10" />
+                <Button Content="{Binding QuitButtonLabel}"
+                        Command="{Binding RequestQuitCommand}"
+                        Padding="16,10" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
 
 </Window>

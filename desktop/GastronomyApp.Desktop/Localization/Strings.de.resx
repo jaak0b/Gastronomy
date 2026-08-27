@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="desktop.windowTitle" xml:space="preserve">
+    <value>Bestellsystem</value>
+  </data>
+  <data name="desktop.addressLabel" xml:space="preserve">
+    <value>Adresse für die Telefone</value>
+  </data>
+  <data name="desktop.address" xml:space="preserve">
+    <value>Die Telefone erreichen den Laptop unter {url}.</value>
+  </data>
+  <data name="desktop.qrHelp" xml:space="preserve">
+    <value>Scannen Sie den Code mit einem Telefon, um zu prüfen, dass die Telefone den Laptop erreichen.</value>
+  </data>
+  <data name="desktop.status.running" xml:space="preserve">
+    <value>Das Programm nimmt Bestellungen an.</value>
+  </data>
+  <data name="desktop.status.stopped" xml:space="preserve">
+    <value>Das Programm nimmt keine Bestellungen an.</value>
+  </data>
+  <data name="desktop.attention.none" xml:space="preserve">
+    <value>Es ist alles in Ordnung.</value>
+  </data>
+  <data name="desktop.attention.some" xml:space="preserve">
+    <value>Öffnen Sie die Verwaltung. Dort wartet etwas, um das Sie sich kümmern müssen.</value>
+  </data>
+  <data name="desktop.phones.none" xml:space="preserve">
+    <value>Es hat sich noch kein Telefon verbunden.</value>
+  </data>
+  <data name="desktop.phones.one" xml:space="preserve">
+    <value>Ein Telefon ist eingerichtet.</value>
+  </data>
+  <data name="desktop.phones.many" xml:space="preserve">
+    <value>{count} Telefone sind eingerichtet.</value>
+  </data>
+  <data name="desktop.button.admin" xml:space="preserve">
+    <value>Verwaltung öffnen</value>
+  </data>
+  <data name="desktop.button.settings" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="desktop.button.quit" xml:space="preserve">
+    <value>Programm beenden</value>
+  </data>
+  <data name="desktop.minimised" xml:space="preserve">
+    <value>Das Programm läuft weiter und nimmt weiter Bestellungen an. Sie holen es über die Taskleiste zurück.</value>
+  </data>
+  <data name="desktop.quit.title" xml:space="preserve">
+    <value>Programm wirklich beenden?</value>
+  </data>
+  <data name="desktop.quit.body" xml:space="preserve">
+    <value>Die Telefone können danach keine Bestellungen mehr aufgeben.</value>
+  </data>
+  <data name="desktop.quit.confirm" xml:space="preserve">
+    <value>Beenden</value>
+  </data>
+  <data name="desktop.quit.cancel" xml:space="preserve">
+    <value>Weiterlaufen lassen</value>
+  </data>
+  <data name="desktop.error.portInUse" xml:space="preserve">
+    <value>Wählen Sie in den Einstellungen einen anderen Port. Der Port {port} wird schon von einem anderen Programm benutzt.</value>
+  </data>
+  <data name="desktop.error.dataFolderRepair" xml:space="preserve">
+    <value>Klicken Sie in den Einstellungen auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
+  </data>
+  <data name="desktop.error.noNetwork" xml:space="preserve">
+    <value>Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk.</value>
+  </data>
+  <data name="desktop.error.startFailed" xml:space="preserve">
+    <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, öffnen Sie die Einstellungen und wählen Sie "Einrichtung reparieren".</value>
+  </data>
+  <data name="desktop.settings.title" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="desktop.settings.port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="desktop.settings.portHelp" xml:space="preserve">
+    <value>Ändern Sie den Port nur, wenn das Programm meldet, dass er belegt ist. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein.</value>
+  </data>
+  <data name="desktop.settings.bindAddress" xml:space="preserve">
+    <value>Adresse, auf der das Programm antwortet</value>
+  </data>
+  <data name="desktop.settings.bindAddressHelp" xml:space="preserve">
+    <value>Ändern Sie diese Adresse nur, bevor die ersten Telefone eingerichtet sind. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein.</value>
+  </data>
+  <data name="desktop.settings.addressLocked" xml:space="preserve">
+    <value>Port und Adresse lassen sich erst nach der Veranstaltung ändern. Die eingerichteten Telefone würden den Laptop sonst nicht mehr erreichen.</value>
+  </data>
+  <data name="desktop.settings.dataFolder" xml:space="preserve">
+    <value>Datenordner</value>
+  </data>
+  <data name="desktop.settings.dataFolderHelp" xml:space="preserve">
+    <value>Hier liegen die Datenbank und die Sicherungsdateien.</value>
+  </data>
+  <data name="desktop.settings.dataFolderLocked" xml:space="preserve">
+    <value>Der Datenordner lässt sich erst nach der Veranstaltung ändern. In diesem Ordner liegen die Bestellungen des laufenden Abends.</value>
+  </data>
+  <data name="desktop.settings.dataFolderRestart" xml:space="preserve">
+    <value>Starten Sie das Programm neu, damit der neue Ordner gilt. Die bisherige Datenbank bleibt liegen, wo sie ist.</value>
+  </data>
+  <data name="desktop.settings.openDataFolder" xml:space="preserve">
+    <value>Datenordner öffnen</value>
+  </data>
+  <data name="desktop.settings.network" xml:space="preserve">
+    <value>Netzwerk, dessen Adresse angezeigt wird</value>
+  </data>
+  <data name="desktop.settings.networkHelp" xml:space="preserve">
+    <value>Wählen Sie das WLAN, in dem die Telefone sind. Der Laptop ist in mehr als einem Netzwerk.</value>
+  </data>
+  <data name="desktop.settings.repairSetup" xml:space="preserve">
+    <value>Einrichtung reparieren</value>
+  </data>
+  <data name="desktop.settings.repairSetupHelp" xml:space="preserve">
+    <value>Nehmen Sie das, wenn die Telefone den Laptop nicht erreichen oder das Programm nicht in seinen Datenordner schreiben kann. Windows fragt dabei einmal nach.</value>
+  </data>
+  <data name="desktop.settings.repairDeclined" xml:space="preserve">
+    <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
+  </data>
+  <data name="desktop.firstRun.title" xml:space="preserve">
+    <value>Einmalige Einrichtung</value>
+  </data>
+  <data name="desktop.firstRun.body" xml:space="preserve">
+    <value>Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an.</value>
+  </data>
+  <data name="desktop.firstRun.declined" xml:space="preserve">
+    <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, holen Sie das in den Einstellungen unter "Einrichtung reparieren" nach.</value>
+  </data>
+</root>
