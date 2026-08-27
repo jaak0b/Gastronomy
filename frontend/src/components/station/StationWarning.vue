@@ -5,8 +5,8 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <section class="station-warning">
-    <h2>{{ t('station.warningTitle') }}</h2>
+  <v-alert class="station-warning mb-4" type="warning" variant="tonal">
+    <div class="text-subtitle-1">{{ t('station.warningTitle') }}</div>
     <p>{{ t('station.warningBody') }}</p>
-  </section>
+  </v-alert>
 </template>

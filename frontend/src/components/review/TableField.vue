@@ -12,26 +12,23 @@ const matches = computed(() => suggestionMatches(props.modelValue, props.suggest
 </script>
 
 <template>
-  <div class="table-field">
-    <div class="suggestions">
-      <button
+  <div class="table-field my-4">
+    <v-chip-group class="suggestions">
+      <v-chip
         v-for="suggestion in matches"
         :key="suggestion"
-        type="button"
         @click="emit('update:modelValue', suggestion)"
       >
         {{ suggestion }}
-      </button>
-    </div>
-    <label>
-      <span>{{ t('review.tableLabel') }}</span>
-      <input
-        type="text"
-        :value="modelValue"
-        :placeholder="t('review.tablePlaceholder')"
-        @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      />
-    </label>
-    <p class="help">{{ t('review.tableHelp') }}</p>
+      </v-chip>
+    </v-chip-group>
+    <v-text-field
+      class="table-input"
+      :label="t('review.tableLabel')"
+      :placeholder="t('review.tablePlaceholder')"
+      :model-value="modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+    <p class="help text-medium-emphasis">{{ t('review.tableHelp') }}</p>
   </div>
 </template>

@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import PeopleList from '../../../src/components/admin/people/PeopleList.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const PERSON_ID = '33333333-3333-3333-3333-333333333333'
 
@@ -41,12 +39,11 @@ function stubFetch(revokeStatus = 200) {
 }
 
 function mountList() {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
-  return mount(PeopleList, { global: { plugins: [i18n] } })
+  return mount(PeopleList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
 async function firstPerson(list: ReturnType<typeof mountList>) {
-  await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+  await vi.waitFor(() => expect(list.find('.person-row').exists()).toBe(true))
 }
 
 const OFF_THE_LIST = {
@@ -68,6 +65,7 @@ function stubFetchWith(people: unknown) {
 describe('taking a server person off the list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.body.innerHTML = ''
   })
 
   afterEach(() => {
@@ -81,7 +79,8 @@ describe('taking a server person off the list', () => {
     await firstPerson(list)
     await list.get('.deactivate').trigger('click')
 
-    expect(list.find('.confirm-dialog').exists()).toBe(true)
+    await waitForDialog()
+
     expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
@@ -92,7 +91,9 @@ describe('taking a server person off the list', () => {
     await firstPerson(list)
     await list.get('.deactivate').trigger('click')
 
-    expect(list.get('.confirm-body').text()).toContain('bleiben gespeichert')
+    await waitForDialog()
+
+    expect(document.querySelector('.confirm-body')!.textContent).toContain('bleiben gespeichert')
   })
 
   it('takes them off the list once the question is answered with yes', async () => {
@@ -101,7 +102,7 @@ describe('taking a server person off the list', () => {
     const list = mountList()
     await firstPerson(list)
     await list.get('.deactivate').trigger('click')
-    await list.get('.confirm').trigger('click')
+    await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),
@@ -112,6 +113,7 @@ describe('taking a server person off the list', () => {
 describe('a server person taken off the list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.body.innerHTML = ''
   })
 
   afterEach(() => {
@@ -124,14 +126,14 @@ describe('a server person taken off the list', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.show-deactivated').exists()).toBe(true))
 
-    expect(list.find('li').exists()).toBe(false)
+    expect(list.find('.person-row').exists()).toBe(false)
   })
 
   it('says so on their row once it is shown', async () => {
     stubFetchWith(OFF_THE_LIST)
 
     const list = mountList()
-    await list.get('.show-deactivated').setValue(true)
+    await list.get('.show-deactivated input').setValue(true)
     await firstPerson(list)
 
     expect(list.get('.deactivated').text()).toBe('Deaktiviert')
@@ -141,7 +143,7 @@ describe('a server person taken off the list', () => {
     const urls = stubFetchWith(OFF_THE_LIST)
 
     const list = mountList()
-    await list.get('.show-deactivated').setValue(true)
+    await list.get('.show-deactivated input').setValue(true)
     await firstPerson(list)
     await list.get('.reactivate').trigger('click')
 
@@ -154,6 +156,7 @@ describe('a server person taken off the list', () => {
 describe('a server person in the admin list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.body.innerHTML = ''
   })
 
   afterEach(() => {
@@ -184,7 +187,7 @@ describe('a server person in the admin list', () => {
     const list = mountList()
     await firstPerson(list)
     await list.get('.deactivate').trigger('click')
-    await list.get('.confirm').trigger('click')
+    await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),

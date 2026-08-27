@@ -6,5 +6,9 @@ const laptopUrl = `${window.location.protocol}//${window.location.hostname}:5000
 </script>
 
 <template>
-  <p class="not-on-laptop">{{ t('admin.notOnLaptop', { url: laptopUrl }) }}</p>
+  <v-container>
+    <v-alert class="not-on-laptop" type="info" variant="tonal">
+      {{ t('admin.notOnLaptop', { url: laptopUrl }) }}
+    </v-alert>
+  </v-container>
 </template>

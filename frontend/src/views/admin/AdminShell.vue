@@ -58,24 +58,25 @@ void request('/api/admin/locations').then((result) => {
 <template>
   <NotOnLaptop v-if="!isReachable" />
   <div v-else class="admin-shell">
-    <nav class="admin-nav">
-      <div class="admin-tabs">
-        <button
+    <v-toolbar class="admin-nav" density="comfortable" color="surface">
+      <v-tabs :model-value="section" class="admin-tabs">
+        <v-tab
           v-for="value in sections"
           :key="value"
-          type="button"
+          :value="value"
           :class="{ 'is-selected': value === section }"
           @click="navigate(`/admin/${value}`)"
         >
           {{ titleFor(value) }}
-        </button>
-      </div>
+        </v-tab>
+      </v-tabs>
+      <v-spacer />
       <LanguageSwitch
         :language="session.language"
         label-key="settings.language"
         @select="session.setLanguage"
       />
-    </nav>
+    </v-toolbar>
     <AdminOverview v-if="section === 'overview'" />
     <LocationsList v-else-if="section === 'locations'" />
     <ItemsList v-else-if="section === 'items'" />

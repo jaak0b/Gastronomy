@@ -61,8 +61,8 @@ function backToItems(): void {
 </script>
 
 <template>
-  <section class="review">
-    <h1>{{ t('review.title') }}</h1>
+  <v-container class="review">
+    <h1 class="text-h5 mb-2">{{ t('review.title') }}</h1>
     <LineList
       :lines="order.basketLines"
       :language="session.language"
@@ -78,40 +78,51 @@ function backToItems(): void {
       @choose="chooseStation"
     />
     <TableField v-model="tableLabel" :suggestions="catalog.tableSuggestions" />
-    <label class="order-note">
-      <span>{{ t('review.orderNote') }}</span>
-      <textarea
-        :value="order.draft.note ?? ''"
-        @input="order.setNote(($event.target as HTMLTextAreaElement).value || null)"
-      ></textarea>
-    </label>
-    <TotalDisplay v-if="order.sendState !== 'accepted'" :total-cents="order.totalCents" :language="session.language" />
-    <button
+    <v-textarea
+      class="order-note"
+      :label="t('review.orderNote')"
+      :model-value="order.draft.note ?? ''"
+      @update:model-value="order.setNote($event || null)"
+    />
+    <TotalDisplay
       v-if="order.sendState !== 'accepted'"
-      type="button"
+      :total-cents="order.totalCents"
+      :language="session.language"
+    />
+    <v-btn
+      v-if="order.sendState !== 'accepted'"
       class="send"
+      color="primary"
+      block
+      size="x-large"
       :disabled="!canSend"
       @click="send"
     >
       {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
-    </button>
-    <p
+    </v-btn>
+    <v-alert
       v-if="order.sendState !== 'accepted' && !isTableLabelValid(order.draft.tableLabel)"
-      class="table-missing"
+      class="table-missing mt-2"
+      type="info"
+      variant="tonal"
     >
       {{ t('review.tableMissing') }}
-    </p>
+    </v-alert>
     <SendFailurePanel
       v-if="order.sendState === 'failed' && order.failure !== null"
       :failure="order.failure"
       @retry="send"
     />
     <template v-if="order.sendState === 'accepted' && order.acceptedOrderNumber !== null">
-      <p class="sent">{{ t('review.sent', { number: order.acceptedOrderNumber }) }}</p>
-      <p v-if="totalChanged !== null" class="total-changed">
+      <v-alert class="sent mt-4" type="success" variant="tonal">
+        {{ t('review.sent', { number: order.acceptedOrderNumber }) }}
+      </v-alert>
+      <v-alert v-if="totalChanged !== null" class="total-changed mt-2" type="info" variant="tonal">
         {{ t('review.totalChanged', { total: formatPrice(totalChanged, session.language) }) }}
-      </p>
+      </v-alert>
     </template>
-    <button type="button" class="back" @click="backToItems">{{ t('review.back') }}</button>
-  </section>
+    <v-btn class="back mt-4" variant="text" block @click="backToItems">
+      {{ t('review.back') }}
+    </v-btn>
+  </v-container>
 </template>

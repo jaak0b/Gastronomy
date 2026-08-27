@@ -14,17 +14,22 @@ const choices = candidateLocations(props.item)
 </script>
 
 <template>
-  <section class="line-station-sheet">
-    <h2>{{ t('line.whereTitle', { item: item.name }) }}</h2>
-    <p>{{ t('line.whereHelp') }}</p>
-    <button
-      v-for="locationId in choices"
-      :key="locationId"
-      type="button"
-      class="station-choice"
-      @click="$emit('choose', locationId)"
-    >
-      {{ locationNameFor(locationId) }}
-    </button>
-  </section>
+  <v-dialog :model-value="true" max-width="480" persistent>
+    <v-card class="line-station-sheet">
+      <v-card-title>{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
+      <v-card-text>{{ t('line.whereHelp') }}</v-card-text>
+      <v-card-actions class="flex-column align-stretch">
+        <v-btn
+          v-for="locationId in choices"
+          :key="locationId"
+          class="station-choice mb-2"
+          variant="tonal"
+          block
+          @click="$emit('choose', locationId)"
+        >
+          {{ locationNameFor(locationId) }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>

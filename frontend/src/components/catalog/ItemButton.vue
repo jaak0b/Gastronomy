@@ -28,22 +28,23 @@ const price = computed(() => formatPrice(props.item.priceCents, props.language))
 </script>
 
 <template>
-  <div class="item-button" :class="{ 'is-sold-out': isSoldOut }">
-    <button type="button" class="add" :disabled="isSoldOut" @click="$emit('add')">
-      <span class="name">{{ item.name }}</span>
-      <span class="price">{{ price }}</span>
-      <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
-    </button>
-    <div v-if="quantity > 0" class="quantity-control">
-      <button
-        type="button"
+  <v-card class="item-button" :class="{ 'is-sold-out': isSoldOut }" variant="outlined">
+    <v-btn class="add" block variant="text" height="88" :disabled="isSoldOut" @click="$emit('add')">
+      <div class="d-flex flex-column align-center">
+        <span class="name text-body-1">{{ item.name }}</span>
+        <span class="price text-caption">{{ price }}</span>
+        <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
+      </div>
+    </v-btn>
+    <v-card-actions v-if="quantity > 0" class="quantity-control">
+      <v-btn
         class="remove"
+        icon="mdi-minus"
+        variant="text"
         :aria-label="t('catalog.removeOne')"
         @click="$emit('remove')"
-      >
-        {{ t('catalog.removeOne') }}
-      </button>
-      <span class="quantity">{{ quantity }}</span>
-    </div>
-  </div>
+      />
+      <span class="quantity text-h6">{{ quantity }}</span>
+    </v-card-actions>
+  </v-card>
 </template>

@@ -78,61 +78,78 @@ function noteInput(event: Event): string | null {
 <template>
   <div class="line-list">
     <section v-for="group in groups" :key="group.locationId ?? group.locationName" class="group">
-      <h3 v-if="group.locationId !== null">
+      <h3 v-if="group.locationId !== null" class="text-subtitle-1 mt-4">
         {{ t('review.goesTo', { name: group.locationName }) }}
       </h3>
-      <div
+      <v-card
         v-for="entry in group.lines"
         :key="entry.index"
-        class="line"
+        class="line mb-2"
         :class="{ 'is-unavailable': entry.line.isSoldOut || entry.line.isNoLongerOnTheMenu }"
+        variant="outlined"
       >
-        <span class="quantity">{{ entry.line.quantity }}</span>
-        <span class="name">{{ nameOf(entry.line) }}</span>
-        <span class="price">{{ priceOf(entry.line) }}</span>
-        <button
-          type="button"
-          class="less"
-          :aria-label="t('catalog.removeOne')"
-          @click="$emit('changeQuantity', entry.index, entry.line.quantity - 1)"
-        >
-          {{ t('catalog.removeOne') }}
-        </button>
-        <button
-          type="button"
-          class="more"
-          :aria-label="t('catalog.addOne')"
-          @click="$emit('changeQuantity', entry.index, entry.line.quantity + 1)"
-        >
-          {{ t('catalog.addOne') }}
-        </button>
-        <span v-if="stationLabelFor(entry.line) !== null" class="line-station">
-          {{ stationLabelFor(entry.line) }}
-        </span>
-        <button
-          v-if="entry.line.candidateLocationIds.length > 1"
-          type="button"
-          class="change-station"
-          @click="$emit('changeStation', entry.index)"
-        >
-          {{ t('line.changeStation') }}
-        </button>
-        <label class="line-note">
-          <span>{{ t('catalog.lineNote') }}</span>
-          <input
-            type="text"
-            :value="entry.line.note ?? ''"
+        <v-card-item>
+          <v-card-title>
+            <span class="quantity">{{ entry.line.quantity }}</span>
+            <span class="name ms-2">{{ nameOf(entry.line) }}</span>
+            <span class="price ms-2 text-medium-emphasis">{{ priceOf(entry.line) }}</span>
+          </v-card-title>
+          <v-card-subtitle v-if="stationLabelFor(entry.line) !== null" class="line-station">
+            {{ stationLabelFor(entry.line) }}
+          </v-card-subtitle>
+        </v-card-item>
+        <v-card-text>
+          <v-text-field
+            class="line-note"
+            :label="t('catalog.lineNote')"
             :placeholder="t('catalog.lineNotePlaceholder')"
+            :model-value="entry.line.note ?? ''"
             @input="$emit('changeNote', entry.index, noteInput($event))"
           />
-        </label>
-        <p v-if="entry.line.isNoLongerOnTheMenu" class="no-longer-on-the-menu">
-          {{ t('catalog.lineNoLongerOnTheMenu') }}
-        </p>
-        <p v-else-if="entry.line.isSoldOut" class="sold-out">
-          {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
-        </p>
-      </div>
+          <v-alert
+            v-if="entry.line.isNoLongerOnTheMenu"
+            class="no-longer-on-the-menu"
+            type="warning"
+            variant="tonal"
+            density="compact"
+          >
+            {{ t('catalog.lineNoLongerOnTheMenu') }}
+          </v-alert>
+          <v-alert
+            v-else-if="entry.line.isSoldOut"
+            class="sold-out"
+            type="warning"
+            variant="tonal"
+            density="compact"
+          >
+            {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            class="less"
+            icon="mdi-minus"
+            variant="tonal"
+            :aria-label="t('catalog.removeOne')"
+            @click="$emit('changeQuantity', entry.index, entry.line.quantity - 1)"
+          />
+          <v-btn
+            class="more"
+            icon="mdi-plus"
+            variant="tonal"
+            :aria-label="t('catalog.addOne')"
+            @click="$emit('changeQuantity', entry.index, entry.line.quantity + 1)"
+          />
+          <v-btn
+            v-if="entry.line.candidateLocationIds.length > 1"
+            class="change-station"
+            variant="text"
+            @click="$emit('changeStation', entry.index)"
+          >
+            {{ t('line.changeStation') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
     </section>
   </div>
 </template>

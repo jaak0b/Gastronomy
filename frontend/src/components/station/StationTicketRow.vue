@@ -75,31 +75,61 @@ const isReprint = computed(() => props.ticket.reprintCount > 0)
 </script>
 
 <template>
-  <article class="station-ticket-row" :class="{ 'is-pending': isPending }">
-    <h2 class="headline">{{ headline }}</h2>
-    <span v-if="isReprint" class="reprint-chip">{{ t('station.reprint') }}</span>
-    <p class="row-time">{{ t('station.rowTime', { time: ticket.orderCreatedAtUtc }) }}</p>
-    <p class="status">{{ t(statusKey) }}</p>
-    <p v-for="(line, index) in ticket.lines" :key="index" class="line">
-      {{ t('station.line', { quantity: line.quantity, item: line.itemName }) }}
-      <span v-if="line.lineNote !== null && line.lineNote !== undefined" class="line-note">
-        {{ t('station.lineNote', { note: line.lineNote }) }}
-      </span>
-    </p>
-    <p v-if="ticket.orderNote !== null" class="order-note">
-      {{ t('station.orderNote', { note: ticket.orderNote }) }}
-    </p>
-    <template v-if="isPending">
-      <p class="taken-pending">{{ t('station.takenPending', { seconds: secondsLeft }) }}</p>
-      <button type="button" class="undo" @click="emit('undo')">{{ t('station.undo') }}</button>
-    </template>
-    <template v-else-if="ticket.canAcknowledge">
-      <button type="button" class="take" @click="emit('take')">{{ t('station.take') }}</button>
-      <p class="take-help">{{ t('station.takeHelp') }}</p>
-    </template>
-    <p v-else class="take-unavailable">
-      {{ t(ticket.canAcknowledgeReasonKey ?? 'station.takeUnavailable') }}
-    </p>
-    <p v-if="noticeKey !== null && noticeKey !== undefined" class="notice">{{ t(noticeKey) }}</p>
-  </article>
+  <v-card class="station-ticket-row mb-3" :class="{ 'is-pending': isPending }">
+    <v-card-item>
+      <v-card-title class="headline">
+        {{ headline }}
+        <v-chip v-if="isReprint" class="reprint-chip ms-2" size="small" color="warning">
+          {{ t('station.reprint') }}
+        </v-chip>
+      </v-card-title>
+      <v-card-subtitle class="row-time">
+        {{ t('station.rowTime', { time: ticket.orderCreatedAtUtc }) }}
+      </v-card-subtitle>
+    </v-card-item>
+    <v-card-text>
+      <p class="status text-medium-emphasis">{{ t(statusKey) }}</p>
+      <p v-for="(line, index) in ticket.lines" :key="index" class="line text-h6">
+        {{ t('station.line', { quantity: line.quantity, item: line.itemName }) }}
+        <span v-if="line.lineNote !== null && line.lineNote !== undefined" class="line-note text-body-2">
+          {{ t('station.lineNote', { note: line.lineNote }) }}
+        </span>
+      </p>
+      <p v-if="ticket.orderNote !== null" class="order-note">
+        {{ t('station.orderNote', { note: ticket.orderNote }) }}
+      </p>
+      <p v-if="isPending" class="taken-pending">
+        {{ t('station.takenPending', { seconds: secondsLeft }) }}
+      </p>
+      <p v-else-if="ticket.canAcknowledge" class="take-help text-medium-emphasis">
+        {{ t('station.takeHelp') }}
+      </p>
+      <p v-else class="take-unavailable">
+        {{ t(ticket.canAcknowledgeReasonKey ?? 'station.takeUnavailable') }}
+      </p>
+      <v-alert
+        v-if="noticeKey !== null && noticeKey !== undefined"
+        class="notice mt-2"
+        type="info"
+        variant="tonal"
+        density="compact"
+      >
+        {{ t(noticeKey) }}
+      </v-alert>
+    </v-card-text>
+    <v-card-actions>
+      <v-btn v-if="isPending" class="undo" variant="tonal" @click="emit('undo')">
+        {{ t('station.undo') }}
+      </v-btn>
+      <v-btn
+        v-else-if="ticket.canAcknowledge"
+        class="take"
+        color="primary"
+        size="x-large"
+        @click="emit('take')"
+      >
+        {{ t('station.take') }}
+      </v-btn>
+    </v-card-actions>
+  </v-card>
 </template>

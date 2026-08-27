@@ -44,23 +44,25 @@ function labelFor(value: MockFault): string {
 </script>
 
 <template>
-  <section class="mock-fault-panel">
-    <h3>{{ t('admin.printers.faultTitle') }}</h3>
-    <p class="help">{{ t('admin.printers.faultHelp') }}</p>
-    <label>
-      <select v-model="fault">
-        <option v-for="value in FAULTS" :key="value" :value="value">{{ labelFor(value) }}</option>
-      </select>
-    </label>
-    <label>
-      <select v-model="mode">
-        <option value="Once">{{ t('admin.printers.fault.once') }}</option>
-        <option value="Sticky">{{ t('admin.printers.fault.sticky') }}</option>
-      </select>
-    </label>
-    <button type="button" @click="emit('apply', fault, mode)">{{ t('admin.save') }}</button>
-    <p v-if="mockFolderPath !== null" class="folder">
+  <v-sheet class="mock-fault-panel pa-4 ma-4" border rounded>
+    <div class="text-subtitle-1">{{ t('admin.printers.faultTitle') }}</div>
+    <p class="help text-medium-emphasis mb-2">{{ t('admin.printers.faultHelp') }}</p>
+    <v-select
+      v-model="fault"
+      class="fault-field"
+      :items="FAULTS.map((value) => ({ title: labelFor(value), value }))"
+    />
+    <v-select
+      v-model="mode"
+      class="mode-field"
+      :items="[
+        { title: t('admin.printers.fault.once'), value: 'Once' },
+        { title: t('admin.printers.fault.sticky'), value: 'Sticky' },
+      ]"
+    />
+    <v-btn class="apply-fault mt-2" @click="emit('apply', fault, mode)">{{ t('admin.save') }}</v-btn>
+    <p v-if="mockFolderPath !== null" class="folder text-medium-emphasis mt-2">
       {{ t('admin.printers.mockFolder', { path: mockFolderPath }) }}
     </p>
-  </section>
+  </v-sheet>
 </template>

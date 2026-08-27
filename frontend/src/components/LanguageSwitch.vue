@@ -9,27 +9,25 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="language-switch">
-    <span class="label">{{ t(labelKey) }}</span>
-    <div class="options">
-      <button
-        type="button"
+  <div class="language-switch d-flex align-center ga-2">
+    <span class="label text-medium-emphasis">{{ t(labelKey) }}</span>
+    <v-btn-toggle :model-value="language" density="comfortable" variant="outlined" divided>
+      <v-btn
+        value="de"
         class="option option-de"
-        :class="{ 'is-selected': language === 'de' }"
         :aria-pressed="language === 'de'"
         @click="$emit('select', 'de')"
       >
         {{ t('language.german') }}
-      </button>
-      <button
-        type="button"
+      </v-btn>
+      <v-btn
+        value="en"
         class="option option-en"
-        :class="{ 'is-selected': language === 'en' }"
         :aria-pressed="language === 'en'"
         @click="$emit('select', 'en')"
       >
         {{ t('language.english') }}
-      </button>
-    </div>
+      </v-btn>
+    </v-btn-toggle>
   </div>
 </template>

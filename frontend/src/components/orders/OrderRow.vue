@@ -33,9 +33,13 @@ const headline = computed(() =>
 </script>
 
 <template>
-  <button type="button" class="order-row" @click="$emit('open')">
-    <span class="headline">{{ headline }}</span>
-    <span class="total">{{ formatPrice(order.totalCents, language) }}</span>
-    <span class="status" :class="statusKey">{{ t(statusKey) }}</span>
-  </button>
+  <v-card class="order-row mb-2" variant="outlined" @click="$emit('open')">
+    <v-card-item>
+      <v-card-title class="headline">{{ headline }}</v-card-title>
+      <v-card-subtitle>
+        <span class="total">{{ formatPrice(order.totalCents, language) }}</span>
+        <span class="status ms-2" :class="statusKey">{{ t(statusKey) }}</span>
+      </v-card-subtitle>
+    </v-card-item>
+  </v-card>
 </template>

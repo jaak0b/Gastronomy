@@ -11,7 +11,9 @@ const { t } = useI18n()
 
 <template>
   <div class="order-list">
-    <p v-if="orders.length === 0" class="empty">{{ t('orders.empty') }}</p>
+    <v-alert v-if="orders.length === 0" class="empty" type="info" variant="tonal">
+      {{ t('orders.empty') }}
+    </v-alert>
     <OrderRow
       v-for="order in orders"
       :key="order.orderId"

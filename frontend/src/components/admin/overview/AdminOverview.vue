@@ -88,31 +88,49 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="admin-overview">
-    <h1>{{ t('admin.overview.title') }}</h1>
-    <p v-if="rows.length === 0" class="ready">{{ t('admin.overview.ready') }}</p>
-    <p v-for="(row, index) in rows" :key="index" class="readiness-row">
+  <v-container class="admin-overview">
+    <h1 class="text-h5 mb-4">{{ t('admin.overview.title') }}</h1>
+    <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
+      {{ t('admin.overview.ready') }}
+    </v-alert>
+    <v-alert
+      v-for="(row, index) in rows"
+      :key="index"
+      class="readiness-row mb-2"
+      type="warning"
+      variant="tonal"
+    >
       {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
-    </p>
-    <p class="phone-address">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
+    </v-alert>
+    <p class="phone-address mt-4">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
 
-    <div class="numbers-reset">
-      <h2>{{ t('admin.numbers.title') }}</h2>
-      <p class="numbers-help">{{ t('admin.numbers.help') }}</p>
-      <button v-if="!isConfirmingReset" type="button" class="secondary" @click="askToReset()">
-        {{ t('admin.numbers.reset') }}
-      </button>
-      <div v-else class="confirm-block">
-        <p class="confirm-question">{{ t('admin.numbers.confirm') }}</p>
-        <button type="button" class="primary" @click="confirmReset()">
-          {{ t('admin.numbers.confirmYes') }}
-        </button>
-        <button type="button" class="secondary" @click="cancelReset()">
-          {{ t('admin.numbers.confirmNo') }}
-        </button>
-      </div>
-      <p v-if="resetDoneText !== null" class="reset-done">{{ resetDoneText }}</p>
-      <p v-if="resetFailed" class="reset-failed">{{ t('admin.loadFailed') }}</p>
-    </div>
-  </section>
+    <v-card class="numbers-reset mt-6">
+      <v-card-title>{{ t('admin.numbers.title') }}</v-card-title>
+      <v-card-text>
+        <p class="numbers-help text-medium-emphasis">{{ t('admin.numbers.help') }}</p>
+        <template v-if="isConfirmingReset">
+          <p class="confirm-question mt-2">{{ t('admin.numbers.confirm') }}</p>
+        </template>
+        <v-alert v-if="resetDoneText !== null" class="reset-done mt-2" type="success" variant="tonal">
+          {{ resetDoneText }}
+        </v-alert>
+        <v-alert v-if="resetFailed" class="reset-failed mt-2" type="error" variant="tonal">
+          {{ t('admin.loadFailed') }}
+        </v-alert>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn v-if="!isConfirmingReset" class="secondary" variant="text" @click="askToReset()">
+          {{ t('admin.numbers.reset') }}
+        </v-btn>
+        <template v-else>
+          <v-btn class="primary" color="primary" @click="confirmReset()">
+            {{ t('admin.numbers.confirmYes') }}
+          </v-btn>
+          <v-btn class="secondary" variant="text" @click="cancelReset()">
+            {{ t('admin.numbers.confirmNo') }}
+          </v-btn>
+        </template>
+      </v-card-actions>
+    </v-card>
+  </v-container>
 </template>

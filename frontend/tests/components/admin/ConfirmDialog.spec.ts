@@ -1,53 +1,58 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
 import ConfirmDialog from '../../../src/components/admin/ConfirmDialog.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import { dialogText, testPlugins, waitForDialog } from '../../support/plugins'
 
 function mountDialog() {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ConfirmDialog, {
     props: {
       title: 'Station abschalten?',
       body: 'Die bisherigen Bestellungen bleiben gespeichert.',
       confirmLabel: 'Station abschalten',
     },
-    global: { plugins: [i18n] },
+    global: { plugins: testPlugins() },
+    attachTo: document.body,
   })
 }
 
 describe('the question asked before something is switched off', () => {
-  it('states what is about to happen', () => {
-    const dialog = mountDialog()
-
-    expect(dialog.get('.confirm-title').text()).toBe('Station abschalten?')
+  beforeEach(() => {
+    document.body.innerHTML = ''
   })
 
-  it('says what it means for the data that is already there', () => {
-    const dialog = mountDialog()
+  it('states what is about to happen', async () => {
+    mountDialog()
+    await waitForDialog()
 
-    expect(dialog.get('.confirm-body').text()).toBe(
-      'Die bisherigen Bestellungen bleiben gespeichert.',
-    )
+    expect(dialogText('.confirm-title')).toBe('Station abschalten?')
   })
 
-  it('names the action on the button that carries it out', () => {
-    const dialog = mountDialog()
+  it('says what it means for the data that is already there', async () => {
+    mountDialog()
+    await waitForDialog()
 
-    expect(dialog.get('.confirm').text()).toBe('Station abschalten')
+    expect(dialogText('.confirm-body')).toBe('Die bisherigen Bestellungen bleiben gespeichert.')
   })
 
-  it('offers a way out that is not the action', () => {
-    const dialog = mountDialog()
+  it('names the action on the button that carries it out', async () => {
+    mountDialog()
+    await waitForDialog()
 
-    expect(dialog.get('.cancel').text()).toBe('Abbrechen')
+    expect(dialogText('.confirm')).toBe('Station abschalten')
+  })
+
+  it('offers a way out that is not the action', async () => {
+    mountDialog()
+    await waitForDialog()
+
+    expect(dialogText('.cancel')).toBe('Abbrechen')
   })
 
   it('reports the confirmation only when the action button is pressed', async () => {
     const dialog = mountDialog()
+    await waitForDialog()
 
-    await dialog.get('.confirm').trigger('click')
+    ;(document.querySelector('.confirm') as HTMLElement).click()
 
     expect(dialog.emitted('confirm')).toHaveLength(1)
     expect(dialog.emitted('cancel')).toBeUndefined()
@@ -55,17 +60,19 @@ describe('the question asked before something is switched off', () => {
 
   it('reports a cancellation when the way out is taken', async () => {
     const dialog = mountDialog()
+    await waitForDialog()
 
-    await dialog.get('.cancel').trigger('click')
+    ;(document.querySelector('.cancel') as HTMLElement).click()
 
     expect(dialog.emitted('cancel')).toHaveLength(1)
     expect(dialog.emitted('confirm')).toBeUndefined()
   })
 
-  it('is announced to a screen reader as a question that needs an answer', () => {
-    const dialog = mountDialog()
+  it('is announced to a screen reader as a question that needs an answer', async () => {
+    mountDialog()
+    await waitForDialog()
 
-    expect(dialog.get('.confirm-dialog').attributes('role')).toBe('dialog')
-    expect(dialog.get('.confirm-dialog').attributes('aria-modal')).toBe('true')
+    expect(document.querySelector('.confirm-dialog')!.getAttribute('role')).toBe('dialog')
+    expect(document.querySelector('.confirm-dialog')!.getAttribute('aria-modal')).toBe('true')
   })
 })

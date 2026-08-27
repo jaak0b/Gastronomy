@@ -27,19 +27,26 @@ function save(): void {
 </script>
 
 <template>
-  <form class="location-form" @submit.prevent="save">
-    <label>
-      <span>{{ t('admin.locations.title') }}</span>
-      <input v-model="name" type="text" />
-    </label>
-    <label>
-      <span>{{ t('admin.locations.slipLanguage') }}</span>
-      <select v-model="slipLanguage">
-        <option value="de">{{ t('settings.languageGerman') }}</option>
-        <option value="en">{{ t('settings.languageEnglish') }}</option>
-      </select>
-    </label>
-    <p class="help">{{ t('admin.locations.slipLanguageHelp') }}</p>
-    <button type="submit" :disabled="name.trim().length === 0">{{ t('admin.save') }}</button>
-  </form>
+  <v-card class="location-form mt-4">
+    <v-form @submit.prevent="save">
+      <v-card-text>
+        <v-text-field v-model="name" :label="t('admin.locations.title')" />
+        <v-select
+          v-model="slipLanguage"
+          class="slip-language"
+          :label="t('admin.locations.slipLanguage')"
+          :items="[
+            { title: t('settings.languageGerman'), value: 'de' },
+            { title: t('settings.languageEnglish'), value: 'en' },
+          ]"
+        />
+        <p class="help text-medium-emphasis mt-2">{{ t('admin.locations.slipLanguageHelp') }}</p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
+          {{ t('admin.save') }}
+        </v-btn>
+      </v-card-actions>
+    </v-form>
+  </v-card>
 </template>

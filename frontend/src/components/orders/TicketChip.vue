@@ -20,7 +20,7 @@ const message = computed(() => messageForTicket(props.ticket, props.orderNumber)
 
 <template>
   <div class="ticket-chip">
-    <span class="label">{{ label }}</span>
-    <p v-if="message !== null" class="message">{{ t(message.key, message.parameters) }}</p>
+    <v-chip class="label" size="small">{{ label }}</v-chip>
+    <p v-if="message !== null" class="message mt-1">{{ t(message.key, message.parameters) }}</p>
   </div>
 </template>

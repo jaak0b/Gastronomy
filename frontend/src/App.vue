@@ -81,8 +81,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AppHeader v-if="showsHeader" />
-  <main>
+  <v-app>
+    <AppHeader v-if="showsHeader" />
+    <v-main>
     <EnrolQr v-if="screen === 'enrolQr'" />
     <Welcome v-else-if="screen === 'welcome'" />
     <Catalog v-else-if="screen === 'catalog'" />
@@ -91,5 +92,6 @@ onMounted(async () => {
     <OrderDetailPage v-else-if="screen === 'orderDetail'" />
     <StationPage v-else-if="screen === 'stations'" />
     <AdminShell v-else />
-  </main>
+    </v-main>
+  </v-app>
 </template>

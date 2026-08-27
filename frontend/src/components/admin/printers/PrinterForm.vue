@@ -38,17 +38,15 @@ function save(): void {
 </script>
 
 <template>
-  <form class="printer-form" @submit.prevent="save">
-    <label>
-      <select v-model="transport">
-        <option v-for="kind in TRANSPORTS" :key="kind" :value="kind">{{ labelFor(kind) }}</option>
-      </select>
-    </label>
-    <label>
-      <input v-model="host" type="text" />
-    </label>
-    <p class="help">{{ t('admin.printers.hostHelp') }}</p>
-    <p class="help">{{ t('admin.printers.sharedHelp') }}</p>
-    <button type="submit">{{ t('admin.save') }}</button>
-  </form>
+  <v-form class="printer-form pa-4" @submit.prevent="save">
+    <v-select
+      v-model="transport"
+      class="transport-field"
+      :label="t('admin.printers.title')"
+      :items="TRANSPORTS.map((kind) => ({ title: labelFor(kind), value: kind }))"
+    />
+    <v-text-field v-model="host" class="host-field" :label="t('admin.printers.hostHelp')" />
+    <p class="help text-medium-emphasis">{{ t('admin.printers.sharedHelp') }}</p>
+    <v-btn type="submit" color="primary" class="mt-2">{{ t('admin.save') }}</v-btn>
+  </v-form>
 </template>

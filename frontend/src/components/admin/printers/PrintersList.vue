@@ -37,10 +37,11 @@ onMounted(printers.load)
 </script>
 
 <template>
-  <section class="admin-printers">
-    <h1>{{ t('admin.printers.title') }}</h1>
-    <p class="help">{{ t('admin.printers.testPrintHelp') }}</p>
-    <p v-if="printers.errorMessage !== null" class="refusal error">
+  <v-container class="admin-printers">
+    <h1 class="text-h5 mb-2">{{ t('admin.printers.title') }}</h1>
+    <p class="help text-medium-emphasis mb-4">{{ t('admin.printers.testPrintHelp') }}</p>
+
+    <v-alert v-if="printers.errorMessage !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{
         printers.errorMessage.count === null
           ? t(printers.errorMessage.key, printers.errorMessage.parameters)
@@ -50,43 +51,54 @@ onMounted(printers.load)
               printers.errorMessage.count,
             )
       }}
-    </p>
-    <p v-if="printers.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
-    <p v-else-if="printers.printers.length === 0" class="empty">
+    </v-alert>
+    <v-alert v-if="printers.loadFailed" class="error" type="error" variant="tonal">
+      {{ t('admin.loadFailed') }}
+    </v-alert>
+    <v-alert v-else-if="printers.printers.length === 0" class="empty" type="info" variant="tonal">
       {{ t('admin.printers.empty') }}
-    </p>
-    <article v-for="printer in printers.printers" :key="printer.locationId" class="printer-row">
-      <h2>{{ printer.locationName }}</h2>
-      <p class="status">{{ t(statusKey(printer)) }}</p>
-      <p v-if="printer.waitingTicketCount > 0" class="waiting">
-        {{
-          t(
-            'admin.printers.waiting',
-            { count: printer.waitingTicketCount },
-            printer.waitingTicketCount,
-          )
-        }}
-      </p>
-      <p v-if="printer.lastChangedAtUtc !== null" class="last-heard">
-        {{ t('admin.printers.lastHeard', { time: printer.lastChangedAtUtc }) }}
-      </p>
-      <p v-if="printer.sharedWithLocationNames.length > 0" class="shared">
-        {{ t('admin.printers.shared', { names: printer.sharedWithLocationNames.join(', ') }) }}
-      </p>
-      <button type="button" @click="printers.testPrint(printer.locationId)">
-        {{ t('admin.printers.testPrint') }}
-      </button>
-      <button type="button" @click="printers.reconnect(printer.locationId)">
-        {{ t('admin.printers.reconnect') }}
-      </button>
-      <p class="help">{{ t('admin.printers.reconnectHelp') }}</p>
-      <button type="button" @click="editing = printer.locationId">{{ t('admin.edit') }}</button>
+    </v-alert>
+
+    <v-card v-for="printer in printers.printers" :key="printer.locationId" class="printer-row mb-3">
+      <v-card-item>
+        <v-card-title>{{ printer.locationName }}</v-card-title>
+        <v-card-subtitle class="status">{{ t(statusKey(printer)) }}</v-card-subtitle>
+      </v-card-item>
+      <v-card-text>
+        <p v-if="printer.waitingTicketCount > 0" class="waiting">
+          {{
+            t(
+              'admin.printers.waiting',
+              { count: printer.waitingTicketCount },
+              printer.waitingTicketCount,
+            )
+          }}
+        </p>
+        <p v-if="printer.lastChangedAtUtc !== null" class="last-heard text-medium-emphasis">
+          {{ t('admin.printers.lastHeard', { time: printer.lastChangedAtUtc }) }}
+        </p>
+        <p v-if="printer.sharedWithLocationNames.length > 0" class="shared text-medium-emphasis">
+          {{ t('admin.printers.shared', { names: printer.sharedWithLocationNames.join(', ') }) }}
+        </p>
+        <p class="help text-medium-emphasis">{{ t('admin.printers.reconnectHelp') }}</p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn class="test-print" variant="text" @click="printers.testPrint(printer.locationId)">
+          {{ t('admin.printers.testPrint') }}
+        </v-btn>
+        <v-btn class="reconnect" variant="text" @click="printers.reconnect(printer.locationId)">
+          {{ t('admin.printers.reconnect') }}
+        </v-btn>
+        <v-btn class="edit" variant="text" @click="editing = printer.locationId">
+          {{ t('admin.edit') }}
+        </v-btn>
+      </v-card-actions>
       <PrinterForm v-if="editing === printer.locationId" :printer="printer" @save="save" />
       <MockFaultPanel
         v-if="printer.transportKind === 'Mock'"
         :mock-folder-path="printer.mockFolderPath"
         @apply="(fault, mode) => printers.setMockFault(printer.locationId, fault, mode)"
       />
-    </article>
-  </section>
+    </v-card>
+  </v-container>
 </template>

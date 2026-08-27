@@ -43,7 +43,7 @@ describe('the note on a line', () => {
   it('offers a note field labelled for this one item', () => {
     const list = mountList([line()])
 
-    expect(list.get('.line-note span').text()).toBe('Hinweis für diese Position')
+    expect(list.get('.line-note label').text()).toBe('Hinweis für diese Position')
   })
 
   it('suggests what a note looks like', () => {
@@ -149,11 +149,11 @@ describe('a line whose item is no longer on the menu', () => {
 })
 
 describe('the quantity buttons', () => {
-  it('offers one more and one less as words rather than a bare number', () => {
+  it('names one more and one less for a screen reader, since the buttons carry icons', () => {
     const list = mountList([line()])
 
-    expect(list.get('.less').text()).toBe('Eins weniger')
-    expect(list.get('.more').text()).toBe('Eins mehr')
+    expect(list.get('.less').attributes('aria-label')).toBe('Eins weniger')
+    expect(list.get('.more').attributes('aria-label')).toBe('Eins mehr')
   })
 
   it('asks for one less when the server taps the minus', async () => {

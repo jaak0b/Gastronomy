@@ -11,23 +11,26 @@ const codeEntryIsOpen = ref(false)
 </script>
 
 <template>
-  <section class="welcome">
+  <v-container class="welcome">
     <LanguageSwitch
       :language="session.language"
       label-key="settings.language"
       @select="session.setLanguage"
     />
-    <h1>{{ t('welcome.title') }}</h1>
-    <p class="welcome-body">{{ t('welcome.body') }}</p>
-    <p v-if="session.heldDraftExists" class="order-held">{{ t('enrol.orderHeld') }}</p>
-    <button
+    <h1 class="text-h4 mt-4">{{ t('welcome.title') }}</h1>
+    <p class="welcome-body text-body-1 mt-2">{{ t('welcome.body') }}</p>
+    <v-alert v-if="session.heldDraftExists" class="order-held mt-4" type="info" variant="tonal">
+      {{ t('enrol.orderHeld') }}
+    </v-alert>
+    <v-btn
       v-if="!codeEntryIsOpen"
-      type="button"
-      class="open-code-entry"
+      class="open-code-entry mt-4"
+      color="primary"
+      block
       @click="codeEntryIsOpen = true"
     >
       {{ t('welcome.enterCode') }}
-    </button>
+    </v-btn>
     <SixDigitFallback v-else :show-language-switch="false" />
-  </section>
+  </v-container>
 </template>

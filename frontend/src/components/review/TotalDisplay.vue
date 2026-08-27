@@ -11,9 +11,9 @@ const total = computed(() => formatPrice(props.totalCents, props.language))
 </script>
 
 <template>
-  <div class="total-display">
-    <span class="label">{{ t('review.total') }}</span>
-    <span class="amount">{{ total }}</span>
-    <p class="help">{{ t('review.totalHelp') }}</p>
-  </div>
+  <v-sheet class="total-display pa-4 my-4" border rounded>
+    <span class="label text-medium-emphasis">{{ t('review.total') }}</span>
+    <div class="amount text-h4">{{ total }}</div>
+    <p class="help text-medium-emphasis">{{ t('review.totalHelp') }}</p>
+  </v-sheet>
 </template>

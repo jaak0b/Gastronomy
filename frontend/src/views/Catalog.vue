@@ -82,18 +82,24 @@ function removeItem(item: CatalogItem): void {
 </script>
 
 <template>
-  <section class="catalog">
-    <h1>{{ t('catalog.title') }}</h1>
-    <p
+  <v-container class="catalog">
+    <h1 class="text-h5 mb-2">{{ t('catalog.title') }}</h1>
+    <v-alert
       v-for="(warning, index) in printerStatus.catalogWarnings"
       :key="index"
-      class="station-warning"
+      class="station-warning mb-2"
+      type="warning"
+      variant="tonal"
     >
       {{ t(warning.key, { name: warning.name }) }}
-    </p>
-    <label class="catalog-search">
-      <input v-model="search" type="search" :placeholder="t('catalog.searchPlaceholder')" />
-    </label>
+    </v-alert>
+    <v-text-field
+      v-model="search"
+      class="catalog-search"
+      type="search"
+      :placeholder="t('catalog.searchPlaceholder')"
+      hide-details
+    />
     <CategoryStrip
       :categories="catalog.categories"
       :selected="activeCategory"
@@ -118,5 +124,5 @@ function removeItem(item: CatalogItem): void {
       :language="session.language"
       @review="navigate('/review')"
     />
-  </section>
+  </v-container>
 </template>

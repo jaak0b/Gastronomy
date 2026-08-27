@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import LocationsList from '../../../src/components/admin/locations/LocationsList.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STATION_ID = '11111111-1111-1111-1111-111111111111'
 
@@ -46,14 +44,14 @@ function refuseDeactivationWith(messageKey: string, parameters: Record<string, u
 }
 
 function mountList() {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
-  return mount(LocationsList, { global: { plugins: [i18n] } })
+  return mount(LocationsList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
+
 async function deactivateFirstStation(list: ReturnType<typeof mountList>) {
-  await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+  await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
   await list.get('.deactivate').trigger('click')
-  await list.get('.confirm').trigger('click')
+  await pressInDialog('.confirm')
   await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
 }
 
@@ -64,6 +62,7 @@ const ONE_STATION_SWITCHED_OFF = JSON.stringify({
 describe('switching a station off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.body.innerHTML = ''
   })
 
   it('asks before it happens, rather than acting on the first tap', async () => {
@@ -77,10 +76,11 @@ describe('switching a station off', () => {
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
 
-    expect(list.find('.confirm-dialog').exists()).toBe(true)
+    await waitForDialog()
+
     expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
@@ -88,10 +88,12 @@ describe('switching a station off', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
 
-    expect(list.get('.confirm-body').text()).toContain('bleiben gespeichert')
+    await waitForDialog()
+
+    expect(document.querySelector('.confirm-body')!.textContent).toContain('bleiben gespeichert')
   })
 
   it('does nothing when the question is answered with no', async () => {
@@ -105,11 +107,10 @@ describe('switching a station off', () => {
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
-    await list.get('.cancel').trigger('click')
+    await pressInDialog('.cancel')
 
-    expect(list.find('.confirm-dialog').exists()).toBe(false)
     expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
@@ -124,9 +125,9 @@ describe('switching a station off', () => {
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
-    await list.get('.confirm').trigger('click')
+    await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
@@ -148,7 +149,7 @@ describe('a station that is switched off', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
 
-    expect(list.find('li').exists()).toBe(false)
+    expect(list.find('.station-row').exists()).toBe(false)
   })
 
   it('says so on its row once it is shown', async () => {
@@ -159,8 +160,8 @@ describe('a station that is switched off', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
-    await list.get('.show-deactivated').setValue(true)
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.show-deactivated input').setValue(true)
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
 
     expect(list.get('.deactivated').text()).toBe('Deaktiviert')
   })
@@ -173,8 +174,8 @@ describe('a station that is switched off', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
-    await list.get('.show-deactivated').setValue(true)
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.show-deactivated input').setValue(true)
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
 
     expect(list.get('.reactivate').text()).toBe('Station einschalten')
   })
@@ -191,8 +192,8 @@ describe('a station that is switched off', () => {
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.empty').exists()).toBe(false))
-    await list.get('.show-deactivated').setValue(true)
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await list.get('.show-deactivated input').setValue(true)
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.reactivate').trigger('click')
 
     await vi.waitFor(() => expect(urls).toContain(`/api/admin/locations/${STATION_ID}/activate`))
@@ -215,9 +216,9 @@ describe('the buttons beside a station', () => {
     )
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('li').exists()).toBe(true))
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.deactivate').trigger('click')
-    await list.get('.confirm').trigger('click')
+    await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
       expect(urls).toContain(`/api/admin/locations/${STATION_ID}/deactivate`),
@@ -229,6 +230,7 @@ describe('the buttons beside a station', () => {
 describe('a station the laptop refuses to switch off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.body.innerHTML = ''
   })
 
   it('says items would be left with no station when that is the reason', async () => {

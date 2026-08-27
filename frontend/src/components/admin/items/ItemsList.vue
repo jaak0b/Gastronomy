@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import { useAdminLocationsStore } from '../../../stores/admin/locations'
 import ConfirmDialog from '../ConfirmDialog.vue'
-import TrashIcon from '../TrashIcon.vue'
 import ItemForm from './ItemForm.vue'
 
 const { t } = useI18n()
@@ -44,51 +43,72 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="admin-items">
-    <h1>{{ t('admin.items.title') }}</h1>
-    <p class="help">{{ t('admin.items.soldOutHelp') }}</p>
-    <p class="walk">{{ t('admin.items.soldOutWalk') }}</p>
-    <p v-if="items.errorKey !== null" class="error">{{ t(items.errorKey) }}</p>
-    <p v-if="items.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
-    <p v-else-if="items.items.length === 0" class="empty">{{ t('admin.items.empty') }}</p>
-    <label class="show-deactivated-field">
-      <input v-model="showsDeactivated" type="checkbox" class="show-deactivated" />
-      <span>{{ t('admin.showDeactivated') }}</span>
-    </label>
-    <ul>
-      <li v-for="item in shown" :key="item.itemId">
-        <span class="name">{{ item.name }}</span>
-        <span v-if="!item.isActive" class="deactivated">{{ t('admin.deactivated') }}</span>
-        <button
+  <v-container class="admin-items">
+    <h1 class="text-h5 mb-2">{{ t('admin.items.title') }}</h1>
+    <p class="help text-medium-emphasis">{{ t('admin.items.soldOutHelp') }}</p>
+    <p class="walk text-medium-emphasis mb-4">{{ t('admin.items.soldOutWalk') }}</p>
+
+    <v-alert v-if="items.errorKey !== null" class="error mb-4" type="error" variant="tonal">
+      {{ t(items.errorKey) }}
+    </v-alert>
+    <v-alert v-if="items.loadFailed" class="error" type="error" variant="tonal">
+      {{ t('admin.loadFailed') }}
+    </v-alert>
+    <v-alert v-else-if="items.items.length === 0" class="empty" type="info" variant="tonal">
+      {{ t('admin.items.empty') }}
+    </v-alert>
+
+    <v-checkbox
+      v-model="showsDeactivated"
+      class="show-deactivated"
+      :label="t('admin.showDeactivated')"
+    />
+
+    <v-card v-for="item in shown" :key="item.itemId" class="item-row mb-3">
+      <v-card-item>
+        <v-card-title class="name">
+          {{ item.name }}
+          <v-chip v-if="!item.isActive" class="deactivated ms-2" size="small" color="grey">
+            {{ t('admin.deactivated') }}
+          </v-chip>
+        </v-card-title>
+      </v-card-item>
+      <v-card-actions>
+        <v-btn
           v-if="item.isActive"
-          type="button"
           class="sold-out-toggle"
+          variant="text"
           @click="items.setAvailability(item.itemId, !item.isAvailable)"
         >
           {{ item.isAvailable ? t('admin.items.soldOut') : t('admin.items.soldOutUndo') }}
-        </button>
-        <button type="button" @click="editingId = item.itemId">{{ t('admin.edit') }}</button>
-        <button
+        </v-btn>
+        <v-btn class="edit" variant="text" @click="editingId = item.itemId">
+          {{ t('admin.edit') }}
+        </v-btn>
+        <v-btn
           v-if="item.isActive"
-          type="button"
           class="deactivate"
+          icon="mdi-delete"
+          variant="text"
+          color="error"
           :aria-label="t('admin.deactivate')"
-          :title="t('admin.deactivate')"
           @click="askingAboutId = item.itemId"
-        >
-          <TrashIcon />
-        </button>
-        <button
+        />
+        <v-btn
           v-else
-          type="button"
           class="reactivate"
+          variant="text"
           @click="items.setActive(item.itemId, true)"
         >
           {{ t('admin.items.activate') }}
-        </button>
-      </li>
-    </ul>
-    <button type="button" @click="isCreating = true">{{ t('admin.items.new') }}</button>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+
+    <v-btn class="new-item" color="primary" @click="isCreating = true">
+      {{ t('admin.items.new') }}
+    </v-btn>
+
     <ItemForm
       v-if="isCreating || editing !== null"
       :item="editing"
@@ -104,5 +124,5 @@ onMounted(async () => {
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />
-  </section>
+  </v-container>
 </template>

@@ -1,7 +1,9 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
-import './style.css'
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
+import { createVuetify } from 'vuetify'
 import App from './App.vue'
 import de from './locales/de.json'
 import en from './locales/en.json'
@@ -15,6 +17,16 @@ export const i18n = createI18n({
   messages: { de, en },
 })
 
+export const vuetify = createVuetify({
+  defaults: {
+    global: { size: 'large' },
+    VBtn: { size: 'large', variant: 'flat' },
+    VTextField: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
+    VSelect: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
+    VCheckbox: { density: 'comfortable', hideDetails: 'auto' },
+  },
+})
+
 startRouter()
 
-createApp(App).use(createPinia()).use(i18n).mount('#app')
+createApp(App).use(createPinia()).use(i18n).use(vuetify).mount('#app')

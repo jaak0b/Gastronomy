@@ -24,25 +24,29 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <section v-if="isReady" class="enrolment-done">
-    <p class="success">{{ t('enrol.success') }}</p>
-    <button type="button" class="to-catalog" @click="navigate('/')">
+  <v-container v-if="isReady" class="enrolment-done">
+    <v-alert class="success" type="success" variant="tonal">{{ t('enrol.success') }}</v-alert>
+    <v-btn class="to-catalog mt-4" color="primary" block @click="navigate('/')">
       {{ t('enrol.continue') }}
-    </button>
-  </section>
-  <section v-else class="enrolment">
+    </v-btn>
+  </v-container>
+  <v-container v-else class="enrolment">
     <LanguageSwitch
       :language="session.language"
       label-key="settings.language"
       @select="session.setLanguage"
     />
-    <h1>{{ t('enrol.title') }}</h1>
-    <p>{{ t('enrol.intro') }}</p>
-    <p v-if="draftIsHeld" class="order-held">{{ t('enrol.orderHeld') }}</p>
-    <NameField v-model="name" />
-    <button type="button" :disabled="!canContinue" @click="submit">
+    <h1 class="text-h4 mt-4">{{ t('enrol.title') }}</h1>
+    <p class="mt-2">{{ t('enrol.intro') }}</p>
+    <v-alert v-if="draftIsHeld" class="order-held mt-2" type="info" variant="tonal">
+      {{ t('enrol.orderHeld') }}
+    </v-alert>
+    <NameField v-model="name" class="mt-4" />
+    <v-btn class="continue" color="primary" block :disabled="!canContinue" @click="submit">
       {{ t('enrol.continue') }}
-    </button>
-    <p v-if="session.redeemErrorKey !== null" class="error">{{ t(session.redeemErrorKey) }}</p>
-  </section>
+    </v-btn>
+    <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" type="error" variant="tonal">
+      {{ t(session.redeemErrorKey) }}
+    </v-alert>
+  </v-container>
 </template>

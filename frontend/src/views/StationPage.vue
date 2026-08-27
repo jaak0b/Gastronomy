@@ -53,17 +53,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <p v-if="station.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
-  <section v-else class="station-page">
-    <h1>{{ t('station.title', { name: selectedName }) }}</h1>
+  <v-container v-if="station.loadFailed" class="station-page-failed">
+    <v-alert class="error" type="error" variant="tonal">{{ t('admin.loadFailed') }}</v-alert>
+  </v-container>
+  <v-container v-else class="station-page">
+    <h1 class="text-h5 mb-2">{{ t('station.title', { name: selectedName }) }}</h1>
     <StationWarning />
     <StationFilter
       :locations="station.locations"
       :selected-location-id="station.selectedLocationId"
       @select="station.selectLocation"
     />
-    <p v-if="printerIsBack" class="printer-back">{{ t('station.printerBack') }}</p>
-    <p v-if="station.tickets.length === 0" class="empty">{{ t('station.empty') }}</p>
+    <v-alert v-if="printerIsBack" class="printer-back mb-2" type="success" variant="tonal">
+      {{ t('station.printerBack') }}
+    </v-alert>
+    <v-alert v-if="station.tickets.length === 0" class="empty" type="info" variant="tonal">
+      {{ t('station.empty') }}
+    </v-alert>
     <StationTicketRow
       v-for="ticket in station.tickets"
       :key="ticket.ticketId"
@@ -74,5 +80,5 @@ onUnmounted(() => {
       @take="station.beginTake(ticket.ticketId)"
       @undo="station.undoTake(ticket.ticketId)"
     />
-  </section>
+  </v-container>
 </template>

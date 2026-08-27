@@ -36,17 +36,18 @@ const previewText = computed(() => {
 </script>
 
 <template>
-  <fieldset class="assignment-editor">
-    <legend>{{ t('admin.assignment.title') }}</legend>
-    <p class="help">{{ t('admin.assignment.help') }}</p>
-    <label v-for="location in locations" :key="location.locationId">
-      <input
-        type="checkbox"
-        :checked="selectedLocationIds.includes(location.locationId)"
-        @change="emit('toggle', location.locationId)"
-      />
-      <span>{{ location.name }}</span>
-    </label>
-    <p class="preview">{{ previewText }}</p>
-  </fieldset>
+  <v-sheet class="assignment-editor pa-4 mb-4" border rounded>
+    <div class="text-subtitle-1">{{ t('admin.assignment.title') }}</div>
+    <p class="help text-medium-emphasis">{{ t('admin.assignment.help') }}</p>
+    <v-checkbox
+      v-for="location in locations"
+      :key="location.locationId"
+      :label="location.name"
+      :model-value="selectedLocationIds.includes(location.locationId)"
+      @update:model-value="emit('toggle', location.locationId)"
+    />
+    <v-alert class="preview" type="info" variant="tonal" density="compact">
+      {{ previewText }}
+    </v-alert>
+  </v-sheet>
 </template>

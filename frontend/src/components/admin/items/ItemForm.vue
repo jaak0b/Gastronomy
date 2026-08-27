@@ -48,28 +48,35 @@ function save(): void {
 </script>
 
 <template>
-  <form class="item-form" @submit.prevent="save">
-    <label>
-      <span>{{ t('admin.items.title') }}</span>
-      <input v-model="name" type="text" />
-    </label>
-    <label>
-      <span>{{ t('admin.items.category') }}</span>
-      <input v-model="categoryName" type="text" />
-    </label>
-    <label class="price-field">
-      <span>{{ t('admin.items.price') }}</span>
-      <input v-model="priceText" type="text" inputmode="decimal" />
-    </label>
-    <p v-if="priceIsUnreadable" class="price-error error">{{ t('admin.items.priceInvalid') }}</p>
-    <p class="help">{{ t('admin.items.priceHelp') }}</p>
-    <AssignmentEditor
-      :item-name="name"
-      :locations="locations"
-      :selected-location-ids="locationIds"
-      @toggle="toggle"
-    />
-    <p v-if="errorKey !== null" class="error">{{ t(errorKey) }}</p>
-    <button type="submit" :disabled="name.trim().length === 0">{{ t('admin.save') }}</button>
-  </form>
+  <v-card class="item-form mt-4">
+    <v-form @submit.prevent="save">
+      <v-card-text>
+        <v-text-field v-model="name" :label="t('admin.items.title')" />
+        <v-text-field v-model="categoryName" :label="t('admin.items.category')" />
+        <v-text-field
+          v-model="priceText"
+          class="price-field"
+          :label="t('admin.items.price')"
+          inputmode="decimal"
+          :error="priceIsUnreadable"
+          :error-messages="priceIsUnreadable ? [t('admin.items.priceInvalid')] : []"
+        />
+        <p class="help text-medium-emphasis">{{ t('admin.items.priceHelp') }}</p>
+        <AssignmentEditor
+          :item-name="name"
+          :locations="locations"
+          :selected-location-ids="locationIds"
+          @toggle="toggle"
+        />
+        <v-alert v-if="errorKey !== null" class="error" type="error" variant="tonal">
+          {{ t(errorKey) }}
+        </v-alert>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
+          {{ t('admin.save') }}
+        </v-btn>
+      </v-card-actions>
+    </v-form>
+  </v-card>
 </template>

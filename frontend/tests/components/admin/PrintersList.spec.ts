@@ -154,7 +154,7 @@ describe('the printers page', () => {
     const page = mountPrinters()
     await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
 
-    expect(page.get('.printer-row h2').text()).toBe('Küche')
+    expect(page.get('.printer-row .v-card-title').text()).toBe('Küche')
   })
 
   it('says why the page is empty when no station has been created yet', async () => {
@@ -194,6 +194,6 @@ describe('the printers page', () => {
     const page = mountPrinters()
     await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
 
-    expect(page.get('.printer-row h2').text()).toBe('Küche')
+    expect(page.get('.printer-row .v-card-title').text()).toBe('Küche')
   })
 })

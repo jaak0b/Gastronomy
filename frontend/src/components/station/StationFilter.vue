@@ -10,21 +10,13 @@ const { t } = useI18n()
 
 <template>
   <div class="station-filter">
-    <label>
-      <span>{{ t('station.filterLabel') }}</span>
-      <select
-        :value="selectedLocationId"
-        @change="$emit('select', ($event.target as HTMLSelectElement).value)"
-      >
-        <option
-          v-for="location in locations"
-          :key="location.locationId"
-          :value="location.locationId"
-        >
-          {{ location.name }}
-        </option>
-      </select>
-    </label>
-    <p class="help">{{ t('station.filterHelp') }}</p>
+    <v-select
+      class="station-select"
+      :label="t('station.filterLabel')"
+      :model-value="selectedLocationId"
+      :items="locations.map((location) => ({ title: location.name, value: location.locationId }))"
+      @update:model-value="$emit('select', $event)"
+    />
+    <p class="help text-medium-emphasis">{{ t('station.filterHelp') }}</p>
   </div>
 </template>

@@ -8,17 +8,19 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="confirm-backdrop">
-    <section
-      class="confirm-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-title"
-    >
-      <h2 id="confirm-title" class="confirm-title">{{ title }}</h2>
-      <p class="confirm-body">{{ body }}</p>
-      <button type="button" class="confirm" @click="emit('confirm')">{{ confirmLabel }}</button>
-      <button type="button" class="cancel" @click="emit('cancel')">{{ t('admin.cancel') }}</button>
-    </section>
-  </div>
+  <v-dialog :model-value="true" max-width="480" persistent>
+    <v-card class="confirm-dialog" role="dialog" aria-modal="true">
+      <v-card-title class="confirm-title">{{ title }}</v-card-title>
+      <v-card-text class="confirm-body">{{ body }}</v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn class="cancel" variant="text" @click="emit('cancel')">
+          {{ t('admin.cancel') }}
+        </v-btn>
+        <v-btn class="confirm" color="error" @click="emit('confirm')">
+          {{ confirmLabel }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>

@@ -39,7 +39,7 @@ describe('the price field', () => {
   it('asks for euros rather than cents', () => {
     const form = mountForm()
 
-    expect(form.get('.price-field span').text()).toBe('Preis in Euro')
+    expect(form.get('.price-field label').text()).toBe('Preis in Euro')
   })
 
   it('shows an existing price in euros', () => {
@@ -81,7 +81,7 @@ describe('the price field', () => {
     await form.get('.price-field input').setValue('drei Euro')
     await form.get('form').trigger('submit')
 
-    expect(form.get('.price-error').text()).toBe(
+    expect(form.get('.price-field .v-messages').text()).toBe(
       'Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.',
     )
   })

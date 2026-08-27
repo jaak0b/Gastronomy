@@ -8,13 +8,11 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
 </script>
 
 <template>
-  <label class="name-field">
-    <span>{{ t('enrol.nameLabel') }}</span>
-    <input
-      type="text"
-      autocomplete="name"
-      :value="modelValue"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    />
-  </label>
+  <v-text-field
+    class="name-field"
+    :label="t('enrol.nameLabel')"
+    autocomplete="name"
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+  />
 </template>

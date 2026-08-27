@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminLocationsStore } from '../../../stores/admin/locations'
 import ConfirmDialog from '../ConfirmDialog.vue'
-import TrashIcon from '../TrashIcon.vue'
 import LocationForm from './LocationForm.vue'
 
 const { t } = useI18n()
@@ -20,6 +19,16 @@ const shown = computed(() =>
 const editing = computed(
   () => locations.locations.find((location) => location.locationId === editingId.value) ?? null,
 )
+
+const refusal = computed(() => {
+  const message = locations.errorMessage
+  if (message === null) {
+    return null
+  }
+  return message.count === null
+    ? t(message.key, message.parameters)
+    : t(message.key, message.parameters, message.count)
+})
 
 async function save(value: Parameters<typeof locations.save>[0]): Promise<void> {
   await locations.save(value)
@@ -39,57 +48,65 @@ onMounted(locations.load)
 </script>
 
 <template>
-  <section class="admin-locations">
-    <h1>{{ t('admin.locations.title') }}</h1>
-    <p class="help">{{ t('admin.locations.help') }}</p>
-    <p v-if="locations.errorMessage !== null" class="refusal error">
-      {{
-        locations.errorMessage.count === null
-          ? t(locations.errorMessage.key, locations.errorMessage.parameters)
-          : t(
-              locations.errorMessage.key,
-              locations.errorMessage.parameters,
-              locations.errorMessage.count,
-            )
-      }}
-    </p>
-    <p v-if="locations.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
-    <p v-else-if="locations.locations.length === 0" class="empty">
+  <v-container class="admin-locations">
+    <h1 class="text-h5 mb-2">{{ t('admin.locations.title') }}</h1>
+    <p class="help text-medium-emphasis mb-4">{{ t('admin.locations.help') }}</p>
+
+    <v-alert v-if="refusal !== null" class="refusal mb-4" type="warning" variant="tonal">
+      {{ refusal }}
+    </v-alert>
+    <v-alert v-if="locations.loadFailed" class="error" type="error" variant="tonal">
+      {{ t('admin.loadFailed') }}
+    </v-alert>
+    <v-alert v-else-if="locations.locations.length === 0" class="empty" type="info" variant="tonal">
       {{ t('admin.locations.empty') }}
-    </p>
-    <label class="show-deactivated-field">
-      <input v-model="showsDeactivated" type="checkbox" class="show-deactivated" />
-      <span>{{ t('admin.showDeactivated') }}</span>
-    </label>
-    <ul>
-      <li v-for="location in shown" :key="location.locationId">
-        <span class="name">{{ location.name }}</span>
-        <span v-if="!location.isActive" class="deactivated">{{ t('admin.deactivated') }}</span>
-        <button type="button" @click="editingId = location.locationId">
+    </v-alert>
+
+    <v-checkbox
+      v-model="showsDeactivated"
+      class="show-deactivated"
+      :label="t('admin.showDeactivated')"
+    />
+
+    <v-card v-for="location in shown" :key="location.locationId" class="station-row mb-3">
+      <v-card-item>
+        <v-card-title class="name">
+          {{ location.name }}
+          <v-chip v-if="!location.isActive" class="deactivated ms-2" size="small" color="grey">
+            {{ t('admin.deactivated') }}
+          </v-chip>
+        </v-card-title>
+      </v-card-item>
+      <v-card-actions>
+        <v-btn class="edit" variant="text" @click="editingId = location.locationId">
           {{ t('admin.edit') }}
-        </button>
-        <button
+        </v-btn>
+        <v-btn
           v-if="location.isActive"
-          type="button"
           class="deactivate"
+          icon="mdi-delete"
+          variant="text"
+          color="error"
           :aria-label="t('admin.deactivate')"
-          :title="t('admin.deactivate')"
           @click="askingAboutId = location.locationId"
-        >
-          <TrashIcon />
-        </button>
-        <button
+        />
+        <v-btn
           v-else
-          type="button"
           class="reactivate"
+          variant="text"
           @click="locations.setActive(location.locationId, true)"
         >
           {{ t('admin.locations.activate') }}
-        </button>
-      </li>
-    </ul>
-    <button type="button" @click="isCreating = true">{{ t('admin.locations.new') }}</button>
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+
+    <v-btn class="new-station" color="primary" @click="isCreating = true">
+      {{ t('admin.locations.new') }}
+    </v-btn>
+
     <LocationForm v-if="isCreating || editing !== null" :location="editing" @save="save" />
+
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.locations.deactivateTitle')"
@@ -98,5 +115,5 @@ onMounted(locations.load)
       @confirm="deactivate"
       @cancel="askingAboutId = null"
     />
-  </section>
+  </v-container>
 </template>

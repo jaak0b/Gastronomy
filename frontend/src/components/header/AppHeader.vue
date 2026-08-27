@@ -39,21 +39,31 @@ const banners = computed(() =>
 </script>
 
 <template>
-  <header class="app-header">
-    <button type="button" class="stations-link" @click="navigate('/stations')">
+  <v-app-bar class="app-header" density="comfortable" color="primary">
+    <v-btn class="stations-link" variant="text" @click="navigate('/stations')">
       {{ t('header.stations') }}
-    </button>
-    <button type="button" class="orders-link" @click="navigate('/orders')">
+    </v-btn>
+    <v-btn class="orders-link" variant="text" @click="navigate('/orders')">
       <span>{{ t('orders.title') }}</span>
-      <span v-if="order.attentionCount > 0" class="attention">
+      <v-chip v-if="order.attentionCount > 0" class="attention ms-2" size="small" color="error">
         {{ t('header.attention', { count: order.attentionCount }, order.attentionCount) }}
-      </span>
-    </button>
-    <span v-if="connectionKey !== null" class="connection">{{ t(connectionKey) }}</span>
-    <button type="button" class="settings" @click="settingsAreOpen = true">
+      </v-chip>
+    </v-btn>
+    <v-spacer />
+    <span v-if="connectionKey !== null" class="connection me-2">{{ t(connectionKey) }}</span>
+    <v-btn class="settings" variant="text" @click="settingsAreOpen = true">
       {{ t('header.settings') }}
-    </button>
-  </header>
-  <p v-for="banner in banners" :key="banner.key" class="station-banner">{{ banner.text }}</p>
+    </v-btn>
+  </v-app-bar>
+  <v-alert
+    v-for="banner in banners"
+    :key="banner.key"
+    class="station-banner"
+    type="warning"
+    variant="tonal"
+    rounded="0"
+  >
+    {{ banner.text }}
+  </v-alert>
   <SettingsSheet v-if="settingsAreOpen" @close="settingsAreOpen = false" />
 </template>

@@ -30,25 +30,26 @@ defineExpose({ showNotice })
 </script>
 
 <template>
-  <section class="order-detail">
-    <h1>{{ t('orders.detailTitle', { number: props.order.globalOrderNumber }) }}</h1>
-    <div v-for="ticket in order.tickets" :key="ticket.ticketId" class="ticket">
-      <TicketChip :ticket="ticket" :order-number="order.globalOrderNumber" />
-      <UnknownQuestion
-        v-if="ticket.status === 'Unknown'"
-        :ticket="ticket"
-        :notice-key="noticeFor(ticket.ticketId)"
-        @answer="(slipIsOnThePile) => answer(ticket.ticketId, slipIsOnThePile)"
-      />
-      <button
-        v-if="ticket.status === 'Failed'"
-        type="button"
-        class="reprint"
-        @click="emit('reprint', ticket.ticketId)"
-      >
-        {{ t('ticket.reprint') }}
-      </button>
-    </div>
-    <p class="changed-mind">{{ t('order.changedMind') }}</p>
-  </section>
+  <v-container class="order-detail">
+    <h1 class="text-h5 mb-4">
+      {{ t('orders.detailTitle', { number: props.order.globalOrderNumber }) }}
+    </h1>
+    <v-card v-for="ticket in order.tickets" :key="ticket.ticketId" class="ticket mb-3">
+      <v-card-text>
+        <TicketChip :ticket="ticket" :order-number="order.globalOrderNumber" />
+        <UnknownQuestion
+          v-if="ticket.status === 'Unknown'"
+          :ticket="ticket"
+          :notice-key="noticeFor(ticket.ticketId)"
+          @answer="(slipIsOnThePile) => answer(ticket.ticketId, slipIsOnThePile)"
+        />
+      </v-card-text>
+      <v-card-actions v-if="ticket.status === 'Failed'">
+        <v-btn class="reprint" variant="tonal" @click="emit('reprint', ticket.ticketId)">
+          {{ t('ticket.reprint') }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+    <p class="changed-mind text-medium-emphasis">{{ t('order.changedMind') }}</p>
+  </v-container>
 </template>

@@ -11,12 +11,12 @@ const session = useSessionStore()
 </script>
 
 <template>
-  <section class="orders">
-    <h1>{{ t('orders.title') }}</h1>
+  <v-container class="orders">
+    <h1 class="text-h5 mb-4">{{ t('orders.title') }}</h1>
     <OrderList
       :orders="order.orders"
       :language="session.language"
       @open="(orderId) => navigate(`/orders/${orderId}`)"
     />
-  </section>
+  </v-container>
 </template>

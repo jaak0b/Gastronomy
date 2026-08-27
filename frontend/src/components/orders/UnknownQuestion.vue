@@ -21,18 +21,20 @@ const notice = computed(() => props.noticeKey ?? null)
 </script>
 
 <template>
-  <section class="unknown-question">
-    <p class="action">{{ action }}</p>
-    <p class="reason">{{ t('ticket.unknown.reason') }}</p>
-    <p v-if="hasNoPaper" class="paper-hint">{{ t('ticket.unknown.paperHint') }}</p>
+  <v-sheet class="unknown-question pa-4 my-2" border rounded>
+    <p class="action text-body-1">{{ action }}</p>
+    <p class="reason text-medium-emphasis">{{ t('ticket.unknown.reason') }}</p>
+    <p v-if="hasNoPaper" class="paper-hint text-medium-emphasis">
+      {{ t('ticket.unknown.paperHint') }}
+    </p>
     <template v-if="notice === null">
-      <button type="button" class="slip-is-there" @click="$emit('answer', true)">
+      <v-btn class="slip-is-there mt-2 me-2" color="primary" @click="$emit('answer', true)">
         {{ t('ticket.unknown.yes') }}
-      </button>
-      <button type="button" class="slip-is-missing" @click="$emit('answer', false)">
+      </v-btn>
+      <v-btn class="slip-is-missing mt-2" variant="tonal" @click="$emit('answer', false)">
         {{ t('ticket.unknown.no') }}
-      </button>
+      </v-btn>
     </template>
-    <p v-else class="notice">{{ t(notice) }}</p>
-  </section>
+    <v-alert v-else class="notice mt-2" type="info" variant="tonal">{{ t(notice) }}</v-alert>
+  </v-sheet>
 </template>

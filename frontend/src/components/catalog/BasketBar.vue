@@ -21,10 +21,11 @@ const summary = computed(() =>
 </script>
 
 <template>
-  <div class="basket-bar">
-    <span class="summary">{{ summary }}</span>
-    <button type="button" :disabled="itemCount === 0" @click="$emit('review')">
+  <v-footer class="basket-bar" app color="surface">
+    <span class="summary text-body-1">{{ summary }}</span>
+    <v-spacer />
+    <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
       {{ t('catalog.toReview') }}
-    </button>
-  </div>
+    </v-btn>
+  </v-footer>
 </template>
