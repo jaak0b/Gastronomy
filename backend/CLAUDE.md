@@ -107,5 +107,5 @@ duplicate.
 dotnet build GastronomyApp.slnx
 dotnet run --project desktop/GastronomyApp.Desktop
 dotnet test GastronomyApp.slnx --filter "FullyQualifiedName~MethodName"
-dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure --startup-project desktop/GastronomyApp.Desktop
+dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure
 ```
