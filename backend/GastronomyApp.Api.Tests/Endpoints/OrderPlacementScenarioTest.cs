@@ -84,7 +84,7 @@ public sealed class OrderPlacementScenarioTest
 
         using (HttpResponseMessage invitation = await factory.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId = (Guid?)null }))
+            new { staffMemberId = (Guid?)null }))
         {
             Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
             JsonDocument body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());

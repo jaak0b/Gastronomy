@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import InvitationPanel from '../../../src/components/admin/people/InvitationPanel.vue'
+import InvitationPanel from '../../../src/components/admin/staff/InvitationPanel.vue'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
@@ -10,7 +10,7 @@ const INVITATION = {
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
   sixDigitCode: '482913',
   expiresAtUtc: '2026-08-27T18:05:00Z',
-  serverPerson: null,
+  staffMember: null,
 }
 
 function mountPanel() {
@@ -46,7 +46,7 @@ describe('the invitation panel', () => {
     const panel = mountPanel()
 
     expect(panel.get('ol').text()).toContain(
-      'Die Bedienung scannt diesen QR-Code mit der Kamera ihres Telefons.',
+      'Der Kellner scannt diesen QR-Code mit der Kamera seines Telefons.',
     )
   })
 })

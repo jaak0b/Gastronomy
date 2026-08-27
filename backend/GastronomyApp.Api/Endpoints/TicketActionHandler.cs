@@ -48,7 +48,7 @@ public sealed class TicketActionHandler
         Guid orderId,
         Guid ticketId,
         ResolveTicketRequest request,
-        Guid? callerServerPersonId,
+        Guid? callerStaffMemberId,
         CancellationToken cancellationToken)
     {
         Order? order = await dbContext.Orders
@@ -60,7 +60,7 @@ public sealed class TicketActionHandler
             return Results.NotFound();
         }
 
-        if (callerServerPersonId is not null && order.ServerPersonId != callerServerPersonId)
+        if (callerStaffMemberId is not null && order.StaffMemberId != callerStaffMemberId)
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status403Forbidden,
@@ -158,7 +158,7 @@ public sealed class TicketActionHandler
     public async Task<IResult> ReprintAsync(
         Guid orderId,
         Guid ticketId,
-        Guid? callerServerPersonId,
+        Guid? callerStaffMemberId,
         CancellationToken cancellationToken)
     {
         Order? order = await dbContext.Orders
@@ -170,7 +170,7 @@ public sealed class TicketActionHandler
             return Results.NotFound();
         }
 
-        if (callerServerPersonId is not null && order.ServerPersonId != callerServerPersonId)
+        if (callerStaffMemberId is not null && order.StaffMemberId != callerStaffMemberId)
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status403Forbidden,

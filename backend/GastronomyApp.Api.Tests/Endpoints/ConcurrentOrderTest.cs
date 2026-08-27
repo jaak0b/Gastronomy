@@ -21,7 +21,7 @@ public sealed class ConcurrentOrderTest
 
         using IServiceScope scope = context.Factory.Services.CreateScope();
         IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(context.World.ServerPersonId, "de", "NUnit second phone", CancellationToken.None);
+            .IssueAsync(context.World.StaffMemberId, "de", "NUnit second phone", CancellationToken.None);
         secondDeviceToken = issued.PlaintextToken;
     }
 

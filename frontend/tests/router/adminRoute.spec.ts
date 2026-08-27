@@ -63,7 +63,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ locations: [], items: [], printers: [], people: [] }), {
+          new Response(JSON.stringify({ locations: [], items: [], printers: [], staffMembers: [] }), {
             status: 200,
           }),
       ),
@@ -100,7 +100,7 @@ describe('the station backlog, which every enrolled phone may open', () => {
       'fetch',
       vi.fn(async (url: string) => {
         const payload = url.startsWith('/api/session')
-          ? { deviceId: 'device-1', serverPerson: { id: 'person-1', name: 'Anna' }, language: 'de' }
+          ? { deviceId: 'device-1', staffMember: { id: 'staff-member-1', name: 'Anna' }, language: 'de' }
           : { locations: [], tickets: [], orders: [], items: [] }
         return new Response(JSON.stringify(payload), { status: 200 })
       }),

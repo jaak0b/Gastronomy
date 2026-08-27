@@ -12,7 +12,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(order => order.Id).ValueGeneratedNever();
         builder.Property(order => order.ClientOrderId).IsRequired();
         builder.Property(order => order.GlobalOrderNumber).IsRequired();
-        builder.Property(order => order.ServerPersonId).IsRequired();
+        builder.Property(order => order.StaffMemberId).IsRequired();
         builder.Property(order => order.DeviceId).IsRequired();
         builder.Property(order => order.TableLabel).IsRequired().HasMaxLength(40);
         builder.Property(order => order.Note).IsRequired(false).HasMaxLength(200);

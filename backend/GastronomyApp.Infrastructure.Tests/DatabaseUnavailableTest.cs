@@ -100,7 +100,7 @@ public sealed class DatabaseUnavailableTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = Guid.NewGuid(),
-            ServerPersonId = seeded.ServerPersonId,
+            StaffMemberId = seeded.StaffMemberId,
             DeviceId = seeded.DeviceId,
             TableLabel = "Tisch 12",
             Note = null,

@@ -28,7 +28,7 @@ describe('the screen a phone lands on with no code', () => {
     const welcome = mountWelcome()
 
     expect(welcome.get('.welcome-body').text()).toBe(
-      'Bitten Sie die Person am Laptop, Sie als Bedienung anzulegen. Sie tippt dort auf "Neue Bedienung" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.',
+      'Bitten Sie die Person am Laptop, Sie als Kellner anzulegen. Sie tippt dort auf "Neuer Kellner" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.',
     )
   })
 

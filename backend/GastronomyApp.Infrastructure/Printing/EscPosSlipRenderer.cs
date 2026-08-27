@@ -11,7 +11,7 @@ public sealed record SlipRenderRequest(
     int LocationSequenceNumber,
     int GlobalOrderNumber,
     string TableName,
-    string ServerName,
+    string StaffMemberName,
     DateTimeOffset OrderTakenAtUtc,
     TimeZoneInfo DisplayTimeZone,
     IReadOnlyList<SlipLine> Lines,
@@ -114,7 +114,7 @@ public sealed class EscPosSlipRenderer
         List<string> header =
         [
             .. Wrap($"{strings.TablePrefix} {request.TableName}"),
-            .. Wrap($"{strings.ServerPrefix} {request.ServerName}"),
+            .. Wrap($"{strings.StaffMemberPrefix} {request.StaffMemberName}"),
             encoder.ToPrintableText(FormatMoment(request.OrderTakenAtUtc, request.DisplayTimeZone, formats.DateAndTime)),
             MinorSeparator(),
         ];

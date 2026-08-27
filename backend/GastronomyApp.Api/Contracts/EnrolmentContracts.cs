@@ -11,5 +11,5 @@ public sealed record RedeemEnrolmentRequest
 public sealed record RedeemedEnrolmentView(
     Guid DeviceId,
     string DeviceToken,
-    ServerPersonView ServerPerson,
+    StaffMemberView StaffMember,
     string Language);

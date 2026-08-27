@@ -62,7 +62,7 @@ public sealed class PrinterCallbackWiringTest
     }
 
     [Test]
-    public async Task PlaceOrder_ConnectedHubClientInThePlacingPersonsGroup_ReceivesTicketStatusChanged()
+    public async Task PlaceOrder_ConnectedHubClientInThePlacingStaffMembersGroup_ReceivesTicketStatusChanged()
     {
         TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -88,7 +88,7 @@ public sealed class PrinterCallbackWiringTest
 
         Task completed = await Task.WhenAny(received.Task, Task.Delay(patience));
 
-        Assert.That(completed, Is.SameAs(received.Task), "No TicketStatusChanged push reached the placing person.");
+        Assert.That(completed, Is.SameAs(received.Task), "No TicketStatusChanged push reached the staff member who placed the order.");
         Assert.That(
             await received.Task,
             Is.EqualTo(LocationTicketStatus.PrintedOnTestPrinter.ToString()));

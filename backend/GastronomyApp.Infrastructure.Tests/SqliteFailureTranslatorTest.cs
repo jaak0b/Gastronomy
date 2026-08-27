@@ -49,7 +49,7 @@ public sealed class SqliteFailureTranslatorTest
         return new EnrolmentInvitation
         {
             Id = Guid.NewGuid(),
-            ServerPersonId = null,
+            StaffMemberId = null,
             QrCodeHash = [1],
             QrCodeSalt = [2],
             SixDigitHash = [3],

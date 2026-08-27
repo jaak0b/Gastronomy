@@ -107,16 +107,16 @@ public sealed class EnrolmentRedemptionHandler
         invitationCache.Forget();
 
         Device device = redemption.Device!;
-        ServerPerson person = redemption.ServerPerson!;
+        StaffMember staffMember = redemption.StaffMember!;
 
         await dispatcher.PushEnrolmentCompletedAsync(
-            new EnrolmentCompletedEvent(person.Id, person.Name, device.Id),
+            new EnrolmentCompletedEvent(staffMember.Id, staffMember.Name, device.Id),
             cancellationToken);
 
         return Results.Ok(new RedeemedEnrolmentView(
             device.Id,
             redemption.PlaintextToken!,
-            new ServerPersonView(person.Id, person.Name),
+            new StaffMemberView(staffMember.Id, staffMember.Name),
             device.Language));
     }
 }

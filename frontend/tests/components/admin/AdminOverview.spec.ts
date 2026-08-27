@@ -44,7 +44,7 @@ describe('the address the phones connect to', () => {
     expect(overview.get('.phone-address').text()).toBe('Phones reach the laptop at http://localhost:3000.')
   })
 
-  it('shows no QR code, because the only enrolment path is the one on the servers page', () => {
+  it('shows no QR code, because the only enrolment path is the one on the waiters page', () => {
     const overview = mountOverview()
 
     expect(overview.find('img').exists()).toBe(false)

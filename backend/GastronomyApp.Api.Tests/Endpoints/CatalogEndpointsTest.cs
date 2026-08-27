@@ -25,7 +25,7 @@ public sealed class CatalogEndpointsTest
 
         using IServiceScope scope = factory.Services.CreateScope();
         IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(world.ServerPersonId, "de", "NUnit", CancellationToken.None);
+            .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
         deviceToken = issued.PlaintextToken;
     }
 

@@ -4,7 +4,7 @@ namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed record SeededDomain
 {
-    public required Guid ServerPersonId { get; init; }
+    public required Guid StaffMemberId { get; init; }
     public required Guid DeviceId { get; init; }
     public required Guid KitchenLocationId { get; init; }
     public required Guid BarLocationId { get; init; }
@@ -18,7 +18,7 @@ public sealed class DomainSeeder
     {
         SeededDomain seeded = new()
         {
-            ServerPersonId = Guid.NewGuid(),
+            StaffMemberId = Guid.NewGuid(),
             DeviceId = Guid.NewGuid(),
             KitchenLocationId = Guid.NewGuid(),
             BarLocationId = Guid.NewGuid(),
@@ -28,9 +28,9 @@ public sealed class DomainSeeder
 
         DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
-        dbContext.ServerPeople.Add(new ServerPerson
+        dbContext.StaffMembers.Add(new StaffMember
         {
-            Id = seeded.ServerPersonId,
+            Id = seeded.StaffMemberId,
             Name = "Anna",
             IsActive = true,
             CreatedAtUtc = now,

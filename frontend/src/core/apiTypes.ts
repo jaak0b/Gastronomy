@@ -123,7 +123,7 @@ export interface OrderSubmitResponse {
   }[]
 }
 
-export interface ServerPerson {
+export interface StaffMember {
   id: string
   name: string
 }
@@ -132,14 +132,14 @@ export type AppLanguage = 'de' | 'en'
 
 export interface SessionInfo {
   deviceId: string
-  serverPerson: ServerPerson
+  staffMember: StaffMember
   language: AppLanguage
 }
 
 export interface RedeemResponse {
   deviceId: string
   deviceToken: string
-  serverPerson: ServerPerson
+  staffMember: StaffMember
   language: AppLanguage
 }
 

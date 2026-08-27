@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { Invitation } from '../../../stores/admin/people'
+import type { Invitation } from '../../../stores/admin/staff'
 
 defineProps<{ invitation: Invitation }>()
 defineEmits<{ close: [] }>()

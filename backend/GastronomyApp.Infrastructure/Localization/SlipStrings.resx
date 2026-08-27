@@ -73,8 +73,8 @@
   <data name="TablePrefix" xml:space="preserve">
     <value>Table</value>
   </data>
-  <data name="ServerPrefix" xml:space="preserve">
-    <value>Server:</value>
+  <data name="StaffMemberPrefix" xml:space="preserve">
+    <value>Waiter:</value>
   </data>
   <data name="NotePrefix" xml:space="preserve">
     <value>Note:</value>

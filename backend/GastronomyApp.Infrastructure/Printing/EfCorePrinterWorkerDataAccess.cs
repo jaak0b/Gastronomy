@@ -47,8 +47,8 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             .Select(candidate => candidate.Name)
             .ToListAsync(ct);
 
-        ServerPerson? serverPerson = await context.ServerPeople.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.Id == order.ServerPersonId, ct);
+        StaffMember? staffMember = await context.StaffMembers.AsNoTracking()
+            .SingleOrDefaultAsync(candidate => candidate.Id == order.StaffMemberId, ct);
 
         Guid? chosenElsewhere = lines
             .Select(line => line.ChosenProductionLocationId)
@@ -77,7 +77,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             ProductionLocationName = location.Name,
             GlobalOrderNumber = order.GlobalOrderNumber,
             TableLabel = order.TableLabel,
-            ServerName = serverPerson?.Name ?? string.Empty,
+            StaffMemberName = staffMember?.Name ?? string.Empty,
             OrderNote = order.Note,
             OrderCreatedAtUtc = order.CreatedAtUtc,
             Lines = [.. lines.Select(line => new TicketLineLoadResult(line.Quantity, line.ItemNameSnapshot, line.Note))],

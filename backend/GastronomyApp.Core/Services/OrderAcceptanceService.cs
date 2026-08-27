@@ -16,7 +16,7 @@ public sealed record OrderAcceptanceLineRequest
 public sealed record OrderAcceptanceRequest
 {
     public required Guid ClientOrderId { get; init; }
-    public required Guid ServerPersonId { get; init; }
+    public required Guid StaffMemberId { get; init; }
     public required Guid DeviceId { get; init; }
     public required string TableLabel { get; init; }
     public string? Note { get; init; }
@@ -193,7 +193,7 @@ public sealed class OrderAcceptanceService
             Id = Guid.NewGuid(),
             ClientOrderId = request.ClientOrderId,
             GlobalOrderNumber = globalOrderNumber,
-            ServerPersonId = request.ServerPersonId,
+            StaffMemberId = request.StaffMemberId,
             DeviceId = request.DeviceId,
             TableLabel = request.TableLabel,
             Note = request.Note,

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
-import type { AppLanguage, RedeemResponse, ServerPerson, SessionInfo } from '../core/apiTypes'
+import type { AppLanguage, RedeemResponse, StaffMember, SessionInfo } from '../core/apiTypes'
 import { loadDraft } from '../core/draftCart'
 import { useConnectionStore } from './connection'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
@@ -17,7 +17,7 @@ export interface RedeemInput {
 
 export const useSessionStore = defineStore('session', () => {
   const deviceToken = ref<string | null>(localStorage.getItem(TOKEN_STORAGE_KEY))
-  const serverPerson = ref<ServerPerson | null>(null)
+  const staffMember = ref<StaffMember | null>(null)
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
@@ -30,7 +30,7 @@ export const useSessionStore = defineStore('session', () => {
 
   function clearToken(): void {
     deviceToken.value = null
-    serverPerson.value = null
+    staffMember.value = null
     localStorage.removeItem(TOKEN_STORAGE_KEY)
   }
 
@@ -75,7 +75,7 @@ export const useSessionStore = defineStore('session', () => {
     switch (result.kind) {
       case 'ok':
         storeToken(result.data.deviceToken)
-        serverPerson.value = result.data.serverPerson
+        staffMember.value = result.data.staffMember
         language.value = result.data.language
         storeLanguage(result.data.language)
         return true
@@ -95,7 +95,7 @@ export const useSessionStore = defineStore('session', () => {
     const result = await request<SessionInfo>('/api/session', { token: deviceToken.value })
     switch (result.kind) {
       case 'ok':
-        serverPerson.value = result.data.serverPerson
+        staffMember.value = result.data.staffMember
         language.value = result.data.language
         return
       case 'error':
@@ -117,7 +117,7 @@ export const useSessionStore = defineStore('session', () => {
 
   return {
     deviceToken,
-    serverPerson,
+    staffMember,
     language,
     redeemErrorKey,
     isEnrolled,

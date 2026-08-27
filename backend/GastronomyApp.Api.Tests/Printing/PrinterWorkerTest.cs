@@ -113,7 +113,7 @@ public class PrinterWorkerTest
             ProductionLocationName = "Küche",
             GlobalOrderNumber = 137,
             TableLabel = "12",
-            ServerName = "Anna",
+            StaffMemberName = "Anna",
             OrderNote = null,
             OrderCreatedAtUtc = new DateTime(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc),
             Lines = [new TicketLineLoadResult(2, "Bratwurst", null)],

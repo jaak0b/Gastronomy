@@ -55,7 +55,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
         Device device = verification.Device;
         ClaimsIdentity identity = new(
             [
-                new Claim(ClaimTypes.NameIdentifier, device.ServerPersonId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, device.StaffMemberId.ToString()),
                 new Claim(claimTypes.DeviceId, device.Id.ToString()),
                 new Claim(claimTypes.Language, device.Language),
             ],

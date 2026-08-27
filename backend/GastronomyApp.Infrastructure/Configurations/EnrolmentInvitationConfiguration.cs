@@ -12,7 +12,7 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
     {
         builder.HasKey(invitation => invitation.Id);
         builder.Property(invitation => invitation.Id).ValueGeneratedNever();
-        builder.Property(invitation => invitation.ServerPersonId).IsRequired(false);
+        builder.Property(invitation => invitation.StaffMemberId).IsRequired(false);
         builder.Property(invitation => invitation.QrCodeHash).IsRequired();
         builder.Property(invitation => invitation.QrCodeSalt).IsRequired();
         builder.Property(invitation => invitation.SixDigitHash).IsRequired();

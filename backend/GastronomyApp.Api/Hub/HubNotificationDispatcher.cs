@@ -85,7 +85,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
         await SendToAsync(
             eventNames.OrderStatusChanged,
             new OrderStatusChangedEvent(orderId, newStatus.ToString()),
-            [groupNames.Person(order.ServerPersonId), groupNames.Admin],
+            [groupNames.StaffMember(order.StaffMemberId), groupNames.Admin],
             ct);
     }
 
@@ -119,12 +119,12 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             ct);
     }
 
-    public async Task PushOrderAcceptedAsync(Guid serverPersonId, OrderAcceptedEvent payload, CancellationToken ct)
+    public async Task PushOrderAcceptedAsync(Guid staffMemberId, OrderAcceptedEvent payload, CancellationToken ct)
     {
         await SendToAsync(
             eventNames.OrderAccepted,
             payload,
-            [groupNames.Person(serverPersonId), groupNames.Admin],
+            [groupNames.StaffMember(staffMemberId), groupNames.Admin],
             ct);
 
         foreach (Guid locationId in payload.Tickets.Select(ticket => ticket.LocationId).Distinct())

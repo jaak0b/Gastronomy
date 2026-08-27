@@ -84,7 +84,7 @@ public sealed class HubConnectionSecurityTest
         revoked = true;
 
         using (HttpResponseMessage revocation = await context.Client.PostAsync(
-            $"/api/admin/server-people/{context.World.ServerPersonId}/revoke-device",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/revoke-device",
             content: null))
         {
             Assert.That(revocation.StatusCode, Is.EqualTo(HttpStatusCode.OK));

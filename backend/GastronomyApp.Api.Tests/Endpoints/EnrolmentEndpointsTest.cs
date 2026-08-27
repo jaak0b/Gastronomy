@@ -40,7 +40,7 @@ public sealed class EnrolmentEndpointsTest
             Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
             Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.Not.EqualTo(Guid.Empty));
             Assert.That(
-                body.RootElement.GetProperty("serverPerson").GetProperty("name").GetString(),
+                body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(),
                 Is.EqualTo("Anna"));
             Assert.That(body.RootElement.GetProperty("language").GetString(), Is.Not.Empty);
         });
@@ -137,14 +137,14 @@ public sealed class EnrolmentEndpointsTest
         EnrolmentInvitationCreated firstInvitation = await CreateInvitationOverHttpAsync(null);
 
         string firstToken;
-        Guid serverPersonId;
+        Guid staffMemberId;
 
         using (HttpResponseMessage redeemed = await RedeemAsync(firstInvitation.QrCodeValue, null, "Anna"))
         {
             Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             JsonDocument body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
             firstToken = body.RootElement.GetProperty("deviceToken").GetString()!;
-            serverPersonId = body.RootElement.GetProperty("serverPerson").GetProperty("id").GetGuid();
+            staffMemberId = body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid();
         }
 
         using (HttpResponseMessage authenticated = await GetSessionAsync(firstToken))
@@ -157,7 +157,7 @@ public sealed class EnrolmentEndpointsTest
             Assert.That(replayed.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
         }
 
-        EnrolmentInvitationCreated secondInvitation = await CreateInvitationOverHttpAsync(serverPersonId);
+        EnrolmentInvitationCreated secondInvitation = await CreateInvitationOverHttpAsync(staffMemberId);
 
         using (HttpResponseMessage afterReplacement = await GetSessionAsync(firstToken))
         {
@@ -177,9 +177,9 @@ public sealed class EnrolmentEndpointsTest
         {
             Assert.That(secondRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(
-                secondBody.RootElement.GetProperty("serverPerson").GetProperty("id").GetGuid(),
-                Is.EqualTo(serverPersonId),
-                "The replacement phone belongs to the same person.");
+                secondBody.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(),
+                Is.EqualTo(staffMemberId),
+                "The replacement phone belongs to the same staff member.");
             Assert.That(secondPhone.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         });
     }
@@ -207,11 +207,11 @@ public sealed class EnrolmentEndpointsTest
             .CreateAsync(null, CancellationToken.None);
     }
 
-    private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid? serverPersonId)
+    private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid? staffMemberId)
     {
         using HttpResponseMessage response = await factory.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId });
+            new { staffMemberId });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

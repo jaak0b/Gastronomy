@@ -3,7 +3,7 @@ namespace GastronomyApp.Core.Entities;
 public sealed class EnrolmentInvitation
 {
     public required Guid Id { get; set; }
-    public Guid? ServerPersonId { get; set; }
+    public Guid? StaffMemberId { get; set; }
     public required byte[] QrCodeHash { get; set; }
     public required byte[] QrCodeSalt { get; set; }
     public required byte[] SixDigitHash { get; set; }

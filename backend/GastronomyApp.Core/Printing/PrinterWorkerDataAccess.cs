@@ -31,7 +31,7 @@ public sealed record TicketLoadResult
     public required string ProductionLocationName { get; init; }
     public required int GlobalOrderNumber { get; init; }
     public required string TableLabel { get; init; }
-    public required string ServerName { get; init; }
+    public required string StaffMemberName { get; init; }
     public required string? OrderNote { get; init; }
     public required DateTime OrderCreatedAtUtc { get; init; }
     public required IReadOnlyList<TicketLineLoadResult> Lines { get; init; }

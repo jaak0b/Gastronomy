@@ -34,7 +34,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         _clock = clock;
     }
 
-    public Task<EnrolmentInvitationCreated> CreateAsync(Guid? serverPersonId, CancellationToken cancellationToken)
+    public Task<EnrolmentInvitationCreated> CreateAsync(Guid? staffMemberId, CancellationToken cancellationToken)
     {
         return _transactionRunner.RunAsync(
             _dbContext,
@@ -55,7 +55,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                 EnrolmentInvitation invitation = new()
                 {
                     Id = Guid.NewGuid(),
-                    ServerPersonId = serverPersonId,
+                    StaffMemberId = staffMemberId,
                     QrCodeHash = hashedQrCode.Hash,
                     QrCodeSalt = hashedQrCode.Salt,
                     SixDigitHash = hashedSixDigitCode.Hash,
@@ -183,12 +183,12 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         DateTime now,
         CancellationToken cancellationToken)
     {
-        ServerPerson serverPerson = await ResolveServerPersonAsync(invitation, request.Name, now, cancellationToken);
+        StaffMember staffMember = await ResolveStaffMemberAsync(invitation, request.Name, now, cancellationToken);
 
-        await RevokeEarlierDevicesAsync(serverPerson.Id, cancellationToken);
+        await RevokeEarlierDevicesAsync(staffMember.Id, cancellationToken);
 
         IssuedDeviceToken issued = await _deviceTokenStore.IssueAsync(
-            serverPerson.Id,
+            staffMember.Id,
             ResolveLanguage(request.AcceptLanguageHeader),
             request.UserAgent,
             cancellationToken);
@@ -202,7 +202,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
             Value = new EnrolmentRedemptionResult(
                 EnrolmentRedemptionOutcome.Redeemed,
                 issued.Device,
-                serverPerson,
+                staffMember,
                 issued.PlaintextToken),
             ShouldCommit = true,
         };
@@ -227,10 +227,10 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         }
     }
 
-    private async Task RevokeEarlierDevicesAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    private async Task RevokeEarlierDevicesAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
         List<Device> earlierDevices = await _dbContext.Devices
-            .Where(device => device.ServerPersonId == serverPersonId && device.RevokedAtUtc == null)
+            .Where(device => device.StaffMemberId == staffMemberId && device.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
         foreach (Device device in earlierDevices)
@@ -239,22 +239,22 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         }
     }
 
-    private async Task<ServerPerson> ResolveServerPersonAsync(
+    private async Task<StaffMember> ResolveStaffMemberAsync(
         EnrolmentInvitation invitation,
         string name,
         DateTime now,
         CancellationToken cancellationToken)
     {
-        if (invitation.ServerPersonId is not null)
+        if (invitation.StaffMemberId is not null)
         {
-            ServerPerson existingPerson = await _dbContext.ServerPeople
-                .SingleAsync(person => person.Id == invitation.ServerPersonId, cancellationToken);
-            existingPerson.Name = name;
+            StaffMember existingStaffMember = await _dbContext.StaffMembers
+                .SingleAsync(staffMember => staffMember.Id == invitation.StaffMemberId, cancellationToken);
+            existingStaffMember.Name = name;
 
-            return existingPerson;
+            return existingStaffMember;
         }
 
-        ServerPerson newPerson = new()
+        StaffMember newStaffMember = new()
         {
             Id = Guid.NewGuid(),
             Name = name,
@@ -262,9 +262,9 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
             CreatedAtUtc = now,
         };
 
-        _dbContext.ServerPeople.Add(newPerson);
+        _dbContext.StaffMembers.Add(newStaffMember);
 
-        return newPerson;
+        return newStaffMember;
     }
 
     private string ResolveLanguage(string acceptLanguageHeader)

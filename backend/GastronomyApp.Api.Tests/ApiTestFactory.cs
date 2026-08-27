@@ -107,7 +107,7 @@ public sealed class ApiTestFactory : IAsyncDisposable
 
 public sealed record SeededWorld(
     Guid EventSessionId,
-    Guid ServerPersonId,
+    Guid StaffMemberId,
     Guid KitchenLocationId,
     Guid BarLocationId,
     Guid BratwurstItemId,
@@ -128,9 +128,9 @@ public sealed class ApiSeeder
             Guid.NewGuid());
 
 
-        context.ServerPeople.Add(new ServerPerson
+        context.StaffMembers.Add(new StaffMember
         {
-            Id = world.ServerPersonId,
+            Id = world.StaffMemberId,
             Name = "Anna",
             IsActive = true,
             CreatedAtUtc = baseline,

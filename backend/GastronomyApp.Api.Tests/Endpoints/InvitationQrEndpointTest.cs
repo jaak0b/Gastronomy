@@ -115,7 +115,7 @@ public sealed class InvitationQrEndpointTest
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId = (Guid?)null });
+            new { staffMemberId = (Guid?)null });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

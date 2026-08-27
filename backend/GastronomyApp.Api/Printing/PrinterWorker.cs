@@ -418,7 +418,7 @@ public sealed class PrinterWorker
             ticket.LocationSequenceNumber,
             ticket.GlobalOrderNumber,
             ticket.TableLabel,
-            ticket.ServerName,
+            ticket.StaffMemberName,
             new DateTimeOffset(DateTime.SpecifyKind(ticket.OrderCreatedAtUtc, DateTimeKind.Utc)),
             TimeZoneInfo.Local,
             [.. ticket.Lines.Select(line => new SlipLine(line.Quantity, line.ItemName, line.LineNote))],

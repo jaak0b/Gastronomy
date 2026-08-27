@@ -23,7 +23,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     }
 
     public async Task<IssuedDeviceToken> IssueAsync(
-        Guid serverPersonId,
+        Guid staffMemberId,
         string language,
         string userAgentSnapshot,
         CancellationToken cancellationToken)
@@ -36,7 +36,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
         Device device = new()
         {
             Id = Guid.NewGuid(),
-            ServerPersonId = serverPersonId,
+            StaffMemberId = staffMemberId,
             Language = language,
             TokenHash = hashedSecret.Hash,
             TokenSalt = hashedSecret.Salt,

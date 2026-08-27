@@ -41,16 +41,16 @@ public sealed class PrintingSeeder
 
     public Guid EventSessionId { get; } = Guid.NewGuid();
 
-    public Guid ServerPersonId { get; } = Guid.NewGuid();
+    public Guid StaffMemberId { get; } = Guid.NewGuid();
 
     public Guid DeviceId { get; } = Guid.NewGuid();
 
     public async Task SeedSessionAsync(GastronomyAppDbContext context, bool isPractice, CancellationToken cancellationToken)
     {
 
-        context.ServerPeople.Add(new ServerPerson
+        context.StaffMembers.Add(new StaffMember
         {
-            Id = ServerPersonId,
+            Id = StaffMemberId,
             Name = "Anna",
             IsActive = true,
             CreatedAtUtc = baseline,
@@ -125,7 +125,7 @@ public sealed class PrintingSeeder
             Id = orderId,
             ClientOrderId = Guid.NewGuid(),
             GlobalOrderNumber = globalOrderNumber,
-            ServerPersonId = ServerPersonId,
+            StaffMemberId = StaffMemberId,
             DeviceId = DeviceId,
             TableLabel = "12",
             Note = null,

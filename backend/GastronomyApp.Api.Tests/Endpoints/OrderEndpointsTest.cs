@@ -145,7 +145,7 @@ public sealed class OrderEndpointsTest
     }
 
     [Test]
-    public async Task GetMine_OrderPlaced_ListsTheOrdersOfThePersonBehindTheDevice()
+    public async Task GetMine_OrderPlaced_ListsTheOrdersOfTheStaffMemberBehindTheDevice()
     {
         using (HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700)))
         {

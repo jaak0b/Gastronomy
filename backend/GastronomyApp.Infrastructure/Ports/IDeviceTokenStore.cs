@@ -9,7 +9,7 @@ public sealed record DeviceVerificationResult(bool IsValid, Device? Device);
 public interface IDeviceTokenStore
 {
     public Task<IssuedDeviceToken> IssueAsync(
-        Guid serverPersonId,
+        Guid staffMemberId,
         string language,
         string userAgentSnapshot,
         CancellationToken cancellationToken);

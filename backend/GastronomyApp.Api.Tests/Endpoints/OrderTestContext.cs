@@ -89,7 +89,7 @@ public sealed class OrderTestContext : IAsyncDisposable
 
             using IServiceScope scope = factory.Services.CreateScope();
             IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                .IssueAsync(world.ServerPersonId, "de", "NUnit", CancellationToken.None);
+                .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
 
             return new OrderTestContext(factory, world, issued.PlaintextToken, issued.Device.Id);
         }

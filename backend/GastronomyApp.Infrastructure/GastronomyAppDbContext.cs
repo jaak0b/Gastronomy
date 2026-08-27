@@ -19,7 +19,7 @@ public sealed class GastronomyAppDbContext : DbContext
 
     public DbSet<TableSuggestion> TableSuggestions => Set<TableSuggestion>();
 
-    public DbSet<ServerPerson> ServerPeople => Set<ServerPerson>();
+    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
 
     public DbSet<Device> Devices => Set<Device>();
 

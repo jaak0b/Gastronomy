@@ -40,7 +40,7 @@ public static class OrderEndpoints
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.ListForPersonAsync(caller.ServerPersonId, cancellationToken);
+            return await handler.ListForStaffMemberAsync(caller.StaffMemberId, cancellationToken);
         });
 
         group.MapGet("/{orderId:guid}", async (
@@ -51,7 +51,7 @@ public static class OrderEndpoints
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.DetailAsync(orderId, caller.ServerPersonId, cancellationToken);
+            return await handler.DetailAsync(orderId, caller.StaffMemberId, cancellationToken);
         });
 
         group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/resolve", async (
@@ -64,7 +64,7 @@ public static class OrderEndpoints
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.ResolveAsync(orderId, ticketId, request, caller.ServerPersonId, cancellationToken);
+            return await handler.ResolveAsync(orderId, ticketId, request, caller.StaffMemberId, cancellationToken);
         });
 
         group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/reprint", async (
@@ -76,7 +76,7 @@ public static class OrderEndpoints
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.ReprintAsync(orderId, ticketId, caller.ServerPersonId, cancellationToken);
+            return await handler.ReprintAsync(orderId, ticketId, caller.StaffMemberId, cancellationToken);
         });
 
         return routes;
@@ -121,7 +121,7 @@ public sealed class OrderPlacementHandler
         OrderAcceptanceRequest acceptanceRequest = new()
         {
             ClientOrderId = request.ClientOrderId,
-            ServerPersonId = caller.ServerPersonId,
+            StaffMemberId = caller.StaffMemberId,
             DeviceId = caller.DeviceId,
             TableLabel = request.TableLabel ?? string.Empty,
             Note = request.Note,
@@ -195,7 +195,7 @@ public sealed class OrderPlacementHandler
         PlacedOrderView view = orderReader.Describe(placed, expectedTotalCents);
 
         await dispatcher.PushOrderAcceptedAsync(
-            caller.ServerPersonId,
+            caller.StaffMemberId,
             new OrderAcceptedEvent(
                 view.OrderId,
                 view.GlobalOrderNumber,

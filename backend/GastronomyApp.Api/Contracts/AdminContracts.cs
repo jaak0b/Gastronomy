@@ -50,8 +50,8 @@ public sealed record SetAvailabilityRequest
     public required bool IsAvailable { get; init; }
 }
 
-public sealed record AdminServerPersonView(
-    Guid ServerPersonId,
+public sealed record AdminStaffMemberView(
+    Guid StaffMemberId,
     string Name,
     bool IsActive,
     bool HasDevice,
@@ -59,16 +59,16 @@ public sealed record AdminServerPersonView(
     string? UserAgent,
     bool HasOutstandingInvitation);
 
-public sealed record AdminServerPersonListView(IReadOnlyList<AdminServerPersonView> People);
+public sealed record AdminStaffMemberListView(IReadOnlyList<AdminStaffMemberView> StaffMembers);
 
-public sealed record RenameServerPersonRequest
+public sealed record RenameStaffMemberRequest
 {
     public required string? Name { get; init; }
 }
 
 public sealed record CreateInvitationRequest
 {
-    public Guid? ServerPersonId { get; init; }
+    public Guid? StaffMemberId { get; init; }
 }
 
 public sealed record InvitationView(
@@ -76,7 +76,7 @@ public sealed record InvitationView(
     string QrUrl,
     string SixDigitCode,
     DateTime ExpiresAtUtc,
-    ServerPersonView? ServerPerson,
+    StaffMemberView? StaffMember,
     IReadOnlyList<string> AvailableAddresses);
 
 public sealed record AdminPrinterView(

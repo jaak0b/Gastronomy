@@ -92,7 +92,7 @@ public sealed class ApiServiceRegistration
         services.AddSingleton<EnrolmentUrlBuilder>();
         services.AddScoped<AdminLocationHandler>();
         services.AddScoped<AdminItemHandler>();
-        services.AddScoped<AdminServerPeopleHandler>();
+        services.AddScoped<AdminStaffMembersHandler>();
         services.AddScoped<AdminPrinterHandler>();
         services.AddScoped<AdminOrderHandler>();
         services.AddScoped<EnrolmentRedemptionHandler>();

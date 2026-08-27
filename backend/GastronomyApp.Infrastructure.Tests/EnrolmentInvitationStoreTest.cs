@@ -24,7 +24,7 @@ public sealed class EnrolmentInvitationStoreTest
         {
             Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
             Assert.That(redemption.Device, Is.Not.Null);
-            Assert.That(redemption.ServerPerson!.Name, Is.EqualTo("Anna"));
+            Assert.That(redemption.StaffMember!.Name, Is.EqualTo("Anna"));
             Assert.That(redemption.Device!.Language, Is.EqualTo("de"));
         });
     }
@@ -133,7 +133,7 @@ public sealed class EnrolmentInvitationStoreTest
     }
 
     [Test]
-    public async Task RedeemAsync_PersonWithAnEarlierPhone_RevokesThatEarlierDevice()
+    public async Task RedeemAsync_StaffMemberWithAnEarlierPhone_RevokesThatEarlierDevice()
     {
         using SqliteInMemoryFixture fixture = new();
         AdjustableClock clock = new();
@@ -144,10 +144,10 @@ public sealed class EnrolmentInvitationStoreTest
             new EnrolmentRedemptionRequest(firstInvitation.QrCodeValue, null, "Anna", "Old phone", "de"),
             TestContext.CurrentContext.CancellationToken);
 
-        Guid serverPersonId = firstRedemption.ServerPerson!.Id;
+        Guid staffMemberId = firstRedemption.StaffMember!.Id;
         Guid oldDeviceId = firstRedemption.Device!.Id;
 
-        EnrolmentInvitationCreated secondInvitation = await store.CreateAsync(serverPersonId, TestContext.CurrentContext.CancellationToken);
+        EnrolmentInvitationCreated secondInvitation = await store.CreateAsync(staffMemberId, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult secondRedemption = await store.RedeemAsync(
             new EnrolmentRedemptionRequest(secondInvitation.QrCodeValue, null, "Anna", "New phone", "de"),
             TestContext.CurrentContext.CancellationToken);
@@ -158,7 +158,7 @@ public sealed class EnrolmentInvitationStoreTest
         Assert.Multiple(() =>
         {
             Assert.That(secondRedemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-            Assert.That(secondRedemption.ServerPerson!.Id, Is.EqualTo(serverPersonId));
+            Assert.That(secondRedemption.StaffMember!.Id, Is.EqualTo(staffMemberId));
             Assert.That(oldDevice.RevokedAtUtc, Is.Not.Null);
         });
     }

@@ -8,7 +8,7 @@ import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import LocationsList from '../../components/admin/locations/LocationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import PrintersList from '../../components/admin/printers/PrintersList.vue'
-import PeopleList from '../../components/admin/people/PeopleList.vue'
+import StaffList from '../../components/admin/staff/StaffList.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
 import { bindLocaleToLaptop } from '../../appLanguageBinding'
 
@@ -27,7 +27,7 @@ const sections: AdminSection[] = [
   'locations',
   'items',
   'printers',
-  'people',
+  'staff',
 ]
 
 function titleFor(value: AdminSection): string {
@@ -40,8 +40,8 @@ function titleFor(value: AdminSection): string {
       return t('admin.items.title')
     case 'printers':
       return t('admin.printers.title')
-    case 'people':
-      return t('admin.people.title')
+    case 'staff':
+      return t('admin.staff.title')
     default:
       return assertNever(value)
   }
@@ -72,6 +72,6 @@ void request('/api/admin/locations').then((result) => {
     <LocationsList v-else-if="section === 'locations'" />
     <ItemsList v-else-if="section === 'items'" />
     <PrintersList v-else-if="section === 'printers'" />
-    <PeopleList v-else />
+    <StaffList v-else />
   </div>
 </template>

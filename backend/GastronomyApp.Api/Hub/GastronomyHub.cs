@@ -9,9 +9,9 @@ public sealed record HubGroupNames
     public string Devices { get; } = "devices";
     public string Admin { get; } = "admin";
 
-    public string Person(Guid serverPersonId)
+    public string StaffMember(Guid staffMemberId)
     {
-        return $"person:{serverPersonId}";
+        return $"staffMember:{staffMemberId}";
     }
 
     public string Device(Guid deviceId)
@@ -58,7 +58,7 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 
         if (caller is not null)
         {
-            joinedGroups.Add(groupNames.Person(caller.ServerPersonId));
+            joinedGroups.Add(groupNames.StaffMember(caller.StaffMemberId));
             joinedGroups.Add(groupNames.Device(caller.DeviceId));
             joinedGroups.Add(groupNames.Devices);
         }

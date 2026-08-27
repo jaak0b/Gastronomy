@@ -38,7 +38,7 @@ public sealed record PrinterStatusChangedEvent(
 
 public sealed record CatalogChangedEvent(string Version);
 
-public sealed record EnrolmentCompletedEvent(Guid ServerPersonId, string ServerPersonName, Guid DeviceId);
+public sealed record EnrolmentCompletedEvent(Guid StaffMemberId, string StaffMemberName, Guid DeviceId);
 
 public sealed record DeviceRevokedEvent(Guid DeviceId);
 

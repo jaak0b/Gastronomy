@@ -25,7 +25,7 @@ public sealed class ResxSlipTextProvider : ISlipTextProvider
             Read("SlipNumberPrefix", culture),
             Read("OrderNumberPrefix", culture),
             Read("TablePrefix", culture),
-            Read("ServerPrefix", culture),
+            Read("StaffMemberPrefix", culture),
             Read("NotePrefix", culture),
             Read("ItemsTotalPrefix", culture),
             Read("AlsoGoesToPrefix", culture),

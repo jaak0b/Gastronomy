@@ -80,7 +80,7 @@ public sealed class DeviceAuthenticationTest
     }
 
     [Test]
-    public async Task Authenticate_ValidToken_ResolvesThePersonBehindTheDevice()
+    public async Task Authenticate_ValidToken_ResolvesTheStaffMemberBehindTheDevice()
     {
         IssuedDeviceToken issued = await IssueTokenAsync();
 
@@ -97,8 +97,8 @@ public sealed class DeviceAuthenticationTest
                 body.RootElement.GetProperty("deviceId").GetGuid(),
                 Is.EqualTo(issued.Device.Id));
             Assert.That(
-                body.RootElement.GetProperty("serverPerson").GetProperty("id").GetGuid(),
-                Is.EqualTo(world.ServerPersonId));
+                body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(),
+                Is.EqualTo(world.StaffMemberId));
         });
     }
 
@@ -106,6 +106,6 @@ public sealed class DeviceAuthenticationTest
     {
         using IServiceScope scope = factory.Services.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(world.ServerPersonId, "de", "NUnit", CancellationToken.None);
+            .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
     }
 }

@@ -13,50 +13,50 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public static class AdminServerPeopleEndpoints
+public static class AdminStaffMembersEndpoints
 {
-    public static IEndpointRouteBuilder MapAdminServerPeopleEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapAdminStaffMembersEndpoints(this IEndpointRouteBuilder routes)
     {
-        RouteGroupBuilder group = routes.MapGroup("/api/admin/server-people");
+        RouteGroupBuilder group = routes.MapGroup("/api/admin/staff-members");
 
         group.MapGet(string.Empty, async (
-            AdminServerPeopleHandler handler,
+            AdminStaffMembersHandler handler,
             CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-        group.MapPut("/{serverPersonId:guid}", async (
-            Guid serverPersonId,
-            RenameServerPersonRequest request,
-            AdminServerPeopleHandler handler,
+        group.MapPut("/{staffMemberId:guid}", async (
+            Guid staffMemberId,
+            RenameStaffMemberRequest request,
+            AdminStaffMembersHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.RenameAsync(serverPersonId, request, cancellationToken));
+                await handler.RenameAsync(staffMemberId, request, cancellationToken));
 
-        group.MapPost("/{serverPersonId:guid}/revoke-device", async (
-            Guid serverPersonId,
-            AdminServerPeopleHandler handler,
+        group.MapPost("/{staffMemberId:guid}/revoke-device", async (
+            Guid staffMemberId,
+            AdminStaffMembersHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.RevokeDeviceAsync(serverPersonId, cancellationToken));
+                await handler.RevokeDeviceAsync(staffMemberId, cancellationToken));
 
-        group.MapPost("/{serverPersonId:guid}/activate", async (
-            Guid serverPersonId,
-            AdminServerPeopleHandler handler,
-            CancellationToken cancellationToken) => await handler.ActivateAsync(serverPersonId, cancellationToken));
+        group.MapPost("/{staffMemberId:guid}/activate", async (
+            Guid staffMemberId,
+            AdminStaffMembersHandler handler,
+            CancellationToken cancellationToken) => await handler.ActivateAsync(staffMemberId, cancellationToken));
 
-        group.MapPost("/{serverPersonId:guid}/deactivate", async (
-            Guid serverPersonId,
-            AdminServerPeopleHandler handler,
+        group.MapPost("/{staffMemberId:guid}/deactivate", async (
+            Guid staffMemberId,
+            AdminStaffMembersHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.DeactivateAsync(serverPersonId, cancellationToken));
+                await handler.DeactivateAsync(staffMemberId, cancellationToken));
 
         routes.MapPost("/api/admin/enrolment/invitations", async (
             CreateInvitationRequest request,
-            AdminServerPeopleHandler handler,
+            AdminStaffMembersHandler handler,
             CancellationToken cancellationToken) => await handler.CreateInvitationAsync(request, cancellationToken));
 
         return routes;
     }
 }
 
-public sealed class AdminServerPeopleHandler
+public sealed class AdminStaffMembersHandler
 {
     private readonly GastronomyAppDbContext dbContext;
     private readonly IDeviceTokenStore deviceTokenStore;
@@ -68,7 +68,7 @@ public sealed class AdminServerPeopleHandler
     private readonly ResultEnvelope resultEnvelope;
     private readonly IClock clock;
 
-    public AdminServerPeopleHandler(
+    public AdminStaffMembersHandler(
         GastronomyAppDbContext dbContext,
         IDeviceTokenStore deviceTokenStore,
         IEnrolmentInvitationStore invitationStore,
@@ -92,9 +92,9 @@ public sealed class AdminServerPeopleHandler
 
     public async Task<IResult> ListAsync(CancellationToken cancellationToken)
     {
-        List<ServerPerson> people = await dbContext.ServerPeople
+        List<StaffMember> staffMembers = await dbContext.StaffMembers
             .AsNoTracking()
-            .OrderBy(person => person.Name)
+            .OrderBy(staffMember => staffMember.Name)
             .ToListAsync(cancellationToken);
 
         List<Device> devices = await dbContext.Devices
@@ -109,28 +109,28 @@ public sealed class AdminServerPeopleHandler
             .Where(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > now)
             .ToListAsync(cancellationToken);
 
-        List<AdminServerPersonView> views = [];
+        List<AdminStaffMemberView> views = [];
 
-        foreach (ServerPerson person in people)
+        foreach (StaffMember staffMember in staffMembers)
         {
-            Device? device = devices.FirstOrDefault(candidate => candidate.ServerPersonId == person.Id);
+            Device? device = devices.FirstOrDefault(candidate => candidate.StaffMemberId == staffMember.Id);
 
-            views.Add(new AdminServerPersonView(
-                person.Id,
-                person.Name,
-                person.IsActive,
+            views.Add(new AdminStaffMemberView(
+                staffMember.Id,
+                staffMember.Name,
+                staffMember.IsActive,
                 device is not null,
                 device?.LastSeenAtUtc,
                 device?.UserAgentSnapshot,
-                outstanding.Any(invitation => invitation.ServerPersonId == person.Id)));
+                outstanding.Any(invitation => invitation.StaffMemberId == staffMember.Id)));
         }
 
-        return Results.Ok(new AdminServerPersonListView(views));
+        return Results.Ok(new AdminStaffMemberListView(views));
     }
 
     public async Task<IResult> RenameAsync(
-        Guid serverPersonId,
-        RenameServerPersonRequest request,
+        Guid staffMemberId,
+        RenameStaffMemberRequest request,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -141,26 +141,26 @@ public sealed class AdminServerPeopleHandler
                 "admin.personNameMissing");
         }
 
-        ServerPerson? person = await dbContext.ServerPeople
-            .FirstOrDefaultAsync(candidate => candidate.Id == serverPersonId, cancellationToken);
+        StaffMember? staffMember = await dbContext.StaffMembers
+            .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
-        if (person is null)
+        if (staffMember is null)
         {
             return Results.NotFound();
         }
 
-        person.Name = request.Name;
+        staffMember.Name = request.Name;
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Results.Ok(new ServerPersonView(person.Id, person.Name));
+        return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
     }
 
-    public async Task<IResult> RevokeDeviceAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    public async Task<IResult> RevokeDeviceAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
         Device? device = await dbContext.Devices
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                candidate => candidate.ServerPersonId == serverPersonId && candidate.RevokedAtUtc == null,
+                candidate => candidate.StaffMemberId == staffMemberId && candidate.RevokedAtUtc == null,
                 cancellationToken);
 
         if (device is null)
@@ -176,38 +176,38 @@ public sealed class AdminServerPeopleHandler
         return Results.Ok(new DeviceRevokedEvent(device.Id));
     }
 
-    public async Task<IResult> ActivateAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    public async Task<IResult> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
-        ServerPerson? person = await dbContext.ServerPeople
-            .FirstOrDefaultAsync(candidate => candidate.Id == serverPersonId, cancellationToken);
+        StaffMember? staffMember = await dbContext.StaffMembers
+            .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
-        if (person is null)
+        if (staffMember is null)
         {
             return Results.NotFound();
         }
 
-        person.IsActive = true;
+        staffMember.IsActive = true;
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Results.Ok(new ServerPersonView(person.Id, person.Name));
+        return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
     }
 
-    public async Task<IResult> DeactivateAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    public async Task<IResult> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
-        ServerPerson? person = await dbContext.ServerPeople
-            .FirstOrDefaultAsync(candidate => candidate.Id == serverPersonId, cancellationToken);
+        StaffMember? staffMember = await dbContext.StaffMembers
+            .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
-        if (person is null)
+        if (staffMember is null)
         {
             return Results.NotFound();
         }
 
         List<Device> devices = await dbContext.Devices
             .AsNoTracking()
-            .Where(device => device.ServerPersonId == serverPersonId && device.RevokedAtUtc == null)
+            .Where(device => device.StaffMemberId == staffMemberId && device.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
-        person.IsActive = false;
+        staffMember.IsActive = false;
         await dbContext.SaveChangesAsync(cancellationToken);
 
         foreach (Device device in devices)
@@ -215,29 +215,29 @@ public sealed class AdminServerPeopleHandler
             await RevokeAsync(device.Id, cancellationToken);
         }
 
-        return Results.Ok(new ServerPersonView(person.Id, person.Name));
+        return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
     }
 
     public async Task<IResult> CreateInvitationAsync(
         CreateInvitationRequest request,
         CancellationToken cancellationToken)
     {
-        ServerPerson? person = null;
+        StaffMember? staffMember = null;
 
-        if (request.ServerPersonId is not null)
+        if (request.StaffMemberId is not null)
         {
-            person = await dbContext.ServerPeople
+            staffMember = await dbContext.StaffMembers
                 .AsNoTracking()
-                .FirstOrDefaultAsync(candidate => candidate.Id == request.ServerPersonId, cancellationToken);
+                .FirstOrDefaultAsync(candidate => candidate.Id == request.StaffMemberId, cancellationToken);
 
-            if (person is null)
+            if (staffMember is null)
             {
                 return Results.NotFound();
             }
         }
 
         EnrolmentInvitationCreated created =
-            await invitationStore.CreateAsync(request.ServerPersonId, cancellationToken);
+            await invitationStore.CreateAsync(request.StaffMemberId, cancellationToken);
 
         string qrUrl = urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
         invitationCache.Remember(new OutstandingInvitation(
@@ -246,11 +246,11 @@ public sealed class AdminServerPeopleHandler
             qrUrl,
             created.ExpiresAtUtc));
 
-        if (request.ServerPersonId is not null)
+        if (request.StaffMemberId is not null)
         {
             List<Device> devices = await dbContext.Devices
                 .AsNoTracking()
-                .Where(device => device.ServerPersonId == request.ServerPersonId && device.RevokedAtUtc == null)
+                .Where(device => device.StaffMemberId == request.StaffMemberId && device.RevokedAtUtc == null)
                 .ToListAsync(cancellationToken);
 
             foreach (Device device in devices)
@@ -265,7 +265,7 @@ public sealed class AdminServerPeopleHandler
                 qrUrl,
                 created.SixDigitCode,
                 created.ExpiresAtUtc,
-                person is null ? null : new ServerPersonView(person.Id, person.Name),
+                staffMember is null ? null : new StaffMemberView(staffMember.Id, staffMember.Name),
                 urlBuilder.ReachableAddresses()),
             statusCode: StatusCodes.Status201Created);
     }

@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import PeopleList from '../../../src/components/admin/people/PeopleList.vue'
+import StaffList from '../../../src/components/admin/staff/StaffList.vue'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
-const PERSON_ID = '33333333-3333-3333-3333-333333333333'
+const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
 
-const ONE_PERSON = {
-  people: [
+const ONE_STAFF_MEMBER = {
+  staffMembers: [
     {
-      serverPersonId: PERSON_ID,
+      staffMemberId: STAFF_MEMBER_ID,
       name: 'Anna',
       isActive: true,
       hasDevice: true,
@@ -32,37 +32,37 @@ function stubFetch(revokeStatus = 200) {
           { status: revokeStatus },
         )
       }
-      return new Response(JSON.stringify(ONE_PERSON), { status: 200 })
+      return new Response(JSON.stringify(ONE_STAFF_MEMBER), { status: 200 })
     }),
   )
   return urls
 }
 
 function mountList() {
-  return mount(PeopleList, { global: { plugins: testPlugins() }, attachTo: document.body })
+  return mount(StaffList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
-async function firstPerson(list: ReturnType<typeof mountList>) {
-  await vi.waitFor(() => expect(list.find('.person-row').exists()).toBe(true))
+async function firstStaffMember(list: ReturnType<typeof mountList>) {
+  await vi.waitFor(() => expect(list.find('.staff-row').exists()).toBe(true))
 }
 
 const OFF_THE_LIST = {
-  people: [{ ...ONE_PERSON.people[0], isActive: false }],
+  staffMembers: [{ ...ONE_STAFF_MEMBER.staffMembers[0], isActive: false }],
 }
 
-function stubFetchWith(people: unknown) {
+function stubFetchWith(staffMembers: unknown) {
   const urls: string[] = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
       urls.push(url)
-      return new Response(JSON.stringify(people), { status: 200 })
+      return new Response(JSON.stringify(staffMembers), { status: 200 })
     }),
   )
   return urls
 }
 
-describe('taking a server person off the list', () => {
+describe('taking a staff member off the list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     document.body.innerHTML = ''
@@ -73,10 +73,10 @@ describe('taking a server person off the list', () => {
   })
 
   it('asks before it happens', async () => {
-    const urls = stubFetchWith(ONE_PERSON)
+    const urls = stubFetchWith(ONE_STAFF_MEMBER)
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.deactivate').trigger('click')
 
     await waitForDialog()
@@ -85,10 +85,10 @@ describe('taking a server person off the list', () => {
   })
 
   it('says that the orders already placed are kept', async () => {
-    stubFetchWith(ONE_PERSON)
+    stubFetchWith(ONE_STAFF_MEMBER)
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.deactivate').trigger('click')
 
     await waitForDialog()
@@ -97,20 +97,20 @@ describe('taking a server person off the list', () => {
   })
 
   it('takes them off the list once the question is answered with yes', async () => {
-    const urls = stubFetchWith(ONE_PERSON)
+    const urls = stubFetchWith(ONE_STAFF_MEMBER)
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.deactivate').trigger('click')
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),
+      expect(urls).toContain(`/api/admin/staff-members/${STAFF_MEMBER_ID}/deactivate`),
     )
   })
 })
 
-describe('a server person taken off the list', () => {
+describe('a staff member taken off the list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     document.body.innerHTML = ''
@@ -126,7 +126,7 @@ describe('a server person taken off the list', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.show-deactivated').exists()).toBe(true))
 
-    expect(list.find('.person-row').exists()).toBe(false)
+    expect(list.find('.staff-row').exists()).toBe(false)
   })
 
   it('says so on their row once it is shown', async () => {
@@ -134,7 +134,7 @@ describe('a server person taken off the list', () => {
 
     const list = mountList()
     await list.get('.show-deactivated input').setValue(true)
-    await firstPerson(list)
+    await firstStaffMember(list)
 
     expect(list.get('.deactivated').text()).toBe('Deaktiviert')
   })
@@ -144,11 +144,11 @@ describe('a server person taken off the list', () => {
 
     const list = mountList()
     await list.get('.show-deactivated input').setValue(true)
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.reactivate').trigger('click')
 
     await vi.waitFor(() =>
-      expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/activate`),
+      expect(urls).toContain(`/api/admin/staff-members/${STAFF_MEMBER_ID}/activate`),
     )
   })
 })
@@ -163,7 +163,7 @@ describe('the QR code for setting up a phone', () => {
     vi.unstubAllGlobals()
   })
 
-  function stubInvitationFor(serverPerson: unknown) {
+  function stubInvitationFor(staffMember: unknown) {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -173,24 +173,24 @@ describe('the QR code for setting up a phone', () => {
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
               sixDigitCode: '158026',
               expiresAtUtc: '2026-08-27T20:00:00Z',
-              serverPerson,
+              staffMember,
               availableAddresses: [],
             }
-          : ONE_PERSON
+          : ONE_STAFF_MEMBER
         return new Response(JSON.stringify(payload), { status: 200 })
       }),
     )
   }
 
-  it('sits inside the row of the person it belongs to', async () => {
-    stubInvitationFor({ id: PERSON_ID, name: 'Anna' })
+  it('sits inside the row of the staff member it belongs to', async () => {
+    stubInvitationFor({ id: STAFF_MEMBER_ID, name: 'Anna' })
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.new-code').trigger('click')
 
     await vi.waitFor(() =>
-      expect(list.get('.person-row').find('.invitation-panel').exists()).toBe(true),
+      expect(list.get('.staff-row').find('.invitation-panel').exists()).toBe(true),
     )
   })
 
@@ -198,15 +198,15 @@ describe('the QR code for setting up a phone', () => {
     stubInvitationFor(null)
 
     const list = mountList()
-    await firstPerson(list)
-    await list.get('.new-person').trigger('click')
+    await firstStaffMember(list)
+    await list.get('.new-staff-member').trigger('click')
 
     await vi.waitFor(() => expect(list.find('.invitation-panel').exists()).toBe(true))
-    expect(list.get('.person-row').find('.invitation-panel').exists()).toBe(false)
+    expect(list.get('.staff-row').find('.invitation-panel').exists()).toBe(false)
   })
 })
 
-describe('a server person in the admin list', () => {
+describe('a staff member in the admin list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     document.body.innerHTML = ''
@@ -220,7 +220,7 @@ describe('a server person in the admin list', () => {
     stubFetch()
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
 
     expect(list.find('.no-phone').exists()).toBe(false)
   })
@@ -229,7 +229,7 @@ describe('a server person in the admin list', () => {
     stubFetch()
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
 
     expect(list.find('.revoke').exists()).toBe(true)
   })
@@ -238,12 +238,12 @@ describe('a server person in the admin list', () => {
     const urls = stubFetch()
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.deactivate').trigger('click')
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(urls).toContain(`/api/admin/server-people/${PERSON_ID}/deactivate`),
+      expect(urls).toContain(`/api/admin/staff-members/${STAFF_MEMBER_ID}/deactivate`),
     )
   })
 
@@ -251,7 +251,7 @@ describe('a server person in the admin list', () => {
     stubFetch(409)
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.revoke').trigger('click')
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
 
@@ -262,7 +262,7 @@ describe('a server person in the admin list', () => {
     stubFetch(409)
 
     const list = mountList()
-    await firstPerson(list)
+    await firstStaffMember(list)
     await list.get('.revoke').trigger('click')
 
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))

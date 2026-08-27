@@ -88,7 +88,7 @@ public sealed class ImmediateTransactionRunnerTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = Guid.NewGuid(),
-            ServerPersonId = seeded.ServerPersonId,
+            StaffMemberId = seeded.StaffMemberId,
             DeviceId = seeded.DeviceId,
             TableLabel = "Tisch 12",
             Note = null,
@@ -127,7 +127,7 @@ public sealed class ImmediateTransactionRunnerTest
         return new EnrolmentInvitation
         {
             Id = Guid.NewGuid(),
-            ServerPersonId = null,
+            StaffMemberId = null,
             QrCodeHash = [1],
             QrCodeSalt = [2],
             SixDigitHash = [3],

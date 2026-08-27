@@ -11,7 +11,7 @@ namespace GastronomyApp.Core.Tests.Services;
 public sealed class OrderAcceptanceServiceTest
 {
     private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
-    private readonly Guid _serverPersonId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
+    private readonly Guid _staffMemberId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
     private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003");
     private readonly Guid _bratwurstId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
     private readonly Guid _beerId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
@@ -115,7 +115,7 @@ public sealed class OrderAcceptanceServiceTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = _clientOrderId,
-            ServerPersonId = _serverPersonId,
+            StaffMemberId = _staffMemberId,
             DeviceId = _deviceId,
             TableLabel = tableLabel,
             Note = null,
@@ -372,7 +372,7 @@ public sealed class OrderAcceptanceServiceTest
             Assert.That(order.Tickets, Has.Count.EqualTo(2));
             Assert.That(order.TotalCents, Is.EqualTo(1100));
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Accepted));
-            Assert.That(order.ServerPersonId, Is.EqualTo(_serverPersonId));
+            Assert.That(order.StaffMemberId, Is.EqualTo(_staffMemberId));
             Assert.That(order.DeviceId, Is.EqualTo(_deviceId));
             Assert.That(order.ClientOrderId, Is.EqualTo(_clientOrderId));
         });
@@ -438,7 +438,7 @@ public sealed class OrderAcceptanceServiceTest
             Id = Guid.NewGuid(),
             ClientOrderId = _clientOrderId,
             GlobalOrderNumber = 12,
-            ServerPersonId = _serverPersonId,
+            StaffMemberId = _staffMemberId,
             DeviceId = _deviceId,
             TableLabel = "Tisch 12",
             TotalCents = 350,

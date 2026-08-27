@@ -25,17 +25,17 @@ public static class SessionEndpoints
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
 
-            ServerPerson? person = await dbContext.ServerPeople
-                .FirstOrDefaultAsync(candidate => candidate.Id == caller.ServerPersonId, cancellationToken);
+            StaffMember? staffMember = await dbContext.StaffMembers
+                .FirstOrDefaultAsync(candidate => candidate.Id == caller.StaffMemberId, cancellationToken);
 
-            if (person is null)
+            if (staffMember is null)
             {
                 return Results.Unauthorized();
             }
 
             return Results.Ok(new SessionView(
                 caller.DeviceId,
-                new ServerPersonView(person.Id, person.Name),
+                new StaffMemberView(staffMember.Id, staffMember.Name),
                 caller.Language));
         });
 

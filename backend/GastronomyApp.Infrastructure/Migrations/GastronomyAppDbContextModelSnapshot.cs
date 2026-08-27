@@ -68,7 +68,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ServerPersonId")
+                    b.Property<Guid>("StaffMemberId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TokenAlgorithm")
@@ -146,9 +146,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("BLOB");
 
-                    b.Property<Guid?>("ServerPersonId")
-                        .HasColumnType("TEXT");
-
                     b.Property<byte[]>("SixDigitHash")
                         .IsRequired()
                         .HasColumnType("BLOB");
@@ -156,6 +153,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<byte[]>("SixDigitSalt")
                         .IsRequired()
                         .HasColumnType("BLOB");
+
+                    b.Property<Guid?>("StaffMemberId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -266,7 +266,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ServerPersonId")
+                    b.Property<Guid>("StaffMemberId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -521,7 +521,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("ProductionLocations");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.ServerPerson", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
@@ -539,7 +539,7 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ServerPeople");
+                    b.ToTable("StaffMembers");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.TableSuggestion", b =>

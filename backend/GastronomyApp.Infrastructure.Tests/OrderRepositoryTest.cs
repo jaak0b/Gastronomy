@@ -64,7 +64,7 @@ public sealed class OrderRepositoryTest
             Id = orderId,
             ClientOrderId = clientOrderId,
             GlobalOrderNumber = 1,
-            ServerPersonId = seeded.ServerPersonId,
+            StaffMemberId = seeded.StaffMemberId,
             DeviceId = seeded.DeviceId,
             TableLabel = "Tisch 12",
             Note = null,

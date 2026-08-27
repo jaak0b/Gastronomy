@@ -10,7 +10,7 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
     {
         builder.HasKey(device => device.Id);
         builder.Property(device => device.Id).ValueGeneratedNever();
-        builder.Property(device => device.ServerPersonId).IsRequired();
+        builder.Property(device => device.StaffMemberId).IsRequired();
         builder.Property(device => device.Language).IsRequired().HasMaxLength(2);
         builder.Property(device => device.TokenHash).IsRequired();
         builder.Property(device => device.TokenSalt).IsRequired();

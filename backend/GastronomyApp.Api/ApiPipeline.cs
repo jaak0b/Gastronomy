@@ -29,7 +29,7 @@ public sealed class ApiPipeline
         app.MapLanguageEndpoints();
         app.MapAdminLocationEndpoints();
         app.MapAdminItemEndpoints();
-        app.MapAdminServerPeopleEndpoints();
+        app.MapAdminStaffMembersEndpoints();
         app.MapAdminPrinterEndpoints();
         app.MapAdminOrderEndpoints();
         app.MapAdminInvitationQrEndpoints();

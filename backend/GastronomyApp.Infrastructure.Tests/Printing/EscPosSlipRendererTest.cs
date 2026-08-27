@@ -97,7 +97,7 @@ public class EscPosSlipRendererTest
             "================================================",
             "Bestellung 137",
             "Tisch 12",
-            "Bedienung: Anna",
+            "Kellner: Anna",
             "26.08.2026, 19:42 Uhr",
             "------------------------------------------------",
             "2 x Bratwurst mit Brot",
@@ -136,7 +136,7 @@ public class EscPosSlipRendererTest
             "================================================",
             "Order 137",
             "Table 12",
-            "Server: Anna",
+            "Waiter: Anna",
             "26/08/2026, 19:42",
             "------------------------------------------------",
             "2 x Sausage with bread",
@@ -178,18 +178,18 @@ public class EscPosSlipRendererTest
     }
 
     [Test]
-    public void RenderInitialSlip_LongTableOrServerName_WrapsSameWay()
+    public void RenderInitialSlip_LongTableOrStaffMemberName_WrapsSameWay()
     {
         SlipRenderRequest request = GermanFixture() with
         {
             TableName = new string('T', 60),
-            ServerName = new string('S', 60),
+            StaffMemberName = new string('S', 60),
         };
 
         RenderedSlip slip = renderer.RenderInitialSlip(request);
 
         Assert.That(slip.RenderedText, Does.Contain("Tisch " + new string('T', 42) + "\r\n    " + new string('T', 18)));
-        Assert.That(slip.RenderedText, Does.Contain("Bedienung: " + new string('S', 37) + "\r\n    " + new string('S', 23)));
+        Assert.That(slip.RenderedText, Does.Contain("Kellner: " + new string('S', 39) + "\r\n    " + new string('S', 21)));
     }
 
     [Test]

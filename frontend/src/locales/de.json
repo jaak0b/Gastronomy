@@ -196,7 +196,7 @@
     },
     "tables": {
       "title": "Tische",
-      "help": "Diese Namen erscheinen als Vorschläge auf dem Telefon. Die Bedienung kann jederzeit einen anderen Tisch eintippen.",
+      "help": "Diese Namen erscheinen als Vorschläge auf dem Telefon. Der Kellner kann jederzeit einen anderen Tisch eintippen.",
       "fromLastSession": "Tischnamen der letzten Veranstaltung übernehmen"
     },
     "printers": {
@@ -239,29 +239,29 @@
       },
       "empty": "Legen Sie zuerst eine Station an. Zu jeder Station gehört ein Drucker."
     },
-    "people": {
-      "title": "Bedienungen",
-      "help": "Richten Sie die Telefone nacheinander ein. Eine Bedienung hat genau ein Telefon.",
-      "new": "Neue Bedienung",
-      "empty": "Hier steht noch niemand. Tippen Sie auf \"Neue Bedienung\" und lassen Sie die erste Bedienung den QR-Code scannen.",
+    "staff": {
+      "title": "Kellner",
+      "help": "Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon.",
+      "new": "Neuer Kellner",
+      "empty": "Hier steht noch niemand. Tippen Sie auf \"Neuer Kellner\" und lassen Sie den ersten Kellner den QR-Code scannen.",
       "noPhone": "Kein Telefon eingerichtet",
       "lastSeen": "Zuletzt gesehen: {time}",
       "newCode": "Neuen QR-Code erstellen",
       "newCodeEffect": "Das bisherige Telefon von {name} kann danach keine Bestellungen mehr senden. Mit dem neuen QR-Code richtet {name} ein Telefon ein, auch ein geliehenes.",
       "rename": "Namen ändern",
-      "renameHelp": "Ändern Sie den Namen, wenn eine Bedienung sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf.",
+      "renameHelp": "Ändern Sie den Namen, wenn ein Kellner sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf.",
       "revoke": "Einrichtung entfernen",
       "revokeConfirm": "Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert.",
       "revoked": "Einrichtung entfernt",
-      "activate": "Bedienung wieder aufnehmen",
-      "deactivateTitle": "Bedienung aus der Liste nehmen?",
-      "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Bedienung später wieder aufnehmen.",
-      "deactivateConfirm": "Bedienung herausnehmen"
+      "activate": "Kellner wieder aufnehmen",
+      "deactivateTitle": "Kellner aus der Liste nehmen?",
+      "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können den Kellner später wieder aufnehmen.",
+      "deactivateConfirm": "Kellner herausnehmen"
     },
     "enrol": {
       "title": "Telefon einrichten",
-      "step1": "Die Bedienung scannt diesen QR-Code mit der Kamera ihres Telefons.",
-      "step2": "Die Bedienung gibt im Browser ihren Namen ein.",
+      "step1": "Der Kellner scannt diesen QR-Code mit der Kamera seines Telefons.",
+      "step2": "Der Kellner gibt im Browser seinen Namen ein.",
       "step3": "Der Name steht danach in der Liste.",
       "validity": "Der QR-Code gilt fünf Minuten und für ein Telefon.",
       "cameraTitle": "Wenn die Kamera nicht funktioniert",
@@ -355,7 +355,7 @@
   },
   "welcome": {
     "title": "Dieses Telefon ist noch nicht eingerichtet.",
-    "body": "Bitten Sie die Person am Laptop, Sie als Bedienung anzulegen. Sie tippt dort auf \"Neue Bedienung\" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.",
+    "body": "Bitten Sie die Person am Laptop, Sie als Kellner anzulegen. Sie tippt dort auf \"Neuer Kellner\" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.",
     "enterCode": "Sechsstelligen Code eingeben"
   },
   "language": {

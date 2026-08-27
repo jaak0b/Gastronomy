@@ -11,7 +11,7 @@ public sealed class GastronomyAppDbContextTest
         "CatalogItems",
         "ItemLocationAssignments",
         "TableSuggestions",
-        "ServerPeople",
+        "StaffMembers",
         "Devices",
         "EnrolmentInvitations",
         "Orders",

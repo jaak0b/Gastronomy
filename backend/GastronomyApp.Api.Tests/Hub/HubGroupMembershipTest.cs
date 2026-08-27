@@ -16,20 +16,20 @@ public sealed class HubGroupMembershipTest
     private readonly TimeSpan silenceWindow = TimeSpan.FromSeconds(2);
 
     private OrderTestContext context = null!;
-    private string otherPersonToken = null!;
+    private string otherStaffMemberToken = null!;
 
     [SetUp]
     public async Task SetUp()
     {
         context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
 
-        Guid otherPersonId = Guid.NewGuid();
+        Guid otherStaffMemberId = Guid.NewGuid();
 
         await using (GastronomyAppDbContext database = context.Factory.CreateContext())
         {
-            database.ServerPeople.Add(new ServerPerson
+            database.StaffMembers.Add(new StaffMember
             {
-                Id = otherPersonId,
+                Id = otherStaffMemberId,
                 Name = "Bea",
                 IsActive = true,
                 CreatedAtUtc = new DateTime(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc),
@@ -40,8 +40,8 @@ public sealed class HubGroupMembershipTest
 
         using IServiceScope scope = context.Factory.Services.CreateScope();
         IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(otherPersonId, "de", "NUnit", CancellationToken.None);
-        otherPersonToken = issued.PlaintextToken;
+            .IssueAsync(otherStaffMemberId, "de", "NUnit", CancellationToken.None);
+        otherStaffMemberToken = issued.PlaintextToken;
     }
 
     [TearDown]
@@ -51,24 +51,24 @@ public sealed class HubGroupMembershipTest
     }
 
     [Test]
-    public async Task OrderAccepted_TwoPeopleConnected_ReachesOnlyThePlacingPersonsGroup()
+    public async Task OrderAccepted_TwoStaffMembersConnected_ReachesOnlyThePlacingStaffMembersGroup()
     {
-        TaskCompletionSource<Guid> placingPersonHeard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource<Guid> otherPersonHeard = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<Guid> placingStaffMemberHeard = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<Guid> otherStaffMemberHeard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        await using HubConnection placingPerson = Connect(context.DeviceToken);
-        await using HubConnection otherPerson = Connect(otherPersonToken);
+        await using HubConnection placingStaffMember = Connect(context.DeviceToken);
+        await using HubConnection otherStaffMember = Connect(otherStaffMemberToken);
 
-        placingPerson.On<JsonElement>(
+        placingStaffMember.On<JsonElement>(
             "OrderAccepted",
-            payload => placingPersonHeard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
+            payload => placingStaffMemberHeard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
 
-        otherPerson.On<JsonElement>(
+        otherStaffMember.On<JsonElement>(
             "OrderAccepted",
-            payload => otherPersonHeard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
+            payload => otherStaffMemberHeard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
 
-        await placingPerson.StartAsync();
-        await otherPerson.StartAsync();
+        await placingStaffMember.StartAsync();
+        await otherStaffMember.StartAsync();
 
         Guid orderId;
 
@@ -79,17 +79,17 @@ public sealed class HubGroupMembershipTest
             orderId = body.RootElement.GetProperty("orderId").GetGuid();
         }
 
-        Task heard = await Task.WhenAny(placingPersonHeard.Task, Task.Delay(patience));
+        Task heard = await Task.WhenAny(placingStaffMemberHeard.Task, Task.Delay(patience));
 
-        Assert.That(heard, Is.SameAs(placingPersonHeard.Task), "The placing person never heard OrderAccepted.");
-        Assert.That(await placingPersonHeard.Task, Is.EqualTo(orderId));
+        Assert.That(heard, Is.SameAs(placingStaffMemberHeard.Task), "The staff member who placed the order never heard OrderAccepted.");
+        Assert.That(await placingStaffMemberHeard.Task, Is.EqualTo(orderId));
 
-        Task silence = await Task.WhenAny(otherPersonHeard.Task, Task.Delay(silenceWindow));
+        Task silence = await Task.WhenAny(otherStaffMemberHeard.Task, Task.Delay(silenceWindow));
 
         Assert.That(
             silence,
-            Is.Not.SameAs(otherPersonHeard.Task),
-            "A second person received an order event that was not theirs.");
+            Is.Not.SameAs(otherStaffMemberHeard.Task),
+            "A second staff member received an order event that was not theirs.");
     }
 
     [Test]

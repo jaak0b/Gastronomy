@@ -76,6 +76,6 @@ public sealed class ConcurrentInvitationTest
     {
         return context.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId = (Guid?)null });
+            new { staffMemberId = (Guid?)null });
     }
 }

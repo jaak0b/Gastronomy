@@ -144,41 +144,41 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task GetServerPeople_LoopbackCaller_ReportsThePhoneBehindEveryPerson()
+    public async Task GetStaffMembers_LoopbackCaller_ReportsThePhoneBehindEveryStaffMember()
     {
-        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/server-people");
+        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/staff-members");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement people = body.RootElement.GetProperty("people");
+        JsonElement staffMembers = body.RootElement.GetProperty("staffMembers");
 
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(people.GetArrayLength(), Is.EqualTo(1));
-            Assert.That(people[0].GetProperty("hasDevice").GetBoolean(), Is.True);
+            Assert.That(staffMembers.GetArrayLength(), Is.EqualTo(1));
+            Assert.That(staffMembers[0].GetProperty("hasDevice").GetBoolean(), Is.True);
         });
     }
 
     [Test]
-    public async Task PutServerPerson_Rename_KeepsTheirIdentity()
+    public async Task PutStaffMember_Rename_KeepsTheirIdentity()
     {
         using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
-            $"/api/admin/server-people/{context.World.ServerPersonId}",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}",
             new { name = "Anna Maria" });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ServerPerson person = await database.ServerPeople.FirstAsync(
-            candidate => candidate.Id == context.World.ServerPersonId);
+        StaffMember staffMember = await database.StaffMembers.FirstAsync(
+            candidate => candidate.Id == context.World.StaffMemberId);
 
-        Assert.That(person.Name, Is.EqualTo("Anna Maria"));
+        Assert.That(staffMember.Name, Is.EqualTo("Anna Maria"));
     }
 
     [Test]
-    public async Task RevokeDevice_PersonWithAPhone_InvalidatesTheirTokenImmediately()
+    public async Task RevokeDevice_StaffMemberWithAPhone_InvalidatesTheirTokenImmediately()
     {
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/server-people/{context.World.ServerPersonId}/revoke-device",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/revoke-device",
             content: null);
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -193,7 +193,7 @@ public sealed class AdminEndpointsTest
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId = (Guid?)null });
+            new { staffMemberId = (Guid?)null });
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -210,7 +210,7 @@ public sealed class AdminEndpointsTest
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/enrolment/invitations",
-            new { serverPersonId = (Guid?)null });
+            new { staffMemberId = (Guid?)null });
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         string qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
@@ -278,26 +278,26 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task Activate_ServerPersonTakenOffTheList_PutsThemBackOnTheList()
+    public async Task Activate_StaffMemberTakenOffTheList_PutsThemBackOnTheList()
     {
         using (HttpResponseMessage takenOff = await context.Client.PostAsync(
-            $"/api/admin/server-people/{context.World.ServerPersonId}/deactivate",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
             content: null))
         {
             Assert.That(takenOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/server-people/{context.World.ServerPersonId}/activate",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/activate",
             content: null);
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        ServerPerson person = await database.ServerPeople.FirstAsync(
-            candidate => candidate.Id == context.World.ServerPersonId);
+        StaffMember staffMember = await database.StaffMembers.FirstAsync(
+            candidate => candidate.Id == context.World.StaffMemberId);
 
-        Assert.That(person.IsActive, Is.True);
+        Assert.That(staffMember.IsActive, Is.True);
     }
 
     [Test]
@@ -427,7 +427,7 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task PostAdminResolve_UnknownTicketOfAnotherPerson_IsStillAllowedFromTheLaptop()
+    public async Task PostAdminResolve_UnknownTicketOfAnotherStaffMember_IsStillAllowedFromTheLaptop()
     {
         Guid orderId;
         Guid ticketId;

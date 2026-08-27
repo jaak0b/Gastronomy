@@ -116,7 +116,7 @@ public sealed class OrderAcceptanceTransactionTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = clientOrderId,
-            ServerPersonId = seeded.ServerPersonId,
+            StaffMemberId = seeded.StaffMemberId,
             DeviceId = seeded.DeviceId,
             TableLabel = "Tisch 12",
             Note = null,

@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public sealed class ServerPerson
+public sealed class StaffMember
 {
     public required Guid Id { get; set; }
     public required string Name { get; set; }

@@ -8,7 +8,8 @@ build tool.
 Conventions used in this document:
 
 * "Server" always means the person carrying orders and trays, never the machine. The machine is called
-  "the backend" or "the laptop".
+  "the backend" or "the laptop". In the code that person is `StaffMember`, and the app calls them
+  "Kellner" in German and "waiter" in English.
 * Money is stored and calculated in integer cents. No decimal type appears anywhere.
 * Times are stored in UTC and rendered in the laptop's local time zone.
 * Every user-facing string in this document is given in German and English. Names the admin types in
@@ -126,9 +127,9 @@ erDiagram
     CatalogItem ||--|{ ItemLocationAssignment : "is produced at"
     CatalogItem ||--o{ OrderLine : "appears as"
 
-    ServerPerson ||--o{ Device : uses
-    ServerPerson ||--o{ Order : placed
-    ServerPerson |o--o{ EnrolmentInvitation : "is invited by"
+    StaffMember ||--o{ Device : uses
+    StaffMember ||--o{ Order : placed
+    StaffMember |o--o{ EnrolmentInvitation : "is invited by"
 
     EnrolmentInvitation |o--o| Device : "was redeemed by"
     Device ||--o{ Order : submitted
@@ -174,7 +175,7 @@ erDiagram
         string Label
         int SortOrder
     }
-    ServerPerson {
+    StaffMember {
         Guid Id PK
         string Name
         bool IsActive
@@ -182,7 +183,7 @@ erDiagram
     }
     Device {
         Guid Id PK
-        Guid ServerPersonId FK
+        Guid StaffMemberId FK
         string Language
         byte_array TokenHash
         byte_array TokenSalt
@@ -196,7 +197,7 @@ erDiagram
     }
     EnrolmentInvitation {
         Guid Id PK
-        Guid ServerPersonId FK "nullable"
+        Guid StaffMemberId FK "nullable"
         byte_array QrCodeHash
         byte_array QrCodeSalt
         byte_array SixDigitHash
@@ -214,7 +215,7 @@ erDiagram
         Guid EventSessionId FK
         Guid ClientOrderId "unique, from the phone"
         int GlobalOrderNumber
-        Guid ServerPersonId FK
+        Guid StaffMemberId FK
         Guid DeviceId FK
         string TableLabel
         string Note "nullable"
@@ -492,7 +493,7 @@ After the first evening the department has a real list for free: the admin scree
 distinct label that servers actually typed during the last session, so the second festival starts with
 suggestions that match how this crew names its tables.
 
-### 2.8 ServerPerson, Device, EnrolmentInvitation
+### 2.8 StaffMember, Device, EnrolmentInvitation
 
 There are no usernames and no passwords anywhere in the product.
 
@@ -502,7 +503,7 @@ in the browser that opens, and their name is in the admin's list a moment later.
 twenty people, so working through them one by one costs a few minutes of one evening's preparation, and
 the owner chose that over anything that sets up a group at once.
 
-**ServerPerson** is a name to print on the slip, the owner of the evening's orders, and the row in the
+**StaffMember** is a name to print on the slip, the owner of the evening's orders, and the row in the
 admin list.
 
 | Field | Type | Notes |
@@ -512,7 +513,7 @@ admin list.
 | IsActive | bool | |
 | CreatedAtUtc | DateTime | |
 
-An order belongs to a `ServerPerson`, not to a phone. That is what makes a flat battery, a revoked
+An order belongs to a `StaffMember`, not to a phone. That is what makes a flat battery, a revoked
 phone, or a re-enrolment survivable: the evening's history follows the human, and the questions in
 section 3.4 stay answerable by the person who can walk to the station.
 
@@ -528,7 +529,7 @@ name, because a slip is rendered when it is printed and no name is copied onto t
 | Field | Type | Notes |
 |---|---|---|
 | Id | Guid | |
-| ServerPersonId | Guid | Whose phone this is. Set when the invitation is redeemed and never changed afterwards. |
+| StaffMemberId | Guid | Whose phone this is. Set when the invitation is redeemed and never changed afterwards. |
 | Language | string(2) | `de` or `en`. Every message the backend sends to this phone is rendered by the phone in this language. **Set at enrolment to German, unless the redeeming browser's `Accept-Language` asks for English first, in which case English.** The enrolment screen asks for a name and nothing else (section 8.3), so the header is the only signal available at that moment, and one tap in the settings sheet (section 8.5) changes it afterwards. This is the same rule and the same reasoning as the break-glass page's opening language in section 8.10, and it does not contradict section 5.1: a stored language always beats the header, and at enrolment there is no stored language yet. |
 | TokenLookupId | string(32) | Non-secret random id, sent with every request so the backend can find the one row to verify against |
 | TokenHash, TokenSalt, TokenIterations, TokenAlgorithm | | PBKDF2-HMAC-SHA512, per-token random salt, iteration count and algorithm name stored alongside the hash so both can be raised later without invalidating existing devices |
@@ -543,7 +544,7 @@ a colleague's handset for the rest of the evening. A phone is handed to the next
 taking it sets it up under their own name. Without the rule the lost phone keeps working all evening,
 and no amount of admin diligence at 22:00 makes up for that.
 
-A device carries no name of its own. There is one name for a server, it lives on `ServerPerson`, and
+A device carries no name of its own. There is one name for a server, it lives on `StaffMember`, and
 the slip, the phone's settings sheet and the admin list all read it from there.
 
 **EnrolmentInvitation** is the single-use, short-lived credential behind one QR code.
@@ -551,7 +552,7 @@ the slip, the phone's settings sheet and the admin list all read it from there.
 | Field | Type | Notes |
 |---|---|---|
 | Id | Guid | |
-| ServerPersonId | Guid? | Null for somebody new, who types their own name. Set when the admin issues a fresh code to somebody already in the list. |
+| StaffMemberId | Guid? | Null for somebody new, who types their own name. Set when the admin issues a fresh code to somebody already in the list. |
 | QrCodeHash, QrCodeSalt | | The long random value carried in the QR URL |
 | SixDigitHash, SixDigitSalt | | The typed fallback for a camera that does not work |
 | CodeIterations, CodeAlgorithm | | The same PBKDF2-HMAC-SHA512 scheme as device tokens, for both secrets |
@@ -570,7 +571,7 @@ Invariants:
   code remembering to.** A partial unique index over the outstanding condition (`ConsumedAtUtc` is
   null and `ExpiresAtUtc` is in the future) permits one such row and rejects a second. Creating an
   invitation consumes whichever one was outstanding **in the same transaction that inserts the new
-  one**, so two admin tabs clicking "Neue Bedienung" within a second produce one outstanding invitation
+  one**, so two admin tabs clicking "Neuer Kellner" within a second produce one outstanding invitation
   and one loser, not two. Without both halves the invariant is an assertion rather than a fact, and the
   redeem path depends on it: verification checks a single row rather than searching a set, which is why
   a hashed short code needs no plaintext lookup index. Two outstanding rows would leave a six digit code
@@ -624,7 +625,7 @@ dissolved rather than fixed. The mechanism it described a defect in no longer ex
 | EventSessionId | Guid | The active session at acceptance |
 | ClientOrderId | Guid | Generated on the phone, unique index. This is the idempotency key. |
 | GlobalOrderNumber | int | Allocated at acceptance, unique within the session |
-| ServerPersonId | Guid | Who placed it. This is what the order list is scoped by. |
+| StaffMemberId | Guid | Who placed it. This is what the order list is scoped by. |
 | DeviceId | Guid | Which phone submitted it, for the admin's diagnosis only |
 | TableLabel | string(40) | |
 | Note | string(200)? | An order level note, printed on every station's slip |
@@ -1361,7 +1362,7 @@ Response 200:
 {
   "deviceId": "9a71...",
   "deviceToken": "K7f3...secret",
-  "serverPerson": { "id": "c2f1...", "name": "Anna" },
+  "staffMember": { "id": "c2f1...", "name": "Anna" },
   "language": "de"
 }
 ```
@@ -1369,7 +1370,7 @@ Response 200:
 `deviceToken` is returned exactly once and never again.
 
 **One redemption does one of two things, decided by the invitation and not by the phone.** An
-invitation the admin issued to somebody already in the list carries a `ServerPersonId`: the typed name
+invitation the admin issued to somebody already in the list carries a `StaffMemberId`: the typed name
 is written to that person, who keeps their id, their orders and their open questions, and the new
 device is theirs. An invitation issued for somebody new carries none, and the typed name creates the
 person. Either way the device row and the consumption of the invitation commit in one transaction.
@@ -1394,7 +1395,7 @@ Device auth. Returns who this device is.
 ```json
 {
   "deviceId": "9a71...",
-  "serverPerson": { "id": "c2f1...", "name": "Anna" },
+  "staffMember": { "id": "c2f1...", "name": "Anna" },
   "eventSession": { "id": "...", "name": "Samstagabend", "isPractice": false },
   "language": "de"
 }
@@ -1573,7 +1574,7 @@ endpoint**, and section 3.1 states the same rule from the order's side.
 
 Device auth. Query `?since=<iso>` optional, `?limit=` default 50.
 
-**Scoped by `ServerPersonId` and the active event session, not by device id.** A server whose phone was
+**Scoped by `StaffMemberId` and the active event session, not by device id.** A server whose phone was
 revoked and set up again is the same person and sees the same evening. Scoping this by device would
 mean that the obvious volunteer response to a misbehaving phone, setting it up again, silently orphans
 every order that person placed and every unanswered question on them.
@@ -1609,11 +1610,11 @@ list outright, so the phone never has to reason about what it might have missed.
 #### GET /api/orders/{orderId}
 
 Device auth. Full order with lines, each line naming the station it went to. 404 unless the order
-belongs to the caller's `ServerPersonId`, or the caller is admin from the laptop.
+belongs to the caller's `StaffMemberId`, or the caller is admin from the laptop.
 
 #### POST /api/orders/{orderId}/tickets/{ticketId}/resolve
 
-Device auth, and only for the `ServerPersonId` that placed the order. Answers an `Unknown` outcome.
+Device auth, and only for the `StaffMemberId` that placed the order. Answers an `Unknown` outcome.
 
 Request `{ "slipIsOnThePile": true }` or `{ "slipIsOnThePile": false }`.
 
@@ -1705,10 +1706,10 @@ devices to keep beside it.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/server-people | | 200, one row per person with the state of their phone, when it was last seen, its user agent, and whether an invitation for them is outstanding |
-| PUT | /api/admin/server-people/{id} | `{name}` | 200. The rename, allowed at any time including during a live event. The person keeps their orders and their open questions, and the next slip carries the new name. |
-| POST | /api/admin/server-people/{id}/revoke-device | | 200, pushes `DeviceRevoked` to that phone. 409 when the person has no phone set up. |
-| POST | /api/admin/server-people/{id}/deactivate | | 200, revoking their phone in the same transaction. Their orders stay where they are. |
+| GET | /api/admin/staff-members | | 200, one row per person with the state of their phone, when it was last seen, its user agent, and whether an invitation for them is outstanding |
+| PUT | /api/admin/staff-members/{id} | `{name}` | 200. The rename, allowed at any time including during a live event. The person keeps their orders and their open questions, and the next slip carries the new name. |
+| POST | /api/admin/staff-members/{id}/revoke-device | | 200, pushes `DeviceRevoked` to that phone. 409 when the person has no phone set up. |
+| POST | /api/admin/staff-members/{id}/deactivate | | 200, revoking their phone in the same transaction. Their orders stay where they are. |
 
 **No endpoint creates a person, and no endpoint moves a phone to somebody else.** A person exists
 because a redemption named them (section 5.2), so the admin never types a name that a server is about
@@ -1719,7 +1720,7 @@ the invitation endpoint below is how that is started.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| POST | /api/admin/enrolment/invitations | `{}` for somebody new, or `{serverPersonId}` for somebody already in the list | 201 `{invitationId, qrUrl, sixDigitCode, expiresAtUtc, serverPerson}`. Consumes any invitation still outstanding. With a `serverPersonId` it also revokes that person's phone in the same transaction and pushes `DeviceRevoked` to it. 404 when that person does not exist. |
+| POST | /api/admin/enrolment/invitations | `{}` for somebody new, or `{staffMemberId}` for somebody already in the list | 201 `{invitationId, qrUrl, sixDigitCode, expiresAtUtc, staffMember}`. Consumes any invitation still outstanding. With a `staffMemberId` it also revokes that person's phone in the same transaction and pushes `DeviceRevoked` to it. 404 when that person does not exist. |
 
 That is the whole enrolment API, and the revoke inside it is the point of the call rather than a side
 effect of it. The usual reason to issue somebody a second QR code is that their first phone has to stop
@@ -1855,7 +1856,7 @@ because the audience opens them in German Excel, where a comma delimited file la
 UTF-8 file without a mark shows broken umlauts.
 
 The export has one row per order line and the header
-`Bestellnummer;Zeit;Tisch;Bedienung;Artikel;Menge;Einzelpreis;Summe;Station;Bonnummer;Status`. Prices
+`Bestellnummer;Zeit;Tisch;Kellner;Artikel;Menge;Einzelpreis;Summe;Station;Bonnummer;Status`. Prices
 are written with a comma as the decimal separator and no thousands separator. Practice sessions are
 excluded.
 
@@ -1988,7 +1989,7 @@ connects with its access key instead. The admin connects from the laptop.
 
 | Group | Members |
 |---|---|
-| `person:{serverPersonId}` | Every unrevoked phone belonging to that person. Order and ticket events go here, so a re-enrolled phone keeps receiving the answers to its own questions. |
+| `staffMember:{staffMemberId}` | Every unrevoked phone belonging to that person. Order and ticket events go here, so a re-enrolled phone keeps receiving the answers to its own questions. |
 | `device:{deviceId}` | One phone. Used only for revocation. |
 | `devices` | All enrolled, unrevoked phones |
 | `admin` | The laptop's admin UI |
@@ -2016,7 +2017,7 @@ the group grants nothing the endpoint did not.
 | `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | `devices`, `admin`, `stations` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. `waitingTicketCount` is appended to that banner with `header.stationWaiting`. The admin printer screen updates its indicator. The station page re-evaluates which rows offer the acknowledge button. |
 | `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap. Tapping it fills in the host and port **and sets `TransportKind` to `Network`**, so the station leaves the test printer in the one action. Filling in an address without changing the kind would leave the station on the mock with a printer address on its row, which is exactly the station nobody notices until a guest asks. |
 | `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out stays in the picker, greyed and not selectable, and any quantity already in the basket for it is flagged rather than silently dropped. A changed price is picked up the same way, which is what keeps an open basket showing the backend's current prices. |
-| `EnrolmentCompleted` | `{serverPersonId, serverPersonName, deviceId}` | `admin` | The QR code is replaced by the person's name and the list gains their row, so the admin sees that somebody across the room finished without walking over to look at their phone. |
+| `EnrolmentCompleted` | `{staffMemberId, staffMemberName, deviceId}` | `admin` | The QR code is replaced by the person's name and the list gains their row, so the admin sees that somebody across the room finished without walking over to look at their phone. |
 | `DeviceRevoked` | `{deviceId}` | `device:{deviceId}`, `admin` | The phone clears its token and shows the enrolment screen with an explanation. **The half-built order on screen is kept**, and comes back when the phone is set up again. |
 | `EventSessionStarted` | `{eventSessionId, name, isPractice}` | `devices`, `admin`, all stations | Phones clear their local order list, because those orders belong to the previous session, and show a one line notice. A half-built order is untouched. |
 
@@ -2484,7 +2485,7 @@ BON 042
 ================================================
 Bestellung 137
 Tisch 12
-Bedienung: Anna
+Kellner: Anna
 26.08.2026, 19:42 Uhr
 ------------------------------------------------
 2 x Bratwurst mit Brot
@@ -2508,7 +2509,7 @@ SLIP 042
 ================================================
 Order 137
 Table 12
-Server: Anna
+Waiter: Anna
 26/08/2026, 19:42
 ------------------------------------------------
 2 x Sausage with bread
@@ -3100,7 +3101,7 @@ running, so there is nothing left for the overview to warn about and the key is 
 | `admin.locations.title` | Stationen | Stations |
 | `admin.locations.help` | Eine Station ist eine Küche oder eine Theke mit einem eigenen Drucker. | A station is a kitchen or a bar with its own printer. |
 | `admin.locations.slipLanguage` | Sprache der Bons | Language of the slips |
-| `admin.locations.slipLanguageHelp` | Wählen Sie die Sprache, in der die Bons an dieser Station gedruckt werden. Das ist die Sprache der Leute, die dort arbeiten, nicht die der Bedienung. | Choose the language the slips are printed in at this station. This is the language of the people working there, not the language of the server. |
+| `admin.locations.slipLanguageHelp` | Wählen Sie die Sprache, in der die Bons an dieser Station gedruckt werden. Das ist die Sprache der Leute, die dort arbeiten, nicht die des Kellners. | Choose the language the slips are printed in at this station. This is the language of the people working there, not the language of the waiter. |
 | `admin.locations.openTickets` | Diese Station hat noch {count} offene Bons und kann jetzt nicht abgeschaltet werden. | This station still has {count} open slips and cannot be switched off right now. |
 | `admin.locations.lastForItems` | Ordnen Sie {names} zuerst eine andere Station zu. Diese Station ist für diese Artikel die einzige. | Give {names} a different station first. This station is the only one for those items. |
 | `admin.locations.stationCard` | Stationskarte drucken | Print the station card |
@@ -3121,11 +3122,11 @@ running, so there is nothing left for the overview to warn about and the key is 
 | `admin.items.category` | Kategorie | Category |
 | `admin.items.price` | Preis in Cent | Price in cents |
 | `admin.assignment.title` | Zuordnung | Assignment |
-| `admin.assignment.help` | Kreuzen Sie an, wo ein Artikel zubereitet werden kann. Bei einer Station läuft es von selbst, bei mehreren wählt die Bedienung beim Aufnehmen aus. | Tick where an item can be prepared. With one station it happens by itself, with several the server chooses while taking the order. |
+| `admin.assignment.help` | Kreuzen Sie an, wo ein Artikel zubereitet werden kann. Bei einer Station läuft es von selbst, bei mehreren wählt der Kellner beim Aufnehmen aus. | Tick where an item can be prepared. With one station it happens by itself, with several the waiter chooses while taking the order. |
 | `admin.assignment.preview` | Vorschau: {item} geht an {location}. | Preview: {item} goes to {location}. |
-| `admin.assignment.previewChoice` | Vorschau: Bei {item} wählt die Bedienung zwischen {locations}. | Preview: for {item} the server chooses between {locations}. |
+| `admin.assignment.previewChoice` | Vorschau: Bei {item} wählt der Kellner zwischen {locations}. | Preview: for {item} the waiter chooses between {locations}. |
 | `admin.tables.title` | Tische | Tables |
-| `admin.tables.help` | Diese Namen erscheinen als Vorschläge auf dem Telefon. Die Bedienung kann jederzeit einen anderen Tisch eintippen. | These names appear as suggestions on the phone. A server can always type a different table. |
+| `admin.tables.help` | Diese Namen erscheinen als Vorschläge auf dem Telefon. Der Kellner kann jederzeit einen anderen Tisch eintippen. | These names appear as suggestions on the phone. A waiter can always type a different table. |
 | `admin.tables.fromLastSession` | Tischnamen der letzten Veranstaltung übernehmen | Add the table names from the last event |
 
 **Sold out is a toggle in the item list, and that is a design requirement rather than a layout note.**
@@ -3199,36 +3200,36 @@ does to a row: create a QR code, remove the phone, change the name.
 
 | Key | Deutsch | English |
 |---|---|---|
-| `admin.people.title` | Bedienungen | Servers |
-| `admin.people.help` | Richten Sie die Telefone nacheinander ein. Eine Bedienung hat genau ein Telefon. | Set the phones up one after another. A server has exactly one phone. |
-| `admin.people.new` | Neue Bedienung | New server |
-| `admin.people.empty` | Hier steht noch niemand. Tippen Sie auf "Neue Bedienung" und lassen Sie die erste Bedienung den QR-Code scannen. | Nobody is in this list yet. Tap "New server" and let the first server scan the QR code. |
-| `admin.people.noPhone` | Kein Telefon eingerichtet | No phone set up |
-| `admin.people.lastSeen` | Zuletzt gesehen: {time} | Last seen at {time} |
-| `admin.people.newCode` | Neuen QR-Code erstellen | Create a new QR code |
-| `admin.people.newCodeEffect` | Das bisherige Telefon von {name} kann danach keine Bestellungen mehr senden. Mit dem neuen QR-Code richtet {name} ein Telefon ein, auch ein geliehenes. | The phone {name} has been using can no longer send orders afterwards. With the new QR code {name} sets up a phone, a borrowed one as well. |
-| `admin.people.rename` | Namen ändern | Change the name |
-| `admin.people.renameHelp` | Ändern Sie den Namen, wenn eine Bedienung sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf. | Change the name when a server mistyped it. From the next slip onwards the new name is on it. |
-| `admin.people.revoke` | Einrichtung entfernen | Remove this phone |
-| `admin.people.revokeConfirm` | Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert. | The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved. |
-| `admin.people.revoked` | Einrichtung entfernt | Removed |
-| `admin.people.deactivate` | Bedienung aus der Liste nehmen | Take this server off the list |
-| `admin.people.deactivateHelp` | Nehmen Sie einen Namen aus der Liste, wenn er dort doppelt steht. Die Bestellungen bleiben gespeichert. | Take a name off the list when it ended up there twice. The orders stay saved. |
+| `admin.staff.title` | Kellner | Waiters |
+| `admin.staff.help` | Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon. | Set the phones up one after another. A waiter has exactly one phone. |
+| `admin.staff.new` | Neuer Kellner | New waiter |
+| `admin.staff.empty` | Hier steht noch niemand. Tippen Sie auf "Neuer Kellner" und lassen Sie den ersten Kellner den QR-Code scannen. | Nobody is in this list yet. Tap "New waiter" and let the first waiter scan the QR code. |
+| `admin.staff.noPhone` | Kein Telefon eingerichtet | No phone set up |
+| `admin.staff.lastSeen` | Zuletzt gesehen: {time} | Last seen at {time} |
+| `admin.staff.newCode` | Neuen QR-Code erstellen | Create a new QR code |
+| `admin.staff.newCodeEffect` | Das bisherige Telefon von {name} kann danach keine Bestellungen mehr senden. Mit dem neuen QR-Code richtet {name} ein Telefon ein, auch ein geliehenes. | The phone {name} has been using can no longer send orders afterwards. With the new QR code {name} sets up a phone, a borrowed one as well. |
+| `admin.staff.rename` | Namen ändern | Change the name |
+| `admin.staff.renameHelp` | Ändern Sie den Namen, wenn ein Kellner sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf. | Change the name when a waiter mistyped it. From the next slip onwards the new name is on it. |
+| `admin.staff.revoke` | Einrichtung entfernen | Remove this phone |
+| `admin.staff.revokeConfirm` | Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert. | The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved. |
+| `admin.staff.revoked` | Einrichtung entfernt | Removed |
+| `admin.staff.deactivate` | Kellner aus der Liste nehmen | Take this waiter off the list |
+| `admin.staff.deactivateHelp` | Nehmen Sie einen Namen aus der Liste, wenn er dort doppelt steht. Die Bestellungen bleiben gespeichert. | Take a name off the list when it ended up there twice. The orders stay saved. |
 
-**`admin.people.newCodeEffect` sits under the button and only on a row that already has a phone**,
+**`admin.staff.newCodeEffect` sits under the button and only on a row that already has a phone**,
 because it is the sentence that says what the click destroys. On a row with no phone the button carries
 no warning, since there is nothing there to lose, and section 8.1's rule about checking rather than
 writing a sentence is what settles that.
 
-**The QR code opens over that list**, from "Neue Bedienung" for somebody new and from a row's "Neuen
+**The QR code opens over that list**, from "Neuer Kellner" for somebody new and from a row's "Neuen
 QR-Code erstellen" for somebody already in it. Both show the same panel, and the difference is invisible
 to the person with the phone.
 
 | Key | Deutsch | English |
 |---|---|---|
 | `admin.enrol.title` | Telefon einrichten | Set up a phone |
-| `admin.enrol.step1` | Die Bedienung scannt diesen QR-Code mit der Kamera ihres Telefons. | The server scans this QR code with the camera on their phone. |
-| `admin.enrol.step2` | Die Bedienung gibt im Browser ihren Namen ein. | The server enters their name in the browser. |
+| `admin.enrol.step1` | Der Kellner scannt diesen QR-Code mit der Kamera seines Telefons. | The waiter scans this QR code with the camera on their phone. |
+| `admin.enrol.step2` | Der Kellner gibt im Browser seinen Namen ein. | The waiter enters their name in the browser. |
 | `admin.enrol.step3` | Der Name steht danach in der Liste. | The name is in the list afterwards. |
 | `admin.enrol.validity` | Der QR-Code gilt fünf Minuten und für ein Telefon. | The QR code is valid for five minutes and for one phone. |
 | `admin.enrol.cameraTitle` | Wenn die Kamera nicht funktioniert | If the camera does not work |
@@ -3555,7 +3556,7 @@ there. Throwing away a half-built order because an admin tapped the wrong row wo
 guest's order to solve an administrative problem.
 
 **The device is revoked and set up again.** The same person's orders are still on the order list,
-because the list is scoped by `ServerPersonId` and not by the phone. Every unanswered slip question the
+because the list is scoped by `StaffMemberId` and not by the phone. Every unanswered slip question the
 person has is still answerable, on whichever handset they are now carrying. This holds because the QR
 code the admin issued names the person, so the redemption reuses their row rather than creating one
 (sections 2.8 and 5.2).
@@ -4063,7 +4064,7 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 3. Legen Sie die Stationen an, zum Beispiel Küche und Theke.
 4. Tragen Sie die Artikel mit ihren Preisen ein.
 5. Kreuzen Sie bei jedem Artikel an, welche Stationen ihn zubereiten können. Essen bekommt meist nur
-   die Küche. Bier bekommt an einem Platz mit zwei Theken beide, und die Bedienung wählt dann beim
+   die Küche. Bier bekommt an einem Platz mit zwei Theken beide, und der Kellner wählt dann beim
    Aufnehmen aus.
 6. Starten Sie eine Übung und geben Sie ein paar Übungsbestellungen vom eigenen Telefon auf, während
    alle Stationen noch auf dem Testdrucker stehen. Übungsbestellungen stehen später nicht in der
@@ -4104,8 +4105,8 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 15. Starten Sie die Veranstaltung. Die Bonnummern beginnen jetzt bei 1. Das Programm startet die
     Veranstaltung nicht, solange eine Station noch auf dem Testdrucker steht, und genau das fällt sonst
     niemandem auf.
-16. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Bedienungen, tippen Sie auf
-    "Neue Bedienung" und lassen Sie diese Bedienung den QR-Code mit der Kamera scannen und ihren Namen
+16. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Kellner, tippen Sie auf
+    "Neuer Kellner" und lassen Sie diesen Kellner den QR-Code mit der Kamera scannen und seinen Namen
     eingeben. Der Name erscheint danach in der Liste, und Sie machen mit der nächsten Person weiter.
     Wenn bei jemandem die Kamera nicht funktioniert, ruft diese Person die Adresse aus dem
     Programmfenster im Browser auf und gibt dort die sechs Ziffern neben dem QR-Code ein.

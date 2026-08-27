@@ -11,7 +11,7 @@ public sealed record SlipStrings(
     string SlipNumberPrefix,
     string OrderNumberPrefix,
     string TablePrefix,
-    string ServerPrefix,
+    string StaffMemberPrefix,
     string NotePrefix,
     string ItemsTotalPrefix,
     string AlsoGoesToPrefix,

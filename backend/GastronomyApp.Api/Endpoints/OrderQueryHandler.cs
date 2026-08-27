@@ -19,11 +19,11 @@ public sealed class OrderQueryHandler
         this.orderReader = orderReader;
     }
 
-    public async Task<IResult> ListForPersonAsync(Guid serverPersonId, CancellationToken cancellationToken)
+    public async Task<IResult> ListForStaffMemberAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
         List<Order> orders = await dbContext.Orders
             .AsNoTracking()
-            .Where(order => order.ServerPersonId == serverPersonId)
+            .Where(order => order.StaffMemberId == staffMemberId)
             .OrderByDescending(order => order.CreatedAtUtc)
             .Take(DefaultLimit)
             .ToListAsync(cancellationToken);
@@ -39,11 +39,11 @@ public sealed class OrderQueryHandler
         return Results.Ok(new OrderListView(entries));
     }
 
-    public async Task<IResult> DetailAsync(Guid orderId, Guid serverPersonId, CancellationToken cancellationToken)
+    public async Task<IResult> DetailAsync(Guid orderId, Guid staffMemberId, CancellationToken cancellationToken)
     {
         LoadedOrder? loaded = await orderReader.LoadAsync(dbContext, orderId, cancellationToken);
 
-        if (loaded is null || loaded.Order.ServerPersonId != serverPersonId)
+        if (loaded is null || loaded.Order.StaffMemberId != staffMemberId)
         {
             return Results.NotFound();
         }

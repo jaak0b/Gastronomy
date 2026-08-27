@@ -4,8 +4,8 @@ import { listFrom, request } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 import { useConnectionStore } from '../connection'
 
-export interface AdminPerson {
-  serverPersonId: string
+export interface AdminStaffMember {
+  staffMemberId: string
   name: string
   isActive: boolean
   hasDevice: boolean
@@ -19,11 +19,11 @@ export interface Invitation {
   qrUrl: string
   sixDigitCode: string
   expiresAtUtc: string
-  serverPerson: { id: string; name: string } | null
+  staffMember: { id: string; name: string } | null
 }
 
-export const useAdminPeopleStore = defineStore('adminPeople', () => {
-  const people = ref<AdminPerson[]>([])
+export const useAdminStaffStore = defineStore('adminStaff', () => {
+  const staffMembers = ref<AdminStaffMember[]>([])
   const loadFailed = ref(false)
   const invitation = ref<Invitation | null>(null)
   const errorMessage = ref<AdminErrorMessage | null>(null)
@@ -31,30 +31,30 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
 
   async function load(): Promise<void> {
     loadFailed.value = false
-    const result = await request<unknown>('/api/admin/server-people')
+    const result = await request<unknown>('/api/admin/staff-members')
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminPerson>(result.data, 'people')
+    const rows = listFrom<AdminStaffMember>(result.data, 'staffMembers')
     if (rows === null) {
       loadFailed.value = true
       return
     }
-    people.value = rows
+    staffMembers.value = rows
   }
 
   async function rename(id: string, name: string): Promise<boolean> {
-    return await commit(`/api/admin/server-people/${id}`, 'PUT', { name })
+    return await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })
   }
 
   async function revokeDevice(id: string): Promise<boolean> {
-    return await commit(`/api/admin/server-people/${id}/revoke-device`, 'POST', undefined)
+    return await commit(`/api/admin/staff-members/${id}/revoke-device`, 'POST', undefined)
   }
 
   async function setActive(id: string, isActive: boolean): Promise<boolean> {
     const action = isActive ? 'activate' : 'deactivate'
-    return await commit(`/api/admin/server-people/${id}/${action}`, 'POST', undefined)
+    return await commit(`/api/admin/staff-members/${id}/${action}`, 'POST', undefined)
   }
 
   async function commit(path: string, method: 'POST' | 'PUT', body: unknown): Promise<boolean> {
@@ -68,12 +68,12 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
     return true
   }
 
-  async function createInvitation(serverPersonId?: string): Promise<void> {
+  async function createInvitation(staffMemberId?: string): Promise<void> {
     enrolledName.value = null
     errorMessage.value = null
     const result = await request<Invitation>('/api/admin/enrolment/invitations', {
       method: 'POST',
-      body: serverPersonId === undefined ? {} : { serverPersonId },
+      body: staffMemberId === undefined ? {} : { staffMemberId },
     })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
@@ -89,15 +89,15 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
   function listen(): void {
     const connection = useConnectionStore()
     connection.registerRefetch(load)
-    connection.onEvent<{ serverPersonName: string }>('EnrolmentCompleted', (payload) => {
-      enrolledName.value = payload.serverPersonName
+    connection.onEvent<{ staffMemberName: string }>('EnrolmentCompleted', (payload) => {
+      enrolledName.value = payload.staffMemberName
       invitation.value = null
       void load()
     })
   }
 
   return {
-    people,
+    staffMembers,
     loadFailed,
     errorMessage,
     invitation,

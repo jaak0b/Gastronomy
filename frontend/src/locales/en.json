@@ -196,7 +196,7 @@
     },
     "tables": {
       "title": "Tables",
-      "help": "These names appear as suggestions on the phone. A server can always type a different table.",
+      "help": "These names appear as suggestions on the phone. A waiter can always type a different table.",
       "fromLastSession": "Add the table names from the last event"
     },
     "printers": {
@@ -239,29 +239,29 @@
       },
       "empty": "Create a station first. Every station has one printer."
     },
-    "people": {
-      "title": "Servers",
-      "help": "Set the phones up one after another. A server has exactly one phone.",
-      "new": "New server",
-      "empty": "Nobody is in this list yet. Tap \"New server\" and let the first server scan the QR code.",
+    "staff": {
+      "title": "Waiters",
+      "help": "Set the phones up one after another. A waiter has exactly one phone.",
+      "new": "New waiter",
+      "empty": "Nobody is in this list yet. Tap \"New waiter\" and let the first waiter scan the QR code.",
       "noPhone": "No phone set up",
       "lastSeen": "Last seen at {time}",
       "newCode": "Create a new QR code",
       "newCodeEffect": "The phone {name} has been using can no longer send orders afterwards. With the new QR code {name} sets up a phone, a borrowed one as well.",
       "rename": "Change the name",
-      "renameHelp": "Change the name when a server mistyped it. From the next slip onwards the new name is on it.",
+      "renameHelp": "Change the name when a waiter mistyped it. From the next slip onwards the new name is on it.",
       "revoke": "Remove this phone",
       "revokeConfirm": "The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved.",
       "revoked": "Removed",
-      "activate": "Put the server back on the list",
-      "deactivateTitle": "Take this server off the list?",
-      "deactivateBody": "The name disappears from the list and the enrolled phone is signed out. The orders placed so far stay saved. You can put the server back on the list later.",
-      "deactivateConfirm": "Take the server off"
+      "activate": "Put the waiter back on the list",
+      "deactivateTitle": "Take this waiter off the list?",
+      "deactivateBody": "The name disappears from the list and the enrolled phone is signed out. The orders placed so far stay saved. You can put the waiter back on the list later.",
+      "deactivateConfirm": "Take the waiter off"
     },
     "enrol": {
       "title": "Set up a phone",
-      "step1": "The server scans this QR code with the camera on their phone.",
-      "step2": "The server enters their name in the browser.",
+      "step1": "The waiter scans this QR code with the camera on their phone.",
+      "step2": "The waiter enters their name in the browser.",
       "step3": "The name is in the list afterwards.",
       "validity": "The QR code is valid for five minutes and for one phone.",
       "cameraTitle": "If the camera does not work",
@@ -355,7 +355,7 @@
   },
   "welcome": {
     "title": "This phone is not set up yet.",
-    "body": "Ask the person at the laptop to add you as a server. They tap \"New server\" there and show you the QR code, which you scan with your camera.",
+    "body": "Ask the person at the laptop to add you as a waiter. They tap \"New waiter\" there and show you the QR code, which you scan with your camera.",
     "enterCode": "Enter the six digit code"
   },
   "language": {
