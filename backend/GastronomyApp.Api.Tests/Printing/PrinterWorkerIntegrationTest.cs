@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Options;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
@@ -124,6 +125,7 @@ public class PrinterWorkerIntegrationTest
                 new PrintJobStateMachine(),
                 new PrinterEndpointKeyBuilder()),
             timeProvider,
+            new AppLanguage(),
             NullLogger<PrinterWorker>.Instance);
     }
 

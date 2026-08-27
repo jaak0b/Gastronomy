@@ -8,3 +8,5 @@ public sealed record SessionView(
     string Language);
 
 public sealed record LanguageChangeRequest(string? Language);
+
+public sealed record LanguageView(string Language);

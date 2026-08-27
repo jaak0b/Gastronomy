@@ -34,6 +34,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string qrContent = string.Empty;
     private int adminPort;
     private LanguageOption? selectedLanguage;
+    private readonly AppLanguage appLanguage = new();
     private string? noticeText;
     private string? errorMessageKey;
     private string? errorMessage;
@@ -61,6 +62,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         selectedLanguage = Languages.FirstOrDefault(language => language.Code == storedLanguage)
             ?? Languages.Single(language => language.Code == "en");
         text.UseLanguage(selectedLanguage.Code);
+        appLanguage.Current = selectedLanguage.Code;
         text.LanguageChanged += OnLanguageChanged;
 
         OpenAdminPagesCommand = new RelayCommand(() => AdminPagesRequested?.Invoke(AdminUrl));
@@ -99,6 +101,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             }
 
             text.UseLanguage(value.Code);
+            appLanguage.Current = value.Code;
             settingsStore.Save(settingsStore.Load() with { Language = value.Code });
         }
     }
@@ -235,6 +238,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             DataDirectory = settings.DataDirectory,
             Port = settings.Port,
             BindAddress = settings.BindAddress,
+            Language = appLanguage,
         };
 
         HostLaunchResult result = await launcher.StartAsync(options, cancellationToken);

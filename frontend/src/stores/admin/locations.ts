@@ -2,13 +2,11 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AppLanguage } from '../../core/apiTypes'
 
 export interface AdminLocation {
   locationId: string
   name: string
   sortOrder: number
-  slipLanguage: AppLanguage
   isActive: boolean
 }
 
@@ -33,7 +31,7 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
   }
 
   async function save(
-    location: Pick<AdminLocation, 'name' | 'sortOrder' | 'slipLanguage'> & { locationId?: string },
+    location: Pick<AdminLocation, 'name' | 'sortOrder'> & { locationId?: string },
   ): Promise<void> {
     const path =
       location.locationId === undefined
@@ -44,7 +42,6 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
       body: {
         name: location.name,
         sortOrder: location.sortOrder,
-        slipLanguage: location.slipLanguage,
       },
     })
     await load()

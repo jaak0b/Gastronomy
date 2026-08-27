@@ -9,7 +9,7 @@ import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
 const LOCATIONS: AdminLocation[] = [
-  { id: 'location-kueche', name: 'Küche', sortOrder: 1, slipLanguage: 'de', isActive: true },
+  { id: 'location-kueche', name: 'Küche', sortOrder: 1, isActive: true },
 ]
 
 const BRATWURST: AdminItem = {

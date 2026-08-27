@@ -10,15 +10,12 @@ import ItemsList from '../../components/admin/items/ItemsList.vue'
 import PrintersList from '../../components/admin/printers/PrintersList.vue'
 import PeopleList from '../../components/admin/people/PeopleList.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
-import LanguageSwitch from '../../components/LanguageSwitch.vue'
-import { useSessionStore } from '../../stores/session'
-import { bindLocaleToSession } from '../../localeBinding'
+import { bindLocaleToLaptop } from '../../appLanguageBinding'
 
 const { t } = useI18n()
-const session = useSessionStore()
 const isReachable = ref(true)
 
-bindLocaleToSession()
+bindLocaleToLaptop()
 
 const section = computed<AdminSection>(() => {
   const route = currentRoute.value
@@ -70,12 +67,6 @@ void request('/api/admin/locations').then((result) => {
           {{ titleFor(value) }}
         </v-tab>
       </v-tabs>
-      <v-spacer />
-      <LanguageSwitch
-        :language="session.language"
-        label-key="settings.language"
-        @select="session.setLanguage"
-      />
     </v-toolbar>
     <AdminOverview v-if="section === 'overview'" />
     <LocationsList v-else-if="section === 'locations'" />

@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Options;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
@@ -37,6 +38,8 @@ public sealed class PrinterWorker
     private int unansweredHeartbeats;
     private DateTimeOffset? reconnectNotBeforeUtc;
 
+    private readonly AppLanguage language;
+
     public PrinterWorker(
         PrinterEndpoint endpoint,
         IReadOnlyCollection<Guid> servedProductionLocationIds,
@@ -46,8 +49,10 @@ public sealed class PrinterWorker
         EscPosSlipRenderer renderer,
         PrinterWorkerDomainServices domainServices,
         TimeProvider timeProvider,
+        AppLanguage language,
         ILogger<PrinterWorker> logger)
     {
+        this.language = language;
         this.endpoint = endpoint;
         this.transport = transport;
         this.dataAccess = dataAccess;
@@ -359,7 +364,7 @@ public sealed class PrinterWorker
         TestPrintLoadResult testPrint = await dataAccess.LoadTestPrintAsync(productionLocationId, cancellationToken);
         RenderedSlip slip = renderer.RenderTestSlip(new TestSlipRenderRequest(
             testPrint.ProductionLocationName,
-            testPrint.SlipLanguage,
+            language.Current,
             timeProvider.GetUtcNow(),
             TimeZoneInfo.Local));
 
@@ -402,14 +407,14 @@ public sealed class PrinterWorker
         {
             return renderer.RenderTestSlip(new TestSlipRenderRequest(
                 ticket.ProductionLocationName,
-                ticket.SlipLanguage,
+                language.Current,
                 timeProvider.GetUtcNow(),
                 TimeZoneInfo.Local));
         }
 
         SlipRenderRequest request = new(
             ticket.ProductionLocationName,
-            ticket.SlipLanguage,
+            language.Current,
             ticket.LocationSequenceNumber,
             ticket.GlobalOrderNumber,
             ticket.TableLabel,

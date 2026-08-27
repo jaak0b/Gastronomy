@@ -96,7 +96,6 @@ public sealed class EnrolmentUrlBuilder
 
 public sealed class AdminLocationHandler
 {
-    private const string DefaultSlipLanguage = "de";
 
     private readonly GastronomyAppDbContext dbContext;
     private readonly PrinterFleet printerFleet;
@@ -140,7 +139,6 @@ public sealed class AdminLocationHandler
                 location.Id,
                 location.Name,
                 location.SortOrder,
-                location.SlipLanguage,
                 location.IsActive,
                 configuration?.TransportKind.ToString() ?? TransportKind.Mock.ToString(),
                 configuration?.Host,
@@ -171,7 +169,6 @@ public sealed class AdminLocationHandler
         {
             Id = locationId,
             Name = request.Name,
-            SlipLanguage = request.SlipLanguage ?? DefaultSlipLanguage,
             SortOrder = request.SortOrder,
             IsActive = true,
         });
@@ -222,7 +219,6 @@ public sealed class AdminLocationHandler
 
         location.Name = request.Name;
         location.SortOrder = request.SortOrder;
-        location.SlipLanguage = request.SlipLanguage ?? location.SlipLanguage;
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Ok(new SavedLocationView(location.Id));

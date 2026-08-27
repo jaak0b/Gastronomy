@@ -161,8 +161,6 @@
     "locations": {
       "title": "Stations",
       "help": "A station is a kitchen or a bar with its own printer.",
-      "slipLanguage": "Language of the slips",
-      "slipLanguageHelp": "Choose the language the slips are printed in at this station. This is the language of the people working there, not the language of the server.",
       "openTickets": "This station still has {count} open slip and cannot be switched off right now. | This station still has {count} open slips and cannot be switched off right now.",
       "lastForItems": "Give {names} a different station first. This station is the only one for those items.",
       "new": "New station",

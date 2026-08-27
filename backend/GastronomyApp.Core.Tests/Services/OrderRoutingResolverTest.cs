@@ -36,7 +36,6 @@ public sealed class OrderRoutingResolverTest
         {
             Id = id,
             Name = name,
-            SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,
         };

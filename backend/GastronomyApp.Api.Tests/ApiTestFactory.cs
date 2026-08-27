@@ -16,13 +16,20 @@ public sealed class ApiTestFactory : IAsyncDisposable
 {
     private readonly WebApplication application;
 
-    private ApiTestFactory(WebApplication application, string dataDirectory, Uri baseAddress)
+    private ApiTestFactory(
+        WebApplication application,
+        string dataDirectory,
+        Uri baseAddress,
+        AppLanguage language)
     {
         this.application = application;
         DataDirectory = dataDirectory;
         BaseAddress = baseAddress;
+        Language = language;
         Client = new HttpClient { BaseAddress = baseAddress };
     }
+
+    public AppLanguage Language { get; }
 
     public string DataDirectory { get; }
 
@@ -78,11 +85,13 @@ public sealed class ApiTestFactory : IAsyncDisposable
             string dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
             Directory.CreateDirectory(dataDirectory);
 
+            AppLanguage language = new();
             WebApplication application = new GastronomyAppApiApplication().Build(new ApiHostOptions
             {
                 DataDirectory = dataDirectory,
                 Port = 0,
                 BindAddress = "127.0.0.1",
+                Language = language,
             });
 
             await application.StartAsync();
@@ -91,7 +100,7 @@ public sealed class ApiTestFactory : IAsyncDisposable
                 application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
             Uri baseAddress = new(addresses.Addresses.First());
 
-            return new ApiTestFactory(application, dataDirectory, baseAddress);
+            return new ApiTestFactory(application, dataDirectory, baseAddress, language);
         }
     }
 }
@@ -150,7 +159,6 @@ public sealed class ApiSeeder
         {
             Id = locationId,
             Name = name,
-            SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,
         });

@@ -71,7 +71,6 @@ public sealed class PrintingSeeder
         {
             Id = locationId,
             Name = name,
-            SlipLanguage = "de",
             SortOrder = 1,
             IsActive = true,
         });

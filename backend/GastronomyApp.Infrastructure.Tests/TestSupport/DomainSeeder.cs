@@ -40,7 +40,6 @@ public sealed class DomainSeeder
         {
             Id = seeded.KitchenLocationId,
             Name = "Kueche",
-            SlipLanguage = "de",
             SortOrder = 1,
             IsActive = true,
         });
@@ -49,7 +48,6 @@ public sealed class DomainSeeder
         {
             Id = seeded.BarLocationId,
             Name = "Theke",
-            SlipLanguage = "de",
             SortOrder = 2,
             IsActive = true,
         });

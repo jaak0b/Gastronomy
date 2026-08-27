@@ -75,7 +75,6 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
             ReprintCount = ticket.ReprintCount,
             LocationSequenceNumber = ticket.LocationSequenceNumber,
             ProductionLocationName = location.Name,
-            SlipLanguage = location.SlipLanguage,
             GlobalOrderNumber = order.GlobalOrderNumber,
             TableLabel = order.TableLabel,
             ServerName = serverPerson?.Name ?? string.Empty,
@@ -577,7 +576,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         ProductionLocation location = await context.ProductionLocations.AsNoTracking()
             .SingleAsync(candidate => candidate.Id == productionLocationId, ct);
 
-        return new TestPrintLoadResult(location.Name, location.SlipLanguage);
+        return new TestPrintLoadResult(location.Name);
     }
 
     public async Task<Guid?> ResolveProductionLocationAsync(Guid locationTicketId, CancellationToken ct)

@@ -161,8 +161,6 @@
     "locations": {
       "title": "Stationen",
       "help": "Eine Station ist eine Küche oder eine Theke mit einem eigenen Drucker.",
-      "slipLanguage": "Sprache der Bons",
-      "slipLanguageHelp": "Wählen Sie die Sprache, in der die Bons an dieser Station gedruckt werden. Das ist die Sprache der Leute, die dort arbeiten, nicht die der Bedienung.",
       "openTickets": "Diese Station hat noch {count} offenen Bon und kann jetzt nicht abgeschaltet werden. | Diese Station hat noch {count} offene Bons und kann jetzt nicht abgeschaltet werden.",
       "lastForItems": "Ordnen Sie {names} zuerst eine andere Station zu. Diese Station ist für diese Artikel die einzige.",
       "new": "Neue Station",

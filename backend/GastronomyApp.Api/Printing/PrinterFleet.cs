@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Printing;
@@ -60,6 +61,8 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
     private readonly Dictionary<string, RunningWorker> workers = [];
     private readonly Lock guard = new();
 
+    private readonly AppLanguage language;
+
     public PrinterFleet(
         IPrinterConfigurationSource configurationSource,
         IPrinterTransportFactory transportFactory,
@@ -68,8 +71,10 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         EscPosSlipRenderer renderer,
         PrinterWorkerDomainServices domainServices,
         TimeProvider timeProvider,
+        AppLanguage language,
         ILoggerFactory loggerFactory)
     {
+        this.language = language;
         this.configurationSource = configurationSource;
         this.transportFactory = transportFactory;
         this.dataAccess = dataAccess;
@@ -259,6 +264,7 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
             renderer,
             domainServices,
             timeProvider,
+            language,
             loggerFactory.CreateLogger<PrinterWorker>());
 
         CancellationTokenSource lifetime = new();

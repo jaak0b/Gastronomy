@@ -4,7 +4,6 @@ public sealed record AdminLocationView(
     Guid LocationId,
     string Name,
     int SortOrder,
-    string SlipLanguage,
     bool IsActive,
     string TransportKind,
     string? Host,
@@ -21,7 +20,6 @@ public sealed record SaveLocationRequest
 {
     public required string? Name { get; init; }
     public required int SortOrder { get; init; }
-    public string? SlipLanguage { get; init; }
 }
 
 public sealed record SavedLocationView(Guid LocationId);

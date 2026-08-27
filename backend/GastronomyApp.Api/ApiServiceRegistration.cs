@@ -109,6 +109,7 @@ public sealed class ApiServiceRegistration
         services.AddSingleton<HubNotificationDispatcher>();
         services.AddSingleton<IPrintCallbacks>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
 
+        services.AddSingleton(options.Language);
         services.AddSingleton<IMockFaultRegistry, InMemoryMockFaultRegistry>();
         services.AddSingleton(provider => new MockPrinterTransport(
             options.DataDirectory,

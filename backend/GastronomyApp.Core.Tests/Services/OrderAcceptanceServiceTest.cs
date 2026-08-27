@@ -70,7 +70,6 @@ public sealed class OrderAcceptanceServiceTest
         {
             Id = id,
             Name = name,
-            SlipLanguage = "de",
             SortOrder = sortOrder,
             IsActive = true,
         };

@@ -6,60 +6,61 @@ import AdminShell from '../../../src/views/admin/AdminShell.vue'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
+function stubFetchWithLanguage(language: string) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      const payload = url.startsWith('/api/language')
+        ? { language }
+        : { locations: [], items: [], printers: [] }
+      return new Response(JSON.stringify(payload), { status: 200 })
+    }),
+  )
+}
+
 function mountShell() {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   const shell = mount(AdminShell, { global: { plugins: [i18n] } })
   return { shell, i18n }
 }
 
-describe('the language switch on the admin', () => {
+describe('the language the admin screens are written in', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
     window.history.replaceState({}, '', '/admin')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ locations: [], items: [], printers: [] }), { status: 200 }),
-      ),
-    )
   })
 
-  it('sits in the nav row, where the admin can find it', () => {
+  it('offers no switch of its own, because the laptop decides', async () => {
+    stubFetchWithLanguage('de')
+
+    const { shell } = mountShell()
+    await vi.waitFor(() => expect(shell.find('.admin-tabs').exists()).toBe(true))
+
+    expect(shell.find('.language-switch').exists()).toBe(false)
+  })
+
+  it('follows the language chosen on the laptop', async () => {
+    stubFetchWithLanguage('en')
+
+    const { i18n } = mountShell()
+
+    await vi.waitFor(() => expect(i18n.global.locale.value).toBe('en'))
+  })
+
+  it('writes the tabs in that language', async () => {
+    stubFetchWithLanguage('en')
+
     const { shell } = mountShell()
 
-    expect(shell.get('.admin-nav .language-switch').exists()).toBe(true)
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Overview'))
   })
 
-  it('offers both languages by their own names', () => {
+  it('stays in German when the laptop is set to German', async () => {
+    stubFetchWithLanguage('de')
+
     const { shell } = mountShell()
 
-    expect(shell.get('.admin-nav .option-de').text()).toBe('Deutsch')
-    expect(shell.get('.admin-nav .option-en').text()).toBe('English')
-  })
-
-  it('switches the whole admin the moment English is tapped', async () => {
-    const { shell, i18n } = mountShell()
-
-    await shell.get('.admin-nav .option-en').trigger('click')
-
-    expect(i18n.global.locale.value).toBe('en')
-  })
-
-  it('renames the tabs into English', async () => {
-    const { shell } = mountShell()
-
-    await shell.get('.admin-nav .option-en').trigger('click')
-
-    expect(shell.get('.admin-tabs button').text()).toBe('Overview')
-  })
-
-  it('remembers the choice on the laptop', async () => {
-    const { shell } = mountShell()
-
-    await shell.get('.admin-nav .option-en').trigger('click')
-
-    expect(localStorage.getItem('language')).toBe('en')
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Übersicht'))
   })
 })

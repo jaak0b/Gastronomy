@@ -179,7 +179,7 @@ public sealed class LocationDeactivationTest
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/locations",
-            new { name = "Zelt", sortOrder = 3, slipLanguage = (string?)null });
+            new { name = "Zelt", sortOrder = 3 });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

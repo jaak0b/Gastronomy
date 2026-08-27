@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Options;
 using FakeItEasy;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
@@ -58,7 +59,6 @@ public class PrinterFleetTest
             {
                 Id = locationId,
                 Name = name,
-                SlipLanguage = "de",
                 SortOrder = 1,
                 IsActive = true,
             },
@@ -94,6 +94,7 @@ public class PrinterFleetTest
                 new PrintJobStateMachine(),
                 new PrinterEndpointKeyBuilder()),
             timeProvider,
+            new AppLanguage(),
             NullLoggerFactory.Instance);
     }
 
@@ -273,7 +274,7 @@ public class PrinterFleetTest
     {
         Configure(Entry(kitchenId, "Küche", "10.0.0.5", 9100));
         A.CallTo(() => dataAccess.LoadTestPrintAsync(A<Guid>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new TestPrintLoadResult("Küche", "de")));
+            .Returns(Task.FromResult(new TestPrintLoadResult("Küche")));
         A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new PrintDispatchResult(
                 PrintAttemptOutcome.Confirmed,

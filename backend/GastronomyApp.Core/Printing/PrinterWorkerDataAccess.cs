@@ -29,7 +29,6 @@ public sealed record TicketLoadResult
     public required int ReprintCount { get; init; }
     public required int LocationSequenceNumber { get; init; }
     public required string ProductionLocationName { get; init; }
-    public required string SlipLanguage { get; init; }
     public required int GlobalOrderNumber { get; init; }
     public required string TableLabel { get; init; }
     public required string ServerName { get; init; }
@@ -42,7 +41,7 @@ public sealed record TicketLoadResult
 
 public sealed record TicketLineLoadResult(int Quantity, string ItemName, string? LineNote);
 
-public sealed record TestPrintLoadResult(string ProductionLocationName, string SlipLanguage);
+public sealed record TestPrintLoadResult(string ProductionLocationName);
 
 public sealed record PrintOutcomeApplied
 {

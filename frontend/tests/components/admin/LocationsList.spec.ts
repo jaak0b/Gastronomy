@@ -12,7 +12,6 @@ const ONE_STATION = JSON.stringify({
       locationId: STATION_ID,
       name: 'Küche',
       sortOrder: 1,
-      slipLanguage: 'de',
       isActive: true,
       accessKey: 'key-kueche',
       breakGlassUrl: 'http://192.168.1.20:5000/s/key-kueche',

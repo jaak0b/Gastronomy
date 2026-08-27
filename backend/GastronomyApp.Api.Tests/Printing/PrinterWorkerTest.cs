@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Options;
 using FakeItEasy;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
@@ -110,7 +111,6 @@ public class PrinterWorkerTest
             ReprintCount = 0,
             LocationSequenceNumber = 42,
             ProductionLocationName = "Küche",
-            SlipLanguage = "de",
             GlobalOrderNumber = 137,
             TableLabel = "12",
             ServerName = "Anna",
@@ -121,6 +121,8 @@ public class PrinterWorkerTest
             ChosenStationNameIfDifferent = null,
         };
     }
+
+    private readonly AppLanguage language = new();
 
     private PrinterWorker Worker(PrinterEndpoint? endpoint = null, IReadOnlyCollection<Guid>? served = null)
     {
@@ -139,7 +141,38 @@ public class PrinterWorkerTest
                 new PrintJobStateMachine(),
                 new PrinterEndpointKeyBuilder()),
             timeProvider,
+            language,
             NullLogger<PrinterWorker>.Instance);
+    }
+
+    [Test]
+    public async Task TestPrint_LaptopSetToEnglish_PrintsTheSlipInEnglish()
+    {
+        language.Current = "en";
+        PrintPayload? sent = null;
+        A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
+            .Invokes((PrintPayload payload, CancellationToken _) => sent = payload);
+        PrinterWorker worker = Worker();
+
+        worker.EnqueueTestPrint(locationId, Guid.NewGuid());
+        await worker.RunOnceAsync(CancellationToken.None);
+
+        Assert.That(sent!.RenderedText, Does.Contain("TEST SLIP"));
+    }
+
+    [Test]
+    public async Task TestPrint_LaptopSetToGerman_PrintsTheSlipInGerman()
+    {
+        language.Current = "de";
+        PrintPayload? sent = null;
+        A.CallTo(() => session.SendJobAsync(A<PrintPayload>._, A<CancellationToken>._))
+            .Invokes((PrintPayload payload, CancellationToken _) => sent = payload);
+        PrinterWorker worker = Worker();
+
+        worker.EnqueueTestPrint(locationId, Guid.NewGuid());
+        await worker.RunOnceAsync(CancellationToken.None);
+
+        Assert.That(sent!.RenderedText, Does.Contain("TESTBON"));
     }
 
     [Test]
@@ -895,7 +928,7 @@ public class PrinterWorkerTest
     public async Task TestPrint_OnASharedEndpoint_PrintsTheRequestedStationsCardNotTheFirstServedOne()
     {
         A.CallTo(() => dataAccess.LoadTestPrintAsync(A<Guid>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new TestPrintLoadResult("Theke", "de")));
+            .Returns(Task.FromResult(new TestPrintLoadResult("Theke")));
         PrinterWorker worker = Worker(served: [locationId, otherLocationId]);
 
         worker.EnqueueTestPrint(otherLocationId, Guid.NewGuid());

@@ -48,7 +48,7 @@ public sealed class AdminEndpointsTest
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/locations",
-            new { name = "Zelt", sortOrder = 3, slipLanguage = (string?)null });
+            new { name = "Zelt", sortOrder = 3, });
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Guid locationId = body.RootElement.GetProperty("locationId").GetGuid();
@@ -62,7 +62,6 @@ public sealed class AdminEndpointsTest
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-            Assert.That(created.SlipLanguage, Is.EqualTo("de"));
             Assert.That(configuration.TransportKind, Is.EqualTo(TransportKind.Mock));
         });
     }
@@ -72,7 +71,7 @@ public sealed class AdminEndpointsTest
     {
         using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
             $"/api/admin/locations/{context.World.KitchenLocationId}",
-            new { name = "Kueche innen", sortOrder = 1, slipLanguage = "de" });
+            new { name = "Kueche innen", sortOrder = 1, });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 

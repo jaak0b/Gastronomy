@@ -6,7 +6,6 @@ const BACKEND_LOCATION = {
   locationId: '11111111-1111-1111-1111-111111111111',
   name: 'Küche',
   sortOrder: 1,
-  slipLanguage: 'de',
   isActive: true,
   accessKey: 'key-kueche',
   breakGlassUrl: 'http://192.168.1.20:5000/s/key-kueche',
@@ -56,7 +55,6 @@ describe('the station list the admin configures', () => {
       locationId: locations.locations[0].locationId,
       name: 'Küche hinten',
       sortOrder: 1,
-      slipLanguage: 'de',
     })
 
     const write = calls.find((call) => call.method !== 'GET')
