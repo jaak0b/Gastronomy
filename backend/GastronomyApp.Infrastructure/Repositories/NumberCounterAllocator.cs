@@ -17,11 +17,10 @@ public sealed class NumberCounterAllocator : INumberAllocator
         _dbContext = dbContext;
     }
 
-    public Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken)
+    public Task<int> AllocateGlobalOrderNumberAsync(CancellationToken cancellationToken)
     {
         return AllocateAsync(
             NumberCounterKind.GlobalOrder,
-            eventSessionId,
             Guid.Empty,
             string.Empty,
             UnboundedMaximumValue,
@@ -29,13 +28,11 @@ public sealed class NumberCounterAllocator : INumberAllocator
     }
 
     public Task<int> AllocateLocationSequenceNumberAsync(
-        Guid eventSessionId,
         Guid productionLocationId,
         CancellationToken cancellationToken)
     {
         return AllocateAsync(
             NumberCounterKind.LocationSequence,
-            eventSessionId,
             productionLocationId,
             string.Empty,
             UnboundedMaximumValue,
@@ -47,15 +44,24 @@ public sealed class NumberCounterAllocator : INumberAllocator
         return AllocateAsync(
             NumberCounterKind.PrinterProcessId,
             Guid.Empty,
-            Guid.Empty,
             printerEndpointKey,
             PrinterProcessIdMaximumValue,
             cancellationToken);
     }
 
+    public async Task ResetOrderAndSlipNumbersAsync(CancellationToken cancellationToken)
+    {
+        List<NumberCounter> counters = await _dbContext.NumberCounters
+            .Where(candidate => candidate.CounterKind == NumberCounterKind.GlobalOrder
+                || candidate.CounterKind == NumberCounterKind.LocationSequence)
+            .ToListAsync(cancellationToken);
+
+        _dbContext.NumberCounters.RemoveRange(counters);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<int> AllocateAsync(
         NumberCounterKind counterKind,
-        Guid eventSessionId,
         Guid productionLocationId,
         string printerEndpointKey,
         int maximumValue,
@@ -63,7 +69,6 @@ public sealed class NumberCounterAllocator : INumberAllocator
     {
         NumberCounter? counter = await _dbContext.NumberCounters.FirstOrDefaultAsync(
             candidate => candidate.CounterKind == counterKind
-                && candidate.EventSessionId == eventSessionId
                 && candidate.ProductionLocationId == productionLocationId
                 && candidate.PrinterEndpointKey == printerEndpointKey,
             cancellationToken);
@@ -73,7 +78,6 @@ public sealed class NumberCounterAllocator : INumberAllocator
             _dbContext.NumberCounters.Add(new NumberCounter
             {
                 CounterKind = counterKind,
-                EventSessionId = eventSessionId,
                 ProductionLocationId = productionLocationId,
                 PrinterEndpointKey = printerEndpointKey,
                 NextValue = 2,

@@ -1,5 +1,4 @@
 using FakeItEasy;
-using GastronomyApp.Api.Hosting;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services;
 using GastronomyApp.Desktop.ViewModels;
@@ -13,7 +12,6 @@ public sealed class SettingsWindowViewModelTests
 
     private ISettingsStore _settingsStore = null!;
     private INetworkAddressProvider _networkAddressProvider = null!;
-    private ISessionStateQuery _sessionState = null!;
     private IElevatedSetupLauncher _elevatedSetup = null!;
     private IDesktopTextProvider _text = null!;
     private int _firewallSettingsOpened;
@@ -24,7 +22,6 @@ public sealed class SettingsWindowViewModelTests
     {
         _settingsStore = A.Fake<ISettingsStore>();
         _networkAddressProvider = A.Fake<INetworkAddressProvider>();
-        _sessionState = A.Fake<ISessionStateQuery>();
         _elevatedSetup = A.Fake<IElevatedSetupLauncher>();
         _text = new DesktopTextProvider();
         _firewallSettingsOpened = 0;
@@ -34,20 +31,18 @@ public sealed class SettingsWindowViewModelTests
             .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, null));
         A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
             .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(false);
     }
 
-    private async Task<SettingsWindowViewModel> CreateOpenedViewModelAsync(bool anyOrderAcceptedThisSession = false)
+    private async Task<SettingsWindowViewModel> CreateOpenedViewModelAsync(bool serverIsRunning = false)
     {
         SettingsWindowViewModel viewModel = new(
             _settingsStore,
             _networkAddressProvider,
-            _sessionState,
+            serverIsRunning,
             _elevatedSetup,
             _text,
             () => _firewallSettingsOpened++,
-            () => _dataFolderOpened++,
-            anyOrderAcceptedThisSession);
+            () => _dataFolderOpened++);
 
         await viewModel.InitializeAsync();
 
@@ -69,11 +64,9 @@ public sealed class SettingsWindowViewModelTests
     }
 
     [Test]
-    public async Task InitializeAsync_OnceTheSessionHasAcceptedAnOrder_RefusesPortAndAddress()
+    public async Task InitializeAsync_WhileTheServerRuns_RefusesPortAndAddress()
     {
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(true);
-
-        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(anyOrderAcceptedThisSession: true);
+        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(serverIsRunning: true);
 
         Assert.Multiple(() =>
         {
@@ -85,8 +78,7 @@ public sealed class SettingsWindowViewModelTests
     [Test]
     public async Task Port_WhenTheAddressFieldsAreRefused_KeepsTheStoredValue()
     {
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(true);
-        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(anyOrderAcceptedThisSession: true);
+        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(serverIsRunning: true);
 
         viewModel.Port = 8080;
         viewModel.BindAddress = "127.0.0.1";
@@ -99,11 +91,10 @@ public sealed class SettingsWindowViewModelTests
     }
 
     [Test]
-    public async Task InitializeAsync_WhileASessionIsActive_DisablesTheDataFolderField()
+    public async Task InitializeAsync_WhileTheServerRuns_DisablesTheDataFolderField()
     {
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(true);
 
-        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync();
+        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(serverIsRunning: true);
 
         Assert.Multiple(() =>
         {
@@ -113,10 +104,9 @@ public sealed class SettingsWindowViewModelTests
     }
 
     [Test]
-    public async Task DataDirectory_WhileASessionIsActive_IsNeverChanged()
+    public async Task DataDirectory_WhileTheServerRuns_IsNeverChanged()
     {
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(true);
-        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync();
+        SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync(serverIsRunning: true);
 
         viewModel.DataDirectory = @"D:\Somewhere else";
 
@@ -128,7 +118,7 @@ public sealed class SettingsWindowViewModelTests
     }
 
     [Test]
-    public async Task InitializeAsync_WithNoSessionRunning_EnablesTheDataFolderField()
+    public async Task InitializeAsync_WhileTheServerIsStopped_EnablesTheDataFolderField()
     {
         SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync();
 
@@ -140,9 +130,8 @@ public sealed class SettingsWindowViewModelTests
     }
 
     [Test]
-    public async Task InitializeAsync_WhenTheServerNeverStarted_LeavesTheDataFolderEditableOnPurpose()
+    public async Task InitializeAsync_WhenTheServerNeverStarted_LeavesTheDataFolderEditable()
     {
-        A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(false);
 
         SettingsWindowViewModel viewModel = await CreateOpenedViewModelAsync();
 

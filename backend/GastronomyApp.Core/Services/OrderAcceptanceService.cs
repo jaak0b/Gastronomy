@@ -16,7 +16,6 @@ public sealed record OrderAcceptanceLineRequest
 public sealed record OrderAcceptanceRequest
 {
     public required Guid ClientOrderId { get; init; }
-    public required Guid EventSessionId { get; init; }
     public required Guid ServerPersonId { get; init; }
     public required Guid DeviceId { get; init; }
     public required string TableLabel { get; init; }
@@ -186,12 +185,11 @@ public sealed class OrderAcceptanceService
     {
         DateTime createdAtUtc = _clock.UtcNow;
         int globalOrderNumber =
-            await _numberAllocator.AllocateGlobalOrderNumberAsync(request.EventSessionId, cancellationToken);
+            await _numberAllocator.AllocateGlobalOrderNumberAsync(cancellationToken);
 
         Order order = new()
         {
             Id = Guid.NewGuid(),
-            EventSessionId = request.EventSessionId,
             ClientOrderId = request.ClientOrderId,
             GlobalOrderNumber = globalOrderNumber,
             ServerPersonId = request.ServerPersonId,
@@ -212,7 +210,6 @@ public sealed class OrderAcceptanceService
             if (!ticketsByLocationId.TryGetValue(resolvedLocationId, out LocationTicket? ticket))
             {
                 int locationSequenceNumber = await _numberAllocator.AllocateLocationSequenceNumberAsync(
-                    request.EventSessionId,
                     resolvedLocationId,
                     cancellationToken);
 

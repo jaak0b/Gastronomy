@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
-using GastronomyApp.Api.Hosting;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Services;
 
@@ -13,12 +12,11 @@ public sealed class SettingsWindowViewModel : ViewModelBase
 
     private readonly ISettingsStore settingsStore;
     private readonly INetworkAddressProvider networkAddressProvider;
-    private readonly ISessionStateQuery sessionState;
+    private readonly bool serverIsRunning;
     private readonly IElevatedSetupLauncher elevatedSetup;
     private readonly IDesktopTextProvider text;
     private readonly Action openFirewallSettings;
     private readonly Action openDataFolderAction;
-    private readonly bool anyOrderAcceptedThisSession;
     private readonly Never never = new();
 
     private int port;
@@ -34,21 +32,19 @@ public sealed class SettingsWindowViewModel : ViewModelBase
     public SettingsWindowViewModel(
         ISettingsStore settingsStore,
         INetworkAddressProvider networkAddressProvider,
-        ISessionStateQuery sessionState,
+        bool serverIsRunning,
         IElevatedSetupLauncher elevatedSetup,
         IDesktopTextProvider text,
         Action openFirewallSettings,
-        Action openDataFolder,
-        bool anyOrderAcceptedThisSession)
+        Action openDataFolder)
     {
         this.settingsStore = settingsStore;
         this.networkAddressProvider = networkAddressProvider;
-        this.sessionState = sessionState;
+        this.serverIsRunning = serverIsRunning;
         this.elevatedSetup = elevatedSetup;
         this.text = text;
         this.openFirewallSettings = openFirewallSettings;
         openDataFolderAction = openDataFolder;
-        this.anyOrderAcceptedThisSession = anyOrderAcceptedThisSession;
 
         this.text.LanguageChanged += OnLanguageChanged;
 
@@ -220,10 +216,8 @@ public sealed class SettingsWindowViewModel : ViewModelBase
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        bool sessionActive = await sessionState.IsSessionActiveAsync(cancellationToken);
-
-        AreAddressFieldsEnabled = !sessionActive && !anyOrderAcceptedThisSession;
-        IsDataFolderEnabled = !sessionActive;
+        AreAddressFieldsEnabled = !serverIsRunning;
+        IsDataFolderEnabled = !serverIsRunning;
 
         DesktopSettings settings = settingsStore.Load();
         SetProperty(ref port, settings.Port, nameof(Port));

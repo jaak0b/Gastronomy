@@ -62,7 +62,6 @@ public sealed class OrderRepositoryTest
         Order order = new()
         {
             Id = orderId,
-            EventSessionId = seeded.EventSessionId,
             ClientOrderId = clientOrderId,
             GlobalOrderNumber = 1,
             ServerPersonId = seeded.ServerPersonId,

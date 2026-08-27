@@ -11,7 +11,6 @@ public sealed class NumberCounterConfiguration : IEntityTypeConfiguration<Number
         builder.HasKey(counter => new
         {
             counter.CounterKind,
-            counter.EventSessionId,
             counter.ProductionLocationId,
             counter.PrinterEndpointKey,
         });

@@ -10,7 +10,6 @@ public sealed class GastronomyAppDbContext : DbContext
     {
     }
 
-    public DbSet<EventSession> EventSessions => Set<EventSession>();
 
     public DbSet<ProductionLocation> ProductionLocations => Set<ProductionLocation>();
 

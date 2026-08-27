@@ -33,13 +33,9 @@ public static class SessionEndpoints
                 return Results.Unauthorized();
             }
 
-            EventSession? session = await dbContext.EventSessions
-                .FirstOrDefaultAsync(candidate => candidate.IsActive, cancellationToken);
-
             return Results.Ok(new SessionView(
                 caller.DeviceId,
                 new ServerPersonView(person.Id, person.Name),
-                session is null ? null : new EventSessionView(session.Id, session.Name, session.IsPractice),
                 caller.Language));
         });
 

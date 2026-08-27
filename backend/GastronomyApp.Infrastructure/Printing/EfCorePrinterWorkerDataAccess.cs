@@ -331,8 +331,6 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
     {
         await using GastronomyAppDbContext context = contextFactory();
         Order order = await context.Orders.AsNoTracking().SingleAsync(candidate => candidate.Id == orderId, ct);
-        EventSession session = await context.EventSessions.AsNoTracking()
-            .SingleAsync(candidate => candidate.Id == order.EventSessionId, ct);
 
         List<LocationTicketStatus> statuses = await context.LocationTickets.AsNoTracking()
             .Where(ticket => ticket.OrderId == orderId)
@@ -342,7 +340,6 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
         return new OrderTicketStatuses
         {
             CurrentStatus = order.Status,
-            IsPracticeSession = session.IsPractice,
             TicketStatuses = statuses,
         };
     }

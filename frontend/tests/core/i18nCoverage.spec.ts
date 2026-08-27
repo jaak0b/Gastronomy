@@ -14,8 +14,6 @@ const PLURAL_KEYS = [
   'admin.overview.stationBlocked',
   'admin.locations.openTickets',
   'admin.printers.waiting',
-  'admin.event.blockedOpenTickets',
-  'admin.event.blockedQuestions',
   'admin.itemsWouldHaveNoStation',
 ]
 

@@ -88,7 +88,6 @@ public sealed class ImmediateTransactionRunnerTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = Guid.NewGuid(),
-            EventSessionId = seeded.EventSessionId,
             ServerPersonId = seeded.ServerPersonId,
             DeviceId = seeded.DeviceId,
             TableLabel = "Tisch 12",

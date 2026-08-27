@@ -4,11 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using GastronomyApp.Api.Hosting;
 using GastronomyApp.Desktop.Services;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Desktop;
 
@@ -167,19 +165,14 @@ public partial class App : Application
             return;
         }
 
-        ISessionStateQuery sessionState = composition.HostLauncher.Application is null
-            ? new NoSessionRunningQuery()
-            : composition.HostLauncher.Application.Services.GetRequiredService<ISessionStateQuery>();
-
         SettingsWindowViewModel viewModel = new(
             composition.SettingsStore,
             composition.NetworkAddressProvider,
-            sessionState,
+            composition.HostLauncher.IsRunning,
             composition.ElevatedSetupLauncher,
             composition.Text,
             OpenWindowsFirewallSettings,
-            OpenDataFolder,
-            anyOrderAcceptedThisSession: false);
+            OpenDataFolder);
 
         await viewModel.InitializeAsync();
 
@@ -241,10 +234,3 @@ public partial class App : Application
     }
 }
 
-public sealed class NoSessionRunningQuery : ISessionStateQuery
-{
-    public Task<bool> IsSessionActiveAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(false);
-    }
-}

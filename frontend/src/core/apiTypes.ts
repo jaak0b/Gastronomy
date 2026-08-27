@@ -128,18 +128,11 @@ export interface ServerPerson {
   name: string
 }
 
-export interface EventSessionSummary {
-  id: string
-  name: string
-  isPractice: boolean
-}
-
 export type AppLanguage = 'de' | 'en'
 
 export interface SessionInfo {
   deviceId: string
   serverPerson: ServerPerson
-  eventSession: EventSessionSummary
   language: AppLanguage
 }
 

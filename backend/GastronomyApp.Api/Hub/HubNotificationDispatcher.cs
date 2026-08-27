@@ -150,15 +150,6 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             ct);
     }
 
-    public async Task PushEventSessionStartedAsync(EventSessionStartedEvent payload, CancellationToken ct)
-    {
-        await SendToAsync(
-            eventNames.EventSessionStarted,
-            payload,
-            [groupNames.Devices, groupNames.Admin, groupNames.Stations],
-            ct);
-    }
-
     private async Task SendToAsync(
         string eventName,
         object payload,

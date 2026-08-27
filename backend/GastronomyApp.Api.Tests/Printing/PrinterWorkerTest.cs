@@ -57,7 +57,6 @@ public class PrinterWorkerTest
             .Returns(Task.FromResult(new OrderTicketStatuses
             {
                 CurrentStatus = OrderStatus.Printing,
-                IsPracticeSession = true,
                 TicketStatuses = [LocationTicketStatus.Printing],
             }));
         A.CallTo(() => dataAccess.LoadSuspensionPeriodsAsync(A<Guid>._, A<TransportKind>._, A<CancellationToken>._))
@@ -377,7 +376,6 @@ public class PrinterWorkerTest
             .Returns(Task.FromResult(new OrderTicketStatuses
             {
                 CurrentStatus = OrderStatus.Printed,
-                IsPracticeSession = true,
                 TicketStatuses = [LocationTicketStatus.PrintedOnTestPrinter],
             }));
         PrinterWorker worker = Worker();
@@ -397,7 +395,6 @@ public class PrinterWorkerTest
             .Returns(Task.FromResult(new OrderTicketStatuses
             {
                 CurrentStatus = OrderStatus.Printing,
-                IsPracticeSession = true,
                 TicketStatuses = [LocationTicketStatus.PrintedOnTestPrinter],
             }));
         PrinterWorker worker = Worker();

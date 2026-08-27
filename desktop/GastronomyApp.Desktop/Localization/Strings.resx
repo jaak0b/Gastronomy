@@ -143,7 +143,7 @@
     <value>Change this address only before the first phones are set up. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again.</value>
   </data>
   <data name="desktop.settings.addressLocked" xml:space="preserve">
-    <value>The port and the address can only be changed after the event. Otherwise the phones that are set up would no longer reach the laptop.</value>
+    <value>Stop the server to change the port and the address. While it runs, the phones that are set up would no longer reach the laptop.</value>
   </data>
   <data name="desktop.settings.dataFolder" xml:space="preserve">
     <value>Data folder</value>
@@ -152,7 +152,7 @@
     <value>The database and the backup files are here.</value>
   </data>
   <data name="desktop.settings.dataFolderLocked" xml:space="preserve">
-    <value>The data folder can only be changed after the event. This folder holds the orders from the evening that is running.</value>
+    <value>Stop the server to change the data folder. While it runs, the program is writing into this folder.</value>
   </data>
   <data name="desktop.settings.dataFolderRestart" xml:space="preserve">
     <value>Restart the program so the new folder takes effect. The database you have so far stays where it is.</value>

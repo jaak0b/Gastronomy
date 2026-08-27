@@ -695,7 +695,7 @@ public sealed class PrinterWorker
     private async Task PushOrderProjectionAsync(Guid orderId, CancellationToken cancellationToken)
     {
         OrderTicketStatuses statuses = await dataAccess.LoadOrderTicketStatusesAsync(orderId, cancellationToken);
-        OrderStatus recalculated = domainServices.OrderStatusCalculator.Calculate(statuses.TicketStatuses, statuses.IsPracticeSession);
+        OrderStatus recalculated = domainServices.OrderStatusCalculator.Calculate(statuses.TicketStatuses);
 
         if (recalculated == statuses.CurrentStatus)
         {

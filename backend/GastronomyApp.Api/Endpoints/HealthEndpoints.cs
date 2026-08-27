@@ -1,5 +1,4 @@
 using GastronomyApp.Api.Contracts;
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -28,10 +27,6 @@ public sealed class HealthReporter
 {
     public async Task<HealthView> ReportAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
     {
-        EventSession? session = await dbContext.EventSessions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.IsActive, cancellationToken);
-
         List<Guid> activeLocationIds = await dbContext.ProductionLocations
             .AsNoTracking()
             .Where(location => location.IsActive)
@@ -44,6 +39,6 @@ public sealed class HealthReporter
                 status => activeLocationIds.Contains(status.ProductionLocationId) && status.IsOnline,
                 cancellationToken);
 
-        return new HealthView("ok", session?.Name, printersOnline, activeLocationIds.Count);
+        return new HealthView("ok", printersOnline, activeLocationIds.Count);
     }
 }

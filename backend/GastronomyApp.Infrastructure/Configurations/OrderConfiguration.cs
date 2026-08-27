@@ -10,7 +10,6 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     {
         builder.HasKey(order => order.Id);
         builder.Property(order => order.Id).ValueGeneratedNever();
-        builder.Property(order => order.EventSessionId).IsRequired();
         builder.Property(order => order.ClientOrderId).IsRequired();
         builder.Property(order => order.GlobalOrderNumber).IsRequired();
         builder.Property(order => order.ServerPersonId).IsRequired();

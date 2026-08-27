@@ -47,14 +47,6 @@ public sealed class PrintingSeeder
 
     public async Task SeedSessionAsync(GastronomyAppDbContext context, bool isPractice, CancellationToken cancellationToken)
     {
-        context.EventSessions.Add(new EventSession
-        {
-            Id = EventSessionId,
-            Name = "Testabend",
-            IsPractice = isPractice,
-            StartedAtUtc = baseline,
-            IsActive = true,
-        });
 
         context.ServerPeople.Add(new ServerPerson
         {
@@ -133,7 +125,6 @@ public sealed class PrintingSeeder
         context.Orders.Add(new Order
         {
             Id = orderId,
-            EventSessionId = EventSessionId,
             ClientOrderId = Guid.NewGuid(),
             GlobalOrderNumber = globalOrderNumber,
             ServerPersonId = ServerPersonId,

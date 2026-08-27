@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using FakeItEasy;
-using GastronomyApp.Api.Hosting;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services;
 using GastronomyApp.Desktop.Tests.Smoke;
@@ -56,18 +55,14 @@ public sealed class MainWindowSmokeTests
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
             .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
-        ISessionStateQuery sessionState = A.Fake<ISessionStateQuery>();
-        A.CallTo(() => sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(false);
-
         SettingsWindowViewModel viewModel = new(
             settingsStore,
             A.Fake<INetworkAddressProvider>(),
-            sessionState,
+            false,
             A.Fake<IElevatedSetupLauncher>(),
             text,
             () => { },
-            () => { },
-            anyOrderAcceptedThisSession: false);
+            () => { });
         await viewModel.InitializeAsync();
 
         SettingsWindow window = new() { DataContext = viewModel };

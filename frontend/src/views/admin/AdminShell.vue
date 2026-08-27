@@ -9,7 +9,6 @@ import LocationsList from '../../components/admin/locations/LocationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import PrintersList from '../../components/admin/printers/PrintersList.vue'
 import PeopleList from '../../components/admin/people/PeopleList.vue'
-import EventSessionPanel from '../../components/admin/event/EventSessionPanel.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
 import LanguageSwitch from '../../components/LanguageSwitch.vue'
 import { useSessionStore } from '../../stores/session'
@@ -32,7 +31,6 @@ const sections: AdminSection[] = [
   'items',
   'printers',
   'people',
-  'event',
 ]
 
 function titleFor(value: AdminSection): string {
@@ -47,8 +45,6 @@ function titleFor(value: AdminSection): string {
       return t('admin.printers.title')
     case 'people':
       return t('admin.people.title')
-    case 'event':
-      return t('admin.event.title')
     default:
       return assertNever(value)
   }
@@ -84,7 +80,6 @@ void request('/api/admin/locations').then((result) => {
     <LocationsList v-else-if="section === 'locations'" />
     <ItemsList v-else-if="section === 'items'" />
     <PrintersList v-else-if="section === 'printers'" />
-    <PeopleList v-else-if="section === 'people'" />
-    <EventSessionPanel v-else />
+    <PeopleList v-else />
   </div>
 </template>

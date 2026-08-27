@@ -39,8 +39,6 @@ public sealed class OrderPlacementScenarioTest
     {
         string deviceToken = await EnrolAPhoneAsync();
 
-        await StartPracticeSessionAsync();
-
         CatalogSelection selection = await FetchCatalogAsync(deviceToken);
 
         PlacedOrder placed = await SendOrderAsync(deviceToken, selection);
@@ -103,18 +101,6 @@ public sealed class OrderPlacementScenarioTest
         JsonDocument redemption = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
 
         return redemption.RootElement.GetProperty("deviceToken").GetString()!;
-    }
-
-    private async Task StartPracticeSessionAsync()
-    {
-        using HttpResponseMessage response = await factory.Client.PostAsJsonAsync(
-            "/api/admin/event-session",
-            new StartSessionBody("Probelauf", true, "Probelauf"));
-
-        Assert.That(
-            response.StatusCode,
-            Is.EqualTo(HttpStatusCode.Created),
-            "A practice run is exempt from the test printer guard.");
     }
 
     private async Task<CatalogSelection> FetchCatalogAsync(string deviceToken)

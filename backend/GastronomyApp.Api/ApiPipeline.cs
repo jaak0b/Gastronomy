@@ -32,8 +32,8 @@ public sealed class ApiPipeline
         app.MapAdminServerPeopleEndpoints();
         app.MapAdminPrinterEndpoints();
         app.MapAdminOrderEndpoints();
-        app.MapAdminEventSessionEndpoints();
         app.MapAdminInvitationQrEndpoints();
+        app.MapAdminNumbersEndpoints();
         app.MapFallback(
             "/{*clientRoute:nonfile}",
             (HttpContext httpContext, ClientRouteFallbackResponder responder) => responder.Respond(httpContext));

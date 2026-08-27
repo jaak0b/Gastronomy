@@ -254,21 +254,6 @@
       "reprint": "Print again",
       "noCancel": "Tell the station. A sent order cannot be taken back, because its slip is already printing."
     },
-    "event": {
-      "title": "Event",
-      "current": "Current event: {name}, since {time}",
-      "startNew": "Start a new event",
-      "startEffect": "Slip numbers start again at 1. Every order so far stays saved.",
-      "blockedOpenTickets": "Settle {count} open slip in the order list first. Starting a new event makes it disappear from every phone. | Settle {count} open slips in the order list first. Starting a new event makes them disappear from every phone.",
-      "blockedQuestions": "Answer {count} open question about a slip in the order list first. | Answer {count} open questions about slips in the order list first.",
-      "blockedMock": "Set up a printer at {names}, or start a practice run instead. On the test printer no slip reaches the pile.",
-      "confirmName": "Type the name of the new event to start it. Orders were still being taken in the last hour.",
-      "practice": "Start a practice run",
-      "practiceHelp": "In a practice run the test printer is fine, and the orders are left out of the takings list later.",
-      "practiceRunning": "A practice run is going on. Start the real event before the guests arrive.",
-      "none": "No event is running.",
-      "name": "Name of the event"
-    },
     "backup": {
       "title": "Backup",
       "create": "Create a backup file",
@@ -286,7 +271,16 @@
     "edit": "Edit",
     "loadFailed": "Reload the page. The data could not be loaded.",
     "itemsWouldHaveNoStation": "Give {count} item a different station first, or take it off the menu. Otherwise it is left with no station and cannot be ordered. | Give {count} items a different station first, or take them off the menu. Otherwise they are left with no station and cannot be ordered.",
-    "stationHasNoPrinterWorker": "Try again in a moment. This station has no printer connection yet."
+    "stationHasNoPrinterWorker": "Try again in a moment. This station has no printer connection yet.",
+    "numbers": {
+      "title": "Slip numbers",
+      "help": "The order number and each station’s slip numbers count up continuously. Reset them to 1 before a new festival.",
+      "reset": "Reset the slip numbers",
+      "confirm": "Reset the slip numbers to 1 now? Orders already taken keep their numbers.",
+      "confirmYes": "Yes, reset them",
+      "confirmNo": "Cancel",
+      "done": "The slip numbers start at 1 again."
+    }
   },
   "station": {
     "title": "{name}: orders on screen",

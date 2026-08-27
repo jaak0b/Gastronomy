@@ -4,14 +4,9 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderStatusCalculator
 {
-    public OrderStatus Calculate(IReadOnlyCollection<LocationTicketStatus> ticketStatuses, bool isPracticeSession)
+    public OrderStatus Calculate(IReadOnlyCollection<LocationTicketStatus> ticketStatuses)
     {
         if (ticketStatuses.Any(NeedsHumanAttention))
-        {
-            return OrderStatus.NeedsAttention;
-        }
-
-        if (!isPracticeSession && ticketStatuses.Any(status => status == LocationTicketStatus.PrintedOnTestPrinter))
         {
             return OrderStatus.NeedsAttention;
         }

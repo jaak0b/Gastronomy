@@ -32,7 +32,6 @@ public sealed record HubEventNames
     public string CatalogChanged { get; } = "CatalogChanged";
     public string EnrolmentCompleted { get; } = "EnrolmentCompleted";
     public string DeviceRevoked { get; } = "DeviceRevoked";
-    public string EventSessionStarted { get; } = "EventSessionStarted";
 }
 
 public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub

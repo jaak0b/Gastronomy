@@ -13,7 +13,6 @@ using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Endpoints;
 
@@ -117,24 +116,11 @@ public sealed class OrderPlacementHandler
         DeviceCaller caller,
         CancellationToken cancellationToken)
     {
-        EventSession? session = await dbContext.EventSessions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.IsActive, cancellationToken);
-
-        if (session is null)
-        {
-            return resultEnvelope.Problem(
-                StatusCodes.Status409Conflict,
-                "NoActiveEventSession",
-                "order.noActiveSession");
-        }
-
         int expectedTotalCents = request.ExpectedTotalCents ?? 0;
 
         OrderAcceptanceRequest acceptanceRequest = new()
         {
             ClientOrderId = request.ClientOrderId,
-            EventSessionId = session.Id,
             ServerPersonId = caller.ServerPersonId,
             DeviceId = caller.DeviceId,
             TableLabel = request.TableLabel ?? string.Empty,

@@ -181,16 +181,6 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task PostItemDeactivate_DuringALiveSession_IsRefused()
-    {
-        using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/items/{context.World.BratwurstItemId}/deactivate",
-            content: null);
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-    }
-
-    [Test]
     public async Task GetServerPeople_LoopbackCaller_ReportsThePhoneBehindEveryPerson()
     {
         using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/server-people");
@@ -334,21 +324,6 @@ public sealed class AdminEndpointsTest
             new { fault = "PaperEnd", mode = "Sticky" });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-    }
-
-    [Test]
-    public async Task GetEventSession_ActiveSession_NamesIt()
-    {
-        using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/event-session");
-        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(
-                body.RootElement.GetProperty("eventSession").GetProperty("name").GetString(),
-                Is.EqualTo("Samstagabend"));
-        });
     }
 
     [Test]

@@ -143,7 +143,7 @@
     <value>Ändern Sie diese Adresse nur, bevor die ersten Telefone eingerichtet sind. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein.</value>
   </data>
   <data name="desktop.settings.addressLocked" xml:space="preserve">
-    <value>Port und Adresse lassen sich erst nach der Veranstaltung ändern. Die eingerichteten Telefone würden den Laptop sonst nicht mehr erreichen.</value>
+    <value>Beenden Sie den Server, um Port und Adresse zu ändern. Solange er läuft, würden die eingerichteten Telefone den Laptop sonst nicht mehr erreichen.</value>
   </data>
   <data name="desktop.settings.dataFolder" xml:space="preserve">
     <value>Datenordner</value>
@@ -152,7 +152,7 @@
     <value>Hier liegen die Datenbank und die Sicherungsdateien.</value>
   </data>
   <data name="desktop.settings.dataFolderLocked" xml:space="preserve">
-    <value>Der Datenordner lässt sich erst nach der Veranstaltung ändern. In diesem Ordner liegen die Bestellungen des laufenden Abends.</value>
+    <value>Beenden Sie den Server, um den Datenordner zu ändern. Solange er läuft, wird in diesem Ordner geschrieben.</value>
   </data>
   <data name="desktop.settings.dataFolderRestart" xml:space="preserve">
     <value>Starten Sie das Programm neu, damit der neue Ordner gilt. Die bisherige Datenbank bleibt liegen, wo sie ist.</value>

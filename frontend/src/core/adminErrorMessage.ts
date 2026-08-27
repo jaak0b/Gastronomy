@@ -15,9 +15,6 @@ const RENDERABLE_KEYS = [
   'admin.stationHasNoPrinterWorker',
   'admin.items.needsLocation',
   'admin.items.deactivateBlocked',
-  'admin.event.blockedOpenTickets',
-  'admin.event.blockedQuestions',
-  'admin.event.blockedMock',
 ]
 
 function countFrom(parameters: Record<string, string | number>): number | null {

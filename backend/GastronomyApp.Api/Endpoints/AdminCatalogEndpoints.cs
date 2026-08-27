@@ -212,17 +212,6 @@ public sealed class AdminItemHandler
             return Results.NotFound();
         }
 
-        bool liveSessionIsRunning = await dbContext.EventSessions
-            .AnyAsync(session => session.IsActive && !session.IsPractice, cancellationToken);
-
-        if (liveSessionIsRunning)
-        {
-            return resultEnvelope.Problem(
-                StatusCodes.Status409Conflict,
-                "LiveSessionRunning",
-                "admin.useSoldOutToggleTonight");
-        }
-
         item.IsActive = false;
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushCatalogChangedAsync(cancellationToken);

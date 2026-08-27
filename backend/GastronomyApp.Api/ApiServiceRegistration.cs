@@ -97,13 +97,6 @@ public sealed class ApiServiceRegistration
         services.AddScoped<AdminPrinterHandler>();
         services.AddScoped<AdminOrderHandler>();
         services.AddScoped<EnrolmentRedemptionHandler>();
-        services.AddScoped<IEventSessionRepository, EventSessionRepository>();
-        services.AddScoped<IEventSessionStartGuardReader, EventSessionStartGuardReader>();
-        services.AddScoped<EventSessionStartService>();
-        services.AddScoped<EventSessionStartCoordinator>();
-        services.AddScoped<AdminEventSessionHandler>();
-        services.AddSingleton<EventSessionRefusalDescriber>();
-        services.AddScoped<ISessionStateQuery, EventSessionStateQuery>();
         services.AddSingleton<StationCallerAccessor>();
         services.AddSingleton<StationPrintabilityReader>();
         services.AddSingleton<StationTicketDescriber>();

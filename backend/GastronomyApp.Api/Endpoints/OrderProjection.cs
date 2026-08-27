@@ -131,15 +131,12 @@ public sealed class OrderStatusProjectionWriter
     {
         Order order = await context.Orders.FirstAsync(candidate => candidate.Id == orderId, cancellationToken);
 
-        EventSession session = await context.EventSessions
-            .FirstAsync(candidate => candidate.Id == order.EventSessionId, cancellationToken);
-
         List<LocationTicketStatus> ticketStatuses = await context.LocationTickets
             .Where(ticket => ticket.OrderId == orderId)
             .Select(ticket => ticket.Status)
             .ToListAsync(cancellationToken);
 
-        order.Status = statusCalculator.Calculate(ticketStatuses, session.IsPractice);
+        order.Status = statusCalculator.Calculate(ticketStatuses);
         await context.SaveChangesAsync(cancellationToken);
 
         return order.Status;

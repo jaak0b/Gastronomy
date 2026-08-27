@@ -54,7 +54,6 @@ public sealed record PrintOutcomeApplied
 public sealed record OrderTicketStatuses
 {
     public required OrderStatus CurrentStatus { get; init; }
-    public required bool IsPracticeSession { get; init; }
     public required IReadOnlyList<LocationTicketStatus> TicketStatuses { get; init; }
 }
 

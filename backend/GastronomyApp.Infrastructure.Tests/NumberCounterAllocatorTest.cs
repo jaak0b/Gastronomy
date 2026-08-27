@@ -15,7 +15,7 @@ public sealed class NumberCounterAllocatorTest
         using SqliteInMemoryFixture fixture = new();
         NumberCounterAllocator allocator = new(fixture.DbContext);
 
-        int allocated = await allocator.AllocateGlobalOrderNumberAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
+        int allocated = await allocator.AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
 
         Assert.That(allocated, Is.EqualTo(1));
     }
@@ -32,14 +32,14 @@ public sealed class NumberCounterAllocatorTest
             GastronomyAppDbContext attemptContext = fixture.CreateContext();
             await using IDbContextTransaction transaction = await attemptContext.Database.BeginTransactionAsync();
             rolledBackValue = await new NumberCounterAllocator(attemptContext)
-                .AllocateGlobalOrderNumberAsync(eventSessionId, TestContext.CurrentContext.CancellationToken);
+                .AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
             await transaction.RollbackAsync();
             attemptContext.Dispose();
         }
 
         GastronomyAppDbContext secondContext = fixture.CreateContext();
         int afterRollback = await new NumberCounterAllocator(secondContext)
-            .AllocateGlobalOrderNumberAsync(eventSessionId, TestContext.CurrentContext.CancellationToken);
+            .AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
 
         Assert.Multiple(() =>
         {
@@ -55,13 +55,13 @@ public sealed class NumberCounterAllocatorTest
         Guid eventSessionId = Guid.NewGuid();
 
         GastronomyAppDbContext beforeRestart = fixture.CreateContext();
-        await new NumberCounterAllocator(beforeRestart).AllocateGlobalOrderNumberAsync(eventSessionId, TestContext.CurrentContext.CancellationToken);
-        await new NumberCounterAllocator(beforeRestart).AllocateGlobalOrderNumberAsync(eventSessionId, TestContext.CurrentContext.CancellationToken);
+        await new NumberCounterAllocator(beforeRestart).AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
+        await new NumberCounterAllocator(beforeRestart).AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
         beforeRestart.Dispose();
 
         GastronomyAppDbContext afterRestart = fixture.CreateContext();
         int allocated = await new NumberCounterAllocator(afterRestart)
-            .AllocateGlobalOrderNumberAsync(eventSessionId, TestContext.CurrentContext.CancellationToken);
+            .AllocateGlobalOrderNumberAsync(TestContext.CurrentContext.CancellationToken);
 
         Assert.That(allocated, Is.EqualTo(3));
     }
@@ -75,9 +75,9 @@ public sealed class NumberCounterAllocatorTest
         Guid firstLocationId = Guid.NewGuid();
         Guid secondLocationId = Guid.NewGuid();
 
-        await allocator.AllocateLocationSequenceNumberAsync(eventSessionId, firstLocationId, TestContext.CurrentContext.CancellationToken);
-        await allocator.AllocateLocationSequenceNumberAsync(eventSessionId, firstLocationId, TestContext.CurrentContext.CancellationToken);
-        int secondLocationFirstNumber = await allocator.AllocateLocationSequenceNumberAsync(eventSessionId, secondLocationId, TestContext.CurrentContext.CancellationToken);
+        await allocator.AllocateLocationSequenceNumberAsync(firstLocationId, TestContext.CurrentContext.CancellationToken);
+        await allocator.AllocateLocationSequenceNumberAsync(firstLocationId, TestContext.CurrentContext.CancellationToken);
+        int secondLocationFirstNumber = await allocator.AllocateLocationSequenceNumberAsync(secondLocationId, TestContext.CurrentContext.CancellationToken);
 
         Assert.That(secondLocationFirstNumber, Is.EqualTo(1));
     }

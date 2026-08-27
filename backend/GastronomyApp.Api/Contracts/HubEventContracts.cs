@@ -39,4 +39,3 @@ public sealed record EnrolmentCompletedEvent(Guid ServerPersonId, string ServerP
 
 public sealed record DeviceRevokedEvent(Guid DeviceId);
 
-public sealed record EventSessionStartedEvent(Guid EventSessionId, string Name, bool IsPractice);

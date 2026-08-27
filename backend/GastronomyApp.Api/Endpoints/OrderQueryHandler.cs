@@ -21,18 +21,9 @@ public sealed class OrderQueryHandler
 
     public async Task<IResult> ListForPersonAsync(Guid serverPersonId, CancellationToken cancellationToken)
     {
-        EventSession? session = await dbContext.EventSessions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.IsActive, cancellationToken);
-
-        if (session is null)
-        {
-            return Results.Ok(new OrderListView([]));
-        }
-
         List<Order> orders = await dbContext.Orders
             .AsNoTracking()
-            .Where(order => order.ServerPersonId == serverPersonId && order.EventSessionId == session.Id)
+            .Where(order => order.ServerPersonId == serverPersonId)
             .OrderByDescending(order => order.CreatedAtUtc)
             .Take(DefaultLimit)
             .ToListAsync(cancellationToken);

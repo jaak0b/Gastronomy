@@ -46,9 +46,9 @@ public sealed class OrderAcceptanceServiceTest
                 LocationOf(_kitchenId, "Kueche", 1),
                 LocationOf(_barIndoorId, "Theke innen", 2),
             ]));
-        A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<CancellationToken>._))
             .Returns(Task.FromResult(137));
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
             .Returns(Task.FromResult(42));
 
         GivenCatalogItem(_bratwurstId, "Bratwurst", 350, [_kitchenId]);
@@ -117,7 +117,6 @@ public sealed class OrderAcceptanceServiceTest
         return new OrderAcceptanceRequest
         {
             ClientOrderId = _clientOrderId,
-            EventSessionId = _eventSessionId,
             ServerPersonId = _serverPersonId,
             DeviceId = _deviceId,
             TableLabel = tableLabel,
@@ -375,15 +374,14 @@ public sealed class OrderAcceptanceServiceTest
             Assert.That(order.Tickets, Has.Count.EqualTo(2));
             Assert.That(order.TotalCents, Is.EqualTo(1100));
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Accepted));
-            Assert.That(order.EventSessionId, Is.EqualTo(_eventSessionId));
             Assert.That(order.ServerPersonId, Is.EqualTo(_serverPersonId));
             Assert.That(order.DeviceId, Is.EqualTo(_deviceId));
             Assert.That(order.ClientOrderId, Is.EqualTo(_clientOrderId));
         });
 
-        A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(_eventSessionId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_eventSessionId, A<Guid>._, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(A<Guid>._, A<CancellationToken>._))
             .MustHaveHappenedTwiceExactly();
         A.CallTo(() => _orderRepository.AddAsync(order, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     }
@@ -406,16 +404,16 @@ public sealed class OrderAcceptanceServiceTest
             Assert.That(order.Lines.Select(line => line.LocationTicketId).Distinct().Count(), Is.EqualTo(1));
             Assert.That(order.Lines[0].LocationTicketId, Is.EqualTo(order.Tickets[0].Id));
         });
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_eventSessionId, _kitchenId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
 
     [Test]
     public async Task AcceptAsync_LinesAtTwoLocations_CreatesOneTicketPerLocationWithItsOwnSequenceNumber()
     {
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_eventSessionId, _kitchenId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_kitchenId, A<CancellationToken>._))
             .Returns(Task.FromResult(42));
-        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_eventSessionId, _barIndoorId, A<CancellationToken>._))
+        A.CallTo(() => _numberAllocator.AllocateLocationSequenceNumberAsync(_barIndoorId, A<CancellationToken>._))
             .Returns(Task.FromResult(7));
 
         Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(
@@ -440,7 +438,6 @@ public sealed class OrderAcceptanceServiceTest
         Order existing = new()
         {
             Id = Guid.NewGuid(),
-            EventSessionId = _eventSessionId,
             ClientOrderId = _clientOrderId,
             GlobalOrderNumber = 12,
             ServerPersonId = _serverPersonId,

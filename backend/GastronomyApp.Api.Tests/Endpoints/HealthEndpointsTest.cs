@@ -24,7 +24,7 @@ public sealed class HealthEndpointsTest
     }
 
     [Test]
-    public async Task GetHealth_AnonymousCaller_ReportsTheSessionAndThePrinterCounts()
+    public async Task GetHealth_AnonymousCaller_ReportsThePrinterCounts()
     {
         using HttpResponseMessage response = await factory.Client.GetAsync("/api/health");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -33,7 +33,6 @@ public sealed class HealthEndpointsTest
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(body.RootElement.GetProperty("status").GetString(), Is.EqualTo("ok"));
-            Assert.That(body.RootElement.GetProperty("eventSession").GetString(), Is.EqualTo("Samstagabend"));
             Assert.That(body.RootElement.GetProperty("printersOnline").GetInt32(), Is.EqualTo(2));
             Assert.That(body.RootElement.GetProperty("printersTotal").GetInt32(), Is.EqualTo(2));
         });

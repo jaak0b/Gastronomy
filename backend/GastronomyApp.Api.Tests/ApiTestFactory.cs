@@ -118,14 +118,6 @@ public sealed class ApiSeeder
             Guid.NewGuid(),
             Guid.NewGuid());
 
-        context.EventSessions.Add(new EventSession
-        {
-            Id = world.EventSessionId,
-            Name = "Samstagabend",
-            IsPractice = false,
-            StartedAtUtc = baseline,
-            IsActive = true,
-        });
 
         context.ServerPeople.Add(new ServerPerson
         {

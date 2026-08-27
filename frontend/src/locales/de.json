@@ -254,21 +254,6 @@
       "reprint": "Erneut drucken",
       "noCancel": "Sagen Sie der Station Bescheid. Eine gesendete Bestellung lässt sich nicht zurücknehmen, weil ihr Bon schon gedruckt wird."
     },
-    "event": {
-      "title": "Veranstaltung",
-      "current": "Laufende Veranstaltung: {name}, seit {time}",
-      "startNew": "Neue Veranstaltung starten",
-      "startEffect": "Die Bonnummern beginnen wieder bei 1. Alle bisherigen Bestellungen bleiben gespeichert.",
-      "blockedOpenTickets": "Klären Sie zuerst {count} offenen Bon in der Bestellliste. Beim Start einer neuen Veranstaltung verschwindet er von allen Telefonen. | Klären Sie zuerst {count} offene Bons in der Bestellliste. Beim Start einer neuen Veranstaltung verschwinden sie von allen Telefonen.",
-      "blockedQuestions": "Beantworten Sie zuerst {count} offene Frage zu einem Bon in der Bestellliste. | Beantworten Sie zuerst {count} offene Fragen zu Bons in der Bestellliste.",
-      "blockedMock": "Tragen Sie bei {names} einen Drucker ein oder starten Sie stattdessen eine Übung. Auf dem Testdrucker kommt kein Bon auf den Stapel.",
-      "confirmName": "Tippen Sie den Namen der neuen Veranstaltung ein, um sie zu starten. In der letzten Stunde wurden noch Bestellungen aufgenommen.",
-      "practice": "Übung starten",
-      "practiceHelp": "In einer Übung ist der Testdrucker in Ordnung, und die Bestellungen stehen später nicht in der Abrechnung.",
-      "practiceRunning": "Es läuft eine Übung. Starten Sie die richtige Veranstaltung, bevor die Gäste kommen.",
-      "none": "Keine Veranstaltung aktiv.",
-      "name": "Name der Veranstaltung"
-    },
     "backup": {
       "title": "Datensicherung",
       "create": "Sicherungsdatei anlegen",
@@ -286,7 +271,16 @@
     "edit": "Bearbeiten",
     "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
     "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Station zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Station und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Station zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Station und können nicht bestellt werden.",
-    "stationHasNoPrinterWorker": "Versuchen Sie es gleich noch einmal. Diese Station hat noch keine Verbindung zum Drucker."
+    "stationHasNoPrinterWorker": "Versuchen Sie es gleich noch einmal. Diese Station hat noch keine Verbindung zum Drucker.",
+    "numbers": {
+      "title": "Laufnummern",
+      "help": "Die Bestellnummer und die Bonnummern jeder Station zählen fortlaufend. Setzen Sie sie vor einem neuen Fest auf 1 zurück.",
+      "reset": "Laufnummern zurücksetzen",
+      "confirm": "Sollen die Laufnummern jetzt auf 1 zurückgesetzt werden? Bereits aufgenommene Bestellungen behalten ihre Nummern.",
+      "confirmYes": "Ja, zurücksetzen",
+      "confirmNo": "Abbrechen",
+      "done": "Die Laufnummern beginnen wieder bei 1."
+    }
   },
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",

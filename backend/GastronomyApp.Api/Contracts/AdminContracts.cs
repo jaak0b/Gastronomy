@@ -129,34 +129,4 @@ public sealed record ArmMockFaultRequest
     public required string? Mode { get; init; }
 }
 
-public sealed record StartEventSessionRequest
-{
-    public required string? Name { get; init; }
-    public required bool IsPractice { get; init; }
-    public string? ConfirmedName { get; init; }
-}
-
-public sealed record EventSessionBlockingConditionView(
-    string Guard,
-    string MessageKey,
-    IReadOnlyDictionary<string, string> Parameters);
-
-public sealed record EventSessionStartRefusedView(
-    string Code,
-    string MessageKey,
-    IReadOnlyDictionary<string, string> Parameters,
-    string? Details,
-    IReadOnlyList<EventSessionBlockingConditionView> BlockingConditions);
-
-public sealed record EventSessionBlocksView(
-    IReadOnlyList<string> ViolatedGuards,
-    int NonFinalTicketCount,
-    int UnansweredUnknownCount,
-    IReadOnlyList<CatalogLocationView> LocationsOnTestPrinter,
-    IReadOnlyList<EventSessionBlockingConditionView> BlockingConditions);
-
-public sealed record AdminEventSessionView(
-    EventSessionView? EventSession,
-    EventSessionBlocksView? BlocksStarting);
-
-public sealed record StartedEventSessionView(EventSessionView EventSession, DateTime StartedAtUtc);
+public sealed record ResetNumbersView(int LocationCountersCleared);

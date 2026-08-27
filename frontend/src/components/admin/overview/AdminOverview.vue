@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminLocationsStore } from '../../../stores/admin/locations'
 import { useAdminItemsStore } from '../../../stores/admin/items'
 import { useAdminPrintersStore } from '../../../stores/admin/printers'
+import { request } from '../../../api/client'
 
 const { t } = useI18n()
 const phoneAddress = window.location.origin
@@ -52,6 +53,33 @@ const rows = computed<ReadinessRow[]>(() => {
   return readiness
 })
 
+const isConfirmingReset = ref(false)
+const resetDoneText = ref<string | null>(null)
+const resetFailed = ref(false)
+
+function askToReset(): void {
+  resetDoneText.value = null
+  resetFailed.value = false
+  isConfirmingReset.value = true
+}
+
+function cancelReset(): void {
+  isConfirmingReset.value = false
+}
+
+async function confirmReset(): Promise<void> {
+  isConfirmingReset.value = false
+  const result = await request('/api/admin/numbers/reset', { method: 'POST' })
+  if (result.kind === 'ok') {
+    resetDoneText.value = t('admin.numbers.done')
+    resetFailed.value = false
+    return
+  }
+
+  resetDoneText.value = null
+  resetFailed.value = true
+}
+
 onMounted(async () => {
   await locations.load()
   await items.load()
@@ -67,5 +95,24 @@ onMounted(async () => {
       {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
     </p>
     <p class="phone-address">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
+
+    <div class="numbers-reset">
+      <h2>{{ t('admin.numbers.title') }}</h2>
+      <p class="numbers-help">{{ t('admin.numbers.help') }}</p>
+      <button v-if="!isConfirmingReset" type="button" class="secondary" @click="askToReset()">
+        {{ t('admin.numbers.reset') }}
+      </button>
+      <div v-else class="confirm-block">
+        <p class="confirm-question">{{ t('admin.numbers.confirm') }}</p>
+        <button type="button" class="primary" @click="confirmReset()">
+          {{ t('admin.numbers.confirmYes') }}
+        </button>
+        <button type="button" class="secondary" @click="cancelReset()">
+          {{ t('admin.numbers.confirmNo') }}
+        </button>
+      </div>
+      <p v-if="resetDoneText !== null" class="reset-done">{{ resetDoneText }}</p>
+      <p v-if="resetFailed" class="reset-failed">{{ t('admin.loadFailed') }}</p>
+    </div>
   </section>
 </template>

@@ -6,7 +6,6 @@ export type AdminSection =
   | 'items'
   | 'printers'
   | 'people'
-  | 'event'
 
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
@@ -23,7 +22,6 @@ const ADMIN_SECTIONS: AdminSection[] = [
   'items',
   'printers',
   'people',
-  'event',
 ]
 
 function adminSectionFrom(segment: string | undefined): AdminSection {

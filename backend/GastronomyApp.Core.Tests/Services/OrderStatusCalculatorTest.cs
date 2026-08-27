@@ -18,7 +18,7 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AnyTicketUnknown_IsNeedsAttention()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Printed, LocationTicketStatus.Unknown], false),
+            _calculator.Calculate([LocationTicketStatus.Printed, LocationTicketStatus.Unknown]),
             Is.EqualTo(OrderStatus.NeedsAttention));
     }
 
@@ -27,8 +27,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Printing, LocationTicketStatus.Failed, LocationTicketStatus.Queued],
-                false),
+                [LocationTicketStatus.Printing, LocationTicketStatus.Failed, LocationTicketStatus.Queued]),
             Is.EqualTo(OrderStatus.NeedsAttention));
     }
 
@@ -36,28 +35,8 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AnyTicketBlocked_IsNeedsAttention()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Blocked], false),
+            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Blocked]),
             Is.EqualTo(OrderStatus.NeedsAttention));
-    }
-
-    [Test]
-    public void Calculate_PrintedOnTestPrinterOutsideAPracticeSession_IsNeedsAttention()
-    {
-        Assert.That(
-            _calculator.Calculate(
-                [LocationTicketStatus.Printed, LocationTicketStatus.PrintedOnTestPrinter],
-                false),
-            Is.EqualTo(OrderStatus.NeedsAttention));
-    }
-
-    [Test]
-    public void Calculate_PrintedOnTestPrinterInAPracticeSession_FallsThroughToPrinted()
-    {
-        Assert.That(
-            _calculator.Calculate(
-                [LocationTicketStatus.Printed, LocationTicketStatus.PrintedOnTestPrinter],
-                true),
-            Is.EqualTo(OrderStatus.Printed));
     }
 
     [Test]
@@ -65,8 +44,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Printed, LocationTicketStatus.HandledOnPaper],
-                false),
+                [LocationTicketStatus.Printed, LocationTicketStatus.HandledOnPaper]),
             Is.EqualTo(OrderStatus.Printed));
     }
 
@@ -79,8 +57,7 @@ public sealed class OrderStatusCalculatorTest
                     LocationTicketStatus.Printed,
                     LocationTicketStatus.HandledOnPaper,
                     LocationTicketStatus.PrintedOnTestPrinter,
-                ],
-                true),
+                ]),
             Is.EqualTo(OrderStatus.Printed));
     }
 
@@ -89,8 +66,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Queued, LocationTicketStatus.Printing, LocationTicketStatus.Printed],
-                false),
+                [LocationTicketStatus.Queued, LocationTicketStatus.Printing, LocationTicketStatus.Printed]),
             Is.EqualTo(OrderStatus.Printing));
     }
 
@@ -98,7 +74,7 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AtLeastOneQueuedAndNothingElseMatching_IsAccepted()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Printed], false),
+            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Printed]),
             Is.EqualTo(OrderStatus.Accepted));
     }
 
@@ -106,11 +82,11 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_SingleQueuedTicket_IsAccepted()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued], false),
+            _calculator.Calculate([LocationTicketStatus.Queued]),
             Is.EqualTo(OrderStatus.Accepted));
     }
 
-    private OrderStatus ExpectedByTable(IReadOnlyCollection<LocationTicketStatus> statuses, bool isPracticeSession)
+    private OrderStatus ExpectedByTable(IReadOnlyCollection<LocationTicketStatus> statuses)
     {
         foreach (LocationTicketStatus status in statuses)
         {
@@ -119,17 +95,6 @@ public sealed class OrderStatusCalculatorTest
                 || status == LocationTicketStatus.Blocked)
             {
                 return OrderStatus.NeedsAttention;
-            }
-        }
-
-        if (!isPracticeSession)
-        {
-            foreach (LocationTicketStatus status in statuses)
-            {
-                if (status == LocationTicketStatus.PrintedOnTestPrinter)
-                {
-                    return OrderStatus.NeedsAttention;
-                }
             }
         }
 
@@ -168,19 +133,16 @@ public sealed class OrderStatusCalculatorTest
 
         foreach (LocationTicketStatus status in allStatuses)
         {
-            foreach (bool isPracticeSession in new[] { false, true })
-            {
-                List<LocationTicketStatus> statuses = [status];
+            List<LocationTicketStatus> statuses = [status];
 
-                Assert.That(
-                    _calculator.Calculate(statuses, isPracticeSession),
-                    Is.EqualTo(ExpectedByTable(statuses, isPracticeSession)),
-                    $"status {status}, practice {isPracticeSession}");
-                checkedCombinations++;
-            }
+            Assert.That(
+                _calculator.Calculate(statuses),
+                Is.EqualTo(ExpectedByTable(statuses)),
+                $"status {status}");
+            checkedCombinations++;
         }
 
-        Assert.That(checkedCombinations, Is.EqualTo(16));
+        Assert.That(checkedCombinations, Is.EqualTo(8));
     }
 
     [Test]
@@ -196,8 +158,8 @@ public sealed class OrderStatusCalculatorTest
                 List<LocationTicketStatus> statuses = [first, second];
 
                 Assert.That(
-                    _calculator.Calculate(statuses, false),
-                    Is.EqualTo(ExpectedByTable(statuses, false)),
+                    _calculator.Calculate(statuses),
+                    Is.EqualTo(ExpectedByTable(statuses)),
                     $"statuses {first} and {second}");
                 checkedCombinations++;
             }

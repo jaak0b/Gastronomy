@@ -211,9 +211,6 @@ export const useOrderStore = defineStore('order', () => {
         }
       },
     )
-    connection.onEvent('EventSessionStarted', () => {
-      orders.value = []
-    })
   }
 
   return {
