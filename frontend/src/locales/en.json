@@ -1,5 +1,317 @@
 {
-  "app": {
-    "title": "GastronomyApp"
+  "enrol": {
+    "title": "Set up this phone",
+    "intro": "Enter your name so the kitchen can see who took the order.",
+    "nameLabel": "Your name",
+    "continue": "Continue",
+    "error": {
+      "codeUsed": "Ask at the laptop for a new QR code. This code is no longer valid.",
+      "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the laptop."
+    },
+    "orderHeld": "The order you had started is still here. It comes back on the screen as soon as the phone is set up.",
+    "success": "Your phone is ready."
+  },
+  "enrolCode": {
+    "title": "Set up with the six digit code",
+    "intro": "Enter the six digit code shown on the laptop.",
+    "validity": "The code is valid for five minutes and for one phone.",
+    "field": "Code",
+    "continue": "Continue",
+    "error": {
+      "wrong": "Read the six digits from the laptop again. This code is not correct.",
+      "retired": "Ask at the laptop for a new QR code. This code was entered wrongly too often and is not accepted any more."
+    }
+  },
+  "header": {
+    "reconnecting": "No connection to the laptop. The app keeps trying.",
+    "backOnline": "The connection is back.",
+    "attention": "{count} order needs checking. | {count} orders need checking.",
+    "stationPaperOut": "The printer at {name} has no paper.",
+    "stationOffline": "Station {name} is not answering right now.",
+    "stationFaulty": "Tell the people at {name}. The printer there is not accepting anything any more.",
+    "stationWaiting": "{count} slip is waiting there. | {count} slips are waiting there.",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "person": "You are serving as {name}.",
+    "language": "Language",
+    "languageGerman": "German",
+    "languageEnglish": "English"
+  },
+  "catalog": {
+    "title": "Take an order",
+    "searchPlaceholder": "Search for an item",
+    "soldOut": "Sold out",
+    "lineNote": "Note for this item",
+    "lineNotePlaceholder": "For example: no onions",
+    "basketEmpty": "Nothing chosen yet",
+    "basketSummary": "{count} item, {total} | {count} items, {total}",
+    "toReview": "Go to the summary",
+    "paperWarning": "Keep taking orders. The printer at {name} has no paper, and the slip prints as soon as somebody loads a roll.",
+    "offlineWarning": "Keep taking orders. Station {name} is not answering right now, and the slip prints later.",
+    "itemSoldOut": "Ask the guest whether they would like something else. {name} has just sold out.",
+    "addOne": "One more",
+    "removeOne": "One less",
+    "lineNoLongerOnTheMenu": "No longer on the menu."
+  },
+  "line": {
+    "whereTitle": "Where should {item} be prepared?",
+    "whereHelp": "The choice applies to this item only.",
+    "station": "Station: {name}",
+    "changeStation": "Change the station"
+  },
+  "review": {
+    "title": "Check the order",
+    "tableLabel": "Table",
+    "tablePlaceholder": "For example: Table 12",
+    "tableHelp": "Enter the table so the tray reaches the right table.",
+    "tableMissing": "Enter a table before you send.",
+    "orderNote": "Note for the kitchen",
+    "goesTo": "Goes to {name}",
+    "total": "Total",
+    "totalHelp": "The amount is only an aid for adding up. You take the cash at the table as before.",
+    "send": "Send order",
+    "sending": "Sending",
+    "sent": "Order {number} has arrived.",
+    "totalChanged": "Tell the guest the new total: {total}. The price was changed at the laptop a moment ago.",
+    "back": "Back to the items",
+    "sendFailed": "Tap \"Send again\". The laptop could not be reached, and the order is still here in full.",
+    "sendFailedDatabase": "Tap \"Send again\". The laptop could not save the order just now, and the order is still here in full.",
+    "tooManyRequests": "Wait a moment, then tap \"Send again\". The laptop is getting too many requests at once.",
+    "retry": "Send again",
+    "sendFailedAgain": "Write the order on paper and take it to the station. Sending has failed several times.",
+    "duplicateRisk": "Check your orders before you take this one again. It has already been sent."
+  },
+  "orders": {
+    "title": "My orders",
+    "empty": "You have not taken an order yet today.",
+    "row": "Order {number}, {table}",
+    "status": {
+      "printing": "Printing",
+      "printed": "Printed",
+      "handledOnPaper": "Taken by the station",
+      "attention": "Please check"
+    },
+    "ticket": "{station}, slip {sequence}",
+    "detailTitle": "Order {number}"
+  },
+  "ticket": {
+    "unknown": {
+      "action": "Check the pile at {station} for slip {sequence} and answer here.",
+      "reason": "The connection to the printer broke while the slip was being sent, so nobody can tell from here whether it printed.",
+      "paperHint": "The printer has also run out of paper.",
+      "yes": "The slip is there",
+      "no": "The slip is missing",
+      "answered": "This question has already been answered."
+    },
+    "paperEnd": "Put a new paper roll into the printer at {station}. The slip prints by itself afterwards.",
+    "coverOpen": "Close the cover on the printer at {station}. The slip prints by itself afterwards.",
+    "failed": "Tell {station} about order {number} in person. The printer there is not answering.",
+    "failedAfterWaiting": "Tell {station} about order {number} in person. The slip has been waiting there {minutes} minutes to print.",
+    "stationFaulty": "Tell {station} about order {number} in person. The printer there is not accepting anything any more.",
+    "stationDisabled": "Tell {station} about order {number} in person. The station is switched off at the laptop.",
+    "printerError": "Fetch somebody who can look at the printer at {station}. The printer is reporting a fault.",
+    "testPrinter": "Tell {station} about order {number} in person. The station is still on the test printer at the laptop, so there is no slip on the pile.",
+    "reprintQueued": "The slip is printed again. It carries the same number again and is marked as a reprint.",
+    "handledOnPaper": "The station has taken this order from the screen. No slip will be printed.",
+    "reprint": "Print again"
+  },
+  "order": {
+    "changedMind": "Tell the station and take the change as a new order. A sent order cannot be taken back here, because its slip is already printing."
+  },
+  "admin": {
+    "notOnLaptop": "Open the admin pages on the laptop itself at {url}.",
+    "overview": {
+      "title": "Overview",
+      "ready": "Everything is set up. You can now set up the phones.",
+      "missingLocation": "Create at least one station, for example Kitchen and Bar.",
+      "missingPrinter": "Set up a printer for {name}. While the test printer is set there, no slip reaches the pile.",
+      "missingItems": "Create the items with their prices.",
+      "itemsWithoutLocation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
+      "paperNearEnd": "Put a new paper roll ready at {name}. The roll in the printer is running out.",
+      "openTickets": "Check the order list. {count} slip is still waiting to print. | Check the order list. {count} slips are still waiting to print.",
+      "stationBlocked": "Sort out the printer at {name}. {count} slip has been waiting there for {minutes} minutes. | Sort out the printer at {name}. {count} slips have been waiting there for {minutes} minutes.",
+      "address": "Phones reach the laptop at {url}.",
+      "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}."
+    },
+    "locations": {
+      "title": "Stations",
+      "help": "A station is a kitchen or a bar with its own printer.",
+      "slipLanguage": "Language of the slips",
+      "slipLanguageHelp": "Choose the language the slips are printed in at this station. This is the language of the people working there, not the language of the server.",
+      "openTickets": "This station still has {count} open slip and cannot be switched off right now. | This station still has {count} open slips and cannot be switched off right now.",
+      "lastForItems": "Give {names} a different station first. This station is the only one for those items.",
+      "stationCard": "Print the station card",
+      "stationCardHelp": "Tape the card inside the printer lid. If the printer fails, the QR code on the card opens this station's emergency page.",
+      "new": "New station",
+      "deactivate": "Switch this station off"
+    },
+    "items": {
+      "title": "Items",
+      "priceHelp": "Prices are only there for adding up. No money is paid through the app.",
+      "needsLocation": "Tick at least one station. Without one this item cannot be ordered.",
+      "soldOut": "Sold out",
+      "soldOutHelp": "Switch an item to sold out as soon as it has run out. It stays on the phones and can no longer be chosen.",
+      "soldOutUndo": "Available again",
+      "deactivate": "Not on the menu",
+      "deactivateHelp": "Take an item off the menu for this festival entirely. It then does not appear on the phones at all.",
+      "deactivateBlocked": "Switch the item to \"Sold out\" instead. It cannot be taken off the menu while an event is running.",
+      "soldOutWalk": "The laptop is the only place where you can switch this.",
+      "new": "New item",
+      "category": "Category",
+      "price": "Price in cents"
+    },
+    "assignment": {
+      "title": "Assignment",
+      "help": "Tick where an item can be prepared. With one station it happens by itself, with several the server chooses while taking the order.",
+      "preview": "Preview: {item} goes to {location}.",
+      "previewChoice": "Preview: for {item} the server chooses between {locations}."
+    },
+    "tables": {
+      "title": "Tables",
+      "help": "These names appear as suggestions on the phone. A server can always type a different table.",
+      "fromLastSession": "Add the table names from the last event"
+    },
+    "printers": {
+      "title": "Printers",
+      "kindNetwork": "Network printer",
+      "kindMock": "Test printer without hardware",
+      "kindAgent": "Printer on a Raspberry Pi",
+      "hostHelp": "Enter the printer's IP address, or search the network for it. Tapping a printer that was found also switches this station from the test printer to a network printer.",
+      "search": "Search the network for printers",
+      "searching": "Searching. This takes about a minute.",
+      "searchNone": "Enter the address from the printer's self test. No printer was found.",
+      "testPrint": "Print a test slip",
+      "testPrintHelp": "Print a test slip at every station before the guests arrive.",
+      "online": "Answering",
+      "offline": "Not answering",
+      "paperEnd": "No paper",
+      "paperNearEnd": "Paper running out",
+      "coverOpen": "Cover open",
+      "faulty": "Fault. Nothing more is being sent to this printer.",
+      "reconnect": "Connect again",
+      "reconnectHelp": "Check the printer for a paper jam and a loose cable first. After that the printer accepts slips again.",
+      "waiting": "{count} slip is waiting for this printer. | {count} slips are waiting for this printer.",
+      "shared": "This address is also set at {names}. The slips for these stations come out of the same printer.",
+      "sharedHelp": "This is intended. When a printer fails, enter the address of a printer that is still working for that station.",
+      "lastHeard": "Last heard from at {time}",
+      "mockFolder": "The slips from this test printer are in the folder {path}.",
+      "mockFolderUnwritable": "Announce the orders for {name} at the station in person. The test printer there cannot put slips anywhere, because nothing can be written into the folder {path}. Repair the setup afterwards, from the program window under Settings, or free up space on the hard disk.",
+      "faultTitle": "Simulate a fault on the test printer",
+      "faultHelp": "This shows what happens on the phone when a printer fails. The setting applies to the test printer only.",
+      "fault": {
+        "none": "No fault",
+        "paperEnd": "No paper",
+        "coverOpen": "Cover open",
+        "connectTimeout": "The printer does not answer",
+        "dropEarly": "The connection breaks before anything is sent",
+        "dropMidJob": "The connection breaks in the middle of printing",
+        "unknown": "The printer does not report whether it printed",
+        "once": "Once",
+        "sticky": "Until it is reset"
+      }
+    },
+    "people": {
+      "title": "Servers",
+      "help": "Set the phones up one after another. A server has exactly one phone.",
+      "new": "New server",
+      "empty": "Nobody is in this list yet. Tap \"New server\" and let the first server scan the QR code.",
+      "noPhone": "No phone set up",
+      "lastSeen": "Last seen at {time}",
+      "newCode": "Create a new QR code",
+      "newCodeEffect": "The phone {name} has been using can no longer send orders afterwards. With the new QR code {name} sets up a phone, a borrowed one as well.",
+      "rename": "Change the name",
+      "renameHelp": "Change the name when a server mistyped it. From the next slip onwards the new name is on it.",
+      "revoke": "Remove this phone",
+      "revokeConfirm": "The phone belonging to {name} can no longer send orders afterwards. The orders {name} took stay saved.",
+      "revoked": "Removed",
+      "deactivate": "Take this server off the list",
+      "deactivateHelp": "Take a name off the list when it ended up there twice. The orders stay saved."
+    },
+    "enrol": {
+      "title": "Set up a phone",
+      "step1": "The server scans this QR code with the camera on their phone.",
+      "step2": "The server enters their name in the browser.",
+      "step3": "The name is in the list afterwards.",
+      "validity": "The QR code is valid for five minutes and for one phone.",
+      "cameraTitle": "If the camera does not work",
+      "cameraStep": "Open {url} in the browser on the phone and enter the code {code} there.",
+      "done": "{name} has set up their phone.",
+      "expired": "Create a new QR code. This one was not scanned for five minutes.",
+      "codeRetired": "Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more."
+    },
+    "orders": {
+      "title": "Orders",
+      "filterAttention": "Only orders that need checking",
+      "unknownQuestion": "Check the pile at {station} for slip {sequence} and answer here.",
+      "slipIsThere": "The slip is there",
+      "slipIsMissing": "The slip is missing",
+      "reprint": "Print again",
+      "noCancel": "Tell the station. A sent order cannot be taken back, because its slip is already printing."
+    },
+    "event": {
+      "title": "Event",
+      "current": "Current event: {name}, since {time}",
+      "startNew": "Start a new event",
+      "startEffect": "Slip numbers start again at 1. Every order so far stays saved.",
+      "blockedOpenTickets": "Settle {count} open slip in the order list first. Starting a new event makes it disappear from every phone. | Settle {count} open slips in the order list first. Starting a new event makes them disappear from every phone.",
+      "blockedQuestions": "Answer {count} open question about a slip in the order list first. | Answer {count} open questions about slips in the order list first.",
+      "blockedMock": "Set up a printer at {names}, or start a practice run instead. On the test printer no slip reaches the pile.",
+      "confirmName": "Type the name of the new event to start it. Orders were still being taken in the last hour.",
+      "practice": "Start a practice run",
+      "practiceHelp": "In a practice run the test printer is fine, and the orders are left out of the takings list later.",
+      "practiceRunning": "A practice run is going on. Start the real event before the guests arrive."
+    },
+    "backup": {
+      "title": "Backup",
+      "create": "Create a backup file",
+      "done": "Copy the file {name} onto a USB stick. It holds the whole history and is in the folder {path}.",
+      "openFolderHint": "Open the folder from the program window, under Settings, with \"Open the data folder\".",
+      "help": "Create the backup file with this button. Copying the database file while the program is running can leave out the most recent orders."
+    },
+    "diagnostics": {
+      "title": "Technical details",
+      "log": "Open the log file",
+      "logHelp": "This holds what the program did this evening. The file helps when a station received nothing."
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit"
+  },
+  "station": {
+    "title": "{name}: orders on screen",
+    "warningTitle": "This page is only for emergencies.",
+    "warningBody": "Open it only when the printer has failed. In normal operation the station works off the pile of slips.",
+    "empty": "There are no open orders. Every slip has printed.",
+    "language": "Language",
+    "languageGerman": "Deutsch",
+    "languageEnglish": "English",
+    "filterLabel": "Station",
+    "filterHelp": "Choose the station whose slips you want to see here.",
+    "row": "Slip {sequence}, order {order}, {table}",
+    "rowTime": "Taken at {time}",
+    "line": "{quantity} x {item}",
+    "lineNote": "Note: {note}",
+    "orderNote": "Note for the order: {note}",
+    "status": {
+      "waiting": "Waiting to print",
+      "printing": "Printing right now",
+      "cannotPrint": "The printer cannot print right now",
+      "failed": "Not printed",
+      "unknown": "Not known whether it printed"
+    },
+    "reprint": "REPRINT",
+    "take": "Taken",
+    "takeHelp": "Write the table number on a piece of paper and put it with the food.",
+    "takeUnavailable": "Fetch this slip at the printer. This station's printer is working.",
+    "takeRefused": "Fetch the slip at the printer. This station's printer is printing again, so this slip was not taken.",
+    "undo": "Undo",
+    "takenPending": "Tap \"Undo\" if you tapped the wrong row. This slip is taken in {seconds} seconds.",
+    "alreadyTaken": "Somebody else has just taken this slip. Talk to each other so the order is made only once.",
+    "takenNote": "No slip will be printed for this order any more.",
+    "alreadyPrinted": "This slip has printed in the meantime and is on the pile.",
+    "printerBack": "The printer is answering again. The slips are coming out of the printer again.",
+    "unknownKey": "Ask the person at the laptop for the current link. This address is no longer valid."
   }
 }

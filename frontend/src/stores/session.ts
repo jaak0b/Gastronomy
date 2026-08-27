@@ -1,0 +1,129 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { request } from '../api/client'
+import type { AppLanguage, RedeemResponse, ServerPerson, SessionInfo } from '../core/apiTypes'
+import { loadDraft } from '../core/draftCart'
+import { useConnectionStore } from './connection'
+
+export const TOKEN_STORAGE_KEY = 'deviceToken'
+export const LANGUAGE_STORAGE_KEY = 'language'
+
+export interface RedeemInput {
+  code?: string
+  sixDigitCode?: string
+  name: string
+}
+
+export const useSessionStore = defineStore('session', () => {
+  const deviceToken = ref<string | null>(localStorage.getItem(TOKEN_STORAGE_KEY))
+  const serverPerson = ref<ServerPerson | null>(null)
+  const language = ref<AppLanguage>(
+    localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'de',
+  )
+  const redeemErrorKey = ref<string | null>(null)
+  const isEnrolled = computed(() => deviceToken.value !== null)
+  const heldDraftExists = computed(() => loadDraft().lines.length > 0)
+
+  function storeToken(token: string): void {
+    deviceToken.value = token
+    localStorage.setItem(TOKEN_STORAGE_KEY, token)
+  }
+
+  function clearToken(): void {
+    deviceToken.value = null
+    serverPerson.value = null
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+  }
+
+  function setLanguage(next: AppLanguage): void {
+    language.value = next
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, next)
+    void request('/api/session/language', {
+      method: 'PUT',
+      body: { language: next },
+      token: deviceToken.value,
+    })
+  }
+
+  function errorKeyFor(status: number, messageKey: string | null): string {
+    if (messageKey !== null) {
+      return messageKey
+    }
+    switch (status) {
+      case 404:
+        return 'enrolCode.error.wrong'
+      case 429:
+        return 'enrolCode.error.retired'
+      default:
+        return 'enrol.error.codeUsed'
+    }
+  }
+
+  async function redeem(input: RedeemInput): Promise<boolean> {
+    redeemErrorKey.value = null
+    const result = await request<RedeemResponse>('/api/enrolment/redeem', {
+      method: 'POST',
+      body: {
+        code: input.code ?? null,
+        sixDigitCode: input.sixDigitCode ?? null,
+        name: input.name,
+        userAgent: navigator.userAgent,
+      },
+    })
+    switch (result.kind) {
+      case 'ok':
+        storeToken(result.data.deviceToken)
+        serverPerson.value = result.data.serverPerson
+        language.value = result.data.language
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, result.data.language)
+        return true
+      case 'unreachable':
+        redeemErrorKey.value = 'enrol.error.noConnection'
+        return false
+      case 'error':
+        redeemErrorKey.value = errorKeyFor(result.status, result.body?.messageKey ?? null)
+        return false
+    }
+  }
+
+  async function loadSession(): Promise<void> {
+    if (deviceToken.value === null) {
+      return
+    }
+    const result = await request<SessionInfo>('/api/session', { token: deviceToken.value })
+    switch (result.kind) {
+      case 'ok':
+        serverPerson.value = result.data.serverPerson
+        language.value = result.data.language
+        return
+      case 'error':
+        if (result.status === 401) {
+          clearToken()
+        }
+        return
+      case 'unreachable':
+        return
+    }
+  }
+
+  function listenForRevocation(): void {
+    const connection = useConnectionStore()
+    connection.onEvent<{ deviceId: string }>('DeviceRevoked', () => {
+      clearToken()
+    })
+  }
+
+  return {
+    deviceToken,
+    serverPerson,
+    language,
+    redeemErrorKey,
+    isEnrolled,
+    heldDraftExists,
+    redeem,
+    loadSession,
+    setLanguage,
+    clearToken,
+    listenForRevocation,
+  }
+})
