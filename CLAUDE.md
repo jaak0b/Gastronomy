@@ -123,7 +123,10 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
     modifiers). This binds source, documentation, commit messages, and UI text.
 
-11. **No trademarked words in file names or identifiers.**
+11. **No trademarked words in file names or identifiers, with one exception: the brand and model of a
+    hardware device the app supports.** A supported printer may be named in a class name, a file name
+    and a persisted discriminator, because that is what the device is called and a neutral substitute
+    would only be a riddle for the next reader. Everything else keeps to neutral names.
 
 12. **Git: commit at will on `master`.** The owner granted standing approval to commit directly to
     `master`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
