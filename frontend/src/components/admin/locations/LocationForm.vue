@@ -27,10 +27,12 @@ function save(): void {
 </script>
 
 <template>
-  <v-card class="location-form mt-4">
-    <v-form @submit.prevent="save">
-      <v-card-text>
+  <v-form class="location-form pa-4" @submit.prevent="save">
+    <v-row dense>
+      <v-col cols="12" md="7">
         <v-text-field v-model="name" :label="t('admin.locations.title')" />
+      </v-col>
+      <v-col cols="12" md="5">
         <v-select
           v-model="slipLanguage"
           class="slip-language"
@@ -40,13 +42,11 @@ function save(): void {
             { title: t('settings.languageEnglish'), value: 'en' },
           ]"
         />
-        <p class="help text-medium-emphasis mt-2">{{ t('admin.locations.slipLanguageHelp') }}</p>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
-          {{ t('admin.save') }}
-        </v-btn>
-      </v-card-actions>
-    </v-form>
-  </v-card>
+      </v-col>
+    </v-row>
+    <p class="help text-medium-emphasis mt-2">{{ t('admin.locations.slipLanguageHelp') }}</p>
+    <v-btn type="submit" color="primary" class="mt-3" :disabled="name.trim().length === 0">
+      {{ t('admin.save') }}
+    </v-btn>
+  </v-form>
 </template>

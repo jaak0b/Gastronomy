@@ -16,10 +16,6 @@ const shown = computed(() =>
   locations.locations.filter((location) => showsDeactivated.value || location.isActive),
 )
 
-const editing = computed(
-  () => locations.locations.find((location) => location.locationId === editingId.value) ?? null,
-)
-
 const refusal = computed(() => {
   const message = locations.errorMessage
   if (message === null) {
@@ -68,17 +64,18 @@ onMounted(locations.load)
       :label="t('admin.showDeactivated')"
     />
 
-    <v-card v-for="location in shown" :key="location.locationId" class="station-row mb-3">
-      <v-card-item>
-        <v-card-title class="name">
-          {{ location.name }}
-          <v-chip v-if="!location.isActive" class="deactivated ms-2" size="small" color="grey">
-            {{ t('admin.deactivated') }}
-          </v-chip>
-        </v-card-title>
-      </v-card-item>
-      <v-card-actions>
-        <v-btn class="edit" variant="text" @click="editingId = location.locationId">
+    <v-card v-for="location in shown" :key="location.locationId" class="station-row mb-2">
+      <div class="d-flex align-center ga-2 px-4 py-2">
+        <span class="name text-h6">{{ location.name }}</span>
+        <v-chip v-if="!location.isActive" class="deactivated" size="small" color="grey">
+          {{ t('admin.deactivated') }}
+        </v-chip>
+        <v-spacer />
+        <v-btn
+          class="edit"
+          variant="text"
+          @click="editingId = editingId === location.locationId ? null : location.locationId"
+        >
           {{ t('admin.edit') }}
         </v-btn>
         <v-btn
@@ -98,14 +95,23 @@ onMounted(locations.load)
         >
           {{ t('admin.locations.activate') }}
         </v-btn>
-      </v-card-actions>
+      </div>
+      <v-expand-transition>
+        <LocationForm
+          v-if="editingId === location.locationId"
+          :location="location"
+          @save="save"
+        />
+      </v-expand-transition>
     </v-card>
 
     <v-btn class="new-station" color="primary" @click="isCreating = true">
       {{ t('admin.locations.new') }}
     </v-btn>
 
-    <LocationForm v-if="isCreating || editing !== null" :location="editing" @save="save" />
+    <v-card v-if="isCreating" class="station-row mb-2">
+      <LocationForm :location="null" @save="save" />
+    </v-card>
 
     <ConfirmDialog
       v-if="askingAboutId !== null"
