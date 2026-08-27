@@ -6,6 +6,7 @@ import { useAdminItemsStore } from '../../../stores/admin/items'
 import { useAdminPrintersStore } from '../../../stores/admin/printers'
 
 const { t } = useI18n()
+const phoneAddress = window.location.origin
 const locations = useAdminLocationsStore()
 const items = useAdminItemsStore()
 const printers = useAdminPrintersStore()
@@ -65,5 +66,6 @@ onMounted(async () => {
     <p v-for="(row, index) in rows" :key="index" class="readiness-row">
       {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
     </p>
+    <p class="phone-address">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
   </section>
 </template>

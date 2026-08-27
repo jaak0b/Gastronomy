@@ -29,30 +29,36 @@ const ADMIN_SECTIONS: AdminSection[] = [
 ]
 
 function adminSectionFrom(segment: string | undefined): AdminSection {
-  const match = ADMIN_SECTIONS.find((section) => section === segment)
+  const wanted = (segment ?? '').toLowerCase()
+  const match = ADMIN_SECTIONS.find((section) => section === wanted)
   return match ?? 'overview'
 }
 
 export function resolveRoute(path: string): AppRoute {
-  const segments = path.split('?')[0].split('/').filter((segment) => segment.length > 0)
+  const segments = path
+    .split('?')[0]
+    .split('#')[0]
+    .split('/')
+    .filter((segment) => segment.length > 0)
+  const first = (segments[0] ?? '').toLowerCase()
   if (segments.length === 0) {
     return { name: 'home' }
   }
-  if (segments[0] === 'j' && segments.length >= 2) {
+  if (first === 'j' && segments.length >= 2) {
     return { name: 'enrolQr', code: segments[1] }
   }
-  if (segments[0] === 'review') {
+  if (first === 'review') {
     return { name: 'review' }
   }
-  if (segments[0] === 'orders') {
+  if (first === 'orders') {
     return segments.length >= 2
       ? { name: 'orderDetail', orderId: segments[1] }
       : { name: 'orders' }
   }
-  if (segments[0] === 'station' && segments.length >= 2) {
+  if (first === 'station' && segments.length >= 2) {
     return { name: 'station', accessKey: segments[1] }
   }
-  if (segments[0] === 'admin') {
+  if (first === 'admin') {
     return { name: 'admin', section: adminSectionFrom(segments[1]) }
   }
   return { name: 'home' }

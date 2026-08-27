@@ -285,8 +285,6 @@
     "warningBody": "Open it only when the printer has failed. In normal operation the station works off the pile of slips.",
     "empty": "There are no open orders. Every slip has printed.",
     "language": "Language",
-    "languageGerman": "Deutsch",
-    "languageEnglish": "English",
     "filterLabel": "Station",
     "filterHelp": "Choose the station whose slips you want to see here.",
     "row": "Slip {sequence}, order {order}, {table}",
@@ -313,5 +311,14 @@
     "alreadyPrinted": "This slip has printed in the meantime and is on the pile.",
     "printerBack": "The printer is answering again. The slips are coming out of the printer again.",
     "unknownKey": "Ask the person at the laptop for the current link. This address is no longer valid."
+  },
+  "welcome": {
+    "title": "This phone is not set up yet.",
+    "body": "Ask the person at the laptop to add you as a server. They tap \"New server\" there and show you the QR code, which you scan with your camera.",
+    "enterCode": "Enter the six digit code"
+  },
+  "language": {
+    "german": "Deutsch",
+    "english": "English"
   }
 }

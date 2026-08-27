@@ -10,7 +10,7 @@ import { usePrinterStatusStore } from './stores/printerStatus'
 import { useConnectionStore } from './stores/connection'
 import AppHeader from './components/header/AppHeader.vue'
 import EnrolQr from './views/EnrolQr.vue'
-import EnrolCode from './views/EnrolCode.vue'
+import Welcome from './views/Welcome.vue'
 import Catalog from './views/Catalog.vue'
 import Review from './views/Review.vue'
 import Orders from './views/Orders.vue'
@@ -27,7 +27,7 @@ const { locale } = useI18n()
 
 type ScreenName =
   | 'enrolQr'
-  | 'enrolCode'
+  | 'welcome'
   | 'catalog'
   | 'review'
   | 'orders'
@@ -41,7 +41,7 @@ const screen = computed<ScreenName>(() => {
     case 'enrolQr':
       return 'enrolQr'
     case 'home':
-      return session.isEnrolled ? 'catalog' : 'enrolCode'
+      return session.isEnrolled ? 'catalog' : 'welcome'
     case 'review':
       return 'review'
     case 'orders':
@@ -91,7 +91,7 @@ onMounted(async () => {
   <AppHeader v-if="showsHeader" />
   <main>
     <EnrolQr v-if="screen === 'enrolQr'" />
-    <EnrolCode v-else-if="screen === 'enrolCode'" />
+    <Welcome v-else-if="screen === 'welcome'" />
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
     <Orders v-else-if="screen === 'orders'" />

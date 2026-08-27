@@ -285,8 +285,6 @@
     "warningBody": "Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Station den Bonstapel ab.",
     "empty": "Es liegen keine offenen Bestellungen an. Alle Bons sind gedruckt.",
     "language": "Sprache",
-    "languageGerman": "Deutsch",
-    "languageEnglish": "English",
     "filterLabel": "Station",
     "filterHelp": "Wählen Sie die Station, deren Bons Sie hier sehen wollen.",
     "row": "Bon {sequence}, Bestellung {order}, {table}",
@@ -313,5 +311,14 @@
     "alreadyPrinted": "Dieser Bon wurde inzwischen gedruckt und liegt auf dem Stapel.",
     "printerBack": "Der Drucker antwortet wieder. Die Bons kommen wieder aus dem Drucker.",
     "unknownKey": "Fragen Sie die Person am Laptop nach dem aktuellen Link. Diese Adresse gilt nicht mehr."
+  },
+  "welcome": {
+    "title": "Dieses Telefon ist noch nicht eingerichtet.",
+    "body": "Bitten Sie die Person am Laptop, Sie als Bedienung anzulegen. Sie tippt dort auf \"Neue Bedienung\" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.",
+    "enterCode": "Sechsstelligen Code eingeben"
+  },
+  "language": {
+    "german": "Deutsch",
+    "english": "English"
   }
 }

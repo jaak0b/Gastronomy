@@ -7,7 +7,7 @@ import { currentRoute } from '../router'
 import StationWarning from '../components/station/StationWarning.vue'
 import StationFilter from '../components/station/StationFilter.vue'
 import StationTicketRow from '../components/station/StationTicketRow.vue'
-import StationLanguageSwitch from '../components/station/StationLanguageSwitch.vue'
+import LanguageSwitch from '../components/LanguageSwitch.vue'
 
 const { t, locale } = useI18n()
 const station = useStationStore()
@@ -61,7 +61,11 @@ onMounted(async () => {
   <p v-if="station.keyIsUnknown" class="unknown-key">{{ t('station.unknownKey') }}</p>
   <section v-else class="station-page">
     <h1>{{ t('station.title', { name: selectedName }) }}</h1>
-    <StationLanguageSwitch :language="station.language" @select="station.setLanguage" />
+    <LanguageSwitch
+      :language="station.language"
+      label-key="station.language"
+      @select="station.setLanguage"
+    />
     <StationWarning />
     <StationFilter
       :locations="station.locations"

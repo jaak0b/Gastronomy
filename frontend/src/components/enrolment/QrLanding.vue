@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
 import { useSessionStore } from '../../stores/session'
 import { navigate } from '../../router'
+import LanguageSwitch from '../LanguageSwitch.vue'
 
 const props = defineProps<{ code: string }>()
 const { t } = useI18n()
@@ -30,6 +31,11 @@ async function submit(): Promise<void> {
     </button>
   </section>
   <section v-else class="enrolment">
+    <LanguageSwitch
+      :language="session.language"
+      label-key="settings.language"
+      @select="session.setLanguage"
+    />
     <h1>{{ t('enrol.title') }}</h1>
     <p>{{ t('enrol.intro') }}</p>
     <p v-if="draftIsHeld" class="order-held">{{ t('enrol.orderHeld') }}</p>

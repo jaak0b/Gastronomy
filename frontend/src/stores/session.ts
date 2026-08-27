@@ -4,9 +4,10 @@ import { request } from '../api/client'
 import type { AppLanguage, RedeemResponse, ServerPerson, SessionInfo } from '../core/apiTypes'
 import { loadDraft } from '../core/draftCart'
 import { useConnectionStore } from './connection'
+import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
-export const LANGUAGE_STORAGE_KEY = 'language'
+export { LANGUAGE_STORAGE_KEY }
 
 export interface RedeemInput {
   code?: string
@@ -17,9 +18,7 @@ export interface RedeemInput {
 export const useSessionStore = defineStore('session', () => {
   const deviceToken = ref<string | null>(localStorage.getItem(TOKEN_STORAGE_KEY))
   const serverPerson = ref<ServerPerson | null>(null)
-  const language = ref<AppLanguage>(
-    localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'de',
-  )
+  const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
   const heldDraftExists = computed(() => loadDraft().lines.length > 0)
@@ -37,7 +36,10 @@ export const useSessionStore = defineStore('session', () => {
 
   function setLanguage(next: AppLanguage): void {
     language.value = next
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, next)
+    storeLanguage(next)
+    if (deviceToken.value === null) {
+      return
+    }
     void request('/api/session/language', {
       method: 'PUT',
       body: { language: next },
@@ -75,7 +77,7 @@ export const useSessionStore = defineStore('session', () => {
         storeToken(result.data.deviceToken)
         serverPerson.value = result.data.serverPerson
         language.value = result.data.language
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, result.data.language)
+        storeLanguage(result.data.language)
         return true
       case 'unreachable':
         redeemErrorKey.value = 'enrol.error.noConnection'

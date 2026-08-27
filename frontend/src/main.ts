@@ -6,12 +6,11 @@ import App from './App.vue'
 import de from './locales/de.json'
 import en from './locales/en.json'
 import { startRouter } from './router'
-
-const storedLanguage = localStorage.getItem('language')
+import { initialLanguage } from './appLanguage'
 
 export const i18n = createI18n({
   legacy: false,
-  locale: storedLanguage === 'en' ? 'en' : 'de',
+  locale: initialLanguage(),
   fallbackLocale: 'de',
   messages: { de, en },
 })
