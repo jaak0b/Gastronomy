@@ -319,6 +319,41 @@ public sealed class EnrolmentInvitationStoreTest
         return correctSixDigitCode == "000000" ? "111111" : "000000";
     }
 
+    [Test]
+    public async Task CreateAsync_AfterAnEarlierInvitationExpiredUnredeemed_ConsumesItAndSucceeds()
+    {
+        using SqliteInMemoryFixture fixture = new();
+        AdjustableClock clock = new();
+        EnrolmentInvitationStore store = CreateStore(fixture, clock);
+
+        EnrolmentInvitationCreated yesterday =
+            await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
+
+        clock.Advance(TimeSpan.FromDays(1));
+
+        EnrolmentInvitationCreated today =
+            await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
+
+        EnrolmentInvitation expiredRow = await fixture.DbContext.EnrolmentInvitations
+            .SingleAsync(
+                invitation => invitation.Id == yesterday.InvitationId,
+                TestContext.CurrentContext.CancellationToken);
+
+        EnrolmentInvitation currentRow = await fixture.DbContext.EnrolmentInvitations
+            .SingleAsync(
+                invitation => invitation.Id == today.InvitationId,
+                TestContext.CurrentContext.CancellationToken);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                expiredRow.ConsumedAtUtc,
+                Is.Not.Null,
+                "An expired invitation still holds the single outstanding marker until it is consumed.");
+            Assert.That(currentRow.ConsumedAtUtc, Is.Null);
+        });
+    }
+
     private EnrolmentInvitationStore CreateStore(SqliteInMemoryFixture fixture, AdjustableClock clock)
     {
         return CreateStore(fixture.DbContext, clock);

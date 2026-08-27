@@ -13,7 +13,7 @@ const requiresConfirmedName = computed(() => eventSession.current?.requiresConfi
 const hasName = computed(() => name.value.trim().length > 0)
 
 const canStart = computed(() => {
-  if (!hasName.value || eventSession.blockingConditions.length > 0) {
+  if (!hasName.value) {
     return false
   }
   return !requiresConfirmedName.value || confirmedName.value.trim() === name.value.trim()
@@ -48,9 +48,6 @@ onMounted(eventSession.load)
       </p>
     </template>
     <p v-else class="no-session">{{ t('admin.event.none') }}</p>
-    <p v-for="(condition, index) in eventSession.blockingConditions" :key="index" class="blocking">
-      {{ t(condition.messageKey, condition.parameters, Number(condition.parameters?.count ?? 1)) }}
-    </p>
     <label class="event-name">
       <span>{{ t('admin.event.name') }}</span>
       <input v-model="name" type="text" />
@@ -74,5 +71,12 @@ onMounted(eventSession.load)
         <p class="practice-help">{{ t('admin.event.practiceHelp') }}</p>
       </div>
     </div>
+    <p v-for="(condition, index) in eventSession.blockingConditions" :key="index" class="blocking">
+      {{
+        condition.count === null
+          ? t(condition.key, condition.parameters)
+          : t(condition.key, condition.parameters, condition.count)
+      }}
+    </p>
   </section>
 </template>

@@ -669,10 +669,23 @@ textarea:focus {
 .admin-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding-bottom: 16px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-nav .language-switch {
+  margin-bottom: 0;
+  margin-left: auto;
 }
 
 .admin-nav button.is-selected {

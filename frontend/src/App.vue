@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted } from 'vue'
 import { currentRoute } from './router'
+import { bindLocaleToSession } from './localeBinding'
 import { assertNever } from './core/assertNever'
 import { useSessionStore } from './stores/session'
 import { useCatalogStore } from './stores/catalog'
@@ -23,7 +23,8 @@ const catalog = useCatalogStore()
 const order = useOrderStore()
 const printerStatus = usePrinterStatusStore()
 const connection = useConnectionStore()
-const { locale } = useI18n()
+
+bindLocaleToSession()
 
 type ScreenName =
   | 'enrolQr'
@@ -59,14 +60,6 @@ const screen = computed<ScreenName>(() => {
 
 const showsHeader = computed(
   () => screen.value !== 'station' && screen.value !== 'admin' && session.isEnrolled,
-)
-
-watch(
-  () => session.language,
-  (next) => {
-    locale.value = next
-  },
-  { immediate: true },
 )
 
 onMounted(async () => {

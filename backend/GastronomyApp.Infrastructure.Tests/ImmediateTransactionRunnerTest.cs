@@ -1,3 +1,4 @@
+using GastronomyApp.Core.Entities;
 ﻿using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
@@ -96,6 +97,49 @@ public sealed class ImmediateTransactionRunnerTest
             [
                 new OrderAcceptanceLineRequest { CatalogItemId = seeded.SausageItemId, Quantity = 1, Note = null },
             ],
+        };
+    }
+
+    [Test]
+    public void RunAsync_BodyViolatingAUniqueIndex_SurfacesAConflictingChangeRatherThanARawFailure()
+    {
+        using SqliteInMemoryFixture fixture = new();
+        ImmediateTransactionRunner runner = new();
+        DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+
+        InfrastructureException failure = Assert.ThrowsAsync<InfrastructureException>(
+            async () => await runner.RunAsync(
+                fixture.DbContext,
+                async transactionCancellationToken =>
+                {
+                    fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
+                    fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
+                    await fixture.DbContext.SaveChangesAsync(transactionCancellationToken);
+
+                    return new TransactionOutcome<bool> { Value = true, ShouldCommit = true };
+                },
+                TestContext.CurrentContext.CancellationToken))!;
+
+        Assert.That(failure.Reason, Is.EqualTo(InfrastructureFailureReason.ConflictingChange));
+    }
+
+    private EnrolmentInvitation BuildUnconsumedInvitation(DateTime now)
+    {
+        return new EnrolmentInvitation
+        {
+            Id = Guid.NewGuid(),
+            ServerPersonId = null,
+            QrCodeHash = [1],
+            QrCodeSalt = [2],
+            SixDigitHash = [3],
+            SixDigitSalt = [4],
+            CodeIterations = 1,
+            CodeAlgorithm = "PBKDF2-HMAC-SHA512",
+            FailedSixDigitAttempts = 0,
+            CreatedAtUtc = now,
+            ExpiresAtUtc = now.AddMinutes(5),
+            ConsumedAtUtc = null,
+            ConsumedByDeviceId = null,
         };
     }
 }

@@ -2,7 +2,7 @@ import { isApiErrorBody, type ApiErrorBody } from '../core/apiError'
 
 export type ApiResult<T> =
   | { kind: 'ok'; status: number; data: T }
-  | { kind: 'error'; status: number; body: ApiErrorBody | null }
+  | { kind: 'error'; status: number; body: ApiErrorBody | null; raw: unknown }
   | { kind: 'unreachable' }
 
 export interface RequestOptions {
@@ -43,6 +43,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       kind: 'error',
       status: response.status,
       body: isApiErrorBody(payload) ? payload : null,
+      raw: payload,
     }
   }
   return { kind: 'ok', status: response.status, data: payload as T }

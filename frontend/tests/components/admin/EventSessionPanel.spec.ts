@@ -134,3 +134,139 @@ describe('the two ways to start something', () => {
     expect(panel.get('.start').attributes('disabled')).toBeUndefined()
   })
 })
+
+const RUNNING_PRACTICE = JSON.stringify({
+  id: 'session-2',
+  name: 'Übung',
+  isPractice: true,
+  startedAtUtc: '2026-08-27T16:00:00Z',
+  blockingConditions: [],
+  requiresConfirmedName: false,
+})
+
+function refuseStartWith(conditions: unknown[]) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return new Response(
+          JSON.stringify({
+            code: 'Conflict',
+            messageKey: 'admin.event.blocked',
+            parameters: {},
+            details: null,
+            blockingConditions: conditions,
+          }),
+          { status: 409 },
+        )
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    }),
+  )
+}
+
+async function typeNameAndStart(panel: ReturnType<typeof mountPanel>, selector: string) {
+  await panel.get('.event-name input').setValue('Sommerfest')
+  await panel.get(selector).trigger('click')
+  await vi.waitFor(() => expect(panel.find('.blocking, .current').exists()).toBe(true))
+}
+
+describe('a new event the laptop refuses to start', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('says both reasons rather than showing nothing at all', async () => {
+    refuseStartWith([
+      { guard: 'OpenTickets', messageKey: 'admin.event.blockedOpenTickets', parameters: { count: 4 } },
+      { guard: 'OpenQuestions', messageKey: 'admin.event.blockedQuestions', parameters: { count: 2 } },
+    ])
+
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.start')
+
+    expect(panel.findAll('.blocking')).toHaveLength(2)
+  })
+
+  it('renders each reason in its own words', async () => {
+    refuseStartWith([
+      { guard: 'OpenTickets', messageKey: 'admin.event.blockedOpenTickets', parameters: { count: 4 } },
+      { guard: 'OpenQuestions', messageKey: 'admin.event.blockedQuestions', parameters: { count: 2 } },
+    ])
+
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.start')
+
+    const shown = panel.findAll('.blocking').map((row) => row.text())
+    expect(shown[0]).toBe(
+      'Klären Sie zuerst 4 offene Bons in der Bestellliste. Beim Start einer neuen Veranstaltung verschwinden sie von allen Telefonen.',
+    )
+    expect(shown[1]).toBe(
+      'Beantworten Sie zuerst 2 offene Fragen zu Bons in der Bestellliste.',
+    )
+  })
+
+  it('names the stations still on the test printer when that is the reason', async () => {
+    refuseStartWith([
+      { guard: 'MockTransport', messageKey: 'admin.event.blockedMock', parameters: { names: 'Küche' } },
+    ])
+
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.start')
+
+    expect(panel.get('.blocking').text()).toBe(
+      'Tragen Sie bei Küche einen Drucker ein oder starten Sie stattdessen eine Übung. Auf dem Testdrucker kommt kein Bon auf den Stapel.',
+    )
+  })
+
+  it('leaves the start button tappable so the admin can try again once it is settled', async () => {
+    refuseStartWith([
+      { guard: 'OpenTickets', messageKey: 'admin.event.blockedOpenTickets', parameters: { count: 4 } },
+    ])
+
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.start')
+
+    expect(panel.get('.start').attributes('disabled')).toBeUndefined()
+  })
+})
+
+describe('the practice run, which the guard lets through', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    let started = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          started = true
+          return new Response(RUNNING_PRACTICE, { status: 201 })
+        }
+        return new Response(started ? RUNNING_PRACTICE : JSON.stringify({}), { status: 200 })
+      }),
+    )
+  })
+
+  it('starts and shows the running practice run afterwards', async () => {
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.practice')
+
+    expect(panel.get('.current').text()).toContain('Übung')
+  })
+
+  it('says a practice run is going on', async () => {
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.practice')
+
+    expect(panel.get('.practice-running').text()).toBe(
+      'Es läuft eine Übung. Starten Sie die richtige Veranstaltung, bevor die Gäste kommen.',
+    )
+  })
+
+  it('lists no blocking reason when nothing blocked it', async () => {
+    const panel = mountPanel()
+    await typeNameAndStart(panel, '.practice')
+
+    expect(panel.findAll('.blocking')).toHaveLength(0)
+  })
+})

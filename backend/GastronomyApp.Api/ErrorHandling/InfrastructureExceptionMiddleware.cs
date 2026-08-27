@@ -28,5 +28,15 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
 
             await problem.ExecuteAsync(context);
         }
+        catch (InfrastructureException exception)
+            when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
+        {
+            IResult problem = resultEnvelope.Problem(
+                StatusCodes.Status409Conflict,
+                "ConflictingChange",
+                "review.conflictingChange");
+
+            await problem.ExecuteAsync(context);
+        }
     }
 }

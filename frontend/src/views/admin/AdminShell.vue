@@ -11,9 +11,15 @@ import PrintersList from '../../components/admin/printers/PrintersList.vue'
 import PeopleList from '../../components/admin/people/PeopleList.vue'
 import EventSessionPanel from '../../components/admin/event/EventSessionPanel.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
+import LanguageSwitch from '../../components/LanguageSwitch.vue'
+import { useSessionStore } from '../../stores/session'
+import { bindLocaleToSession } from '../../localeBinding'
 
 const { t } = useI18n()
+const session = useSessionStore()
 const isReachable = ref(true)
+
+bindLocaleToSession()
 
 const section = computed<AdminSection>(() => {
   const route = currentRoute.value
@@ -57,15 +63,22 @@ void request('/api/admin/locations').then((result) => {
   <NotOnLaptop v-if="!isReachable" />
   <div v-else class="admin-shell">
     <nav class="admin-nav">
-      <button
-        v-for="value in sections"
-        :key="value"
-        type="button"
-        :class="{ 'is-selected': value === section }"
-        @click="navigate(`/admin/${value}`)"
-      >
-        {{ titleFor(value) }}
-      </button>
+      <div class="admin-tabs">
+        <button
+          v-for="value in sections"
+          :key="value"
+          type="button"
+          :class="{ 'is-selected': value === section }"
+          @click="navigate(`/admin/${value}`)"
+        >
+          {{ titleFor(value) }}
+        </button>
+      </div>
+      <LanguageSwitch
+        :language="session.language"
+        label-key="settings.language"
+        @select="session.setLanguage"
+      />
     </nav>
     <AdminOverview v-if="section === 'overview'" />
     <LocationsList v-else-if="section === 'locations'" />

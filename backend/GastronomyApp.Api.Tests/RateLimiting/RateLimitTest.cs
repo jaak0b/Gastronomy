@@ -43,21 +43,40 @@ public sealed class RateLimitTest
     [Test]
     public async Task DeviceScopedEndpoint_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
     {
-        for (int request = 0; request < DeviceRequestsPerMinute; request++)
+        IReadOnlyList<HttpResponseMessage> responses = await SendConcurrentlyAsync(DeviceRequestsPerMinute + 1);
+
+        int allowed = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
+        int refused = responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+        HttpResponseMessage? firstRefusal = responses
+            .FirstOrDefault(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+
+        string refusalBody = firstRefusal is null ? string.Empty : await firstRefusal.Content.ReadAsStringAsync();
+
+        foreach (HttpResponseMessage response in responses)
         {
-            using HttpResponseMessage allowed = await SendSessionRequestAsync();
-
-            Assert.That(allowed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            response.Dispose();
         }
-
-        using HttpResponseMessage refused = await SendSessionRequestAsync();
-        JsonDocument body = JsonDocument.Parse(await refused.Content.ReadAsStringAsync());
 
         Assert.Multiple(() =>
         {
-            Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
-            Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("review.tooManyRequests"));
+            Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
+            Assert.That(refused, Is.EqualTo(1));
+            Assert.That(
+                JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(),
+                Is.EqualTo("review.tooManyRequests"));
         });
+    }
+
+    private async Task<IReadOnlyList<HttpResponseMessage>> SendConcurrentlyAsync(int requestCount)
+    {
+        List<Task<HttpResponseMessage>> inFlight = [];
+
+        for (int request = 0; request < requestCount; request++)
+        {
+            inFlight.Add(SendSessionRequestAsync());
+        }
+
+        return await Task.WhenAll(inFlight);
     }
 
     [Test]

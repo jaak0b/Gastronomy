@@ -42,7 +42,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
             {
                 DateTime now = _clock.UtcNow;
 
-                await ConsumeOutstandingInvitationsAsync(now, transactionCancellationToken);
+                await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, transactionCancellationToken);
 
                 string qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QrCodeLengthBytes));
                 string sixDigitCode = RandomNumberGenerator.GetInt32(0, 1_000_000)
@@ -208,18 +208,20 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         };
     }
 
-    private async Task ConsumeOutstandingInvitationsAsync(DateTime now, CancellationToken cancellationToken)
+    private async Task ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(
+        DateTime now,
+        CancellationToken cancellationToken)
     {
-        List<EnrolmentInvitation> outstanding = await _dbContext.EnrolmentInvitations
-            .Where(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > now)
+        List<EnrolmentInvitation> unconsumedPredecessors = await _dbContext.EnrolmentInvitations
+            .Where(invitation => invitation.ConsumedAtUtc == null)
             .ToListAsync(cancellationToken);
 
-        foreach (EnrolmentInvitation invitation in outstanding)
+        foreach (EnrolmentInvitation predecessor in unconsumedPredecessors)
         {
-            invitation.ConsumedAtUtc = now;
+            predecessor.ConsumedAtUtc = now;
         }
 
-        if (outstanding.Count > 0)
+        if (unconsumedPredecessors.Count > 0)
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
