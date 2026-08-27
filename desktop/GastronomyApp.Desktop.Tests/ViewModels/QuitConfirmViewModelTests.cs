@@ -26,13 +26,11 @@ public sealed class QuitConfirmViewModelTests
     {
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null));
+            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
 
         return new MainWindowViewModel(
             _launcher,
             _power,
-            A.Fake<IQrCodeGenerator>(),
-            A.Fake<INetworkAddressProvider>(),
             settingsStore,
             _text);
     }

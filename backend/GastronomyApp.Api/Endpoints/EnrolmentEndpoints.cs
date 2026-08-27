@@ -1,5 +1,6 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Entities;
@@ -32,15 +33,18 @@ public sealed class EnrolmentRedemptionHandler
 
     private readonly IEnrolmentInvitationStore invitationStore;
     private readonly HubNotificationDispatcher dispatcher;
+    private readonly OutstandingInvitationCache invitationCache;
     private readonly ResultEnvelope resultEnvelope;
 
     public EnrolmentRedemptionHandler(
         IEnrolmentInvitationStore invitationStore,
         HubNotificationDispatcher dispatcher,
+        OutstandingInvitationCache invitationCache,
         ResultEnvelope resultEnvelope)
     {
         this.invitationStore = invitationStore;
         this.dispatcher = dispatcher;
+        this.invitationCache = invitationCache;
         this.resultEnvelope = resultEnvelope;
     }
 
@@ -100,6 +104,8 @@ public sealed class EnrolmentRedemptionHandler
         EnrolmentRedemptionResult redemption,
         CancellationToken cancellationToken)
     {
+        invitationCache.Forget();
+
         Device device = redemption.Device!;
         ServerPerson person = redemption.ServerPerson!;
 

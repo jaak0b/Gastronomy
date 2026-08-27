@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request } from '../../api/client'
+import { listFrom, request } from '../../api/client'
+import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 import type { AppLanguage } from '../../core/apiTypes'
 
 export interface AdminLocation {
@@ -13,14 +14,22 @@ export interface AdminLocation {
 
 export const useAdminLocationsStore = defineStore('adminLocations', () => {
   const locations = ref<AdminLocation[]>([])
-  const errorKey = ref<string | null>(null)
-  const errorParameters = ref<Record<string, string | number>>({})
+  const loadFailed = ref(false)
+  const errorMessage = ref<AdminErrorMessage | null>(null)
 
   async function load(): Promise<void> {
-    const result = await request<{ locations: AdminLocation[] }>('/api/admin/locations')
-    if (result.kind === 'ok') {
-      locations.value = result.data.locations
+    loadFailed.value = false
+    const result = await request<unknown>('/api/admin/locations')
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
+      return
     }
+    const rows = listFrom<AdminLocation>(result.data, 'locations')
+    if (rows === null) {
+      loadFailed.value = true
+      return
+    }
+    locations.value = rows
   }
 
   async function save(
@@ -40,11 +49,10 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
   }
 
   async function deactivate(id: string): Promise<void> {
-    errorKey.value = null
+    errorMessage.value = null
     const result = await request(`/api/admin/locations/${id}/deactivate`, { method: 'POST' })
-    if (result.kind === 'error') {
-      errorKey.value = result.body?.messageKey ?? 'admin.locations.openTickets'
-      errorParameters.value = result.body?.parameters ?? {}
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return
     }
     await load()
@@ -58,5 +66,5 @@ export const useAdminLocationsStore = defineStore('adminLocations', () => {
     return result.kind === 'ok' ? result.data.stationUrl : null
   }
 
-  return { locations, errorKey, errorParameters, load, save, deactivate, regenerateAccessKey }
+  return { locations, loadFailed, errorMessage, load, save, deactivate, regenerateAccessKey }
 })

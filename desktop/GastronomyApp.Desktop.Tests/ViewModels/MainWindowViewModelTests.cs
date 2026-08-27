@@ -1,3 +1,4 @@
+using System.Globalization;
 using FakeItEasy;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Localization;
@@ -11,8 +12,6 @@ public sealed class MainWindowViewModelTests
 {
     private IHostLauncher _launcher = null!;
     private IPowerManager _power = null!;
-    private IQrCodeGenerator _qrCodeGenerator = null!;
-    private INetworkAddressProvider _networkAddressProvider = null!;
     private ISettingsStore _settingsStore = null!;
     private IDesktopTextProvider _text = null!;
 
@@ -21,17 +20,11 @@ public sealed class MainWindowViewModelTests
     {
         _launcher = A.Fake<IHostLauncher>();
         _power = A.Fake<IPowerManager>();
-        _qrCodeGenerator = A.Fake<IQrCodeGenerator>();
-        _networkAddressProvider = A.Fake<INetworkAddressProvider>();
         _settingsStore = A.Fake<ISettingsStore>();
         _text = new DesktopTextProvider();
 
         A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null));
-        A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
-            .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
-        A.CallTo(() => _qrCodeGenerator.GenerateMatrix(A<string>._))
-            .Returns(new List<bool[]> { new[] { true, false }, new[] { false, true } });
+            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, null));
     }
 
     private const string DataFolder = @"C:\ProgramData\GastronomyApp";
@@ -41,8 +34,6 @@ public sealed class MainWindowViewModelTests
         return new MainWindowViewModel(
             _launcher,
             _power,
-            _qrCodeGenerator,
-            _networkAddressProvider,
             _settingsStore,
             _text);
     }
@@ -228,33 +219,125 @@ public sealed class MainWindowViewModelTests
     }
 
     [Test]
-    public void RefreshAddress_PassesTheAddressToTheEncoderUnchanged()
+    public void OpenAdminPagesCommand_OpensTheAdminPageOnLoopbackWithTheConfiguredPort()
     {
+        A.CallTo(() => _settingsStore.Load())
+            .Returns(new DesktopSettings(8080, "0.0.0.0", DataFolder, null, null));
         MainWindowViewModel viewModel = CreateViewModel();
+        viewModel.ReloadSettings();
+        string? opened = null;
+        viewModel.AdminPagesRequested += url => opened = url;
 
-        viewModel.RefreshAddress();
+        viewModel.OpenAdminPagesCommand.Execute(null);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.AddressUrl, Is.EqualTo("http://192.168.1.20:5000"));
-            Assert.That(viewModel.QrContent, Is.EqualTo(viewModel.AddressUrl));
-            Assert.That(viewModel.QrMatrix, Has.Count.EqualTo(2));
-        });
-        A.CallTo(() => _qrCodeGenerator.GenerateMatrix("http://192.168.1.20:5000"))
-            .MustHaveHappenedOnceExactly();
+        Assert.That(opened, Is.EqualTo("http://localhost:8080/admin"));
     }
 
     [Test]
-    public void RefreshAddress_WhenTheLaptopIsOnSeveralNetworks_UsesTheSelectedOne()
+    public void OpenAdminPagesCommand_NeverOpensAnAddressFromTheNetwork()
     {
-        A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, "Festival"));
-        A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
-            .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20"), new("Festival", "10.0.0.5") });
+        MainWindowViewModel viewModel = CreateViewModel();
+        viewModel.ReloadSettings();
+        string? opened = null;
+        viewModel.AdminPagesRequested += url => opened = url;
+
+        viewModel.OpenAdminPagesCommand.Execute(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(opened, Does.Not.Contain("192.168."));
+            Assert.That(opened, Is.EqualTo("http://localhost:5000/admin"));
+        });
+    }
+
+    [Test]
+    public void Languages_OffersDeutschAndEnglishAndNothingElse()
+    {
         MainWindowViewModel viewModel = CreateViewModel();
 
-        viewModel.RefreshAddress();
-
-        Assert.That(viewModel.AddressUrl, Is.EqualTo("http://10.0.0.5:5000"));
+        Assert.That(
+            viewModel.Languages.Select(language => language.Name),
+            Is.EqualTo(new List<string> { "Deutsch", "English" }));
     }
+
+    [Test]
+    public void SelectedLanguage_WithNoChoiceStored_FollowsWindows()
+    {
+        CultureInfo original = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+
+        try
+        {
+            MainWindowViewModel viewModel = CreateViewModel();
+
+            Assert.That(viewModel.SelectedLanguage!.Code, Is.EqualTo("de"));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = original;
+        }
+    }
+
+    [Test]
+    public void SelectedLanguage_WithAStoredChoice_UsesTheStoredOne()
+    {
+        CultureInfo original = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        A.CallTo(() => _settingsStore.Load())
+            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, "de"));
+
+        try
+        {
+            MainWindowViewModel viewModel = CreateViewModel();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.SelectedLanguage!.Code, Is.EqualTo("de"));
+                Assert.That(viewModel.StatusText, Is.EqualTo("Das Programm nimmt keine Bestellungen an."));
+            });
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = original;
+        }
+    }
+
+    [Test]
+    public void SelectedLanguage_WhenChanged_ChangesTheWindowTextAtOnce()
+    {
+        CultureInfo original = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+        try
+        {
+            MainWindowViewModel viewModel = CreateViewModel();
+            List<string?> changedProperties = [];
+            viewModel.PropertyChanged += (_, eventArgs) => changedProperties.Add(eventArgs.PropertyName);
+
+            viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.StatusText, Is.EqualTo("Das Programm nimmt keine Bestellungen an."));
+                Assert.That(viewModel.QuitButtonLabel, Is.EqualTo("Programm beenden"));
+                Assert.That(changedProperties, Does.Contain(string.Empty));
+            });
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = original;
+        }
+    }
+
+    [Test]
+    public void SelectedLanguage_WhenChanged_IsRememberedForTheNextStart()
+    {
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+
+        A.CallTo(() => _settingsStore.Save(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, "de")))
+            .MustHaveHappenedOnceExactly();
+    }
+
 }

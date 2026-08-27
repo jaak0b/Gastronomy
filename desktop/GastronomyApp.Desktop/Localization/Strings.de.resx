@@ -61,14 +61,14 @@
   <data name="desktop.windowTitle" xml:space="preserve">
     <value>Bestellsystem</value>
   </data>
-  <data name="desktop.addressLabel" xml:space="preserve">
-    <value>Adresse für die Telefone</value>
+  <data name="desktop.language" xml:space="preserve">
+    <value>Sprache</value>
   </data>
-  <data name="desktop.address" xml:space="preserve">
-    <value>Die Telefone erreichen den Laptop unter {url}.</value>
+  <data name="desktop.language.german" xml:space="preserve">
+    <value>Deutsch</value>
   </data>
-  <data name="desktop.qrHelp" xml:space="preserve">
-    <value>Scannen Sie den Code mit einem Telefon, um zu prüfen, dass die Telefone den Laptop erreichen.</value>
+  <data name="desktop.language.english" xml:space="preserve">
+    <value>English</value>
   </data>
   <data name="desktop.status.running" xml:space="preserve">
     <value>Das Programm nimmt Bestellungen an.</value>

@@ -176,7 +176,14 @@ public sealed class AdminPrinterHandler
             return Results.NotFound();
         }
 
-        await printerFleet.TestPrintAsync(locationId, cancellationToken);
+        try
+        {
+            await printerFleet.TestPrintAsync(locationId, cancellationToken);
+        }
+        catch (UnknownLocationTicketException)
+        {
+            return NoWorkerServesThisStation();
+        }
 
         return Results.Json(new SharedEndpointView(locationId, []), statusCode: StatusCodes.Status202Accepted);
     }
@@ -188,7 +195,16 @@ public sealed class AdminPrinterHandler
             return Results.NotFound();
         }
 
-        IReadOnlyList<Guid> clearedLocationIds = await printerFleet.ReconnectAsync(locationId, cancellationToken);
+        IReadOnlyList<Guid> clearedLocationIds;
+
+        try
+        {
+            clearedLocationIds = await printerFleet.ReconnectAsync(locationId, cancellationToken);
+        }
+        catch (UnknownLocationTicketException)
+        {
+            return NoWorkerServesThisStation();
+        }
 
         return Results.Json(
             new ReconnectedView(locationId, clearedLocationIds),
@@ -228,6 +244,14 @@ public sealed class AdminPrinterHandler
         mockFaultRegistry.Arm(locationId, fault, mode);
 
         return Results.Ok(new ArmedMockFaultView(locationId, fault.ToString(), mode.ToString()));
+    }
+
+    private IResult NoWorkerServesThisStation()
+    {
+        return resultEnvelope.Problem(
+            StatusCodes.Status409Conflict,
+            "NoPrinterWorkerForStation",
+            "admin.stationHasNoPrinterWorker");
     }
 
     private Task<bool> LocationExistsAsync(Guid locationId, CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request } from '../../api/client'
+import { listFrom, request } from '../../api/client'
+import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 
 export type TransportKind = 'Network' | 'Agent' | 'Mock'
 
@@ -35,12 +36,22 @@ export interface AdminPrinter {
 
 export const useAdminPrintersStore = defineStore('adminPrinters', () => {
   const printers = ref<AdminPrinter[]>([])
+  const loadFailed = ref(false)
+  const errorMessage = ref<AdminErrorMessage | null>(null)
 
   async function load(): Promise<void> {
-    const result = await request<{ printers: AdminPrinter[] }>('/api/admin/printers')
-    if (result.kind === 'ok') {
-      printers.value = result.data.printers
+    loadFailed.value = false
+    const result = await request<unknown>('/api/admin/printers')
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
+      return
     }
+    const rows = listFrom<AdminPrinter>(result.data, 'printers')
+    if (rows === null) {
+      loadFailed.value = true
+      return
+    }
+    printers.value = rows
   }
 
   async function save(printer: AdminPrinter): Promise<void> {
@@ -57,11 +68,20 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
   }
 
   async function testPrint(locationId: string): Promise<void> {
-    await request(`/api/admin/printers/${locationId}/test-print`, { method: 'POST' })
+    errorMessage.value = null
+    const result = await request(`/api/admin/printers/${locationId}/test-print`, { method: 'POST' })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+    }
   }
 
   async function reconnect(locationId: string): Promise<void> {
-    await request(`/api/admin/printers/${locationId}/reconnect`, { method: 'POST' })
+    errorMessage.value = null
+    const result = await request(`/api/admin/printers/${locationId}/reconnect`, { method: 'POST' })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return
+    }
     await load()
   }
 
@@ -77,5 +97,5 @@ export const useAdminPrintersStore = defineStore('adminPrinters', () => {
     await load()
   }
 
-  return { printers, load, save, testPrint, reconnect, setMockFault }
+  return { printers, loadFailed, errorMessage, load, save, testPrint, reconnect, setMockFault }
 })

@@ -1,28 +1,28 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
+        xmlns:svc="using:GastronomyApp.Desktop.Services"
         x:Class="GastronomyApp.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Width="760"
-        Height="620"
+        Width="620"
+        Height="520"
         Title="{Binding WindowTitle}">
 
     <ScrollViewer>
         <StackPanel Margin="28" Spacing="18">
 
-            <TextBlock Text="{Binding AddressLabel}" FontSize="16" />
-
-            <TextBlock Text="{Binding AddressUrl}" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" />
-
-            <TextBlock Text="{Binding AddressText}" TextWrapping="Wrap" />
-
-            <StackPanel Orientation="Horizontal" Spacing="18">
-                <Border Name="QrBorder" Padding="10" Background="White">
-                    <Canvas Name="QrCanvas" Width="220" Height="220" />
-                </Border>
-                <TextBlock Text="{Binding QrHelpText}" TextWrapping="Wrap" Width="380" VerticalAlignment="Center" />
-            </StackPanel>
+            <ComboBox ItemsSource="{Binding Languages}"
+                      SelectedItem="{Binding SelectedLanguage}"
+                      HorizontalAlignment="Right"
+                      MinWidth="140"
+                      ToolTip.Tip="{Binding LanguageLabel}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="svc:LanguageOption">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <TextBlock Text="{Binding StatusText}" FontSize="18" />
 

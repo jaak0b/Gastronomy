@@ -145,7 +145,8 @@
       "stationCard": "Stationskarte drucken",
       "stationCardHelp": "Kleben Sie die Karte in den Deckel des Druckers. Wenn der Drucker ausfällt, führt der QR-Code auf der Karte zur Notfallseite dieser Station.",
       "new": "Neue Station",
-      "deactivate": "Station abschalten"
+      "deactivate": "Station abschalten",
+      "empty": "Legen Sie die erste Station an, zum Beispiel Küche oder Theke."
     },
     "items": {
       "title": "Artikel",
@@ -160,7 +161,9 @@
       "soldOutWalk": "Der Laptop ist die einzige Stelle, an der Sie das umschalten können.",
       "new": "Neuer Artikel",
       "category": "Kategorie",
-      "price": "Preis in Cent"
+      "price": "Preis in Euro",
+      "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
+      "empty": "Legen Sie den ersten Artikel mit seinem Preis an."
     },
     "assignment": {
       "title": "Zuordnung",
@@ -210,7 +213,8 @@
         "unknown": "Drucker meldet nicht, ob er gedruckt hat",
         "once": "Einmal",
         "sticky": "Bis zum Zurücksetzen"
-      }
+      },
+      "empty": "Legen Sie zuerst eine Station an. Zu jeder Station gehört ein Drucker."
     },
     "people": {
       "title": "Bedienungen",
@@ -261,7 +265,9 @@
       "confirmName": "Tippen Sie den Namen der neuen Veranstaltung ein, um sie zu starten. In der letzten Stunde wurden noch Bestellungen aufgenommen.",
       "practice": "Übung starten",
       "practiceHelp": "In einer Übung ist der Testdrucker in Ordnung, und die Bestellungen stehen später nicht in der Abrechnung.",
-      "practiceRunning": "Es läuft eine Übung. Starten Sie die richtige Veranstaltung, bevor die Gäste kommen."
+      "practiceRunning": "Es läuft eine Übung. Starten Sie die richtige Veranstaltung, bevor die Gäste kommen.",
+      "none": "Keine Veranstaltung aktiv.",
+      "name": "Name der Veranstaltung"
     },
     "backup": {
       "title": "Datensicherung",
@@ -277,7 +283,10 @@
     },
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "edit": "Bearbeiten"
+    "edit": "Bearbeiten",
+    "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
+    "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Station zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Station und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Station zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Station und können nicht bestellt werden.",
+    "stationHasNoPrinterWorker": "Versuchen Sie es gleich noch einmal. Diese Station hat noch keine Verbindung zum Drucker."
   },
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",

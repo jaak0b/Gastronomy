@@ -35,6 +35,8 @@ onMounted(async () => {
     <p class="help">{{ t('admin.items.soldOutHelp') }}</p>
     <p class="walk">{{ t('admin.items.soldOutWalk') }}</p>
     <p v-if="items.errorKey !== null" class="error">{{ t(items.errorKey) }}</p>
+    <p v-if="items.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
+    <p v-else-if="items.items.length === 0" class="empty">{{ t('admin.items.empty') }}</p>
     <ul>
       <li v-for="item in items.items" :key="item.id">
         <span class="name">{{ item.name }}</span>

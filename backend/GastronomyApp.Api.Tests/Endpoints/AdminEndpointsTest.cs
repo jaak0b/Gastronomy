@@ -253,6 +253,41 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
+    public async Task PostEnrolmentInvitation_AnyBind_CarriesAnAddressAPhoneCanOpen()
+    {
+        using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
+            "/api/admin/enrolment/invitations",
+            new { serverPersonId = (Guid?)null });
+
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        string qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(qrUrl, Does.Not.Contain("0.0.0.0"), "A bind wildcard is not an address a phone can open.");
+            Assert.That(qrUrl, Does.Not.Contain(":0/"), "Port zero is not an address a phone can open.");
+            Assert.That(Uri.TryCreate(qrUrl, UriKind.Absolute, out Uri? _), Is.True);
+            Assert.That(body.RootElement.TryGetProperty("availableAddresses", out JsonElement _), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task GetStationCard_AnyBind_CarriesAnAddressAPhoneCanOpen()
+    {
+        using HttpResponseMessage response = await context.Client.GetAsync(
+            $"/api/admin/locations/{context.World.KitchenLocationId}/station-card");
+
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        string breakGlassUrl = body.RootElement.GetProperty("breakGlassUrl").GetString()!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(breakGlassUrl, Does.Not.Contain("0.0.0.0"));
+            Assert.That(breakGlassUrl, Does.Not.Contain(":0/"));
+        });
+    }
+
+    [Test]
     public async Task GetPrinters_LoopbackCaller_ReportsConfigurationAndLiveStatus()
     {
         using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/printers");

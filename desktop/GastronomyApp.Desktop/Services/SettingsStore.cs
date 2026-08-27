@@ -18,6 +18,8 @@ public sealed record StoredSettings
     public string? DataDirectory { get; init; }
 
     public string? SelectedNetworkInterface { get; init; }
+
+    public string? Language { get; init; }
 }
 
 public sealed class SettingsStore : ISettingsStore
@@ -49,7 +51,8 @@ public sealed class SettingsStore : ISettingsStore
             stored.Port ?? defaults.Port ?? FallbackPort,
             stored.BindAddress ?? defaults.BindAddress ?? FallbackBindAddress,
             stored.DataDirectory ?? settingsDirectory,
-            stored.SelectedNetworkInterface);
+            stored.SelectedNetworkInterface,
+            stored.Language);
     }
 
     public void Save(DesktopSettings settings)
@@ -62,6 +65,7 @@ public sealed class SettingsStore : ISettingsStore
             BindAddress = settings.BindAddress,
             DataDirectory = settings.DataDirectory,
             SelectedNetworkInterface = settings.SelectedNetworkInterface,
+            Language = settings.Language,
         };
 
         File.WriteAllText(

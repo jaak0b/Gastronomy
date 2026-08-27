@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { request } from '../../api/client'
+import { computed, ref } from 'vue'
+import { listFrom, request } from '../../api/client'
 
 export interface BlockingCondition {
   messageKey: string
@@ -19,12 +19,36 @@ export interface EventSessionState {
 export const useAdminEventSessionStore = defineStore('adminEventSession', () => {
   const current = ref<EventSessionState | null>(null)
   const blockingConditions = ref<BlockingCondition[]>([])
+  const loadFailed = ref(false)
+
+  const hasSession = computed(
+    () =>
+      current.value !== null &&
+      current.value.name.trim().length > 0 &&
+      current.value.startedAtUtc !== null &&
+      current.value.startedAtUtc !== undefined,
+  )
 
   async function load(): Promise<void> {
-    const result = await request<EventSessionState>('/api/admin/event-session')
-    if (result.kind === 'ok') {
-      current.value = result.data
-      blockingConditions.value = result.data.blockingConditions
+    loadFailed.value = false
+    const result = await request<Partial<EventSessionState>>('/api/admin/event-session')
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
+      return
+    }
+    const payload = result.data
+    blockingConditions.value = listFrom<BlockingCondition>(payload, 'blockingConditions') ?? []
+    if (typeof payload?.id !== 'string' || typeof payload?.name !== 'string') {
+      current.value = null
+      return
+    }
+    current.value = {
+      id: payload.id,
+      name: payload.name,
+      isPractice: payload.isPractice === true,
+      startedAtUtc: payload.startedAtUtc ?? '',
+      blockingConditions: blockingConditions.value,
+      requiresConfirmedName: payload.requiresConfirmedName === true,
     }
   }
 
@@ -41,5 +65,5 @@ export const useAdminEventSessionStore = defineStore('adminEventSession', () => 
     return result.kind === 'ok'
   }
 
-  return { current, blockingConditions, load, start }
+  return { current, hasSession, blockingConditions, loadFailed, load, start }
 })

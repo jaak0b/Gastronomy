@@ -4,7 +4,6 @@ export type AdminSection =
   | 'overview'
   | 'locations'
   | 'items'
-  | 'assignment'
   | 'printers'
   | 'people'
   | 'event'
@@ -22,7 +21,6 @@ const ADMIN_SECTIONS: AdminSection[] = [
   'overview',
   'locations',
   'items',
-  'assignment',
   'printers',
   'people',
   'event',

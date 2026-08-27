@@ -31,7 +31,7 @@ public sealed class SettingsWindowViewModelTests
         _dataFolderOpened = 0;
 
         A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null));
+            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, null));
         A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
             .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
         A.CallTo(() => _sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(false);
@@ -293,7 +293,7 @@ public sealed class SettingsWindowViewModelTests
 
         Assert.That(viewModel.CanSave, Is.True);
         viewModel.Save();
-        A.CallTo(() => _settingsStore.Save(new DesktopSettings(8080, "0.0.0.0", DataFolder, null)))
+        A.CallTo(() => _settingsStore.Save(new DesktopSettings(8080, "0.0.0.0", DataFolder, null, null)))
             .MustHaveHappenedOnceExactly();
     }
 }

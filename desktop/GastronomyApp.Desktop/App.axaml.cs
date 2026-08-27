@@ -151,16 +151,11 @@ public partial class App : Application
         await mainWindowViewModel.StartAsync();
     }
 
-    private void OpenAdminPages()
+    private void OpenAdminPages(string adminUrl)
     {
-        if (mainWindowViewModel is null || mainWindowViewModel.AddressUrl.Length == 0)
-        {
-            return;
-        }
-
         Process.Start(new ProcessStartInfo
         {
-            FileName = mainWindowViewModel.AddressUrl,
+            FileName = adminUrl,
             UseShellExecute = true,
         });
     }
@@ -191,7 +186,7 @@ public partial class App : Application
         SettingsWindow window = new() { DataContext = viewModel };
         await window.ShowDialog(mainWindow);
 
-        mainWindowViewModel?.RefreshAddress();
+        mainWindowViewModel?.ReloadSettings();
     }
 
     private void OpenWindowsFirewallSettings()

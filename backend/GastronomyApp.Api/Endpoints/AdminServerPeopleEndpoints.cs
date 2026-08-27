@@ -1,5 +1,6 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -56,6 +57,7 @@ public sealed class AdminServerPeopleHandler
     private readonly IDeviceTokenStore deviceTokenStore;
     private readonly IEnrolmentInvitationStore invitationStore;
     private readonly BreakGlassUrlBuilder urlBuilder;
+    private readonly OutstandingInvitationCache invitationCache;
     private readonly HubNotificationDispatcher dispatcher;
     private readonly DeviceConnectionTerminator connectionTerminator;
     private readonly ResultEnvelope resultEnvelope;
@@ -66,6 +68,7 @@ public sealed class AdminServerPeopleHandler
         IDeviceTokenStore deviceTokenStore,
         IEnrolmentInvitationStore invitationStore,
         BreakGlassUrlBuilder urlBuilder,
+        OutstandingInvitationCache invitationCache,
         HubNotificationDispatcher dispatcher,
         DeviceConnectionTerminator connectionTerminator,
         ResultEnvelope resultEnvelope,
@@ -75,6 +78,7 @@ public sealed class AdminServerPeopleHandler
         this.deviceTokenStore = deviceTokenStore;
         this.invitationStore = invitationStore;
         this.urlBuilder = urlBuilder;
+        this.invitationCache = invitationCache;
         this.dispatcher = dispatcher;
         this.connectionTerminator = connectionTerminator;
         this.resultEnvelope = resultEnvelope;
@@ -214,6 +218,13 @@ public sealed class AdminServerPeopleHandler
         EnrolmentInvitationCreated created =
             await invitationStore.CreateAsync(request.ServerPersonId, cancellationToken);
 
+        string qrUrl = urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
+        invitationCache.Remember(new OutstandingInvitation(
+            created.InvitationId,
+            created.QrCodeValue,
+            qrUrl,
+            created.ExpiresAtUtc));
+
         if (request.ServerPersonId is not null)
         {
             List<Device> devices = await dbContext.Devices
@@ -230,10 +241,11 @@ public sealed class AdminServerPeopleHandler
         return Results.Json(
             new InvitationView(
                 created.InvitationId,
-                urlBuilder.BuildEnrolmentUrl(created.QrCodeValue),
+                qrUrl,
                 created.SixDigitCode,
                 created.ExpiresAtUtc,
-                person is null ? null : new ServerPersonView(person.Id, person.Name)),
+                person is null ? null : new ServerPersonView(person.Id, person.Name),
+                urlBuilder.ReachableAddresses()),
             statusCode: StatusCodes.Status201Created);
     }
 

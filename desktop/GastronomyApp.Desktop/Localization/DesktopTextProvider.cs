@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Resources;
 using GastronomyApp.Desktop.Services;
 
@@ -7,6 +8,8 @@ public sealed class DesktopTextProvider : IDesktopTextProvider
 {
     private readonly ResourceManager resourceManager;
 
+    private CultureInfo? chosenCulture;
+
     public DesktopTextProvider()
     {
         resourceManager = new ResourceManager(
@@ -14,9 +17,20 @@ public sealed class DesktopTextProvider : IDesktopTextProvider
             typeof(DesktopTextProvider).Assembly);
     }
 
+    public event Action? LanguageChanged;
+
+    public void UseLanguage(string? languageCode)
+    {
+        chosenCulture = languageCode is null
+            ? null
+            : CultureInfo.GetCultureInfo(languageCode);
+
+        LanguageChanged?.Invoke();
+    }
+
     public string Get(string key)
     {
-        string? value = resourceManager.GetString(key);
+        string? value = resourceManager.GetString(key, chosenCulture ?? CultureInfo.CurrentUICulture);
         if (value is null)
         {
             throw new MissingManifestResourceException($"Desktop string '{key}' is missing.");

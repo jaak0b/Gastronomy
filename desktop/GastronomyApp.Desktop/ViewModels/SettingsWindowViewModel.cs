@@ -50,6 +50,8 @@ public sealed class SettingsWindowViewModel : ViewModelBase
         openDataFolderAction = openDataFolder;
         this.anyOrderAcceptedThisSession = anyOrderAcceptedThisSession;
 
+        this.text.LanguageChanged += OnLanguageChanged;
+
         OpenDataFolderCommand = new RelayCommand(OpenDataFolder);
         RepairSetupCommand = new AsyncRelayCommand(() => RepairSetupAsync());
         SaveCommand = new RelayCommand(Save);
@@ -211,6 +213,11 @@ public sealed class SettingsWindowViewModel : ViewModelBase
         && !string.IsNullOrWhiteSpace(bindAddress)
         && !string.IsNullOrWhiteSpace(dataDirectory);
 
+    private void OnLanguageChanged()
+    {
+        OnPropertyChanged(string.Empty);
+    }
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         bool sessionActive = await sessionState.IsSessionActiveAsync(cancellationToken);
@@ -242,7 +249,13 @@ public sealed class SettingsWindowViewModel : ViewModelBase
             return;
         }
 
-        settingsStore.Save(new DesktopSettings(port, bindAddress, dataDirectory, SelectedNetworkInterface));
+        settingsStore.Save(settingsStore.Load() with
+        {
+            Port = port,
+            BindAddress = bindAddress,
+            DataDirectory = dataDirectory,
+            SelectedNetworkInterface = SelectedNetworkInterface,
+        });
     }
 
     public void OpenDataFolder()

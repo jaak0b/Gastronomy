@@ -145,7 +145,8 @@
       "stationCard": "Print the station card",
       "stationCardHelp": "Tape the card inside the printer lid. If the printer fails, the QR code on the card opens this station's emergency page.",
       "new": "New station",
-      "deactivate": "Switch this station off"
+      "deactivate": "Switch this station off",
+      "empty": "Create the first station, for example Kitchen or Bar."
     },
     "items": {
       "title": "Items",
@@ -160,7 +161,9 @@
       "soldOutWalk": "The laptop is the only place where you can switch this.",
       "new": "New item",
       "category": "Category",
-      "price": "Price in cents"
+      "price": "Price in euros",
+      "priceInvalid": "Enter the price in euros, for example 3.50.",
+      "empty": "Create the first item with its price."
     },
     "assignment": {
       "title": "Assignment",
@@ -210,7 +213,8 @@
         "unknown": "The printer does not report whether it printed",
         "once": "Once",
         "sticky": "Until it is reset"
-      }
+      },
+      "empty": "Create a station first. Every station has one printer."
     },
     "people": {
       "title": "Servers",
@@ -261,7 +265,9 @@
       "confirmName": "Type the name of the new event to start it. Orders were still being taken in the last hour.",
       "practice": "Start a practice run",
       "practiceHelp": "In a practice run the test printer is fine, and the orders are left out of the takings list later.",
-      "practiceRunning": "A practice run is going on. Start the real event before the guests arrive."
+      "practiceRunning": "A practice run is going on. Start the real event before the guests arrive.",
+      "none": "No event is running.",
+      "name": "Name of the event"
     },
     "backup": {
       "title": "Backup",
@@ -277,7 +283,10 @@
     },
     "save": "Save",
     "cancel": "Cancel",
-    "edit": "Edit"
+    "edit": "Edit",
+    "loadFailed": "Reload the page. The data could not be loaded.",
+    "itemsWouldHaveNoStation": "Give {count} item a different station first, or take it off the menu. Otherwise it is left with no station and cannot be ordered. | Give {count} items a different station first, or take them off the menu. Otherwise they are left with no station and cannot be ordered.",
+    "stationHasNoPrinterWorker": "Try again in a moment. This station has no printer connection yet."
   },
   "station": {
     "title": "{name}: orders on screen",

@@ -67,11 +67,6 @@ public enum SingleInstanceOutcome
     SignaledExistingAndShouldExit,
 }
 
-public interface IQrCodeGenerator
-{
-    public IReadOnlyList<bool[]> GenerateMatrix(string content);
-}
-
 public interface INetworkAddressProvider
 {
     public IReadOnlyList<NetworkAddressOption> GetAvailableAddresses();
@@ -90,7 +85,8 @@ public sealed record DesktopSettings(
     int Port,
     string BindAddress,
     string DataDirectory,
-    string? SelectedNetworkInterface);
+    string? SelectedNetworkInterface,
+    string? Language);
 
 public interface IElevatedSetupLauncher
 {
@@ -103,8 +99,14 @@ public enum ElevatedSetupOutcome
     ElevationDeclined,
 }
 
+public sealed record LanguageOption(string Code, string Name);
+
 public interface IDesktopTextProvider
 {
+    public event Action? LanguageChanged;
+
+    public void UseLanguage(string? languageCode);
+
     public string Get(string key);
 
     public string Format(string key, params TextPlaceholder[] placeholders);

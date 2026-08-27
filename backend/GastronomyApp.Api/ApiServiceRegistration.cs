@@ -86,6 +86,10 @@ public sealed class ApiServiceRegistration
         services.AddSingleton<PrinterStatusReader>();
         services.AddSingleton<HealthReporter>();
         services.AddSingleton<StationAccessKeyGenerator>();
+        services.AddSingleton<OutstandingInvitationCache>();
+        services.AddScoped<InvitationQrRenderer>();
+        services.AddSingleton<LocalNetworkAddressProvider>();
+        services.AddSingleton<ReachableHostResolver>();
         services.AddSingleton<BreakGlassUrlBuilder>();
         services.AddScoped<AdminLocationHandler>();
         services.AddScoped<AdminItemHandler>();

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Services;
@@ -22,8 +23,6 @@ public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly IHostLauncher launcher;
     private readonly IPowerManager power;
-    private readonly IQrCodeGenerator qrCodeGenerator;
-    private readonly INetworkAddressProvider networkAddressProvider;
     private readonly ISettingsStore settingsStore;
     private readonly IDesktopTextProvider text;
     private readonly Never never = new();
@@ -33,6 +32,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private int phoneCount;
     private string addressUrl = string.Empty;
     private string qrContent = string.Empty;
+    private int adminPort;
+    private LanguageOption? selectedLanguage;
     private string? noticeText;
     private string? errorMessageKey;
     private string? errorMessage;
@@ -40,24 +41,34 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         IHostLauncher launcher,
         IPowerManager power,
-        IQrCodeGenerator qrCodeGenerator,
-        INetworkAddressProvider networkAddressProvider,
         ISettingsStore settingsStore,
         IDesktopTextProvider text)
     {
         this.launcher = launcher;
         this.power = power;
-        this.qrCodeGenerator = qrCodeGenerator;
-        this.networkAddressProvider = networkAddressProvider;
         this.settingsStore = settingsStore;
         this.text = text;
 
-        OpenAdminPagesCommand = new RelayCommand(() => AdminPagesRequested?.Invoke());
+        Languages.Add(new LanguageOption("de", text.Get("desktop.language.german")));
+        Languages.Add(new LanguageOption("en", text.Get("desktop.language.english")));
+
+        DesktopSettings startupSettings = settingsStore.Load();
+        adminPort = startupSettings.Port;
+
+        string storedLanguage = startupSettings.Language
+            ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+        selectedLanguage = Languages.FirstOrDefault(language => language.Code == storedLanguage)
+            ?? Languages.Single(language => language.Code == "en");
+        text.UseLanguage(selectedLanguage.Code);
+        text.LanguageChanged += OnLanguageChanged;
+
+        OpenAdminPagesCommand = new RelayCommand(() => AdminPagesRequested?.Invoke(AdminUrl));
         OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke());
         RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
     }
 
-    public event Action? AdminPagesRequested;
+    public event Action<string>? AdminPagesRequested;
 
     public event Action? SettingsRequested;
 
@@ -71,9 +82,26 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string WindowTitle => text.Get("desktop.windowTitle");
 
-    public string AddressLabel => text.Get("desktop.addressLabel");
+    public string AdminUrl => $"http://localhost:{adminPort}/admin";
 
-    public string QrHelpText => text.Get("desktop.qrHelp");
+    public string LanguageLabel => text.Get("desktop.language");
+
+    public ObservableCollection<LanguageOption> Languages { get; } = [];
+
+    public LanguageOption? SelectedLanguage
+    {
+        get => selectedLanguage;
+        set
+        {
+            if (value is null || !SetProperty(ref selectedLanguage, value))
+            {
+                return;
+            }
+
+            text.UseLanguage(value.Code);
+            settingsStore.Save(settingsStore.Load() with { Language = value.Code });
+        }
+    }
 
     public string MinimisedText => text.Get("desktop.minimised");
 
@@ -82,8 +110,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string SettingsButtonLabel => text.Get("desktop.button.settings");
 
     public string QuitButtonLabel => text.Get("desktop.button.quit");
-
-    public ObservableCollection<bool[]> QrMatrix { get; } = [];
 
     public HostStatus Status
     {
@@ -154,26 +180,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ? text.Format("desktop.phones.many", new TextPlaceholder("count", PhoneCount.ToString()))
         : text.Get(PhonesTextKey);
 
-    public string AddressUrl
-    {
-        get => addressUrl;
-        private set
-        {
-            if (SetProperty(ref addressUrl, value))
-            {
-                OnPropertyChanged(nameof(AddressText));
-            }
-        }
-    }
-
-    public string AddressText => text.Format("desktop.address", new TextPlaceholder("url", AddressUrl));
-
-    public string QrContent
-    {
-        get => qrContent;
-        private set => SetProperty(ref qrContent, value);
-    }
-
     public string? ErrorMessageKey
     {
         get => errorMessageKey;
@@ -208,36 +214,20 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public bool HasNotice => NoticeText is not null;
 
-    public void RefreshAddress()
+    private void OnLanguageChanged()
     {
-        DesktopSettings settings = settingsStore.Load();
-        IReadOnlyList<NetworkAddressOption> options = networkAddressProvider.GetAvailableAddresses();
+        OnPropertyChanged(string.Empty);
+    }
 
-        NetworkAddressOption? chosen = options.FirstOrDefault(
-            option => option.InterfaceName == settings.SelectedNetworkInterface) ?? options.FirstOrDefault();
-
-        if (chosen is null)
-        {
-            AddressUrl = string.Empty;
-            QrContent = string.Empty;
-            QrMatrix.Clear();
-
-            return;
-        }
-
-        AddressUrl = $"http://{chosen.IPAddress}:{settings.Port}";
-        QrContent = AddressUrl;
-
-        QrMatrix.Clear();
-        foreach (bool[] row in qrCodeGenerator.GenerateMatrix(QrContent))
-        {
-            QrMatrix.Add(row);
-        }
+    public void ReloadSettings()
+    {
+        adminPort = settingsStore.Load().Port;
+        OnPropertyChanged(nameof(AdminUrl));
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        RefreshAddress();
+        ReloadSettings();
 
         DesktopSettings settings = settingsStore.Load();
         ApiHostOptions options = new()

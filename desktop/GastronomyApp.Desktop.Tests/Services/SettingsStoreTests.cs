@@ -69,13 +69,13 @@ public sealed class SettingsStoreTests
         string shippedBefore = File.ReadAllText(_shippedDefaultsPath);
         SettingsStore store = CreateStore();
 
-        store.Save(new DesktopSettings(8080, "127.0.0.1", _settingsDirectory, "Festival"));
+        store.Save(new DesktopSettings(8080, "127.0.0.1", _settingsDirectory, "Festival", null));
 
         DesktopSettings reloaded = CreateStore().Load();
 
         Assert.Multiple(() =>
         {
-            Assert.That(reloaded, Is.EqualTo(new DesktopSettings(8080, "127.0.0.1", _settingsDirectory, "Festival")));
+            Assert.That(reloaded, Is.EqualTo(new DesktopSettings(8080, "127.0.0.1", _settingsDirectory, "Festival", null)));
             Assert.That(File.ReadAllText(_shippedDefaultsPath), Is.EqualTo(shippedBefore));
         });
     }

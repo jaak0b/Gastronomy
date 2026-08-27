@@ -805,3 +805,62 @@ textarea:focus {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+.event-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.practice {
+  background: var(--bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.practice-help {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.no-session {
+  font-weight: 600;
+}
+
+.qr-image {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto 16px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.six-digit-code {
+  margin: 8px 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.invitation-panel .camera-step {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.invitation-panel .qr-url {
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  padding: 0;
+}
+
+.price-error {
+  margin-top: -8px;
+}

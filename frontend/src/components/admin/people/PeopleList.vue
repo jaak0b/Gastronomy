@@ -34,7 +34,8 @@ onMounted(async () => {
     <p v-if="people.enrolledName !== null" class="enrolled">
       {{ t('admin.enrol.done', { name: people.enrolledName }) }}
     </p>
-    <p v-if="people.people.length === 0" class="empty">{{ t('admin.people.empty') }}</p>
+    <p v-if="people.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
+    <p v-else-if="people.people.length === 0" class="empty">{{ t('admin.people.empty') }}</p>
     <ul>
       <li v-for="person in people.people" :key="person.id">
         <span class="name">{{ person.name }}</span>

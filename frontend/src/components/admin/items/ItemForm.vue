@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AppLanguage } from '../../../core/apiTypes'
+import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
 import type { AdminLocation } from '../../../stores/admin/locations'
 import AssignmentEditor from './AssignmentEditor.vue'
@@ -12,10 +14,13 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; deactivate: [id: string] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const name = ref(props.item?.name ?? '')
 const categoryName = ref(props.item?.categoryName ?? '')
-const priceCents = ref(props.item?.priceCents ?? 0)
+const priceText = ref(
+  formatEuroInput(props.item?.priceCents ?? null, locale.value as AppLanguage),
+)
+const priceIsUnreadable = ref(false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
 const locationIds = ref<string[]>([...(props.item?.locationIds ?? [])])
 
@@ -26,11 +31,16 @@ function toggle(locationId: string): void {
 }
 
 function save(): void {
+  const priceCents = parseEuroInput(priceText.value)
+  priceIsUnreadable.value = priceCents === null
+  if (priceCents === null) {
+    return
+  }
   emit('save', {
     id: props.item?.id,
     name: name.value,
     categoryName: categoryName.value,
-    priceCents: priceCents.value,
+    priceCents,
     sortOrder: sortOrder.value,
     locationIds: locationIds.value,
   })
@@ -47,10 +57,11 @@ function save(): void {
       <span>{{ t('admin.items.category') }}</span>
       <input v-model="categoryName" type="text" />
     </label>
-    <label>
+    <label class="price-field">
       <span>{{ t('admin.items.price') }}</span>
-      <input v-model.number="priceCents" type="number" min="0" step="1" />
+      <input v-model="priceText" type="text" inputmode="decimal" />
     </label>
+    <p v-if="priceIsUnreadable" class="price-error error">{{ t('admin.items.priceInvalid') }}</p>
     <p class="help">{{ t('admin.items.priceHelp') }}</p>
     <AssignmentEditor
       :item-name="name"

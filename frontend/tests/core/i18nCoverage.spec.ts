@@ -16,6 +16,7 @@ const PLURAL_KEYS = [
   'admin.printers.waiting',
   'admin.event.blockedOpenTickets',
   'admin.event.blockedQuestions',
+  'admin.itemsWouldHaveNoStation',
 ]
 
 function flatten(tree: LocaleTree, prefix = ''): Map<string, string> {

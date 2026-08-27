@@ -82,7 +82,8 @@ public sealed record InvitationView(
     string QrUrl,
     string SixDigitCode,
     DateTime ExpiresAtUtc,
-    ServerPersonView? ServerPerson);
+    ServerPersonView? ServerPerson,
+    IReadOnlyList<string> AvailableAddresses);
 
 public sealed record AdminPrinterView(
     Guid LocationId,

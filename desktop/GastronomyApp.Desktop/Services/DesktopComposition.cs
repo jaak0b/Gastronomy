@@ -20,7 +20,6 @@ public sealed class DesktopComposition
             Path.Combine(AppContext.BaseDirectory, ShippedDefaultsFileName),
             DataDirectoryPath);
         NetworkAddressProvider = new NetworkAddressProvider();
-        QrCodeGenerator = new QrCodeGenerator();
         HostLauncher = new HostLauncher(NetworkAddressProvider, path => new DataFolderSetup(path));
         SingleInstance = new SingleInstanceCoordinator();
 
@@ -49,8 +48,6 @@ public sealed class DesktopComposition
 
     public INetworkAddressProvider NetworkAddressProvider { get; }
 
-    public IQrCodeGenerator QrCodeGenerator { get; }
-
     public HostLauncher HostLauncher { get; }
 
     public ISingleInstance SingleInstance { get; }
@@ -66,8 +63,6 @@ public sealed class DesktopComposition
         return new MainWindowViewModel(
             HostLauncher,
             PowerManager,
-            QrCodeGenerator,
-            NetworkAddressProvider,
             SettingsStore,
             Text);
     }

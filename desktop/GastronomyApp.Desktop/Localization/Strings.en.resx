@@ -61,14 +61,14 @@
   <data name="desktop.windowTitle" xml:space="preserve">
     <value>Ordering system</value>
   </data>
-  <data name="desktop.addressLabel" xml:space="preserve">
-    <value>Address for the phones</value>
+  <data name="desktop.language" xml:space="preserve">
+    <value>Language</value>
   </data>
-  <data name="desktop.address" xml:space="preserve">
-    <value>Phones reach the laptop at {url}.</value>
+  <data name="desktop.language.german" xml:space="preserve">
+    <value>Deutsch</value>
   </data>
-  <data name="desktop.qrHelp" xml:space="preserve">
-    <value>Scan the code with a phone to check that the phones reach the laptop.</value>
+  <data name="desktop.language.english" xml:space="preserve">
+    <value>English</value>
   </data>
   <data name="desktop.status.running" xml:space="preserve">
     <value>The program is taking orders.</value>

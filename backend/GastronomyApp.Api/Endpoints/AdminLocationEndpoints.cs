@@ -1,7 +1,11 @@
 using System.Security.Cryptography;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Hosting;
+using GastronomyApp.Api.Printing;
 using GastronomyApp.Api.Options;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
@@ -74,20 +78,49 @@ public sealed class StationAccessKeyGenerator
 public sealed class BreakGlassUrlBuilder
 {
     private readonly ApiHostOptions hostOptions;
+    private readonly ReachableHostResolver hostResolver;
+    private readonly IServer server;
 
-    public BreakGlassUrlBuilder(ApiHostOptions hostOptions)
+    public BreakGlassUrlBuilder(ApiHostOptions hostOptions, ReachableHostResolver hostResolver, IServer server)
     {
         this.hostOptions = hostOptions;
+        this.hostResolver = hostResolver;
+        this.server = server;
     }
 
     public string Build(string accessKey)
     {
-        return $"http://{hostOptions.BindAddress}:{hostOptions.Port}/station/{accessKey}";
+        return $"{Origin()}/station/{accessKey}";
     }
 
     public string BuildEnrolmentUrl(string qrCodeValue)
     {
-        return $"http://{hostOptions.BindAddress}:{hostOptions.Port}/j/{qrCodeValue}";
+        return $"{Origin()}/j/{qrCodeValue}";
+    }
+
+    public IReadOnlyList<string> ReachableAddresses()
+    {
+        return hostResolver.ReachableAddresses();
+    }
+
+    public string Origin()
+    {
+        return $"http://{hostResolver.ResolveHost()}:{ResolvePort()}";
+    }
+
+    private int ResolvePort()
+    {
+        if (hostOptions.Port != 0)
+        {
+            return hostOptions.Port;
+        }
+
+        IServerAddressesFeature? addresses = server.Features.Get<IServerAddressesFeature>();
+        string? boundAddress = addresses?.Addresses.FirstOrDefault();
+
+        return boundAddress is not null && Uri.TryCreate(boundAddress, UriKind.Absolute, out Uri? uri)
+            ? uri.Port
+            : hostOptions.Port;
     }
 }
 
@@ -98,17 +131,20 @@ public sealed class AdminLocationHandler
     private readonly GastronomyAppDbContext dbContext;
     private readonly StationAccessKeyGenerator accessKeyGenerator;
     private readonly BreakGlassUrlBuilder urlBuilder;
+    private readonly PrinterFleet printerFleet;
     private readonly ResultEnvelope resultEnvelope;
 
     public AdminLocationHandler(
         GastronomyAppDbContext dbContext,
         StationAccessKeyGenerator accessKeyGenerator,
         BreakGlassUrlBuilder urlBuilder,
+        PrinterFleet printerFleet,
         ResultEnvelope resultEnvelope)
     {
         this.dbContext = dbContext;
         this.accessKeyGenerator = accessKeyGenerator;
         this.urlBuilder = urlBuilder;
+        this.printerFleet = printerFleet;
         this.resultEnvelope = resultEnvelope;
     }
 
@@ -196,6 +232,7 @@ public sealed class AdminLocationHandler
         });
 
         await dbContext.SaveChangesAsync(cancellationToken);
+        await printerFleet.ReconcileAsync(cancellationToken);
 
         return Results.Json(
             new AccessKeyView(locationId, accessKey, urlBuilder.Build(accessKey)),
@@ -273,6 +310,7 @@ public sealed class AdminLocationHandler
 
         location.IsActive = false;
         await dbContext.SaveChangesAsync(cancellationToken);
+        await printerFleet.ReconcileAsync(cancellationToken);
 
         return Results.Ok(new AccessKeyView(
             location.Id,

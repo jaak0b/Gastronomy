@@ -30,21 +30,11 @@ public sealed class MainWindowSmokeTests
     {
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null));
-
-        INetworkAddressProvider networkAddressProvider = A.Fake<INetworkAddressProvider>();
-        A.CallTo(() => networkAddressProvider.GetAvailableAddresses())
-            .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
-
-        IQrCodeGenerator qrCodeGenerator = A.Fake<IQrCodeGenerator>();
-        A.CallTo(() => qrCodeGenerator.GenerateMatrix(A<string>._))
-            .Returns(new List<bool[]> { new[] { true, false }, new[] { false, true } });
+            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
 
         return new MainWindowViewModel(
             A.Fake<IHostLauncher>(),
             A.Fake<IPowerManager>(),
-            qrCodeGenerator,
-            networkAddressProvider,
             settingsStore,
             text);
     }
@@ -53,7 +43,6 @@ public sealed class MainWindowSmokeTests
     public void MainWindow_Loads_WithTheTitleResolvedFromTheResxTable()
     {
         MainWindowViewModel viewModel = CreateMainWindowViewModel();
-        viewModel.RefreshAddress();
 
         MainWindow window = new() { DataContext = viewModel };
         window.Show();
@@ -66,7 +55,7 @@ public sealed class MainWindowSmokeTests
     {
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null));
+            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
         ISessionStateQuery sessionState = A.Fake<ISessionStateQuery>();
         A.CallTo(() => sessionState.IsSessionActiveAsync(A<CancellationToken>._)).Returns(false);
 

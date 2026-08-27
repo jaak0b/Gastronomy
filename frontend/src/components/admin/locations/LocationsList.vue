@@ -27,11 +27,20 @@ onMounted(locations.load)
   <section class="admin-locations">
     <h1>{{ t('admin.locations.title') }}</h1>
     <p class="help">{{ t('admin.locations.help') }}</p>
-    <p
-      v-if="locations.errorKey !== null"
-      class="error"
-    >
-      {{ t(locations.errorKey, locations.errorParameters, Number(locations.errorParameters.count ?? 1)) }}
+    <p v-if="locations.errorMessage !== null" class="refusal error">
+      {{
+        locations.errorMessage.count === null
+          ? t(locations.errorMessage.key, locations.errorMessage.parameters)
+          : t(
+              locations.errorMessage.key,
+              locations.errorMessage.parameters,
+              locations.errorMessage.count,
+            )
+      }}
+    </p>
+    <p v-if="locations.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
+    <p v-else-if="locations.locations.length === 0" class="empty">
+      {{ t('admin.locations.empty') }}
     </p>
     <ul>
       <li v-for="location in locations.locations" :key="location.id">

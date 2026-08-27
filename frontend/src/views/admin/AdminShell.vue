@@ -24,7 +24,6 @@ const sections: AdminSection[] = [
   'overview',
   'locations',
   'items',
-  'assignment',
   'printers',
   'people',
   'event',
@@ -38,8 +37,6 @@ function titleFor(value: AdminSection): string {
       return t('admin.locations.title')
     case 'items':
       return t('admin.items.title')
-    case 'assignment':
-      return t('admin.assignment.title')
     case 'printers':
       return t('admin.printers.title')
     case 'people':
@@ -72,7 +69,7 @@ void request('/api/admin/locations').then((result) => {
     </nav>
     <AdminOverview v-if="section === 'overview'" />
     <LocationsList v-else-if="section === 'locations'" />
-    <ItemsList v-else-if="section === 'items' || section === 'assignment'" />
+    <ItemsList v-else-if="section === 'items'" />
     <PrintersList v-else-if="section === 'printers'" />
     <PeopleList v-else-if="section === 'people'" />
     <EventSessionPanel v-else />

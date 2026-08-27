@@ -40,6 +40,21 @@ onMounted(printers.load)
   <section class="admin-printers">
     <h1>{{ t('admin.printers.title') }}</h1>
     <p class="help">{{ t('admin.printers.testPrintHelp') }}</p>
+    <p v-if="printers.errorMessage !== null" class="refusal error">
+      {{
+        printers.errorMessage.count === null
+          ? t(printers.errorMessage.key, printers.errorMessage.parameters)
+          : t(
+              printers.errorMessage.key,
+              printers.errorMessage.parameters,
+              printers.errorMessage.count,
+            )
+      }}
+    </p>
+    <p v-if="printers.loadFailed" class="error">{{ t('admin.loadFailed') }}</p>
+    <p v-else-if="printers.printers.length === 0" class="empty">
+      {{ t('admin.printers.empty') }}
+    </p>
     <article v-for="printer in printers.printers" :key="printer.locationId" class="printer-row">
       <h2>{{ printer.locationName }}</h2>
       <p class="status">{{ t(statusKey(printer)) }}</p>

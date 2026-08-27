@@ -47,3 +47,16 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
   return { kind: 'ok', status: response.status, data: payload as T }
 }
+
+export function listFrom<T>(data: unknown, key: string): T[] | null {
+  if (Array.isArray(data)) {
+    return data as T[]
+  }
+  if (typeof data === 'object' && data !== null) {
+    const inner = (data as Record<string, unknown>)[key]
+    if (Array.isArray(inner)) {
+      return inner as T[]
+    }
+  }
+  return null
+}

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request } from '../../api/client'
+import { listFrom, request } from '../../api/client'
 import { useConnectionStore } from '../connection'
 
 export interface AdminPerson {
@@ -22,14 +22,23 @@ export interface Invitation {
 
 export const useAdminPeopleStore = defineStore('adminPeople', () => {
   const people = ref<AdminPerson[]>([])
+  const loadFailed = ref(false)
   const invitation = ref<Invitation | null>(null)
   const enrolledName = ref<string | null>(null)
 
   async function load(): Promise<void> {
-    const result = await request<{ people: AdminPerson[] }>('/api/admin/server-people')
-    if (result.kind === 'ok') {
-      people.value = result.data.people
+    loadFailed.value = false
+    const result = await request<unknown>('/api/admin/server-people')
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
+      return
     }
+    const rows = listFrom<AdminPerson>(result.data, 'people')
+    if (rows === null) {
+      loadFailed.value = true
+      return
+    }
+    people.value = rows
   }
 
   async function rename(id: string, name: string): Promise<void> {
@@ -74,6 +83,7 @@ export const useAdminPeopleStore = defineStore('adminPeople', () => {
 
   return {
     people,
+    loadFailed,
     invitation,
     enrolledName,
     load,

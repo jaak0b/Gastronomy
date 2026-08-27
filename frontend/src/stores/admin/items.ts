@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request } from '../../api/client'
+import { listFrom, request } from '../../api/client'
 
 export interface AdminItem {
   id: string
@@ -16,13 +16,22 @@ export type AdminItemDraft = Omit<AdminItem, 'id' | 'isAvailable'> & { id?: stri
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
   const items = ref<AdminItem[]>([])
+  const loadFailed = ref(false)
   const errorKey = ref<string | null>(null)
 
   async function load(): Promise<void> {
-    const result = await request<{ items: AdminItem[] }>('/api/admin/items')
-    if (result.kind === 'ok') {
-      items.value = result.data.items
+    loadFailed.value = false
+    const result = await request<unknown>('/api/admin/items')
+    if (result.kind !== 'ok') {
+      loadFailed.value = true
+      return
     }
+    const rows = listFrom<AdminItem>(result.data, 'items')
+    if (rows === null) {
+      loadFailed.value = true
+      return
+    }
+    items.value = rows
   }
 
   async function save(item: AdminItemDraft): Promise<boolean> {
@@ -68,5 +77,5 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     await load()
   }
 
-  return { items, errorKey, load, save, setAvailability, deactivate }
+  return { items, loadFailed, errorKey, load, save, setAvailability, deactivate }
 })
