@@ -192,9 +192,7 @@
     },
     "assignment": {
       "title": "Zuordnung",
-      "help": "Kreuzen Sie an, wo ein Artikel zubereitet werden kann. Bei einer Station läuft es von selbst, bei mehreren wählt die Bedienung beim Aufnehmen aus.",
-      "preview": "Vorschau: {item} geht an {location}.",
-      "previewChoice": "Vorschau: Bei {item} wählt die Bedienung zwischen {locations}."
+      "help": "Kreuzen Sie an, wo ein Artikel zubereitet werden kann."
     },
     "tables": {
       "title": "Tische",

@@ -153,6 +153,59 @@ describe('a server person taken off the list', () => {
   })
 })
 
+describe('the QR code for setting up a phone', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function stubInvitationFor(serverPerson: unknown) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const payload = url.includes('/invitations')
+          ? {
+              invitationId: 'invitation-1',
+              qrUrl: 'http://192.168.0.22:5000/j/CODE',
+              sixDigitCode: '158026',
+              expiresAtUtc: '2026-08-27T20:00:00Z',
+              serverPerson,
+              availableAddresses: [],
+            }
+          : ONE_PERSON
+        return new Response(JSON.stringify(payload), { status: 200 })
+      }),
+    )
+  }
+
+  it('sits inside the row of the person it belongs to', async () => {
+    stubInvitationFor({ id: PERSON_ID, name: 'Anna' })
+
+    const list = mountList()
+    await firstPerson(list)
+    await list.get('.new-code').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(list.get('.person-row').find('.invitation-panel').exists()).toBe(true),
+    )
+  })
+
+  it('sits on its own when it belongs to nobody yet', async () => {
+    stubInvitationFor(null)
+
+    const list = mountList()
+    await firstPerson(list)
+    await list.get('.new-person').trigger('click')
+
+    await vi.waitFor(() => expect(list.find('.invitation-panel').exists()).toBe(true))
+    expect(list.get('.person-row').find('.invitation-panel').exists()).toBe(false)
+  })
+})
+
 describe('a server person in the admin list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

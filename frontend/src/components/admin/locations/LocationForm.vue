@@ -23,7 +23,7 @@ function save(): void {
 
 <template>
   <v-form class="location-form pa-4" @submit.prevent="save">
-    <v-text-field v-model="name" :label="t('admin.locations.title')" />
+    <v-text-field v-model="name" class="mb-4" :label="t('admin.locations.title')" />
     <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
       {{ t('admin.save') }}
     </v-btn>

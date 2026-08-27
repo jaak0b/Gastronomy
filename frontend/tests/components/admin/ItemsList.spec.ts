@@ -213,14 +213,4 @@ describe('the station checkboxes on an item', () => {
     expect((checkbox.element as HTMLInputElement).checked).toBe(true)
   })
 
-  it('names the assigned station in the sentence below the boxes', async () => {
-    stubFetch()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(list.find('.assignment-editor').exists()).toBe(true))
-
-    expect(list.get('.assignment-editor .preview').text()).toContain('Küche')
-  })
 })

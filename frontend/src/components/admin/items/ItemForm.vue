@@ -51,11 +51,11 @@ function save(): void {
   <v-card class="item-form mt-4">
     <v-form @submit.prevent="save">
       <v-card-text>
-        <v-text-field v-model="name" :label="t('admin.items.title')" />
-        <v-text-field v-model="categoryName" :label="t('admin.items.category')" />
+        <v-text-field v-model="name" class="mb-4" :label="t('admin.items.title')" />
+        <v-text-field v-model="categoryName" class="mb-4" :label="t('admin.items.category')" />
         <v-text-field
           v-model="priceText"
-          class="price-field"
+          class="price-field mb-2"
           :label="t('admin.items.price')"
           inputmode="decimal"
           :error="priceIsUnreadable"

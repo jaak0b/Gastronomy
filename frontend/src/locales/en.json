@@ -192,9 +192,7 @@
     },
     "assignment": {
       "title": "Assignment",
-      "help": "Tick where an item can be prepared. With one station it happens by itself, with several the server chooses while taking the order.",
-      "preview": "Preview: {item} goes to {location}.",
-      "previewChoice": "Preview: for {item} the server chooses between {locations}."
+      "help": "Tick where an item can be prepared."
     },
     "tables": {
       "title": "Tables",

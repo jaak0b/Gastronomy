@@ -154,6 +154,13 @@ onMounted(async () => {
           {{ t('admin.people.activate') }}
         </v-btn>
       </v-card-actions>
+      <v-expand-transition>
+        <InvitationPanel
+          v-if="people.invitation?.serverPerson?.id === person.serverPersonId"
+          :invitation="people.invitation"
+          @close="people.closeInvitation"
+        />
+      </v-expand-transition>
     </v-card>
 
     <v-btn class="new-person" color="primary" @click="people.createInvitation()">
@@ -169,7 +176,7 @@ onMounted(async () => {
       @cancel="askingAboutId = null"
     />
     <InvitationPanel
-      v-if="people.invitation !== null"
+      v-if="people.invitation !== null && people.invitation.serverPerson === null"
       :invitation="people.invitation"
       @close="people.closeInvitation"
     />

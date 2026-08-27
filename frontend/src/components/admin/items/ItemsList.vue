@@ -18,7 +18,6 @@ const shown = computed(() =>
   items.items.filter((item) => showsDeactivated.value || item.isActive),
 )
 
-const editing = computed(() => items.items.find((item) => item.itemId === editingId.value) ?? null)
 
 async function save(item: AdminItemDraft): Promise<void> {
   const saved = await items.save(item)
@@ -82,7 +81,11 @@ onMounted(async () => {
         >
           {{ item.isAvailable ? t('admin.items.soldOut') : t('admin.items.soldOutUndo') }}
         </v-btn>
-        <v-btn class="edit" variant="text" @click="editingId = item.itemId">
+        <v-btn
+          class="edit"
+          variant="text"
+          @click="editingId = editingId === item.itemId ? null : item.itemId"
+        >
           {{ t('admin.edit') }}
         </v-btn>
         <v-btn
@@ -103,19 +106,29 @@ onMounted(async () => {
           {{ t('admin.items.activate') }}
         </v-btn>
       </v-card-actions>
+      <v-expand-transition>
+        <ItemForm
+          v-if="editingId === item.itemId"
+          :item="item"
+          :locations="locations.locations"
+          :error-key="items.errorKey"
+          @save="save"
+        />
+      </v-expand-transition>
     </v-card>
 
     <v-btn class="new-item" color="primary" @click="isCreating = true">
       {{ t('admin.items.new') }}
     </v-btn>
 
-    <ItemForm
-      v-if="isCreating || editing !== null"
-      :item="editing"
-      :locations="locations.locations"
-      :error-key="items.errorKey"
-      @save="save"
-    />
+    <v-card v-if="isCreating" class="item-row mt-3">
+      <ItemForm
+        :item="null"
+        :locations="locations.locations"
+        :error-key="items.errorKey"
+        @save="save"
+      />
+    </v-card>
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.items.deactivateTitle')"
