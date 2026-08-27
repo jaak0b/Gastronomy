@@ -344,6 +344,13 @@ therefore refuses to start a session when any of these is true, and each refusal
 
 A practice run is exempt from the last condition, because the test printer is the point of it.
 
+**The one-hour boundary is inclusive.** An order accepted exactly one hour ago still needs the typed
+confirmation; only an order older than one hour is exempt from it. **`Failed` counts as non-final for
+the first guard above**, alongside `Queued`, `Blocked`, `Printing`, and `Unknown`: a ticket that has
+given up is not a settled ticket, and starting a new session over one would make it vanish from every
+phone with nobody having acted on it. Only `Printed`, `PrintedOnTestPrinter`, and `HandledOnPaper` are
+final. Section 5.6 defines an open ticket the same way.
+
 ### 2.4 ProductionLocation
 
 A kitchen or a bar. Exactly one printer per location. There is no grouping above this: a location is
@@ -916,6 +923,7 @@ stateDiagram-v2
     Printing --> PrintedOnTestPrinter : the test printer rendered it
     Printing --> Unknown : socket dropped or the echo timed out after bytes were written
     Printing --> Queued : attempt failed before any byte was written
+    Printing --> Blocked : the pre-flight status check, run after the claim, says paper end or cover open
     Queued --> Blocked : pre-flight status says paper end or cover open
     Blocked --> Queued : printer reports paper loaded and cover closed
     Queued --> Failed : the give-up window expired
@@ -1776,8 +1784,47 @@ ready, and the slips parked behind it print without anybody re-sending anything.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/event-session | | 200 current session, plus what currently blocks starting a new one |
-| POST | /api/admin/event-session | `{name, isPractice, confirmedName}` | 201. Ends the current session and resets numbering to 1. 409 with the blocking conditions from section 2.3, each naming what to settle first. |
+| GET | /api/admin/event-session | | 200 current session, plus `blocksStarting`: what currently blocks starting a new one, or `null` when nothing does |
+| POST | /api/admin/event-session | `{name, isPractice, confirmedName}` | 201. Ends the current session and resets numbering to 1. 400 `admin.eventSessionNameMissing` when `name` is empty after trimming. 409 with the blocking conditions from section 2.3, each naming what to settle first. |
+
+**`GET` describes the blocks by probing the same guards `POST` would apply, without ever starting or
+ending anything.** It runs `EventSessionStartService` against an empty candidate name on a throwaway
+database context, reads back which guards it would have violated, and discards the result. No session
+is touched, so the overview can show what stands in the way of starting a new session while the current
+one keeps running undisturbed. The response is `null` when nothing would block a start.
+
+**`confirmedName` is compared to `name`, trimmed on both sides, ordinally.** The guard in section 2.3
+that requires a typed confirmation when an order was accepted in the last hour is satisfied only when
+`confirmedName.Trim()` equals `name.Trim()` exactly, case included and with no normalization beyond the
+trim. A `name` that is empty once trimmed is refused before any guard runs, with 400
+`admin.eventSessionNameMissing`, since there is nothing left to confirm or to start a session with.
+
+**A 409 refusal carries every violated guard at once, not the first one found.** The response extends
+the usual error envelope with `blockingConditions`, a list where each entry names the guard, a
+`messageKey` for the admin's language, and that message's parameters:
+
+```json
+{
+  "code": "EventSessionStartRefused",
+  "messageKey": "admin.eventSessionStartRefused",
+  "parameters": { "guardCount": "2" },
+  "blockingConditions": [
+    {
+      "guard": "NonFinalTicketsRemain",
+      "messageKey": "admin.sessionBlockedByOpenTickets",
+      "parameters": { "count": "3" }
+    },
+    {
+      "guard": "ActiveLocationOnTestPrinter",
+      "messageKey": "admin.sessionBlockedByTestPrinter",
+      "parameters": { "stations": "Theke Zelt" }
+    }
+  ]
+}
+```
+
+Showing every reason together is what lets the admin settle all of them before trying again, rather
+than fixing one, resubmitting, and being told about the next.
 | GET | /api/admin/orders | `?status=&locationId=&since=&search=` | 200 |
 | POST | /api/admin/orders/{id}/tickets/{ticketId}/resolve | `{slipIsOnThePile}` | 200. The laptop's answer to the `Unknown` question, for the evening when the placing server's phone is flat, lost, or in a pocket at the far end of the marquee. |
 | POST | /api/admin/orders/{id}/tickets/{ticketId}/reprint | | 202 |
@@ -2356,7 +2403,7 @@ language. The admin sets it on the station form and it is carried by both locati
 |---|---|---|
 | Init | `ESC @`, `ESC t 19`, `GS a 15` | Reset, code page, enable status back |
 | Reprint banner, only on a reprint | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | `NACHDRUCK` / `REPRINT`, then the reprint time in normal size |
-| Location name | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | Up to 24 characters, truncated with a full stop if longer. **The intended station, and the first thing on every slip.** |
+| Location name | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | A name longer than 24 characters wraps onto a continuation line, per the truncation rules below. **The intended station, and the first thing on every slip.** |
 | Sequence number | `ESC a 1`, `GS ! 0x11`, `ESC E 1` | `BON 042` / `SLIP 042` |
 | Order header | `ESC a 0`, `GS ! 0x00`, `ESC E 1` for the number line | Order number, table, server, time |
 | Lines | `ESC a 0`, `GS ! 0x00` | Quantity, item, and any line note indented by four spaces |
@@ -2406,6 +2453,14 @@ length in a dark marquee.
 **The URL is printed underneath the symbol as plain text as well**, wrapped over two lines at 48
 columns. That is what somebody reads out when a symbol will not scan, and it is what
 `MockPrinterTransport` writes into its file, because a text file cannot hold a symbol (section 7.8).
+
+**The bracketed placeholder line in the rendered examples below, `[ QR-Code, 37 x 37 Module ]`, is a
+note for the reader of this document and never reaches `PrintPayload.RenderedText`.** The symbol itself
+is bytes only, sent through the `GS ( k` sequence above and carried by nothing but the ESC/POS byte
+stream; `RenderedText` is assembled line by line from the segments that carry printable text, and the
+station card segment that emits the symbol commands contributes no line to it. The wrapped URL
+immediately below the symbol is a separate segment and is real: it is in `RenderedText`, it is what the
+mock's text file shows, and it is why a test slip is legible even without the symbol rendering.
 
 **This sequence is an assumption until a printer is on a desk.** `GS ( k` is documented for the TM
 series, but the TM-T20IV's firmware has not been checked, exactly as `GS ( H` has not been checked.
@@ -3050,6 +3105,8 @@ running, so there is nothing left for the overview to warn about and the key is 
 | `admin.locations.lastForItems` | Ordnen Sie {names} zuerst eine andere Station zu. Diese Station ist für diese Artikel die einzige. | Give {names} a different station first. This station is the only one for those items. |
 | `admin.locations.stationCard` | Stationskarte drucken | Print the station card |
 | `admin.locations.stationCardHelp` | Kleben Sie die Karte in den Deckel des Druckers. Wenn der Drucker ausfällt, führt der QR-Code auf der Karte zur Notfallseite dieser Station. | Tape the card inside the printer lid. If the printer fails, the QR code on the card opens this station's emergency page. |
+| `admin.locations.new` | Neue Station | New station |
+| `admin.locations.deactivate` | Station abschalten | Switch this station off |
 | `admin.items.title` | Artikel | Items |
 | `admin.items.priceHelp` | Preise dienen nur zum Zusammenrechnen. Über die App wird kein Geld bezahlt. | Prices are only there for adding up. No money is paid through the app. |
 | `admin.items.needsLocation` | Kreuzen Sie mindestens eine Station an. Ohne Station kann dieser Artikel nicht bestellt werden. | Tick at least one station. Without one this item cannot be ordered. |
@@ -3060,6 +3117,9 @@ running, so there is nothing left for the overview to warn about and the key is 
 | `admin.items.deactivateHelp` | Nehmen Sie einen Artikel damit für dieses Fest ganz von der Karte. Auf den Telefonen erscheint er dann gar nicht mehr. | Take an item off the menu for this festival entirely. It then does not appear on the phones at all. |
 | `admin.items.deactivateBlocked` | Schalten Sie den Artikel stattdessen auf "Ausverkauft". Während einer laufenden Veranstaltung lässt er sich nicht von der Karte nehmen. | Switch the item to "Sold out" instead. It cannot be taken off the menu while an event is running. |
 | `admin.items.soldOutWalk` | Der Laptop ist die einzige Stelle, an der Sie das umschalten können. | The laptop is the only place where you can switch this. |
+| `admin.items.new` | Neuer Artikel | New item |
+| `admin.items.category` | Kategorie | Category |
+| `admin.items.price` | Preis in Cent | Price in cents |
 | `admin.assignment.title` | Zuordnung | Assignment |
 | `admin.assignment.help` | Kreuzen Sie an, wo ein Artikel zubereitet werden kann. Bei einer Station läuft es von selbst, bei mehreren wählt die Bedienung beim Aufnehmen aus. | Tick where an item can be prepared. With one station it happens by itself, with several the server chooses while taking the order. |
 | `admin.assignment.preview` | Vorschau: {item} geht an {location}. | Preview: {item} goes to {location}. |
@@ -3222,6 +3282,9 @@ nothing else live that a reader has to know about.
 | `admin.diagnostics.title` | Technische Angaben | Technical details |
 | `admin.diagnostics.log` | Protokolldatei öffnen | Open the log file |
 | `admin.diagnostics.logHelp` | Hier steht, was das Programm heute Abend getan hat. Diese Datei hilft, wenn eine Station nichts bekommen hat. | This holds what the program did this evening. The file helps when a station received nothing. |
+| `admin.save` | Speichern | Save |
+| `admin.cancel` | Abbrechen | Cancel |
+| `admin.edit` | Bearbeiten | Edit |
 
 ### 8.10 Break-glass station page
 
@@ -3389,7 +3452,14 @@ change: a line added, a quantity changed, a station chosen, a note typed, the ta
   "tableLabel": "Tisch 12",
   "note": null,
   "lines": [
-    { "catalogItemId": "...", "quantity": 2, "note": null, "productionLocationId": null }
+    {
+      "catalogItemId": "...",
+      "quantity": 2,
+      "note": null,
+      "productionLocationId": null,
+      "name": "Bratwurst mit Brot",
+      "unitPriceCents": 450
+    }
   ],
   "clientOrderId": null
 }
@@ -3398,6 +3468,17 @@ change: a line added, a quantity changed, a station chosen, a note typed, the ta
 Its only job is that a reload does not lose a half-built order. `localStorage` survives a tab being
 closed, a browser being killed, and a phone rebooting, which is why the device token lives there too.
 On page load the app reads `draftOrder` and puts the order back on the screen exactly as it was.
+
+**Each line also carries `name` and `unitPriceCents`, a snapshot of the item as it stood when the line
+was added.** These two fields exist only in the stored draft and never travel over the wire: `POST
+/api/orders` still sends exactly `catalogItemId`, `quantity`, `note`, and `productionLocationId` per
+line (section 5.4), because the backend prices the order itself and does not read a price from the
+phone. The snapshot is what lets the basket keep showing a name and a price for a line whose item the
+catalog no longer carries. While the item is still present, `CatalogChanged` refreshes both fields from
+the current catalog (section 6.2), so an open basket tracks a changed name or price. If the item has
+since vanished from the catalog, the line renders greyed from its last snapshot, but it is not dropped:
+it still counts toward the line count and the total, and it is still submitted like any other line when
+the order is sent.
 
 **This is a draft cart and not a queue, and the distinction is load-bearing.** A draft cart holds one
 order, the one on the screen, and nothing ever sends it except a person tapping the send button. It has
@@ -3717,6 +3798,7 @@ application is C#. German and English, complete, like everywhere else.
 | `desktop.error.portInUse` | Wählen Sie in den Einstellungen einen anderen Port. Der Port {port} wird schon von einem anderen Programm benutzt. | Choose a different port in the settings. Port {port} is already being used by another program. |
 | `desktop.error.dataFolderRepair` | Klicken Sie in den Einstellungen auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach. | In the settings, click "Repair the setup". Nothing can be written into the folder {path}. Windows asks you once while it happens. |
 | `desktop.error.noNetwork` | Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk. | Connect the laptop to the WiFi the phones are on. The laptop is not on any network at the moment. |
+| `desktop.error.startFailed` | Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, öffnen Sie die Einstellungen und wählen Sie "Einrichtung reparieren". | The server could not be started. Quit the program and start it again. If that does not help, open the settings and choose "Repair the setup". |
 | `desktop.settings.title` | Einstellungen | Settings |
 | `desktop.settings.port` | Port | Port |
 | `desktop.settings.portHelp` | Ändern Sie den Port nur, wenn das Programm meldet, dass er belegt ist. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein. | Change the port only when the program reports that it is taken. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again. |
