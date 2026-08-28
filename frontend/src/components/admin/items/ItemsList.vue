@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { groupByCategory } from '../../../core/grouping'
 import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
@@ -15,8 +16,12 @@ const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 
-const shown = computed(() =>
-  items.items.filter((item) => showsDeactivated.value || item.isActive),
+const groups = computed(() =>
+  groupByCategory(
+    items.items.filter((item) => showsDeactivated.value || item.isActive),
+    (item) => item.categoryName,
+    (item) => item.name,
+  ),
 )
 
 
@@ -62,60 +67,60 @@ onMounted(async () => {
       :label="t('admin.showDeactivated')"
     />
 
-    <v-card v-for="item in shown" :key="item.itemId" class="item-row mb-3">
-      <v-card-item>
-        <v-card-title class="name">
-          {{ item.name }}
-          <v-chip v-if="!item.isActive" class="deactivated ms-2" size="small" color="grey">
+    <section v-for="group in groups" :key="group.name" class="category-section">
+      <h2 class="category-heading text-subtitle-1 font-weight-bold py-2">{{ group.name }}</h2>
+      <v-card v-for="item in group.items" :key="item.itemId" class="item-row mb-2">
+        <div class="item-line d-flex align-center ga-2 px-4 py-2">
+          <span class="name text-body-1">{{ item.name }}</span>
+          <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
             {{ t('admin.deactivated') }}
           </v-chip>
-        </v-card-title>
-      </v-card-item>
-      <v-card-actions>
-        <v-btn
-          v-if="item.isActive"
-          class="sold-out-toggle"
-          variant="text"
-          @click="items.setAvailability(item.itemId, !item.isAvailable)"
-        >
-          {{ item.isAvailable ? t('admin.items.soldOut') : t('admin.items.soldOutUndo') }}
-        </v-btn>
-        <v-btn
-          class="edit"
-          variant="text"
-          @click="editingId = editingId === item.itemId ? null : item.itemId"
-        >
-          {{ t('admin.edit') }}
-        </v-btn>
-        <v-btn
-          v-if="item.isActive"
-          class="deactivate"
-          icon="mdi-delete"
-          variant="text"
-          color="error"
-          :aria-label="t('admin.deactivate')"
-          @click="askingAboutId = item.itemId"
-        />
-        <v-btn
-          v-else
-          class="reactivate"
-          variant="text"
-          @click="items.setActive(item.itemId, true)"
-        >
-          {{ t('admin.items.activate') }}
-        </v-btn>
-      </v-card-actions>
-      <v-expand-transition>
-        <ItemForm
-          v-if="editingId === item.itemId"
-          :item="item"
-          :stations="stations.stations"
-          :category-names="items.categoryNames"
-          :error-key="items.errorKey"
-          @save="save"
-        />
-      </v-expand-transition>
-    </v-card>
+          <v-spacer />
+          <v-btn
+            v-if="item.isActive"
+            class="sold-out-toggle"
+            variant="text"
+            @click="items.setAvailability(item.itemId, !item.isAvailable)"
+          >
+            {{ item.isAvailable ? t('admin.items.soldOut') : t('admin.items.soldOutUndo') }}
+          </v-btn>
+          <v-btn
+            class="edit"
+            variant="text"
+            @click="editingId = editingId === item.itemId ? null : item.itemId"
+          >
+            {{ t('admin.edit') }}
+          </v-btn>
+          <v-btn
+            v-if="item.isActive"
+            class="deactivate"
+            icon="mdi-delete"
+            variant="text"
+            color="error"
+            :aria-label="t('admin.deactivate')"
+            @click="askingAboutId = item.itemId"
+          />
+          <v-btn
+            v-else
+            class="reactivate"
+            variant="text"
+            @click="items.setActive(item.itemId, true)"
+          >
+            {{ t('admin.items.activate') }}
+          </v-btn>
+        </div>
+        <v-expand-transition>
+          <ItemForm
+            v-if="editingId === item.itemId"
+            :item="item"
+            :stations="stations.stations"
+            :category-names="items.categoryNames"
+            :error-key="items.errorKey"
+            @save="save"
+          />
+        </v-expand-transition>
+      </v-card>
+    </section>
 
     <v-btn class="new-item" color="primary" @click="isCreating = true">
       {{ t('admin.items.new') }}

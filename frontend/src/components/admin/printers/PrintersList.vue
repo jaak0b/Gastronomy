@@ -58,10 +58,6 @@ function statusKey(printer: AdminPrinter): string {
   return 'admin.printers.online'
 }
 
-function needsAHand(printer: AdminPrinter): boolean {
-  return printer.isFaulty || !printer.isOnline || printer.isPaperEnd || printer.isCoverOpen
-}
-
 async function save(value: SavePrinter): Promise<void> {
   await printers.save(value)
   editingId.value = null
@@ -107,9 +103,6 @@ onMounted(printers.load)
               printer.waitingTicketCount,
             )
           }}
-        </p>
-        <p v-if="needsAHand(printer)" class="repair-help text-medium-emphasis">
-          {{ t('admin.printers.reconnectHelp') }}
         </p>
         <v-alert
           v-if="refusal !== null && askingAboutId === null"

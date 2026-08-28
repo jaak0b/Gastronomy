@@ -81,6 +81,64 @@ const DEACTIVATED_ITEM = {
   items: [{ ...ONE_ITEM.items[0], isActive: false }],
 }
 
+const THREE_ITEMS = {
+  items: [
+    { ...ONE_ITEM.items[0], itemId: 'aaaa1111-2222-4333-8444-555566667777', name: 'Wasser', categoryName: 'Getränke' },
+    { ...ONE_ITEM.items[0], itemId: 'bbbb1111-2222-4333-8444-555566667777', name: 'Schnitzel', categoryName: 'Speisen' },
+    { ...ONE_ITEM.items[0], itemId: 'cccc1111-2222-4333-8444-555566667777', name: 'Bier', categoryName: 'Getränke' },
+  ],
+}
+
+describe('the item list', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('heads each category and sorts the categories by name', async () => {
+    stubFetchWith(THREE_ITEMS)
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.findAll('.category-heading').map((element) => element.text())).toEqual([
+      'Getränke',
+      'Speisen',
+    ])
+  })
+
+  it('sorts the items inside a category by name', async () => {
+    stubFetchWith(THREE_ITEMS)
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.findAll('.item-row .name').map((element) => element.text())).toEqual([
+      'Bier',
+      'Wasser',
+      'Schnitzel',
+    ])
+  })
+
+  it('keeps the name and the buttons of an item on one line', async () => {
+    stubFetchWith(ONE_ITEM)
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    const line = list.get('.item-row .item-line')
+
+    expect(line.find('.name').exists()).toBe(true)
+    expect(line.find('.sold-out-toggle').exists()).toBe(true)
+    expect(line.find('.edit').exists()).toBe(true)
+    expect(line.find('.deactivate').exists()).toBe(true)
+  })
+})
+
 describe('deactivating an item', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

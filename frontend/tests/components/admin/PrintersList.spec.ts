@@ -192,26 +192,6 @@ describe('the printers page', () => {
     )
   })
 
-  it('keeps the repair sentence away from a printer that is answering', async () => {
-    respondWith(ONE_PRINTER)
-
-    const page = mountPrinters()
-    await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
-
-    expect(page.find('.repair-help').exists()).toBe(false)
-  })
-
-  it('shows the repair sentence on a printer that is not answering', async () => {
-    respondWith(JSON.stringify({ printers: [{ ...TEST_PRINTER, isOnline: false }] }))
-
-    const page = mountPrinters()
-    await vi.waitFor(() => expect(page.find('.printer-row').exists()).toBe(true))
-
-    expect(page.get('.repair-help').text()).toBe(
-      'Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an.',
-    )
-  })
-
   it('says the load failed rather than showing nothing at all', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('no network'))))
 
