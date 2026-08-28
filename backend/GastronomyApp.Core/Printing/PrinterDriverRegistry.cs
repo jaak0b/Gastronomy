@@ -11,12 +11,11 @@ public sealed class PrinterDriverRegistry
     ArgumentNullException.ThrowIfNull(drivers);
 
     driversByPrinterType = [];
-    foreach (IPrinterDriver driver in drivers)
+    foreach (var driver in drivers)
     {
       if (!driversByPrinterType.TryAdd(driver.PrinterType, driver))
       {
-        throw new DuplicatePrinterDriverException(
-            $"Two printer drivers claim {driver.PrinterType.Name}, so the app cannot tell which one to use.");
+        throw new DuplicatePrinterDriverException($"Two printer drivers claim {driver.PrinterType.Name}, so the app cannot tell which one to use.");
       }
     }
   }
@@ -25,13 +24,12 @@ public sealed class PrinterDriverRegistry
   {
     ArgumentNullException.ThrowIfNull(printer);
 
-    if (driversByPrinterType.TryGetValue(printer.GetType(), out IPrinterDriver? driver))
+    if (driversByPrinterType.TryGetValue(printer.GetType(), out var driver))
     {
       return driver;
     }
 
-    throw new UnknownPrinterDriverException(
-        $"This build has no driver for the printer {printer.Name}, so it cannot be used.");
+    throw new UnknownPrinterDriverException($"This build has no driver for the printer {printer.Name}, so it cannot be used.");
   }
 }
 
@@ -42,12 +40,12 @@ public sealed class DuplicatePrinterDriverException : Exception
   }
 
   public DuplicatePrinterDriverException(string message)
-      : base(message)
+    : base(message)
   {
   }
 
   public DuplicatePrinterDriverException(string message, Exception innerException)
-      : base(message, innerException)
+    : base(message, innerException)
   {
   }
 }
@@ -59,12 +57,12 @@ public sealed class UnknownPrinterDriverException : Exception
   }
 
   public UnknownPrinterDriverException(string message)
-      : base(message)
+    : base(message)
   {
   }
 
   public UnknownPrinterDriverException(string message, Exception innerException)
-      : base(message, innerException)
+    : base(message, innerException)
   {
   }
 }

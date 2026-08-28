@@ -12,24 +12,24 @@ public sealed class PrintingSqliteFixture : IDisposable
 
   public PrintingSqliteFixture()
   {
-    connection = new SqliteConnection("Data Source=:memory:");
+    connection = new("Data Source=:memory:");
     connection.Open();
-    using GastronomyAppDbContext creator = CreateContext();
+    using var creator = CreateContext();
     creator.Database.Migrate();
-  }
-
-  public GastronomyAppDbContext CreateContext()
-  {
-    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>()
-        .UseSqlite(connection)
-        .Options;
-
-    return new GastronomyAppDbContext(options);
   }
 
   public void Dispose()
   {
     connection.Dispose();
+  }
+
+  public GastronomyAppDbContext CreateContext()
+  {
+    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>()
+                                                      .UseSqlite(connection)
+                                                      .Options;
+
+    return new(options);
   }
 }
 
@@ -47,35 +47,33 @@ public sealed class PrintingSeeder
 
   public async Task SeedSessionAsync(GastronomyAppDbContext context, bool isPractice, CancellationToken cancellationToken)
   {
-
-    context.StaffMembers.Add(new StaffMember
-    {
-      Id = StaffMemberId,
-      Name = "Anna",
-      IsActive = true,
-      CreatedAtUtc = baseline,
-    });
+    context.StaffMembers.Add(new()
+                             {
+                               Id = StaffMemberId,
+                               Name = "Anna",
+                               IsActive = true,
+                               CreatedAtUtc = baseline
+                             });
 
     await context.SaveChangesAsync(cancellationToken);
   }
 
-  public async Task SeedStationAsync(
-      GastronomyAppDbContext context,
-      Guid stationId,
-      string name,
-      Guid printerId,
-      string host,
-      int port,
-      CancellationToken cancellationToken)
+  public async Task SeedStationAsync(GastronomyAppDbContext context,
+                                     Guid stationId,
+                                     string name,
+                                     Guid printerId,
+                                     string host,
+                                     int port,
+                                     CancellationToken cancellationToken)
   {
     Station station = new()
-    {
-      Id = stationId,
-      Name = name,
-      SortOrder = 1,
-      IsActive = true,
-      NextStationOrderNumber = 1,
-    };
+                      {
+                        Id = stationId,
+                        Name = name,
+                        SortOrder = 1,
+                        IsActive = true,
+                        NextStationOrderNumber = 1
+                      };
     context.Stations.Add(station);
 
     station.PrinterId = printerId;
@@ -83,84 +81,83 @@ public sealed class PrintingSeeder
     if (!await context.Printers.AnyAsync(printer => printer.Id == printerId, cancellationToken))
     {
       context.Printers.Add(new EpsonTmT20ivNetworkPrinter
-      {
-        Id = printerId,
-        Name = "Drucker " + name,
-        Host = host,
-        Port = port,
-      });
+                           {
+                             Id = printerId,
+                             Name = "Drucker " + name,
+                             Host = host,
+                             Port = port
+                           });
 
-      context.PrinterStatuses.Add(new PrinterStatus
-      {
-        PrinterId = printerId,
-        IsOnline = true,
-        IsPaperEnd = false,
-        IsPaperNearEnd = false,
-        IsCoverOpen = false,
-        IsInErrorState = false,
-        IsFaulty = false,
-        LastDetail = "seeded",
-        LastChangedAtUtc = baseline,
-        LastHeardFromAtUtc = baseline,
-      });
+      context.PrinterStatuses.Add(new()
+                                  {
+                                    PrinterId = printerId,
+                                    IsOnline = true,
+                                    IsPaperEnd = false,
+                                    IsPaperNearEnd = false,
+                                    IsCoverOpen = false,
+                                    IsInErrorState = false,
+                                    IsFaulty = false,
+                                    LastDetail = "seeded",
+                                    LastChangedAtUtc = baseline,
+                                    LastHeardFromAtUtc = baseline
+                                  });
     }
 
     await context.SaveChangesAsync(cancellationToken);
   }
 
-  public async Task<SeededStationOrder> SeedOrderAsync(
-      GastronomyAppDbContext context,
-      Guid stationId,
-      int globalOrderNumber,
-      int sequenceNumber,
-      int minutesAfterBaseline,
-      PrintJobStatus status,
-      CancellationToken cancellationToken)
+  public async Task<SeededStationOrder> SeedOrderAsync(GastronomyAppDbContext context,
+                                                       Guid stationId,
+                                                       int globalOrderNumber,
+                                                       int sequenceNumber,
+                                                       int minutesAfterBaseline,
+                                                       PrintJobStatus status,
+                                                       CancellationToken cancellationToken)
   {
-    Guid orderId = Guid.NewGuid();
-    Guid stationOrderId = Guid.NewGuid();
-    Guid printJobId = Guid.NewGuid();
-    DateTime createdAtUtc = baseline.AddMinutes(minutesAfterBaseline);
+    var orderId = Guid.NewGuid();
+    var stationOrderId = Guid.NewGuid();
+    var printJobId = Guid.NewGuid();
+    var createdAtUtc = baseline.AddMinutes(minutesAfterBaseline);
 
-    context.Orders.Add(new Order
-    {
-      Id = orderId,
-      ClientOrderId = Guid.NewGuid(),
-      GlobalOrderNumber = globalOrderNumber,
-      StaffMemberId = StaffMemberId,
-      TableName = "12",
-      Note = null,
-      CreatedAtUtc = createdAtUtc,
-    });
+    context.Orders.Add(new()
+                       {
+                         Id = orderId,
+                         ClientOrderId = Guid.NewGuid(),
+                         GlobalOrderNumber = globalOrderNumber,
+                         StaffMemberId = StaffMemberId,
+                         TableName = "12",
+                         Note = null,
+                         CreatedAtUtc = createdAtUtc
+                       });
 
-    context.StationOrders.Add(new StationOrder
-    {
-      Id = stationOrderId,
-      OrderId = orderId,
-      StationId = stationId,
-      StationOrderNumber = sequenceNumber,
-    });
+    context.StationOrders.Add(new()
+                              {
+                                Id = stationOrderId,
+                                OrderId = orderId,
+                                StationId = stationId,
+                                StationOrderNumber = sequenceNumber
+                              });
 
-    context.PrintJobs.Add(new PrintJob
-    {
-      Id = printJobId,
-      StationOrderId = stationOrderId,
-      CopyNumber = 0,
-      Status = status,
-      CreatedAtUtc = createdAtUtc,
-    });
+    context.PrintJobs.Add(new()
+                          {
+                            Id = printJobId,
+                            StationOrderId = stationOrderId,
+                            CopyNumber = 0,
+                            Status = status,
+                            CreatedAtUtc = createdAtUtc
+                          });
 
-    context.OrderItems.Add(new OrderItem
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = stationOrderId,
-      CatalogItemId = Guid.NewGuid(),
-      ItemName = "Bratwurst mit Brot",
-      UnitPriceCents = 350,
-      Note = null,
-    });
+    context.OrderItems.Add(new()
+                           {
+                             Id = Guid.NewGuid(),
+                             StationOrderId = stationOrderId,
+                             CatalogItemId = Guid.NewGuid(),
+                             ItemName = "Bratwurst mit Brot",
+                             UnitPriceCents = 350,
+                             Note = null
+                           });
 
     await context.SaveChangesAsync(cancellationToken);
-    return new SeededStationOrder(orderId, stationOrderId, printJobId, sequenceNumber);
+    return new(orderId, stationOrderId, printJobId, sequenceNumber);
   }
 }

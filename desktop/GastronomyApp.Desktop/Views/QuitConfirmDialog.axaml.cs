@@ -9,13 +9,13 @@ public partial class QuitConfirmDialog : Window
   {
     InitializeComponent();
 
-    Button? cancelButton = this.FindControl<Button>("CancelButton");
+    var cancelButton = this.FindControl<Button>("CancelButton");
     if (cancelButton is not null)
     {
       cancelButton.Click += OnCancelClicked;
     }
 
-    Button? confirmButton = this.FindControl<Button>("ConfirmButton");
+    var confirmButton = this.FindControl<Button>("ConfirmButton");
     if (confirmButton is not null)
     {
       confirmButton.Click += OnConfirmClicked;

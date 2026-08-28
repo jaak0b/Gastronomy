@@ -8,6 +8,7 @@ namespace GastronomyApp.Infrastructure;
 public sealed record TransactionOutcome<TValue>
 {
   public required TValue Value { get; init; }
+
   public required bool ShouldCommit { get; init; }
 }
 
@@ -15,21 +16,19 @@ public sealed class ImmediateTransactionRunner
 {
   private readonly SqliteFailureTranslator _failureTranslator = new();
 
-  public async Task<TValue> RunAsync<TValue>(
-      GastronomyAppDbContext dbContext,
-      Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
-      CancellationToken cancellationToken)
+  public async Task<TValue> RunAsync<TValue>(GastronomyAppDbContext dbContext,
+                                             Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
+                                             CancellationToken cancellationToken)
   {
-    AutoTransactionBehavior previousBehavior = dbContext.Database.AutoTransactionBehavior;
+    var previousBehavior = dbContext.Database.AutoTransactionBehavior;
     if (previousBehavior == AutoTransactionBehavior.Never)
     {
-      throw new InvalidOperationException(
-          "This context is already inside an immediate transaction, and SQLite cannot nest one inside another.");
+      throw new InvalidOperationException("This context is already inside an immediate transaction, and SQLite cannot nest one inside another.");
     }
 
     await dbContext.Database.OpenConnectionAsync(cancellationToken);
-    DbConnection connection = dbContext.Database.GetDbConnection();
-    bool transactionIsOpen = false;
+    var connection = dbContext.Database.GetDbConnection();
+    var transactionIsOpen = false;
 
     try
     {
@@ -50,17 +49,16 @@ public sealed class ImmediateTransactionRunner
       throw _failureTranslator.Translate(exception);
     }
     catch (DbUpdateException exception)
-        when (exception.InnerException is SqliteException inner && _failureTranslator.IsDatabaseUnavailable(inner))
+      when (exception.InnerException is SqliteException inner && _failureTranslator.IsDatabaseUnavailable(inner))
     {
       throw _failureTranslator.Translate(inner);
     }
     catch (DbUpdateException exception)
-        when (exception.InnerException is SqliteException inner
+      when (exception.InnerException is SqliteException inner
             && _failureTranslator.IsUniqueConstraintViolation(inner))
     {
       throw _failureTranslator.TranslateConflict(inner);
-    }
-    finally
+    } finally
     {
       if (transactionIsOpen)
       {
@@ -80,20 +78,18 @@ public sealed class ImmediateTransactionRunner
     }
     catch (SqliteException rollbackException)
     {
-      throw new InfrastructureException(
-          InfrastructureFailureReason.DatabaseUnavailable,
-          "The transaction could not be rolled back after the operation failed.",
-          rollbackException);
+      throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable,
+                                        "The transaction could not be rolled back after the operation failed.",
+                                        rollbackException);
     }
   }
 
-  private async Task ExecuteAsync(
-      DbConnection connection,
-      string statement,
-      int? commandTimeoutSeconds,
-      CancellationToken cancellationToken)
+  private async Task ExecuteAsync(DbConnection connection,
+                                  string statement,
+                                  int? commandTimeoutSeconds,
+                                  CancellationToken cancellationToken)
   {
-    await using DbCommand command = connection.CreateCommand();
+    await using var command = connection.CreateCommand();
     command.CommandText = statement;
     if (commandTimeoutSeconds is not null)
     {
@@ -105,10 +101,10 @@ public sealed class ImmediateTransactionRunner
 
   private int BusyTimeoutSecondsOf(DbConnection connection)
   {
-    using DbCommand command = connection.CreateCommand();
+    using var command = connection.CreateCommand();
     command.CommandText = "PRAGMA busy_timeout";
-    object? value = command.ExecuteScalar();
-    double milliseconds = value is null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    var value = command.ExecuteScalar();
+    var milliseconds = value is null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
     return Math.Max(1, (int)Math.Ceiling(milliseconds / 1000d));
   }

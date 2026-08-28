@@ -13,17 +13,16 @@ public sealed class SqliteConnectionPolicyInterceptor : DbConnectionInterceptor
     this.connectionFactory = connectionFactory;
   }
 
-  public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
+  override public void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
   {
     connectionFactory.ApplyConnectionPolicy(connection);
 
     base.ConnectionOpened(connection, eventData);
   }
 
-  public override async Task ConnectionOpenedAsync(
-      DbConnection connection,
-      ConnectionEndEventData eventData,
-      CancellationToken cancellationToken = default)
+  override public async Task ConnectionOpenedAsync(DbConnection connection,
+                                                   ConnectionEndEventData eventData,
+                                                   CancellationToken cancellationToken = default)
   {
     await connectionFactory.ApplyConnectionPolicyAsync(connection, cancellationToken);
 

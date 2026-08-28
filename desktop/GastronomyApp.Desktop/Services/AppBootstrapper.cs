@@ -6,24 +6,23 @@ namespace GastronomyApp.Desktop.Services;
 public enum BootstrapOutcome
 {
   ProceedToWindow,
-  ExitImmediately,
+  ExitImmediately
 }
 
 public sealed class AppBootstrapper
 {
-  private readonly ISingleInstance singleInstance;
-  private readonly Func<MainWindowViewModel> mainWindowViewModelFactory;
   private readonly Action bringExistingWindowToFront;
   private readonly Action<Action> dispatchToUserInterface;
+  private readonly Func<MainWindowViewModel> mainWindowViewModelFactory;
   private readonly Never never = new();
+  private readonly ISingleInstance singleInstance;
 
   private bool holdsTheInstance;
 
-  public AppBootstrapper(
-      ISingleInstance singleInstance,
-      Func<MainWindowViewModel> mainWindowViewModelFactory,
-      Action bringExistingWindowToFront,
-      Action<Action> dispatchToUserInterface)
+  public AppBootstrapper(ISingleInstance singleInstance,
+                         Func<MainWindowViewModel> mainWindowViewModelFactory,
+                         Action bringExistingWindowToFront,
+                         Action<Action> dispatchToUserInterface)
   {
     this.singleInstance = singleInstance;
     this.mainWindowViewModelFactory = mainWindowViewModelFactory;

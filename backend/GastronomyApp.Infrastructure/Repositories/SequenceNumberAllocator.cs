@@ -19,8 +19,8 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   public async Task<int> AllocateGlobalOrderNumberAsync(CancellationToken cancellationToken)
   {
-    SequenceCounters counters = await LoadCountersAsync(cancellationToken);
-    int allocatedValue = counters.NextOrderNumber;
+    var counters = await LoadCountersAsync(cancellationToken);
+    var allocatedValue = counters.NextOrderNumber;
     counters.NextOrderNumber = allocatedValue + 1;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -29,10 +29,10 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   public async Task<int> AllocatePrinterJobIdAsync(CancellationToken cancellationToken)
   {
-    SequenceCounters counters = await LoadCountersAsync(cancellationToken);
-    int allocatedValue = counters.NextPrinterJobId;
+    var counters = await LoadCountersAsync(cancellationToken);
+    var allocatedValue = counters.NextPrinterJobId;
     counters.NextPrinterJobId =
-        allocatedValue >= PrinterJobIdMaximumValue ? FirstNumber : allocatedValue + 1;
+      allocatedValue >= PrinterJobIdMaximumValue ? FirstNumber : allocatedValue + 1;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     return allocatedValue;
@@ -40,10 +40,10 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   public async Task<int> AllocateStationOrderNumberAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Station station = await _dbContext.Stations
-        .FirstAsync(candidate => candidate.Id == stationId, cancellationToken);
+    var station = await _dbContext.Stations
+                                  .FirstAsync(candidate => candidate.Id == stationId, cancellationToken);
 
-    int allocatedValue = station.NextStationOrderNumber;
+    var allocatedValue = station.NextStationOrderNumber;
     station.NextStationOrderNumber = allocatedValue + 1;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -52,11 +52,11 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   public async Task ResetOrderAndStationNumbersAsync(CancellationToken cancellationToken)
   {
-    SequenceCounters counters = await LoadCountersAsync(cancellationToken);
+    var counters = await LoadCountersAsync(cancellationToken);
     counters.NextOrderNumber = FirstNumber;
 
     List<Station> stations = await _dbContext.Stations.ToListAsync(cancellationToken);
-    foreach (Station station in stations)
+    foreach (var station in stations)
     {
       station.NextStationOrderNumber = FirstNumber;
     }
@@ -66,8 +66,8 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   private async Task<SequenceCounters> LoadCountersAsync(CancellationToken cancellationToken)
   {
-    SequenceCounters? counters = await _dbContext.SequenceCounters
-        .FirstOrDefaultAsync(candidate => candidate.Id == SingleRowId, cancellationToken);
+    var counters = await _dbContext.SequenceCounters
+                                   .FirstOrDefaultAsync(candidate => candidate.Id == SingleRowId, cancellationToken);
 
     if (counters is not null)
     {
@@ -75,11 +75,11 @@ public sealed class SequenceNumberAllocator : INumberAllocator
     }
 
     SequenceCounters created = new()
-    {
-      Id = SingleRowId,
-      NextOrderNumber = FirstNumber,
-      NextPrinterJobId = FirstNumber,
-    };
+                               {
+                                 Id = SingleRowId,
+                                 NextOrderNumber = FirstNumber,
+                                 NextPrinterJobId = FirstNumber
+                               };
 
     _dbContext.SequenceCounters.Add(created);
     await _dbContext.SaveChangesAsync(cancellationToken);

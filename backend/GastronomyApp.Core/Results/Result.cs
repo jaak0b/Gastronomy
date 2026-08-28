@@ -2,8 +2,8 @@
 
 public sealed class Result<TValue, TFailure>
 {
-  private readonly TValue? _value;
   private readonly TFailure? _failure;
+  private readonly TValue? _value;
 
   private Result(bool isSuccess, TValue? value, TFailure? failure)
   {
@@ -42,11 +42,11 @@ public sealed class Result<TValue, TFailure>
 
   public static Result<TValue, TFailure> Success(TValue value)
   {
-    return new Result<TValue, TFailure>(true, value, default);
+    return new(true, value, default);
   }
 
   public static Result<TValue, TFailure> Failed(TFailure failure)
   {
-    return new Result<TValue, TFailure>(false, default, failure);
+    return new(false, default, failure);
   }
 }

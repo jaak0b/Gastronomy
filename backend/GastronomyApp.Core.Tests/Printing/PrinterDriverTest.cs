@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Printing;
+﻿using GastronomyApp.Core.Printing;
 
 namespace GastronomyApp.Core.Tests.Printing;
 
@@ -9,7 +8,7 @@ public sealed class PrinterDriverTest
   public async Task ConnectAsync_OnItsOwnPrinter_ReceivesItTyped()
   {
     TestPrinterDriverDouble driver = new();
-    TestPrinter printer = APrinter.Test();
+    var printer = APrinter.Test();
 
     await driver.ConnectAsync(printer, CancellationToken.None);
 
@@ -21,7 +20,6 @@ public sealed class PrinterDriverTest
   {
     TestPrinterDriverDouble driver = new();
 
-    Assert.ThrowsAsync<PrinterDriverMismatchException>(
-        async () => await driver.ConnectAsync(APrinter.Network(), CancellationToken.None));
+    Assert.ThrowsAsync<PrinterDriverMismatchException>(async () => await driver.ConnectAsync(APrinter.Network(), CancellationToken.None));
   }
 }

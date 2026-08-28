@@ -11,7 +11,7 @@ public sealed class LocalNetworkAddressProvider
   {
     List<string> addresses = [];
 
-    foreach (NetworkInterface networkInterface in NetworkInterface.GetAllNetworkInterfaces())
+    foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
     {
       if (networkInterface.OperationalStatus != OperationalStatus.Up
           || networkInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback)
@@ -19,7 +19,7 @@ public sealed class LocalNetworkAddressProvider
         continue;
       }
 
-      foreach (UnicastIPAddressInformation unicast in networkInterface.GetIPProperties().UnicastAddresses)
+      foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
       {
         if (unicast.Address.AddressFamily == AddressFamily.InterNetwork
             && !IPAddress.IsLoopback(unicast.Address))
@@ -36,9 +36,9 @@ public sealed class LocalNetworkAddressProvider
 public sealed class ReachableHostResolver
 {
   private const string LoopbackHost = "127.0.0.1";
+  private readonly LocalNetworkAddressProvider addressProvider;
 
   private readonly ApiHostOptions hostOptions;
-  private readonly LocalNetworkAddressProvider addressProvider;
 
   public ReachableHostResolver(ApiHostOptions hostOptions, LocalNetworkAddressProvider addressProvider)
   {
@@ -48,10 +48,10 @@ public sealed class ReachableHostResolver
 
   public bool BindsEveryAddress()
   {
-    string bindAddress = hostOptions.BindAddress;
+    var bindAddress = hostOptions.BindAddress;
 
     return string.IsNullOrWhiteSpace(bindAddress)
-        || bindAddress is "0.0.0.0" or "::" or "*" or "+";
+           || bindAddress is "0.0.0.0" or "::" or "*" or "+";
   }
 
   public string ResolveHost()

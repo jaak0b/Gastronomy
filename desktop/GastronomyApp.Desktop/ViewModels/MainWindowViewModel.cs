@@ -11,35 +11,34 @@ namespace GastronomyApp.Desktop.ViewModels;
 public enum HostStatus
 {
   Stopped,
-  Running,
+  Running
 }
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-  private readonly IHostLauncher launcher;
-  private readonly IPowerManager power;
-  private readonly ISettingsStore settingsStore;
-  private readonly IDesktopTextProvider text;
-  private readonly IFreePortProvider freePorts;
-  private readonly Never never = new();
 
   private const int MaximumPortAttempts = 10;
   private const string EveryNetworkInterface = "0.0.0.0";
+  private readonly AppLanguage appLanguage = new();
+  private readonly IFreePortProvider freePorts;
+  private readonly IHostLauncher launcher;
+  private readonly Never never = new();
+  private readonly IPowerManager power;
+  private readonly ISettingsStore settingsStore;
+  private readonly IDesktopTextProvider text;
+  private int adminPort;
+  private string? errorMessage;
+  private string? errorMessageKey;
+  private string? noticeText;
+  private LanguageOption? selectedLanguage;
 
   private HostStatus status = HostStatus.Stopped;
-  private int adminPort;
-  private LanguageOption? selectedLanguage;
-  private readonly AppLanguage appLanguage = new();
-  private string? noticeText;
-  private string? errorMessageKey;
-  private string? errorMessage;
 
-  public MainWindowViewModel(
-      IHostLauncher launcher,
-      IPowerManager power,
-      ISettingsStore settingsStore,
-      IDesktopTextProvider text,
-      IFreePortProvider freePorts)
+  public MainWindowViewModel(IHostLauncher launcher,
+                             IPowerManager power,
+                             ISettingsStore settingsStore,
+                             IDesktopTextProvider text,
+                             IFreePortProvider freePorts)
   {
     this.launcher = launcher;
     this.power = power;
@@ -47,17 +46,17 @@ public sealed class MainWindowViewModel : ViewModelBase
     this.text = text;
     this.freePorts = freePorts;
 
-    Languages.Add(new LanguageOption("de", text.Get("desktop.language.german")));
-    Languages.Add(new LanguageOption("en", text.Get("desktop.language.english")));
+    Languages.Add(new("de", text.Get("desktop.language.german")));
+    Languages.Add(new("en", text.Get("desktop.language.english")));
 
-    DesktopSettings startupSettings = settingsStore.Load();
+    var startupSettings = settingsStore.Load();
     adminPort = startupSettings.Port ?? 0;
 
-    string storedLanguage = startupSettings.Language
-        ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var storedLanguage = startupSettings.Language
+                         ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
     selectedLanguage = Languages.FirstOrDefault(language => language.Code == storedLanguage)
-        ?? Languages.Single(language => language.Code == "en");
+                       ?? Languages.Single(language => language.Code == "en");
     text.UseLanguage(selectedLanguage.Code);
     appLanguage.Current = selectedLanguage.Code;
     text.LanguageChanged += OnLanguageChanged;
@@ -67,14 +66,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     RepairSetupCommand = new RelayCommand(() => RepairRequested?.Invoke());
     RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
   }
-
-  public event Action<string>? AdminPagesRequested;
-
-  public event Action? DataFolderRequested;
-
-  public event Action? RepairRequested;
-
-  public event Action? QuitRequested;
 
   public IRelayCommand OpenAdminPagesCommand { get; }
 
@@ -158,6 +149,14 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public bool HasNotice => NoticeText is not null;
 
+  public event Action<string>? AdminPagesRequested;
+
+  public event Action? DataFolderRequested;
+
+  public event Action? RepairRequested;
+
+  public event Action? QuitRequested;
+
   private void OnLanguageChanged()
   {
     OnPropertyChanged(string.Empty);
@@ -165,15 +164,14 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public async Task StartAsync(CancellationToken cancellationToken = default)
   {
-    DesktopSettings settings = settingsStore.Load();
-    int? writtenDownPort = settings.Port;
-    int port = writtenDownPort ?? freePorts.Reserve();
+    var settings = settingsStore.Load();
+    var writtenDownPort = settings.Port;
+    var port = writtenDownPort ?? freePorts.Reserve();
 
-    for (int attempt = 0; attempt < MaximumPortAttempts; attempt++)
+    for (var attempt = 0; attempt < MaximumPortAttempts; attempt++)
     {
-      HostLaunchResult result = await launcher.StartAsync(
-          OptionsFor(settings, port),
-          cancellationToken);
+      var result = await launcher.StartAsync(OptionsFor(settings, port),
+                                             cancellationToken);
 
       if (result is HostLaunchResult.PortInUse)
       {
@@ -199,13 +197,13 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   private ApiHostOptions OptionsFor(DesktopSettings settings, int port)
   {
-    return new ApiHostOptions
-    {
-      DataDirectory = settings.DataDirectory,
-      Port = port,
-      BindAddress = EveryNetworkInterface,
-      Language = appLanguage,
-    };
+    return new()
+           {
+             DataDirectory = settings.DataDirectory,
+             Port = port,
+             BindAddress = EveryNetworkInterface,
+             Language = appLanguage
+           };
   }
 
   private void Apply(HostLaunchResult result, DesktopSettings settings, int? writtenDownPort, int port)
@@ -213,10 +211,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     switch (result)
     {
       case HostLaunchResult.Started:
-        Log.Information(
-            "The server is answering on port {Port} in {DataDirectory}.",
-            port,
-            settings.DataDirectory);
+        Log.Information("The server is answering on port {Port} in {DataDirectory}.",
+                        port,
+                        settings.DataDirectory);
         RememberPort(settings, writtenDownPort, port);
         ClearError();
         Status = HostStatus.Running;
@@ -225,9 +222,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       case HostLaunchResult.DataFolderNotWritable notWritable:
-        ShowError(
-            "desktop.error.dataFolderRepair",
-            new TextPlaceholder("path", notWritable.Path));
+        ShowError("desktop.error.dataFolderRepair",
+                  new TextPlaceholder("path", notWritable.Path));
 
         break;
 
@@ -262,10 +258,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     if (writtenDownPort is not null)
     {
-      Log.Warning(
-          "The port changed from {PreviousPort} to {Port}. Every phone has to be set up again.",
-          writtenDownPort,
-          port);
+      Log.Warning("The port changed from {PreviousPort} to {Port}. Every phone has to be set up again.",
+                  writtenDownPort,
+                  port);
       NoticeText = text.Get("desktop.notice.addressChanged");
     }
   }

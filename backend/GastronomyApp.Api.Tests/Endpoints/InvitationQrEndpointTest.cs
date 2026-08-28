@@ -8,15 +8,11 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class InvitationQrEndpointTest
 {
-  private const string QrPath = "/api/admin/enrolment/invitations/current/qr.svg";
-  private const int PixelsPerModule = 8;
-
-  private OrderTestContext context = null!;
 
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
+    context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
@@ -25,10 +21,15 @@ public sealed class InvitationQrEndpointTest
     await context.DisposeAsync();
   }
 
+  private const string QrPath = "/api/admin/enrolment/invitations/current/qr.svg";
+  private const int PixelsPerModule = 8;
+
+  private OrderTestContext context = null!;
+
   [Test]
   public async Task GetQr_NoOutstandingInvitation_AnswersNotFound()
   {
-    using HttpResponseMessage response = await context.Client.GetAsync(QrPath);
+    using var response = await context.Client.GetAsync(QrPath);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -36,25 +37,24 @@ public sealed class InvitationQrEndpointTest
   [Test]
   public async Task GetQr_OutstandingInvitation_RendersScalableVectorGraphicsForItsUrl()
   {
-    string qrUrl = await CreateInvitationAsync();
+    var qrUrl = await CreateInvitationAsync();
 
-    using HttpResponseMessage response = await context.Client.GetAsync(QrPath);
-    string svg = await response.Content.ReadAsStringAsync();
+    using var response = await context.Client.GetAsync(QrPath);
+    var svg = await response.Content.ReadAsStringAsync();
 
-    int side = ReadDeclaredSide(svg);
-    int smallestSideThatHolds = SmallestModuleCountFor(qrUrl.Length) * PixelsPerModule;
+    var side = ReadDeclaredSide(svg);
+    var smallestSideThatHolds = SmallestModuleCountFor(qrUrl.Length) * PixelsPerModule;
 
     Assert.Multiple(() =>
-    {
-      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-      Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("image/svg+xml"));
-      Assert.That(svg, Does.Contain("<svg"));
-      Assert.That(
-              side,
-              Is.GreaterThanOrEqualTo(smallestSideThatHolds),
-              $"A QR carrying {qrUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
-      Assert.That(side % PixelsPerModule, Is.EqualTo(0), "The QR must be drawn in whole modules.");
-    });
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("image/svg+xml"));
+                      Assert.That(svg, Does.Contain("<svg"));
+                      Assert.That(side,
+                                  Is.GreaterThanOrEqualTo(smallestSideThatHolds),
+                                  $"A QR carrying {qrUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
+                      Assert.That(side % PixelsPerModule, Is.EqualTo(0), "The QR must be drawn in whole modules.");
+                    });
   }
 
   [Test]
@@ -63,20 +63,19 @@ public sealed class InvitationQrEndpointTest
     await CreateInvitationAsync();
 
     string firstSvg;
-    using (HttpResponseMessage first = await context.Client.GetAsync(QrPath))
+    using (var first = await context.Client.GetAsync(QrPath))
     {
       firstSvg = await first.Content.ReadAsStringAsync();
     }
 
     await CreateInvitationAsync();
 
-    using HttpResponseMessage second = await context.Client.GetAsync(QrPath);
-    string secondSvg = await second.Content.ReadAsStringAsync();
+    using var second = await context.Client.GetAsync(QrPath);
+    var secondSvg = await second.Content.ReadAsStringAsync();
 
-    Assert.That(
-        secondSvg,
-        Is.Not.EqualTo(firstSvg),
-        "The rendered QR must encode the current invitation, not a stale or placeholder image.");
+    Assert.That(secondSvg,
+                Is.Not.EqualTo(firstSvg),
+                "The rendered QR must encode the current invitation, not a stale or placeholder image.");
   }
 
   [Test]
@@ -84,49 +83,47 @@ public sealed class InvitationQrEndpointTest
   {
     await CreateInvitationAsync();
 
-    using HttpResponseMessage response = await context.Client.GetAsync(QrPath);
+    using var response = await context.Client.GetAsync(QrPath);
 
     Assert.Multiple(() =>
-    {
-      Assert.That(response.Headers.CacheControl!.NoStore, Is.True);
-      Assert.That(response.Headers.CacheControl.NoCache, Is.True);
-    });
+                    {
+                      Assert.That(response.Headers.CacheControl!.NoStore, Is.True);
+                      Assert.That(response.Headers.CacheControl.NoCache, Is.True);
+                    });
   }
 
   [Test]
   public async Task GetQr_InvitationAlreadyRedeemed_AnswersNotFound()
   {
-    string qrUrl = await CreateInvitationAsync();
-    string code = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
+    var qrUrl = await CreateInvitationAsync();
+    var code = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
 
-    using (HttpResponseMessage redeemed = await context.Client.PostAsJsonAsync(
-        "/api/enrolment/redeem",
-        new RedeemBody(code, "Anna", "NUnit")))
+    using (var redeemed = await context.Client.PostAsJsonAsync("/api/enrolment/redeem",
+                                                               new RedeemBody(code, "Anna", "NUnit")))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using HttpResponseMessage response = await context.Client.GetAsync(QrPath);
+    using var response = await context.Client.GetAsync(QrPath);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
 
   private async Task<string> CreateInvitationAsync()
   {
-    using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-        "/api/admin/enrolment/invitations",
-        new { staffMemberId = (Guid?)null });
+    using var response = await context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+                                                              new { staffMemberId = (Guid?)null });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     return body.RootElement.GetProperty("qrUrl").GetString()!;
   }
 
   private int ReadDeclaredSide(string svg)
   {
-    Match width = Regex.Match(svg, @"width=""(\d+)""");
+    var width = Regex.Match(svg, @"width=""(\d+)""");
 
     Assert.That(width.Success, Is.True, "The rendered QR must declare its width.");
 

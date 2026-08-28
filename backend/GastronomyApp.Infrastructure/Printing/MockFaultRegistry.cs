@@ -10,13 +10,13 @@ public enum MockFault
   ConnectTimeout,
   DropSocketEarly,
   DropSocketMidJob,
-  UnknownOutcome,
+  UnknownOutcome
 }
 
 public enum MockFaultMode
 {
   Once,
-  Sticky,
+  Sticky
 }
 
 public sealed record ArmedMockFault(MockFault Fault, MockFaultMode Mode);
@@ -43,21 +43,21 @@ public sealed class InMemoryMockFaultRegistry : IMockFaultRegistry
 
   public ArmedMockFault Armed(Guid printerId)
   {
-    return armed.TryGetValue(printerId, out ArmedMockFault? entry)
-        ? entry
-        : new ArmedMockFault(MockFault.None, MockFaultMode.Once);
+    return armed.TryGetValue(printerId, out var entry)
+             ? entry
+             : new(MockFault.None, MockFaultMode.Once);
   }
 
   public void Arm(Guid printerId, MockFault fault, MockFaultMode mode)
   {
-    armed[printerId] = new ArmedMockFault(fault, mode);
+    armed[printerId] = new(fault, mode);
   }
 
   public void ClearIfOnce(Guid printerId)
   {
-    if (armed.TryGetValue(printerId, out ArmedMockFault? entry) && entry.Mode == MockFaultMode.Once)
+    if (armed.TryGetValue(printerId, out var entry) && entry.Mode == MockFaultMode.Once)
     {
-      armed[printerId] = new ArmedMockFault(MockFault.None, MockFaultMode.Sticky);
+      armed[printerId] = new(MockFault.None, MockFaultMode.Sticky);
     }
   }
 }

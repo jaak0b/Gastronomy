@@ -10,5 +10,5 @@ public enum PrintFailureReason
   PrinterError = 5,
   StationDisabled = 6,
   StationFaulty = 7,
-  HandledOnPaper = 8,
+  HandledOnPaper = 8
 }

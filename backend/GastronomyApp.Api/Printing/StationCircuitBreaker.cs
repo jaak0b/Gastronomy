@@ -12,7 +12,7 @@ public sealed class StationCircuitBreaker
 
   public bool RecordOutcome(PrintOutcome outcome, PrintJobStatus jobStatus)
   {
-    bool countsTowardsTrip = jobStatus == PrintJobStatus.Unknown || outcome == PrintOutcome.Timeout;
+    var countsTowardsTrip = jobStatus == PrintJobStatus.Unknown || outcome == PrintOutcome.Timeout;
     if (!countsTowardsTrip)
     {
       consecutiveUnknownOrTimeout = 0;
@@ -40,18 +40,18 @@ public sealed class ReconnectBackoff
 {
   private readonly IReadOnlyList<TimeSpan> schedule =
   [
-      TimeSpan.FromSeconds(1),
-        TimeSpan.FromSeconds(2),
-        TimeSpan.FromSeconds(5),
-        TimeSpan.FromSeconds(10),
-        TimeSpan.FromSeconds(30),
-    ];
+    TimeSpan.FromSeconds(1),
+    TimeSpan.FromSeconds(2),
+    TimeSpan.FromSeconds(5),
+    TimeSpan.FromSeconds(10),
+    TimeSpan.FromSeconds(30)
+  ];
 
   private int attempt;
 
   public TimeSpan Next()
   {
-    TimeSpan delay = schedule[Math.Min(attempt, schedule.Count - 1)];
+    var delay = schedule[Math.Min(attempt, schedule.Count - 1)];
     attempt++;
     return delay;
   }

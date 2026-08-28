@@ -1,6 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using GastronomyApp.Infrastructure;
+﻿using System.Net.Http.Json;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,10 +7,10 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
 
 public sealed record OrderBody(
-    Guid ClientOrderId,
-    string TableName,
-    string? Note,
-    IReadOnlyList<OrderItemBody> Items);
+  Guid ClientOrderId,
+  string TableName,
+  string? Note,
+  IReadOnlyList<OrderItemBody> Items);
 
 public sealed class OrderTestContext : IAsyncDisposable
 {
@@ -32,18 +30,19 @@ public sealed class OrderTestContext : IAsyncDisposable
 
   public Guid DeviceId { get; }
 
-  public HttpClient Client
+  public HttpClient Client => Factory.Client;
+
+  public async ValueTask DisposeAsync()
   {
-    get { return Factory.Client; }
+    await Factory.DisposeAsync();
   }
 
   public OrderBody BuildOrder(Guid clientOrderId)
   {
-    return new OrderBody(
-        clientOrderId,
-        "Tisch 12",
-        null,
-        [new OrderItemBody(World.BratwurstItemId, 350, null, null), new OrderItemBody(World.BratwurstItemId, 350, null, null)]);
+    return new(clientOrderId,
+               "Tisch 12",
+               null,
+               [new(World.BratwurstItemId, 350, null, null), new(World.BratwurstItemId, 350, null, null)]);
   }
 
   public Task<HttpResponseMessage> PostOrderAsync(OrderBody body)
@@ -54,7 +53,7 @@ public sealed class OrderTestContext : IAsyncDisposable
   public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body = null)
   {
     using HttpRequestMessage request = new(method, path);
-    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", DeviceToken);
+    request.Headers.Authorization = new("Bearer", DeviceToken);
     if (body is not null)
     {
       request.Content = JsonContent.Create(body, body.GetType());
@@ -63,19 +62,14 @@ public sealed class OrderTestContext : IAsyncDisposable
     return await Client.SendAsync(request);
   }
 
-  public async ValueTask DisposeAsync()
-  {
-    await Factory.DisposeAsync();
-  }
-
   public sealed class Builder
   {
     public async Task<OrderTestContext> StartAsync(bool withRunningPrinters = true)
     {
-      ApiTestFactory factory = await new ApiTestFactory.Builder().StartAsync();
+      var factory = await new ApiTestFactory.Builder().StartAsync();
       SeededWorld world;
 
-      await using (GastronomyAppDbContext context = factory.CreateContext())
+      await using (var context = factory.CreateContext())
       {
         world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
       }
@@ -85,11 +79,11 @@ public sealed class OrderTestContext : IAsyncDisposable
         await factory.ReconcilePrintersAsync();
       }
 
-      using IServiceScope scope = factory.Services.CreateScope();
-      IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-          .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+      using var scope = factory.Services.CreateScope();
+      var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
+                              .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
 
-      return new OrderTestContext(factory, world, issued.PlaintextToken, issued.Device.Id);
+      return new(factory, world, issued.PlaintextToken, issued.Device.Id);
     }
   }
 }

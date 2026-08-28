@@ -11,10 +11,10 @@ public sealed class ResultTest
     Result<string, int> result = Result<string, int>.Success("routed");
 
     Assert.Multiple(() =>
-    {
-      Assert.That(result.IsSuccess, Is.True);
-      Assert.That(result.Value, Is.EqualTo("routed"));
-    });
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(result.Value, Is.EqualTo("routed"));
+                    });
   }
 
   [Test]
@@ -23,10 +23,10 @@ public sealed class ResultTest
     Result<string, int> result = Result<string, int>.Failed(42);
 
     Assert.Multiple(() =>
-    {
-      Assert.That(result.IsSuccess, Is.False);
-      Assert.That(result.Failure, Is.EqualTo(42));
-    });
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure, Is.EqualTo(42));
+                    });
   }
 
   [Test]

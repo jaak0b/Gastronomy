@@ -9,14 +9,13 @@ public sealed class OrderAcceptanceComposition
   {
     OrderRepository orderRepository = new(dbContext);
 
-    OrderAcceptanceService acceptanceService = new(
-        orderRepository,
-        new CatalogItemRepository(dbContext),
-        new StationRepository(dbContext),
-        new SequenceNumberAllocator(dbContext),
-        new OrderRoutingResolver(),
-        new SystemClock());
+    OrderAcceptanceService acceptanceService = new(orderRepository,
+                                                   new CatalogItemRepository(dbContext),
+                                                   new StationRepository(dbContext),
+                                                   new SequenceNumberAllocator(dbContext),
+                                                   new(),
+                                                   new SystemClock());
 
-    return new OrderAcceptanceTransaction(dbContext, orderRepository, acceptanceService);
+    return new(dbContext, orderRepository, acceptanceService);
   }
 }

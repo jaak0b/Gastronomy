@@ -1,6 +1,4 @@
-﻿using System.Data.Common;
-using System.Globalization;
-using GastronomyApp.Infrastructure;
+﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Hosting;
@@ -8,7 +6,6 @@ namespace GastronomyApp.Api.Tests.Hosting;
 [TestFixture]
 public sealed class SqliteConnectionPolicyTest
 {
-  private ApiTestFactory factory = null!;
 
   [SetUp]
   public async Task SetUp()
@@ -22,34 +19,35 @@ public sealed class SqliteConnectionPolicyTest
     await factory.DisposeAsync();
   }
 
+  private ApiTestFactory factory = null!;
+
   [Test]
   public async Task ResolvedContext_ConnectionFromTheBuiltApplication_CarriesTheBusyTimeoutPolicy()
   {
-    string busyTimeout = await ReadPragmaAsync("busy_timeout");
+    var busyTimeout = await ReadPragmaAsync("busy_timeout");
 
-    Assert.That(
-        busyTimeout,
-        Is.EqualTo("5000"),
-        "The composition root must apply the busy timeout the transaction runner sizes its BEGIN IMMEDIATE from.");
+    Assert.That(busyTimeout,
+                Is.EqualTo("5000"),
+                "The composition root must apply the busy timeout the transaction runner sizes its BEGIN IMMEDIATE from.");
   }
 
   [Test]
   public async Task ResolvedContext_ConnectionFromTheBuiltApplication_CarriesTheWriteAheadLogPolicy()
   {
-    string journalMode = await ReadPragmaAsync("journal_mode");
+    var journalMode = await ReadPragmaAsync("journal_mode");
 
     Assert.That(journalMode, Is.EqualTo("wal").IgnoreCase);
   }
 
   private async Task<string> ReadPragmaAsync(string pragmaName)
   {
-    await using GastronomyAppDbContext context = factory.CreateContext();
+    await using var context = factory.CreateContext();
     await context.Database.OpenConnectionAsync();
 
-    DbConnection connection = context.Database.GetDbConnection();
-    await using DbCommand command = connection.CreateCommand();
+    var connection = context.Database.GetDbConnection();
+    await using var command = connection.CreateCommand();
     command.CommandText = $"PRAGMA {pragmaName};";
-    object? value = await command.ExecuteScalarAsync();
+    var value = await command.ExecuteScalarAsync();
 
     await context.Database.CloseConnectionAsync();
 

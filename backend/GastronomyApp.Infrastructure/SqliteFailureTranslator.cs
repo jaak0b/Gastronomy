@@ -15,36 +15,34 @@ public sealed class SqliteFailureTranslator
   public bool IsDatabaseUnavailable(SqliteException exception)
   {
     return exception.SqliteErrorCode switch
-    {
-      SqliteBusy => true,
-      SqliteLocked => true,
-      SqliteReadOnly => true,
-      SqliteInputOutputError => true,
-      SqliteCorrupt => true,
-      SqliteCannotOpen => true,
-      _ => false,
-    };
+           {
+             SqliteBusy => true,
+             SqliteLocked => true,
+             SqliteReadOnly => true,
+             SqliteInputOutputError => true,
+             SqliteCorrupt => true,
+             SqliteCannotOpen => true,
+             _ => false
+           };
   }
 
   public bool IsUniqueConstraintViolation(SqliteException exception)
   {
     return exception.SqliteErrorCode == SqliteConstraint
-        && exception.Message.Contains("UNIQUE constraint failed", StringComparison.Ordinal);
+           && exception.Message.Contains("UNIQUE constraint failed", StringComparison.Ordinal);
   }
 
   public InfrastructureException TranslateConflict(SqliteException exception)
   {
-    return new InfrastructureException(
-        InfrastructureFailureReason.ConflictingChange,
-        "Another write reached the same unique row first.",
-        exception);
+    return new(InfrastructureFailureReason.ConflictingChange,
+               "Another write reached the same unique row first.",
+               exception);
   }
 
   public InfrastructureException Translate(SqliteException exception)
   {
-    return new InfrastructureException(
-        InfrastructureFailureReason.DatabaseUnavailable,
-        "The order database could not be written to.",
-        exception);
+    return new(InfrastructureFailureReason.DatabaseUnavailable,
+               "The order database could not be written to.",
+               exception);
   }
 }

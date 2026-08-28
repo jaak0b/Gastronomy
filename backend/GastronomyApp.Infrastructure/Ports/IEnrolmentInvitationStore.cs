@@ -8,31 +8,30 @@ public enum EnrolmentRedemptionOutcome
   CodeInvalid,
   CodeExpired,
   StaffMemberIsOffTheList,
-  NameRequired,
+  NameRequired
 }
 
 public sealed record EnrolmentInvitationCreated(
-    Guid InvitationId,
-    string QrCodeValue,
-    DateTime ExpiresAtUtc);
+  Guid InvitationId,
+  string QrCodeValue,
+  DateTime ExpiresAtUtc);
 
 public sealed record EnrolmentRedemptionRequest(
-    string Code,
-    string? Name,
-    string UserAgent,
-    string AcceptLanguageHeader);
+  string Code,
+  string? Name,
+  string UserAgent,
+  string AcceptLanguageHeader);
 
 public sealed record EnrolmentRedemptionResult(
-    EnrolmentRedemptionOutcome Outcome,
-    Device? Device,
-    StaffMember? StaffMember,
-    string? PlaintextToken);
+  EnrolmentRedemptionOutcome Outcome,
+  Device? Device,
+  StaffMember? StaffMember,
+  string? PlaintextToken);
 
 public interface IEnrolmentInvitationStore
 {
   public Task<EnrolmentInvitationCreated> CreateAsync(Guid? staffMemberId, CancellationToken cancellationToken);
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(
-      EnrolmentRedemptionRequest request,
-      CancellationToken cancellationToken);
+  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
+                                                     CancellationToken cancellationToken);
 }

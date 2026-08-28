@@ -15,14 +15,14 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
     builder.Property(stationOrder => stationOrder.StationOrderNumber).IsRequired();
     builder.HasIndex(stationOrder => new { stationOrder.OrderId, stationOrder.StationId }).IsUnique();
     builder.HasOne<Station>()
-        .WithMany()
-        .HasForeignKey(stationOrder => stationOrder.StationId)
-        .OnDelete(DeleteBehavior.Restrict);
+           .WithMany()
+           .HasForeignKey(stationOrder => stationOrder.StationId)
+           .OnDelete(DeleteBehavior.Restrict);
     builder.HasMany(stationOrder => stationOrder.Items)
-        .WithOne()
-        .HasForeignKey(item => item.StationOrderId);
+           .WithOne()
+           .HasForeignKey(item => item.StationOrderId);
     builder.HasMany(stationOrder => stationOrder.PrintJobs)
-        .WithOne()
-        .HasForeignKey(job => job.StationOrderId);
+           .WithOne()
+           .HasForeignKey(job => job.StationOrderId);
   }
 }

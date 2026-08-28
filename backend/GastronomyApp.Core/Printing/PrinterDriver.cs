@@ -22,7 +22,7 @@ public interface IPrinterDriver
 }
 
 public abstract class PrinterDriver<TPrinter> : IPrinterDriver
-    where TPrinter : Printer
+  where TPrinter : Printer
 {
   public Type PrinterType => typeof(TPrinter);
 
@@ -44,8 +44,7 @@ public abstract class PrinterDriver<TPrinter> : IPrinterDriver
 
     if (printer is not TPrinter typed)
     {
-      throw new PrinterDriverMismatchException(
-          $"The driver for {typeof(TPrinter).Name} was handed a {printer.GetType().Name}, which it cannot talk to.");
+      throw new PrinterDriverMismatchException($"The driver for {typeof(TPrinter).Name} was handed a {printer.GetType().Name}, which it cannot talk to.");
     }
 
     return ConnectAsync(typed, cancellationToken);
@@ -61,12 +60,12 @@ public sealed class PrinterDriverMismatchException : Exception
   }
 
   public PrinterDriverMismatchException(string message)
-      : base(message)
+    : base(message)
   {
   }
 
   public PrinterDriverMismatchException(string message, Exception innerException)
-      : base(message, innerException)
+    : base(message, innerException)
   {
   }
 }

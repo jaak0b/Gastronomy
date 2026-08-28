@@ -8,15 +8,11 @@ namespace GastronomyApp.Api.Tests.Hub;
 [TestFixture]
 public sealed class HubConnectionSecurityTest
 {
-  private readonly TimeSpan patience = TimeSpan.FromSeconds(10);
-  private readonly TimeSpan silenceWindow = TimeSpan.FromSeconds(2);
-
-  private OrderTestContext context = null!;
 
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
+    context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
@@ -25,27 +21,31 @@ public sealed class HubConnectionSecurityTest
     await context.DisposeAsync();
   }
 
+  private readonly TimeSpan patience = TimeSpan.FromSeconds(10);
+  private readonly TimeSpan silenceWindow = TimeSpan.FromSeconds(2);
+
+  private OrderTestContext context = null!;
+
   [Test]
   public async Task Connect_ValidStationAccessKey_JoinsTheSiteWideStationGroup()
   {
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    string accessKey = context.World.KitchenStationId.ToString("N");
+    var accessKey = context.World.KitchenStationId.ToString("N");
 
-    await using HubConnection connection = Connect($"hub?stationAccessKey={accessKey}");
-    connection.On<JsonElement>(
-        "OrderAccepted",
-        payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
+    await using var connection = Connect($"hub?stationAccessKey={accessKey}");
+    connection.On<JsonElement>("OrderAccepted",
+                               payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
 
     await connection.StartAsync();
 
-    Guid orderId = await PlaceAnOrderAsync();
-    Task received = await Task.WhenAny(heard.Task, Task.Delay(patience));
+    var orderId = await PlaceAnOrderAsync();
+    var received = await Task.WhenAny(heard.Task, Task.Delay(patience));
 
     Assert.Multiple(() =>
-    {
-      Assert.That(received, Is.SameAs(heard.Task), "A valid station key must join the stations group.");
-      Assert.That(connection.State, Is.EqualTo(HubConnectionState.Connected));
-    });
+                    {
+                      Assert.That(received, Is.SameAs(heard.Task), "A valid station key must join the stations group.");
+                      Assert.That(connection.State, Is.EqualTo(HubConnectionState.Connected));
+                    });
 
     Assert.That(await heard.Task, Is.EqualTo(orderId));
   }
@@ -55,57 +55,56 @@ public sealed class HubConnectionSecurityTest
   {
     TaskCompletionSource<Guid> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource<Guid> heardAfterRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    bool revoked = false;
+    var revoked = false;
 
-    await using HubConnection connection = Connect($"hub?access_token={context.DeviceToken}");
-    connection.On<JsonElement>("OrderAccepted", payload =>
-    {
-      Guid orderId = payload.GetProperty("orderId").GetGuid();
+    await using var connection = Connect($"hub?access_token={context.DeviceToken}");
+    connection.On<JsonElement>("OrderAccepted",
+                               payload =>
+                               {
+                                 var orderId = payload.GetProperty("orderId").GetGuid();
 
-      if (revoked)
-      {
-        heardAfterRevocation.TrySetResult(orderId);
-        return;
-      }
+                                 if (revoked)
+                                 {
+                                   heardAfterRevocation.TrySetResult(orderId);
+                                   return;
+                                 }
 
-      heardBeforeRevocation.TrySetResult(orderId);
-    });
+                                 heardBeforeRevocation.TrySetResult(orderId);
+                               });
 
     await connection.StartAsync();
     await PlaceAnOrderAsync();
 
-    Task beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(patience));
+    var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(patience));
 
-    Assert.That(
-        beforeRevocation,
-        Is.SameAs(heardBeforeRevocation.Task),
-        "The phone must receive its own order events before it is revoked.");
+    Assert.That(beforeRevocation,
+                Is.SameAs(heardBeforeRevocation.Task),
+                "The phone must receive its own order events before it is revoked.");
 
     revoked = true;
 
-    using (HttpResponseMessage revocation = await context.Client.PostAsync(
-        $"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
-        content: null))
+    using (var revocation = await context.Client.PostAsync($"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
+                                                           null))
     {
       Assert.That(revocation.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    bool closed = await WaitUntilAsync(() => connection.State != HubConnectionState.Connected);
+    var closed = await WaitUntilAsync(() => connection.State != HubConnectionState.Connected);
 
     Assert.That(closed, Is.True, "Revoking a device must abort its live connection.");
 
-    using HttpResponseMessage afterRevocation = await context.SendAsync(HttpMethod.Get, "/api/session");
+    using var afterRevocation = await context.SendAsync(HttpMethod.Get, "/api/session");
 
     Assert.That(afterRevocation.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
 
   private async Task<Guid> PlaceAnOrderAsync()
   {
-    using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     return body.RootElement.GetProperty("orderId").GetGuid();
   }
@@ -116,7 +115,7 @@ public sealed class HubConnectionSecurityTest
     {
       await connection.StartAsync();
     }
-    catch (Exception exception) when (exception is not NUnit.Framework.AssertionException)
+    catch (Exception exception) when (exception is not AssertionException)
     {
       TestContext.Out.WriteLine($"The refused connection reported: {exception.Message}");
     }
@@ -124,7 +123,7 @@ public sealed class HubConnectionSecurityTest
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)
   {
-    DateTime deadline = DateTime.UtcNow.Add(patience);
+    var deadline = DateTime.UtcNow.Add(patience);
 
     while (DateTime.UtcNow < deadline)
     {
@@ -142,7 +141,7 @@ public sealed class HubConnectionSecurityTest
   private HubConnection Connect(string relativeUrl)
   {
     return new HubConnectionBuilder()
-        .WithUrl(new Uri(context.Factory.BaseAddress, relativeUrl))
-        .Build();
+          .WithUrl(new Uri(context.Factory.BaseAddress, relativeUrl))
+          .Build();
   }
 }

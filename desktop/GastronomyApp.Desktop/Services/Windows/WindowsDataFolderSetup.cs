@@ -6,18 +6,17 @@ namespace GastronomyApp.Desktop.Services.Windows;
 
 public sealed class DataFolderSetup : IDataFolderSetup
 {
-  private readonly string dataDirectoryPath;
 
   public DataFolderSetup(string dataDirectoryPath)
   {
-    this.dataDirectoryPath = dataDirectoryPath;
+    this.DataDirectoryPath = dataDirectoryPath;
   }
 
-  public string DataDirectoryPath => dataDirectoryPath;
+  public string DataDirectoryPath { get; }
 
   public bool Exists()
   {
-    return Directory.Exists(dataDirectoryPath);
+    return Directory.Exists(DataDirectoryPath);
   }
 
   public bool CurrentUserCanWrite()
@@ -27,7 +26,7 @@ public sealed class DataFolderSetup : IDataFolderSetup
       return false;
     }
 
-    string probe = Path.Combine(dataDirectoryPath, $"write-probe-{Guid.NewGuid():N}.tmp");
+    var probe = Path.Combine(DataDirectoryPath, $"write-probe-{Guid.NewGuid():N}.tmp");
 
     try
     {
@@ -48,7 +47,7 @@ public sealed class DataFolderSetup : IDataFolderSetup
 
   public void CreateWithUsersModifyGrant()
   {
-    Directory.CreateDirectory(dataDirectoryPath);
+    Directory.CreateDirectory(DataDirectoryPath);
     GrantUsersModifyOnExisting();
   }
 
@@ -65,15 +64,14 @@ public sealed class DataFolderSetup : IDataFolderSetup
   [SupportedOSPlatform("windows")]
   private void GrantOnWindows()
   {
-    DirectoryInfo directory = new(dataDirectoryPath);
-    DirectorySecurity security = directory.GetAccessControl();
+    DirectoryInfo directory = new(DataDirectoryPath);
+    var security = directory.GetAccessControl();
 
-    security.AddAccessRule(new FileSystemAccessRule(
-        new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
-        FileSystemRights.Modify,
-        InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-        PropagationFlags.None,
-        AccessControlType.Allow));
+    security.AddAccessRule(new(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
+                               FileSystemRights.Modify,
+                               InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                               PropagationFlags.None,
+                               AccessControlType.Allow));
 
     directory.SetAccessControl(security);
   }

@@ -10,7 +10,7 @@ public sealed class PrinterDriverRegistryTest
     TestPrinterDriverDouble testDriver = new();
     PrinterDriverRegistry registry = new([testDriver, new NetworkPrinterDriverDouble()]);
 
-    IPrinterDriver found = registry.For(APrinter.Test());
+    var found = registry.For(APrinter.Test());
 
     Assert.That(found, Is.SameAs(testDriver));
   }
@@ -20,8 +20,7 @@ public sealed class PrinterDriverRegistryTest
   {
     PrinterDriverRegistry registry = new([new TestPrinterDriverDouble()]);
 
-    UnknownPrinterDriverException thrown = Assert.Throws<UnknownPrinterDriverException>(
-        () => registry.For(APrinter.Network()))!;
+    var thrown = Assert.Throws<UnknownPrinterDriverException>(() => registry.For(APrinter.Network()))!;
 
     Assert.That(thrown.Message, Does.Contain("Drucker Küche"));
   }
@@ -29,7 +28,6 @@ public sealed class PrinterDriverRegistryTest
   [Test]
   public void Constructor_OnTwoDriversForOnePrinter_RefusesToStart()
   {
-    Assert.Throws<DuplicatePrinterDriverException>(
-        () => _ = new PrinterDriverRegistry([new TestPrinterDriverDouble(), new TestPrinterDriverDouble()]));
+    Assert.Throws<DuplicatePrinterDriverException>(() => _ = new PrinterDriverRegistry([new TestPrinterDriverDouble(), new TestPrinterDriverDouble()]));
   }
 }

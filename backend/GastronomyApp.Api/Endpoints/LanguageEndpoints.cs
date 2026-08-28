@@ -10,8 +10,9 @@ public static class LanguageEndpoints
 {
   public static IEndpointRouteBuilder MapLanguageEndpoints(this IEndpointRouteBuilder routes)
   {
-    routes.MapGet("/api/language", (AppLanguage language) =>
-        Results.Ok(new LanguageView(language.Current)));
+    routes.MapGet("/api/language",
+                  (AppLanguage language) =>
+                    Results.Ok(new LanguageView(language.Current)));
 
     return routes;
   }

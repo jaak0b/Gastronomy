@@ -9,15 +9,20 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
   private const string ActivationSignal = "activate";
   private const int ConnectAttempts = 5;
   private const int ConnectAttemptMilliseconds = 400;
+  private CancellationTokenSource? listening;
 
   private Mutex? mutex;
-  private CancellationTokenSource? listening;
+
+  public void Dispose()
+  {
+    Release();
+  }
 
   public event Action? ActivationRequested;
 
   public SingleInstanceOutcome AcquireOrSignalExisting()
   {
-    mutex = new Mutex(initiallyOwned: true, MutexName, out bool acquired);
+    mutex = new(true, MutexName, out var acquired);
 
     if (!acquired)
     {
@@ -28,7 +33,7 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
       return SingleInstanceOutcome.SignaledExistingAndShouldExit;
     }
 
-    listening = new CancellationTokenSource();
+    listening = new();
     _ = ListenForActivationAsync(listening.Token);
 
     return SingleInstanceOutcome.AcquiredPrimary;
@@ -45,14 +50,9 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
     mutex = null;
   }
 
-  public void Dispose()
-  {
-    Release();
-  }
-
   private void SignalExisting()
   {
-    for (int attempt = 0; attempt < ConnectAttempts; attempt++)
+    for (var attempt = 0; attempt < ConnectAttempts; attempt++)
     {
       if (TrySignalExisting())
       {
@@ -88,11 +88,9 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
     }
     catch (OperationCanceledException)
     {
-      return;
     }
     catch (ObjectDisposedException)
     {
-      return;
     }
   }
 
@@ -100,15 +98,14 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
   {
     while (!cancellationToken.IsCancellationRequested)
     {
-      using NamedPipeServerStream server = new(
-          PipeName,
-          PipeDirection.In,
-          NamedPipeServerStream.MaxAllowedServerInstances);
+      using NamedPipeServerStream server = new(PipeName,
+                                               PipeDirection.In,
+                                               NamedPipeServerStream.MaxAllowedServerInstances);
 
       await server.WaitForConnectionAsync(cancellationToken);
 
       using StreamReader reader = new(server);
-      string? signal = await reader.ReadLineAsync(cancellationToken);
+      var signal = await reader.ReadLineAsync(cancellationToken);
 
       if (signal == ActivationSignal)
       {

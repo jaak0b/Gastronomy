@@ -4,19 +4,18 @@ public sealed record CollapsedOrderLine<TLine>(TLine Line, int Quantity);
 
 public sealed class OrderLineCollapser
 {
-  public IReadOnlyList<CollapsedOrderLine<TLine>> Collapse<TLine>(
-      IReadOnlyList<TLine> lines,
-      Func<TLine, string> itemNameOf,
-      Func<TLine, string?> noteOf)
+  public IReadOnlyList<CollapsedOrderLine<TLine>> Collapse<TLine>(IReadOnlyList<TLine> lines,
+                                                                  Func<TLine, string> itemNameOf,
+                                                                  Func<TLine, string?> noteOf)
   {
     Dictionary<LineKey, int> countByKey = [];
     List<LineKey> order = [];
     Dictionary<LineKey, TLine> firstLineByKey = [];
 
-    foreach (TLine line in lines)
+    foreach (var line in lines)
     {
       LineKey key = new(itemNameOf(line), noteOf(line) ?? string.Empty);
-      if (countByKey.TryGetValue(key, out int seen))
+      if (countByKey.TryGetValue(key, out var seen))
       {
         countByKey[key] = seen + 1;
         continue;

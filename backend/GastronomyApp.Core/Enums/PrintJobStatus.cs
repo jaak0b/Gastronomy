@@ -8,5 +8,5 @@ public enum PrintJobStatus
   Blocked = 3,
   Failed = 4,
   Unknown = 5,
-  HandledOnPaper = 6,
+  HandledOnPaper = 6
 }

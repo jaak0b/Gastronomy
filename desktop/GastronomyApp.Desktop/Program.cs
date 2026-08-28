@@ -3,7 +3,7 @@ using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop;
 
-internal sealed class Program
+sealed internal class Program
 {
   private const string SetupArgument = "--setup";
 
@@ -23,19 +23,18 @@ internal sealed class Program
     {
       log.Start(new DesktopComposition().DataDirectoryPath);
       BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-    }
-    finally
+    } finally
     {
       log.Stop();
     }
   }
 
   public static AppBuilder BuildAvaloniaApp()
-      => AppBuilder.Configure<App>()
-          .UsePlatformDetect()
+    => AppBuilder.Configure<App>()
+                 .UsePlatformDetect()
 #if DEBUG
-          .WithDeveloperTools()
+                 .WithDeveloperTools()
 #endif
-          .WithInterFont()
-          .LogToTrace();
+                 .WithInterFont()
+                 .LogToTrace();
 }

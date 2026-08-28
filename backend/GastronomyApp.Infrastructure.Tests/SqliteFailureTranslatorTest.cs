@@ -18,16 +18,15 @@ public sealed class SqliteFailureTranslatorTest
     fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
     fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
 
-    DbUpdateException failure = Assert.ThrowsAsync<DbUpdateException>(
-        async () => await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken))!;
+    var failure = Assert.ThrowsAsync<DbUpdateException>(async () => await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken))!;
 
-    SqliteException inner = (SqliteException)failure.InnerException!;
+    var inner = (SqliteException)failure.InnerException!;
 
     Assert.Multiple(() =>
-    {
-      Assert.That(_translator.IsUniqueConstraintViolation(inner), Is.True);
-      Assert.That(_translator.IsDatabaseUnavailable(inner), Is.False);
-    });
+                    {
+                      Assert.That(_translator.IsUniqueConstraintViolation(inner), Is.True);
+                      Assert.That(_translator.IsDatabaseUnavailable(inner), Is.False);
+                    });
   }
 
   [Test]
@@ -35,29 +34,29 @@ public sealed class SqliteFailureTranslatorTest
   {
     SqliteException violation = new("UNIQUE constraint failed", 19, 2067);
 
-    InfrastructureException translated = _translator.TranslateConflict(violation);
+    var translated = _translator.TranslateConflict(violation);
 
     Assert.Multiple(() =>
-    {
-      Assert.That(translated.Reason, Is.EqualTo(InfrastructureFailureReason.ConflictingChange));
-      Assert.That(translated.InnerException, Is.SameAs(violation));
-    });
+                    {
+                      Assert.That(translated.Reason, Is.EqualTo(InfrastructureFailureReason.ConflictingChange));
+                      Assert.That(translated.InnerException, Is.SameAs(violation));
+                    });
   }
 
   private EnrolmentInvitation BuildUnconsumedInvitation(DateTime now)
   {
-    return new EnrolmentInvitation
-    {
-      Id = Guid.NewGuid(),
-      StaffMemberId = null,
-      QrCodeHash = [1],
-      QrCodeSalt = [2],
-      QrCodeIterations = 1,
-      QrCodeAlgorithm = "PBKDF2-HMAC-SHA512",
-      CreatedAtUtc = now,
-      ExpiresAtUtc = now.AddMinutes(5),
-      ConsumedAtUtc = null,
-      ConsumedByDeviceId = null,
-    };
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             StaffMemberId = null,
+             QrCodeHash = [1],
+             QrCodeSalt = [2],
+             QrCodeIterations = 1,
+             QrCodeAlgorithm = "PBKDF2-HMAC-SHA512",
+             CreatedAtUtc = now,
+             ExpiresAtUtc = now.AddMinutes(5),
+             ConsumedAtUtc = null,
+             ConsumedByDeviceId = null
+           };
   }
 }

@@ -18,16 +18,16 @@ public sealed class WindowsElevatedSetupLauncher : IElevatedSetupLauncher
   public async Task<ElevatedSetupOutcome> RunElevatedSetupAsync(CancellationToken cancellationToken = default)
   {
     ProcessStartInfo startInfo = new()
-    {
-      FileName = executablePath,
-      Arguments = SetupArgument,
-      UseShellExecute = true,
-      Verb = "runas",
-    };
+                                 {
+                                   FileName = executablePath,
+                                   Arguments = SetupArgument,
+                                   UseShellExecute = true,
+                                   Verb = "runas"
+                                 };
 
     try
     {
-      using Process? process = Process.Start(startInfo);
+      using var process = Process.Start(startInfo);
       if (process is null)
       {
         return ElevatedSetupOutcome.ElevationDeclined;
@@ -36,8 +36,8 @@ public sealed class WindowsElevatedSetupLauncher : IElevatedSetupLauncher
       await process.WaitForExitAsync(cancellationToken);
 
       return process.ExitCode == 0
-          ? ElevatedSetupOutcome.Completed
-          : ElevatedSetupOutcome.ElevationDeclined;
+               ? ElevatedSetupOutcome.Completed
+               : ElevatedSetupOutcome.ElevationDeclined;
     }
     catch (Win32Exception failure) when (failure.NativeErrorCode == ElevationDeclinedByUser)
     {

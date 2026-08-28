@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api;
+﻿using System.Net.Sockets;
+using GastronomyApp.Api;
 using GastronomyApp.Api.Options;
 using Microsoft.AspNetCore.Builder;
 
@@ -6,33 +7,29 @@ namespace GastronomyApp.Desktop.Services;
 
 public sealed class HostLauncher : IHostLauncher
 {
-  private readonly INetworkAddressProvider networkAddressProvider;
   private readonly Func<string, IDataFolderSetup> dataFolderSetupFactory;
+  private readonly INetworkAddressProvider networkAddressProvider;
 
-  private WebApplication? application;
-
-  public HostLauncher(
-      INetworkAddressProvider networkAddressProvider,
-      Func<string, IDataFolderSetup> dataFolderSetupFactory)
+  public HostLauncher(INetworkAddressProvider networkAddressProvider,
+                      Func<string, IDataFolderSetup> dataFolderSetupFactory)
   {
     this.networkAddressProvider = networkAddressProvider;
     this.dataFolderSetupFactory = dataFolderSetupFactory;
   }
 
-  public bool IsRunning => application is not null;
+  public WebApplication? Application { get; private set; }
 
-  public WebApplication? Application => application;
+  public bool IsRunning => Application is not null;
 
-  public async Task<HostLaunchResult> StartAsync(
-      ApiHostOptions options,
-      CancellationToken cancellationToken = default)
+  public async Task<HostLaunchResult> StartAsync(ApiHostOptions options,
+                                                 CancellationToken cancellationToken = default)
   {
     if (networkAddressProvider.GetAvailableAddresses().Count == 0)
     {
       return new HostLaunchResult.NoNetworkAvailable();
     }
 
-    IDataFolderSetup configuredFolder = dataFolderSetupFactory(options.DataDirectory);
+    var configuredFolder = dataFolderSetupFactory(options.DataDirectory);
 
     if (!configuredFolder.Exists() || !configuredFolder.CurrentUserCanWrite())
     {
@@ -66,28 +63,28 @@ public sealed class HostLauncher : IHostLauncher
       return new HostLaunchResult.StartFailed(failure);
     }
 
-    application = built;
+    Application = built;
 
     return new HostLaunchResult.Started(built);
   }
 
   public async Task StopAsync(CancellationToken cancellationToken = default)
   {
-    if (application is null)
+    if (Application is null)
     {
       return;
     }
 
-    await application.StopAsync(cancellationToken);
-    await application.DisposeAsync();
-    application = null;
+    await Application.StopAsync(cancellationToken);
+    await Application.DisposeAsync();
+    Application = null;
   }
 
   private bool IsPortAlreadyBound(Exception failure)
   {
-    for (Exception? candidate = failure; candidate is not null; candidate = candidate.InnerException)
+    for (var candidate = failure; candidate is not null; candidate = candidate.InnerException)
     {
-      if (candidate is System.Net.Sockets.SocketException)
+      if (candidate is SocketException)
       {
         return true;
       }

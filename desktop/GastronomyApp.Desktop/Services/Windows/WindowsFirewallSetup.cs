@@ -22,34 +22,33 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 
   public void EnsureRuleConfigured()
   {
-    string ruleSettings =
-        $"action=allow program=\"{executablePath}\" "
-        + "protocol=TCP profile=private remoteip=localsubnet enable=yes";
+    var ruleSettings =
+      $"action=allow program=\"{executablePath}\" "
+      + "protocol=TCP profile=private remoteip=localsubnet enable=yes";
 
-    int exitCode = IsRuleConfigured()
-        ? RunNetsh($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}")
-        : RunNetsh($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
+    var exitCode = IsRuleConfigured()
+                     ? RunNetsh($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}")
+                     : RunNetsh($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
 
     if (exitCode != 0)
     {
-      throw new InvalidOperationException(
-          $"Configuring the inbound firewall rule failed with exit code {exitCode}.");
+      throw new InvalidOperationException($"Configuring the inbound firewall rule failed with exit code {exitCode}.");
     }
   }
 
   private int RunNetsh(string arguments)
   {
     ProcessStartInfo startInfo = new()
-    {
-      FileName = "netsh",
-      Arguments = arguments,
-      UseShellExecute = false,
-      CreateNoWindow = true,
-      RedirectStandardOutput = true,
-      RedirectStandardError = true,
-    };
+                                 {
+                                   FileName = "netsh",
+                                   Arguments = arguments,
+                                   UseShellExecute = false,
+                                   CreateNoWindow = true,
+                                   RedirectStandardOutput = true,
+                                   RedirectStandardError = true
+                                 };
 
-    using Process? process = Process.Start(startInfo);
+    using var process = Process.Start(startInfo);
     if (process is null)
     {
       throw new InvalidOperationException("The netsh command could not be started.");

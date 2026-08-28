@@ -15,17 +15,16 @@ public sealed class ApiTestFactory : IAsyncDisposable
 {
   private readonly WebApplication application;
 
-  private ApiTestFactory(
-      WebApplication application,
-      string dataDirectory,
-      Uri baseAddress,
-      AppLanguage language)
+  private ApiTestFactory(WebApplication application,
+                         string dataDirectory,
+                         Uri baseAddress,
+                         AppLanguage language)
   {
     this.application = application;
     DataDirectory = dataDirectory;
     BaseAddress = baseAddress;
     Language = language;
-    Client = new HttpClient { BaseAddress = baseAddress };
+    Client = new() { BaseAddress = baseAddress };
   }
 
   public AppLanguage Language { get; }
@@ -36,25 +35,9 @@ public sealed class ApiTestFactory : IAsyncDisposable
 
   public HttpClient Client { get; }
 
-  public IServiceProvider Services
-  {
-    get { return application.Services; }
-  }
+  public IServiceProvider Services => application.Services;
 
-  public string MockSlipFolder
-  {
-    get { return Path.Combine(DataDirectory, "mock-slips"); }
-  }
-
-  public Task ReconcilePrintersAsync()
-  {
-    return Services.GetRequiredService<PrinterFleet>().ReconcileAsync(CancellationToken.None);
-  }
-
-  public GastronomyAppDbContext CreateContext()
-  {
-    return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
-  }
+  public string MockSlipFolder => Path.Combine(DataDirectory, "mock-slips");
 
   public async ValueTask DisposeAsync()
   {
@@ -77,40 +60,50 @@ public sealed class ApiTestFactory : IAsyncDisposable
     }
   }
 
+  public Task ReconcilePrintersAsync()
+  {
+    return Services.GetRequiredService<PrinterFleet>().ReconcileAsync(CancellationToken.None);
+  }
+
+  public GastronomyAppDbContext CreateContext()
+  {
+    return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
+  }
+
   public sealed class Builder
   {
     public async Task<ApiTestFactory> StartAsync()
     {
-      string dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
+      var dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
       Directory.CreateDirectory(dataDirectory);
 
       AppLanguage language = new();
-      WebApplication application = new GastronomyAppApiApplication().Build(new ApiHostOptions
-      {
-        DataDirectory = dataDirectory,
-        Port = 0,
-        BindAddress = "127.0.0.1",
-        Language = language,
-      });
+      var application = new GastronomyAppApiApplication().Build(new()
+                                                                {
+                                                                  DataDirectory = dataDirectory,
+                                                                  Port = 0,
+                                                                  BindAddress = "127.0.0.1",
+                                                                  Language = language
+                                                                });
 
       await application.StartAsync();
 
-      IServerAddressesFeature addresses =
-          application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+      var addresses =
+        application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
       Uri baseAddress = new(addresses.Addresses.First());
 
-      return new ApiTestFactory(application, dataDirectory, baseAddress, language);
+      return new(application, dataDirectory, baseAddress, language);
     }
   }
 }
 
 public sealed record SeededWorld(
-    Guid EventSessionId,
-    Guid StaffMemberId,
-    Guid KitchenStationId,
-    Guid BarStationId,
-    Guid BratwurstItemId,
-    Guid BeerItemId);
+  Guid EventSessionId,
+  Guid StaffMemberId,
+  Guid KitchenStationId,
+  Guid BarStationId,
+  Guid BratwurstItemId,
+  Guid BeerItemId);
 
 public sealed class ApiSeeder
 {
@@ -118,22 +111,21 @@ public sealed class ApiSeeder
 
   public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
   {
-    SeededWorld world = new(
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        Guid.NewGuid());
+    SeededWorld world = new(Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            Guid.NewGuid());
 
 
-    context.StaffMembers.Add(new StaffMember
-    {
-      Id = world.StaffMemberId,
-      Name = "Anna",
-      IsActive = true,
-      CreatedAtUtc = baseline,
-    });
+    context.StaffMembers.Add(new()
+                             {
+                               Id = world.StaffMemberId,
+                               Name = "Anna",
+                               IsActive = true,
+                               CreatedAtUtc = baseline
+                             });
 
     AddStation(context, world.KitchenStationId, "Kueche", 1);
     AddStation(context, world.BarStationId, "Bar", 2);
@@ -147,63 +139,62 @@ public sealed class ApiSeeder
 
   private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
   {
-    Guid printerId = Guid.NewGuid();
+    var printerId = Guid.NewGuid();
     context.Printers.Add(new TestPrinter
-    {
-      Id = printerId,
-      Name = "Drucker " + name,
-    });
+                         {
+                           Id = printerId,
+                           Name = "Drucker " + name
+                         });
 
-    context.Stations.Add(new Station
-    {
-      Id = stationId,
-      Name = name,
-      SortOrder = sortOrder,
-      IsActive = true,
-      NextStationOrderNumber = 1,
-      PrinterId = printerId,
-    });
+    context.Stations.Add(new()
+                         {
+                           Id = stationId,
+                           Name = name,
+                           SortOrder = sortOrder,
+                           IsActive = true,
+                           NextStationOrderNumber = 1,
+                           PrinterId = printerId
+                         });
 
-    context.PrinterStatuses.Add(new PrinterStatus
-    {
-      PrinterId = printerId,
-      IsOnline = true,
-      IsPaperEnd = false,
-      IsPaperNearEnd = false,
-      IsCoverOpen = false,
-      IsInErrorState = false,
-      IsFaulty = false,
-      LastDetail = "seeded",
-      LastChangedAtUtc = baseline,
-      LastHeardFromAtUtc = baseline,
-    });
+    context.PrinterStatuses.Add(new()
+                                {
+                                  PrinterId = printerId,
+                                  IsOnline = true,
+                                  IsPaperEnd = false,
+                                  IsPaperNearEnd = false,
+                                  IsCoverOpen = false,
+                                  IsInErrorState = false,
+                                  IsFaulty = false,
+                                  LastDetail = "seeded",
+                                  LastChangedAtUtc = baseline,
+                                  LastHeardFromAtUtc = baseline
+                                });
   }
 
-  private void AddItem(
-      GastronomyAppDbContext context,
-      Guid itemId,
-      string name,
-      string categoryName,
-      int priceCents,
-      int sortOrder,
-      Guid stationId)
+  private void AddItem(GastronomyAppDbContext context,
+                       Guid itemId,
+                       string name,
+                       string categoryName,
+                       int priceCents,
+                       int sortOrder,
+                       Guid stationId)
   {
-    context.CatalogItems.Add(new CatalogItem
-    {
-      Id = itemId,
-      Name = name,
-      CategoryName = categoryName,
-      PriceCents = priceCents,
-      IsActive = true,
-      SortOrder = sortOrder,
-      IsAvailable = true,
-    });
+    context.CatalogItems.Add(new()
+                             {
+                               Id = itemId,
+                               Name = name,
+                               CategoryName = categoryName,
+                               PriceCents = priceCents,
+                               IsActive = true,
+                               SortOrder = sortOrder,
+                               IsAvailable = true
+                             });
 
-    context.ItemStationAssignments.Add(new ItemStationAssignment
-    {
-      Id = Guid.NewGuid(),
-      CatalogItemId = itemId,
-      StationId = stationId,
-    });
+    context.ItemStationAssignments.Add(new()
+                                       {
+                                         Id = Guid.NewGuid(),
+                                         CatalogItemId = itemId,
+                                         StationId = stationId
+                                       });
   }
 }

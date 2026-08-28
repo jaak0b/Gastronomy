@@ -7,6 +7,7 @@ namespace GastronomyApp.Desktop.Services;
 public sealed class DesktopComposition
 {
   private const string ProductFolderName = "GastronomyApp";
+
   public DesktopComposition()
   {
     ExecutablePath = Environment.ProcessPath ?? AppContext.BaseDirectory;
@@ -17,20 +18,20 @@ public sealed class DesktopComposition
     SettingsStore = new SettingsStore(DataDirectoryPath);
     FreePorts = new FreePortProvider();
     NetworkAddressProvider = new NetworkAddressProvider();
-    HostLauncher = new HostLauncher(NetworkAddressProvider, path => new DataFolderSetup(path));
+    HostLauncher = new(NetworkAddressProvider, path => new DataFolderSetup(path));
     SingleInstance = new SingleInstanceCoordinator();
 
     PowerManager = OperatingSystem.IsWindows()
-        ? new WindowsPowerManager()
-        : new NoOpPowerManager();
+                     ? new WindowsPowerManager()
+                     : new NoOpPowerManager();
 
     FirewallSetup = OperatingSystem.IsWindows()
-        ? new WindowsFirewallSetup(ExecutablePath)
-        : new NoFirewallSetup();
+                      ? new WindowsFirewallSetup(ExecutablePath)
+                      : new NoFirewallSetup();
 
     ElevatedSetupLauncher = OperatingSystem.IsWindows()
-        ? new WindowsElevatedSetupLauncher(ExecutablePath)
-        : new UnavailableElevatedSetupLauncher();
+                              ? new WindowsElevatedSetupLauncher(ExecutablePath)
+                              : new UnavailableElevatedSetupLauncher();
   }
 
   public string ExecutablePath { get; }
@@ -59,24 +60,22 @@ public sealed class DesktopComposition
 
   public MainWindowViewModel CreateMainWindowViewModel()
   {
-    return new MainWindowViewModel(
-        HostLauncher,
-        PowerManager,
-        SettingsStore,
-        Text,
-        FreePorts);
+    return new(HostLauncher,
+               PowerManager,
+               SettingsStore,
+               Text,
+               FreePorts);
   }
 
   public FirstRunViewModel CreateFirstRunViewModel()
   {
-    return new FirstRunViewModel(FirewallSetup, DataFolderSetup, ElevatedSetupLauncher, Text);
+    return new(FirewallSetup, DataFolderSetup, ElevatedSetupLauncher, Text);
   }
 
-  public QuitConfirmViewModel CreateQuitConfirmViewModel(
-      MainWindowViewModel mainWindowViewModel,
-      Action requestApplicationExit)
+  public QuitConfirmViewModel CreateQuitConfirmViewModel(MainWindowViewModel mainWindowViewModel,
+                                                         Action requestApplicationExit)
   {
-    return new QuitConfirmViewModel(mainWindowViewModel.StopAsync, Text, requestApplicationExit);
+    return new(mainWindowViewModel.StopAsync, Text, requestApplicationExit);
   }
 
   public void RunElevatedSetupSteps()
@@ -95,9 +94,9 @@ public sealed class DesktopComposition
 
   private string ResolveDataDirectory()
   {
-    Environment.SpecialFolder root = OperatingSystem.IsWindows()
-        ? Environment.SpecialFolder.CommonApplicationData
-        : Environment.SpecialFolder.LocalApplicationData;
+    var root = OperatingSystem.IsWindows()
+                 ? Environment.SpecialFolder.CommonApplicationData
+                 : Environment.SpecialFolder.LocalApplicationData;
 
     return Path.Combine(Environment.GetFolderPath(root), ProductFolderName);
   }

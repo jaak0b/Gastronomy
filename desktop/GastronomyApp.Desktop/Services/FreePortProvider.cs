@@ -13,8 +13,7 @@ public sealed class FreePortProvider : IFreePortProvider
     try
     {
       return ((IPEndPoint)probe.LocalEndpoint).Port;
-    }
-    finally
+    } finally
     {
       probe.Stop();
     }

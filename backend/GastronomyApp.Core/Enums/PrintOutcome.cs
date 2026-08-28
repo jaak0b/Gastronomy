@@ -7,5 +7,5 @@ public enum PrintOutcome
   Unreachable,
   SocketDropped,
   Timeout,
-  PrinterError,
+  PrinterError
 }

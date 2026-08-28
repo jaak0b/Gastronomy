@@ -20,7 +20,7 @@ public sealed class WindowsPowerManager : IPowerManager
   }
 
   [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern uint SetThreadExecutionState(uint executionState);
+  private extern static uint SetThreadExecutionState(uint executionState);
 }
 
 public sealed class NoOpPowerManager : IPowerManager

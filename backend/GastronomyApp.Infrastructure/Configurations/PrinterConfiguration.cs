@@ -13,8 +13,8 @@ public sealed class PrinterConfiguration : IEntityTypeConfiguration<Printer>
     builder.Property(printer => printer.Id).ValueGeneratedNever();
     builder.Property(printer => printer.Name).IsRequired().HasMaxLength(40);
     builder.HasDiscriminator<string>("PrinterType")
-        .HasValue<TestPrinter>("TestPrinter")
-        .HasValue<EpsonTmT20ivNetworkPrinter>("EpsonTmT20ivNetworkPrinter");
+           .HasValue<TestPrinter>("TestPrinter")
+           .HasValue<EpsonTmT20ivNetworkPrinter>("EpsonTmT20ivNetworkPrinter");
   }
 }
 

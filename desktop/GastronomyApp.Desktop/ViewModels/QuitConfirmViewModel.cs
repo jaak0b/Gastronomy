@@ -4,16 +4,15 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class QuitConfirmViewModel : ViewModelBase
 {
+  private readonly Action requestApplicationExit;
   private readonly Func<CancellationToken, Task> stopServer;
   private readonly IDesktopTextProvider text;
-  private readonly Action requestApplicationExit;
 
   private bool isConfirmationVisible;
 
-  public QuitConfirmViewModel(
-      Func<CancellationToken, Task> stopServer,
-      IDesktopTextProvider text,
-      Action requestApplicationExit)
+  public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer,
+                              IDesktopTextProvider text,
+                              Action requestApplicationExit)
   {
     this.stopServer = stopServer;
     this.text = text;

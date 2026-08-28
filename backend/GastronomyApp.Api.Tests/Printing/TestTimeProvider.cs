@@ -9,7 +9,7 @@ public sealed class TestTimeProvider : TimeProvider
     now = start;
   }
 
-  public override DateTimeOffset GetUtcNow()
+  override public DateTimeOffset GetUtcNow()
   {
     return now;
   }

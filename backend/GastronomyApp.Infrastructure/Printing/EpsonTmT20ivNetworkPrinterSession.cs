@@ -17,7 +17,7 @@ public enum InboundFrame
   ProcessIdEcho,
   AutomaticStatusBack,
   TransmitStatus,
-  Unrecognised,
+  Unrecognised
 }
 
 public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
@@ -38,26 +38,26 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
   private const byte PaperNearEndMask = 0x0C;
 
   private readonly TcpClient client;
+  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
+  private readonly Lock guard = new();
+  private readonly List<byte> inbound = [];
+
+  private readonly byte[] initialise = [0x1B, 0x40];
+  private readonly CancellationTokenSource lifetime = new();
+  private readonly ConcurrentQueue<TaskCompletionSource<byte>> pendingQueries = new();
+  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
+  private readonly Channel<PrinterStatusSnapshot> statusChannel = Channel.CreateUnbounded<PrinterStatusSnapshot>();
   private readonly NetworkStream stream;
   private readonly PrinterSessionTimeouts timeouts;
   private readonly TimeProvider timeProvider;
-  private readonly CancellationTokenSource lifetime = new();
-  private readonly Channel<PrinterStatusSnapshot> statusChannel = Channel.CreateUnbounded<PrinterStatusSnapshot>();
-  private readonly ConcurrentQueue<TaskCompletionSource<byte>> pendingQueries = new();
-  private readonly List<byte> inbound = [];
-  private readonly Lock guard = new();
   private readonly SemaphoreSlim writeGate = new(1, 1);
-
-  private readonly byte[] initialise = [0x1B, 0x40];
-  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
-  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
+  private Task? heartbeatLoop;
+  private PrinterStatusSnapshot lastKnownStatus;
 
   private PendingProcessIdEcho? pendingEcho;
-  private PrinterStatusSnapshot lastKnownStatus;
-  private int unrecognisedInboundByteCount;
-  private bool remoteClosed;
   private Task? readLoop;
-  private Task? heartbeatLoop;
+  private bool remoteClosed;
+  private int unrecognisedInboundByteCount;
 
   public EpsonTmT20ivNetworkPrinterSession(TcpClient client, PrinterSessionTimeouts timeouts, TimeProvider timeProvider)
   {
@@ -65,7 +65,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     this.timeouts = timeouts;
     this.timeProvider = timeProvider;
     stream = client.GetStream();
-    lastKnownStatus = new PrinterStatusSnapshot(true, false, false, false, false, "Connected.", timeProvider.GetUtcNow());
+    lastKnownStatus = new(true, false, false, false, false, "Connected.", timeProvider.GetUtcNow());
   }
 
   public int UnrecognisedInboundByteCount
@@ -79,32 +79,21 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     }
   }
 
-  public IAsyncEnumerable<PrinterStatusSnapshot> StatusStream
-  {
-    get { return statusChannel.Reader.ReadAllAsync(); }
-  }
-
-  public async Task StartAsync()
-  {
-    await WriteAllAsync([.. initialise, .. selectCodePage, .. enableAutomaticStatusBack], lifetime.Token);
-    readLoop = Task.Run(() => ReadLoopAsync(lifetime.Token), CancellationToken.None);
-    heartbeatLoop = Task.Run(() => HeartbeatLoopAsync(lifetime.Token), CancellationToken.None);
-  }
+  public IAsyncEnumerable<PrinterStatusSnapshot> StatusStream => statusChannel.Reader.ReadAllAsync();
 
   public async Task<PrinterStatusSnapshot> QueryStatusAsync(CancellationToken cancellationToken)
   {
-    byte? printerStatus = await QueryAsync(1, cancellationToken);
-    byte? offlineStatus = await QueryAsync(2, cancellationToken);
-    byte? paperStatus = await QueryAsync(4, cancellationToken);
+    var printerStatus = await QueryAsync(1, cancellationToken);
+    var offlineStatus = await QueryAsync(2, cancellationToken);
+    var paperStatus = await QueryAsync(4, cancellationToken);
 
-    PrinterStatusSnapshot snapshot = new(
-        printerStatus is null || (printerStatus.Value & OfflineBit) == 0,
-        paperStatus is not null && (paperStatus.Value & PaperEndMask) == PaperEndMask,
-        paperStatus is not null && (paperStatus.Value & PaperNearEndMask) != 0,
-        offlineStatus is not null && (offlineStatus.Value & CoverOpenBit) != 0,
-        offlineStatus is not null && (offlineStatus.Value & ErrorOccurredBit) != 0,
-        $"DLE EOT n=1,2,4 answered {Describe(printerStatus)},{Describe(offlineStatus)},{Describe(paperStatus)}.",
-        timeProvider.GetUtcNow());
+    PrinterStatusSnapshot snapshot = new(printerStatus is null || (printerStatus.Value & OfflineBit) == 0,
+                                         paperStatus is not null && (paperStatus.Value & PaperEndMask) == PaperEndMask,
+                                         paperStatus is not null && (paperStatus.Value & PaperNearEndMask) != 0,
+                                         offlineStatus is not null && (offlineStatus.Value & CoverOpenBit) != 0,
+                                         offlineStatus is not null && (offlineStatus.Value & ErrorOccurredBit) != 0,
+                                         $"DLE EOT n=1,2,4 answered {Describe(printerStatus)},{Describe(offlineStatus)},{Describe(paperStatus)}.",
+                                         timeProvider.GetUtcNow());
 
     Publish(snapshot);
     return snapshot;
@@ -115,10 +104,10 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     TaskCompletionSource<bool> echoCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     lock (guard)
     {
-      pendingEcho = new PendingProcessIdEcho(payload.PrinterJobId, echoCompletion);
+      pendingEcho = new(payload.PrinterJobId, echoCompletion);
     }
 
-    int bytesWritten = 0;
+    var bytesWritten = 0;
     await writeGate.WaitAsync(cancellationToken);
     try
     {
@@ -130,7 +119,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
       ReadOnlyMemory<byte> bytes = payload.Bytes;
       while (bytesWritten < bytes.Length)
       {
-        int take = Math.Min(WriteChunkSize, bytes.Length - bytesWritten);
+        var take = Math.Min(WriteChunkSize, bytes.Length - bytesWritten);
         await stream.WriteAsync(bytes.Slice(bytesWritten, take), cancellationToken);
         bytesWritten += take;
 
@@ -145,13 +134,12 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException)
     {
       return Dropped(bytesWritten, error.Message);
-    }
-    finally
+    } finally
     {
       writeGate.Release();
     }
 
-    Task completed = await Task.WhenAny(echoCompletion.Task, Task.Delay(timeouts.JobTimeout, cancellationToken));
+    var completed = await Task.WhenAny(echoCompletion.Task, Task.Delay(timeouts.JobTimeout, cancellationToken));
     lock (guard)
     {
       pendingEcho = null;
@@ -159,18 +147,16 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
     if (completed != echoCompletion.Task)
     {
-      return new PrintDispatchResult(
-          PrintOutcome.Timeout,
-          bytesWritten,
-          lastKnownStatus,
-          $"No process id echo for {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} arrived within {timeouts.JobTimeout}.");
+      return new(PrintOutcome.Timeout,
+                 bytesWritten,
+                 lastKnownStatus,
+                 $"No process id echo for {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} arrived within {timeouts.JobTimeout}.");
     }
 
-    return new PrintDispatchResult(
-        PrintOutcome.Confirmed,
-        bytesWritten,
-        lastKnownStatus,
-        $"Process id {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} echoed on the sending connection.");
+    return new(PrintOutcome.Confirmed,
+               bytesWritten,
+               lastKnownStatus,
+               $"Process id {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} echoed on the sending connection.");
   }
 
   public async ValueTask DisposeAsync()
@@ -193,6 +179,13 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     writeGate.Dispose();
   }
 
+  public async Task StartAsync()
+  {
+    await WriteAllAsync([.. initialise, .. selectCodePage, .. enableAutomaticStatusBack], lifetime.Token);
+    readLoop = Task.Run(() => ReadLoopAsync(lifetime.Token), CancellationToken.None);
+    heartbeatLoop = Task.Run(() => HeartbeatLoopAsync(lifetime.Token), CancellationToken.None);
+  }
+
   private PrintDispatchResult Dropped(int bytesWritten, string detail)
   {
     lock (guard)
@@ -200,7 +193,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
       pendingEcho = null;
     }
 
-    return new PrintDispatchResult(PrintOutcome.SocketDropped, bytesWritten, lastKnownStatus, detail);
+    return new(PrintOutcome.SocketDropped, bytesWritten, lastKnownStatus, detail);
   }
 
   private string Describe(byte? value)
@@ -210,7 +203,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private byte[] ProcessIdRequest(int processId)
   {
-    byte[] digits = Encoding.ASCII.GetBytes(processId.ToString("D4", CultureInfo.InvariantCulture));
+    var digits = Encoding.ASCII.GetBytes(processId.ToString("D4", CultureInfo.InvariantCulture));
     return [0x1D, 0x28, 0x48, 0x06, 0x00, 0x30, 0x30, .. digits];
   }
 
@@ -238,19 +231,18 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     await writeGate.WaitAsync(cancellationToken);
     try
     {
-      await stream.WriteAsync(new byte[] { DataLinkEscape, EndOfTransmission, (byte)n }, cancellationToken);
+      await stream.WriteAsync(new[] { DataLinkEscape, EndOfTransmission, (byte)n }, cancellationToken);
     }
     catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException)
     {
       completion.TrySetResult(0x00);
       return null;
-    }
-    finally
+    } finally
     {
       writeGate.Release();
     }
 
-    Task finished = await Task.WhenAny(completion.Task, Task.Delay(timeouts.StatusQueryTimeout, cancellationToken));
+    var finished = await Task.WhenAny(completion.Task, Task.Delay(timeouts.StatusQueryTimeout, cancellationToken));
     if (finished != completion.Task)
     {
       completion.TrySetCanceled();
@@ -262,7 +254,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private async Task ReadLoopAsync(CancellationToken cancellationToken)
   {
-    byte[] buffer = new byte[1024];
+    var buffer = new byte[1024];
     while (!cancellationToken.IsCancellationRequested)
     {
       int read;
@@ -300,14 +292,14 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private bool DrainOne()
   {
-    InboundFrame frame = PeekFrame();
+    var frame = PeekFrame();
 
     switch (frame)
     {
       case InboundFrame.Incomplete:
         return false;
       case InboundFrame.ProcessIdEcho:
-        int? echoed = TakeProcessIdEcho();
+        var echoed = TakeProcessIdEcho();
         if (echoed is null)
         {
           return false;
@@ -316,7 +308,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         CompleteEcho(echoed.Value);
         return true;
       case InboundFrame.AutomaticStatusBack:
-        byte[]? asb = TakeAsbBlock();
+        var asb = TakeAsbBlock();
         if (asb is null)
         {
           return false;
@@ -331,7 +323,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
           return true;
         }
 
-        byte? status = TakeSingleByte();
+        var status = TakeSingleByte();
         if (status is null)
         {
           return false;
@@ -356,7 +348,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         return InboundFrame.Incomplete;
       }
 
-      byte head = inbound[0];
+      var head = inbound[0];
 
       if (head == ProcessIdEchoHeader)
       {
@@ -405,7 +397,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         return null;
       }
 
-      byte value = inbound[0];
+      var value = inbound[0];
       inbound.RemoveAt(0);
       return value;
     }
@@ -420,15 +412,15 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         return null;
       }
 
-      int terminator = inbound.IndexOf(0x00);
+      var terminator = inbound.IndexOf(0x00);
       if (terminator < 2)
       {
         return null;
       }
 
-      string digits = Encoding.ASCII.GetString([.. inbound.GetRange(2, terminator - 2)]);
+      var digits = Encoding.ASCII.GetString([.. inbound.GetRange(2, terminator - 2)]);
       inbound.RemoveRange(0, terminator + 1);
-      return int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) ? parsed : -1;
+      return int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
     }
   }
 
@@ -461,14 +453,13 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private PrinterStatusSnapshot DecodeAsb(byte[] block)
   {
-    return new PrinterStatusSnapshot(
-        (block[0] & OfflineBit) == 0,
-        (block[2] & PaperEndMask) == PaperEndMask,
-        (block[2] & PaperNearEndMask) != 0,
-        (block[1] & CoverOpenBit) != 0,
-        (block[1] & ErrorOccurredBit) != 0,
-        $"Automatic status back block {Convert.ToHexString(block)}.",
-        timeProvider.GetUtcNow());
+    return new((block[0] & OfflineBit) == 0,
+               (block[2] & PaperEndMask) == PaperEndMask,
+               (block[2] & PaperNearEndMask) != 0,
+               (block[1] & CoverOpenBit) != 0,
+               (block[1] & ErrorOccurredBit) != 0,
+               $"Automatic status back block {Convert.ToHexString(block)}.",
+               timeProvider.GetUtcNow());
   }
 
   private void Publish(PrinterStatusSnapshot snapshot)
@@ -479,25 +470,24 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private async Task HeartbeatLoopAsync(CancellationToken cancellationToken)
   {
-    int unanswered = 0;
+    var unanswered = 0;
     while (!cancellationToken.IsCancellationRequested)
     {
       try
       {
         await Task.Delay(timeouts.HeartbeatInterval, cancellationToken);
-        byte? answer = await QueryAsync(4, cancellationToken);
+        var answer = await QueryAsync(4, cancellationToken);
         unanswered = answer is null ? unanswered + 1 : 0;
 
         if (unanswered == 2)
         {
-          Publish(new PrinterStatusSnapshot(
-              false,
-              lastKnownStatus.IsPaperEnd,
-              lastKnownStatus.IsPaperNearEnd,
-              lastKnownStatus.IsCoverOpen,
-              lastKnownStatus.IsInErrorState,
-              "Two consecutive heartbeats went unanswered.",
-              timeProvider.GetUtcNow()));
+          Publish(new(false,
+                      lastKnownStatus.IsPaperEnd,
+                      lastKnownStatus.IsPaperNearEnd,
+                      lastKnownStatus.IsCoverOpen,
+                      lastKnownStatus.IsInErrorState,
+                      "Two consecutive heartbeats went unanswered.",
+                      timeProvider.GetUtcNow()));
         }
       }
       catch (OperationCanceledException)
@@ -513,8 +503,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     try
     {
       await stream.WriteAsync(bytes, cancellationToken);
-    }
-    finally
+    } finally
     {
       writeGate.Release();
     }

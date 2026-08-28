@@ -17,12 +17,13 @@ public sealed class SettingsStore : ISettingsStore
 {
   private const string SettingsFileName = "settings.json";
 
-  private readonly string settingsDirectory;
   private readonly JsonSerializerOptions serializerOptions = new()
-  {
-    PropertyNameCaseInsensitive = true,
-    WriteIndented = true,
-  };
+                                                             {
+                                                               PropertyNameCaseInsensitive = true,
+                                                               WriteIndented = true
+                                                             };
+
+  private readonly string settingsDirectory;
 
   public SettingsStore(string settingsDirectory)
   {
@@ -31,13 +32,12 @@ public sealed class SettingsStore : ISettingsStore
 
   public DesktopSettings Load()
   {
-    StoredSettings stored = ReadStoredSettings();
+    var stored = ReadStoredSettings();
 
-    return new DesktopSettings(
-        stored.Port,
-        stored.DataDirectory ?? settingsDirectory,
-        stored.SelectedNetworkInterface,
-        stored.Language);
+    return new(stored.Port,
+               stored.DataDirectory ?? settingsDirectory,
+               stored.SelectedNetworkInterface,
+               stored.Language);
   }
 
   public void Save(DesktopSettings settings)
@@ -45,27 +45,26 @@ public sealed class SettingsStore : ISettingsStore
     Directory.CreateDirectory(settingsDirectory);
 
     StoredSettings stored = new()
-    {
-      Port = settings.Port,
-      DataDirectory = settings.DataDirectory,
-      SelectedNetworkInterface = settings.SelectedNetworkInterface,
-      Language = settings.Language,
-    };
+                            {
+                              Port = settings.Port,
+                              DataDirectory = settings.DataDirectory,
+                              SelectedNetworkInterface = settings.SelectedNetworkInterface,
+                              Language = settings.Language
+                            };
 
-    File.WriteAllText(
-        Path.Combine(settingsDirectory, SettingsFileName),
-        JsonSerializer.Serialize(stored, serializerOptions));
+    File.WriteAllText(Path.Combine(settingsDirectory, SettingsFileName),
+                      JsonSerializer.Serialize(stored, serializerOptions));
   }
 
   private StoredSettings ReadStoredSettings()
   {
-    string path = Path.Combine(settingsDirectory, SettingsFileName);
+    var path = Path.Combine(settingsDirectory, SettingsFileName);
     if (!File.Exists(path))
     {
-      return new StoredSettings();
+      return new();
     }
 
     return JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(path), serializerOptions)
-        ?? new StoredSettings();
+           ?? new StoredSettings();
   }
 }

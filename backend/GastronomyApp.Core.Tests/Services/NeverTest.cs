@@ -11,8 +11,7 @@ public sealed class NeverTest
   {
     Never never = new();
 
-    InvalidOperationException? thrown = Assert.Throws<InvalidOperationException>(
-        () => never.OfType<string>(PrintJobStatus.HandledOnPaper));
+    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<string>(PrintJobStatus.HandledOnPaper));
 
     Assert.That(thrown!.Message, Does.Contain(PrintJobStatus.HandledOnPaper.ToString()));
   }
@@ -22,7 +21,7 @@ public sealed class NeverTest
   {
     Never never = new();
 
-    InvalidOperationException? thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<bool>(8));
+    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<bool>(8));
 
     Assert.That(thrown!.Message, Does.Contain("8"));
   }

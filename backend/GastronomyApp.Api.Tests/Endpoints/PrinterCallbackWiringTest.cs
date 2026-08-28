@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,9 +9,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class PrinterCallbackWiringTest
 {
-  private readonly TimeSpan patience = TimeSpan.FromSeconds(20);
-
-  private OrderTestContext context = null!;
 
   [SetUp]
   public async Task SetUp()
@@ -26,16 +22,20 @@ public sealed class PrinterCallbackWiringTest
     await context.DisposeAsync();
   }
 
+  private readonly TimeSpan patience = TimeSpan.FromSeconds(20);
+
+  private OrderTestContext context = null!;
+
   [Test]
   public async Task PlaceOrder_RealFleetOverTheMockTransport_WritesASlipFileForEveryTicket()
   {
-    using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    bool slipAppeared = await WaitUntilAsync(() =>
-        Directory.Exists(context.Factory.MockSlipFolder)
-        && Directory.GetFiles(context.Factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length > 0);
+    var slipAppeared = await WaitUntilAsync(() =>
+                                              Directory.Exists(context.Factory.MockSlipFolder)
+                                              && Directory.GetFiles(context.Factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length > 0);
 
     Assert.That(slipAppeared, Is.True, "No mock slip file appeared for the accepted order.");
   }
@@ -45,18 +45,17 @@ public sealed class PrinterCallbackWiringTest
   {
     Guid ticketId;
 
-    using (HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
+    using (var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
     {
-      JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+      var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
       ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
     }
 
-    bool reachedTestPrinterState = await WaitUntilAsync(async () =>
-    {
-      await using GastronomyAppDbContext database = context.Factory.CreateContext();
-      return await database.PrintJobs.AnyAsync(
-              job => job.StationOrderId == ticketId && job.Status == PrintJobStatus.Printed);
-    });
+    var reachedTestPrinterState = await WaitUntilAsync(async () =>
+                                                       {
+                                                         await using var database = context.Factory.CreateContext();
+                                                         return await database.PrintJobs.AnyAsync(job => job.StationOrderId == ticketId && job.Status == PrintJobStatus.Printed);
+                                                       });
 
     Assert.That(reachedTestPrinterState, Is.True, "The ticket never reached Printed.");
   }
@@ -66,32 +65,32 @@ public sealed class PrinterCallbackWiringTest
   {
     TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    await using HubConnection connection = new HubConnectionBuilder()
-        .WithUrl(new Uri(context.Factory.BaseAddress, $"hub?access_token={context.DeviceToken}"))
-        .Build();
+    await using var connection = new HubConnectionBuilder()
+                                .WithUrl(new Uri(context.Factory.BaseAddress, $"hub?access_token={context.DeviceToken}"))
+                                .Build();
 
-    connection.On<JsonElement>("PrintJobStatusChanged", payload =>
-    {
-      string status = payload.GetProperty("status").GetString() ?? string.Empty;
+    connection.On<JsonElement>("PrintJobStatusChanged",
+                               payload =>
+                               {
+                                 var status = payload.GetProperty("status").GetString() ?? string.Empty;
 
-      if (status == PrintJobStatus.Printed.ToString())
-      {
-        received.TrySetResult(status);
-      }
-    });
+                                 if (status == PrintJobStatus.Printed.ToString())
+                                 {
+                                   received.TrySetResult(status);
+                                 }
+                               });
 
     await connection.StartAsync();
 
-    using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    Task completed = await Task.WhenAny(received.Task, Task.Delay(patience));
+    var completed = await Task.WhenAny(received.Task, Task.Delay(patience));
 
     Assert.That(completed, Is.SameAs(received.Task), "No PrintJobStatusChanged push reached the staff member who placed the order.");
-    Assert.That(
-        await received.Task,
-        Is.EqualTo(PrintJobStatus.Printed.ToString()));
+    Assert.That(await received.Task,
+                Is.EqualTo(PrintJobStatus.Printed.ToString()));
   }
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)
@@ -101,7 +100,7 @@ public sealed class PrinterCallbackWiringTest
 
   private async Task<bool> WaitUntilAsync(Func<Task<bool>> condition)
   {
-    DateTime deadline = DateTime.UtcNow.Add(patience);
+    var deadline = DateTime.UtcNow.Add(patience);
 
     while (DateTime.UtcNow < deadline)
     {

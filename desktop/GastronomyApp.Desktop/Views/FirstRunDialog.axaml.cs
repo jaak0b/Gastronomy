@@ -9,7 +9,7 @@ public partial class FirstRunDialog : Window
   {
     InitializeComponent();
 
-    Button? continueButton = this.FindControl<Button>("ContinueButton");
+    var continueButton = this.FindControl<Button>("ContinueButton");
     if (continueButton is not null)
     {
       continueButton.Click += OnContinueClicked;

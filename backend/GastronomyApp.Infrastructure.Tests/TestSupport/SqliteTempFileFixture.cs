@@ -13,42 +13,42 @@ public sealed class SqliteTempFileFixture : IDisposable
   {
     DatabasePath = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");
 
-    using GastronomyAppDbContext migrationContext = CreateContext();
+    using var migrationContext = CreateContext();
     migrationContext.Database.Migrate();
   }
 
   public string DatabasePath { get; }
 
-  public GastronomyAppDbContext CreateContext()
-  {
-    SqliteConnection connection = _connectionFactory.Open(DatabasePath);
-    _connections.Add(connection);
-
-    GastronomyAppDbContext context = new(new DbContextOptionsBuilder<GastronomyAppDbContext>()
-        .UseSqlite(connection)
-        .Options);
-    _contexts.Add(context);
-
-    return context;
-  }
-
   public void Dispose()
   {
-    foreach (GastronomyAppDbContext context in _contexts)
+    foreach (var context in _contexts)
     {
       context.Dispose();
     }
 
-    foreach (SqliteConnection connection in _connections)
+    foreach (var connection in _connections)
     {
       connection.Dispose();
     }
 
     SqliteConnection.ClearAllPools();
 
-    foreach (string path in new[] { DatabasePath, $"{DatabasePath}-wal", $"{DatabasePath}-shm" })
+    foreach (var path in new[] { DatabasePath, $"{DatabasePath}-wal", $"{DatabasePath}-shm" })
     {
       File.Delete(path);
     }
+  }
+
+  public GastronomyAppDbContext CreateContext()
+  {
+    var connection = _connectionFactory.Open(DatabasePath);
+    _connections.Add(connection);
+
+    GastronomyAppDbContext context = new(new DbContextOptionsBuilder<GastronomyAppDbContext>()
+                                        .UseSqlite(connection)
+                                        .Options);
+    _contexts.Add(context);
+
+    return context;
   }
 }

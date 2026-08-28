@@ -5,22 +5,22 @@ namespace GastronomyApp.Infrastructure.Tests;
 
 public sealed class GastronomyAppDbContextTest
 {
-  private static readonly string[] ExpectedTableNames =
+  private readonly static string[] ExpectedTableNames =
   [
-      "Stations",
-        "CatalogItems",
-        "ItemStationAssignments",
-        "StaffMembers",
-        "Devices",
-        "EnrolmentInvitations",
-        "Orders",
-        "StationOrders",
-        "OrderItems",
-        "PrintJobs",
-        "Printers",
-        "PrinterStatuses",
-        "SequenceCounters",
-    ];
+    "Stations",
+    "CatalogItems",
+    "ItemStationAssignments",
+    "StaffMembers",
+    "Devices",
+    "EnrolmentInvitations",
+    "Orders",
+    "StationOrders",
+    "OrderItems",
+    "PrintJobs",
+    "Printers",
+    "PrinterStatuses",
+    "SequenceCounters"
+  ];
 
   [Test]
   public async Task Migrate_OnEmptyDatabase_CreatesEveryTable()
@@ -28,11 +28,11 @@ public sealed class GastronomyAppDbContextTest
     using SqliteInMemoryFixture fixture = new();
 
     List<string> tableNames = [];
-    using (SqliteCommand command = fixture.Connection.CreateCommand())
+    using (var command = fixture.Connection.CreateCommand())
     {
       command.CommandText =
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE '__EFMigrations%' AND name NOT LIKE 'sqlite_%'";
-      using SqliteDataReader reader = await command.ExecuteReaderAsync();
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE '__EFMigrations%' AND name NOT LIKE 'sqlite_%'";
+      using var reader = await command.ExecuteReaderAsync();
       while (await reader.ReadAsync())
       {
         tableNames.Add(reader.GetString(0));
@@ -45,28 +45,27 @@ public sealed class GastronomyAppDbContextTest
   [Test]
   public async Task OpenConnection_OnFile_SetsWalModeAndBusyTimeout()
   {
-    string path = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");
+    var path = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");
     SqliteConnectionFactory factory = new();
 
     try
     {
-      await using SqliteConnection connection = factory.Open(path);
+      await using var connection = factory.Open(path);
 
-      using SqliteCommand journalMode = connection.CreateCommand();
+      using var journalMode = connection.CreateCommand();
       journalMode.CommandText = "PRAGMA journal_mode";
-      object? journalModeValue = await journalMode.ExecuteScalarAsync();
+      var journalModeValue = await journalMode.ExecuteScalarAsync();
 
-      using SqliteCommand busyTimeout = connection.CreateCommand();
+      using var busyTimeout = connection.CreateCommand();
       busyTimeout.CommandText = "PRAGMA busy_timeout";
-      object? busyTimeoutValue = await busyTimeout.ExecuteScalarAsync();
+      var busyTimeoutValue = await busyTimeout.ExecuteScalarAsync();
 
       Assert.Multiple(() =>
-      {
-        Assert.That(journalModeValue, Is.EqualTo("wal"));
-        Assert.That(Convert.ToInt32(busyTimeoutValue), Is.EqualTo(5000));
-      });
-    }
-    finally
+                      {
+                        Assert.That(journalModeValue, Is.EqualTo("wal"));
+                        Assert.That(Convert.ToInt32(busyTimeoutValue), Is.EqualTo(5000));
+                      });
+    } finally
     {
       SqliteConnection.ClearAllPools();
       File.Delete(path);

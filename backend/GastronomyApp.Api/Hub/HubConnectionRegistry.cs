@@ -6,8 +6,11 @@ namespace GastronomyApp.Api.Hub;
 public sealed record TrackedHubConnection
 {
   public required string ConnectionId { get; init; }
+
   public required Guid? DeviceId { get; init; }
+
   public required IReadOnlyList<string> Groups { get; init; }
+
   public required HubCallerContext CallerContext { get; init; }
 }
 
@@ -33,8 +36,8 @@ public sealed class HubConnectionRegistry
 
 public sealed class DeviceConnectionTerminator
 {
-  private readonly HubConnectionRegistry registry;
   private readonly IHubContext<GastronomyHub> hubContext;
+  private readonly HubConnectionRegistry registry;
 
   public DeviceConnectionTerminator(HubConnectionRegistry registry, IHubContext<GastronomyHub> hubContext)
   {
@@ -44,9 +47,9 @@ public sealed class DeviceConnectionTerminator
 
   public async Task TerminateAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    foreach (TrackedHubConnection connection in registry.FindByDevice(deviceId))
+    foreach (var connection in registry.FindByDevice(deviceId))
     {
-      foreach (string group in connection.Groups)
+      foreach (var group in connection.Groups)
       {
         await hubContext.Groups.RemoveFromGroupAsync(connection.ConnectionId, group, cancellationToken);
       }

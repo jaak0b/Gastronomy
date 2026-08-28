@@ -1,5 +1,5 @@
 ﻿using Serilog;
-using Serilog.Core;
+using Serilog.Events;
 
 namespace GastronomyApp.Desktop.Services;
 
@@ -11,21 +11,20 @@ public sealed class ApplicationLog
 
   public string Start(string dataDirectory)
   {
-    string folder = Path.Combine(dataDirectory, LogFolderName);
+    var folder = Path.Combine(dataDirectory, LogFolderName);
     Directory.CreateDirectory(folder);
 
-    string path = Path.Combine(folder, LogFileName);
+    var path = Path.Combine(folder, LogFileName);
 
-    Logger logger = new LoggerConfiguration()
-        .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
-        .WriteTo.File(
-            path,
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: RetainedFiles,
-            shared: true)
-        .CreateLogger();
+    var logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .WriteTo.File(path,
+                              rollingInterval: RollingInterval.Day,
+                              retainedFileCountLimit: RetainedFiles,
+                              shared: true)
+                .CreateLogger();
 
     Log.Logger = logger;
 

@@ -17,34 +17,34 @@ public static class AdminStaffMembersEndpoints
 {
   public static IEndpointRouteBuilder MapAdminStaffMembersEndpoints(this IEndpointRouteBuilder routes)
   {
-    RouteGroupBuilder group = routes.MapGroup("/api/admin/staff-members");
+    var group = routes.MapGroup("/api/admin/staff-members");
 
-    group.MapGet(string.Empty, async (
-        AdminStaffMembersHandler handler,
-        CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+    group.MapGet(string.Empty,
+                 async (AdminStaffMembersHandler handler,
+                        CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-    group.MapPut("/{staffMemberId:guid}", async (
-        Guid staffMemberId,
-        RenameStaffMemberRequest request,
-        AdminStaffMembersHandler handler,
-        CancellationToken cancellationToken) =>
-            await handler.RenameAsync(staffMemberId, request, cancellationToken));
+    group.MapPut("/{staffMemberId:guid}",
+                 async (Guid staffMemberId,
+                        RenameStaffMemberRequest request,
+                        AdminStaffMembersHandler handler,
+                        CancellationToken cancellationToken) =>
+                   await handler.RenameAsync(staffMemberId, request, cancellationToken));
 
-    group.MapPost("/{staffMemberId:guid}/activate", async (
-        Guid staffMemberId,
-        AdminStaffMembersHandler handler,
-        CancellationToken cancellationToken) => await handler.ActivateAsync(staffMemberId, cancellationToken));
+    group.MapPost("/{staffMemberId:guid}/activate",
+                  async (Guid staffMemberId,
+                         AdminStaffMembersHandler handler,
+                         CancellationToken cancellationToken) => await handler.ActivateAsync(staffMemberId, cancellationToken));
 
-    group.MapPost("/{staffMemberId:guid}/deactivate", async (
-        Guid staffMemberId,
-        AdminStaffMembersHandler handler,
-        CancellationToken cancellationToken) =>
-            await handler.DeactivateAsync(staffMemberId, cancellationToken));
+    group.MapPost("/{staffMemberId:guid}/deactivate",
+                  async (Guid staffMemberId,
+                         AdminStaffMembersHandler handler,
+                         CancellationToken cancellationToken) =>
+                    await handler.DeactivateAsync(staffMemberId, cancellationToken));
 
-    routes.MapPost("/api/admin/enrolment/invitations", async (
-        CreateInvitationRequest request,
-        AdminStaffMembersHandler handler,
-        CancellationToken cancellationToken) => await handler.CreateInvitationAsync(request, cancellationToken));
+    routes.MapPost("/api/admin/enrolment/invitations",
+                   async (CreateInvitationRequest request,
+                          AdminStaffMembersHandler handler,
+                          CancellationToken cancellationToken) => await handler.CreateInvitationAsync(request, cancellationToken));
 
     return routes;
   }
@@ -52,26 +52,25 @@ public static class AdminStaffMembersEndpoints
 
 public sealed class AdminStaffMembersHandler
 {
+  private readonly IClock clock;
+  private readonly DeviceConnectionTerminator connectionTerminator;
   private readonly GastronomyAppDbContext dbContext;
   private readonly IDeviceTokenStore deviceTokenStore;
-  private readonly IEnrolmentInvitationStore invitationStore;
-  private readonly EnrolmentUrlBuilder urlBuilder;
-  private readonly OutstandingInvitationCache invitationCache;
   private readonly HubNotificationDispatcher dispatcher;
-  private readonly DeviceConnectionTerminator connectionTerminator;
+  private readonly OutstandingInvitationCache invitationCache;
+  private readonly IEnrolmentInvitationStore invitationStore;
   private readonly ResultEnvelope resultEnvelope;
-  private readonly IClock clock;
+  private readonly EnrolmentUrlBuilder urlBuilder;
 
-  public AdminStaffMembersHandler(
-      GastronomyAppDbContext dbContext,
-      IDeviceTokenStore deviceTokenStore,
-      IEnrolmentInvitationStore invitationStore,
-      EnrolmentUrlBuilder urlBuilder,
-      OutstandingInvitationCache invitationCache,
-      HubNotificationDispatcher dispatcher,
-      DeviceConnectionTerminator connectionTerminator,
-      ResultEnvelope resultEnvelope,
-      IClock clock)
+  public AdminStaffMembersHandler(GastronomyAppDbContext dbContext,
+                                  IDeviceTokenStore deviceTokenStore,
+                                  IEnrolmentInvitationStore invitationStore,
+                                  EnrolmentUrlBuilder urlBuilder,
+                                  OutstandingInvitationCache invitationCache,
+                                  HubNotificationDispatcher dispatcher,
+                                  DeviceConnectionTerminator connectionTerminator,
+                                  ResultEnvelope resultEnvelope,
+                                  IClock clock)
   {
     this.dbContext = dbContext;
     this.deviceTokenStore = deviceTokenStore;
@@ -87,54 +86,51 @@ public sealed class AdminStaffMembersHandler
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
     List<StaffMember> staffMembers = await dbContext.StaffMembers
-        .AsNoTracking()
-        .OrderBy(staffMember => staffMember.Name)
-        .ToListAsync(cancellationToken);
+                                                    .AsNoTracking()
+                                                    .OrderBy(staffMember => staffMember.Name)
+                                                    .ToListAsync(cancellationToken);
 
     List<Device> devices = await dbContext.Devices
-        .AsNoTracking()
-        .ToListAsync(cancellationToken);
+                                          .AsNoTracking()
+                                          .ToListAsync(cancellationToken);
 
-    DateTime now = clock.UtcNow;
+    var now = clock.UtcNow;
 
     List<EnrolmentInvitation> outstanding = await dbContext.EnrolmentInvitations
-        .AsNoTracking()
-        .Where(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > now)
-        .ToListAsync(cancellationToken);
+                                                           .AsNoTracking()
+                                                           .Where(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > now)
+                                                           .ToListAsync(cancellationToken);
 
     List<AdminStaffMemberView> views = [];
 
-    foreach (StaffMember staffMember in staffMembers)
+    foreach (var staffMember in staffMembers)
     {
-      Device? device = devices.FirstOrDefault(candidate => candidate.StaffMemberId == staffMember.Id);
+      var device = devices.FirstOrDefault(candidate => candidate.StaffMemberId == staffMember.Id);
 
-      views.Add(new AdminStaffMemberView(
-          staffMember.Id,
-          staffMember.Name,
-          staffMember.IsActive,
-          device is not null,
-          device?.LastSeenAtUtc,
-          outstanding.Any(invitation => invitation.StaffMemberId == staffMember.Id)));
+      views.Add(new(staffMember.Id,
+                    staffMember.Name,
+                    staffMember.IsActive,
+                    device is not null,
+                    device?.LastSeenAtUtc,
+                    outstanding.Any(invitation => invitation.StaffMemberId == staffMember.Id)));
     }
 
     return Results.Ok(new AdminStaffMemberListView(views));
   }
 
-  public async Task<IResult> RenameAsync(
-      Guid staffMemberId,
-      RenameStaffMemberRequest request,
-      CancellationToken cancellationToken)
+  public async Task<IResult> RenameAsync(Guid staffMemberId,
+                                         RenameStaffMemberRequest request,
+                                         CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
     {
-      return resultEnvelope.Problem(
-          StatusCodes.Status400BadRequest,
-          "ValidationFailed",
-          "admin.personNameMissing");
+      return resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+                                    "ValidationFailed",
+                                    "admin.personNameMissing");
     }
 
-    StaffMember? staffMember = await dbContext.StaffMembers
-        .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
+    var staffMember = await dbContext.StaffMembers
+                                     .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
     if (staffMember is null)
     {
@@ -149,8 +145,8 @@ public sealed class AdminStaffMembersHandler
 
   public async Task<IResult> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    StaffMember? staffMember = await dbContext.StaffMembers
-        .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
+    var staffMember = await dbContext.StaffMembers
+                                     .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
     if (staffMember is null)
     {
@@ -165,8 +161,8 @@ public sealed class AdminStaffMembersHandler
 
   public async Task<IResult> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    StaffMember? staffMember = await dbContext.StaffMembers
-        .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
+    var staffMember = await dbContext.StaffMembers
+                                     .FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
 
     if (staffMember is null)
     {
@@ -174,26 +170,26 @@ public sealed class AdminStaffMembersHandler
     }
 
     List<Device> devices = await dbContext.Devices
-        .AsNoTracking()
-        .Where(device => device.StaffMemberId == staffMemberId)
-        .ToListAsync(cancellationToken);
+                                          .AsNoTracking()
+                                          .Where(device => device.StaffMemberId == staffMemberId)
+                                          .ToListAsync(cancellationToken);
 
     staffMember.IsActive = false;
 
-    DateTime now = clock.UtcNow;
+    var now = clock.UtcNow;
     List<EnrolmentInvitation> outstanding = await dbContext.EnrolmentInvitations
-        .Where(invitation => invitation.StaffMemberId == staffMemberId
-            && invitation.ConsumedAtUtc == null)
-        .ToListAsync(cancellationToken);
+                                                           .Where(invitation => invitation.StaffMemberId == staffMemberId
+                                                                                && invitation.ConsumedAtUtc == null)
+                                                           .ToListAsync(cancellationToken);
 
-    foreach (EnrolmentInvitation invitation in outstanding)
+    foreach (var invitation in outstanding)
     {
       invitation.ConsumedAtUtc = now;
     }
 
     await dbContext.SaveChangesAsync(cancellationToken);
 
-    foreach (Device device in devices)
+    foreach (var device in devices)
     {
       await RevokeAsync(device.Id, cancellationToken);
     }
@@ -201,17 +197,16 @@ public sealed class AdminStaffMembersHandler
     return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
   }
 
-  public async Task<IResult> CreateInvitationAsync(
-      CreateInvitationRequest request,
-      CancellationToken cancellationToken)
+  public async Task<IResult> CreateInvitationAsync(CreateInvitationRequest request,
+                                                   CancellationToken cancellationToken)
   {
     StaffMember? staffMember = null;
 
     if (request.StaffMemberId is not null)
     {
       staffMember = await dbContext.StaffMembers
-          .AsNoTracking()
-          .FirstOrDefaultAsync(candidate => candidate.Id == request.StaffMemberId, cancellationToken);
+                                   .AsNoTracking()
+                                   .FirstOrDefaultAsync(candidate => candidate.Id == request.StaffMemberId, cancellationToken);
 
       if (staffMember is null)
       {
@@ -219,37 +214,34 @@ public sealed class AdminStaffMembersHandler
       }
     }
 
-    EnrolmentInvitationCreated created =
-        await invitationStore.CreateAsync(request.StaffMemberId, cancellationToken);
+    var created =
+      await invitationStore.CreateAsync(request.StaffMemberId, cancellationToken);
 
-    string qrUrl = urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
-    invitationCache.Remember(new OutstandingInvitation(
-        created.InvitationId,
-        created.QrCodeValue,
-        qrUrl,
-        created.ExpiresAtUtc));
+    var qrUrl = urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
+    invitationCache.Remember(new(created.InvitationId,
+                                 created.QrCodeValue,
+                                 qrUrl,
+                                 created.ExpiresAtUtc));
 
     if (request.StaffMemberId is not null)
     {
       List<Device> devices = await dbContext.Devices
-          .AsNoTracking()
-          .Where(device => device.StaffMemberId == request.StaffMemberId)
-          .ToListAsync(cancellationToken);
+                                            .AsNoTracking()
+                                            .Where(device => device.StaffMemberId == request.StaffMemberId)
+                                            .ToListAsync(cancellationToken);
 
-      foreach (Device device in devices)
+      foreach (var device in devices)
       {
         await RevokeAsync(device.Id, cancellationToken);
       }
     }
 
-    return Results.Json(
-        new InvitationView(
-            created.InvitationId,
-            qrUrl,
-            created.ExpiresAtUtc,
-            staffMember is null ? null : new StaffMemberView(staffMember.Id, staffMember.Name),
-            urlBuilder.ReachableAddresses()),
-        statusCode: StatusCodes.Status201Created);
+    return Results.Json(new InvitationView(created.InvitationId,
+                                           qrUrl,
+                                           created.ExpiresAtUtc,
+                                           staffMember is null ? null : new StaffMemberView(staffMember.Id, staffMember.Name),
+                                           urlBuilder.ReachableAddresses()),
+                        statusCode: StatusCodes.Status201Created);
   }
 
   private async Task RevokeAsync(Guid deviceId, CancellationToken cancellationToken)

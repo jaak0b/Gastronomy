@@ -7,7 +7,6 @@ namespace GastronomyApp.Desktop.Tests.Localization;
 [TestFixture]
 public sealed class DesktopTextProviderTests
 {
-  private CultureInfo _originalUiCulture = null!;
 
   [SetUp]
   public void SetUp()
@@ -20,6 +19,8 @@ public sealed class DesktopTextProviderTests
   {
     CultureInfo.CurrentUICulture = _originalUiCulture;
   }
+
+  private CultureInfo _originalUiCulture = null!;
 
   [Test]
   public void Get_OnAGermanWindows_ReturnsTheGermanString()
@@ -57,7 +58,7 @@ public sealed class DesktopTextProviderTests
   public void UseLanguage_TellsEveryReaderThatTheLanguageChanged()
   {
     IDesktopTextProvider text = new DesktopTextProvider();
-    int changes = 0;
+    var changes = 0;
     text.LanguageChanged += () => changes++;
 
     text.UseLanguage("de");

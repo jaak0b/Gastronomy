@@ -16,7 +16,7 @@ public sealed class HeadlessAppBuilder
 {
   public static AppBuilder BuildAvaloniaApp()
   {
-    return AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions());
+    return AppBuilder.Configure<App>().UseHeadless(new());
   }
 }
 
@@ -27,27 +27,25 @@ public sealed class MainWindowSmokeTests
 
   private MainWindowViewModel CreateMainWindowViewModel()
   {
-    ISettingsStore settingsStore = A.Fake<ISettingsStore>();
+    var settingsStore = A.Fake<ISettingsStore>();
     A.CallTo(() => settingsStore.Load())
-        .Returns(new DesktopSettings(5000, @"C:\ProgramData\GastronomyApp", null, null));
+     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null));
 
-    return new MainWindowViewModel(
-        A.Fake<IHostLauncher>(),
-        A.Fake<IPowerManager>(),
-        settingsStore,
-        text,
-        A.Fake<IFreePortProvider>());
+    return new(A.Fake<IHostLauncher>(),
+               A.Fake<IPowerManager>(),
+               settingsStore,
+               text,
+               A.Fake<IFreePortProvider>());
   }
 
   [AvaloniaTest]
   public void MainWindow_Loads_WithTheTitleResolvedFromTheResxTable()
   {
-    MainWindowViewModel viewModel = CreateMainWindowViewModel();
+    var viewModel = CreateMainWindowViewModel();
 
     MainWindow window = new() { DataContext = viewModel };
     window.Show();
 
     Assert.That(window.Title, Is.EqualTo(text.Get("desktop.windowTitle")));
   }
-
 }

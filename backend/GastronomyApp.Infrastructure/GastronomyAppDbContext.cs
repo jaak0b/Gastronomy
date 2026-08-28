@@ -6,7 +6,7 @@ namespace GastronomyApp.Infrastructure;
 public sealed class GastronomyAppDbContext : DbContext
 {
   public GastronomyAppDbContext(DbContextOptions<GastronomyAppDbContext> options)
-      : base(options)
+    : base(options)
   {
   }
 
@@ -37,7 +37,7 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<SequenceCounters> SequenceCounters => Set<SequenceCounters>();
 
-  protected override void OnModelCreating(ModelBuilder modelBuilder)
+  override protected void OnModelCreating(ModelBuilder modelBuilder)
   {
     modelBuilder.ApplyConfigurationsFromAssembly(typeof(GastronomyAppDbContext).Assembly);
   }

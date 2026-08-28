@@ -3,29 +3,29 @@
 namespace GastronomyApp.Core.Printing;
 
 public sealed record PrintPayload(
-    int PrinterJobId,
-    ReadOnlyMemory<byte> Bytes,
-    string RenderedText,
-    int CopyNumber,
-    int StationOrderNumber,
-    Guid StationId,
-    string StationName,
-    bool IsTest);
+  int PrinterJobId,
+  ReadOnlyMemory<byte> Bytes,
+  string RenderedText,
+  int CopyNumber,
+  int StationOrderNumber,
+  Guid StationId,
+  string StationName,
+  bool IsTest);
 
 public sealed record PrinterStatusSnapshot(
-    bool IsOnline,
-    bool IsPaperEnd,
-    bool IsPaperNearEnd,
-    bool IsCoverOpen,
-    bool IsInErrorState,
-    string Detail,
-    DateTimeOffset ObservedAt);
+  bool IsOnline,
+  bool IsPaperEnd,
+  bool IsPaperNearEnd,
+  bool IsCoverOpen,
+  bool IsInErrorState,
+  string Detail,
+  DateTimeOffset ObservedAt);
 
 public sealed record PrintDispatchResult(
-    PrintOutcome Outcome,
-    int BytesWritten,
-    PrinterStatusSnapshot StatusAtEnd,
-    string Detail);
+  PrintOutcome Outcome,
+  int BytesWritten,
+  PrinterStatusSnapshot StatusAtEnd,
+  string Detail);
 
 public interface IPrinterSession : IAsyncDisposable
 {
@@ -37,6 +37,6 @@ public interface IPrinterSession : IAsyncDisposable
 }
 
 public sealed record PrinterSessionTimeouts(
-    TimeSpan JobTimeout,
-    TimeSpan HeartbeatInterval,
-    TimeSpan StatusQueryTimeout);
+  TimeSpan JobTimeout,
+  TimeSpan HeartbeatInterval,
+  TimeSpan StatusQueryTimeout);

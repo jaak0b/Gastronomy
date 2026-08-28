@@ -13,11 +13,11 @@ public class FakeEscPosPrinterServerTest
 
     using TcpClient client = new();
     await client.ConnectAsync("127.0.0.1", server.Port);
-    NetworkStream stream = client.GetStream();
+    var stream = client.GetStream();
     await stream.WriteAsync(new byte[] { 0x10, 0x04, 0x04 });
 
-    byte[] response = new byte[1];
-    int read = await stream.ReadAsync(response);
+    var response = new byte[1];
+    var read = await stream.ReadAsync(response);
 
     Assert.That(read, Is.EqualTo(1));
     Assert.That(response[0], Is.EqualTo(0x60));

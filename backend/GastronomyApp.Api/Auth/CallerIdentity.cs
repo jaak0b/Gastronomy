@@ -10,15 +10,15 @@ public sealed class CallerIdentity
 
   public DeviceCaller? ReadDevice(ClaimsPrincipal principal)
   {
-    string? staffMemberId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-    string? deviceId = principal.FindFirstValue(claimTypes.DeviceId);
-    string? language = principal.FindFirstValue(claimTypes.Language);
+    var staffMemberId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+    var deviceId = principal.FindFirstValue(claimTypes.DeviceId);
+    var language = principal.FindFirstValue(claimTypes.Language);
 
     if (staffMemberId is null || deviceId is null || language is null)
     {
       return null;
     }
 
-    return new DeviceCaller(Guid.Parse(staffMemberId), Guid.Parse(deviceId), language);
+    return new(Guid.Parse(staffMemberId), Guid.Parse(deviceId), language);
   }
 }

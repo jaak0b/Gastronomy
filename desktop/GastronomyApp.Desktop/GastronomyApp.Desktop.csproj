@@ -1,32 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Localization\*.resx" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Update="Localization\*.resx"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.Fonts.Inter" />
-    <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Serilog" />
-    <PackageReference Include="Serilog.Sinks.File" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia"/>
+        <PackageReference Include="Avalonia.Desktop"/>
+        <PackageReference Include="Avalonia.Themes.Fluent"/>
+        <PackageReference Include="Avalonia.Fonts.Inter"/>
+        <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="CommunityToolkit.Mvvm"/>
+        <PackageReference Include="Serilog"/>
+        <PackageReference Include="Serilog.Sinks.File"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\backend\GastronomyApp.Api\GastronomyApp.Api.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\backend\GastronomyApp.Api\GastronomyApp.Api.csproj"/>
+    </ItemGroup>
 </Project>

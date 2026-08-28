@@ -1,130 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
             <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
             </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>2.0</value>
-  </resheader>
-  <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="desktop.windowTitle" xml:space="preserve">
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="desktop.windowTitle" xml:space="preserve">
     <value>Bestellsystem</value>
   </data>
-  <data name="desktop.language" xml:space="preserve">
+    <data name="desktop.language" xml:space="preserve">
     <value>Sprache</value>
   </data>
-  <data name="desktop.language.german" xml:space="preserve">
+    <data name="desktop.language.german" xml:space="preserve">
     <value>Deutsch</value>
   </data>
-  <data name="desktop.language.english" xml:space="preserve">
+    <data name="desktop.language.english" xml:space="preserve">
     <value>English</value>
   </data>
-  <data name="desktop.button.admin" xml:space="preserve">
+    <data name="desktop.button.admin" xml:space="preserve">
     <value>Verwaltung öffnen</value>
   </data>
-  <data name="desktop.button.quit" xml:space="preserve">
+    <data name="desktop.button.quit" xml:space="preserve">
     <value>Programm beenden</value>
   </data>
-  <data name="desktop.minimised" xml:space="preserve">
+    <data name="desktop.minimised" xml:space="preserve">
     <value>Das Programm läuft weiter und nimmt weiter Bestellungen an. Sie holen es über die Taskleiste zurück.</value>
   </data>
-  <data name="desktop.quit.title" xml:space="preserve">
+    <data name="desktop.quit.title" xml:space="preserve">
     <value>Programm wirklich beenden?</value>
   </data>
-  <data name="desktop.quit.body" xml:space="preserve">
+    <data name="desktop.quit.body" xml:space="preserve">
     <value>Die Telefone können danach keine Bestellungen mehr aufgeben.</value>
   </data>
-  <data name="desktop.quit.confirm" xml:space="preserve">
+    <data name="desktop.quit.confirm" xml:space="preserve">
     <value>Beenden</value>
   </data>
-  <data name="desktop.quit.cancel" xml:space="preserve">
+    <data name="desktop.quit.cancel" xml:space="preserve">
     <value>Weiterlaufen lassen</value>
   </data>
-  <data name="desktop.error.dataFolderRepair" xml:space="preserve">
+    <data name="desktop.error.dataFolderRepair" xml:space="preserve">
     <value>Klicken Sie auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
   </data>
-  <data name="desktop.error.noNetwork" xml:space="preserve">
+    <data name="desktop.error.noNetwork" xml:space="preserve">
     <value>Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk.</value>
   </data>
-  <data name="desktop.error.startFailed" xml:space="preserve">
+    <data name="desktop.error.startFailed" xml:space="preserve">
     <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
-  <data name="desktop.settings.openDataFolder" xml:space="preserve">
+    <data name="desktop.settings.openDataFolder" xml:space="preserve">
     <value>Datenordner öffnen</value>
   </data>
-  <data name="desktop.settings.repairSetup" xml:space="preserve">
+    <data name="desktop.settings.repairSetup" xml:space="preserve">
     <value>Einrichtung reparieren</value>
   </data>
-  <data name="desktop.settings.repairDeclined" xml:space="preserve">
+    <data name="desktop.settings.repairDeclined" xml:space="preserve">
     <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
   </data>
-  <data name="desktop.firstRun.title" xml:space="preserve">
+    <data name="desktop.firstRun.title" xml:space="preserve">
     <value>Einmalige Einrichtung</value>
   </data>
-  <data name="desktop.firstRun.body" xml:space="preserve">
+    <data name="desktop.firstRun.body" xml:space="preserve">
     <value>Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an.</value>
   </data>
-  <data name="desktop.firstRun.declined" xml:space="preserve">
+    <data name="desktop.firstRun.declined" xml:space="preserve">
     <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
-  <data name="desktop.settings.repairDone" xml:space="preserve">
+    <data name="desktop.settings.repairDone" xml:space="preserve">
     <value>Die Einrichtung wurde repariert. Starten Sie das Programm noch einmal, damit die Änderung wirkt.</value>
   </data>
-  <data name="desktop.notice.addressChanged" xml:space="preserve">
+    <data name="desktop.notice.addressChanged" xml:space="preserve">
     <value>Alle müssen ihr Telefon noch einmal einrichten, da sich die Serveradresse geändert hat.</value>
   </data>
-  <data name="desktop.error.noPortAvailable" xml:space="preserve">
+    <data name="desktop.error.noPortAvailable" xml:space="preserve">
     <value>Ein anderes Programm auf diesem Laptop blockiert die Verbindung. Starten Sie den Laptop neu und öffnen Sie das Programm noch einmal.</value>
   </data>
 </root>

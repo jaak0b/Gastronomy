@@ -5,21 +5,20 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class FirstRunViewModel : ViewModelBase
 {
-  private readonly IFirewallSetup firewall;
   private readonly IDataFolderSetup dataFolder;
   private readonly IElevatedSetupLauncher elevatedSetup;
-  private readonly IDesktopTextProvider text;
+  private readonly IFirewallSetup firewall;
   private readonly Never never = new();
+  private readonly IDesktopTextProvider text;
+  private string? declinedText;
 
   private bool isSetupOffered;
   private bool readyToStart;
-  private string? declinedText;
 
-  public FirstRunViewModel(
-      IFirewallSetup firewall,
-      IDataFolderSetup dataFolder,
-      IElevatedSetupLauncher elevatedSetup,
-      IDesktopTextProvider text)
+  public FirstRunViewModel(IFirewallSetup firewall,
+                           IDataFolderSetup dataFolder,
+                           IElevatedSetupLauncher elevatedSetup,
+                           IDesktopTextProvider text)
   {
     this.firewall = firewall;
     this.dataFolder = dataFolder;
@@ -53,9 +52,9 @@ public sealed class FirstRunViewModel : ViewModelBase
 
   public void Evaluate()
   {
-    bool firewallConfigured = firewall.IsRuleConfigured();
-    bool dataFolderReady = dataFolder.Exists() && dataFolder.CurrentUserCanWrite();
-    bool everythingInPlace = firewallConfigured && dataFolderReady;
+    var firewallConfigured = firewall.IsRuleConfigured();
+    var dataFolderReady = dataFolder.Exists() && dataFolder.CurrentUserCanWrite();
+    var everythingInPlace = firewallConfigured && dataFolderReady;
 
     IsSetupOffered = !everythingInPlace;
     ReadyToStart = everythingInPlace;
@@ -71,7 +70,7 @@ public sealed class FirstRunViewModel : ViewModelBase
 
   public async Task RunSetupAsync(CancellationToken cancellationToken = default)
   {
-    ElevatedSetupOutcome outcome = await elevatedSetup.RunElevatedSetupAsync(cancellationToken);
+    var outcome = await elevatedSetup.RunElevatedSetupAsync(cancellationToken);
 
     switch (outcome)
     {

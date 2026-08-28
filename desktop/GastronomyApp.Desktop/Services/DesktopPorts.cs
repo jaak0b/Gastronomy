@@ -5,11 +5,12 @@ namespace GastronomyApp.Desktop.Services;
 
 public interface IHostLauncher
 {
+
+  public bool IsRunning { get; }
+
   public Task<HostLaunchResult> StartAsync(ApiHostOptions options, CancellationToken cancellationToken = default);
 
   public Task StopAsync(CancellationToken cancellationToken = default);
-
-  public bool IsRunning { get; }
 }
 
 public abstract record HostLaunchResult
@@ -64,7 +65,7 @@ public interface ISingleInstance
 public enum SingleInstanceOutcome
 {
   AcquiredPrimary,
-  SignaledExistingAndShouldExit,
+  SignaledExistingAndShouldExit
 }
 
 public interface INetworkAddressProvider
@@ -82,10 +83,10 @@ public interface ISettingsStore
 }
 
 public sealed record DesktopSettings(
-    int? Port,
-    string DataDirectory,
-    string? SelectedNetworkInterface,
-    string? Language);
+  int? Port,
+  string DataDirectory,
+  string? SelectedNetworkInterface,
+  string? Language);
 
 public interface IFreePortProvider
 {
@@ -100,7 +101,7 @@ public interface IElevatedSetupLauncher
 public enum ElevatedSetupOutcome
 {
   Completed,
-  ElevationDeclined,
+  ElevationDeclined
 }
 
 public sealed record LanguageOption(string Code, string Name);

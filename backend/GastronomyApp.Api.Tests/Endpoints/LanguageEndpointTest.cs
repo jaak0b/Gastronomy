@@ -6,12 +6,11 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class LanguageEndpointTest
 {
-  private OrderTestContext context = null!;
 
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
+    context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
@@ -20,17 +19,19 @@ public sealed class LanguageEndpointTest
     await context.DisposeAsync();
   }
 
+  private OrderTestContext context = null!;
+
   [Test]
   public async Task GetLanguage_FreshLaptop_ReportsTheLanguageTheOperatorChose()
   {
-    using HttpResponseMessage response = await context.Client.GetAsync("/api/language");
-    JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    using var response = await context.Client.GetAsync("/api/language");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
-    {
-      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-      Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("de"));
-    });
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("de"));
+                    });
   }
 
   [Test]
@@ -38,8 +39,8 @@ public sealed class LanguageEndpointTest
   {
     context.Factory.Language.Current = "en";
 
-    using HttpResponseMessage response = await context.Client.GetAsync("/api/language");
-    JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    using var response = await context.Client.GetAsync("/api/language");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("en"));
   }

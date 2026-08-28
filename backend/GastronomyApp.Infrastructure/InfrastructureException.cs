@@ -3,13 +3,13 @@
 public enum InfrastructureFailureReason
 {
   DatabaseUnavailable,
-  ConflictingChange,
+  ConflictingChange
 }
 
 public sealed class InfrastructureException : Exception
 {
   public InfrastructureException(InfrastructureFailureReason reason, string message, Exception? inner = null)
-      : base(message, inner)
+    : base(message, inner)
   {
     Reason = reason;
   }

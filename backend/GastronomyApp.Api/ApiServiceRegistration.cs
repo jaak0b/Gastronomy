@@ -1,19 +1,20 @@
 ﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Endpoints;
+using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Options;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Api.RateLimiting;
-using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Localization;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Printing;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.Localization;
+using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Printing;
 using GastronomyApp.Infrastructure.Repositories;
-using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -29,7 +30,7 @@ public sealed class ApiServiceRegistration
   public void Register(IServiceCollection services, ApiHostOptions options)
   {
     Directory.CreateDirectory(options.DataDirectory);
-    string databasePath = Path.Combine(options.DataDirectory, DatabaseFileName);
+    var databasePath = Path.Combine(options.DataDirectory, DatabaseFileName);
 
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
@@ -37,14 +38,12 @@ public sealed class ApiServiceRegistration
     SqliteConnectionFactory connectionFactory = new();
     services.AddSingleton(connectionFactory);
 
-    services.AddDbContextFactory<GastronomyAppDbContext>(
-        builder => builder
-            .UseSqlite($"Data Source={databasePath}")
-            .AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)),
-        ServiceLifetime.Singleton);
+    services.AddDbContextFactory<GastronomyAppDbContext>(builder => builder
+                                                                   .UseSqlite($"Data Source={databasePath}")
+                                                                   .AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
 
     services.AddScoped(provider =>
-        provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
+                         provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
 
     services.AddSingleton<IClock, SystemClock>();
     services.AddSingleton<Pbkdf2SecretHasher>();
@@ -107,27 +106,23 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton(options.Language);
     services.AddSingleton<IMockFaultRegistry, InMemoryMockFaultRegistry>();
-    services.AddSingleton(provider => new TestPrinterDriver(
-        options.DataDirectory,
-        provider.GetRequiredService<IMockFaultRegistry>(),
-        provider.GetRequiredService<TimeProvider>()));
+    services.AddSingleton(provider => new TestPrinterDriver(options.DataDirectory,
+                                                            provider.GetRequiredService<IMockFaultRegistry>(),
+                                                            provider.GetRequiredService<TimeProvider>()));
     services.AddSingleton<IPrinterDriver>(provider => provider.GetRequiredService<TestPrinterDriver>());
     services.AddSingleton<EpsonTmT20ivNetworkPrinterDriver>();
     services.AddSingleton<IPrinterDriver>(provider =>
-        provider.GetRequiredService<EpsonTmT20ivNetworkPrinterDriver>());
-    services.AddSingleton(provider => new PrinterDriverRegistry(
-        provider.GetServices<IPrinterDriver>()));
+                                            provider.GetRequiredService<EpsonTmT20ivNetworkPrinterDriver>());
+    services.AddSingleton(provider => new PrinterDriverRegistry(provider.GetServices<IPrinterDriver>()));
     services.AddSingleton<IPrinterSource, DatabasePrinterSource>();
-    services.AddSingleton<ISlipTextProvider, GastronomyApp.Infrastructure.Localization.ResxSlipTextProvider>();
+    services.AddSingleton<ISlipTextProvider, ResxSlipTextProvider>();
     services.AddSingleton<EscPosSlipRenderer>();
-    services.AddSingleton(provider => new PrinterWorkerDomainServices(
-        provider.GetRequiredService<RetryPolicy>(),
-        provider.GetRequiredService<GiveUpWindowCalculator>(),
-        provider.GetRequiredService<OrderStatusCalculator>(),
-        provider.GetRequiredService<PrintJobStateMachine>()));
-    services.AddSingleton<IPrinterWorkerDataAccess>(provider => new EfCorePrinterWorkerDataAccess(
-        () => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext(),
-        provider.GetRequiredService<TimeProvider>()));
+    services.AddSingleton(provider => new PrinterWorkerDomainServices(provider.GetRequiredService<RetryPolicy>(),
+                                                                      provider.GetRequiredService<GiveUpWindowCalculator>(),
+                                                                      provider.GetRequiredService<OrderStatusCalculator>(),
+                                                                      provider.GetRequiredService<PrintJobStateMachine>()));
+    services.AddSingleton<IPrinterWorkerDataAccess>(provider => new EfCorePrinterWorkerDataAccess(() => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext(),
+                                                                                                  provider.GetRequiredService<TimeProvider>()));
     services.AddSingleton<StationPrinterStatusLookup>();
     services.AddSingleton<PrinterFleet>();
     services.AddSingleton<IPrinterFleet>(provider => provider.GetRequiredService<PrinterFleet>());
@@ -137,15 +132,14 @@ public sealed class ApiServiceRegistration
 
     AuthenticationSchemeNames schemeNames = new();
     services.AddAuthentication(schemeNames.Device)
-        .AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(
-            schemeNames.Device,
-            configureOptions: null);
+            .AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(schemeNames.Device,
+                                                                                       null);
 
     services.AddAuthorization(authorization =>
-    {
-      authorization.DefaultPolicy = new AuthorizationPolicyBuilder(schemeNames.Device)
-              .RequireAuthenticatedUser()
-              .Build();
-    });
+                              {
+                                authorization.DefaultPolicy = new AuthorizationPolicyBuilder(schemeNames.Device)
+                                                             .RequireAuthenticatedUser()
+                                                             .Build();
+                              });
   }
 }

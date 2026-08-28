@@ -14,7 +14,7 @@ public interface IPrintCallbacks
 }
 
 public sealed record PrinterWorkerDomainServices(
-    RetryPolicy RetryPolicy,
-    GiveUpWindowCalculator GiveUpWindowCalculator,
-    OrderStatusCalculator OrderStatusCalculator,
-    PrintJobStateMachine PrintJobStateMachine);
+  RetryPolicy RetryPolicy,
+  GiveUpWindowCalculator GiveUpWindowCalculator,
+  OrderStatusCalculator OrderStatusCalculator,
+  PrintJobStateMachine PrintJobStateMachine);

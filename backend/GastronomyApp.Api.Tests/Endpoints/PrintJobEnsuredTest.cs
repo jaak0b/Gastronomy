@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -8,12 +7,11 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class PrintJobEnsuredTest
 {
-  private OrderTestContext context = null!;
 
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
+    context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
@@ -22,58 +20,58 @@ public sealed class PrintJobEnsuredTest
     await context.DisposeAsync();
   }
 
+  private OrderTestContext context = null!;
+
   [Test]
   public async Task PostOrder_RetriedAfterATicketWasNeverHandedToAPrinter_HandsItOverOnTheRetry()
   {
-    Guid clientOrderId = Guid.NewGuid();
-    using HttpResponseMessage first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
-    JsonDocument body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
-    Guid stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
+    var clientOrderId = Guid.NewGuid();
+    using var first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    var body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+    var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    await using (GastronomyAppDbContext database = context.Factory.CreateContext())
+    await using (var database = context.Factory.CreateContext())
     {
       await database.PrintJobs
-          .Where(job => job.StationOrderId == stationOrderId)
-          .ExecuteDeleteAsync();
+                    .Where(job => job.StationOrderId == stationOrderId)
+                    .ExecuteDeleteAsync();
     }
 
-    using HttpResponseMessage retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
 
-    await using GastronomyAppDbContext verification = context.Factory.CreateContext();
-    Assert.That(
-        await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
-        Is.EqualTo(1));
+    await using var verification = context.Factory.CreateContext();
+    Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
+                Is.EqualTo(1));
   }
 
   [Test]
   public async Task PostOrder_RetriedWhileTheSlipIsStillWaiting_DoesNotQueueASecondPrint()
   {
-    Guid clientOrderId = Guid.NewGuid();
-    using HttpResponseMessage first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
-    JsonDocument body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
-    Guid stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
+    var clientOrderId = Guid.NewGuid();
+    using var first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    var body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+    var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    using HttpResponseMessage retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
 
-    await using GastronomyAppDbContext verification = context.Factory.CreateContext();
-    Assert.That(
-        await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
-        Is.EqualTo(1));
+    await using var verification = context.Factory.CreateContext();
+    Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
+                Is.EqualTo(1));
   }
 
   [Test]
   public async Task PostReprint_TwoSimultaneousTaps_QueuesAtMostOneJob()
   {
-    using HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
-    JsonDocument body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
-    Guid orderId = body.RootElement.GetProperty("orderId").GetGuid();
-    Guid stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
+    using var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+    var orderId = body.RootElement.GetProperty("orderId").GetGuid();
+    var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    await using (GastronomyAppDbContext database = context.Factory.CreateContext())
+    await using (var database = context.Factory.CreateContext())
     {
       await database.PrintJobs
-          .Where(job => job.StationOrderId == stationOrderId)
-          .ExecuteUpdateAsync(job => job.SetProperty(entry => entry.Status, PrintJobStatus.Printed));
+                    .Where(job => job.StationOrderId == stationOrderId)
+                    .ExecuteUpdateAsync(job => job.SetProperty(entry => entry.Status, PrintJobStatus.Printed));
       await database.SaveChangesAsync();
     }
 
@@ -81,22 +79,19 @@ public sealed class PrintJobEnsuredTest
     Task<HttpResponseMessage> secondTap = ReprintAsync(orderId, stationOrderId);
     HttpResponseMessage[] responses = await Task.WhenAll(firstTap, secondTap);
 
-    foreach (HttpResponseMessage response in responses)
+    foreach (var response in responses)
     {
       response.Dispose();
     }
 
-    await using GastronomyAppDbContext verification = context.Factory.CreateContext();
-    Assert.That(
-        await verification.PrintJobs.CountAsync(
-            job => job.StationOrderId == stationOrderId && job.CopyNumber == 1),
-        Is.EqualTo(1));
+    await using var verification = context.Factory.CreateContext();
+    Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId && job.CopyNumber == 1),
+                Is.EqualTo(1));
   }
 
   private Task<HttpResponseMessage> ReprintAsync(Guid orderId, Guid stationOrderId)
   {
-    return context.SendAsync(
-        HttpMethod.Post,
-        $"/api/orders/{orderId}/station-orders/{stationOrderId}/print-another-copy");
+    return context.SendAsync(HttpMethod.Post,
+                             $"/api/orders/{orderId}/station-orders/{stationOrderId}/print-another-copy");
   }
 }

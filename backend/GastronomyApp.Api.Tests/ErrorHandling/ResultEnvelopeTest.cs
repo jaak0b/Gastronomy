@@ -15,30 +15,29 @@ public sealed class ResultEnvelopeTest
   [TestCase(OrderValidationFailureReason.UnknownCatalogItemId, 422, "UnprocessableEntity")]
   [TestCase(OrderValidationFailureReason.StationRequired, 422, "UnprocessableEntity")]
   [TestCase(OrderValidationFailureReason.StationNotAssignedToItem, 422, "UnprocessableEntity")]
-  public void Describe_OrderValidationFailure_MapsToItsStatusAndCode(
-      OrderValidationFailureReason reason,
-      int expectedStatusCode,
-      string expectedCode)
+  public void Describe_OrderValidationFailure_MapsToItsStatusAndCode(OrderValidationFailureReason reason,
+                                                                     int expectedStatusCode,
+                                                                     string expectedCode)
   {
-    ProblemDescription problem = envelope.Describe(new OrderValidationFailure { Reason = reason });
+    var problem = envelope.Describe(new OrderValidationFailure { Reason = reason });
 
     Assert.Multiple(() =>
-    {
-      Assert.That(problem.StatusCode, Is.EqualTo(expectedStatusCode));
-      Assert.That(problem.Error.Code, Is.EqualTo(expectedCode));
-    });
+                    {
+                      Assert.That(problem.StatusCode, Is.EqualTo(expectedStatusCode));
+                      Assert.That(problem.Error.Code, Is.EqualTo(expectedCode));
+                    });
   }
 
   [TestCase(RoutingFailureReason.StationRequired)]
   [TestCase(RoutingFailureReason.StationNotAssignedToItem)]
   public void Describe_RoutingFailure_MapsToUnprocessableEntity(RoutingFailureReason reason)
   {
-    ProblemDescription problem = envelope.Describe(new RoutingFailure { Reason = reason });
+    var problem = envelope.Describe(new RoutingFailure { Reason = reason });
 
     Assert.Multiple(() =>
-    {
-      Assert.That(problem.StatusCode, Is.EqualTo(422));
-      Assert.That(problem.Error.Code, Is.EqualTo("UnprocessableEntity"));
-    });
+                    {
+                      Assert.That(problem.StatusCode, Is.EqualTo(422));
+                      Assert.That(problem.Error.Code, Is.EqualTo("UnprocessableEntity"));
+                    });
   }
 }

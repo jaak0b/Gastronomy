@@ -19,22 +19,20 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
       await next(context);
     }
     catch (InfrastructureException exception)
-        when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
+      when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
     {
-      IResult problem = resultEnvelope.Problem(
-          StatusCodes.Status503ServiceUnavailable,
-          "DatabaseUnavailable",
-          "review.sendFailedDatabase");
+      var problem = resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable,
+                                           "DatabaseUnavailable",
+                                           "review.sendFailedDatabase");
 
       await problem.ExecuteAsync(context);
     }
     catch (InfrastructureException exception)
-        when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
+      when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
     {
-      IResult problem = resultEnvelope.Problem(
-          StatusCodes.Status409Conflict,
-          "ConflictingChange",
-          "review.conflictingChange");
+      var problem = resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                           "ConflictingChange",
+                                           "review.conflictingChange");
 
       await problem.ExecuteAsync(context);
     }

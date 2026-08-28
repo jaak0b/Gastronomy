@@ -18,14 +18,14 @@ public sealed class SqliteConnectionFactory
 
   public void ApplyConnectionPolicy(DbConnection connection)
   {
-    using DbCommand command = connection.CreateCommand();
+    using var command = connection.CreateCommand();
     command.CommandText = ConnectionPolicyStatements;
     command.ExecuteNonQuery();
   }
 
   public async Task ApplyConnectionPolicyAsync(DbConnection connection, CancellationToken cancellationToken)
   {
-    await using DbCommand command = connection.CreateCommand();
+    await using var command = connection.CreateCommand();
     command.CommandText = ConnectionPolicyStatements;
     await command.ExecuteNonQueryAsync(cancellationToken);
   }

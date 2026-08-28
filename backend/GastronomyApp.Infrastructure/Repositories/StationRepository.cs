@@ -16,8 +16,8 @@ public sealed class StationRepository : IStationRepository
   public async Task<IReadOnlyCollection<Station>> FindActiveAsync(CancellationToken cancellationToken)
   {
     return await _dbContext.Stations
-        .Where(station => station.IsActive)
-        .OrderBy(station => station.SortOrder)
-        .ToListAsync(cancellationToken);
+                           .Where(station => station.IsActive)
+                           .OrderBy(station => station.SortOrder)
+                           .ToListAsync(cancellationToken);
   }
 }

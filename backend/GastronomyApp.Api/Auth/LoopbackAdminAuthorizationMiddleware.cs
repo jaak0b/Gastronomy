@@ -19,11 +19,11 @@ public sealed class LocalAddressSet
       return true;
     }
 
-    IPAddress candidate = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+    var candidate = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
 
-    foreach (NetworkInterface networkInterface in NetworkInterface.GetAllNetworkInterfaces())
+    foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
     {
-      foreach (UnicastIPAddressInformation unicast in networkInterface.GetIPProperties().UnicastAddresses)
+      foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
       {
         if (unicast.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6
             && unicast.Address.Equals(candidate))

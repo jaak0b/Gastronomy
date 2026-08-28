@@ -6,23 +6,23 @@ namespace GastronomyApp.Infrastructure.Printing;
 public sealed record SlipLine(int Quantity, string ItemName, string? LineNote);
 
 public sealed record SlipRenderRequest(
-    string StationName,
-    string LanguageCode,
-    int StationOrderNumber,
-    int GlobalOrderNumber,
-    string TableName,
-    string StaffMemberName,
-    DateTimeOffset OrderTakenAtUtc,
-    TimeZoneInfo DisplayTimeZone,
-    IReadOnlyList<SlipLine> Lines,
-    string? OrderNote,
-    IReadOnlyList<string> AlsoGoesToStationNames);
+  string StationName,
+  string LanguageCode,
+  int StationOrderNumber,
+  int GlobalOrderNumber,
+  string TableName,
+  string StaffMemberName,
+  DateTimeOffset OrderTakenAtUtc,
+  TimeZoneInfo DisplayTimeZone,
+  IReadOnlyList<SlipLine> Lines,
+  string? OrderNote,
+  IReadOnlyList<string> AlsoGoesToStationNames);
 
 public sealed record TestSlipRenderRequest(
-    string StationName,
-    string LanguageCode,
-    DateTimeOffset PrintedAtUtc,
-    TimeZoneInfo DisplayTimeZone);
+  string StationName,
+  string LanguageCode,
+  DateTimeOffset PrintedAtUtc,
+  TimeZoneInfo DisplayTimeZone);
 
 public sealed record RenderedSlip(ReadOnlyMemory<byte> Bytes, string RenderedText);
 
@@ -35,30 +35,30 @@ public sealed class EscPosSlipRenderer
   private const int ContinuationIndentWidth = 4;
   private const string ContinuationIndent = "    ";
   private const string LineBreak = "\r\n";
-
-  private readonly ISlipTextProvider slipTextProvider;
-  private readonly Pc858Encoder encoder;
-
-  private readonly byte[] initialise = [0x1B, 0x40];
-  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
-  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
   private readonly byte[] alignCentre = [0x1B, 0x61, 0x01];
   private readonly byte[] alignLeft = [0x1B, 0x61, 0x00];
+  private readonly byte[] emphasisOff = [0x1B, 0x45, 0x00];
+  private readonly byte[] emphasisOn = [0x1B, 0x45, 0x01];
+  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
+  private readonly Pc858Encoder encoder;
+  private readonly byte[] feed = [0x1B, 0x64, 0x04];
+
+  private readonly byte[] initialise = [0x1B, 0x40];
+  private readonly byte[] partialCut = [0x1D, 0x56, 0x42, 0x03];
+  private readonly byte[] qrErrorCorrection = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
+  private readonly byte[] qrModuleSize = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
+  private readonly byte[] qrPrintSymbol = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
+  private readonly byte[] qrSelectModel = [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00];
+  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
   private readonly byte[] sizeDouble = [0x1D, 0x21, 0x11];
   private readonly byte[] sizeNormal = [0x1D, 0x21, 0x00];
-  private readonly byte[] emphasisOn = [0x1B, 0x45, 0x01];
-  private readonly byte[] emphasisOff = [0x1B, 0x45, 0x00];
-  private readonly byte[] feed = [0x1B, 0x64, 0x04];
-  private readonly byte[] partialCut = [0x1D, 0x56, 0x42, 0x03];
-  private readonly byte[] qrSelectModel = [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00];
-  private readonly byte[] qrModuleSize = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
-  private readonly byte[] qrErrorCorrection = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
-  private readonly byte[] qrPrintSymbol = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
+
+  private readonly ISlipTextProvider slipTextProvider;
 
   public EscPosSlipRenderer(ISlipTextProvider slipTextProvider)
   {
     this.slipTextProvider = slipTextProvider;
-    encoder = new Pc858Encoder();
+    encoder = new();
   }
 
   public RenderedSlip RenderInitialSlip(SlipRenderRequest request)
@@ -66,74 +66,69 @@ public sealed class EscPosSlipRenderer
     return RenderSlip(request, null, null, null);
   }
 
-  public RenderedSlip RenderCopySlip(
-      SlipRenderRequest request,
-      int copyNumber,
-      DateTimeOffset copyPrintedAtUtc,
-      TimeZoneInfo displayTimeZone)
+  public RenderedSlip RenderCopySlip(SlipRenderRequest request,
+                                     int copyNumber,
+                                     DateTimeOffset copyPrintedAtUtc,
+                                     TimeZoneInfo displayTimeZone)
   {
     return RenderSlip(request, copyNumber, copyPrintedAtUtc, displayTimeZone);
   }
 
   public RenderedSlip RenderTestSlip(TestSlipRenderRequest request)
   {
-    SlipStrings strings = slipTextProvider.GetStrings(request.LanguageCode);
-    SlipTimeFormats formats = FormatsFor(request.LanguageCode);
+    var strings = slipTextProvider.GetStrings(request.LanguageCode);
+    var formats = FormatsFor(request.LanguageCode);
     List<SlipSegment> segments =
     [
-        new SlipSegment(NormalText(), [MajorSeparator()]),
-            new SlipSegment(LargeText(), WrapLarge(request.StationName)),
-            new SlipSegment(NormalText(), [MajorSeparator()]),
-            new SlipSegment(LargeText(), WrapLarge(strings.TestSlipHeader)),
-            new SlipSegment(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()]),
-        ];
+      new(NormalText(), [MajorSeparator()]),
+      new(LargeText(), WrapLarge(request.StationName)),
+      new(NormalText(), [MajorSeparator()]),
+      new(LargeText(), WrapLarge(strings.TestSlipHeader)),
+      new(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()])
+    ];
 
     return Compose(segments);
   }
 
-  private RenderedSlip RenderSlip(
-      SlipRenderRequest request,
-      int? copyNumber,
-      DateTimeOffset? reprintAtUtc,
-      TimeZoneInfo? reprintTimeZone)
+  private RenderedSlip RenderSlip(SlipRenderRequest request,
+                                  int? copyNumber,
+                                  DateTimeOffset? reprintAtUtc,
+                                  TimeZoneInfo? reprintTimeZone)
   {
-    SlipStrings strings = slipTextProvider.GetStrings(request.LanguageCode);
-    SlipTimeFormats formats = FormatsFor(request.LanguageCode);
-    List<SlipSegment> segments = [new SlipSegment(NormalText(), [MajorSeparator()])];
+    var strings = slipTextProvider.GetStrings(request.LanguageCode);
+    var formats = FormatsFor(request.LanguageCode);
+    List<SlipSegment> segments = [new(NormalText(), [MajorSeparator()])];
 
     if (reprintAtUtc is not null && reprintTimeZone is not null)
     {
-      segments.Add(new SlipSegment(
-          LargeText(),
-          WrapLarge(string.Format(
-              CultureInfo.InvariantCulture,
-              strings.ReprintBanner,
-              copyNumber ?? 0))));
-      segments.Add(new SlipSegment(
-          NormalText(),
-          [
-              Wrap($"{strings.ReprintTimePrefix} {FormatMoment(reprintAtUtc.Value, reprintTimeZone, formats.TimeOnly)}")[0],
-                    MajorSeparator(),
-          ]));
+      segments.Add(new(LargeText(),
+                       WrapLarge(string.Format(CultureInfo.InvariantCulture,
+                                               strings.ReprintBanner,
+                                               copyNumber ?? 0))));
+      segments.Add(new(NormalText(),
+                       [
+                         Wrap($"{strings.ReprintTimePrefix} {FormatMoment(reprintAtUtc.Value, reprintTimeZone, formats.TimeOnly)}")[0],
+                         MajorSeparator()
+                       ]));
     }
 
-    segments.Add(new SlipSegment(LargeText(), WrapLarge(request.StationName)));
-    segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
-    segments.Add(new SlipSegment(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.StationOrderNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
-    segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
-    segments.Add(new SlipSegment(EmphasisedText(), Wrap($"{strings.OrderNumberPrefix} {request.GlobalOrderNumber.ToString(CultureInfo.InvariantCulture)}")));
+    segments.Add(new(LargeText(), WrapLarge(request.StationName)));
+    segments.Add(new(NormalText(), [MajorSeparator()]));
+    segments.Add(new(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.StationOrderNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
+    segments.Add(new(NormalText(), [MajorSeparator()]));
+    segments.Add(new(EmphasisedText(), Wrap($"{strings.OrderNumberPrefix} {request.GlobalOrderNumber.ToString(CultureInfo.InvariantCulture)}")));
 
     List<string> header =
     [
-        .. Wrap($"{strings.TablePrefix} {request.TableName}"),
-            .. Wrap($"{strings.StaffMemberPrefix} {request.StaffMemberName}"),
-            encoder.ToPrintableText(FormatMoment(request.OrderTakenAtUtc, request.DisplayTimeZone, formats.DateAndTime)),
-            MinorSeparator(),
-        ];
-    segments.Add(new SlipSegment(NormalText(), header));
+      .. Wrap($"{strings.TablePrefix} {request.TableName}"),
+      .. Wrap($"{strings.StaffMemberPrefix} {request.StaffMemberName}"),
+      encoder.ToPrintableText(FormatMoment(request.OrderTakenAtUtc, request.DisplayTimeZone, formats.DateAndTime)),
+      MinorSeparator()
+    ];
+    segments.Add(new(NormalText(), header));
 
     List<string> body = [];
-    foreach (SlipLine line in request.Lines)
+    foreach (var line in request.Lines)
     {
       body.AddRange(Wrap($"{line.Quantity.ToString(CultureInfo.InvariantCulture)} x {line.ItemName}"));
       if (line.LineNote is not null)
@@ -143,9 +138,9 @@ public sealed class EscPosSlipRenderer
     }
 
     body.Add(MinorSeparator());
-    segments.Add(new SlipSegment(NormalText(), body));
+    segments.Add(new(NormalText(), body));
 
-    int itemsTotal = request.Lines.Sum(line => line.Quantity);
+    var itemsTotal = request.Lines.Sum(line => line.Quantity);
     List<string> footer = [.. Wrap($"{strings.ItemsTotalPrefix} {itemsTotal.ToString(CultureInfo.InvariantCulture)}")];
 
     if (request.OrderNote is not null)
@@ -159,7 +154,7 @@ public sealed class EscPosSlipRenderer
     }
 
     footer.Add(MajorSeparator());
-    segments.Add(new SlipSegment(NormalText(), footer));
+    segments.Add(new(NormalText(), footer));
 
     return Compose(segments);
   }
@@ -169,10 +164,10 @@ public sealed class EscPosSlipRenderer
     List<byte> bytes = [.. initialise, .. selectCodePage, .. enableAutomaticStatusBack];
     List<string> allLines = [];
 
-    foreach (SlipSegment segment in segments)
+    foreach (var segment in segments)
     {
       bytes.AddRange(segment.Commands);
-      foreach (string line in segment.Lines)
+      foreach (var line in segment.Lines)
       {
         bytes.AddRange(encoder.GetBytes(line));
         bytes.AddRange(encoder.GetBytes(LineBreak));
@@ -183,8 +178,8 @@ public sealed class EscPosSlipRenderer
     bytes.AddRange(feed);
     bytes.AddRange(partialCut);
 
-    string renderedText = string.Join(LineBreak, allLines) + LineBreak;
-    return new RenderedSlip(bytes.ToArray(), renderedText);
+    var renderedText = string.Join(LineBreak, allLines) + LineBreak;
+    return new(bytes.ToArray(), renderedText);
   }
 
   private IReadOnlyList<byte> NormalText()
@@ -205,24 +200,24 @@ public sealed class EscPosSlipRenderer
   private SlipTimeFormats FormatsFor(string languageCode)
   {
     return languageCode.StartsWith("en", StringComparison.OrdinalIgnoreCase)
-        ? new SlipTimeFormats("dd/MM/yyyy, HH:mm", "HH:mm")
-        : new SlipTimeFormats("dd.MM.yyyy, HH:mm 'Uhr'", "HH:mm 'Uhr'");
+             ? new("dd/MM/yyyy, HH:mm", "HH:mm")
+             : new SlipTimeFormats("dd.MM.yyyy, HH:mm 'Uhr'", "HH:mm 'Uhr'");
   }
 
   private string FormatMoment(DateTimeOffset momentUtc, TimeZoneInfo displayTimeZone, string format)
   {
-    DateTimeOffset local = TimeZoneInfo.ConvertTime(momentUtc, displayTimeZone);
+    var local = TimeZoneInfo.ConvertTime(momentUtc, displayTimeZone);
     return local.ToString(format, CultureInfo.InvariantCulture);
   }
 
   private string MajorSeparator()
   {
-    return new string('=', LineWidth);
+    return new('=', LineWidth);
   }
 
   private string MinorSeparator()
   {
-    return new string('-', LineWidth);
+    return new('-', LineWidth);
   }
 
   private IReadOnlyList<string> SplitParagraph(string paragraph)
@@ -242,18 +237,18 @@ public sealed class EscPosSlipRenderer
 
   private IReadOnlyList<string> WrapTo(string text, int width)
   {
-    string printable = encoder.ToPrintableText(text);
+    var printable = encoder.ToPrintableText(text);
     if (printable.Length <= width)
     {
       return [printable];
     }
 
-    int continuationWidth = width - ContinuationIndentWidth;
+    var continuationWidth = width - ContinuationIndentWidth;
     List<string> lines = [printable[..width]];
-    int position = width;
+    var position = width;
     while (position < printable.Length)
     {
-      int take = Math.Min(continuationWidth, printable.Length - position);
+      var take = Math.Min(continuationWidth, printable.Length - position);
       lines.Add(ContinuationIndent + printable.Substring(position, take));
       position += take;
     }

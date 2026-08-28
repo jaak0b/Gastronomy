@@ -18,7 +18,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     builder.Property(order => order.CreatedAtUtc).IsRequired();
     builder.HasIndex(order => order.ClientOrderId).IsUnique();
     builder.HasMany(order => order.StationOrders)
-        .WithOne()
-        .HasForeignKey(stationOrder => stationOrder.OrderId);
+           .WithOne()
+           .HasForeignKey(stationOrder => stationOrder.OrderId);
   }
 }

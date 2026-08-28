@@ -5,33 +5,30 @@ using System.Text;
 
 namespace GastronomyApp.Infrastructure.Tests.Printing;
 
-internal sealed record ProcessIdEchoScript(bool Enabled, TimeSpan AfterDelay, int? OverrideProcessId);
+sealed internal record ProcessIdEchoScript(bool Enabled, TimeSpan AfterDelay, int? OverrideProcessId);
 
-internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
+sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
 {
+  private readonly Dictionary<int, byte> dleEotResponses = [];
+  private readonly Lock guard = new();
+  private readonly CancellationTokenSource lifetime = new();
   private readonly TcpListener listener;
   private readonly List<byte> receivedBytes = [];
-  private readonly Dictionary<int, byte> dleEotResponses = [];
-  private readonly CancellationTokenSource lifetime = new();
-  private readonly Lock guard = new();
-
-  private byte[]? asbOnConnect;
-  private ProcessIdEchoScript processIdEcho = new(true, TimeSpan.Zero, null);
-  private int? dropAfterBytes;
-  private bool dropImmediately;
-  private byte[]? burstOnProcessIdRequest;
   private int acceptedConnectionCount;
   private Task? acceptLoop;
 
+  private byte[]? asbOnConnect;
+  private byte[]? burstOnProcessIdRequest;
+  private int? dropAfterBytes;
+  private bool dropImmediately;
+  private ProcessIdEchoScript processIdEcho = new(true, TimeSpan.Zero, null);
+
   public FakeEscPosPrinterServer(int port)
   {
-    listener = new TcpListener(IPAddress.Loopback, port);
+    listener = new(IPAddress.Loopback, port);
   }
 
-  public int Port
-  {
-    get { return ((IPEndPoint)listener.LocalEndpoint).Port; }
-  }
+  public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
 
   public int AcceptedConnectionCount
   {
@@ -53,6 +50,18 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
         return [.. receivedBytes];
       }
     }
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    await lifetime.CancelAsync();
+    listener.Stop();
+    if (acceptLoop is not null)
+    {
+      await Task.WhenAny(acceptLoop, Task.Delay(500));
+    }
+
+    lifetime.Dispose();
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -82,7 +91,7 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
   {
     lock (guard)
     {
-      processIdEcho = new ProcessIdEchoScript(true, afterDelay, null);
+      processIdEcho = new(true, afterDelay, null);
     }
   }
 
@@ -90,7 +99,7 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
   {
     lock (guard)
     {
-      processIdEcho = new ProcessIdEchoScript(true, TimeSpan.Zero, processId);
+      processIdEcho = new(true, TimeSpan.Zero, processId);
     }
   }
 
@@ -106,7 +115,7 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
   {
     lock (guard)
     {
-      processIdEcho = new ProcessIdEchoScript(false, TimeSpan.Zero, null);
+      processIdEcho = new(false, TimeSpan.Zero, null);
     }
   }
 
@@ -124,18 +133,6 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
     {
       dropImmediately = true;
     }
-  }
-
-  public async ValueTask DisposeAsync()
-  {
-    await lifetime.CancelAsync();
-    listener.Stop();
-    if (acceptLoop is not null)
-    {
-      await Task.WhenAny(acceptLoop, Task.Delay(500));
-    }
-
-    lifetime.Dispose();
   }
 
   private async Task AcceptLoopAsync(CancellationToken cancellationToken)
@@ -163,8 +160,8 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
 
   private async Task ServeAsync(TcpClient client, CancellationToken cancellationToken)
   {
-    using TcpClient owned = client;
-    NetworkStream stream = owned.GetStream();
+    using var owned = client;
+    var stream = owned.GetStream();
 
     if (ReadDropImmediately())
     {
@@ -172,14 +169,14 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
       return;
     }
 
-    byte[]? initialAsb = ReadAsbOnConnect();
+    var initialAsb = ReadAsbOnConnect();
     if (initialAsb is not null)
     {
       await stream.WriteAsync(initialAsb, cancellationToken);
     }
 
-    byte[] buffer = new byte[4096];
-    int totalRead = 0;
+    var buffer = new byte[4096];
+    var totalRead = 0;
 
     while (!cancellationToken.IsCancellationRequested)
     {
@@ -198,14 +195,14 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
         return;
       }
 
-      byte[] chunk = buffer[..read];
+      var chunk = buffer[..read];
       lock (guard)
       {
         receivedBytes.AddRange(chunk);
       }
 
       totalRead += read;
-      int? dropAt = ReadDropAfterBytes();
+      var dropAt = ReadDropAfterBytes();
       if (dropAt is not null && totalRead >= dropAt.Value)
       {
         owned.Close();
@@ -218,11 +215,11 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
 
   private async Task RespondAsync(NetworkStream stream, byte[] chunk, CancellationToken cancellationToken)
   {
-    for (int index = 0; index < chunk.Length; index++)
+    for (var index = 0; index < chunk.Length; index++)
     {
       if (index + 2 < chunk.Length && chunk[index] == 0x10 && chunk[index + 1] == 0x04)
       {
-        byte? response = ReadDleEotResponse(chunk[index + 2]);
+        var response = ReadDleEotResponse(chunk[index + 2]);
         if (response is not null)
         {
           await stream.WriteAsync(new[] { response.Value }, cancellationToken);
@@ -236,8 +233,8 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
           && chunk[index + 1] == 0x28
           && chunk[index + 2] == 0x48)
       {
-        ProcessIdEchoScript script = ReadProcessIdEcho();
-        byte[]? burst = ReadBurst();
+        var script = ReadProcessIdEcho();
+        var burst = ReadBurst();
         if (burst is not null)
         {
           await stream.WriteAsync(burst, cancellationToken);
@@ -248,9 +245,9 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
           continue;
         }
 
-        byte[] processId = script.OverrideProcessId is null
-            ? chunk[(index + 7)..(index + 11)]
-            : Encoding.ASCII.GetBytes(script.OverrideProcessId.Value.ToString("D4", CultureInfo.InvariantCulture));
+        var processId = script.OverrideProcessId is null
+                          ? chunk[(index + 7)..(index + 11)]
+                          : Encoding.ASCII.GetBytes(script.OverrideProcessId.Value.ToString("D4", CultureInfo.InvariantCulture));
         if (script.AfterDelay > TimeSpan.Zero)
         {
           await Task.Delay(script.AfterDelay, cancellationToken);
@@ -298,7 +295,7 @@ internal sealed class FakeEscPosPrinterServer : IAsyncDisposable
   {
     lock (guard)
     {
-      return dleEotResponses.TryGetValue(n, out byte response) ? response : null;
+      return dleEotResponses.TryGetValue(n, out var response) ? response : null;
     }
   }
 

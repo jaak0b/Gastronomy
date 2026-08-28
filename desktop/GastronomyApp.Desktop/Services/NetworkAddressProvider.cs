@@ -9,7 +9,7 @@ public sealed class NetworkAddressProvider : INetworkAddressProvider
   {
     List<NetworkAddressOption> options = [];
 
-    foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
+    foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
     {
       if (adapter.OperationalStatus != OperationalStatus.Up
           || adapter.NetworkInterfaceType == NetworkInterfaceType.Loopback)
@@ -17,14 +17,14 @@ public sealed class NetworkAddressProvider : INetworkAddressProvider
         continue;
       }
 
-      foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+      foreach (var address in adapter.GetIPProperties().UnicastAddresses)
       {
         if (address.Address.AddressFamily != AddressFamily.InterNetwork)
         {
           continue;
         }
 
-        options.Add(new NetworkAddressOption(adapter.Name, address.Address.ToString()));
+        options.Add(new(adapter.Name, address.Address.ToString()));
       }
     }
 

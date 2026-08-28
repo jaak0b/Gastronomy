@@ -27,30 +27,30 @@ public sealed class OrderStatusCalculator
   private bool NeedsHumanAttention(PrintJobStatus status)
   {
     return status switch
-    {
-      PrintJobStatus.Unknown => true,
-      PrintJobStatus.Failed => true,
-      PrintJobStatus.Blocked => true,
-      PrintJobStatus.Queued => false,
-      PrintJobStatus.Sending => false,
-      PrintJobStatus.Printed => false,
-      PrintJobStatus.HandledOnPaper => false,
-      _ => new Never().OfType<bool>(status),
-    };
+           {
+             PrintJobStatus.Unknown => true,
+             PrintJobStatus.Failed => true,
+             PrintJobStatus.Blocked => true,
+             PrintJobStatus.Queued => false,
+             PrintJobStatus.Sending => false,
+             PrintJobStatus.Printed => false,
+             PrintJobStatus.HandledOnPaper => false,
+             _ => new Never().OfType<bool>(status)
+           };
   }
 
   private bool IsOnPaper(PrintJobStatus status)
   {
     return status switch
-    {
-      PrintJobStatus.Printed => true,
-      PrintJobStatus.HandledOnPaper => true,
-      PrintJobStatus.Queued => false,
-      PrintJobStatus.Blocked => false,
-      PrintJobStatus.Sending => false,
-      PrintJobStatus.Unknown => false,
-      PrintJobStatus.Failed => false,
-      _ => new Never().OfType<bool>(status),
-    };
+           {
+             PrintJobStatus.Printed => true,
+             PrintJobStatus.HandledOnPaper => true,
+             PrintJobStatus.Queued => false,
+             PrintJobStatus.Blocked => false,
+             PrintJobStatus.Sending => false,
+             PrintJobStatus.Unknown => false,
+             PrintJobStatus.Failed => false,
+             _ => new Never().OfType<bool>(status)
+           };
   }
 }

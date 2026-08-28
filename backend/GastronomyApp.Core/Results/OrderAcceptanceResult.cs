@@ -5,12 +5,14 @@ namespace GastronomyApp.Core.Results;
 public sealed record OrderAcceptanceResult
 {
   public required Order Order { get; init; }
+
   public required bool WasAlreadyAccepted { get; init; }
 }
 
 public sealed record OrderValidationFailure
 {
   public required OrderValidationFailureReason Reason { get; init; }
+
   public Guid? OffendingCatalogItemId { get; init; }
 }
 
@@ -24,5 +26,5 @@ public enum OrderValidationFailureReason
   StationRequired,
   StationNotAssignedToItem,
   ItemHasNoStation,
-  PriceOutOfRange,
+  PriceOutOfRange
 }

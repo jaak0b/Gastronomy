@@ -5,27 +5,26 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class GiveUpWindowCalculator
 {
-  public static readonly TimeSpan GiveUpWindow = TimeSpan.FromMinutes(5);
+  public readonly static TimeSpan GiveUpWindow = TimeSpan.FromMinutes(5);
 
-  public static readonly TimeSpan OuterBound = TimeSpan.FromMinutes(20);
+  public readonly static TimeSpan OuterBound = TimeSpan.FromMinutes(20);
 
-  public GiveUpWindowEvaluation Evaluate(
-      DateTime printJobCreatedAtUtc,
-      DateTime evaluatedAtUtc,
-      PrintJobStatus currentStatus,
-      IReadOnlyCollection<SuspensionPeriod> suspensionPeriods)
+  public GiveUpWindowEvaluation Evaluate(DateTime printJobCreatedAtUtc,
+                                         DateTime evaluatedAtUtc,
+                                         PrintJobStatus currentStatus,
+                                         IReadOnlyCollection<SuspensionPeriod> suspensionPeriods)
   {
-    TimeSpan elapsed = evaluatedAtUtc - printJobCreatedAtUtc;
-    TimeSpan suspended = TimeSpan.Zero;
+    var elapsed = evaluatedAtUtc - printJobCreatedAtUtc;
+    var suspended = TimeSpan.Zero;
 
-    foreach (SuspensionPeriod period in suspensionPeriods)
+    foreach (var period in suspensionPeriods)
     {
-      DateTime effectiveStart = period.StartedAtUtc < printJobCreatedAtUtc
-          ? printJobCreatedAtUtc
-          : period.StartedAtUtc;
-      DateTime effectiveEnd = period.EndedAtUtc is null || period.EndedAtUtc > evaluatedAtUtc
-          ? evaluatedAtUtc
-          : period.EndedAtUtc.Value;
+      var effectiveStart = period.StartedAtUtc < printJobCreatedAtUtc
+                             ? printJobCreatedAtUtc
+                             : period.StartedAtUtc;
+      var effectiveEnd = period.EndedAtUtc is null || period.EndedAtUtc > evaluatedAtUtc
+                           ? evaluatedAtUtc
+                           : period.EndedAtUtc.Value;
 
       if (effectiveEnd > effectiveStart)
       {
@@ -33,17 +32,17 @@ public sealed class GiveUpWindowCalculator
       }
     }
 
-    TimeSpan accumulatedUnsuspendedTime = elapsed - suspended;
+    var accumulatedUnsuspendedTime = elapsed - suspended;
     if (accumulatedUnsuspendedTime < TimeSpan.Zero)
     {
       accumulatedUnsuspendedTime = TimeSpan.Zero;
     }
 
-    return new GiveUpWindowEvaluation
-    {
-      HasReachedGiveUpWindow = accumulatedUnsuspendedTime >= GiveUpWindow,
-      HasReachedOuterBound = currentStatus != PrintJobStatus.Sending && elapsed >= OuterBound,
-      AccumulatedUnsuspendedTime = accumulatedUnsuspendedTime,
-    };
+    return new()
+           {
+             HasReachedGiveUpWindow = accumulatedUnsuspendedTime >= GiveUpWindow,
+             HasReachedOuterBound = currentStatus != PrintJobStatus.Sending && elapsed >= OuterBound,
+             AccumulatedUnsuspendedTime = accumulatedUnsuspendedTime
+           };
   }
 }

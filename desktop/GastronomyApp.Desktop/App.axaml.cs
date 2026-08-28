@@ -12,8 +12,8 @@ namespace GastronomyApp.Desktop;
 
 public class App : Application
 {
-  private DesktopComposition? composition;
   private AppBootstrapper? bootstrapper;
+  private DesktopComposition? composition;
   private MainWindow? mainWindow;
   private MainWindowViewModel? mainWindowViewModel;
   private QuitConfirmViewModel? quitConfirmViewModel;

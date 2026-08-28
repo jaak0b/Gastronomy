@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using GastronomyApp.Infrastructure;
 using GastronomyApp.Infrastructure.Ports;
@@ -11,29 +10,27 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class ConcurrentOrderTest
 {
-  private OrderTestContext context = null!;
-  private string secondDeviceToken = null!;
 
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
+    context = await new OrderTestContext.Builder().StartAsync(false);
 
-    using IServiceScope scope = context.Factory.Services.CreateScope();
-    GastronomyAppDbContext database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+    using var scope = context.Factory.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
 
-    Guid secondStaffMemberId = Guid.NewGuid();
-    database.StaffMembers.Add(new GastronomyApp.Core.Entities.StaffMember
-    {
-      Id = secondStaffMemberId,
-      Name = "Bernd",
-      IsActive = true,
-      CreatedAtUtc = DateTime.UtcNow,
-    });
+    var secondStaffMemberId = Guid.NewGuid();
+    database.StaffMembers.Add(new()
+                              {
+                                Id = secondStaffMemberId,
+                                Name = "Bernd",
+                                IsActive = true,
+                                CreatedAtUtc = DateTime.UtcNow
+                              });
     await database.SaveChangesAsync();
 
-    IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-        .IssueAsync(secondStaffMemberId, "de", "NUnit second phone", CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
+                            .IssueAsync(secondStaffMemberId, "de", "NUnit second phone", CancellationToken.None);
     secondDeviceToken = issued.PlaintextToken;
   }
 
@@ -42,6 +39,9 @@ public sealed class ConcurrentOrderTest
   {
     await context.DisposeAsync();
   }
+
+  private OrderTestContext context = null!;
+  private string secondDeviceToken = null!;
 
   [Test]
   public async Task PostOrder_TwoServersSendingAtTheSameMoment_AcceptsBothWithDistinctNumbers()
@@ -52,31 +52,30 @@ public sealed class ConcurrentOrderTest
     HttpResponseMessage[] responses = await Task.WhenAll(first, second);
     IReadOnlyList<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
 
-    foreach (HttpResponseMessage response in responses)
+    foreach (var response in responses)
     {
       response.Dispose();
     }
 
-    await using GastronomyAppDbContext database = context.Factory.CreateContext();
+    await using var database = context.Factory.CreateContext();
     List<int> orderNumbers = await database.Orders
-        .Select(order => order.GlobalOrderNumber)
-        .OrderBy(number => number)
-        .ToListAsync();
+                                           .Select(order => order.GlobalOrderNumber)
+                                           .OrderBy(number => number)
+                                           .ToListAsync();
 
     Assert.Multiple(() =>
-    {
-      Assert.That(
-              statuses,
-              Is.All.EqualTo(HttpStatusCode.Created),
-              "Two servers sending at the same moment must both be accepted.");
-      Assert.That(orderNumbers, Is.EqualTo(new[] { 1, 2 }), "Each order keeps its own global number.");
-    });
+                    {
+                      Assert.That(statuses,
+                                  Is.All.EqualTo(HttpStatusCode.Created),
+                                  "Two servers sending at the same moment must both be accepted.");
+                      Assert.That(orderNumbers, Is.EqualTo(new[] { 1, 2 }), "Each order keeps its own global number.");
+                    });
   }
 
   private Task<HttpResponseMessage> SendOrderAsync(string deviceToken)
   {
     HttpRequestMessage request = new(HttpMethod.Post, "/api/orders");
-    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
+    request.Headers.Authorization = new("Bearer", deviceToken);
     request.Content = JsonContent.Create(context.BuildOrder(Guid.NewGuid()));
 
     return context.Client.SendAsync(request);

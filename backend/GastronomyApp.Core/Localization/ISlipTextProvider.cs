@@ -6,13 +6,13 @@ public interface ISlipTextProvider
 }
 
 public sealed record SlipStrings(
-    string ReprintBanner,
-    string ReprintTimePrefix,
-    string SlipNumberPrefix,
-    string OrderNumberPrefix,
-    string TablePrefix,
-    string StaffMemberPrefix,
-    string NotePrefix,
-    string ItemsTotalPrefix,
-    string AlsoGoesToPrefix,
-    string TestSlipHeader);
+  string ReprintBanner,
+  string ReprintTimePrefix,
+  string SlipNumberPrefix,
+  string OrderNumberPrefix,
+  string TablePrefix,
+  string StaffMemberPrefix,
+  string NotePrefix,
+  string ItemsTotalPrefix,
+  string AlsoGoesToPrefix,
+  string TestSlipHeader);

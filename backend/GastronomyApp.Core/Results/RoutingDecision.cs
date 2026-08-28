@@ -3,7 +3,9 @@
 public sealed record RoutingDecision
 {
   public required Guid ResolvedStationId { get; init; }
+
   public required Guid? ChosenStationId { get; init; }
+
   public required bool FellBackFromStaleChoice { get; init; }
 }
 
@@ -16,5 +18,5 @@ public enum RoutingFailureReason
 {
   ItemHasNoStation,
   StationRequired,
-  StationNotAssignedToItem,
+  StationNotAssignedToItem
 }
