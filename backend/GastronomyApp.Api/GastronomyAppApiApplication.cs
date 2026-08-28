@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace GastronomyApp.Api;
 
@@ -17,6 +19,8 @@ public sealed class GastronomyAppApiApplication
         });
 
         builder.WebHost.UseUrls($"http://{options.BindAddress}:{options.Port}");
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog();
 
         new ApiServiceRegistration().Register(builder.Services, options);
 

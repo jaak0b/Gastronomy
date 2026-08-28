@@ -17,7 +17,17 @@ internal sealed class Program
             return;
         }
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        ApplicationLog log = new();
+
+        try
+        {
+            log.Start(new DesktopComposition().DataDirectoryPath);
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            log.Stop();
+        }
     }
 
     public static AppBuilder BuildAvaloniaApp()

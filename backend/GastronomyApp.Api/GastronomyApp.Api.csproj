@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="QRCoder" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
