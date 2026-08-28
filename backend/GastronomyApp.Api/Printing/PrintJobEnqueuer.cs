@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Printing;
@@ -15,21 +14,19 @@ public sealed class PrintJobEnqueuer
     }
 
     public async Task EnqueueWithoutFailingTheCallerAsync(
-        Guid locationTicketId,
-        PrintJobKind kind,
+        Guid stationOrderId,
         CancellationToken cancellationToken)
     {
         try
         {
-            await printerFleet.EnqueueAsync(locationTicketId, kind, cancellationToken);
+            await printerFleet.EnqueueAsync(stationOrderId, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogError(
                 exception,
-                "Ticket {TicketId} could not be handed to a printer worker for a {Kind} job, so it stays waiting at its station until it is handed over again.",
-                locationTicketId,
-                kind);
+                "The station order {StationOrderId} could not be handed to a printer worker, so it stays waiting at its station until it is handed over again.",
+                stationOrderId);
         }
     }
 }

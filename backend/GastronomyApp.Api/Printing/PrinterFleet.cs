@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Printing;
 using GastronomyApp.Infrastructure.Printing;
 using Microsoft.Extensions.Hosting;
@@ -8,39 +7,34 @@ using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Printing;
 
-public sealed record PrinterConfigurationEntry(Station Station, PrinterConfiguration Configuration);
+public sealed record PrinterWithStations(Printer Printer, IReadOnlyList<Guid> StationIds);
 
-public interface IPrinterConfigurationSource
+public interface IPrinterSource
 {
-    public Task<IReadOnlyList<PrinterConfigurationEntry>> LoadEnabledAsync(CancellationToken ct);
-}
-
-public interface IPrinterTransportFactory
-{
-    public IPrinterTransport Create(TransportKind kind);
+    public Task<IReadOnlyList<PrinterWithStations>> LoadActiveAsync(CancellationToken ct);
 }
 
 public interface IPrinterFleet
 {
-    public Task<PrintJobEnsured> EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
+    public Task<PrintJobEnsured> EnqueueAsync(Guid stationOrderId, CancellationToken cancellationToken);
 
-    public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid stationId, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<Guid>> ReconnectAsync(Guid printerId, CancellationToken cancellationToken);
 
-    public Task TestPrintAsync(Guid stationId, CancellationToken cancellationToken);
+    public Task TestPrintAsync(Guid printerId, CancellationToken cancellationToken);
 }
 
-public sealed class UnknownLocationTicketException : Exception
+public sealed class UnknownStationOrderException : Exception
 {
-    public UnknownLocationTicketException()
+    public UnknownStationOrderException()
     {
     }
 
-    public UnknownLocationTicketException(string message)
+    public UnknownStationOrderException(string message)
         : base(message)
     {
     }
 
-    public UnknownLocationTicketException(string message, Exception innerException)
+    public UnknownStationOrderException(string message, Exception innerException)
         : base(message, innerException)
     {
     }
@@ -50,22 +44,22 @@ public sealed record RunningWorker(PrinterWorker Worker, CancellationTokenSource
 
 public sealed class PrinterFleet : IPrinterFleet, IHostedService
 {
-    private readonly IPrinterConfigurationSource configurationSource;
-    private readonly IPrinterTransportFactory transportFactory;
+    private readonly IPrinterSource printerSource;
+    private readonly PrinterDriverRegistry driverRegistry;
     private readonly IPrinterWorkerDataAccess dataAccess;
     private readonly IPrintCallbacks callbacks;
     private readonly EscPosSlipRenderer renderer;
     private readonly PrinterWorkerDomainServices domainServices;
     private readonly TimeProvider timeProvider;
     private readonly ILoggerFactory loggerFactory;
-    private readonly Dictionary<string, RunningWorker> workers = [];
+    private readonly Dictionary<Guid, RunningWorker> workers = [];
     private readonly Lock guard = new();
 
     private readonly AppLanguage language;
 
     public PrinterFleet(
-        IPrinterConfigurationSource configurationSource,
-        IPrinterTransportFactory transportFactory,
+        IPrinterSource printerSource,
+        PrinterDriverRegistry driverRegistry,
         IPrinterWorkerDataAccess dataAccess,
         IPrintCallbacks callbacks,
         EscPosSlipRenderer renderer,
@@ -75,8 +69,8 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         ILoggerFactory loggerFactory)
     {
         this.language = language;
-        this.configurationSource = configurationSource;
-        this.transportFactory = transportFactory;
+        this.printerSource = printerSource;
+        this.driverRegistry = driverRegistry;
         this.dataAccess = dataAccess;
         this.callbacks = callbacks;
         this.renderer = renderer;
@@ -123,28 +117,16 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
     public async Task ReconcileAsync(CancellationToken cancellationToken)
     {
-        IReadOnlyList<PrinterConfigurationEntry> entries = await configurationSource.LoadEnabledAsync(cancellationToken);
-        Dictionary<string, List<PrinterConfigurationEntry>> grouped = [];
-
-        foreach (PrinterConfigurationEntry entry in entries)
-        {
-            string key = KeyFor(entry.Configuration);
-            if (!grouped.TryGetValue(key, out List<PrinterConfigurationEntry>? bucket))
-            {
-                bucket = [];
-                grouped[key] = bucket;
-            }
-
-            bucket.Add(entry);
-        }
+        IReadOnlyList<PrinterWithStations> entries = await printerSource.LoadActiveAsync(cancellationToken);
+        Dictionary<Guid, PrinterWithStations> wanted = entries.ToDictionary(entry => entry.Printer.Id);
 
         List<RunningWorker> retired = [];
         lock (guard)
         {
-            foreach (string key in workers.Keys.Where(existing => !grouped.ContainsKey(existing)).ToList())
+            foreach (Guid printerId in workers.Keys.Where(existing => !wanted.ContainsKey(existing)).ToList())
             {
-                retired.Add(workers[key]);
-                workers.Remove(key);
+                retired.Add(workers[printerId]);
+                workers.Remove(printerId);
             }
         }
 
@@ -153,17 +135,17 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
             await StopWorkerAsync(entry);
         }
 
-        foreach (KeyValuePair<string, List<PrinterConfigurationEntry>> group in grouped)
+        foreach (KeyValuePair<Guid, PrinterWithStations> wantedPrinter in wanted)
         {
-            Guid[] served = [.. group.Value.Select(entry => entry.Station.Id)];
-            bool exists;
+            Guid[] served = [.. wantedPrinter.Value.StationIds];
+            bool alreadyRunning;
             lock (guard)
             {
-                exists = workers.TryGetValue(group.Key, out RunningWorker? running)
+                alreadyRunning = workers.TryGetValue(wantedPrinter.Key, out RunningWorker? running)
                     && running.Worker.ServedStationIds.OrderBy(id => id).SequenceEqual(served.OrderBy(id => id));
             }
 
-            if (exists)
+            if (alreadyRunning)
             {
                 continue;
             }
@@ -171,10 +153,10 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
             RunningWorker? replaced = null;
             lock (guard)
             {
-                if (workers.TryGetValue(group.Key, out RunningWorker? previous))
+                if (workers.TryGetValue(wantedPrinter.Key, out RunningWorker? previous))
                 {
                     replaced = previous;
-                    workers.Remove(group.Key);
+                    workers.Remove(wantedPrinter.Key);
                 }
             }
 
@@ -183,48 +165,40 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
                 await StopWorkerAsync(replaced);
             }
 
-            StartWorker(group.Key, group.Value, served);
+            StartWorker(wantedPrinter.Value, served);
         }
     }
 
-    public async Task<PrintJobEnsured> EnqueueAsync(
-        Guid locationTicketId,
-        PrintJobKind kind,
-        CancellationToken cancellationToken)
+    public async Task<PrintJobEnsured> EnqueueAsync(Guid stationOrderId, CancellationToken cancellationToken)
     {
-        Guid? stationId = await dataAccess.ResolveStationAsync(locationTicketId, cancellationToken);
-        if (stationId is null)
+        PrintJobEnsured ensured = await dataAccess.EnsureNextCopyAsync(stationOrderId, cancellationToken);
+
+        if (ensured.StationId is null)
         {
-            throw new UnknownLocationTicketException(
-                $"There is no location ticket with id {locationTicketId}, so no print job was created.");
+            throw new UnknownStationOrderException(
+                $"There is no station order with id {stationOrderId}, so no print job was created.");
         }
 
-        PrintJobEnsured ensured = await dataAccess.EnsureOpenPrintJobAsync(
-            locationTicketId,
-            stationId.Value,
-            kind,
-            cancellationToken);
-
-        if (ensured.WasCreated)
+        if (ensured.PrintJobId is not null)
         {
-            WorkerFor(stationId.Value).Enqueue(locationTicketId);
+            WorkerForStation(ensured.StationId.Value).Enqueue(ensured.PrintJobId.Value);
         }
 
         return ensured;
     }
 
-    public async Task<IReadOnlyList<Guid>> ReconnectAsync(Guid stationId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Guid>> ReconnectAsync(Guid printerId, CancellationToken cancellationToken)
     {
-        return await WorkerFor(stationId).ReconnectAsync(cancellationToken);
+        return await WorkerForPrinter(printerId).ReconnectAsync(cancellationToken);
     }
 
-    public async Task TestPrintAsync(Guid stationId, CancellationToken cancellationToken)
+    public async Task TestPrintAsync(Guid printerId, CancellationToken cancellationToken)
     {
-        Guid printJobId = await dataAccess.CreatePrintJobAsync(null, stationId, PrintJobKind.Test, cancellationToken);
-        WorkerFor(stationId).EnqueueTestPrint(stationId, printJobId);
+        WorkerForPrinter(printerId).EnqueueTestPrint(Guid.NewGuid());
+        await Task.CompletedTask;
     }
 
-    private PrinterWorker WorkerFor(Guid stationId)
+    private PrinterWorker WorkerForStation(Guid stationId)
     {
         lock (guard)
         {
@@ -237,28 +211,30 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
             }
         }
 
-        throw new UnknownLocationTicketException(
+        throw new UnknownStationOrderException(
             $"No printer worker serves station {stationId}.");
     }
 
-    private void StartWorker(string key, IReadOnlyList<PrinterConfigurationEntry> group, Guid[] served)
+    private PrinterWorker WorkerForPrinter(Guid printerId)
     {
-        PrinterConfiguration configuration = group[0].Configuration;
-        PrinterEndpoint endpoint = new(
-            group[0].Station.Id,
-            configuration.TransportKind,
-            configuration.Host,
-            configuration.Port,
-            configuration.AgentIdentifier,
-            TimeSpan.FromSeconds(configuration.ConnectTimeoutSeconds),
-            TimeSpan.FromSeconds(configuration.JobTimeoutSeconds),
-            TimeSpan.FromSeconds(configuration.HeartbeatSeconds),
-            TimeSpan.FromSeconds(configuration.ConnectTimeoutSeconds));
+        lock (guard)
+        {
+            if (workers.TryGetValue(printerId, out RunningWorker? running))
+            {
+                return running.Worker;
+            }
+        }
 
+        throw new UnknownStationOrderException(
+            $"No printer worker is running for printer {printerId}.");
+    }
+
+    private void StartWorker(PrinterWithStations entry, Guid[] served)
+    {
         PrinterWorker worker = new(
-            endpoint,
+            entry.Printer,
             served,
-            transportFactory.Create(configuration.TransportKind),
+            driverRegistry.For(entry.Printer),
             dataAccess,
             callbacks,
             renderer,
@@ -272,7 +248,7 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
         lock (guard)
         {
-            workers[key] = new RunningWorker(worker, lifetime, loop);
+            workers[entry.Printer.Id] = new RunningWorker(worker, lifetime, loop);
         }
     }
 
@@ -281,14 +257,5 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
         await entry.Lifetime.CancelAsync();
         await Task.WhenAny(entry.Loop, Task.Delay(TimeSpan.FromSeconds(2)));
         entry.Lifetime.Dispose();
-    }
-
-    private string KeyFor(PrinterConfiguration configuration)
-    {
-        return domainServices.EndpointKeyBuilder.Build(
-            configuration.TransportKind,
-            configuration.Host ?? string.Empty,
-            configuration.Port == 0 ? null : configuration.Port,
-            configuration.AgentIdentifier ?? string.Empty);
     }
 }

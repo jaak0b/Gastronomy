@@ -89,12 +89,13 @@ public sealed class ImmediateTransactionRunnerTest
         {
             ClientOrderId = Guid.NewGuid(),
             StaffMemberId = seeded.StaffMemberId,
-            DeviceId = seeded.DeviceId,
-            TableLabel = "Tisch 12",
+            TableName = "Tisch 12",
             Note = null,
-            Lines =
+            Items =
             [
-                new OrderAcceptanceLineRequest { CatalogItemId = seeded.SausageItemId, Quantity = 1, Note = null },
+                new OrderAcceptanceItemRequest { CatalogItemId = seeded.SausageItemId, Note = null,
+                    UnitPriceCents = 350,
+                },
             ],
         };
     }
@@ -130,11 +131,8 @@ public sealed class ImmediateTransactionRunnerTest
             StaffMemberId = null,
             QrCodeHash = [1],
             QrCodeSalt = [2],
-            SixDigitHash = [3],
-            SixDigitSalt = [4],
-            CodeIterations = 1,
-            CodeAlgorithm = "PBKDF2-HMAC-SHA512",
-            FailedSixDigitAttempts = 0,
+            QrCodeIterations = 1,
+            QrCodeAlgorithm = "PBKDF2-HMAC-SHA512",
             CreatedAtUtc = now,
             ExpiresAtUtc = now.AddMinutes(5),
             ConsumedAtUtc = null,

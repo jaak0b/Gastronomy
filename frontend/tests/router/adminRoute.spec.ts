@@ -4,28 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import { createVuetify } from 'vuetify'
 
-vi.mock('@microsoft/signalr', () => {
-  class HubConnectionBuilder {
-    withUrl() {
-      return this
-    }
-    withAutomaticReconnect() {
-      return this
-    }
-    build() {
-      return {
-        state: 'Disconnected',
-        on: () => undefined,
-        onreconnecting: () => undefined,
-        onreconnected: () => undefined,
-        onclose: () => undefined,
-        start: async () => undefined,
-        stop: async () => undefined,
-      }
-    }
-  }
-  return { HubConnectionBuilder, HubConnectionState: { Disconnected: 'Disconnected' } }
-})
+vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const { currentRoute, resolveRoute } = await import('../../src/router')
 const App = (await import('../../src/App.vue')).default
@@ -101,7 +80,7 @@ describe('the station backlog, which every enrolled phone may open', () => {
       vi.fn(async (url: string) => {
         const payload = url.startsWith('/api/session')
           ? { deviceId: 'device-1', staffMember: { id: 'staff-member-1', name: 'Anna' }, language: 'de' }
-          : { stations: [], tickets: [], orders: [], items: [] }
+          : { stations: [], stationOrders: [], orders: [], items: [] }
         return new Response(JSON.stringify(payload), { status: 200 })
       }),
     )

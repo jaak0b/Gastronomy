@@ -17,8 +17,6 @@ public sealed class GastronomyAppDbContext : DbContext
 
     public DbSet<ItemStationAssignment> ItemStationAssignments => Set<ItemStationAssignment>();
 
-    public DbSet<TableSuggestion> TableSuggestions => Set<TableSuggestion>();
-
     public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
 
     public DbSet<Device> Devices => Set<Device>();
@@ -27,19 +25,17 @@ public sealed class GastronomyAppDbContext : DbContext
 
     public DbSet<Order> Orders => Set<Order>();
 
-    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+    public DbSet<StationOrder> StationOrders => Set<StationOrder>();
 
-    public DbSet<LocationTicket> LocationTickets => Set<LocationTicket>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
 
-    public DbSet<PrintAttempt> PrintAttempts => Set<PrintAttempt>();
-
-    public DbSet<PrinterConfiguration> PrinterConfigurations => Set<PrinterConfiguration>();
+    public DbSet<Printer> Printers => Set<Printer>();
 
     public DbSet<PrinterStatus> PrinterStatuses => Set<PrinterStatus>();
 
-    public DbSet<NumberCounter> NumberCounters => Set<NumberCounter>();
+    public DbSet<SequenceCounters> SequenceCounters => Set<SequenceCounters>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

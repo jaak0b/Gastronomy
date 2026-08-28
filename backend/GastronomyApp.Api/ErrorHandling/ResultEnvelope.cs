@@ -13,20 +13,22 @@ public sealed class ResultEnvelope
     {
         return failure.Reason switch
         {
-            OrderValidationFailureReason.NoLines =>
-                Validation("order.noLines"),
-            OrderValidationFailureReason.QuantityOutOfRange =>
-                Validation("order.quantityOutOfRange"),
-            OrderValidationFailureReason.TableLabelMissing =>
-                Validation("order.tableLabelMissing"),
-            OrderValidationFailureReason.TableLabelTooLong =>
-                Validation("order.tableLabelTooLong"),
+            OrderValidationFailureReason.NoItems =>
+                Validation("order.noItems"),
+            OrderValidationFailureReason.TooManyItems =>
+                Validation("order.tooManyItems"),
+            OrderValidationFailureReason.TableNameMissing =>
+                Validation("order.tableNameMissing"),
+            OrderValidationFailureReason.TableNameTooLong =>
+                Validation("order.tableNameTooLong"),
             OrderValidationFailureReason.UnknownCatalogItemId =>
                 Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
             OrderValidationFailureReason.StationRequired =>
                 Unprocessable("order.stationRequired", failure.OffendingCatalogItemId),
             OrderValidationFailureReason.StationNotAssignedToItem =>
                 Unprocessable("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
+            OrderValidationFailureReason.PriceOutOfRange =>
+                Validation("order.priceOutOfRange"),
             OrderValidationFailureReason.ItemHasNoStation =>
                 Unprocessable("order.itemHasNoStation", failure.OffendingCatalogItemId),
             _ => new Never().OfType<ProblemDescription>(failure.Reason),

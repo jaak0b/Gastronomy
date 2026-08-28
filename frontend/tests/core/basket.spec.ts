@@ -37,7 +37,7 @@ function catalog(): Catalog {
 }
 
 function draftWith(lines: DraftOrder['lines']): DraftOrder {
-  return { tableLabel: '', note: null, lines, clientOrderId: null }
+  return { tableName: '', note: null, lines, clientOrderId: null }
 }
 
 describe('buildBasketView', () => {

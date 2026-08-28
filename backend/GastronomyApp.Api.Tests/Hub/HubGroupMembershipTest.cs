@@ -72,7 +72,7 @@ public sealed class HubGroupMembershipTest
 
         Guid orderId;
 
-        using (HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700)))
+        using (HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
             JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

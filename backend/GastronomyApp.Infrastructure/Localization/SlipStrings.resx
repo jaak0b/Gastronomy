@@ -59,7 +59,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a2c561934e089</value>
   </resheader>
   <data name="ReprintBanner" xml:space="preserve">
-    <value>REPRINT</value>
+    <value>NACHDRUCK Nr. {0}</value>
   </data>
   <data name="ReprintTimePrefix" xml:space="preserve">
     <value>Reprint at</value>
@@ -84,9 +84,6 @@
   </data>
   <data name="AlsoGoesToPrefix" xml:space="preserve">
     <value>This order also goes to:</value>
-  </data>
-  <data name="ChosenStationWasPrefix" xml:space="preserve">
-    <value>Chosen station was:</value>
   </data>
   <data name="TestSlipHeader" xml:space="preserve">
     <value>TEST SLIP</value>

@@ -11,7 +11,7 @@ import {
   setLineQuantity,
   setLineStation,
   setOrderNote,
-  setTableLabel,
+  setTableName,
 } from '../../src/core/draftCart'
 import type { DraftLine } from '../../src/core/apiTypes'
 
@@ -30,7 +30,7 @@ describe('emptyDraft', () => {
   it('starts with no table, no note, no lines and no submission id', () => {
     const draft = emptyDraft()
 
-    expect(draft).toEqual({ tableLabel: '', note: null, lines: [], clientOrderId: null })
+    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
   })
 })
 
@@ -42,7 +42,7 @@ describe('loadDraft', () => {
   it('returns an empty draft when nothing was ever stored', () => {
     const draft = loadDraft()
 
-    expect(draft).toEqual({ tableLabel: '', note: null, lines: [], clientOrderId: null })
+    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
   })
 
   it('returns an empty draft when the stored value is not readable', () => {
@@ -50,12 +50,12 @@ describe('loadDraft', () => {
 
     const draft = loadDraft()
 
-    expect(draft).toEqual({ tableLabel: '', note: null, lines: [], clientOrderId: null })
+    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
   })
 
   it('puts a half built order back on the screen after a reload', () => {
     saveDraft({
-      tableLabel: 'Tisch 12',
+      tableName: 'Tisch 12',
       note: 'ohne Eis',
       lines: [bratwurstLine()],
       clientOrderId: null,
@@ -64,7 +64,7 @@ describe('loadDraft', () => {
     const draft = loadDraft()
 
     expect(draft).toEqual({
-      tableLabel: 'Tisch 12',
+      tableName: 'Tisch 12',
       note: 'ohne Eis',
       lines: [
         {
@@ -83,7 +83,7 @@ describe('loadDraft', () => {
   it('reads a draft written before lines carried a name and a price without crashing', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
-      '{"tableLabel":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","quantity":2,"note":null,"stationId":null}]}',
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","quantity":2,"note":null,"stationId":null}]}',
     )
 
     const draft = loadDraft()
@@ -115,11 +115,11 @@ describe('the stored draft shape', () => {
   })
 
   it('stores no field beyond the table, the note, the lines and the submission id', () => {
-    saveDraft({ tableLabel: 'Tisch 3', note: null, lines: [], clientOrderId: null })
+    saveDraft({ tableName: 'Tisch 3', note: null, lines: [], clientOrderId: null })
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as object
 
-    expect(Object.keys(stored).sort()).toEqual(['clientOrderId', 'lines', 'note', 'tableLabel'])
+    expect(Object.keys(stored).sort()).toEqual(['clientOrderId', 'lines', 'note', 'tableName'])
   })
 
   it('stores the item, the quantity, the note, the station and the name and price it was added at', () => {
@@ -230,9 +230,9 @@ describe('draft mutators', () => {
   })
 
   it('persists the table', () => {
-    setTableLabel(emptyDraft(), 'Tisch 12')
+    setTableName(emptyDraft(), 'Tisch 12')
 
-    expect(loadDraft().tableLabel).toBe('Tisch 12')
+    expect(loadDraft().tableName).toBe('Tisch 12')
   })
 
   it('persists the order note', () => {
@@ -249,7 +249,7 @@ describe('clearDraft', () => {
 
   it('removes the stored order', () => {
     saveDraft({
-      tableLabel: 'Tisch 12',
+      tableName: 'Tisch 12',
       note: null,
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
@@ -262,7 +262,7 @@ describe('clearDraft', () => {
 
   it('leaves the next draft empty', () => {
     saveDraft({
-      tableLabel: 'Tisch 12',
+      tableName: 'Tisch 12',
       note: null,
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
@@ -270,6 +270,43 @@ describe('clearDraft', () => {
 
     clearDraft()
 
-    expect(loadDraft()).toEqual({ tableLabel: '', note: null, lines: [], clientOrderId: null })
+    expect(loadDraft()).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
+  })
+})
+
+describe('adding an item that is already in the basket', () => {
+  it('raises the quantity of the line it is already on', () => {
+    const once = addLine(emptyDraft(), bratwurstLine())
+
+    const twice = addLine(once, bratwurstLine())
+
+    expect(twice.lines).toHaveLength(1)
+    expect(twice.lines[0].quantity).toBe(2)
+  })
+
+  it('adds the quantity that was handed in rather than one', () => {
+    const once = addLine(emptyDraft(), bratwurstLine())
+
+    const more = addLine(once, { ...bratwurstLine(), quantity: 3 })
+
+    expect(more.lines[0].quantity).toBe(4)
+  })
+
+  it('keeps a line with a note to itself, because the note names those portions', () => {
+    const noted = addLine(emptyDraft(), { ...bratwurstLine(), note: 'ohne Senf' })
+
+    const plain = addLine(noted, bratwurstLine())
+
+    expect(plain.lines).toHaveLength(2)
+    expect(plain.lines[0].note).toBe('ohne Senf')
+    expect(plain.lines[1].quantity).toBe(1)
+  })
+
+  it('keeps the same item apart when it was sent to different stations', () => {
+    const kitchen = addLine(emptyDraft(), { ...bratwurstLine(), stationId: 'station-1' })
+
+    const bar = addLine(kitchen, { ...bratwurstLine(), stationId: 'station-2' })
+
+    expect(bar.lines).toHaveLength(2)
   })
 })

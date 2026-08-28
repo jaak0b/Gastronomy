@@ -101,7 +101,7 @@ public sealed class InvitationQrEndpointTest
 
         using (HttpResponseMessage redeemed = await context.Client.PostAsJsonAsync(
             "/api/enrolment/redeem",
-            new RedeemBody(code, null, "Anna", "NUnit")))
+            new RedeemBody(code, "Anna", "NUnit")))
         {
             Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }

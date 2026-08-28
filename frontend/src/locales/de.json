@@ -9,7 +9,9 @@
       "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht."
     },
     "orderHeld": "Ihre angefangene Bestellung ist noch da. Sie steht wieder auf dem Bildschirm, sobald das Telefon eingerichtet ist.",
-    "success": "Das Telefon ist eingerichtet."
+    "codeSpent": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser wurde schon benutzt.",
+    "codeSpentWithSession": "Dieser QR-Code wurde schon benutzt. Sie können mit diesem Telefon weiterarbeiten.",
+    "carryOn": "Weiter"
   },
   "enrolCode": {
     "title": "Einrichten mit dem sechsstelligen Code",
@@ -44,7 +46,7 @@
     "title": "Bestellung aufnehmen",
     "searchPlaceholder": "Artikel suchen",
     "soldOut": "Ausverkauft",
-    "lineNote": "Hinweis für diese Position",
+    "itemNote": "Hinweis für diese Position",
     "lineNotePlaceholder": "Zum Beispiel: ohne Zwiebeln",
     "basketEmpty": "Noch nichts ausgewählt",
     "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
@@ -64,7 +66,7 @@
   },
   "review": {
     "title": "Bestellung prüfen",
-    "tableLabel": "Tisch",
+    "tableName": "Tisch",
     "tablePlaceholder": "Zum Beispiel: Tisch 12",
     "tableHelp": "Tragen Sie den Tisch ein, damit das Tablett zum richtigen Tisch kommt.",
     "tableMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
@@ -75,7 +77,6 @@
     "send": "Bestellung senden",
     "sending": "Wird gesendet",
     "sent": "Bestellung {number} ist angekommen.",
-    "totalChanged": "Sagen Sie dem Gast die neue Summe: {total}. Der Preis wurde gerade am Laptop geändert.",
     "back": "Zurück zur Auswahl",
     "sendFailed": "Tippen Sie auf \"Noch einmal senden\". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.",
     "sendFailedDatabase": "Tippen Sie auf \"Noch einmal senden\". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.",
@@ -95,52 +96,21 @@
       "handledOnPaper": "Von der Ausgabestelle übernommen",
       "attention": "Bitte prüfen"
     },
-    "ticket": "{station}, Bon {sequence}",
-    "detailTitle": "Bestellung {number}"
-  },
-  "ticket": {
-    "unknown": {
-      "action": "Schauen Sie am Stapel bei {station} nach Bon {sequence} und antworten Sie hier.",
-      "reason": "Die Verbindung zum Drucker ist abgerissen, während der Bon gesendet wurde, deshalb ist hier nicht bekannt, ob er gedruckt wurde.",
-      "paperHint": "Der Drucker hat außerdem kein Papier mehr.",
-      "yes": "Der Bon liegt da",
-      "no": "Der Bon fehlt",
-      "answered": "Diese Frage wurde bereits beantwortet."
-    },
-    "paperEnd": "Legen Sie eine neue Papierrolle in den Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
-    "coverOpen": "Schließen Sie die Klappe am Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
-    "failed": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort antwortet nicht.",
-    "failedAfterWaiting": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Bon wartet dort seit {minutes} Minuten auf den Druck.",
-    "stationFaulty": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort nimmt nichts mehr an.",
-    "stationDisabled": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle ist am Laptop ausgeschaltet.",
-    "printerError": "Holen Sie jemanden, der sich den Drucker bei {station} ansehen kann. Der Drucker meldet eine Störung.",
-    "testPrinter": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle steht am Laptop noch auf dem Testdrucker, es liegt also kein Bon auf dem Stapel.",
-    "reprintQueued": "Der Bon wird noch einmal gedruckt. Er trägt wieder dieselbe Nummer und den Vermerk Nachdruck.",
-    "handledOnPaper": "Die Ausgabestelle hat diese Bestellung vom Bildschirm übernommen. Es wird kein Bon mehr gedruckt.",
-    "reprint": "Erneut drucken",
-    "blocked": "Dieser Bon wartet, weil der Drucker der Ausgabestelle gerade nicht drucken kann.",
-    "illegalTransition": "Dieser Bon ist nicht mehr in dem Zustand, den Sie auf dem Bildschirm sehen. Laden Sie die Seite neu.",
-    "printJobAlreadyRunning": "Für diesen Bon läuft schon ein Druck. Warten Sie ihn ab, bevor Sie noch einmal drucken.",
-    "printedOnTestPrinter": "Dieser Bon wurde auf dem Testdrucker gedruckt und liegt nicht an der Ausgabestelle.",
-    "questionAlreadyAnswered": "Diese Frage hat schon jemand anderes beantwortet.",
-    "reprintNotAllowed": "Dieser Bon kann gerade nicht noch einmal gedruckt werden. Das geht erst, wenn er gedruckt wurde oder fehlgeschlagen ist.",
-    "resolvedByHuman": "Diesen Bon hat jemand von Hand erledigt.",
-    "socketDropped": "Die Verbindung zum Drucker ist abgerissen. Ob der Bon gedruckt wurde, ist offen.",
-    "timeout": "Der Drucker hat zu lange nicht geantwortet.",
-    "unknownOutcome": "Ob dieser Bon gedruckt wurde, ist offen. Schauen Sie an der Ausgabestelle nach.",
-    "unreachable": "Der Drucker der Ausgabestelle ist nicht erreichbar."
+    "detailTitle": "Bestellung {number}",
+    "stationOrder": "{station}, Bon {sequence}"
   },
   "order": {
     "changedMind": "Sagen Sie an der Ausgabestelle Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.",
     "itemHasNoStation": "Für einen Artikel auf dieser Bestellung ist keine Ausgabestelle eingerichtet. Sagen Sie am Laptop Bescheid und geben Sie die Bestellung so lange persönlich auf.",
-    "noLines": "Wählen Sie zuerst etwas aus, bevor Sie senden.",
+    "noItems": "Wählen Sie zuerst etwas aus, bevor Sie senden.",
     "notYours": "Diese Bestellung gehört zu einem anderen Telefon. Sie können nur Ihre eigenen Bestellungen ändern.",
+    "priceOutOfRange": "Dieser Preis ergibt keinen Sinn. Laden Sie die Karte neu und stellen Sie die Bestellung noch einmal zusammen.",
     "quantityOutOfRange": "Diese Menge ist zu groß. Tragen Sie eine kleinere Menge ein oder geben Sie zwei Bestellungen auf.",
     "stationNotAssignedToItem": "Dieser Artikel wird an der gewählten Ausgabestelle nicht gemacht. Wählen Sie eine andere Ausgabestelle.",
     "stationRequired": "Wählen Sie für diesen Artikel eine Ausgabestelle aus.",
     "submissionIdReused": "Diese Bestellung wurde schon einmal gesendet, aber mit anderem Inhalt. Prüfen Sie die Bestellliste, bevor Sie erneut senden.",
-    "tableLabelMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
-    "tableLabelTooLong": "Dieser Tisch ist zu lang. Schreiben Sie ihn kürzer, zum Beispiel: Tisch 12.",
+    "tableNameMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
+    "tableNameTooLong": "Dieser Tisch ist zu lang. Schreiben Sie ihn kürzer, zum Beispiel: Tisch 12.",
     "unknownItem": "Einen Artikel auf dieser Bestellung gibt es nicht mehr. Laden Sie die Karte neu und stellen Sie die Bestellung noch einmal zusammen."
   },
   "admin": {
@@ -149,14 +119,14 @@
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone einrichten.",
       "missingStation": "Legen Sie mindestens eine Ausgabestelle an, zum Beispiel Küche und Theke.",
-      "missingPrinter": "Tragen Sie für {name} einen Drucker ein. Solange dort der Testdrucker steht, kommt kein Bon auf den Stapel.",
       "missingItems": "Legen Sie die Artikel mit ihren Preisen an.",
       "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
       "paperNearEnd": "Legen Sie bei {name} eine neue Papierrolle bereit. Die eingelegte Rolle geht zu Ende.",
       "openTickets": "Sehen Sie in der Bestellliste nach. {count} Bon wartet noch auf den Druck. | Sehen Sie in der Bestellliste nach. {count} Bons warten noch auf den Druck.",
       "stationBlocked": "Kümmern Sie sich um den Drucker bei {name}. Dort wartet {count} Bon seit {minutes} Minuten. | Kümmern Sie sich um den Drucker bei {name}. Dort warten {count} Bons seit {minutes} Minuten.",
       "address": "Die Telefone erreichen den Laptop unter {url}.",
-      "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}."
+      "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}.",
+      "stationWithoutPrinter": "Ordnen Sie {name} einen Drucker zu. Ohne Drucker wird dort kein Bon gedruckt, und die Bestellungen stehen nur auf dem Telefon der Ausgabestelle."
     },
     "stations": {
       "title": "Ausgabestellen",
@@ -168,17 +138,16 @@
       "activate": "Ausgabestelle einschalten",
       "deactivateTitle": "Ausgabestelle abschalten?",
       "deactivateBody": "Die Ausgabestelle verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Ausgabestelle später wieder einschalten.",
-      "deactivateConfirm": "Ausgabestelle abschalten"
+      "deactivateConfirm": "Ausgabestelle abschalten",
+      "printerLabel": "Drucker dieser Ausgabestelle",
+      "noPrinter": "Kein Drucker"
     },
     "items": {
       "title": "Artikel",
-      "priceHelp": "Preise dienen nur zum Zusammenrechnen. Über die App wird kein Geld bezahlt.",
       "needsStation": "Kreuzen Sie mindestens eine Ausgabestelle an. Ohne Ausgabestelle kann dieser Artikel nicht bestellt werden.",
       "soldOut": "Ausverkauft",
-      "soldOutHelp": "Schalten Sie einen Artikel auf ausverkauft, sobald er alle ist. Er bleibt auf den Telefonen stehen, ist aber nicht mehr auswählbar.",
       "soldOutUndo": "Wieder verfügbar",
       "deactivateBlocked": "Schalten Sie den Artikel stattdessen auf \"Ausverkauft\". Während einer laufenden Veranstaltung lässt er sich nicht von der Karte nehmen.",
-      "soldOutWalk": "Der Laptop ist die einzige Stelle, an der Sie das umschalten können.",
       "new": "Neuer Artikel",
       "category": "Kategorie",
       "price": "Preis in Euro",
@@ -199,15 +168,7 @@
     },
     "printers": {
       "title": "Drucker",
-      "kindNetwork": "Netzwerkdrucker",
-      "kindMock": "Testdrucker ohne Gerät",
-      "kindAgent": "Drucker am Raspberry Pi",
-      "hostHelp": "Tragen Sie die IP-Adresse des Druckers ein oder suchen Sie ihn im Netz. Ein gefundener Drucker, den Sie antippen, stellt diese Ausgabestelle zugleich vom Testdrucker auf einen Netzwerkdrucker um.",
-      "search": "Drucker im Netz suchen",
-      "searching": "Es wird gesucht. Das dauert etwa eine Minute.",
-      "searchNone": "Tragen Sie die Adresse vom Selbsttest des Druckers ein. Es wurde kein Drucker gefunden.",
       "testPrint": "Testbon drucken",
-      "testPrintHelp": "Drucken Sie an jeder Ausgabestelle einen Testbon, bevor die Gäste kommen.",
       "online": "Antwortet",
       "offline": "Antwortet nicht",
       "paperEnd": "Kein Papier",
@@ -217,11 +178,7 @@
       "reconnect": "Wieder verbinden",
       "reconnectHelp": "Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an.",
       "waiting": "{count} Bon wartet auf diesen Drucker. | {count} Bons warten auf diesen Drucker.",
-      "shared": "Diese Adresse ist auch bei {names} eingetragen. Die Bons dieser Ausgabestellen kommen aus demselben Drucker.",
-      "sharedHelp": "Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Ausgabestelle die Adresse eines Druckers ein, der noch arbeitet.",
       "lastHeard": "Zuletzt gemeldet: {time}",
-      "mockFolder": "Die Bons dieses Testdruckers liegen im Ordner {path}.",
-      "mockFolderUnwritable": "Sagen Sie die Bestellungen für {name} an der Ausgabestelle persönlich an. Der Testdrucker dort kann keine Bons ablegen, weil sich in den Ordner {path} nichts schreiben lässt. Reparieren Sie danach im Programmfenster unter Einstellungen die Einrichtung, oder schaffen Sie Platz auf der Festplatte.",
       "faultTitle": "Störung am Testdrucker simulieren",
       "faultHelp": "Damit führen Sie vor, was am Telefon passiert, wenn ein Drucker ausfällt. Die Auswahl gilt nur für den Testdrucker.",
       "fault": {
@@ -234,21 +191,36 @@
         "unknown": "Drucker meldet nicht, ob er gedruckt hat",
         "once": "Einmal",
         "sticky": "Bis zum Zurücksetzen"
-      }
+      },
+      "help": "Legen Sie für jedes Gerät einen Drucker an. Drucken Sie an jeder Ausgabestelle einen Testbon, bevor die Gäste kommen.",
+      "new": "Neuer Drucker",
+      "nameLabel": "Name des Druckers",
+      "typeLabel": "Druckertyp",
+      "typeTestPrinter": "Testdrucker",
+      "typeEpsonTmT20ivNetworkPrinter": "Epson TM-T20IV",
+      "typeFixed": "Wählen Sie den Druckertyp jetzt. Er lässt sich später nicht mehr ändern.",
+      "hostLabel": "IP-Adresse des Druckers",
+      "portLabel": "Anschlussnummer des Druckers",
+      "stationsOnThisPrinter": "Diese Ausgabestellen drucken auf diesem Drucker: {names}.",
+      "statusDetail": "Der Drucker meldet: {detail}",
+      "typeTestPrinterHint": "Der Testdrucker schreibt die Bons in einen Ordner auf dem Laptop, statt sie zu drucken.",
+      "typeEpsonTmT20ivNetworkPrinterHint": "Dieser Drucker hängt am Netzwerk und bekommt die Bons über seine IP-Adresse.",
+      "newTitle": "Neuen Drucker anlegen",
+      "faultLabel": "Störung",
+      "faultModeLabel": "Wie oft",
+      "delete": "Drucker löschen",
+      "deleteTitle": "Drucker löschen?",
+      "deleteBody": "Der Drucker verschwindet aus der Liste. Sie können ihn jederzeit wieder anlegen.",
+      "deleteConfirm": "Drucker löschen"
     },
     "staff": {
       "title": "Kellner",
       "help": "Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon.",
       "new": "Neuer Kellner",
       "noPhone": "Kein Telefon eingerichtet",
-      "lastSeen": "Zuletzt gesehen: {time}",
-      "newCode": "Neuen QR-Code erstellen",
-      "newCodeEffect": "Das bisherige Telefon von {name} kann danach keine Bestellungen mehr senden. Mit dem neuen QR-Code richtet {name} ein Telefon ein, auch ein geliehenes.",
+      "newCode": "Telefon neu einrichten",
       "rename": "Namen ändern",
       "renameHelp": "Ändern Sie den Namen, wenn ein Kellner sich vertippt hat. Ab dem nächsten Bon steht der neue Name darauf.",
-      "revoke": "Einrichtung entfernen",
-      "revokeConfirm": "Das Telefon von {name} kann danach keine Bestellungen mehr senden. Die Bestellungen von {name} bleiben gespeichert.",
-      "revoked": "Einrichtung entfernt",
       "activate": "Kellner wieder aufnehmen",
       "deactivateTitle": "Kellner aus der Liste nehmen?",
       "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können den Kellner später wieder aufnehmen.",
@@ -256,15 +228,15 @@
     },
     "enrol": {
       "title": "Telefon einrichten",
-      "step1": "Der Kellner scannt diesen QR-Code mit der Kamera seines Telefons.",
-      "step2": "Der Kellner gibt im Browser seinen Namen ein.",
-      "step3": "Der Name steht danach in der Liste.",
       "validity": "Der QR-Code gilt fünf Minuten und für ein Telefon.",
-      "cameraTitle": "Wenn die Kamera nicht funktioniert",
-      "cameraStep": "Öffnen Sie im Browser des Telefons {url} und geben Sie dort den Code {code} ein.",
       "done": "{name} hat das Telefon eingerichtet.",
       "expired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
-      "codeRetired": "Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen."
+      "codeRetired": "Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen.",
+      "copyUrl": "Adresse kopieren",
+      "copied": "Adresse kopiert",
+      "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
+      "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
+      "qrAlt": "QR-Code zum Einrichten des Telefons"
     },
     "orders": {
       "title": "Bestellungen",
@@ -303,32 +275,30 @@
       "done": "Die Laufnummern beginnen wieder bei 1."
     },
     "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
+    "itemCategoryMissing": "Geben Sie dem Artikel eine Kategorie, bevor Sie ihn speichern.",
     "itemNeedsAStation": "Kreuzen Sie mindestens eine Ausgabestelle an, damit der Artikel bestellt werden kann.",
     "stationHasOpenTickets": "Diese Ausgabestelle hat noch offene Bons und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bons ab und versuchen Sie es danach erneut.",
     "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
-    "personHasNoPhone": "Für diese Person ist gerade kein Telefon angemeldet. Es gibt also nichts abzumelden.",
     "personNameMissing": "Geben Sie der Person einen Namen, bevor Sie speichern.",
-    "stationIsNotOnTheTestPrinter": "Diese Ausgabestelle druckt nicht in einen Ordner. Störungen zum Ausprobieren gibt es nur bei Ausgabestellen, die in einen Ordner drucken.",
-    "unknownMockFault": "Diese Störung kennt das Programm nicht. Wählen Sie eine Störung aus der Liste.",
-    "unknownTransportKind": "Diese Anschlussart kennt das Programm nicht. Wählen Sie eine Anschlussart aus der Liste.",
     "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
     "deactivate": "Deaktivieren",
     "deactivated": "Deaktiviert",
     "showDeactivated": "Deaktivierte anzeigen",
-    "itemHasNoActiveStation": "Alle Ausgabestellen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Ausgabestelle zu, die läuft."
+    "itemHasNoActiveStation": "Alle Ausgabestellen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Ausgabestelle zu, die läuft.",
+    "printerNameMissing": "Geben Sie dem Drucker einen Namen, bevor Sie ihn speichern.",
+    "printerStillHasStations": "Ordnen Sie {names} zuerst einen anderen Drucker zu. Einen Drucker, den eine Ausgabestelle benutzt, können Sie nicht löschen.",
+    "printerTypeCannotChange": "Der Druckertyp lässt sich nicht ändern. Legen Sie einen neuen Drucker an und ordnen Sie ihm die Ausgabestelle zu."
   },
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",
-    "warningTitle": "Diese Seite ist nur für den Notfall.",
-    "warningBody": "Öffnen Sie sie nur, wenn der Drucker ausgefallen ist. Im Normalbetrieb arbeitet die Ausgabestelle den Bonstapel ab.",
-    "empty": "Es liegen keine offenen Bestellungen an. Alle Bons sind gedruckt.",
+    "empty": "Es liegen keine offenen Bestellungen an.",
     "language": "Sprache",
     "filterLabel": "Ausgabestelle",
     "filterHelp": "Wählen Sie die Ausgabestelle, deren Bons Sie hier sehen wollen.",
     "row": "Bon {sequence}, Bestellung {order}, {table}",
     "rowTime": "Aufgenommen um {time}",
     "line": "{quantity} x {item}",
-    "lineNote": "Hinweis: {note}",
+    "itemNote": "Hinweis: {note}",
     "orderNote": "Hinweis zur Bestellung: {note}",
     "status": {
       "waiting": "Wartet auf den Druck",
@@ -347,25 +317,54 @@
     "alreadyTaken": "Dieser Bon wurde gerade von jemand anderem übernommen. Sprechen Sie sich ab, damit die Bestellung nur einmal gemacht wird.",
     "takenNote": "Für diese Bestellung wird kein Bon mehr gedruckt.",
     "alreadyPrinted": "Dieser Bon wurde inzwischen gedruckt und liegt auf dem Stapel.",
-    "printerBack": "Der Drucker antwortet wieder. Die Bons kommen wieder aus dem Drucker."
+    "noPrinter": "Diese Ausgabestelle hat keinen Drucker. Arbeiten Sie die Bestellungen hier am Telefon ab."
   },
   "welcome": {
     "title": "Dieses Telefon ist noch nicht eingerichtet.",
-    "body": "Bitten Sie die Person am Laptop, Sie als Kellner anzulegen. Sie tippt dort auf \"Neuer Kellner\" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.",
-    "enterCode": "Sechsstelligen Code eingeben"
+    "body": "Bitten Sie die Person am Laptop, Sie als Kellner anzulegen. Sie tippt dort auf \"Neuer Kellner\" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen."
   },
   "language": {
     "german": "Deutsch",
     "english": "English"
   },
   "enrolment": {
-    "oneCodeFormRequired": "Scannen Sie den QR-Code oder tippen Sie den sechsstelligen Code ein. Eines von beiden genügt.",
     "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
     "codeUnknown": "Diesen Code kennt der Laptop nicht. Lassen Sie sich am Laptop einen neuen Code zeigen.",
     "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Laptop einen neuen Code zeigen.",
-    "sixDigitCodeRetired": "Dieser Code wurde zu oft falsch eingetippt und gilt nicht mehr. Lassen Sie sich am Laptop einen neuen Code zeigen."
+    "codeMissing": "Scannen Sie den QR-Code am Laptop noch einmal. Diese Seite wurde ohne Code geöffnet.",
+    "staffMemberIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste."
   },
   "session": {
     "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
+  },
+  "printJob": {
+    "unknown": {
+      "action": "Schauen Sie am Stapel bei {station} nach Bon {sequence} und antworten Sie hier.",
+      "reason": "Die Verbindung zum Drucker ist abgerissen, während der Bon gesendet wurde, deshalb ist hier nicht bekannt, ob er gedruckt wurde.",
+      "paperHint": "Der Drucker hat außerdem kein Papier mehr.",
+      "yes": "Der Bon liegt da",
+      "no": "Der Bon fehlt",
+      "answered": "Diese Frage wurde bereits beantwortet."
+    },
+    "paperEnd": "Legen Sie eine neue Papierrolle in den Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
+    "coverOpen": "Schließen Sie die Klappe am Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
+    "failed": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort antwortet nicht.",
+    "failedAfterWaiting": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Bon wartet dort seit {minutes} Minuten auf den Druck.",
+    "stationFaulty": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort nimmt nichts mehr an.",
+    "stationDisabled": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle ist am Laptop ausgeschaltet.",
+    "printerError": "Holen Sie jemanden, der sich den Drucker bei {station} ansehen kann. Der Drucker meldet eine Störung.",
+    "reprintQueued": "Der Bon wird noch einmal gedruckt. Er trägt wieder dieselbe Nummer und den Vermerk Nachdruck.",
+    "handledOnPaper": "Die Ausgabestelle hat diese Bestellung vom Bildschirm übernommen. Es wird kein Bon mehr gedruckt.",
+    "blocked": "Dieser Bon wartet, weil der Drucker der Ausgabestelle gerade nicht drucken kann.",
+    "illegalTransition": "Dieser Bon ist nicht mehr in dem Zustand, den Sie auf dem Bildschirm sehen. Laden Sie die Seite neu.",
+    "printJobAlreadyRunning": "Für diesen Bon läuft schon ein Druck. Warten Sie ihn ab, bevor Sie noch einmal drucken.",
+    "questionAlreadyAnswered": "Diese Frage hat schon jemand anderes beantwortet.",
+    "reprintNotAllowed": "Dieser Bon kann gerade nicht noch einmal gedruckt werden. Das geht erst, wenn er gedruckt wurde oder fehlgeschlagen ist.",
+    "resolvedByHuman": "Diesen Bon hat jemand von Hand erledigt.",
+    "socketDropped": "Die Verbindung zum Drucker ist abgerissen. Ob der Bon gedruckt wurde, ist offen.",
+    "timeout": "Der Drucker hat zu lange nicht geantwortet.",
+    "unknownOutcome": "Ob dieser Bon gedruckt wurde, ist offen. Schauen Sie an der Ausgabestelle nach.",
+    "unreachable": "Der Drucker der Ausgabestelle ist nicht erreichbar.",
+    "anotherCopy": "Erneut drucken"
   }
 }

@@ -99,15 +99,18 @@ public sealed class AdminStationHandler
 
     private readonly GastronomyAppDbContext dbContext;
     private readonly PrinterFleet printerFleet;
+    private readonly StationPrinterStatusLookup statusLookup;
     private readonly ResultEnvelope resultEnvelope;
 
     public AdminStationHandler(
         GastronomyAppDbContext dbContext,
         PrinterFleet printerFleet,
+        StationPrinterStatusLookup statusLookup,
         ResultEnvelope resultEnvelope)
     {
         this.dbContext = dbContext;
         this.printerFleet = printerFleet;
+        this.statusLookup = statusLookup;
         this.resultEnvelope = resultEnvelope;
     }
 
@@ -118,32 +121,30 @@ public sealed class AdminStationHandler
             .OrderBy(station => station.SortOrder)
             .ToListAsync(cancellationToken);
 
-        List<PrinterConfiguration> configurations = await dbContext.PrinterConfigurations
+        List<Printer> printers = await dbContext.Printers
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        List<PrinterStatus> statuses = await dbContext.PrinterStatuses
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+        Dictionary<Guid, PrinterStatus> statuses = await statusLookup.ByStationAsync(
+            dbContext,
+            [.. stations.Select(station => station.Id)],
+            cancellationToken);
 
         List<AdminStationView> views = [];
 
         foreach (Station station in stations)
         {
-            PrinterConfiguration? configuration = configurations.FirstOrDefault(
-                candidate => candidate.StationId == station.Id);
-            PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.StationId == station.Id);
+            Printer? printer = printers.FirstOrDefault(
+                candidate => candidate.Id == station.PrinterId);
+            statuses.TryGetValue(station.Id, out PrinterStatus? status);
 
             views.Add(new AdminStationView(
                 station.Id,
                 station.Name,
                 station.SortOrder,
                 station.IsActive,
-                configuration?.TransportKind.ToString() ?? TransportKind.Mock.ToString(),
-                configuration?.Host,
-                configuration?.Port ?? 0,
-                configuration?.IsEnabled ?? false,
+                station.PrinterId,
+                printer?.Name,
                 status?.IsOnline ?? false,
                 status?.IsPaperEnd ?? false,
                 status?.IsCoverOpen ?? false,
@@ -171,21 +172,8 @@ public sealed class AdminStationHandler
             Name = request.Name,
             SortOrder = request.SortOrder,
             IsActive = true,
-        });
-
-        dbContext.PrinterConfigurations.Add(new PrinterConfiguration
-        {
-            StationId = stationId,
-            TransportKind = TransportKind.Mock,
-            Host = null,
-            Port = 0,
-            AgentIdentifier = null,
-            CharactersPerLine = 48,
-            CodePageName = "PC858",
-            ConnectTimeoutSeconds = 3,
-            JobTimeoutSeconds = 90,
-            HeartbeatSeconds = 10,
-            IsEnabled = true,
+            NextStationOrderNumber = 1,
+            PrinterId = request.PrinterId,
         });
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -219,7 +207,9 @@ public sealed class AdminStationHandler
 
         station.Name = request.Name;
         station.SortOrder = request.SortOrder;
+        station.PrinterId = request.PrinterId;
         await dbContext.SaveChangesAsync(cancellationToken);
+        await printerFleet.ReconcileAsync(cancellationToken);
 
         return Results.Ok(new SavedStationView(station.Id));
     }
@@ -251,12 +241,19 @@ public sealed class AdminStationHandler
             return Results.NotFound();
         }
 
-        int openTickets = await dbContext.LocationTickets.CountAsync(
-            ticket => ticket.StationId == stationId
-                && ticket.Status != LocationTicketStatus.Printed
-                && ticket.Status != LocationTicketStatus.PrintedOnTestPrinter
-                && ticket.Status != LocationTicketStatus.HandledOnPaper,
+        List<Guid> stationOrderIds = await dbContext.StationOrders
+            .AsNoTracking()
+            .Where(stationOrder => stationOrder.StationId == stationId)
+            .Select(stationOrder => stationOrder.Id)
+            .ToListAsync(cancellationToken);
+
+        Dictionary<Guid, LatestPrintJob> latestJobs = await StationScreenDescriber.LoadLatestPrintJobsAsync(
+            dbContext,
+            stationOrderIds,
             cancellationToken);
+
+        int openTickets = latestJobs.Values.Count(job =>
+            job.Status != PrintJobStatus.Printed && job.Status != PrintJobStatus.HandledOnPaper);
 
         if (openTickets > 0)
         {

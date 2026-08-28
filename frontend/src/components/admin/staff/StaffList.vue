@@ -8,7 +8,6 @@ import InvitationPanel from './InvitationPanel.vue'
 const { t } = useI18n()
 const staff = useAdminStaffStore()
 const renamingId = ref<string | null>(null)
-const revokedIds = ref<string[]>([])
 const newName = ref('')
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
@@ -22,13 +21,6 @@ async function deactivate(): Promise<void> {
   askingAboutId.value = null
   if (staffMemberId !== null) {
     await staff.setActive(staffMemberId, false)
-  }
-}
-
-async function revoke(id: string): Promise<void> {
-  const revoked = await staff.revokeDevice(id)
-  if (revoked) {
-    revokedIds.value = [...revokedIds.value, id]
   }
 }
 
@@ -73,31 +65,6 @@ onMounted(async () => {
     />
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
-      <v-card-item>
-        <v-card-title class="name">
-          {{ staffMember.name }}
-          <v-chip v-if="!staffMember.isActive" class="deactivated ms-2" size="small" color="grey">
-            {{ t('admin.deactivated') }}
-          </v-chip>
-          <v-chip v-if="!staffMember.hasDevice" class="no-phone ms-2" size="small" color="warning">
-            {{ t('admin.staff.noPhone') }}
-          </v-chip>
-        </v-card-title>
-        <v-card-subtitle
-          v-if="staffMember.hasDevice && staffMember.lastSeenAtUtc !== null"
-          class="last-seen"
-        >
-          {{ t('admin.staff.lastSeen', { time: staffMember.lastSeenAtUtc }) }}
-        </v-card-subtitle>
-      </v-card-item>
-      <v-card-text v-if="staffMember.hasDevice">
-        <p class="new-code-effect text-medium-emphasis">
-          {{ t('admin.staff.newCodeEffect', { name: staffMember.name }) }}
-        </p>
-        <p class="revoke-confirm text-medium-emphasis">
-          {{ t('admin.staff.revokeConfirm', { name: staffMember.name }) }}
-        </p>
-      </v-card-text>
       <v-card-text v-if="renamingId === staffMember.staffMemberId">
         <v-text-field v-model="newName" class="rename-field" :label="t('admin.staff.rename')" />
         <p class="help text-medium-emphasis">{{ t('admin.staff.renameHelp') }}</p>
@@ -105,7 +72,14 @@ onMounted(async () => {
           {{ t('admin.save') }}
         </v-btn>
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="staff-row-line">
+        <span class="name text-h6 ms-2 me-2">{{ staffMember.name }}</span>
+        <v-chip v-if="!staffMember.isActive" class="deactivated me-2" size="small" color="grey">
+          {{ t('admin.deactivated') }}
+        </v-chip>
+        <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" size="small" color="warning">
+          {{ t('admin.staff.noPhone') }}
+        </v-chip>
         <v-btn
           class="new-code"
           variant="text"
@@ -125,17 +99,7 @@ onMounted(async () => {
         >
           {{ t('admin.staff.rename') }}
         </v-btn>
-        <v-btn
-          v-if="staffMember.hasDevice"
-          class="revoke"
-          variant="text"
-          @click="revoke(staffMember.staffMemberId)"
-        >
-          {{ t('admin.staff.revoke') }}
-        </v-btn>
-        <v-chip v-if="revokedIds.includes(staffMember.staffMemberId)" class="revoked" size="small">
-          {{ t('admin.staff.revoked') }}
-        </v-chip>
+        <v-spacer />
         <v-btn
           v-if="staffMember.isActive"
           class="deactivate"

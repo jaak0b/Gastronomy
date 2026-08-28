@@ -8,12 +8,12 @@ namespace GastronomyApp.Infrastructure.Tests;
 public sealed class OrderRepositoryTest
 {
     [Test]
-    public async Task AddAsync_NewOrder_PersistsOrderTicketsAndLines()
+    public async Task AddAsync_NewOrder_PersistsTheOrderItsStationOrdersAndItsItems()
     {
         using SqliteInMemoryFixture fixture = new();
         SeededDomain seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
         OrderRepository repository = new(fixture.DbContext);
-        Order order = BuildOrder(seeded, Guid.NewGuid(), 700);
+        Order order = BuildOrder(seeded, Guid.NewGuid());
 
         await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
@@ -22,10 +22,12 @@ public sealed class OrderRepositoryTest
         Assert.Multiple(() =>
         {
             Assert.That(reloaded, Is.Not.Null);
-            Assert.That(reloaded!.Tickets, Has.Count.EqualTo(1));
-            Assert.That(reloaded.Lines, Has.Count.EqualTo(1));
-            Assert.That(reloaded.Lines[0].ItemNameSnapshot, Is.EqualTo("Bratwurst"));
-            Assert.That(reloaded.TotalCents, Is.EqualTo(700));
+            Assert.That(reloaded!.StationOrders, Has.Count.EqualTo(1));
+            Assert.That(reloaded.StationOrders[0].Items, Has.Count.EqualTo(1));
+            Assert.That(reloaded.StationOrders[0].Items[0].ItemName, Is.EqualTo("Bratwurst"));
+            Assert.That(reloaded.StationOrders[0].Items[0].UnitPriceCents, Is.EqualTo(350));
+            Assert.That(reloaded.StationOrders[0].PrintJobs, Has.Count.EqualTo(1));
+            Assert.That(reloaded.StationOrders[0].PrintJobs[0].CopyNumber, Is.EqualTo(0));
         });
     }
 
@@ -40,24 +42,12 @@ public sealed class OrderRepositoryTest
         Assert.That(found, Is.Null);
     }
 
-    [Test]
-    public async Task AddAsync_TotalDisagreesWithLines_Throws()
-    {
-        using SqliteInMemoryFixture fixture = new();
-        SeededDomain seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-        OrderRepository repository = new(fixture.DbContext);
-        Order order = BuildOrder(seeded, Guid.NewGuid(), 1);
 
-        Assert.That(
-            async () => await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken),
-            Throws.InstanceOf<InvalidOperationException>());
-    }
-
-    private Order BuildOrder(SeededDomain seeded, Guid clientOrderId, int totalCents)
+    private Order BuildOrder(SeededDomain seeded, Guid clientOrderId)
     {
         DateTime createdAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
         Guid orderId = Guid.NewGuid();
-        Guid ticketId = Guid.NewGuid();
+        Guid stationOrderId = Guid.NewGuid();
 
         Order order = new()
         {
@@ -65,37 +55,39 @@ public sealed class OrderRepositoryTest
             ClientOrderId = clientOrderId,
             GlobalOrderNumber = 1,
             StaffMemberId = seeded.StaffMemberId,
-            DeviceId = seeded.DeviceId,
-            TableLabel = "Tisch 12",
+            TableName = "Tisch 12",
             Note = null,
-            TotalCents = totalCents,
-            Status = OrderStatus.Accepted,
             CreatedAtUtc = createdAtUtc,
         };
 
-        order.Tickets.Add(new LocationTicket
+        StationOrder stationOrder = new()
         {
-            Id = ticketId,
+            Id = stationOrderId,
             OrderId = orderId,
             StationId = seeded.KitchenStationId,
-            StationSequenceNumber = 1,
-            Status = LocationTicketStatus.Queued,
-            ReprintCount = 0,
+            StationOrderNumber = 1,
+        };
+
+        stationOrder.PrintJobs.Add(new PrintJob
+        {
+            Id = Guid.NewGuid(),
+            StationOrderId = stationOrderId,
+            CopyNumber = 0,
+            Status = PrintJobStatus.Queued,
             CreatedAtUtc = createdAtUtc,
         });
 
-        order.Lines.Add(new OrderLine
+        stationOrder.Items.Add(new OrderItem
         {
             Id = Guid.NewGuid(),
-            OrderId = orderId,
-            LocationTicketId = ticketId,
+            StationOrderId = stationOrderId,
             CatalogItemId = seeded.SausageItemId,
-            ChosenStationId = null,
-            ItemNameSnapshot = "Bratwurst",
-            UnitPriceCentsSnapshot = 350,
-            Quantity = 2,
+            ItemName = "Bratwurst",
+            UnitPriceCents = 350,
             Note = null,
         });
+
+        order.StationOrders.Add(stationOrder);
 
         return order;
     }

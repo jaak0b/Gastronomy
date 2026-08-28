@@ -54,13 +54,24 @@ reverse proxy.
    destructure one positionally. Every multi-value return is a named `record` or `record struct` read
    by name, so reordering or renaming a member is a compile error rather than a silent value swap.
 
-9. **Printer transports go behind `IPrinterTransport`.** Implementations: `NetworkPrinterTransport`
-   (raw TCP 9100 to an Ethernet printer), `AgentPrinterTransport` (via the Pi agent, deferred), and
-   `MockPrinterTransport`. Nothing above that interface may know which one it is talking to, and a
-   station's transport is configuration, not code. New transports are new implementations, never a
-   branch inside an existing one.
+9. **Supported printers go behind `IPrinterDriver`.** A `Printer` row says which device the volunteer
+   configured; the driver is the code that knows how to talk to that model. Implementations:
+   `TestPrinterDriver` (writes slips into a folder) and `EpsonTmT20ivNetworkPrinterDriver` (raw TCP
+   9100 to an Ethernet printer). A Pi-attached variant comes later as its own driver, holding the same
+   rendering rather than inheriting from the network one, because the model and the connection are
+   independent axes.
 
-10. **`MockPrinterTransport` writes slips to a folder, and stays that simple.** One file per slip,
+   Nothing above the interface may know which driver it is talking to. `PrinterDriverRegistry` maps a
+   printer's type to its driver and is the only place that mapping exists; everywhere else holds
+   `IPrinterDriver` and `IPrinterSession`. No `is TestPrinter` and no switch on a printer's type
+   outside the registry, the driver itself, and the frontend's form component map. Adding a printer is
+   a new entity, a new driver, one registration, and its two locale strings: never a branch inside an
+   existing driver.
+
+   The driver owns the model's facts: characters per line, code page, the timeouts, and whether the
+   `GS ( H` process id echo can be trusted. Those are not columns a volunteer types.
+
+10. **`TestPrinterDriver` writes slips to a folder, and stays that simple.** One file per slip,
     holding exactly the content that would have been printed. No rendered station screen, no pile
     visualisation, no styling: a folder of files is enough to show that the right lines reached the
     right station. It must still be able to produce, on demand, every failure mode the real transports
@@ -73,6 +84,27 @@ reverse proxy.
     constraints in the root `CLAUDE.md` are load-bearing: one connection at a time, 90 second timeout,
     re-query before re-sending. An order's print state is explicit and persisted, never inferred from
     "we sent it and got no error".
+
+## The order model
+
+One order, split per station, printed per copy.
+
+- **Order**: what the waiter sent. Global order number, table name, note, who took it, when. It has no
+  status and no total: both are derived, never stored.
+- **StationOrder**: the slice of that order belonging to one station, carrying the number the paper
+  shows for that station. Unique on `(OrderId, StationId)`, so a station can never receive two slices
+  of one order.
+- **OrderItem**: one entry of that slice. The item name comes from the catalog; the price is the one
+  the phone displayed to the guest and the laptop stores it untouched.
+- **PrintJob**: one printing of a station order. `CopyNumber` 0 is the original, anything above prints
+  "NACHDRUCK Nr. x". Unique on `(StationOrderId, CopyNumber)`. This is the only object with a status.
+- **Device**: one phone, 1:1 with a staff member. Setting a phone up again deletes the row, which is
+  what revoking is.
+
+The status of an order is calculated from the newest print job of each of its station orders, so the
+two can never disagree. Enums persist as numbers with pinned values, so a member may be renamed freely
+but never reordered. Counters live where they belong: `Station.NextStationOrderNumber` per station, and
+one single row for the next order number and the next printer job id.
 
 ## Intended project structure
 

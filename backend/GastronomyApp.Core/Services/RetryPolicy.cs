@@ -5,38 +5,30 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class RetryPolicy
 {
-    public PrintOutcomeMapping Map(PrintAttemptOutcome outcome, TransportKind transportKind, int bytesWritten)
+    public PrintOutcomeMapping Map(PrintOutcome outcome, int bytesWritten)
     {
         bool anyByteReachedThePrinter = bytesWritten > 0;
 
-        return (outcome, anyByteReachedThePrinter, transportKind) switch
+        return (outcome, anyByteReachedThePrinter) switch
         {
-            (PrintAttemptOutcome.Confirmed, true, TransportKind.Mock) => new PrintOutcomeMapping
-            {
-                JobStatus = PrintJobStatus.Confirmed,
-                TicketStatus = LocationTicketStatus.PrintedOnTestPrinter,
-                ShouldRetryAutomatically = false,
-            },
-            (PrintAttemptOutcome.Confirmed, true, TransportKind.Network) => ConfirmedOnARealPrinter(),
-            (PrintAttemptOutcome.Confirmed, true, TransportKind.Agent) => ConfirmedOnARealPrinter(),
-            (PrintAttemptOutcome.Blocked, false, _) => HeldByTheStation(),
-            (PrintAttemptOutcome.PrinterError, false, _) => HeldByTheStation(),
-            (PrintAttemptOutcome.Unreachable, false, _) => WaitingForAnotherAttempt(),
-            (PrintAttemptOutcome.SocketDropped, false, _) => WaitingForAnotherAttempt(),
-            (PrintAttemptOutcome.Timeout, false, _) => WaitingForAnotherAttempt(),
-            (PrintAttemptOutcome.SocketDropped, true, _) => OutcomeIsNotKnowable(),
-            (PrintAttemptOutcome.Timeout, true, _) => OutcomeIsNotKnowable(),
-            (PrintAttemptOutcome.PrinterError, true, _) => OutcomeIsNotKnowable(),
+            (PrintOutcome.Confirmed, true) => ConfirmedOnPaper(),
+            (PrintOutcome.Blocked, false) => HeldByTheStation(),
+            (PrintOutcome.PrinterError, false) => HeldByTheStation(),
+            (PrintOutcome.Unreachable, false) => WaitingForAnotherAttempt(),
+            (PrintOutcome.SocketDropped, false) => WaitingForAnotherAttempt(),
+            (PrintOutcome.Timeout, false) => WaitingForAnotherAttempt(),
+            (PrintOutcome.SocketDropped, true) => OutcomeIsNotKnowable(),
+            (PrintOutcome.Timeout, true) => OutcomeIsNotKnowable(),
+            (PrintOutcome.PrinterError, true) => OutcomeIsNotKnowable(),
             _ => new Never().OfType<PrintOutcomeMapping>(outcome),
         };
     }
 
-    private PrintOutcomeMapping ConfirmedOnARealPrinter()
+    private PrintOutcomeMapping ConfirmedOnPaper()
     {
         return new PrintOutcomeMapping
         {
-            JobStatus = PrintJobStatus.Confirmed,
-            TicketStatus = LocationTicketStatus.Printed,
+            JobStatus = PrintJobStatus.Printed,
             ShouldRetryAutomatically = false,
         };
     }
@@ -46,7 +38,6 @@ public sealed class RetryPolicy
         return new PrintOutcomeMapping
         {
             JobStatus = PrintJobStatus.Blocked,
-            TicketStatus = LocationTicketStatus.Blocked,
             ShouldRetryAutomatically = true,
         };
     }
@@ -56,7 +47,6 @@ public sealed class RetryPolicy
         return new PrintOutcomeMapping
         {
             JobStatus = PrintJobStatus.Queued,
-            TicketStatus = LocationTicketStatus.Queued,
             ShouldRetryAutomatically = true,
         };
     }
@@ -66,7 +56,6 @@ public sealed class RetryPolicy
         return new PrintOutcomeMapping
         {
             JobStatus = PrintJobStatus.Unknown,
-            TicketStatus = LocationTicketStatus.Unknown,
             ShouldRetryAutomatically = false,
         };
     }

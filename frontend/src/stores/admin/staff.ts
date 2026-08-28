@@ -17,7 +17,6 @@ export interface AdminStaffMember {
 export interface Invitation {
   invitationId: string
   qrUrl: string
-  sixDigitCode: string
   expiresAtUtc: string
   staffMember: { id: string; name: string } | null
 }
@@ -46,10 +45,6 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
 
   async function rename(id: string, name: string): Promise<boolean> {
     return await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })
-  }
-
-  async function revokeDevice(id: string): Promise<boolean> {
-    return await commit(`/api/admin/staff-members/${id}/revoke-device`, 'POST', undefined)
   }
 
   async function setActive(id: string, isActive: boolean): Promise<boolean> {
@@ -104,7 +99,6 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     enrolledName,
     load,
     rename,
-    revokeDevice,
     setActive,
     createInvitation,
     closeInvitation,

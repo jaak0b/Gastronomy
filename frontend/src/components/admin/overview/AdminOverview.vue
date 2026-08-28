@@ -34,18 +34,20 @@ const rows = computed<ReadinessRow[]>(() => {
       count: withoutStation,
     })
   }
-  for (const printer of printers.printers) {
-    if (printer.transportKind === 'Mock') {
+  for (const station of stations.stations) {
+    if (station.isActive && station.printerId === null) {
       readiness.push({
-        key: 'admin.overview.missingPrinter',
-        parameters: { name: printer.stationName },
+        key: 'admin.overview.stationWithoutPrinter',
+        parameters: { name: station.name },
         count: null,
       })
     }
+  }
+  for (const printer of printers.printers) {
     if (printer.isPaperNearEnd) {
       readiness.push({
         key: 'admin.overview.paperNearEnd',
-        parameters: { name: printer.stationName },
+        parameters: { name: printer.name },
         count: null,
       })
     }

@@ -8,10 +8,10 @@ public sealed class ResultEnvelopeTest
 {
     private readonly ResultEnvelope envelope = new();
 
-    [TestCase(OrderValidationFailureReason.NoLines, 400, "ValidationFailed")]
-    [TestCase(OrderValidationFailureReason.QuantityOutOfRange, 400, "ValidationFailed")]
-    [TestCase(OrderValidationFailureReason.TableLabelMissing, 400, "ValidationFailed")]
-    [TestCase(OrderValidationFailureReason.TableLabelTooLong, 400, "ValidationFailed")]
+    [TestCase(OrderValidationFailureReason.NoItems, 400, "ValidationFailed")]
+    [TestCase(OrderValidationFailureReason.TooManyItems, 400, "ValidationFailed")]
+    [TestCase(OrderValidationFailureReason.TableNameMissing, 400, "ValidationFailed")]
+    [TestCase(OrderValidationFailureReason.TableNameTooLong, 400, "ValidationFailed")]
     [TestCase(OrderValidationFailureReason.UnknownCatalogItemId, 422, "UnprocessableEntity")]
     [TestCase(OrderValidationFailureReason.StationRequired, 422, "UnprocessableEntity")]
     [TestCase(OrderValidationFailureReason.StationNotAssignedToItem, 422, "UnprocessableEntity")]

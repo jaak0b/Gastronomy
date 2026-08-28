@@ -347,3 +347,25 @@ undone.
   place of a button, and both the unit test and the integration test now walk a `Printing` ticket
   through every printer condition in turn. The claim transaction, the 409 and the acknowledge condition
   now say the same thing in the same words.
+
+## Printers became entities, and the test printer stopped being special
+
+The owner asked for a printer feature that supports more devices later, where adding one is a new
+driver class and a registration rather than a branch. Three things in the spec changed with it.
+
+* **A printer is an entity now, not a row beside a location.** `PrinterConfiguration` is gone.
+  `Printer` is a table per hierarchy holding every supported device, `ProductionLocation.PrinterId` is
+  nullable, and several locations may point at one printer. The worker, the process id counter and the
+  circuit breaker all key on the printer's id, which replaces the canonical `TransportKind|Host|Port|
+  AgentIdentifier` string that existed only because a printer had no identity of its own.
+* **`IPrinterTransport` became `IPrinterDriver`, and it describes the model as well as reaching it.**
+  Characters per line, the code page, the timeouts and whether the `GS ( H` echo can be trusted are
+  facts about a model, so they live in the driver instead of in columns a volunteer types.
+  `PrinterDriverRegistry` is the only place a printer's type turns into behaviour.
+* **`PrintedOnTestPrinter` is gone, and B6 of the first review is closed a third way.** That state
+  existed because a location whose printer was never configured was created on the mock, so the mock
+  reporting `Printed` would have hidden a whole evening of orders in a folder. A location is now
+  created with no printer at all: nothing prints there, the overview names the location, and its own
+  screen tells the people standing at it to work the orders off the phone. The trap is closed at the
+  source rather than by a ticket state, the test printer is one supported printer among others, and
+  nothing above `IPrinterDriver` knows which driver wrote a slip.

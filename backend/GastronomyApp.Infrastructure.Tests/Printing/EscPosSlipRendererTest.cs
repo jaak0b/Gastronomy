@@ -36,8 +36,7 @@ public class EscPosSlipRendererTest
                 new SlipLine(3, "Kartoffelsalat", null),
             ],
             "Ein Teller extra für ein Kind.",
-            ["Theke"],
-            null);
+            ["Theke"]);
     }
 
     private SlipRenderRequest EnglishFixture()
@@ -192,27 +191,19 @@ public class EscPosSlipRendererTest
         Assert.That(slip.RenderedText, Does.Contain("Kellner: " + new string('S', 39) + "\r\n    " + new string('S', 21)));
     }
 
-    [Test]
-    public void RenderInitialSlip_ChosenStationDiffers_FootersChosenStationLine()
-    {
-        RenderedSlip german = renderer.RenderInitialSlip(GermanFixture() with { ChosenStationNameIfDifferent = "Theke Zelt" });
-        RenderedSlip english = renderer.RenderInitialSlip(EnglishFixture() with { ChosenStationNameIfDifferent = "Bar marquee" });
-
-        Assert.That(german.RenderedText, Does.Contain("Gewählt war: Theke Zelt"));
-        Assert.That(english.RenderedText, Does.Contain("Chosen station was: Bar marquee"));
-    }
 
     [Test]
-    public void RenderReprintSlip_German_PrependsReprintBannerWithReprintTime()
+    public void RenderCopySlip_German_PrependsReprintBannerWithReprintTime()
     {
-        RenderedSlip slip = renderer.RenderReprintSlip(
+        RenderedSlip slip = renderer.RenderCopySlip(
             GermanFixture(),
+            1,
             new DateTimeOffset(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
             TimeZoneInfo.Utc);
 
         Assert.That(slip.RenderedText, Does.StartWith(Joined(
             "================================================",
-            "NACHDRUCK",
+            "NACHDRUCK Nr. 1",
             "Nachdruck um 20:31 Uhr",
             "================================================",
             "KÜCHE",
@@ -281,12 +272,13 @@ public class EscPosSlipRendererTest
     }
 
     [Test]
-    public void RenderReprintSlip_NormalSizeRegions_StillWrapAtFortyEightColumns()
+    public void RenderCopySlip_NormalSizeRegions_StillWrapAtFortyEightColumns()
     {
         SlipRenderRequest request = GermanFixture() with { TableName = new string('T', 60) };
 
-        RenderedSlip slip = renderer.RenderReprintSlip(
+        RenderedSlip slip = renderer.RenderCopySlip(
             request,
+            1,
             new DateTimeOffset(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
             TimeZoneInfo.Utc);
 

@@ -4,22 +4,22 @@ public sealed record StationView(Guid StationId, string Name, int SortOrder, boo
 
 public sealed record StationListView(IReadOnlyList<StationView> Stations);
 
-public sealed record StationTicketLineView(int Quantity, string ItemName, string? LineNote);
+public sealed record StationOrderItemView(int Quantity, string ItemName, string? ItemNote);
 
-public sealed record StationTicketView(
-    Guid TicketId,
+public sealed record StationScreenOrderView(
+    Guid StationOrderId,
     Guid OrderId,
     Guid StationId,
     string StationName,
-    int SequenceNumber,
+    int StationOrderNumber,
     int GlobalOrderNumber,
-    string TableLabel,
+    string TableName,
     string? OrderNote,
     DateTime OrderCreatedAtUtc,
     string Status,
-    int ReprintCount,
-    bool CanAcknowledge,
-    string? CanAcknowledgeReasonKey,
-    IReadOnlyList<StationTicketLineView> Lines);
+    int CopyNumber,
+    bool CanHandleOnPaper,
+    string? CanHandleOnPaperReasonKey,
+    IReadOnlyList<StationOrderItemView> Items);
 
-public sealed record StationTicketListView(Guid StationId, IReadOnlyList<StationTicketView> Tickets);
+public sealed record StationScreenListView(Guid StationId, IReadOnlyList<StationScreenOrderView> StationOrders);

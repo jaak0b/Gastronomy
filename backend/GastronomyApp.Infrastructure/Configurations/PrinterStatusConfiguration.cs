@@ -8,8 +8,8 @@ public sealed class PrinterStatusConfiguration : IEntityTypeConfiguration<Printe
 {
     public void Configure(EntityTypeBuilder<PrinterStatus> builder)
     {
-        builder.HasKey(status => status.StationId);
-        builder.Property(status => status.StationId).ValueGeneratedNever();
+        builder.HasKey(status => status.PrinterId);
+        builder.Property(status => status.PrinterId).ValueGeneratedNever();
         builder.Property(status => status.IsOnline).IsRequired();
         builder.Property(status => status.IsPaperEnd).IsRequired();
         builder.Property(status => status.IsPaperNearEnd).IsRequired();

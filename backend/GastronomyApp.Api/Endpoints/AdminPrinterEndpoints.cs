@@ -2,7 +2,6 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Printing;
 using GastronomyApp.Infrastructure;
 using GastronomyApp.Infrastructure.Printing;
@@ -23,28 +22,31 @@ public static class AdminPrinterEndpoints
             AdminPrinterHandler handler,
             CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-        group.MapPut("/{stationId:guid}", async (
-            Guid stationId,
+        group.MapPost(string.Empty, async (
             SavePrinterRequest request,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.SaveAsync(stationId, request, cancellationToken));
+            CancellationToken cancellationToken) => await handler.CreateAsync(request, cancellationToken));
 
-        group.MapPost("/{stationId:guid}/test-print", async (
-            Guid stationId,
+        group.MapPut("/{printerId:guid}", async (
+            Guid printerId,
+            SavePrinterRequest request,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.TestPrintAsync(stationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.SaveAsync(printerId, request, cancellationToken));
 
-        group.MapPost("/{stationId:guid}/reconnect", async (
-            Guid stationId,
+        group.MapDelete("/{printerId:guid}", async (
+            Guid printerId,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) => await handler.ReconnectAsync(stationId, cancellationToken));
+            CancellationToken cancellationToken) => await handler.DeleteAsync(printerId, cancellationToken));
 
-        routes.MapPost("/api/admin/mock/{stationId:guid}/fault", async (
-            Guid stationId,
-            ArmMockFaultRequest request,
+        group.MapPost("/{printerId:guid}/test-print", async (
+            Guid printerId,
             AdminPrinterHandler handler,
-            CancellationToken cancellationToken) =>
-                await handler.ArmMockFaultAsync(stationId, request, cancellationToken));
+            CancellationToken cancellationToken) => await handler.TestPrintAsync(printerId, cancellationToken));
+
+        group.MapPost("/{printerId:guid}/reconnect", async (
+            Guid printerId,
+            AdminPrinterHandler handler,
+            CancellationToken cancellationToken) => await handler.ReconnectAsync(printerId, cancellationToken));
 
         return routes;
     }
@@ -57,7 +59,6 @@ public sealed class AdminPrinterHandler
     private readonly PrinterFleet fleet;
     private readonly IMockFaultRegistry mockFaultRegistry;
     private readonly IPrinterWorkerDataAccess printerWorkerDataAccess;
-    private readonly MockPrinterTransport mockPrinterTransport;
     private readonly ResultEnvelope resultEnvelope;
 
     public AdminPrinterHandler(
@@ -66,7 +67,6 @@ public sealed class AdminPrinterHandler
         PrinterFleet fleet,
         IMockFaultRegistry mockFaultRegistry,
         IPrinterWorkerDataAccess printerWorkerDataAccess,
-        MockPrinterTransport mockPrinterTransport,
         ResultEnvelope resultEnvelope)
     {
         this.dbContext = dbContext;
@@ -74,19 +74,19 @@ public sealed class AdminPrinterHandler
         this.fleet = fleet;
         this.mockFaultRegistry = mockFaultRegistry;
         this.printerWorkerDataAccess = printerWorkerDataAccess;
-        this.mockPrinterTransport = mockPrinterTransport;
         this.resultEnvelope = resultEnvelope;
     }
 
     public async Task<IResult> ListAsync(CancellationToken cancellationToken)
     {
+        List<Printer> printers = await dbContext.Printers
+            .AsNoTracking()
+            .OrderBy(printer => printer.Name)
+            .ToListAsync(cancellationToken);
+
         List<Station> stations = await dbContext.Stations
             .AsNoTracking()
             .OrderBy(station => station.SortOrder)
-            .ToListAsync(cancellationToken);
-
-        List<PrinterConfiguration> configurations = await dbContext.PrinterConfigurations
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         List<PrinterStatus> statuses = await dbContext.PrinterStatuses
@@ -95,132 +95,135 @@ public sealed class AdminPrinterHandler
 
         List<AdminPrinterView> views = [];
 
-        foreach (Station station in stations)
+        foreach (Printer printer in printers)
         {
-            PrinterConfiguration? configuration = configurations.FirstOrDefault(
-                candidate => candidate.StationId == station.Id);
+            List<Station> served = [.. stations.Where(station => station.PrinterId == printer.Id)];
+            PrinterStatus? status = statuses.FirstOrDefault(
+                candidate => candidate.PrinterId == printer.Id);
 
-            if (configuration is null)
+            int waitingTicketCount = 0;
+            foreach (Station station in served)
             {
-                continue;
+                waitingTicketCount += await printerWorkerDataAccess.CountWaitingPrintJobsAsync(
+                    station.Id,
+                    cancellationToken);
             }
 
-            PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.StationId == station.Id);
-
-            IReadOnlyList<string> sharedWithStationNames = configurations
-                .Where(candidate => candidate.StationId != station.Id
-                    && candidate.TransportKind == configuration.TransportKind
-                    && candidate.Host == configuration.Host
-                    && candidate.Port == configuration.Port)
-                .Join(
-                    stations,
-                    candidate => candidate.StationId,
-                    sharing => sharing.Id,
-                    (candidate, sharing) => sharing.Name)
-                .ToList();
-
-            int waitingTicketCount = await printerWorkerDataAccess.CountWaitingTicketsAsync(
-                station.Id,
-                cancellationToken);
-
-            views.Add(new AdminPrinterView(
-                station.Id,
-                station.Name,
-                configuration.TransportKind.ToString(),
-                configuration.Host,
-                configuration.Port,
-                configuration.AgentIdentifier,
-                configuration.CharactersPerLine,
-                configuration.CodePageName,
-                configuration.ConnectTimeoutSeconds,
-                configuration.JobTimeoutSeconds,
-                configuration.HeartbeatSeconds,
-                configuration.IsEnabled,
-                status?.IsOnline ?? false,
-                status?.IsPaperEnd ?? false,
-                status?.IsPaperNearEnd ?? false,
-                status?.IsCoverOpen ?? false,
-                status?.IsFaulty ?? false,
-                waitingTicketCount,
-                status?.LastChangedAtUtc,
-                sharedWithStationNames,
-                configuration.TransportKind == TransportKind.Mock
-                    ? mockPrinterTransport.SlipRootFolderPath
-                    : null));
+            views.Add(ViewOf(printer, served, status, waitingTicketCount));
         }
 
         return Results.Ok(new AdminPrinterListView(views));
     }
 
+    public async Task<IResult> CreateAsync(SavePrinterRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return NameIsMissing();
+        }
+
+        Printer printer = NewPrinterFrom(request);
+        dbContext.Printers.Add(printer);
+        ApplyTo(printer, request);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await fleet.ReconcileAsync(cancellationToken);
+
+        return Results.Json(
+            new SavedPrinterView(printer.Id, []),
+            statusCode: StatusCodes.Status201Created);
+    }
+
     public async Task<IResult> SaveAsync(
-        Guid stationId,
+        Guid printerId,
         SavePrinterRequest request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse(request.TransportKind, out TransportKind transportKind))
+        if (string.IsNullOrWhiteSpace(request.Name))
         {
-            return resultEnvelope.Problem(
-                StatusCodes.Status400BadRequest,
-                "ValidationFailed",
-                "admin.unknownTransportKind");
+            return NameIsMissing();
         }
 
-        PrinterConfiguration? configuration = await dbContext.PrinterConfigurations
-            .FirstOrDefaultAsync(candidate => candidate.StationId == stationId, cancellationToken);
+        Printer? printer = await dbContext.Printers
+            .FirstOrDefaultAsync(candidate => candidate.Id == printerId, cancellationToken);
 
-        if (configuration is null)
+        if (printer is null)
         {
             return Results.NotFound();
         }
 
-        configuration.TransportKind = transportKind;
-        configuration.Host = request.Host;
-        configuration.Port = request.Port;
-        configuration.AgentIdentifier = request.AgentIdentifier;
-        configuration.CharactersPerLine = request.CharactersPerLine;
-        configuration.CodePageName = request.CodePageName ?? configuration.CodePageName;
-        configuration.ConnectTimeoutSeconds = request.ConnectTimeoutSeconds;
-        configuration.JobTimeoutSeconds = request.JobTimeoutSeconds;
-        configuration.HeartbeatSeconds = request.HeartbeatSeconds;
-        configuration.IsEnabled = request.IsEnabled;
+        if (!MatchesTypeOf(printer, request))
+        {
+            return resultEnvelope.Problem(
+                StatusCodes.Status422UnprocessableEntity,
+                "UnprocessableEntity",
+                "admin.printerTypeCannotChange");
+        }
 
+        printer.Name = request.Name.Trim();
+        ApplyTo(printer, request);
         await dbContext.SaveChangesAsync(cancellationToken);
         await fleet.ReconcileAsync(cancellationToken);
 
-        List<Guid> sharingStationIds = await dbContext.PrinterConfigurations
-            .AsNoTracking()
-            .Where(candidate => candidate.TransportKind == transportKind
-                && candidate.Host == request.Host
-                && candidate.Port == request.Port)
-            .Select(candidate => candidate.StationId)
-            .ToListAsync(cancellationToken);
-
-        return Results.Ok(new SharedEndpointView(stationId, sharingStationIds));
+        IReadOnlyList<string> stationNames = await StationNamesOnAsync(printerId, cancellationToken);
+        return Results.Ok(new SavedPrinterView(printerId, stationNames));
     }
 
-    public async Task<IResult> TestPrintAsync(Guid stationId, CancellationToken cancellationToken)
+    public async Task<IResult> DeleteAsync(Guid printerId, CancellationToken cancellationToken)
     {
-        if (!await StationExistsAsync(stationId, cancellationToken))
+        Printer? printer = await dbContext.Printers
+            .FirstOrDefaultAsync(candidate => candidate.Id == printerId, cancellationToken);
+
+        if (printer is null)
+        {
+            return Results.NotFound();
+        }
+
+        IReadOnlyList<string> stationNames = await StationNamesOnAsync(printerId, cancellationToken);
+        if (stationNames.Count > 0)
+        {
+            return resultEnvelope.Problem(
+                StatusCodes.Status409Conflict,
+                "Conflict",
+                "admin.printerStillHasStations",
+                new Dictionary<string, string> { ["names"] = string.Join(", ", stationNames) });
+        }
+
+        PrinterStatus? status = await dbContext.PrinterStatuses
+            .FirstOrDefaultAsync(candidate => candidate.PrinterId == printerId, cancellationToken);
+        if (status is not null)
+        {
+            dbContext.PrinterStatuses.Remove(status);
+        }
+
+        dbContext.Printers.Remove(printer);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await fleet.ReconcileAsync(cancellationToken);
+
+        return Results.Ok(new SavedPrinterView(printerId, []));
+    }
+
+    public async Task<IResult> TestPrintAsync(Guid printerId, CancellationToken cancellationToken)
+    {
+        if (!await PrinterExistsAsync(printerId, cancellationToken))
         {
             return Results.NotFound();
         }
 
         try
         {
-            await printerFleet.TestPrintAsync(stationId, cancellationToken);
+            await printerFleet.TestPrintAsync(printerId, cancellationToken);
         }
-        catch (UnknownLocationTicketException)
+        catch (UnknownStationOrderException)
         {
-            return NoWorkerServesThisStation();
+            return NoWorkerServesThisPrinter();
         }
 
-        return Results.Json(new SharedEndpointView(stationId, []), statusCode: StatusCodes.Status202Accepted);
+        return Results.Json(new SavedPrinterView(printerId, []), statusCode: StatusCodes.Status202Accepted);
     }
 
-    public async Task<IResult> ReconnectAsync(Guid stationId, CancellationToken cancellationToken)
+    public async Task<IResult> ReconnectAsync(Guid printerId, CancellationToken cancellationToken)
     {
-        if (!await StationExistsAsync(stationId, cancellationToken))
+        if (!await PrinterExistsAsync(printerId, cancellationToken))
         {
             return Results.NotFound();
         }
@@ -229,67 +232,145 @@ public sealed class AdminPrinterHandler
 
         try
         {
-            clearedStationIds = await printerFleet.ReconnectAsync(stationId, cancellationToken);
+            clearedStationIds = await printerFleet.ReconnectAsync(printerId, cancellationToken);
         }
-        catch (UnknownLocationTicketException)
+        catch (UnknownStationOrderException)
         {
-            return NoWorkerServesThisStation();
+            return NoWorkerServesThisPrinter();
         }
 
         return Results.Json(
-            new ReconnectedView(stationId, clearedStationIds),
+            new ReconnectedView(printerId, clearedStationIds),
             statusCode: StatusCodes.Status202Accepted);
     }
 
-    public async Task<IResult> ArmMockFaultAsync(
-        Guid stationId,
-        ArmMockFaultRequest request,
-        CancellationToken cancellationToken)
+    private AdminPrinterView ViewOf(
+        Printer printer,
+        IReadOnlyList<Station> served,
+        PrinterStatus? status,
+        int waitingTicketCount)
     {
-        PrinterConfiguration? configuration = await dbContext.PrinterConfigurations
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.StationId == stationId, cancellationToken);
+        IReadOnlyList<string> stationNames = [.. served.Select(station => station.Name)];
 
-        if (configuration is null)
+        if (printer is EpsonTmT20ivNetworkPrinter network)
         {
-            return Results.NotFound();
+            return new EpsonTmT20ivNetworkPrinterView
+            {
+                PrinterId = printer.Id,
+                Name = printer.Name,
+                IsOnline = status?.IsOnline ?? false,
+                IsPaperEnd = status?.IsPaperEnd ?? false,
+                IsPaperNearEnd = status?.IsPaperNearEnd ?? false,
+                IsCoverOpen = status?.IsCoverOpen ?? false,
+                IsFaulty = status?.IsFaulty ?? false,
+                WaitingTicketCount = waitingTicketCount,
+                LastChangedAtUtc = status?.LastChangedAtUtc,
+                StatusDetail = status?.LastDetail,
+                StationNames = stationNames,
+                Host = network.Host,
+                Port = network.Port,
+            };
         }
 
-        if (configuration.TransportKind != TransportKind.Mock)
+        ArmedMockFault armed = mockFaultRegistry.Armed(printer.Id);
+        return new TestPrinterView
         {
-            return resultEnvelope.Problem(
-                StatusCodes.Status422UnprocessableEntity,
-                "UnprocessableEntity",
-                "admin.stationIsNotOnTheTestPrinter");
-        }
-
-        if (!Enum.TryParse(request.Fault, out MockFault fault) || !Enum.TryParse(request.Mode, out MockFaultMode mode))
-        {
-            return resultEnvelope.Problem(
-                StatusCodes.Status400BadRequest,
-                "ValidationFailed",
-                "admin.unknownMockFault");
-        }
-
-        mockFaultRegistry.Arm(stationId, fault, mode);
-
-        return Results.Ok(new ArmedMockFaultView(stationId, fault.ToString(), mode.ToString()));
+            PrinterId = printer.Id,
+            Name = printer.Name,
+            IsOnline = status?.IsOnline ?? false,
+            IsPaperEnd = status?.IsPaperEnd ?? false,
+            IsPaperNearEnd = status?.IsPaperNearEnd ?? false,
+            IsCoverOpen = status?.IsCoverOpen ?? false,
+            IsFaulty = status?.IsFaulty ?? false,
+            WaitingTicketCount = waitingTicketCount,
+            LastChangedAtUtc = status?.LastChangedAtUtc,
+            StatusDetail = status?.LastDetail,
+            StationNames = stationNames,
+            SimulatedFault = armed.Fault.ToString(),
+            SimulatedFaultMode = armed.Mode.ToString(),
+        };
     }
 
-    private IResult NoWorkerServesThisStation()
+    private Printer NewPrinterFrom(SavePrinterRequest request)
+    {
+        if (request is SaveEpsonTmT20ivNetworkPrinterRequest network)
+        {
+            return new EpsonTmT20ivNetworkPrinter
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name!.Trim(),
+                Host = network.Host?.Trim() ?? string.Empty,
+                Port = network.Port,
+            };
+        }
+
+        return new TestPrinter
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name!.Trim(),
+        };
+    }
+
+    private void ApplyTo(Printer printer, SavePrinterRequest request)
+    {
+        if (printer is EpsonTmT20ivNetworkPrinter network
+            && request is SaveEpsonTmT20ivNetworkPrinterRequest networkRequest)
+        {
+            network.Host = networkRequest.Host?.Trim() ?? string.Empty;
+            network.Port = networkRequest.Port;
+            return;
+        }
+
+        if (request is SaveTestPrinterRequest testRequest)
+        {
+            MockFault fault = Enum.TryParse(testRequest.SimulatedFault, out MockFault parsedFault)
+                ? parsedFault
+                : MockFault.None;
+            MockFaultMode mode = Enum.TryParse(testRequest.SimulatedFaultMode, out MockFaultMode parsedMode)
+                ? parsedMode
+                : MockFaultMode.Once;
+            mockFaultRegistry.Arm(printer.Id, fault, mode);
+        }
+    }
+
+    private bool MatchesTypeOf(Printer printer, SavePrinterRequest request)
+    {
+        return (printer, request) switch
+        {
+            (EpsonTmT20ivNetworkPrinter, SaveEpsonTmT20ivNetworkPrinterRequest) => true,
+            (TestPrinter, SaveTestPrinterRequest) => true,
+            _ => false,
+        };
+    }
+
+    private Task<bool> PrinterExistsAsync(Guid printerId, CancellationToken cancellationToken)
+    {
+        return dbContext.Printers.AnyAsync(printer => printer.Id == printerId, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<string>> StationNamesOnAsync(Guid printerId, CancellationToken cancellationToken)
+    {
+        return await dbContext.Stations
+            .AsNoTracking()
+            .Where(station => station.PrinterId == printerId)
+            .OrderBy(station => station.SortOrder)
+            .Select(station => station.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    private IResult NameIsMissing()
+    {
+        return resultEnvelope.Problem(
+            StatusCodes.Status400BadRequest,
+            "ValidationFailed",
+            "admin.printerNameMissing");
+    }
+
+    private IResult NoWorkerServesThisPrinter()
     {
         return resultEnvelope.Problem(
             StatusCodes.Status409Conflict,
             "NoPrinterWorkerForStation",
             "admin.stationHasNoPrinterWorker");
     }
-
-    private Task<bool> StationExistsAsync(Guid stationId, CancellationToken cancellationToken)
-    {
-        return dbContext.Stations.AnyAsync(
-            station => station.Id == stationId,
-            cancellationToken);
-    }
 }
-
-public sealed record ArmedMockFaultView(Guid StationId, string Fault, string Mode);

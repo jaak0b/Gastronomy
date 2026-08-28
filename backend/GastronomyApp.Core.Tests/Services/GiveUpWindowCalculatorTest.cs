@@ -33,7 +33,7 @@ public sealed class GiveUpWindowCalculatorTest
 
     private GiveUpWindowEvaluation EvaluateAt(
         double minute,
-        LocationTicketStatus currentStatus,
+        PrintJobStatus currentStatus,
         IReadOnlyCollection<SuspensionPeriod> suspensionPeriods)
     {
         return _calculator.Evaluate(_createdAtUtc, AtMinute(minute), currentStatus, suspensionPeriods);
@@ -42,7 +42,7 @@ public sealed class GiveUpWindowCalculatorTest
     [Test]
     public void Evaluate_NoSuspensionAtFiveMinutes_HasReachedTheGiveUpWindow()
     {
-        GiveUpWindowEvaluation evaluation = EvaluateAt(5, LocationTicketStatus.Queued, []);
+        GiveUpWindowEvaluation evaluation = EvaluateAt(5, PrintJobStatus.Queued, []);
 
         Assert.Multiple(() =>
         {
@@ -55,7 +55,7 @@ public sealed class GiveUpWindowCalculatorTest
     [Test]
     public void Evaluate_NoSuspensionAMomentBeforeFiveMinutes_HasNotReachedTheGiveUpWindow()
     {
-        GiveUpWindowEvaluation evaluation = EvaluateAt(4.99, LocationTicketStatus.Queued, []);
+        GiveUpWindowEvaluation evaluation = EvaluateAt(4.99, PrintJobStatus.Queued, []);
 
         Assert.That(evaluation.HasReachedGiveUpWindow, Is.False);
     }
@@ -64,7 +64,7 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_SuspendedForItsWholeLife_AccumulatesNothingAndDoesNotGiveUp()
     {
         GiveUpWindowEvaluation evaluation =
-            EvaluateAt(12, LocationTicketStatus.Blocked, [SuspendedFrom(0, null)]);
+            EvaluateAt(12, PrintJobStatus.Blocked, [SuspendedFrom(0, null)]);
 
         Assert.Multiple(() =>
         {
@@ -78,7 +78,7 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_SuspendedForItsWholeLifeAtTwentyMinutes_HasReachedTheOuterBound()
     {
         GiveUpWindowEvaluation evaluation =
-            EvaluateAt(20, LocationTicketStatus.Blocked, [SuspendedFrom(0, null)]);
+            EvaluateAt(20, PrintJobStatus.Blocked, [SuspendedFrom(0, null)]);
 
         Assert.Multiple(() =>
         {
@@ -92,7 +92,7 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_TheWorkedExampleAtTwentyMinutes_EndsAtTheOuterBoundWithTheStopwatchStillRunning()
     {
         GiveUpWindowEvaluation evaluation =
-            EvaluateAt(20, LocationTicketStatus.Queued, [SuspendedFrom(0, 18)]);
+            EvaluateAt(20, PrintJobStatus.Queued, [SuspendedFrom(0, 18)]);
 
         Assert.Multiple(() =>
         {
@@ -106,7 +106,7 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_TheWorkedExampleBeforeTheOuterBound_HasNotYetReachedTheGiveUpWindow()
     {
         GiveUpWindowEvaluation evaluation =
-            EvaluateAt(19, LocationTicketStatus.Queued, [SuspendedFrom(0, 18)]);
+            EvaluateAt(19, PrintJobStatus.Queued, [SuspendedFrom(0, 18)]);
 
         Assert.Multiple(() =>
         {
@@ -121,7 +121,7 @@ public sealed class GiveUpWindowCalculatorTest
     {
         GiveUpWindowEvaluation evaluation = EvaluateAt(
             14,
-            LocationTicketStatus.Queued,
+            PrintJobStatus.Queued,
             [SuspendedFrom(0, 2), SuspendedFrom(10, 12)]);
 
         Assert.Multiple(() =>
@@ -136,7 +136,7 @@ public sealed class GiveUpWindowCalculatorTest
     {
         GiveUpWindowEvaluation evaluation = EvaluateAt(
             8,
-            LocationTicketStatus.Queued,
+            PrintJobStatus.Queued,
             [SuspendedFrom(0, 2), SuspendedFrom(4, 6)]);
 
         Assert.Multiple(() =>
@@ -150,7 +150,7 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_AnySuspensionInForce_StopsTheClockWhicheverOfTheFourCausesRaisedIt()
     {
         GiveUpWindowEvaluation evaluation =
-            EvaluateAt(6, LocationTicketStatus.Blocked, [SuspendedFrom(0, null)]);
+            EvaluateAt(6, PrintJobStatus.Blocked, [SuspendedFrom(0, null)]);
 
         Assert.Multiple(() =>
         {
@@ -163,8 +163,8 @@ public sealed class GiveUpWindowCalculatorTest
     public void Evaluate_TakesSuspensionPeriodsAsGiven_BecauseChoosingWhichCauseSuspendsIsTheCallersConcern()
     {
         GiveUpWindowEvaluation suspended =
-            EvaluateAt(6, LocationTicketStatus.Blocked, [SuspendedFrom(0, null)]);
-        GiveUpWindowEvaluation notSuspended = EvaluateAt(6, LocationTicketStatus.Blocked, []);
+            EvaluateAt(6, PrintJobStatus.Blocked, [SuspendedFrom(0, null)]);
+        GiveUpWindowEvaluation notSuspended = EvaluateAt(6, PrintJobStatus.Blocked, []);
 
         Assert.Multiple(() =>
         {
@@ -176,7 +176,7 @@ public sealed class GiveUpWindowCalculatorTest
     [Test]
     public void Evaluate_ABlockedTicketWithNoSuspendingCause_GivesUpAtFiveMinutes()
     {
-        GiveUpWindowEvaluation evaluation = EvaluateAt(5, LocationTicketStatus.Blocked, []);
+        GiveUpWindowEvaluation evaluation = EvaluateAt(5, PrintJobStatus.Blocked, []);
 
         Assert.Multiple(() =>
         {
@@ -199,10 +199,10 @@ public sealed class GiveUpWindowCalculatorTest
         foreach (IReadOnlyCollection<SuspensionPeriod> suspensionPeriods in everyCause)
         {
             Assert.That(
-                EvaluateAt(20, LocationTicketStatus.Queued, suspensionPeriods).HasReachedOuterBound,
+                EvaluateAt(20, PrintJobStatus.Queued, suspensionPeriods).HasReachedOuterBound,
                 Is.True);
             Assert.That(
-                EvaluateAt(20, LocationTicketStatus.Blocked, suspensionPeriods).HasReachedOuterBound,
+                EvaluateAt(20, PrintJobStatus.Blocked, suspensionPeriods).HasReachedOuterBound,
                 Is.True);
         }
     }
@@ -210,7 +210,7 @@ public sealed class GiveUpWindowCalculatorTest
     [Test]
     public void Evaluate_ATicketStillPrintingWellPastTheOuterBound_HasNotReachedTheOuterBound()
     {
-        GiveUpWindowEvaluation evaluation = EvaluateAt(25, LocationTicketStatus.Printing, []);
+        GiveUpWindowEvaluation evaluation = EvaluateAt(25, PrintJobStatus.Sending, []);
 
         Assert.Multiple(() =>
         {
@@ -225,7 +225,7 @@ public sealed class GiveUpWindowCalculatorTest
         GiveUpWindowEvaluation evaluation = _calculator.Evaluate(
             _createdAtUtc,
             AtMinute(10),
-            LocationTicketStatus.Queued,
+            PrintJobStatus.Queued,
             [
                 new SuspensionPeriod
                 {
@@ -242,7 +242,7 @@ public sealed class GiveUpWindowCalculatorTest
     {
         GiveUpWindowEvaluation evaluation = EvaluateAt(
             10,
-            LocationTicketStatus.Queued,
+            PrintJobStatus.Queued,
             [SuspendedFrom(4, 30)]);
 
         Assert.That(evaluation.AccumulatedUnsuspendedTime, Is.EqualTo(TimeSpan.FromMinutes(4)));

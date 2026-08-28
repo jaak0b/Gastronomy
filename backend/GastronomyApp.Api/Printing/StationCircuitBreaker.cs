@@ -10,9 +10,9 @@ public sealed class StationCircuitBreaker
 
     public bool IsTripped { get; private set; }
 
-    public bool RecordOutcome(PrintAttemptOutcome outcome, PrintJobStatus jobStatus)
+    public bool RecordOutcome(PrintOutcome outcome, PrintJobStatus jobStatus)
     {
-        bool countsTowardsTrip = jobStatus == PrintJobStatus.Unknown || outcome == PrintAttemptOutcome.Timeout;
+        bool countsTowardsTrip = jobStatus == PrintJobStatus.Unknown || outcome == PrintOutcome.Timeout;
         if (!countsTowardsTrip)
         {
             consecutiveUnknownOrTimeout = 0;

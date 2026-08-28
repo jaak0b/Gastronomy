@@ -16,20 +16,15 @@ public sealed class OrderRepository : IOrderRepository
     public async Task<Order?> FindByClientOrderIdAsync(Guid clientOrderId, CancellationToken cancellationToken)
     {
         return await _dbContext.Orders
-            .Include(order => order.Lines)
-            .Include(order => order.Tickets)
+            .Include(order => order.StationOrders)
+                .ThenInclude(stationOrder => stationOrder.Items)
+            .Include(order => order.StationOrders)
+                .ThenInclude(stationOrder => stationOrder.PrintJobs)
             .FirstOrDefaultAsync(order => order.ClientOrderId == clientOrderId, cancellationToken);
     }
 
     public async Task AddAsync(Order order, CancellationToken cancellationToken)
     {
-        int recomputedTotalCents = order.Lines.Sum(line => line.Quantity * line.UnitPriceCentsSnapshot);
-        if (recomputedTotalCents != order.TotalCents)
-        {
-            throw new InvalidOperationException(
-                $"The order total {order.TotalCents} disagrees with the sum of its lines {recomputedTotalCents}.");
-        }
-
         _dbContext.Orders.Add(order);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

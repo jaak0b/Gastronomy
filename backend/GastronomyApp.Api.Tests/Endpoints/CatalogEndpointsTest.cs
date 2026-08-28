@@ -46,7 +46,6 @@ public sealed class CatalogEndpointsTest
             Assert.That(body.RootElement.GetProperty("categories").GetArrayLength(), Is.EqualTo(2));
             Assert.That(body.RootElement.GetProperty("items").GetArrayLength(), Is.EqualTo(2));
             Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(2));
-            Assert.That(body.RootElement.GetProperty("tableSuggestions").GetArrayLength(), Is.EqualTo(1));
         });
 
         JsonElement item = body.RootElement.GetProperty("items")[0];

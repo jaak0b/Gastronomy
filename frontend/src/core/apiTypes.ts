@@ -19,17 +19,11 @@ export interface CatalogStation {
   sortOrder: number
 }
 
-export interface TableSuggestion {
-  label: string
-  sortOrder: number
-}
-
 export interface Catalog {
   version: string
   categories: CatalogCategory[]
   items: CatalogItem[]
   stations: CatalogStation[]
-  tableSuggestions: TableSuggestion[]
 }
 
 export interface DraftLine {
@@ -42,7 +36,7 @@ export interface DraftLine {
 }
 
 export interface DraftOrder {
-  tableLabel: string
+  tableName: string
   note: string | null
   lines: DraftLine[]
   clientOrderId: string | null
@@ -50,14 +44,13 @@ export interface DraftOrder {
 
 export type OrderStatus = 'Accepted' | 'Printing' | 'Printed' | 'NeedsAttention'
 
-export type TicketStatus =
+export type PrintJobStatus =
   | 'Queued'
   | 'Blocked'
   | 'Printing'
   | 'Unknown'
   | 'Failed'
   | 'Printed'
-  | 'PrintedOnTestPrinter'
   | 'HandledOnPaper'
 
 export type PrintFailureReason =
@@ -69,29 +62,29 @@ export type PrintFailureReason =
   | 'PrinterError'
   | 'StationDisabled'
   | 'StationFaulty'
-  | 'TicketResolvedByHuman'
+  | 'HandledOnPaper'
 
-export interface OrderSubmitLine {
+export interface OrderSubmitItem {
   catalogItemId: string
   quantity: number
+  unitPriceCents: number
   note: string | null
   stationId: string | null
 }
 
 export interface OrderSubmitRequest {
   clientOrderId: string
-  tableLabel: string
+  tableName: string
   note: string | null
-  expectedTotalCents: number
-  lines: OrderSubmitLine[]
+  items: OrderSubmitItem[]
 }
 
-export interface TicketSummary {
-  ticketId: string
+export interface StationOrderSummary {
+  stationOrderId: string
   stationId: string
   stationName: string
-  sequenceNumber: number
-  status: TicketStatus
+  stationOrderNumber: number
+  status: PrintJobStatus
   failureReason: PrintFailureReason | null
   printerHasPaper: boolean | null
 }
@@ -99,11 +92,11 @@ export interface TicketSummary {
 export interface OrderSummary {
   orderId: string
   globalOrderNumber: number
-  tableLabel: string
+  tableName: string
   totalCents: number
   status: OrderStatus
   createdAtUtc: string
-  tickets: TicketSummary[]
+  stationOrders: StationOrderSummary[]
 }
 
 export interface OrderSubmitResponse {
@@ -111,15 +104,14 @@ export interface OrderSubmitResponse {
   globalOrderNumber: number
   status: OrderStatus
   totalCents: number
-  expectedTotalCents: number
   createdAtUtc: string
-  tickets: {
-    ticketId: string
+  stationOrders: {
+    stationOrderId: string
     stationId: string
     stationName: string
-    sequenceNumber: number
-    status: TicketStatus
-    lineIds: string[]
+    stationOrderNumber: number
+    status: PrintJobStatus
+    itemIds: string[]
   }[]
 }
 
@@ -154,17 +146,17 @@ export interface PrinterStatusRow {
   lastChangedAtUtc: string
 }
 
-export interface StationTicketRow {
-  ticketId: string
+export interface StationScreenOrderRow {
+  stationOrderId: string
   orderId: string
   globalOrderNumber: number
-  sequenceNumber: number
-  tableLabel: string
+  stationOrderNumber: number
+  tableName: string
   orderCreatedAtUtc: string
-  status: TicketStatus
-  canAcknowledge: boolean
-  canAcknowledgeReasonKey: string | null
-  reprintCount: number
+  status: PrintJobStatus
+  canHandleOnPaper: boolean
+  canHandleOnPaperReasonKey: string | null
+  copyNumber: number
   orderNote: string | null
-  lines: { quantity: number; itemName: string; lineNote: string | null }[]
+  items: { quantity: number; itemName: string; itemNote: string | null }[]
 }

@@ -2,28 +2,28 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { OrderSummary } from '../../core/apiTypes'
-import TicketChip from './TicketChip.vue'
+import PrintStatusChip from './PrintStatusChip.vue'
 import UnknownQuestion from './UnknownQuestion.vue'
 
 const props = defineProps<{ order: OrderSummary }>()
 const emit = defineEmits<{
-  answer: [ticketId: string, slipIsOnThePile: boolean]
-  reprint: [ticketId: string]
+  answer: [stationOrderId: string, slipIsOnThePile: boolean]
+  printAnotherCopy: [stationOrderId: string]
 }>()
 
 const { t } = useI18n()
 const noticeByTicketId = ref<Record<string, string>>({})
 
-function noticeFor(ticketId: string): string | null {
-  return noticeByTicketId.value[ticketId] ?? null
+function noticeFor(stationOrderId: string): string | null {
+  return noticeByTicketId.value[stationOrderId] ?? null
 }
 
-function answer(ticketId: string, slipIsOnThePile: boolean): void {
-  emit('answer', ticketId, slipIsOnThePile)
+function answer(stationOrderId: string, slipIsOnThePile: boolean): void {
+  emit('answer', stationOrderId, slipIsOnThePile)
 }
 
-function showNotice(ticketId: string, key: string): void {
-  noticeByTicketId.value = { ...noticeByTicketId.value, [ticketId]: key }
+function showNotice(stationOrderId: string, key: string): void {
+  noticeByTicketId.value = { ...noticeByTicketId.value, [stationOrderId]: key }
 }
 
 defineExpose({ showNotice })
@@ -34,19 +34,19 @@ defineExpose({ showNotice })
     <h1 class="text-h5 mb-4">
       {{ t('orders.detailTitle', { number: props.order.globalOrderNumber }) }}
     </h1>
-    <v-card v-for="ticket in order.tickets" :key="ticket.ticketId" class="ticket mb-3">
+    <v-card v-for="stationOrder in order.stationOrders" :key="stationOrder.stationOrderId" class="stationOrder mb-3">
       <v-card-text>
-        <TicketChip :ticket="ticket" :order-number="order.globalOrderNumber" />
+        <PrintStatusChip :station-order="stationOrder" :order-number="order.globalOrderNumber" />
         <UnknownQuestion
-          v-if="ticket.status === 'Unknown'"
-          :ticket="ticket"
-          :notice-key="noticeFor(ticket.ticketId)"
-          @answer="(slipIsOnThePile) => answer(ticket.ticketId, slipIsOnThePile)"
+          v-if="stationOrder.status === 'Unknown'"
+          :station-order="stationOrder"
+          :notice-key="noticeFor(stationOrder.stationOrderId)"
+          @answer="(slipIsOnThePile) => answer(stationOrder.stationOrderId, slipIsOnThePile)"
         />
       </v-card-text>
-      <v-card-actions v-if="ticket.status === 'Failed'">
-        <v-btn class="reprint" variant="tonal" @click="emit('reprint', ticket.ticketId)">
-          {{ t('ticket.reprint') }}
+      <v-card-actions v-if="stationOrder.status === 'Failed'">
+        <v-btn class="print-another-copy" variant="tonal" @click="emit('printAnotherCopy', stationOrder.stationOrderId)">
+          {{ t('printJob.anotherCopy') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -9,12 +9,15 @@ namespace GastronomyApp.Api.Endpoints;
 
 public sealed record LoadedOrder(
     Order Order,
-    IReadOnlyList<OrderLine> Lines,
-    IReadOnlyList<LocationTicket> Tickets,
-    IReadOnlyDictionary<Guid, string> StationNames);
+    IReadOnlyList<StationOrder> StationOrders,
+    IReadOnlyList<OrderItem> Items,
+    IReadOnlyDictionary<Guid, string> StationNames,
+    IReadOnlyDictionary<Guid, PrintJob> LatestPrintJobByStationOrderId);
 
 public sealed class OrderReader
 {
+    private readonly OrderStatusCalculator statusCalculator = new();
+
     public async Task<LoadedOrder?> LoadAsync(
         GastronomyAppDbContext context,
         Guid orderId,
@@ -39,34 +42,56 @@ public sealed class OrderReader
         return order is null ? null : await LoadForAsync(context, order, cancellationToken);
     }
 
-    public PlacedOrderView Describe(LoadedOrder loaded, int expectedTotalCents)
+    public OrderStatus StatusOf(LoadedOrder loaded)
+    {
+        return statusCalculator.Calculate(
+        [
+            .. loaded.StationOrders.Select(stationOrder =>
+                loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrder.Id, out PrintJob? job)
+                    ? job.Status
+                    : PrintJobStatus.Queued),
+        ]);
+    }
+
+    public int TotalCentsOf(LoadedOrder loaded)
+    {
+        return loaded.Items.Sum(item => item.UnitPriceCents);
+    }
+
+    public PlacedOrderView Describe(LoadedOrder loaded)
     {
         return new PlacedOrderView(
             loaded.Order.Id,
             loaded.Order.GlobalOrderNumber,
-            loaded.Order.Status.ToString(),
-            loaded.Order.TotalCents,
-            expectedTotalCents,
+            StatusOf(loaded).ToString(),
+            TotalCentsOf(loaded),
             loaded.Order.CreatedAtUtc,
-            DescribeTickets(loaded));
+            DescribeStationOrders(loaded));
     }
 
-    public IReadOnlyList<OrderTicketView> DescribeTickets(LoadedOrder loaded)
+    public IReadOnlyList<StationOrderView> DescribeStationOrders(LoadedOrder loaded)
     {
         return
         [
-            .. loaded.Tickets.Select(ticket => new OrderTicketView(
-                ticket.Id,
-                ticket.StationId,
-                loaded.StationNames.TryGetValue(ticket.StationId, out string? name) ? name : string.Empty,
-                ticket.StationSequenceNumber,
-                ticket.Status.ToString(),
+            .. loaded.StationOrders.Select(stationOrder => new StationOrderView(
+                stationOrder.Id,
+                stationOrder.StationId,
+                loaded.StationNames.TryGetValue(stationOrder.StationId, out string? name) ? name : string.Empty,
+                stationOrder.StationOrderNumber,
+                StatusOfStationOrder(loaded, stationOrder.Id).ToString(),
                 [
-                    .. loaded.Lines
-                        .Where(line => line.LocationTicketId == ticket.Id)
-                        .Select(line => line.Id),
+                    .. loaded.Items
+                        .Where(item => item.StationOrderId == stationOrder.Id)
+                        .Select(item => item.Id),
                 ])),
         ];
+    }
+
+    public PrintJobStatus StatusOfStationOrder(LoadedOrder loaded, Guid stationOrderId)
+    {
+        return loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrderId, out PrintJob? job)
+            ? job.Status
+            : PrintJobStatus.Queued;
     }
 
     private async Task<LoadedOrder> LoadForAsync(
@@ -74,71 +99,39 @@ public sealed class OrderReader
         Order order,
         CancellationToken cancellationToken)
     {
-        List<OrderLine> lines = await context.OrderLines
+        List<StationOrder> stationOrders = await context.StationOrders
             .AsNoTracking()
-            .Where(line => line.OrderId == order.Id)
-            .OrderBy(line => line.Id)
+            .Where(stationOrder => stationOrder.OrderId == order.Id)
+            .OrderBy(stationOrder => stationOrder.StationOrderNumber)
+            .ThenBy(stationOrder => stationOrder.Id)
             .ToListAsync(cancellationToken);
 
-        List<LocationTicket> tickets = await context.LocationTickets
+        List<Guid> stationOrderIds = [.. stationOrders.Select(stationOrder => stationOrder.Id)];
+
+        List<OrderItem> items = await context.OrderItems
             .AsNoTracking()
-            .Where(ticket => ticket.OrderId == order.Id)
-            .OrderBy(ticket => ticket.StationSequenceNumber)
-            .ThenBy(ticket => ticket.Id)
+            .Where(item => stationOrderIds.Contains(item.StationOrderId))
+            .OrderBy(item => item.Id)
             .ToListAsync(cancellationToken);
 
-        HashSet<Guid> stationIds = [.. tickets.Select(ticket => ticket.StationId)];
+        List<PrintJob> printJobs = await context.PrintJobs
+            .AsNoTracking()
+            .Where(job => stationOrderIds.Contains(job.StationOrderId))
+            .ToListAsync(cancellationToken);
+
+        Dictionary<Guid, PrintJob> latestByStationOrderId = printJobs
+            .GroupBy(job => job.StationOrderId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderByDescending(job => job.CopyNumber).First());
+
+        HashSet<Guid> stationIds = [.. stationOrders.Select(stationOrder => stationOrder.StationId)];
 
         Dictionary<Guid, string> stationNames = await context.Stations
             .AsNoTracking()
             .Where(station => stationIds.Contains(station.Id))
             .ToDictionaryAsync(station => station.Id, station => station.Name, cancellationToken);
 
-        return new LoadedOrder(order, lines, tickets, stationNames);
-    }
-}
-
-public sealed class OrderStatusProjectionWriter
-{
-    private readonly OrderStatusCalculator statusCalculator;
-    private readonly ImmediateTransactionRunner transactionRunner = new();
-
-    public OrderStatusProjectionWriter(OrderStatusCalculator statusCalculator)
-    {
-        this.statusCalculator = statusCalculator;
-    }
-
-    public Task<OrderStatus> WriteAsync(
-        GastronomyAppDbContext context,
-        Guid orderId,
-        CancellationToken cancellationToken)
-    {
-        return transactionRunner.RunAsync(
-            context,
-            async transactionCancellationToken =>
-            {
-                OrderStatus status = await ApplyAsync(context, orderId, transactionCancellationToken);
-
-                return new TransactionOutcome<OrderStatus> { Value = status, ShouldCommit = true };
-            },
-            cancellationToken);
-    }
-
-    public async Task<OrderStatus> ApplyAsync(
-        GastronomyAppDbContext context,
-        Guid orderId,
-        CancellationToken cancellationToken)
-    {
-        Order order = await context.Orders.FirstAsync(candidate => candidate.Id == orderId, cancellationToken);
-
-        List<LocationTicketStatus> ticketStatuses = await context.LocationTickets
-            .Where(ticket => ticket.OrderId == orderId)
-            .Select(ticket => ticket.Status)
-            .ToListAsync(cancellationToken);
-
-        order.Status = statusCalculator.Calculate(ticketStatuses);
-        await context.SaveChangesAsync(cancellationToken);
-
-        return order.Status;
+        return new LoadedOrder(order, stationOrders, items, stationNames, latestByStationOrderId);
     }
 }

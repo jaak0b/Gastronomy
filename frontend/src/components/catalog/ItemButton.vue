@@ -28,23 +28,47 @@ const price = computed(() => formatPrice(props.item.priceCents, props.language))
 </script>
 
 <template>
-  <v-card class="item-button" :class="{ 'is-sold-out': isSoldOut }" variant="outlined">
-    <v-btn class="add" block variant="text" height="88" :disabled="isSoldOut" @click="$emit('add')">
-      <div class="d-flex flex-column align-center">
-        <span class="name text-body-1">{{ item.name }}</span>
-        <span class="price text-caption">{{ price }}</span>
-        <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
-      </div>
+  <div class="item-row align-center rounded border" :class="{ 'is-sold-out': isSoldOut }">
+    <div class="quantity-control d-flex align-center">
+      <template v-if="quantity > 0">
+        <v-btn
+          class="remove"
+          icon="mdi-minus"
+          variant="text"
+          size="large"
+          :aria-label="t('catalog.removeOne')"
+          @click="$emit('remove')"
+        />
+        <span class="quantity text-h6">{{ quantity }}</span>
+      </template>
+    </div>
+    <v-btn class="add" variant="text" height="64" :disabled="isSoldOut" @click="$emit('add')">
+      <span class="name text-body-1">{{ item.name }}</span>
+      <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
+      <span class="price text-body-1">{{ price }}</span>
     </v-btn>
-    <v-card-actions v-if="quantity > 0" class="quantity-control">
-      <v-btn
-        class="remove"
-        icon="mdi-minus"
-        variant="text"
-        :aria-label="t('catalog.removeOne')"
-        @click="$emit('remove')"
-      />
-      <span class="quantity text-h6">{{ quantity }}</span>
-    </v-card-actions>
-  </v-card>
+  </div>
 </template>
+
+<style scoped>
+.item-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+}
+
+.quantity-control {
+  justify-content: flex-start;
+}
+
+.add :deep(.v-btn__content) {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quantity {
+  min-width: 2ch;
+  text-align: center;
+}
+</style>

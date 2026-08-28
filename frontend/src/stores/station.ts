@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { request } from '../api/client'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
-import type { PrinterStatusRow, StationTicketRow } from '../core/apiTypes'
+import type { PrinterStatusRow, StationScreenOrderRow } from '../core/apiTypes'
 
 export const TAKE_DELAY_SECONDS = 10
 
@@ -16,7 +16,7 @@ export interface Station {
 export const useStationStore = defineStore('station', () => {
   const stations = ref<Station[]>([])
   const selectedStationId = ref<string | null>(null)
-  const tickets = ref<StationTicketRow[]>([])
+  const stationOrders = ref<StationScreenOrderRow[]>([])
   const printer = ref<PrinterStatusRow | null>(null)
   const loadFailed = ref(false)
   const pendingTicketIds = ref<string[]>([])
@@ -46,12 +46,12 @@ export const useStationStore = defineStore('station', () => {
     if (selectedStationId.value === null) {
       return
     }
-    const result = await request<{ tickets: StationTicketRow[] }>(
-      `/api/stations/${selectedStationId.value}/tickets`,
+    const result = await request<{ stationOrders: StationScreenOrderRow[] }>(
+      `/api/stations/${selectedStationId.value}/station-orders`,
       { token: deviceToken() },
     )
     if (result.kind === 'ok') {
-      tickets.value = result.data.tickets
+      stationOrders.value = result.data.stationOrders
     }
   }
 
@@ -68,50 +68,50 @@ export const useStationStore = defineStore('station', () => {
     }
   }
 
-  function isPending(ticketId: string): boolean {
-    return pendingTicketIds.value.includes(ticketId)
+  function isPending(stationOrderId: string): boolean {
+    return pendingTicketIds.value.includes(stationOrderId)
   }
 
-  async function sendAcknowledge(ticketId: string): Promise<void> {
-    const ticket = tickets.value.find((row) => row.ticketId === ticketId)
-    if (ticket === undefined) {
+  async function sendAcknowledge(stationOrderId: string): Promise<void> {
+    const stationOrder = stationOrders.value.find((row) => row.stationOrderId === stationOrderId)
+    if (stationOrder === undefined) {
       return
     }
     const result = await request(
-      `/api/stations/${selectedStationId.value}/tickets/${ticket.ticketId}/acknowledge`,
+      `/api/stations/${selectedStationId.value}/station-orders/${stationOrder.stationOrderId}/hand-on-paper`,
       { method: 'POST', token: deviceToken() },
     )
     if (result.kind === 'error') {
       noticeKeyByTicketId.value = {
         ...noticeKeyByTicketId.value,
-        [ticketId]: result.body?.messageKey ?? 'station.takeRefused',
+        [stationOrderId]: result.body?.messageKey ?? 'station.takeRefused',
       }
     }
     await loadTickets()
   }
 
-  function beginTake(ticketId: string): void {
-    if (isPending(ticketId)) {
+  function beginTake(stationOrderId: string): void {
+    if (isPending(stationOrderId)) {
       return
     }
-    pendingTicketIds.value = [...pendingTicketIds.value, ticketId]
+    pendingTicketIds.value = [...pendingTicketIds.value, stationOrderId]
     pendingTimers.set(
-      ticketId,
+      stationOrderId,
       setTimeout(() => {
-        pendingTimers.delete(ticketId)
-        pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== ticketId)
-        void sendAcknowledge(ticketId)
+        pendingTimers.delete(stationOrderId)
+        pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== stationOrderId)
+        void sendAcknowledge(stationOrderId)
       }, TAKE_DELAY_SECONDS * 1000),
     )
   }
 
-  function undoTake(ticketId: string): void {
-    const timer = pendingTimers.get(ticketId)
+  function undoTake(stationOrderId: string): void {
+    const timer = pendingTimers.get(stationOrderId)
     if (timer !== undefined) {
       clearTimeout(timer)
-      pendingTimers.delete(ticketId)
+      pendingTimers.delete(stationOrderId)
     }
-    pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== ticketId)
+    pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== stationOrderId)
   }
 
   async function refresh(): Promise<void> {
@@ -137,7 +137,7 @@ export const useStationStore = defineStore('station', () => {
   return {
     stations,
     selectedStationId,
-    tickets,
+    stationOrders,
     printer,
     loadFailed,
     pendingTicketIds,

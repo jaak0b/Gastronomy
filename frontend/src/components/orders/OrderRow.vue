@@ -28,7 +28,7 @@ const statusKey = computed(() => {
 })
 
 const headline = computed(() =>
-  t('orders.row', { number: props.order.globalOrderNumber, table: props.order.tableLabel }),
+  t('orders.row', { number: props.order.globalOrderNumber, table: props.order.tableName }),
 )
 </script>
 

@@ -17,7 +17,7 @@ public sealed class EnrolmentInvitationStoreTest
 
         EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Test agent", "de-DE,de;q=0.9"),
+            new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "Test agent", "de-DE,de;q=0.9"),
             TestContext.CurrentContext.CancellationToken);
 
         Assert.Multiple(() =>
@@ -26,24 +26,6 @@ public sealed class EnrolmentInvitationStoreTest
             Assert.That(redemption.Device, Is.Not.Null);
             Assert.That(redemption.StaffMember!.Name, Is.EqualTo("Anna"));
             Assert.That(redemption.Device!.Language, Is.EqualTo("de"));
-        });
-    }
-
-    [Test]
-    public async Task CreateAsync_ThenRedeemAsync_WithReturnedSixDigitCode_Redeems()
-    {
-        using SqliteInMemoryFixture fixture = new();
-        EnrolmentInvitationStore store = CreateStore(fixture, new AdjustableClock());
-
-        EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-        EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(null, created.SixDigitCode, "Bernd", "Test agent", "en-GB,en;q=0.9"),
-            TestContext.CurrentContext.CancellationToken);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-            Assert.That(redemption.Device!.Language, Is.EqualTo("en"));
         });
     }
 
@@ -69,53 +51,6 @@ public sealed class EnrolmentInvitationStoreTest
     }
 
     [Test]
-    public async Task RedeemAsync_WrongSixDigitCode_TenTimes_ExhaustsAttempts()
-    {
-        using SqliteInMemoryFixture fixture = new();
-        EnrolmentInvitationStore store = CreateStore(fixture, new AdjustableClock());
-
-        EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-        string wrongCode = WrongSixDigitCodeFor(created.SixDigitCode);
-
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            EnrolmentRedemptionResult rejected = await store.RedeemAsync(
-                new EnrolmentRedemptionRequest(null, wrongCode, "Anna", "Test agent", "de"),
-                TestContext.CurrentContext.CancellationToken);
-            Assert.That(rejected.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeInvalid));
-        }
-
-        EnrolmentRedemptionResult exhausted = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(null, created.SixDigitCode, "Anna", "Test agent", "de"),
-            TestContext.CurrentContext.CancellationToken);
-
-        Assert.That(exhausted.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.SixDigitAttemptsExhausted));
-    }
-
-    [Test]
-    public async Task RedeemAsync_WrongSixDigitCode_TenthAttempt_QrCodeStillVerifies()
-    {
-        using SqliteInMemoryFixture fixture = new();
-        EnrolmentInvitationStore store = CreateStore(fixture, new AdjustableClock());
-
-        EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-        string wrongCode = WrongSixDigitCodeFor(created.SixDigitCode);
-
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            await store.RedeemAsync(
-                new EnrolmentRedemptionRequest(null, wrongCode, "Anna", "Test agent", "de"),
-                TestContext.CurrentContext.CancellationToken);
-        }
-
-        EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Test agent", "de"),
-            TestContext.CurrentContext.CancellationToken);
-
-        Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-    }
-
-    [Test]
     public async Task RedeemAsync_ExpiredInvitation_IsRejected()
     {
         using SqliteInMemoryFixture fixture = new();
@@ -126,14 +61,14 @@ public sealed class EnrolmentInvitationStoreTest
         clock.Advance(TimeSpan.FromMinutes(6));
 
         EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Test agent", "de"),
+            new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "Test agent", "de"),
             TestContext.CurrentContext.CancellationToken);
 
         Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeExpired));
     }
 
     [Test]
-    public async Task RedeemAsync_StaffMemberWithAnEarlierPhone_RevokesThatEarlierDevice()
+    public async Task RedeemAsync_StaffMemberWithAnEarlierPhone_LeavesOnlyTheNewDevice()
     {
         using SqliteInMemoryFixture fixture = new();
         AdjustableClock clock = new();
@@ -141,7 +76,7 @@ public sealed class EnrolmentInvitationStoreTest
 
         EnrolmentInvitationCreated firstInvitation = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult firstRedemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(firstInvitation.QrCodeValue, null, "Anna", "Old phone", "de"),
+            new EnrolmentRedemptionRequest(firstInvitation.QrCodeValue, "Anna", "Old phone", "de"),
             TestContext.CurrentContext.CancellationToken);
 
         Guid staffMemberId = firstRedemption.StaffMember!.Id;
@@ -149,17 +84,19 @@ public sealed class EnrolmentInvitationStoreTest
 
         EnrolmentInvitationCreated secondInvitation = await store.CreateAsync(staffMemberId, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult secondRedemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(secondInvitation.QrCodeValue, null, "Anna", "New phone", "de"),
+            new EnrolmentRedemptionRequest(secondInvitation.QrCodeValue, "Anna", "New phone", "de"),
             TestContext.CurrentContext.CancellationToken);
 
-        Device oldDevice = await fixture.DbContext.Devices
-            .SingleAsync(device => device.Id == oldDeviceId, TestContext.CurrentContext.CancellationToken);
+        List<Device> devices = await fixture.DbContext.Devices
+            .Where(device => device.StaffMemberId == staffMemberId)
+            .ToListAsync(TestContext.CurrentContext.CancellationToken);
 
         Assert.Multiple(() =>
         {
             Assert.That(secondRedemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
             Assert.That(secondRedemption.StaffMember!.Id, Is.EqualTo(staffMemberId));
-            Assert.That(oldDevice.RevokedAtUtc, Is.Not.Null);
+            Assert.That(devices, Has.Count.EqualTo(1));
+            Assert.That(devices[0].Id, Is.Not.EqualTo(oldDeviceId));
         });
     }
 
@@ -199,10 +136,10 @@ public sealed class EnrolmentInvitationStoreTest
 
         EnrolmentRedemptionResult[] results = await Task.WhenAll(
             Task.Run(() => firstStore.RedeemAsync(
-                new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "First phone", "de"),
+                new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "First phone", "de"),
                 TestContext.CurrentContext.CancellationToken)),
             Task.Run(() => secondStore.RedeemAsync(
-                new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Second phone", "de"),
+                new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "Second phone", "de"),
                 TestContext.CurrentContext.CancellationToken)));
 
         GastronomyAppDbContext verificationContext = fixture.CreateContext();
@@ -229,7 +166,7 @@ public sealed class EnrolmentInvitationStoreTest
 
         EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Test agent", "de"),
+            new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "Test agent", "de"),
             TestContext.CurrentContext.CancellationToken);
 
         Assert.That(redemption.PlaintextToken, Is.Not.Null);
@@ -255,7 +192,7 @@ public sealed class EnrolmentInvitationStoreTest
 
         await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
         EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest("not-the-right-code", null, "Anna", "Test agent", "de"),
+            new EnrolmentRedemptionRequest("not-the-right-code", "Anna", "Test agent", "de"),
             TestContext.CurrentContext.CancellationToken);
 
         Assert.Multiple(() =>
@@ -276,7 +213,7 @@ public sealed class EnrolmentInvitationStoreTest
         clock.Advance(TimeSpan.FromMinutes(6));
 
         EnrolmentRedemptionResult redemption = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(created.QrCodeValue, null, "Anna", "Test agent", "de"),
+            new EnrolmentRedemptionRequest(created.QrCodeValue, "Anna", "Test agent", "de"),
             TestContext.CurrentContext.CancellationToken);
 
         Assert.Multiple(() =>
@@ -284,39 +221,6 @@ public sealed class EnrolmentInvitationStoreTest
             Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeExpired));
             Assert.That(redemption.PlaintextToken, Is.Null);
         });
-    }
-
-    [Test]
-    public async Task RedeemAsync_SixDigitAttemptsExhausted_CarriesNoPlaintextToken()
-    {
-        using SqliteInMemoryFixture fixture = new();
-        EnrolmentInvitationStore store = CreateStore(fixture, new AdjustableClock());
-
-        EnrolmentInvitationCreated created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-        string wrongCode = WrongSixDigitCodeFor(created.SixDigitCode);
-
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            EnrolmentRedemptionResult rejected = await store.RedeemAsync(
-                new EnrolmentRedemptionRequest(null, wrongCode, "Anna", "Test agent", "de"),
-                TestContext.CurrentContext.CancellationToken);
-            Assert.That(rejected.PlaintextToken, Is.Null);
-        }
-
-        EnrolmentRedemptionResult exhausted = await store.RedeemAsync(
-            new EnrolmentRedemptionRequest(null, created.SixDigitCode, "Anna", "Test agent", "de"),
-            TestContext.CurrentContext.CancellationToken);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(exhausted.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.SixDigitAttemptsExhausted));
-            Assert.That(exhausted.PlaintextToken, Is.Null);
-        });
-    }
-
-    private string WrongSixDigitCodeFor(string correctSixDigitCode)
-    {
-        return correctSixDigitCode == "000000" ? "111111" : "000000";
     }
 
     [Test]

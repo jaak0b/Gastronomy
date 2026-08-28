@@ -13,14 +13,12 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(order => order.ClientOrderId).IsRequired();
         builder.Property(order => order.GlobalOrderNumber).IsRequired();
         builder.Property(order => order.StaffMemberId).IsRequired();
-        builder.Property(order => order.DeviceId).IsRequired();
-        builder.Property(order => order.TableLabel).IsRequired().HasMaxLength(40);
+        builder.Property(order => order.TableName).IsRequired().HasMaxLength(40);
         builder.Property(order => order.Note).IsRequired(false).HasMaxLength(200);
-        builder.Property(order => order.TotalCents).IsRequired();
-        builder.Property(order => order.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(order => order.CreatedAtUtc).IsRequired();
         builder.HasIndex(order => order.ClientOrderId).IsUnique();
-        builder.HasMany(order => order.Lines).WithOne().HasForeignKey(line => line.OrderId);
-        builder.HasMany(order => order.Tickets).WithOne().HasForeignKey(ticket => ticket.OrderId);
+        builder.HasMany(order => order.StationOrders)
+            .WithOne()
+            .HasForeignKey(stationOrder => stationOrder.OrderId);
     }
 }

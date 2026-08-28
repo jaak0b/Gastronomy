@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
 import { useSessionStore } from '../../stores/session'
@@ -11,26 +11,52 @@ const { t } = useI18n()
 const session = useSessionStore()
 const name = ref('')
 const draftIsHeld = ref(session.heldDraftExists)
-const isReady = ref(false)
+const asksForAName = ref(false)
+const codeIsSpent = ref(false)
 
 const canContinue = computed(() => name.value.trim().length > 0)
 
 async function submit(): Promise<void> {
   const redeemed = await session.redeem({ code: props.code, name: name.value.trim() })
   if (redeemed) {
-    isReady.value = true
+    navigate('/')
   }
 }
+
+onMounted(async () => {
+  const redeemed = await session.redeem({ code: props.code })
+  if (redeemed) {
+    navigate('/')
+    return
+  }
+
+  if (session.redeemErrorKey === 'enrolment.nameMissing') {
+    session.redeemErrorKey = null
+    asksForAName.value = true
+    return
+  }
+
+  session.redeemErrorKey = null
+  codeIsSpent.value = true
+})
 </script>
 
 <template>
-  <v-container v-if="isReady" class="enrolment-done">
-    <v-alert class="success" type="success" variant="tonal">{{ t('enrol.success') }}</v-alert>
-    <v-btn class="to-catalog mt-4" color="primary" block @click="navigate('/')">
-      {{ t('enrol.continue') }}
+  <v-container v-if="codeIsSpent" class="code-spent">
+    <v-alert class="spent-notice" type="info" variant="tonal">
+      {{ session.isEnrolled ? t('enrol.codeSpentWithSession') : t('enrol.codeSpent') }}
+    </v-alert>
+    <v-btn
+      v-if="session.isEnrolled"
+      class="carry-on mt-4"
+      color="primary"
+      block
+      @click="navigate('/')"
+    >
+      {{ t('enrol.carryOn') }}
     </v-btn>
   </v-container>
-  <v-container v-else class="enrolment">
+  <v-container v-else-if="asksForAName" class="enrolment">
     <LanguageSwitch
       :language="session.language"
       label-key="settings.language"
@@ -49,4 +75,5 @@ async function submit(): Promise<void> {
       {{ t(session.redeemErrorKey) }}
     </v-alert>
   </v-container>
+  <v-container v-else class="enrolment-working" />
 </template>

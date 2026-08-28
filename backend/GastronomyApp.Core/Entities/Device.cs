@@ -12,6 +12,4 @@ public sealed class Device
     public required string TokenLookupId { get; set; }
     public required DateTime CreatedAtUtc { get; set; }
     public required DateTime LastSeenAtUtc { get; set; }
-    public DateTime? RevokedAtUtc { get; set; }
-    public required string UserAgentSnapshot { get; set; }
 }

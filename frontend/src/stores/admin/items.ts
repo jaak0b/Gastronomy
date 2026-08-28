@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 
 export interface AdminItem {
@@ -21,6 +21,11 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   const items = ref<AdminItem[]>([])
   const loadFailed = ref(false)
   const errorKey = ref<string | null>(null)
+
+  const categoryNames = computed(() =>
+    [...new Set(items.value.map((item) => item.categoryName).filter((name) => name.length > 0))]
+      .sort((left, right) => left.localeCompare(right)),
+  )
 
   async function load(): Promise<void> {
     loadFailed.value = false
@@ -82,5 +87,5 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     await load()
   }
 
-  return { items, loadFailed, errorKey, load, save, setAvailability, setActive }
+  return { items, loadFailed, errorKey, categoryNames, load, save, setAvailability, setActive }
 })

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildSubmitRequest, ensureClientOrderId } from '../../src/core/submission'
-import { addLine, clearDraft, emptyDraft, loadDraft, setTableLabel } from '../../src/core/draftCart'
+import { addLine, clearDraft, emptyDraft, loadDraft, setTableName } from '../../src/core/draftCart'
 
 describe('ensureClientOrderId', () => {
   beforeEach(() => {
@@ -44,6 +44,29 @@ describe('ensureClientOrderId', () => {
     expect(nextOrder.clientOrderId).not.toBe(accepted.clientOrderId)
   })
 
+  it('generates a submission id on a phone served over plain http, where randomUUID is missing', () => {
+    const randomBytes = crypto.getRandomValues.bind(crypto)
+    vi.stubGlobal('crypto', { getRandomValues: randomBytes })
+    try {
+      const sent = ensureClientOrderId(emptyDraft())
+
+      expect(sent.clientOrderId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('gives a second order its own submission id', () => {
+    const first = ensureClientOrderId(emptyDraft())
+    clearDraft()
+
+    const second = ensureClientOrderId(emptyDraft())
+
+    expect(second.clientOrderId).not.toBe(first.clientOrderId)
+  })
+
   it('generates a submission id in the canonical uuid form', () => {
     const sent = ensureClientOrderId(emptyDraft())
 
@@ -58,7 +81,7 @@ describe('buildSubmitRequest', () => {
     localStorage.clear()
   })
 
-  it('sends the table, the note, the lines and the total the server was shown', () => {
+  it('sends the table, the note and every item with the price the phone showed', () => {
     const withLine = addLine(emptyDraft(), {
       catalogItemId: 'item-1',
       quantity: 2,
@@ -67,19 +90,19 @@ describe('buildSubmitRequest', () => {
       name: 'Bratwurst',
       unitPriceCents: 350,
     })
-    const ready = ensureClientOrderId(setTableLabel(withLine, 'Tisch 12'))
+    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready, 1050)
+    const request = buildSubmitRequest(ready)
 
     expect(request).toEqual({
       clientOrderId: ready.clientOrderId,
-      tableLabel: 'Tisch 12',
+      tableName: 'Tisch 12',
       note: null,
-      expectedTotalCents: 1050,
-      lines: [
+      items: [
         {
           catalogItemId: 'item-1',
           quantity: 2,
+          unitPriceCents: 350,
           note: 'ohne Zwiebeln',
           stationId: 'station-2',
         },
@@ -87,7 +110,7 @@ describe('buildSubmitRequest', () => {
     })
   })
 
-  it('sends no name and no price, because the laptop is the authority on both', () => {
+  it('sends no item name, because the laptop keeps the name from its own catalog', () => {
     const withLine = addLine(emptyDraft(), {
       catalogItemId: 'item-1',
       quantity: 1,
@@ -96,19 +119,20 @@ describe('buildSubmitRequest', () => {
       name: 'Bratwurst',
       unitPriceCents: 350,
     })
-    const ready = ensureClientOrderId(setTableLabel(withLine, 'Tisch 12'))
+    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready, 350)
+    const request = buildSubmitRequest(ready)
 
-    expect(Object.keys(request.lines[0]).sort()).toEqual([
+    expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
       'note',
       'quantity',
       'stationId',
+      'unitPriceCents',
     ])
   })
 
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft(), 0)).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft())).toThrow()
   })
 })

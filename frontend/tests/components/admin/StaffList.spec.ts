@@ -225,15 +225,6 @@ describe('a staff member in the admin list', () => {
     expect(list.find('.no-phone').exists()).toBe(false)
   })
 
-  it('offers the revoke button once a phone is enrolled', async () => {
-    stubFetch()
-
-    const list = mountList()
-    await firstStaffMember(list)
-
-    expect(list.find('.revoke').exists()).toBe(true)
-  })
-
   it('is deactivated at their own address', async () => {
     const urls = stubFetch()
 
@@ -247,40 +238,25 @@ describe('a staff member in the admin list', () => {
     )
   })
 
-  it('is not reported as revoked when the laptop refused the revocation', async () => {
-    stubFetch(409)
-
-    const list = mountList()
-    await firstStaffMember(list)
-    await list.get('.revoke').trigger('click')
-    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
-
-    expect(list.find('.revoked').exists()).toBe(false)
-  })
-
-  it('says out loud that the revocation failed', async () => {
-    stubFetch(409)
-
-    const list = mountList()
-    await firstStaffMember(list)
-    await list.get('.revoke').trigger('click')
-
-    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
-  })
 })
 
-describe('the staff list before anyone is on it', () => {
+describe('a staff member who already has a phone', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     document.body.innerHTML = ''
   })
 
-  it('leaves the page to the button instead of stating that the list is empty', async () => {
-    stubFetchWith({ staffMembers: [] })
+  it('keeps the name and the buttons on one line', async () => {
+    stubFetch()
 
     const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-staff-member').exists()).toBe(true))
+    await firstStaffMember(list)
 
-    expect(list.find('.empty').exists()).toBe(false)
+    const row = list.get('.staff-row-line')
+
+    expect(row.find('.name').exists()).toBe(true)
+    expect(row.find('.new-code').exists()).toBe(true)
+    expect(row.find('.rename').exists()).toBe(true)
+    expect(row.find('.deactivate').exists()).toBe(true)
   })
 })

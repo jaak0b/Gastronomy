@@ -11,7 +11,7 @@ defineEmits<{ add: [item: CatalogItem]; remove: [item: CatalogItem] }>()
 </script>
 
 <template>
-  <div class="item-grid d-grid ga-3">
+  <div class="item-grid d-flex flex-column ga-2">
     <ItemButton
       v-for="item in items"
       :key="item.id"

@@ -1,28 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import { presentOrderState } from '../../src/core/orderStateMachine'
-import type { OrderStatus, OrderSummary, TicketStatus } from '../../src/core/apiTypes'
+import type { OrderStatus, OrderSummary, PrintJobStatus } from '../../src/core/apiTypes'
 
-function ticket(status: TicketStatus, sequenceNumber: number) {
+function ticket(status: PrintJobStatus, stationOrderNumber: number) {
   return {
-    ticketId: `ticket-${sequenceNumber}`,
+    stationOrderId: `ticket-${stationOrderNumber}`,
     stationId: 'station-kueche',
     stationName: 'Kueche',
-    sequenceNumber,
+    stationOrderNumber,
     status,
     failureReason: null,
     printerHasPaper: true,
   }
 }
 
-function order(status: OrderStatus, ticketStatuses: TicketStatus[]): OrderSummary {
+function order(status: OrderStatus, ticketStatuses: PrintJobStatus[]): OrderSummary {
   return {
     orderId: 'order-1',
     globalOrderNumber: 137,
-    tableLabel: 'Tisch 12',
+    tableName: 'Tisch 12',
     totalCents: 1050,
     status,
     createdAtUtc: '2026-08-27T19:00:00Z',
-    tickets: ticketStatuses.map((ticketStatus, index) => ticket(ticketStatus, index + 1)),
+    stationOrders: ticketStatuses.map((ticketStatus, index) => ticket(ticketStatus, index + 1)),
   }
 }
 
@@ -49,12 +49,6 @@ describe('presentOrderState', () => {
     const state = presentOrderState(order('Printed', ['Printed', 'HandledOnPaper']))
 
     expect(state).toBe('HandledOnPaper')
-  })
-
-  it('shows an order printed only on the test printer as printed', () => {
-    const state = presentOrderState(order('Printed', ['PrintedOnTestPrinter']))
-
-    expect(state).toBe('Printed')
   })
 
   it('shows an order that needs checking as needing attention', () => {

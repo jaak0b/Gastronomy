@@ -5,10 +5,10 @@ using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed record OrderAcceptanceLineRequest
+public sealed record OrderAcceptanceItemRequest
 {
     public required Guid CatalogItemId { get; init; }
-    public required int Quantity { get; init; }
+    public required int UnitPriceCents { get; init; }
     public string? Note { get; init; }
     public Guid? StationId { get; init; }
 }
@@ -17,24 +17,21 @@ public sealed record OrderAcceptanceRequest
 {
     public required Guid ClientOrderId { get; init; }
     public required Guid StaffMemberId { get; init; }
-    public required Guid DeviceId { get; init; }
-    public required string TableLabel { get; init; }
+    public required string TableName { get; init; }
     public string? Note { get; init; }
-    public required IReadOnlyList<OrderAcceptanceLineRequest> Lines { get; init; }
+    public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
 }
 
 public sealed class OrderAcceptanceService
 {
-    private const int MinimumQuantity = 1;
-    private const int MaximumQuantity = 99;
-    private const int MaximumTableLabelLength = 40;
+    private const int MaximumItems = 200;
+    private const int MaximumTableNameLength = 40;
 
     private readonly IOrderRepository _orderRepository;
     private readonly ICatalogItemRepository _catalogItemRepository;
     private readonly IStationRepository _stationRepository;
     private readonly INumberAllocator _numberAllocator;
     private readonly OrderRoutingResolver _routingResolver;
-    private readonly OrderTotalCalculator _totalCalculator;
     private readonly IClock _clock;
 
     public OrderAcceptanceService(
@@ -43,7 +40,6 @@ public sealed class OrderAcceptanceService
         IStationRepository stationRepository,
         INumberAllocator numberAllocator,
         OrderRoutingResolver routingResolver,
-        OrderTotalCalculator totalCalculator,
         IClock clock)
     {
         _orderRepository = orderRepository;
@@ -51,7 +47,6 @@ public sealed class OrderAcceptanceService
         _stationRepository = stationRepository;
         _numberAllocator = numberAllocator;
         _routingResolver = routingResolver;
-        _totalCalculator = totalCalculator;
         _clock = clock;
     }
 
@@ -79,47 +74,47 @@ public sealed class OrderAcceptanceService
         IReadOnlyCollection<Station> activeStations =
             await _stationRepository.FindActiveAsync(cancellationToken);
 
-        List<ResolvedLine> resolvedLines = [];
-        foreach (OrderAcceptanceLineRequest lineRequest in request.Lines)
+        List<ResolvedItem> resolvedItems = [];
+        foreach (OrderAcceptanceItemRequest itemRequest in request.Items)
         {
             CatalogItem? catalogItem =
-                await _catalogItemRepository.FindByIdAsync(lineRequest.CatalogItemId, cancellationToken);
+                await _catalogItemRepository.FindByIdAsync(itemRequest.CatalogItemId, cancellationToken);
             if (catalogItem is null)
             {
                 return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new OrderValidationFailure
                 {
                     Reason = OrderValidationFailureReason.UnknownCatalogItemId,
-                    OffendingCatalogItemId = lineRequest.CatalogItemId,
+                    OffendingCatalogItemId = itemRequest.CatalogItemId,
                 });
             }
 
             IReadOnlyCollection<ItemStationAssignment> assignments =
-                await _catalogItemRepository.FindAssignmentsAsync(lineRequest.CatalogItemId, cancellationToken);
+                await _catalogItemRepository.FindAssignmentsAsync(itemRequest.CatalogItemId, cancellationToken);
 
             Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(
-                lineRequest.CatalogItemId,
+                itemRequest.CatalogItemId,
                 assignments,
                 activeStations,
-                lineRequest.StationId);
+                itemRequest.StationId);
 
             if (!routing.IsSuccess)
             {
                 return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new OrderValidationFailure
                 {
                     Reason = ReasonFor(routing.Failure.Reason),
-                    OffendingCatalogItemId = lineRequest.CatalogItemId,
+                    OffendingCatalogItemId = itemRequest.CatalogItemId,
                 });
             }
 
-            resolvedLines.Add(new ResolvedLine
+            resolvedItems.Add(new ResolvedItem
             {
-                Request = lineRequest,
+                Request = itemRequest,
                 CatalogItem = catalogItem,
                 Decision = routing.Value,
             });
         }
 
-        Order order = await BuildOrderAsync(request, resolvedLines, cancellationToken);
+        Order order = await BuildOrderAsync(request, resolvedItems, cancellationToken);
         await _orderRepository.AddAsync(order, cancellationToken);
 
         return Result<OrderAcceptanceResult, OrderValidationFailure>.Success(new OrderAcceptanceResult
@@ -129,38 +124,43 @@ public sealed class OrderAcceptanceService
         });
     }
 
-    private sealed record ResolvedLine
+    private sealed record ResolvedItem
     {
-        public required OrderAcceptanceLineRequest Request { get; init; }
+        public required OrderAcceptanceItemRequest Request { get; init; }
         public required CatalogItem CatalogItem { get; init; }
         public required RoutingDecision Decision { get; init; }
     }
 
     private OrderValidationFailure? ValidateShape(OrderAcceptanceRequest request)
     {
-        if (request.Lines.Count == 0)
+        if (request.Items.Count == 0)
         {
-            return new OrderValidationFailure { Reason = OrderValidationFailureReason.NoLines };
+            return new OrderValidationFailure { Reason = OrderValidationFailureReason.NoItems };
         }
 
-        if (string.IsNullOrWhiteSpace(request.TableLabel))
+        if (request.Items.Count > MaximumItems)
         {
-            return new OrderValidationFailure { Reason = OrderValidationFailureReason.TableLabelMissing };
+            return new OrderValidationFailure { Reason = OrderValidationFailureReason.TooManyItems };
         }
 
-        if (request.TableLabel.Length > MaximumTableLabelLength)
+        if (string.IsNullOrWhiteSpace(request.TableName))
         {
-            return new OrderValidationFailure { Reason = OrderValidationFailureReason.TableLabelTooLong };
+            return new OrderValidationFailure { Reason = OrderValidationFailureReason.TableNameMissing };
         }
 
-        foreach (OrderAcceptanceLineRequest line in request.Lines)
+        if (request.TableName.Length > MaximumTableNameLength)
         {
-            if (line.Quantity < MinimumQuantity || line.Quantity > MaximumQuantity)
+            return new OrderValidationFailure { Reason = OrderValidationFailureReason.TableNameTooLong };
+        }
+
+        foreach (OrderAcceptanceItemRequest item in request.Items)
+        {
+            if (item.UnitPriceCents < 0)
             {
                 return new OrderValidationFailure
                 {
-                    Reason = OrderValidationFailureReason.QuantityOutOfRange,
-                    OffendingCatalogItemId = line.CatalogItemId,
+                    Reason = OrderValidationFailureReason.PriceOutOfRange,
+                    OffendingCatalogItemId = item.CatalogItemId,
                 };
             }
         }
@@ -181,7 +181,7 @@ public sealed class OrderAcceptanceService
 
     private async Task<Order> BuildOrderAsync(
         OrderAcceptanceRequest request,
-        IReadOnlyCollection<ResolvedLine> resolvedLines,
+        IReadOnlyCollection<ResolvedItem> resolvedItems,
         CancellationToken cancellationToken)
     {
         DateTime createdAtUtc = _clock.UtcNow;
@@ -194,56 +194,54 @@ public sealed class OrderAcceptanceService
             ClientOrderId = request.ClientOrderId,
             GlobalOrderNumber = globalOrderNumber,
             StaffMemberId = request.StaffMemberId,
-            DeviceId = request.DeviceId,
-            TableLabel = request.TableLabel,
+            TableName = request.TableName,
             Note = request.Note,
-            TotalCents = 0,
-            Status = OrderStatus.Accepted,
             CreatedAtUtc = createdAtUtc,
         };
 
-        Dictionary<Guid, LocationTicket> ticketsByStationId = [];
+        Dictionary<Guid, StationOrder> stationOrdersByStationId = [];
 
-        foreach (ResolvedLine resolvedLine in resolvedLines)
+        foreach (ResolvedItem resolvedItem in resolvedItems)
         {
-            Guid resolvedStationId = resolvedLine.Decision.ResolvedStationId;
+            Guid resolvedStationId = resolvedItem.Decision.ResolvedStationId;
 
-            if (!ticketsByStationId.TryGetValue(resolvedStationId, out LocationTicket? ticket))
+            if (!stationOrdersByStationId.TryGetValue(resolvedStationId, out StationOrder? stationOrder))
             {
-                int stationSequenceNumber = await _numberAllocator.AllocateStationSequenceNumberAsync(
+                int stationOrderNumber = await _numberAllocator.AllocateStationOrderNumberAsync(
                     resolvedStationId,
                     cancellationToken);
 
-                ticket = new LocationTicket
+                stationOrder = new StationOrder
                 {
                     Id = Guid.NewGuid(),
                     OrderId = order.Id,
                     StationId = resolvedStationId,
-                    StationSequenceNumber = stationSequenceNumber,
-                    Status = LocationTicketStatus.Queued,
-                    ReprintCount = 0,
-                    CreatedAtUtc = createdAtUtc,
+                    StationOrderNumber = stationOrderNumber,
                 };
 
-                ticketsByStationId.Add(resolvedStationId, ticket);
-                order.Tickets.Add(ticket);
+                stationOrder.PrintJobs.Add(new PrintJob
+                {
+                    Id = Guid.NewGuid(),
+                    StationOrderId = stationOrder.Id,
+                    CopyNumber = 0,
+                    Status = PrintJobStatus.Queued,
+                    CreatedAtUtc = createdAtUtc,
+                });
+
+                stationOrdersByStationId.Add(resolvedStationId, stationOrder);
+                order.StationOrders.Add(stationOrder);
             }
 
-            order.Lines.Add(new OrderLine
+            stationOrder.Items.Add(new OrderItem
             {
                 Id = Guid.NewGuid(),
-                OrderId = order.Id,
-                LocationTicketId = ticket.Id,
-                CatalogItemId = resolvedLine.CatalogItem.Id,
-                ChosenStationId = resolvedLine.Decision.ChosenStationId,
-                ItemNameSnapshot = resolvedLine.CatalogItem.Name,
-                UnitPriceCentsSnapshot = resolvedLine.CatalogItem.PriceCents,
-                Quantity = resolvedLine.Request.Quantity,
-                Note = resolvedLine.Request.Note,
+                StationOrderId = stationOrder.Id,
+                CatalogItemId = resolvedItem.CatalogItem.Id,
+                ItemName = resolvedItem.CatalogItem.Name,
+                UnitPriceCents = resolvedItem.Request.UnitPriceCents,
+                Note = resolvedItem.Request.Note,
             });
         }
-
-        order.TotalCents = _totalCalculator.CalculateTotalCents(order.Lines);
 
         return order;
     }

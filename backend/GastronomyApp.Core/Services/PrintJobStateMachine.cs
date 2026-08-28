@@ -8,20 +8,21 @@ public sealed class PrintJobStateMachine
     {
         return (from, to) switch
         {
-            (PrintJobStatus.Queued, PrintJobStatus.PreflightCheck) => true,
+            (PrintJobStatus.Queued, PrintJobStatus.Sending) => true,
+            (PrintJobStatus.Queued, PrintJobStatus.Blocked) => true,
             (PrintJobStatus.Queued, PrintJobStatus.Failed) => true,
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Blocked) => true,
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Queued) => true,
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Sending) => true,
+            (PrintJobStatus.Queued, PrintJobStatus.HandledOnPaper) => true,
+            (PrintJobStatus.Sending, PrintJobStatus.Printed) => true,
+            (PrintJobStatus.Sending, PrintJobStatus.Unknown) => true,
+            (PrintJobStatus.Sending, PrintJobStatus.Queued) => true,
+            (PrintJobStatus.Sending, PrintJobStatus.Blocked) => true,
             (PrintJobStatus.Blocked, PrintJobStatus.Queued) => true,
             (PrintJobStatus.Blocked, PrintJobStatus.Failed) => true,
-            (PrintJobStatus.Sending, PrintJobStatus.AwaitingEcho) => true,
-            (PrintJobStatus.Sending, PrintJobStatus.Queued) => true,
-            (PrintJobStatus.Sending, PrintJobStatus.Unknown) => true,
-            (PrintJobStatus.AwaitingEcho, PrintJobStatus.Confirmed) => true,
-            (PrintJobStatus.AwaitingEcho, PrintJobStatus.Unknown) => true,
-            (PrintJobStatus.Unknown, PrintJobStatus.ResolvedPrinted) => true,
-            (PrintJobStatus.Unknown, PrintJobStatus.ResolvedMissing) => true,
+            (PrintJobStatus.Blocked, PrintJobStatus.HandledOnPaper) => true,
+            (PrintJobStatus.Unknown, PrintJobStatus.Printed) => true,
+            (PrintJobStatus.Unknown, PrintJobStatus.Queued) => true,
+            (PrintJobStatus.Unknown, PrintJobStatus.HandledOnPaper) => true,
+            (PrintJobStatus.Failed, PrintJobStatus.HandledOnPaper) => true,
             _ => false,
         };
     }

@@ -20,8 +20,20 @@ public sealed class ConcurrentOrderTest
         context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
 
         using IServiceScope scope = context.Factory.Services.CreateScope();
+        GastronomyAppDbContext database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+
+        Guid secondStaffMemberId = Guid.NewGuid();
+        database.StaffMembers.Add(new GastronomyApp.Core.Entities.StaffMember
+        {
+            Id = secondStaffMemberId,
+            Name = "Bernd",
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+        });
+        await database.SaveChangesAsync();
+
         IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(context.World.StaffMemberId, "de", "NUnit second phone", CancellationToken.None);
+            .IssueAsync(secondStaffMemberId, "de", "NUnit second phone", CancellationToken.None);
         secondDeviceToken = issued.PlaintextToken;
     }
 
@@ -65,7 +77,7 @@ public sealed class ConcurrentOrderTest
     {
         HttpRequestMessage request = new(HttpMethod.Post, "/api/orders");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
-        request.Content = JsonContent.Create(context.BuildOrder(Guid.NewGuid(), 700));
+        request.Content = JsonContent.Create(context.BuildOrder(Guid.NewGuid()));
 
         return context.Client.SendAsync(request);
     }

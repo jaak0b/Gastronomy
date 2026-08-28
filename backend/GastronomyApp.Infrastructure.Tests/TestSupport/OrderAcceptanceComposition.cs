@@ -13,9 +13,8 @@ public sealed class OrderAcceptanceComposition
             orderRepository,
             new CatalogItemRepository(dbContext),
             new StationRepository(dbContext),
-            new NumberCounterAllocator(dbContext),
+            new SequenceNumberAllocator(dbContext),
             new OrderRoutingResolver(),
-            new OrderTotalCalculator(),
             new SystemClock());
 
         return new OrderAcceptanceTransaction(dbContext, orderRepository, acceptanceService);

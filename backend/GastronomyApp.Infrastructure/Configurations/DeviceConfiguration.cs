@@ -19,8 +19,7 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
         builder.Property(device => device.TokenLookupId).IsRequired().HasMaxLength(32);
         builder.Property(device => device.CreatedAtUtc).IsRequired();
         builder.Property(device => device.LastSeenAtUtc).IsRequired();
-        builder.Property(device => device.RevokedAtUtc).IsRequired(false);
-        builder.Property(device => device.UserAgentSnapshot).IsRequired().HasMaxLength(200);
         builder.HasIndex(device => device.TokenLookupId).IsUnique();
+        builder.HasIndex(device => device.StaffMemberId).IsUnique();
     }
 }

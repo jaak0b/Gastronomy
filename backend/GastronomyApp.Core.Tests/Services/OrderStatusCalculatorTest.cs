@@ -18,7 +18,7 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AnyTicketUnknown_IsNeedsAttention()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Printed, LocationTicketStatus.Unknown]),
+            _calculator.Calculate([PrintJobStatus.Printed, PrintJobStatus.Unknown]),
             Is.EqualTo(OrderStatus.NeedsAttention));
     }
 
@@ -27,7 +27,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Printing, LocationTicketStatus.Failed, LocationTicketStatus.Queued]),
+                [PrintJobStatus.Sending, PrintJobStatus.Failed, PrintJobStatus.Queued]),
             Is.EqualTo(OrderStatus.NeedsAttention));
     }
 
@@ -35,7 +35,7 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AnyTicketBlocked_IsNeedsAttention()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Blocked]),
+            _calculator.Calculate([PrintJobStatus.Queued, PrintJobStatus.Blocked]),
             Is.EqualTo(OrderStatus.NeedsAttention));
     }
 
@@ -44,20 +44,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Printed, LocationTicketStatus.HandledOnPaper]),
-            Is.EqualTo(OrderStatus.Printed));
-    }
-
-    [Test]
-    public void Calculate_EveryTicketPrintedHandledOnPaperOrTestPrinterInAPracticeSession_IsPrinted()
-    {
-        Assert.That(
-            _calculator.Calculate(
-                [
-                    LocationTicketStatus.Printed,
-                    LocationTicketStatus.HandledOnPaper,
-                    LocationTicketStatus.PrintedOnTestPrinter,
-                ]),
+                [PrintJobStatus.Printed, PrintJobStatus.HandledOnPaper]),
             Is.EqualTo(OrderStatus.Printed));
     }
 
@@ -66,7 +53,7 @@ public sealed class OrderStatusCalculatorTest
     {
         Assert.That(
             _calculator.Calculate(
-                [LocationTicketStatus.Queued, LocationTicketStatus.Printing, LocationTicketStatus.Printed]),
+                [PrintJobStatus.Queued, PrintJobStatus.Sending, PrintJobStatus.Printed]),
             Is.EqualTo(OrderStatus.Printing));
     }
 
@@ -74,7 +61,7 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_AtLeastOneQueuedAndNothingElseMatching_IsAccepted()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued, LocationTicketStatus.Printed]),
+            _calculator.Calculate([PrintJobStatus.Queued, PrintJobStatus.Printed]),
             Is.EqualTo(OrderStatus.Accepted));
     }
 
@@ -82,28 +69,27 @@ public sealed class OrderStatusCalculatorTest
     public void Calculate_SingleQueuedTicket_IsAccepted()
     {
         Assert.That(
-            _calculator.Calculate([LocationTicketStatus.Queued]),
+            _calculator.Calculate([PrintJobStatus.Queued]),
             Is.EqualTo(OrderStatus.Accepted));
     }
 
-    private OrderStatus ExpectedByTable(IReadOnlyCollection<LocationTicketStatus> statuses)
+    private OrderStatus ExpectedByTable(IReadOnlyCollection<PrintJobStatus> statuses)
     {
-        foreach (LocationTicketStatus status in statuses)
+        foreach (PrintJobStatus status in statuses)
         {
-            if (status == LocationTicketStatus.Unknown
-                || status == LocationTicketStatus.Failed
-                || status == LocationTicketStatus.Blocked)
+            if (status == PrintJobStatus.Unknown
+                || status == PrintJobStatus.Failed
+                || status == PrintJobStatus.Blocked)
             {
                 return OrderStatus.NeedsAttention;
             }
         }
 
         bool everyTicketIsDone = true;
-        foreach (LocationTicketStatus status in statuses)
+        foreach (PrintJobStatus status in statuses)
         {
-            if (status != LocationTicketStatus.Printed
-                && status != LocationTicketStatus.HandledOnPaper
-                && status != LocationTicketStatus.PrintedOnTestPrinter)
+            if (status != PrintJobStatus.Printed
+                && status != PrintJobStatus.HandledOnPaper)
             {
                 everyTicketIsDone = false;
             }
@@ -114,9 +100,9 @@ public sealed class OrderStatusCalculatorTest
             return OrderStatus.Printed;
         }
 
-        foreach (LocationTicketStatus status in statuses)
+        foreach (PrintJobStatus status in statuses)
         {
-            if (status == LocationTicketStatus.Printing)
+            if (status == PrintJobStatus.Sending)
             {
                 return OrderStatus.Printing;
             }
@@ -128,12 +114,12 @@ public sealed class OrderStatusCalculatorTest
     [Test]
     public void Calculate_EverySingleTicketCombination_MatchesTheFirstMatchingRow()
     {
-        LocationTicketStatus[] allStatuses = Enum.GetValues<LocationTicketStatus>();
+        PrintJobStatus[] allStatuses = Enum.GetValues<PrintJobStatus>();
         int checkedCombinations = 0;
 
-        foreach (LocationTicketStatus status in allStatuses)
+        foreach (PrintJobStatus status in allStatuses)
         {
-            List<LocationTicketStatus> statuses = [status];
+            List<PrintJobStatus> statuses = [status];
 
             Assert.That(
                 _calculator.Calculate(statuses),
@@ -142,20 +128,20 @@ public sealed class OrderStatusCalculatorTest
             checkedCombinations++;
         }
 
-        Assert.That(checkedCombinations, Is.EqualTo(8));
+        Assert.That(checkedCombinations, Is.EqualTo(7));
     }
 
     [Test]
     public void Calculate_EveryTwoTicketCombination_MatchesTheFirstMatchingRow()
     {
-        LocationTicketStatus[] allStatuses = Enum.GetValues<LocationTicketStatus>();
+        PrintJobStatus[] allStatuses = Enum.GetValues<PrintJobStatus>();
         int checkedCombinations = 0;
 
-        foreach (LocationTicketStatus first in allStatuses)
+        foreach (PrintJobStatus first in allStatuses)
         {
-            foreach (LocationTicketStatus second in allStatuses)
+            foreach (PrintJobStatus second in allStatuses)
             {
-                List<LocationTicketStatus> statuses = [first, second];
+                List<PrintJobStatus> statuses = [first, second];
 
                 Assert.That(
                     _calculator.Calculate(statuses),
@@ -165,6 +151,6 @@ public sealed class OrderStatusCalculatorTest
             }
         }
 
-        Assert.That(checkedCombinations, Is.EqualTo(64));
+        Assert.That(checkedCombinations, Is.EqualTo(49));
     }
 }

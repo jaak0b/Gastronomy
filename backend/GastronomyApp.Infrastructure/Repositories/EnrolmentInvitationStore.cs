@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -11,7 +10,6 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 {
     private const int QrCodeLengthBytes = 32;
-    private const int MaximumFailedSixDigitAttempts = 10;
     private const int InvitationLifetimeMinutes = 5;
     private const string GermanLanguage = "de";
     private const string EnglishLanguage = "en";
@@ -45,11 +43,8 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                 await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, transactionCancellationToken);
 
                 string qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QrCodeLengthBytes));
-                string sixDigitCode = RandomNumberGenerator.GetInt32(0, 1_000_000)
-                    .ToString("D6", CultureInfo.InvariantCulture);
 
                 HashedSecret hashedQrCode = _secretHasher.Hash(qrCodeValue);
-                HashedSecret hashedSixDigitCode = _secretHasher.Hash(sixDigitCode);
                 DateTime expiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes);
 
                 EnrolmentInvitation invitation = new()
@@ -58,11 +53,8 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                     StaffMemberId = staffMemberId,
                     QrCodeHash = hashedQrCode.Hash,
                     QrCodeSalt = hashedQrCode.Salt,
-                    SixDigitHash = hashedSixDigitCode.Hash,
-                    SixDigitSalt = hashedSixDigitCode.Salt,
-                    CodeIterations = hashedQrCode.Iterations,
-                    CodeAlgorithm = hashedQrCode.Algorithm,
-                    FailedSixDigitAttempts = 0,
+                    QrCodeIterations = hashedQrCode.Iterations,
+                    QrCodeAlgorithm = hashedQrCode.Algorithm,
                     CreatedAtUtc = now,
                     ExpiresAtUtc = expiresAtUtc,
                     ConsumedAtUtc = null,
@@ -74,7 +66,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
                 return new TransactionOutcome<EnrolmentInvitationCreated>
                 {
-                    Value = new EnrolmentInvitationCreated(invitation.Id, qrCodeValue, sixDigitCode, expiresAtUtc),
+                    Value = new EnrolmentInvitationCreated(invitation.Id, qrCodeValue, expiresAtUtc),
                     ShouldCommit = true,
                 };
             },
@@ -103,47 +95,32 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
             return Rejected(EnrolmentRedemptionOutcome.CodeExpired);
         }
 
-        if (request.Code is not null)
-        {
-            bool qrCodeMatches = _secretHasher.Verify(
-                request.Code,
-                invitation.QrCodeHash,
-                invitation.QrCodeSalt,
-                invitation.CodeIterations,
-                invitation.CodeAlgorithm);
+        bool qrCodeMatches = _secretHasher.Verify(
+            request.Code,
+            invitation.QrCodeHash,
+            invitation.QrCodeSalt,
+            invitation.QrCodeIterations,
+            invitation.QrCodeAlgorithm);
 
-            return qrCodeMatches
-                ? await CompleteRedemptionAsync(invitation, request, now, cancellationToken)
-                : Rejected(EnrolmentRedemptionOutcome.CodeInvalid);
-        }
-
-        if (request.SixDigitCode is null)
+        if (!qrCodeMatches)
         {
             return Rejected(EnrolmentRedemptionOutcome.CodeInvalid);
         }
 
-        if (invitation.FailedSixDigitAttempts >= MaximumFailedSixDigitAttempts)
+        if (invitation.StaffMemberId is not null)
         {
-            return Rejected(EnrolmentRedemptionOutcome.SixDigitAttemptsExhausted);
-        }
+            bool staffMemberIsOnTheList = await _dbContext.StaffMembers.AnyAsync(
+                staffMember => staffMember.Id == invitation.StaffMemberId && staffMember.IsActive,
+                cancellationToken);
 
-        bool sixDigitCodeMatches = _secretHasher.Verify(
-            request.SixDigitCode,
-            invitation.SixDigitHash,
-            invitation.SixDigitSalt,
-            invitation.CodeIterations,
-            invitation.CodeAlgorithm);
-
-        if (!sixDigitCodeMatches)
-        {
-            invitation.FailedSixDigitAttempts++;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            return new TransactionOutcome<EnrolmentRedemptionResult>
+            if (!staffMemberIsOnTheList)
             {
-                Value = new EnrolmentRedemptionResult(EnrolmentRedemptionOutcome.CodeInvalid, null, null, null),
-                ShouldCommit = true,
-            };
+                return Rejected(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList);
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return Rejected(EnrolmentRedemptionOutcome.NameRequired);
         }
 
         return await CompleteRedemptionAsync(invitation, request, now, cancellationToken);
@@ -230,7 +207,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     private async Task RevokeEarlierDevicesAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
         List<Device> earlierDevices = await _dbContext.Devices
-            .Where(device => device.StaffMemberId == staffMemberId && device.RevokedAtUtc == null)
+            .Where(device => device.StaffMemberId == staffMemberId)
             .ToListAsync(cancellationToken);
 
         foreach (Device device in earlierDevices)
@@ -241,23 +218,20 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     private async Task<StaffMember> ResolveStaffMemberAsync(
         EnrolmentInvitation invitation,
-        string name,
+        string? name,
         DateTime now,
         CancellationToken cancellationToken)
     {
         if (invitation.StaffMemberId is not null)
         {
-            StaffMember existingStaffMember = await _dbContext.StaffMembers
+            return await _dbContext.StaffMembers
                 .SingleAsync(staffMember => staffMember.Id == invitation.StaffMemberId, cancellationToken);
-            existingStaffMember.Name = name;
-
-            return existingStaffMember;
         }
 
         StaffMember newStaffMember = new()
         {
             Id = Guid.NewGuid(),
-            Name = name,
+            Name = name!,
             IsActive = true,
             CreatedAtUtc = now,
         };

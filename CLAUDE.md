@@ -29,7 +29,7 @@ no payment data, and issues no receipts to guests.
 | `backend/` | .NET 9 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, printing service, static frontend) and is hosted by the desktop app. |
 | `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
 | `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
-| `pi-agent/` | Python agent for USB-attached printers. **Deferred**, not yet started. Until it exists, `MockPrinterTransport` stands in. |
+| `pi-agent/` | Python agent for USB-attached printers. **Deferred**, not yet started. Until it exists, `TestPrinterDriver` stands in. |
 
 Three source trees ship as one executable: the frontend build output is embedded, the Api library is
 hosted in-process, and the operator double-clicks the desktop app. Closing its window never stops the
@@ -78,6 +78,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    (a) write the test, (b) run it and paste the failing output, (c) only then touch production code,
    (d) re-run to green. A red run you can quote is the gate. No red proof means the fix does not start.
    If you catch yourself having edited production code first, revert it and restart from (a).
+
+   **Never write a test whose purpose is to prove that deleted behaviour stayed deleted.** When a
+   feature, a string or a control is removed, delete its tests with it and write nothing in their
+   place. A test asserting that some text or element is absent pins the codebase to a decision that
+   was already made, fails for unrelated reasons later, and describes nothing a user does. This binds
+   the removal itself: the red run for a deletion is the existing test failing, not a new one.
+   Assertions that some element is absent *under a condition the code still decides* are a different
+   thing and remain welcome, for example that a repair hint is hidden while a printer is healthy.
 
 4. **Two test layers per change: unit and integration.** End-to-end coverage is required for the order
    placement flow and the printing pipeline, and optional elsewhere. "It is only a small change" is not
@@ -167,7 +175,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 ## Current phase: the mock is the demo
 
 No printer hardware has been bought. The fire department will first try the system with
-`MockPrinterTransport` standing in for every station, and only if they agree it is a tool they want
+`TestPrinterDriver` standing in for every station, and only if they agree it is a tool they want
 will the printers be purchased.
 
 **Keep the mock simple.** It writes the slip content it would have printed to a file in a folder, one
@@ -182,7 +190,7 @@ phone. Admin configuration polish, device revocation, the break-glass page and t
 come after that slice works end to end.
 
 The `GS ( H` process id echo that print confirmation depends on stays unverified against real
-TM-T20IV firmware until hardware is bought. It is contained behind `IPrinterTransport`, and the spec
+TM-T20IV firmware until hardware is bought. It is contained behind `IPrinterDriver`, and the spec
 specifies a fallback, but treat it as an assumption rather than a fact.
 
 ## Hardware constraints that bind the code

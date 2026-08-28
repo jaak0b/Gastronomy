@@ -29,7 +29,7 @@ public sealed class PrinterCallbackWiringTest
     [Test]
     public async Task PlaceOrder_RealFleetOverTheMockTransport_WritesASlipFileForEveryTicket()
     {
-        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700));
+        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -41,28 +41,28 @@ public sealed class PrinterCallbackWiringTest
     }
 
     [Test]
-    public async Task PlaceOrder_RealFleetOverTheMockTransport_ReachesTheTicketPrintedOnTestPrinterState()
+    public async Task PlaceOrder_RealFleetOverTheTestPrinter_ReachesTheTicketPrintedState()
     {
         Guid ticketId;
 
-        using (HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700)))
+        using (HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
         {
             JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            ticketId = body.RootElement.GetProperty("tickets")[0].GetProperty("ticketId").GetGuid();
+            ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
         }
 
         bool reachedTestPrinterState = await WaitUntilAsync(async () =>
         {
             await using GastronomyAppDbContext database = context.Factory.CreateContext();
-            return await database.LocationTickets.AnyAsync(
-                ticket => ticket.Id == ticketId && ticket.Status == LocationTicketStatus.PrintedOnTestPrinter);
+            return await database.PrintJobs.AnyAsync(
+                job => job.StationOrderId == ticketId && job.Status == PrintJobStatus.Printed);
         });
 
-        Assert.That(reachedTestPrinterState, Is.True, "The ticket never reached PrintedOnTestPrinter.");
+        Assert.That(reachedTestPrinterState, Is.True, "The ticket never reached Printed.");
     }
 
     [Test]
-    public async Task PlaceOrder_ConnectedHubClientInThePlacingStaffMembersGroup_ReceivesTicketStatusChanged()
+    public async Task PlaceOrder_ConnectedHubClientInThePlacingStaffMembersGroup_ReceivesPrintJobStatusChanged()
     {
         TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -70,11 +70,11 @@ public sealed class PrinterCallbackWiringTest
             .WithUrl(new Uri(context.Factory.BaseAddress, $"hub?access_token={context.DeviceToken}"))
             .Build();
 
-        connection.On<JsonElement>("TicketStatusChanged", payload =>
+        connection.On<JsonElement>("PrintJobStatusChanged", payload =>
         {
             string status = payload.GetProperty("status").GetString() ?? string.Empty;
 
-            if (status == LocationTicketStatus.PrintedOnTestPrinter.ToString())
+            if (status == PrintJobStatus.Printed.ToString())
             {
                 received.TrySetResult(status);
             }
@@ -82,16 +82,16 @@ public sealed class PrinterCallbackWiringTest
 
         await connection.StartAsync();
 
-        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700));
+        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
         Task completed = await Task.WhenAny(received.Task, Task.Delay(patience));
 
-        Assert.That(completed, Is.SameAs(received.Task), "No TicketStatusChanged push reached the staff member who placed the order.");
+        Assert.That(completed, Is.SameAs(received.Task), "No PrintJobStatusChanged push reached the staff member who placed the order.");
         Assert.That(
             await received.Task,
-            Is.EqualTo(LocationTicketStatus.PrintedOnTestPrinter.ToString()));
+            Is.EqualTo(PrintJobStatus.Printed.ToString()));
     }
 
     private async Task<bool> WaitUntilAsync(Func<bool> condition)

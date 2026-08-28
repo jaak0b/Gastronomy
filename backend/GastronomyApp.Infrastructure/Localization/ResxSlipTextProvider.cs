@@ -29,7 +29,6 @@ public sealed class ResxSlipTextProvider : ISlipTextProvider
             Read("NotePrefix", culture),
             Read("ItemsTotalPrefix", culture),
             Read("AlsoGoesToPrefix", culture),
-            Read("ChosenStationWasPrefix", culture),
             Read("TestSlipHeader", culture));
     }
 

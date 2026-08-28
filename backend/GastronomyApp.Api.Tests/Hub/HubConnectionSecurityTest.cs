@@ -51,7 +51,7 @@ public sealed class HubConnectionSecurityTest
     }
 
     [Test]
-    public async Task RevokeDevice_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
+    public async Task Deactivate_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
     {
         TaskCompletionSource<Guid> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource<Guid> heardAfterRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -84,7 +84,7 @@ public sealed class HubConnectionSecurityTest
         revoked = true;
 
         using (HttpResponseMessage revocation = await context.Client.PostAsync(
-            $"/api/admin/staff-members/{context.World.StaffMemberId}/revoke-device",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
             content: null))
         {
             Assert.That(revocation.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -101,7 +101,7 @@ public sealed class HubConnectionSecurityTest
 
     private async Task<Guid> PlaceAnOrderAsync()
     {
-        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700));
+        using HttpResponseMessage response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

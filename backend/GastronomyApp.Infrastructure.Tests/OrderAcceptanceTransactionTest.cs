@@ -25,9 +25,8 @@ public sealed class OrderAcceptanceTransactionTest
             Assert.That(result.IsSuccess, Is.True);
             Assert.That(result.Value.WasAlreadyAccepted, Is.False);
             Assert.That(result.Value.Order.GlobalOrderNumber, Is.EqualTo(1));
-            Assert.That(result.Value.Order.Tickets, Has.Count.EqualTo(2));
-            Assert.That(result.Value.Order.Lines, Has.Count.EqualTo(2));
-            Assert.That(result.Value.Order.TotalCents, Is.EqualTo(950));
+            Assert.That(result.Value.Order.StationOrders, Has.Count.EqualTo(2));
+            Assert.That(result.Value.Order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(), Is.EqualTo(2));
         });
     }
 
@@ -100,13 +99,13 @@ public sealed class OrderAcceptanceTransactionTest
         Result<OrderAcceptanceResult, OrderValidationFailure> second = await transaction.AcceptAsync(
             BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
-        LocationTicket kitchenTicket = second.Value.Order.Tickets.Single(ticket => ticket.StationId == seeded.KitchenStationId);
-        LocationTicket barTicket = second.Value.Order.Tickets.Single(ticket => ticket.StationId == seeded.BarStationId);
+        StationOrder kitchenTicket = second.Value.Order.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.KitchenStationId);
+        StationOrder barTicket = second.Value.Order.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.BarStationId);
 
         Assert.Multiple(() =>
         {
-            Assert.That(kitchenTicket.StationSequenceNumber, Is.EqualTo(2));
-            Assert.That(barTicket.StationSequenceNumber, Is.EqualTo(2));
+            Assert.That(kitchenTicket.StationOrderNumber, Is.EqualTo(2));
+            Assert.That(barTicket.StationOrderNumber, Is.EqualTo(2));
             Assert.That(second.Value.Order.GlobalOrderNumber, Is.EqualTo(2));
         });
     }
@@ -117,13 +116,16 @@ public sealed class OrderAcceptanceTransactionTest
         {
             ClientOrderId = clientOrderId,
             StaffMemberId = seeded.StaffMemberId,
-            DeviceId = seeded.DeviceId,
-            TableLabel = "Tisch 12",
+            TableName = "Tisch 12",
             Note = null,
-            Lines =
+            Items =
             [
-                new OrderAcceptanceLineRequest { CatalogItemId = seeded.SausageItemId, Quantity = 2, Note = null },
-                new OrderAcceptanceLineRequest { CatalogItemId = seeded.LemonadeItemId, Quantity = 1, Note = null },
+                new OrderAcceptanceItemRequest { CatalogItemId = seeded.SausageItemId, Note = null,
+                    UnitPriceCents = 350,
+                },
+                new OrderAcceptanceItemRequest { CatalogItemId = seeded.LemonadeItemId, Note = null,
+                    UnitPriceCents = 350,
+                },
             ],
         };
     }

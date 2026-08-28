@@ -1,23 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
 import InvitationPanel from '../../../src/components/admin/staff/InvitationPanel.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import { testPlugins } from '../../support/plugins'
 
 const INVITATION = {
   invitationId: 'invitation-1',
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
-  sixDigitCode: '482913',
   expiresAtUtc: '2026-08-27T18:05:00Z',
   staffMember: null,
 }
 
 function mountPanel() {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(InvitationPanel, {
     props: { invitation: INVITATION },
-    global: { plugins: [i18n] },
+    global: { plugins: testPlugins() },
   })
 }
 
@@ -30,23 +26,37 @@ describe('the invitation panel', () => {
     )
   })
 
-  it('shows the six digit code for a camera that does not work', () => {
+  it('shows the address exactly once, as a code block', () => {
     const panel = mountPanel()
 
-    expect(panel.get('.six-digit-code').text()).toBe('482913')
+    expect(panel.findAll('.qr-url')).toHaveLength(1)
+    expect(panel.get('code.qr-url').text()).toBe('http://192.168.1.20:5000/j/abc123')
   })
 
-  it('keeps the address as secondary text rather than as the main instruction', () => {
+  it('offers a copy button beside the address, because nobody types that by hand', () => {
     const panel = mountPanel()
 
-    expect(panel.get('.qr-url').text()).toBe('http://192.168.1.20:5000/j/abc123')
+    expect(panel.find('.copy-url').exists()).toBe(true)
   })
 
-  it('still walks the admin through the three steps', () => {
+  it('tells the admin what happens, before showing the code', () => {
     const panel = mountPanel()
 
-    expect(panel.get('ol').text()).toContain(
-      'Der Kellner scannt diesen QR-Code mit der Kamera seines Telefons.',
+    expect(panel.get('.instruction').text()).toBe(
+      'Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.',
+    )
+  })
+
+  it('drops the name step when the code belongs to somebody already', () => {
+    const panel = mount(InvitationPanel, {
+      props: {
+        invitation: { ...INVITATION, staffMember: { id: 'staff-1', name: 'Anna' } },
+      },
+      global: { plugins: testPlugins() },
+    })
+
+    expect(panel.get('.instruction').text()).toBe(
+      'Scannen Sie diesen QR-Code mit der Kamera des Telefons.',
     )
   })
 })

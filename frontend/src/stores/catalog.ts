@@ -10,7 +10,6 @@ const EMPTY_CATALOG: Catalog = {
   categories: [],
   items: [],
   stations: [],
-  tableSuggestions: [],
 }
 
 export const useCatalogStore = defineStore('catalog', () => {
@@ -20,11 +19,6 @@ export const useCatalogStore = defineStore('catalog', () => {
     [...catalog.value.categories].sort((left, right) => left.sortOrder - right.sortOrder),
   )
 
-  const tableSuggestions = computed(() =>
-    [...catalog.value.tableSuggestions]
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-      .map((suggestion) => suggestion.label),
-  )
 
   function itemsInCategory(categoryName: string): CatalogItem[] {
     return catalog.value.items
@@ -55,5 +49,5 @@ export const useCatalogStore = defineStore('catalog', () => {
     })
   }
 
-  return { catalog, categories, tableSuggestions, itemsInCategory, stationName, load, listen }
+  return { catalog, categories, itemsInCategory, stationName, load, listen }
 })

@@ -77,4 +77,27 @@ describe('ItemButton', () => {
 
     expect(button.get('.quantity').text()).toBe('3')
   })
+
+  it('takes one off again when the server taps the minus', async () => {
+    const button = mountButton(true, 2)
+
+    await button.get('.remove').trigger('click')
+
+    expect(button.emitted('remove')).toHaveLength(1)
+  })
+
+  it('puts the minus and the count at the start of the row, ahead of the tap area', () => {
+    const button = mountButton(true, 2)
+
+    const first = button.get('.item-row').element.firstElementChild
+
+    expect(first?.classList.contains('quantity-control')).toBe(true)
+  })
+
+  it('keeps the space for the count while the item is not in the order, so the name never moves', () => {
+    const button = mountButton(true, 0)
+
+    expect(button.find('.quantity-control').exists()).toBe(true)
+    expect(button.find('.quantity').exists()).toBe(false)
+  })
 })

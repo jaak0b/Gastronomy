@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -20,16 +19,14 @@ public sealed class ResolveRaceTest
     {
         context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
 
-        using HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700));
+        using HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
         JsonDocument body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
         orderId = body.RootElement.GetProperty("orderId").GetGuid();
-        ticketId = body.RootElement.GetProperty("tickets")[0].GetProperty("ticketId").GetGuid();
+        ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        LocationTicket ticket = await database.LocationTickets.FirstAsync(candidate => candidate.Id == ticketId);
-        ticket.Status = LocationTicketStatus.Unknown;
         await database.PrintJobs
-            .Where(job => job.LocationTicketId == ticketId)
+            .Where(job => job.StationOrderId == ticketId)
             .ExecuteUpdateAsync(job => job.SetProperty(entry => entry.Status, PrintJobStatus.Unknown));
         await database.SaveChangesAsync();
     }
@@ -57,13 +54,13 @@ public sealed class ResolveRaceTest
         }
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        int reprintJobs = await database.PrintJobs.CountAsync(job => job.Kind == PrintJobKind.Reprint);
+        int printJobs = await database.PrintJobs.CountAsync();
 
         Assert.Multiple(() =>
         {
             Assert.That(accepted, Is.EqualTo(1), "Exactly one answer to the question may win.");
             Assert.That(refused, Is.EqualTo(1), "The losing answer must be told the question was already answered.");
-            Assert.That(reprintJobs, Is.EqualTo(1), "A ticket must never be reprinted twice for one question.");
+            Assert.That(printJobs, Is.EqualTo(1), "One question may never leave two slips waiting to print.");
         });
     }
 
@@ -76,7 +73,7 @@ public sealed class ResolveRaceTest
     {
         HttpRequestMessage request = new(
             HttpMethod.Post,
-            $"/api/orders/{orderId}/tickets/{ticketId}/resolve");
+            $"/api/orders/{orderId}/station-orders/{ticketId}/resolve");
         request.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.DeviceToken);
         request.Content = JsonContent.Create(new SlipOnThePileBody(false));

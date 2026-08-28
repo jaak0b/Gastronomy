@@ -65,7 +65,7 @@ public sealed class OrderPlacementScenarioTest
             IReadOnlyList<string> statuses = await ReadMyTicketStatusesAsync(deviceToken);
 
             return statuses.Count == 2
-                && statuses.All(status => status == LocationTicketStatus.PrintedOnTestPrinter.ToString());
+                && statuses.All(status => status == PrintJobStatus.Printed.ToString());
         });
 
         Assert.That(phoneSeesBothPrinted, Is.True, "The print state must come back to the phone's own endpoints.");
@@ -94,7 +94,7 @@ public sealed class OrderPlacementScenarioTest
 
         using HttpResponseMessage redeemed = await factory.Client.PostAsJsonAsync(
             "/api/enrolment/redeem",
-            new RedeemBody(qrCodeValue, null, "Anna", "NUnit"));
+            new RedeemBody(qrCodeValue, "Anna", "NUnit"));
 
         Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -132,16 +132,13 @@ public sealed class OrderPlacementScenarioTest
 
     private async Task<PlacedOrder> SendOrderAsync(string deviceToken, CatalogSelection selection)
     {
-        int expectedTotalCents = (selection.BratwurstPriceCents * 2) + selection.BeerPriceCents;
-
         OrderBody body = new(
             Guid.NewGuid(),
             "Tisch 12",
             null,
-            expectedTotalCents,
-            [
-                new OrderLineBody(selection.BratwurstItemId, 2, null, null),
-                new OrderLineBody(selection.BeerItemId, 1, null, null),
+                        [
+                new OrderItemBody(selection.BratwurstItemId, 2, selection.BratwurstPriceCents, null, null),
+                new OrderItemBody(selection.BeerItemId, 1, selection.BeerPriceCents, null, null),
             ]);
 
         using HttpResponseMessage response = await SendAsync(HttpMethod.Post, "/api/orders", deviceToken, body);
@@ -149,14 +146,14 @@ public sealed class OrderPlacementScenarioTest
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
         JsonDocument placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement tickets = placed.RootElement.GetProperty("tickets");
+        JsonElement tickets = placed.RootElement.GetProperty("stationOrders");
 
         return new PlacedOrder(
             placed.RootElement.GetProperty("orderId").GetGuid(),
             placed.RootElement.GetProperty("globalOrderNumber").GetInt32(),
             placed.RootElement.GetProperty("totalCents").GetInt32(),
             tickets.GetArrayLength(),
-            [.. tickets.EnumerateArray().Select(ticket => ticket.GetProperty("sequenceNumber").GetInt32())]);
+            [.. tickets.EnumerateArray().Select(ticket => ticket.GetProperty("stationOrderNumber").GetInt32())]);
     }
 
     private async Task<IReadOnlyList<string>> ReadMyTicketStatusesAsync(string deviceToken)
@@ -172,7 +169,7 @@ public sealed class OrderPlacementScenarioTest
 
         return
         [
-            .. orders[0].GetProperty("tickets")
+            .. orders[0].GetProperty("stationOrders")
                 .EnumerateArray()
                 .Select(ticket => ticket.GetProperty("status").GetString() ?? string.Empty),
         ];

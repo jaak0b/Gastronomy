@@ -30,12 +30,6 @@ public static class AdminStaffMembersEndpoints
             CancellationToken cancellationToken) =>
                 await handler.RenameAsync(staffMemberId, request, cancellationToken));
 
-        group.MapPost("/{staffMemberId:guid}/revoke-device", async (
-            Guid staffMemberId,
-            AdminStaffMembersHandler handler,
-            CancellationToken cancellationToken) =>
-                await handler.RevokeDeviceAsync(staffMemberId, cancellationToken));
-
         group.MapPost("/{staffMemberId:guid}/activate", async (
             Guid staffMemberId,
             AdminStaffMembersHandler handler,
@@ -99,7 +93,6 @@ public sealed class AdminStaffMembersHandler
 
         List<Device> devices = await dbContext.Devices
             .AsNoTracking()
-            .Where(device => device.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
         DateTime now = clock.UtcNow;
@@ -121,7 +114,6 @@ public sealed class AdminStaffMembersHandler
                 staffMember.IsActive,
                 device is not null,
                 device?.LastSeenAtUtc,
-                device?.UserAgentSnapshot,
                 outstanding.Any(invitation => invitation.StaffMemberId == staffMember.Id)));
         }
 
@@ -155,27 +147,6 @@ public sealed class AdminStaffMembersHandler
         return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
     }
 
-    public async Task<IResult> RevokeDeviceAsync(Guid staffMemberId, CancellationToken cancellationToken)
-    {
-        Device? device = await dbContext.Devices
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                candidate => candidate.StaffMemberId == staffMemberId && candidate.RevokedAtUtc == null,
-                cancellationToken);
-
-        if (device is null)
-        {
-            return resultEnvelope.Problem(
-                StatusCodes.Status409Conflict,
-                "PersonHasNoPhone",
-                "admin.personHasNoPhone");
-        }
-
-        await RevokeAsync(device.Id, cancellationToken);
-
-        return Results.Ok(new DeviceRevokedEvent(device.Id));
-    }
-
     public async Task<IResult> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
     {
         StaffMember? staffMember = await dbContext.StaffMembers
@@ -204,10 +175,22 @@ public sealed class AdminStaffMembersHandler
 
         List<Device> devices = await dbContext.Devices
             .AsNoTracking()
-            .Where(device => device.StaffMemberId == staffMemberId && device.RevokedAtUtc == null)
+            .Where(device => device.StaffMemberId == staffMemberId)
             .ToListAsync(cancellationToken);
 
         staffMember.IsActive = false;
+
+        DateTime now = clock.UtcNow;
+        List<EnrolmentInvitation> outstanding = await dbContext.EnrolmentInvitations
+            .Where(invitation => invitation.StaffMemberId == staffMemberId
+                && invitation.ConsumedAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (EnrolmentInvitation invitation in outstanding)
+        {
+            invitation.ConsumedAtUtc = now;
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         foreach (Device device in devices)
@@ -250,7 +233,7 @@ public sealed class AdminStaffMembersHandler
         {
             List<Device> devices = await dbContext.Devices
                 .AsNoTracking()
-                .Where(device => device.StaffMemberId == request.StaffMemberId && device.RevokedAtUtc == null)
+                .Where(device => device.StaffMemberId == request.StaffMemberId)
                 .ToListAsync(cancellationToken);
 
             foreach (Device device in devices)
@@ -263,7 +246,6 @@ public sealed class AdminStaffMembersHandler
             new InvitationView(
                 created.InvitationId,
                 qrUrl,
-                created.SixDigitCode,
                 created.ExpiresAtUtc,
                 staffMember is null ? null : new StaffMemberView(staffMember.Id, staffMember.Name),
                 urlBuilder.ReachableAddresses()),

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { VCombobox } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
@@ -25,7 +26,7 @@ const BRATWURST: AdminItem = {
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemForm, {
-    props: { item, stations: STATIONS, errorKey: null },
+    props: { item, stations: STATIONS, errorKey: null, categoryNames: ['Essen', 'Getränke'] },
     global: { plugins: [i18n] },
   })
 }
@@ -93,5 +94,27 @@ describe('the price field', () => {
     await form.get('form').trigger('submit')
 
     expect(form.emitted('save')).toBeUndefined()
+  })
+})
+
+describe('the category field', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('offers the categories that are already in use', () => {
+    const form = mountForm()
+
+    expect(form.getComponent(VCombobox).props('items')).toEqual(['Essen', 'Getränke'])
+  })
+
+  it('still takes a category that is typed out in full', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.category-field input').setValue('Nachtisch')
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ categoryName: 'Nachtisch' })
   })
 })

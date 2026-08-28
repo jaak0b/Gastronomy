@@ -2,26 +2,15 @@ using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Core.Printing;
 
-public sealed record PrinterEndpoint(
-    Guid StationId,
-    TransportKind TransportKind,
-    string? Host,
-    int Port,
-    string? AgentIdentifier,
-    TimeSpan ConnectTimeout,
-    TimeSpan JobTimeout,
-    TimeSpan HeartbeatInterval,
-    TimeSpan StatusQueryTimeout);
-
 public sealed record PrintPayload(
-    int ProcessId,
+    int PrinterJobId,
     ReadOnlyMemory<byte> Bytes,
     string RenderedText,
-    PrintJobKind Kind,
-    int StationSequenceNumber,
-    int ReprintCount,
+    int CopyNumber,
+    int StationOrderNumber,
     Guid StationId,
-    string StationName);
+    string StationName,
+    bool IsTest);
 
 public sealed record PrinterStatusSnapshot(
     bool IsOnline,
@@ -33,17 +22,10 @@ public sealed record PrinterStatusSnapshot(
     DateTimeOffset ObservedAt);
 
 public sealed record PrintDispatchResult(
-    PrintAttemptOutcome Outcome,
+    PrintOutcome Outcome,
     int BytesWritten,
     PrinterStatusSnapshot StatusAtEnd,
     string Detail);
-
-public interface IPrinterTransport
-{
-    public TransportKind Kind { get; }
-
-    public Task<IPrinterSession> ConnectAsync(PrinterEndpoint endpoint, CancellationToken cancellationToken);
-}
 
 public interface IPrinterSession : IAsyncDisposable
 {
@@ -53,3 +35,8 @@ public interface IPrinterSession : IAsyncDisposable
 
     public Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken);
 }
+
+public sealed record PrinterSessionTimeouts(
+    TimeSpan JobTimeout,
+    TimeSpan HeartbeatInterval,
+    TimeSpan StatusQueryTimeout);

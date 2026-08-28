@@ -19,21 +19,33 @@ const order = useOrderStore()
 const session = useSessionStore()
 const printerStatus = usePrinterStatusStore()
 
-const selectedCategory = ref<string | null>(null)
 const search = ref('')
 const itemAwaitingStation = ref<CatalogItem | null>(null)
+const headingElements: Record<string, HTMLElement> = {}
 
-const activeCategory = computed(
-  () => selectedCategory.value ?? catalog.categories[0]?.name ?? null,
+const isSearching = computed(() => search.value.trim().length > 0)
+
+const searchResults = computed(() => {
+  const typed = search.value.trim().toLowerCase()
+  return catalog.catalog.items.filter((item) => item.name.toLowerCase().includes(typed))
+})
+
+const groups = computed(() =>
+  catalog.categories.map((category) => ({
+    name: category.name,
+    items: catalog.itemsInCategory(category.name),
+  })),
 )
 
-const items = computed(() => {
-  const typed = search.value.trim().toLowerCase()
-  if (typed.length > 0) {
-    return catalog.catalog.items.filter((item) => item.name.toLowerCase().includes(typed))
+function rememberHeading(name: string, element: unknown): void {
+  if (element instanceof HTMLElement) {
+    headingElements[name] = element
   }
-  return activeCategory.value === null ? [] : catalog.itemsInCategory(activeCategory.value)
-})
+}
+
+function jumpTo(name: string): void {
+  headingElements[name]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 function quantityFor(itemId: string): number {
   return order.draft.lines
@@ -100,18 +112,33 @@ function removeItem(item: CatalogItem): void {
       :placeholder="t('catalog.searchPlaceholder')"
       hide-details
     />
-    <CategoryStrip
-      :categories="catalog.categories"
-      :selected="activeCategory"
-      @select="(name) => (selectedCategory = name)"
-    />
+    <CategoryStrip :categories="catalog.categories" @select="jumpTo" />
     <ItemGrid
-      :items="items"
+      v-if="isSearching"
+      :items="searchResults"
       :language="session.language"
       :quantity-for="quantityFor"
       @add="addItem"
       @remove="removeItem"
     />
+    <template v-else>
+      <section v-for="group in groups" :key="group.name" class="category-section">
+        <h2
+          :ref="(element) => rememberHeading(group.name, element)"
+          class="category-heading text-subtitle-1 font-weight-bold py-2"
+          :data-category="group.name"
+        >
+          {{ group.name }}
+        </h2>
+        <ItemGrid
+          :items="group.items"
+          :language="session.language"
+          :quantity-for="quantityFor"
+          @add="addItem"
+          @remove="removeItem"
+        />
+      </section>
+    </template>
     <LineStationSheet
       v-if="itemAwaitingStation !== null"
       :item="itemAwaitingStation"
@@ -126,3 +153,12 @@ function removeItem(item: CatalogItem): void {
     />
   </v-container>
 </template>
+
+<style scoped>
+.category-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: rgb(var(--v-theme-background));
+}
+</style>

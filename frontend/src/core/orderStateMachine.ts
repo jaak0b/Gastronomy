@@ -9,7 +9,7 @@ export function presentOrderState(order: OrderSummary): OrderPresentationState {
     case 'Printing':
       return 'Printing'
     case 'Printed':
-      return order.tickets.some((ticket) => ticket.status === 'HandledOnPaper')
+      return order.stationOrders.some((stationOrder) => stationOrder.status === 'HandledOnPaper')
         ? 'HandledOnPaper'
         : 'Printed'
     case 'NeedsAttention':

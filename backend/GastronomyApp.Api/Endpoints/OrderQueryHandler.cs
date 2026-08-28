@@ -1,5 +1,6 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -10,13 +11,20 @@ public sealed class OrderQueryHandler
 {
     private const int DefaultLimit = 50;
 
+    private readonly OrderLineCollapser lineCollapser = new();
+
     private readonly GastronomyAppDbContext dbContext;
     private readonly OrderReader orderReader;
+    private readonly StationPrinterStatusLookup statusLookup;
 
-    public OrderQueryHandler(GastronomyAppDbContext dbContext, OrderReader orderReader)
+    public OrderQueryHandler(
+        GastronomyAppDbContext dbContext,
+        OrderReader orderReader,
+        StationPrinterStatusLookup statusLookup)
     {
         this.dbContext = dbContext;
         this.orderReader = orderReader;
+        this.statusLookup = statusLookup;
     }
 
     public async Task<IResult> ListForStaffMemberAsync(Guid staffMemberId, CancellationToken cancellationToken)
@@ -53,83 +61,79 @@ public sealed class OrderQueryHandler
 
     public async Task<OrderDetailView> DescribeDetailAsync(LoadedOrder loaded, CancellationToken cancellationToken)
     {
-        Dictionary<Guid, Guid> ticketStations = loaded.Tickets
-            .ToDictionary(ticket => ticket.Id, ticket => ticket.StationId);
+        Dictionary<Guid, Guid> stationOrderStations = loaded.StationOrders
+            .ToDictionary(stationOrder => stationOrder.Id, stationOrder => stationOrder.StationId);
 
         await Task.CompletedTask;
 
-        List<OrderDetailLineView> lines =
+        List<OrderDetailItemView> items =
         [
-            .. loaded.Lines.Select(line => new OrderDetailLineView(
-                line.Id,
-                line.CatalogItemId,
-                line.ItemNameSnapshot,
-                line.Quantity,
-                line.UnitPriceCentsSnapshot,
-                line.Note,
-                StationNameFor(loaded, ticketStations, line.LocationTicketId))),
+            .. loaded.StationOrders.SelectMany(stationOrder => lineCollapser
+                .Collapse(
+                    [.. loaded.Items.Where(item => item.StationOrderId == stationOrder.Id)],
+                    item => item.ItemName,
+                    item => item.Note)
+                .Select(collapsed => new OrderDetailItemView(
+                    collapsed.Line.Id,
+                    collapsed.Line.CatalogItemId,
+                    collapsed.Line.ItemName,
+                    collapsed.Quantity,
+                    collapsed.Line.UnitPriceCents,
+                    collapsed.Line.Note,
+                    StationNameFor(loaded, stationOrderStations, collapsed.Line.StationOrderId)))),
         ];
 
         return new OrderDetailView(
             loaded.Order.Id,
             loaded.Order.GlobalOrderNumber,
-            loaded.Order.TableLabel,
+            loaded.Order.TableName,
             loaded.Order.Note,
-            loaded.Order.TotalCents,
-            loaded.Order.Status.ToString(),
+            orderReader.TotalCentsOf(loaded),
+            orderReader.StatusOf(loaded).ToString(),
             loaded.Order.CreatedAtUtc,
-            lines,
-            orderReader.DescribeTickets(loaded));
+            items,
+            orderReader.DescribeStationOrders(loaded));
     }
 
     public async Task<OrderListEntryView> DescribeListEntryAsync(
         LoadedOrder loaded,
         CancellationToken cancellationToken)
     {
-        HashSet<Guid> stationIds = [.. loaded.Tickets.Select(ticket => ticket.StationId)];
+        HashSet<Guid> stationIds = [.. loaded.StationOrders.Select(stationOrder => stationOrder.StationId)];
 
-        Dictionary<Guid, PrinterStatus> printerStatuses = await dbContext.PrinterStatuses
-            .AsNoTracking()
-            .Where(status => stationIds.Contains(status.StationId))
-            .ToDictionaryAsync(status => status.StationId, cancellationToken);
+        Dictionary<Guid, PrinterStatus> printerStatuses =
+            await statusLookup.ByStationAsync(dbContext, stationIds, cancellationToken);
 
-        HashSet<Guid> ticketIds = [.. loaded.Tickets.Select(ticket => ticket.Id)];
-
-        Dictionary<Guid, PrintJob> latestJobs = await dbContext.PrintJobs
-            .AsNoTracking()
-            .Where(job => job.LocationTicketId != null && ticketIds.Contains(job.LocationTicketId!.Value))
-            .GroupBy(job => job.LocationTicketId!.Value)
-            .Select(group => group.OrderByDescending(job => job.CreatedAtUtc).First())
-            .ToDictionaryAsync(job => job.LocationTicketId!.Value, cancellationToken);
-
-        List<OrderListTicketView> tickets =
+        List<OrderListStationOrderView> stationOrders =
         [
-            .. loaded.Tickets.Select(ticket => new OrderListTicketView(
-                ticket.Id,
-                loaded.StationNames.TryGetValue(ticket.StationId, out string? name) ? name : string.Empty,
-                ticket.StationSequenceNumber,
-                ticket.Status.ToString(),
-                latestJobs.TryGetValue(ticket.Id, out PrintJob? job) ? job.FailureReason?.ToString() : null,
-                !printerStatuses.TryGetValue(ticket.StationId, out PrinterStatus? status)
+            .. loaded.StationOrders.Select(stationOrder => new OrderListStationOrderView(
+                stationOrder.Id,
+                loaded.StationNames.TryGetValue(stationOrder.StationId, out string? name) ? name : string.Empty,
+                stationOrder.StationOrderNumber,
+                orderReader.StatusOfStationOrder(loaded, stationOrder.Id).ToString(),
+                loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrder.Id, out PrintJob? job)
+                    ? job.FailureReason?.ToString()
+                    : null,
+                !printerStatuses.TryGetValue(stationOrder.StationId, out PrinterStatus? status)
                     || !status.IsPaperEnd)),
         ];
 
         return new OrderListEntryView(
             loaded.Order.Id,
             loaded.Order.GlobalOrderNumber,
-            loaded.Order.TableLabel,
-            loaded.Order.TotalCents,
-            loaded.Order.Status.ToString(),
+            loaded.Order.TableName,
+            orderReader.TotalCentsOf(loaded),
+            orderReader.StatusOf(loaded).ToString(),
             loaded.Order.CreatedAtUtc,
-            tickets);
+            stationOrders);
     }
 
     private string StationNameFor(
         LoadedOrder loaded,
-        IReadOnlyDictionary<Guid, Guid> ticketStations,
-        Guid locationTicketId)
+        IReadOnlyDictionary<Guid, Guid> stationOrderStations,
+        Guid stationOrderId)
     {
-        if (!ticketStations.TryGetValue(locationTicketId, out Guid stationId))
+        if (!stationOrderStations.TryGetValue(stationOrderId, out Guid stationId))
         {
             return string.Empty;
         }

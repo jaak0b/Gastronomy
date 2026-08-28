@@ -1,5 +1,4 @@
 using GastronomyApp.Api.Contracts;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
@@ -20,12 +19,9 @@ public static class AdminNumbersEndpoints
             INumberAllocator numberAllocator,
             CancellationToken cancellationToken) =>
         {
-            int stationCounters = await dbContext.NumberCounters
-                .CountAsync(
-                    counter => counter.CounterKind == NumberCounterKind.StationSequence,
-                    cancellationToken);
+            int stationCounters = await dbContext.Stations.CountAsync(cancellationToken);
 
-            await numberAllocator.ResetOrderAndSlipNumbersAsync(cancellationToken);
+            await numberAllocator.ResetOrderAndStationNumbersAsync(cancellationToken);
 
             return Results.Ok(new ResetNumbersView(stationCounters));
         });

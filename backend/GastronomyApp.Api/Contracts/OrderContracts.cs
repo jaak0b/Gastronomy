@@ -1,9 +1,9 @@
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record OrderLineRequest
+public sealed record OrderItemRequest
 {
     public required Guid CatalogItemId { get; init; }
-    public required int Quantity { get; init; }
+    public required int UnitPriceCents { get; init; }
     public string? Note { get; init; }
     public Guid? StationId { get; init; }
 }
@@ -11,33 +11,31 @@ public sealed record OrderLineRequest
 public sealed record PlaceOrderRequest
 {
     public required Guid ClientOrderId { get; init; }
-    public required string? TableLabel { get; init; }
+    public required string? TableName { get; init; }
     public string? Note { get; init; }
-    public int? ExpectedTotalCents { get; init; }
-    public required IReadOnlyList<OrderLineRequest>? Lines { get; init; }
+    public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
 }
 
-public sealed record OrderTicketView(
-    Guid TicketId,
+public sealed record StationOrderView(
+    Guid StationOrderId,
     Guid StationId,
     string StationName,
-    int SequenceNumber,
+    int StationOrderNumber,
     string Status,
-    IReadOnlyList<Guid> LineIds);
+    IReadOnlyList<Guid> ItemIds);
 
 public sealed record PlacedOrderView(
     Guid OrderId,
     int GlobalOrderNumber,
     string Status,
     int TotalCents,
-    int ExpectedTotalCents,
     DateTime CreatedAtUtc,
-    IReadOnlyList<OrderTicketView> Tickets);
+    IReadOnlyList<StationOrderView> StationOrders);
 
-public sealed record OrderListTicketView(
-    Guid TicketId,
+public sealed record OrderListStationOrderView(
+    Guid StationOrderId,
     string StationName,
-    int SequenceNumber,
+    int StationOrderNumber,
     string Status,
     string? FailureReason,
     bool PrinterHasPaper);
@@ -45,16 +43,16 @@ public sealed record OrderListTicketView(
 public sealed record OrderListEntryView(
     Guid OrderId,
     int GlobalOrderNumber,
-    string TableLabel,
+    string TableName,
     int TotalCents,
     string Status,
     DateTime CreatedAtUtc,
-    IReadOnlyList<OrderListTicketView> Tickets);
+    IReadOnlyList<OrderListStationOrderView> StationOrders);
 
 public sealed record OrderListView(IReadOnlyList<OrderListEntryView> Orders);
 
-public sealed record OrderDetailLineView(
-    Guid LineId,
+public sealed record OrderDetailItemView(
+    Guid ItemId,
     Guid CatalogItemId,
     string ItemName,
     int Quantity,
@@ -65,15 +63,15 @@ public sealed record OrderDetailLineView(
 public sealed record OrderDetailView(
     Guid OrderId,
     int GlobalOrderNumber,
-    string TableLabel,
+    string TableName,
     string? Note,
     int TotalCents,
     string Status,
     DateTime CreatedAtUtc,
-    IReadOnlyList<OrderDetailLineView> Lines,
-    IReadOnlyList<OrderTicketView> Tickets);
+    IReadOnlyList<OrderDetailItemView> Items,
+    IReadOnlyList<StationOrderView> StationOrders);
 
-public sealed record ResolveTicketRequest
+public sealed record ResolveUnknownPrintRequest
 {
     public required bool SlipIsOnThePile { get; init; }
 }

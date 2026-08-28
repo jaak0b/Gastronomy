@@ -16,12 +16,13 @@ public sealed record OrderValidationFailure
 
 public enum OrderValidationFailureReason
 {
-    NoLines,
-    QuantityOutOfRange,
-    TableLabelMissing,
-    TableLabelTooLong,
+    NoItems,
+    TooManyItems,
+    TableNameMissing,
+    TableNameTooLong,
     UnknownCatalogItemId,
     StationRequired,
     StationNotAssignedToItem,
     ItemHasNoStation,
+    PriceOutOfRange,
 }

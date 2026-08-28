@@ -101,8 +101,9 @@ function noteInput(event: Event): string | null {
         <v-card-text>
           <v-text-field
             class="line-note"
-            :label="t('catalog.lineNote')"
+            :label="t('catalog.itemNote')"
             :placeholder="t('catalog.lineNotePlaceholder')"
+            persistent-placeholder
             :model-value="entry.line.note ?? ''"
             @input="$emit('changeNote', entry.index, noteInput($event))"
           />

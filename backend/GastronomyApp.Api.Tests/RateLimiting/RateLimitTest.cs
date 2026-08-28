@@ -103,7 +103,7 @@ public sealed class RateLimitTest
     {
         return factory.Client.PostAsJsonAsync(
             "/api/enrolment/redeem",
-            new Endpoints.RedeemBody(null, "000000", "Anna", "NUnit"));
+            new Endpoints.RedeemBody("not-a-real-code", "Anna", "NUnit"));
     }
 
     private async Task<HttpResponseMessage> SendSessionRequestAsync()

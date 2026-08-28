@@ -118,7 +118,7 @@ erDiagram
     EventSession ||--o{ Order : contains
     EventSession ||--o{ NumberCounter : scopes
 
-    ProductionLocation ||--|| PrinterConfiguration : "prints through"
+    ProductionLocation }o--o| Printer : "prints through"
     ProductionLocation ||--|| PrinterStatus : "last reported"
     ProductionLocation ||--o{ ItemLocationAssignment : "can produce"
     ProductionLocation ||--o{ LocationTicket : receives
@@ -269,19 +269,12 @@ erDiagram
         DateTime StartedAtUtc
         DateTime EndedAtUtc
     }
-    PrinterConfiguration {
+    Printer {
         Guid Id PK
-        Guid ProductionLocationId FK
-        string TransportKind
-        string Host "nullable"
-        int Port
-        string AgentIdentifier "nullable"
-        int CharactersPerLine
-        string CodePageName
-        int ConnectTimeoutSeconds
-        int JobTimeoutSeconds
-        int HeartbeatSeconds
-        bool IsEnabled
+        string PrinterType
+        string Name
+        string Host "nullable, network printers only"
+        int Port "nullable, network printers only"
     }
     PrinterStatus {
         Guid ProductionLocationId PK
@@ -299,7 +292,7 @@ erDiagram
         string CounterKind PK
         Guid EventSessionId PK "nullable"
         Guid ProductionLocationId PK "nullable"
-        string PrinterEndpointKey PK "nullable"
+        Guid PrinterId PK "nullable"
         int NextValue
     }
 ```
@@ -349,7 +342,7 @@ A practice run is exempt from the last condition, because the test printer is th
 confirmation; only an order older than one hour is exempt from it. **`Failed` counts as non-final for
 the first guard above**, alongside `Queued`, `Blocked`, `Printing`, and `Unknown`: a ticket that has
 given up is not a settled ticket, and starting a new session over one would make it vanish from every
-phone with nobody having acted on it. Only `Printed`, `PrintedOnTestPrinter`, and `HandledOnPaper` are
+phone with nobody having acted on it. Only `Printed` and `HandledOnPaper` are
 final. Section 5.6 defines an open ticket the same way.
 
 ### 2.4 ProductionLocation
@@ -368,8 +361,9 @@ the whole of the site structure the system models.
 
 Invariants:
 
-* Every active location has exactly one `PrinterConfiguration` row and exactly one `PrinterStatus` row.
-  Both are created with the location and never exist without it.
+* Every active location has exactly one `PrinterStatus` row, created with the location and never
+  existing without it. Its `PrinterId` may be null, which means nothing prints there until one is
+  assigned.
 * A location cannot be deactivated while it has tickets that are not in a final state.
 * **A location cannot be deactivated while it is the last active location of any active item.** The
   refusal names those items. This is what keeps the candidate set in section 2.6 non-empty, and it is
@@ -729,28 +723,40 @@ Invariants:
   connection is discarded, because the counter cycles and a stale match would turn a lost slip into a
   reported success.
 
-### 2.12 PrinterConfiguration and PrinterStatus
+### 2.12 Printer and PrinterStatus
 
-| PrinterConfiguration field | Type | Default | Notes |
+A printer is a device the admin created, not a row that appears beside a location. One table holds every
+supported printer, table per hierarchy, with the discriminator naming the model and its connection.
+
+| Printer field | Type | Default | Notes |
 |---|---|---|---|
-| ProductionLocationId | Guid | | One to one |
-| TransportKind | string | `Mock` | `Network`, `Agent`, or `Mock`. This is the only place the choice exists. |
-| Host | string(64)? | | IP address of the printer or its WiFi bridge. **Two locations may name the same address, and that is a supported configuration rather than a mistake.** See below. |
-| Port | int | 9100 | |
-| AgentIdentifier | string(64)? | | Reserved for the deferred Pi agent |
-| CharactersPerLine | int | 48 | Font A on 80 mm paper |
-| CodePageName | string | `PC858` | ESC/POS page 19, which contains the German umlauts and the Eszett |
-| ConnectTimeoutSeconds | int | 5 | |
-| JobTimeoutSeconds | int | 90 | Matches the printer's own connection timeout |
-| HeartbeatSeconds | int | 10 | `DLE EOT n=4` poll interval |
-| IsEnabled | bool | true | A disabled printer holds its tickets rather than failing them straight away, and section 3.2 bounds how long that can last |
+| Id | Guid | | |
+| PrinterType | string(34) | | The discriminator: `TestPrinter` or `EpsonTmT20ivNetworkPrinter`. Adding a supported printer adds a value here and needs no other schema change unless the model wants a field nobody has yet. |
+| Name | string(40) | | What the volunteer calls the box, such as "Drucker Küche" |
+| | | | A printer is deleted outright rather than deactivated, because it is a piece of hardware somebody unplugged. Deleting one a location still points at is refused, naming those locations. |
+| Host | string(64)? | | `EpsonTmT20ivNetworkPrinter` only. IP address of the printer or its WiFi bridge |
+| Port | int? | 9100 | `EpsonTmT20ivNetworkPrinter` only |
+
+`ProductionLocation.PrinterId` is nullable and points at the printer whose pile that location works off.
+**A location has at most one printer and a printer may serve several locations**, which is what makes
+one dead printer survivable. See below.
+
+Characters per line, the code page and the three timeouts are facts about the model, so they live in the
+driver (section 7.2) rather than in columns a volunteer types. A location with no printer is a normal
+state right after it is created: nothing prints there, the overview says so by name, and the location's
+own screen tells the people standing at it to work the orders off the phone.
+
+**A printer no location uses is equally normal and is never remarked on.** A fire department may keep a
+dozen printers configured and use two of them at a given festival. Testing a printer and reconnecting to
+it are about the device, so both work whatever the locations point at, and a test slip carries the
+printer's own name rather than a location's.
 
 | PrinterStatus field | Type | Notes |
 |---|---|---|
-| ProductionLocationId | Guid | |
+| PrinterId | Guid | The status belongs to the device. A printer no location uses still reports one, which is what lets a test print say something. |
 | IsOnline | bool | A connection is open and the last heartbeat answered |
 | IsPaperEnd, IsPaperNearEnd, IsCoverOpen, IsInErrorState | bool | Decoded from ASB and `DLE EOT` |
-| IsFaulty | bool | Set by the circuit breaker in section 7.6. The worker has stopped attempting until a human acts. **The breaker is keyed by printer endpoint, so a trip sets this row for every location resolving to that endpoint and a reconnect on any of them clears all of them.** |
+| IsFaulty | bool | Set by the circuit breaker in section 7.6. The worker has stopped attempting until a human acts. **The breaker is keyed by the printer, so one trip covers every location routing to it and a reconnect from any of them clears it.** |
 | LastDetail | string(200) | |
 | LastChangedAtUtc, LastHeardFromAtUtc | DateTime | |
 
@@ -797,24 +803,23 @@ relationship instead of a naming convention. See section 4.
 | CounterKind | string(20) | `GlobalOrder`, `LocationSequence`, or `PrinterProcessId`. Part of the primary key. |
 | EventSessionId | Guid? | Set for `GlobalOrder` and `LocationSequence`, null for `PrinterProcessId`. Part of the primary key. |
 | ProductionLocationId | Guid? | Set for `LocationSequence`, null for `GlobalOrder` and `PrinterProcessId`. Part of the primary key. |
-| PrinterEndpointKey | string(96)? | Set for `PrinterProcessId`, null for the other two. Part of the primary key. |
+| PrinterId | Guid? | Set for `PrinterProcessId`, empty for the other two. Part of the primary key. |
 | NextValue | int | |
 
 `PrinterProcessId` lives here rather than in memory because a counter that restarts at 1 after a crash
 can match a stale echo, and a stale match reports a lost slip as printed.
 
 **The process id counter belongs to the printer, not to the location**, which is why its key is the
-endpoint and not a location id. Two locations sharing one machine (section 2.12) share one counter, and
+printer's id and not a location id. Two locations sharing one machine (section 2.12) share one counter, and
 they have to. Two independent counters feeding one socket can hand out the same value twice: a job that
 timed out at 90 seconds can have its echo arrive late while the next job is already waiting for an
 echo, and if that next job came from the other location's counter with the same number, the worker would
 accept the dead job's echo as the live job's confirmation and report a lost slip as printed. One counter
 per socket makes that arithmetically impossible.
 
-`PrinterEndpointKey` is the canonical form of the endpoint, `TransportKind|Host|Port|AgentIdentifier`,
-with the empty string for the parts a transport does not use. It is a string because an endpoint has no
-id of its own, it is built in one place alongside the worker that uses it, and it is never parsed back
-apart.
+The key is the printer's own id. An earlier draft built a string out of the transport kind, host, port
+and agent identifier, because a printer had no identity of its own; a printer is an entity now, so the
+counter, the worker and the circuit breaker all key on the same id and no canonical string exists.
 
 ---
 
@@ -871,10 +876,9 @@ no arrows to be missing.
 | # | Condition over the order's tickets | Order status |
 |---|---|---|
 | 1 | Any ticket is `Unknown`, `Failed`, or `Blocked` | `NeedsAttention` |
-| 2 | Any ticket is `PrintedOnTestPrinter` and the session is not a practice run | `NeedsAttention` |
-| 3 | Every ticket is `Printed`, `HandledOnPaper`, or `PrintedOnTestPrinter` | `Printed` |
-| 4 | Any ticket is `Printing` | `Printing` |
-| 5 | Otherwise, which means at least one ticket is `Queued` | `Accepted` |
+| 2 | Every ticket is `Printed` or `HandledOnPaper` | `Printed` |
+| 3 | Any ticket is `Printing` | `Printing` |
+| 4 | Otherwise, which means at least one ticket is `Queued` | `Accepted` |
 
 Row 1 puts `Blocked` on the attention list on purpose. A station with no paper needs a human, and the
 message that reaches the phone says the slip prints by itself once the roll is in, so the row clears
@@ -921,7 +925,6 @@ stateDiagram-v2
     [*] --> Queued : order accepted
     Queued --> Printing : worker claimed the job
     Printing --> Printed : printer echoed the process id
-    Printing --> PrintedOnTestPrinter : the test printer rendered it
     Printing --> Unknown : socket dropped or the echo timed out after bytes were written
     Printing --> Queued : attempt failed before any byte was written
     Printing --> Blocked : the pre-flight status check, run after the claim, says paper end or cover open
@@ -939,7 +942,6 @@ stateDiagram-v2
     Blocked --> HandledOnPaper : acknowledged at a station that cannot print
     Queued --> HandledOnPaper : acknowledged at a station that cannot print
     Printed --> Queued : a human asked for a reprint
-    PrintedOnTestPrinter --> Queued : a human asked for a reprint
     Printed --> [*]
     HandledOnPaper --> [*]
 ```
@@ -950,7 +952,6 @@ stateDiagram-v2
 | `Blocked` | The printer answered, and it has no paper or an open cover. Nothing was sent. |
 | `Printing` | Bytes are being written, or the process id echo is being waited for. |
 | `Printed` | The printer echoed the process id, or a human confirmed the slip is on the pile. |
-| `PrintedOnTestPrinter` | The station is on the test printer. The slip exists as a file on the laptop and nowhere else. |
 | `Unknown` | Bytes were written and the outcome is genuinely not knowable from here. |
 | `Failed` | Nothing was sent, and either the give-up window expired or the ticket hit the outer bound. The reason says whether the printer was unreachable, switched off, out of paper, or declared faulty. |
 | `HandledOnPaper` | The station saw the order on the break-glass page and is producing it. The slip will not be chased any further, and no job for it will ever be sent. |
@@ -978,8 +979,8 @@ moment the condition clears without the elapsed time being reset:
 |---|---|
 | Paper end | `PrinterStatus.IsPaperEnd` |
 | Cover open | `PrinterStatus.IsCoverOpen` |
-| Station switched off at the laptop | `PrinterConfiguration.IsEnabled` is false |
-| The test printer's folder cannot be written | `PrinterStatus.IsInErrorState` on a `Mock` transport |
+| The station has no printer assigned | `ProductionLocation.PrinterId` is null |
+| The test printer's folder cannot be written | `PrinterStatus.IsInErrorState` |
 
 Every other reason a slip has not printed runs the clock: unreachable, timing out, a station declared
 faulty, and a mechanical error the printer reports. The concrete failure the suspension prevents is
@@ -1015,8 +1016,8 @@ holding it".** The diagram above gives the bound only from `Queued` and from `Bl
 to. `Printing` means bytes are on the wire or the echo is being waited for, and failing the ticket then
 would send a server to announce an order that the printer puts on the pile eight seconds later, which
 is the table served twice that this whole section is written against. Nothing parks as a result: a job
-is bounded by `JobTimeoutSeconds`, which is 90 seconds, so the ticket leaves `Printing` for `Printed`,
-`PrintedOnTestPrinter` or `Unknown` within a minute and a half. The bound is evaluated again the moment
+is bounded by the driver's job timeout, which is 90 seconds, so the ticket leaves `Printing` for
+`Printed` or `Unknown` within a minute and a half. The bound is evaluated again the moment
 the job ends, so a ticket held this way is at most 90 seconds late, and one that ended in `Unknown` is
 a question on a phone rather than a ticket waiting on a clock.
 
@@ -1146,7 +1147,7 @@ state; it does not report job history. So:
 | Backend restarted mid-job | Unknown | Never | `Unknown` on recovery | The question, on the next connect of that phone |
 | Station is disabled in configuration | 0 | Held until it is switched on again | `Queued`, and `Failed` only at the 20 minute outer bound | That the station is switched off. The give-up window does not run, because the cause is known. |
 | A human took the ticket on the break-glass page while a job was queued for it | 0 | No, the job ends `Failed` with `TicketResolvedByHuman` | `HandledOnPaper` | That the station has taken the order from the screen and no slip will be printed |
-| Station is on the test printer during a real event | all | No | `PrintedOnTestPrinter` | That the order went to the test printer and no slip is on the pile |
+| Station has no printer | 0 | No, nothing is ever sent | `Queued`, and `Failed` only at the 20 minute outer bound | That the station has no printer. The overview names the station, and the people at it work the orders off its own screen. |
 
 ### 3.6 A guest changes their mind
 
@@ -1192,7 +1193,7 @@ Two numbers appear on every slip. Both matter, and they do different jobs.
 
 Counters live in the `NumberCounter` table, keyed by kind and by the ids the counter belongs to:
 
-| CounterKind | EventSessionId | ProductionLocationId | PrinterEndpointKey | Counts |
+| CounterKind | EventSessionId | ProductionLocationId | PrinterId | Counts |
 |---|---|---|---|---|
 | `GlobalOrder` | set | null | null | Global order numbers |
 | `LocationSequence` | set | set | null | That location's sequence numbers |
@@ -1625,7 +1626,7 @@ the same person answered it on the laptop or from a second phone.
 
 #### POST /api/orders/{orderId}/tickets/{ticketId}/reprint
 
-Device auth, same person scope. Allowed from `Failed`, `Printed`, and `PrintedOnTestPrinter`. Creates a
+Device auth, same person scope. Allowed from `Failed` and `Printed`. Creates a
 `PrintJob` of kind `Reprint`. Response 202 with the ticket. 409 if a job for that ticket is already
 running.
 
@@ -1663,8 +1664,8 @@ addresses.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/locations | | 200 list, each with its printer configuration and live status |
-| POST | /api/admin/locations | `{name, sortOrder, slipLanguage}` | 201, also creating a printer configuration with `TransportKind: "Mock"` and a fresh access key. `slipLanguage` may be omitted and defaults to `de` |
+| GET | /api/admin/locations | | 200 list, each naming its printer and that printer's live status |
+| POST | /api/admin/locations | `{name, sortOrder, printerId, slipLanguage}` | 201 with a fresh access key. `printerId` may be null, which is the normal state until a printer exists. `slipLanguage` may be omitted and defaults to `de` |
 | PUT | /api/admin/locations/{id} | `{name, sortOrder, slipLanguage}` | 200 |
 | POST | /api/admin/locations/{id}/deactivate | | 200, or 409 naming the open tickets or the items that would be left with no station |
 | POST | /api/admin/locations/{id}/regenerate-access-key | | 200 with the new break-glass URL |
@@ -1747,10 +1748,12 @@ address are written on paper.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /api/admin/printers | | 200 configuration plus live status per location |
-| PUT | /api/admin/printers/{locationId} | full configuration | 200. Changing the endpoint restarts the workers on both sides of the change. **An address another location already uses is accepted**, and the response says which locations now share it. |
-| POST | /api/admin/printers/{locationId}/test-print | | 202. Prints a test slip naming the location, the current time, and carrying the station card's QR code. Section 7.7 gives the command sequence for that QR code. |
-| POST | /api/admin/printers/{locationId}/reconnect | | 202. Also clears `IsFaulty`. Because the circuit breaker is keyed by printer endpoint (7.6), this clears `IsFaulty` on every location sharing that endpoint and restarts the one worker, and the response names those locations. This is how a human ends a circuit breaker. |
+| GET | /api/admin/printers | | 200, each printer with its live status and the locations that route to it |
+| POST | /api/admin/printers | `{printerType, name, ...}` | 201. The body is polymorphic on `printerType`, which is fixed for the life of the printer. |
+| PUT | /api/admin/printers/{printerId} | `{printerType, name, ...}` | 200. A body naming another `printerType` is refused with 422, because a printer's type never changes. |
+| DELETE | /api/admin/printers/{printerId} | | 200. A printer a location still points at is refused with 409 naming those locations. There is no deactivated state: a printer is hardware somebody unplugged. |
+| POST | /api/admin/printers/{printerId}/test-print | | 202. Prints a test slip naming the printer, the current time, and carrying the station card's QR code. Section 7.7 gives the command sequence for that QR code. **Whether a location routes to this printer is irrelevant**, because a test print is about the device. |
+| POST | /api/admin/printers/{printerId}/reconnect | | 202. Also clears `IsFaulty`. The circuit breaker is keyed by the printer (7.6), so this clears the one status row, restarts the one worker, and the response names the locations that were freed. This is how a human ends a circuit breaker. |
 | POST | /api/admin/printers/discover | | 202, then `PrinterDiscovered` events. Scans the laptop's own /24 for open port 9100 and reports what answered. |
 
 **Pointing a station at another station's printer is the product's answer to a dead printer**, and it
@@ -1769,9 +1772,12 @@ printer, at every event, because DHCP moves them. A list to tap replaces all thr
 One endpoint, because the mock's slips are files in a folder (section 7.8) rather than a screen with a
 list to fetch and clear.
 
-| Method | Path | Body | Response |
-|---|---|---|---|
-| POST | /api/admin/mock/{locationId}/fault | `{fault, mode}` | 200. `fault` is one of `None`, `PaperEnd`, `CoverOpen`, `ConnectTimeout`, `DropSocketEarly`, `DropSocketMidJob`, `UnknownOutcome`. `mode` is `Once` or `Sticky`. 422 when the location's transport is not `Mock`. |
+There is no endpoint named after the test printer. A fault is armed by saving the test printer itself,
+`PUT /api/admin/printers/{printerId}` with `printerType: "TestPrinter"` and the two fields
+`simulatedFault` and `simulatedFaultMode`. `simulatedFault` is one of `None`, `PaperEnd`, `CoverOpen`,
+`ConnectTimeout`, `DropSocketEarly`, `DropSocketMidJob`, `UnknownOutcome`, and `simulatedFaultMode` is
+`Once` or `Sticky`. The armed fault is held in memory, not in the database, because it is a
+demonstration control and a restart should clear it.
 
 The fault set is enumerated in exactly two places, here and in the table in section 7.8, and the two
 are the same seven values. `DropSocketEarly` is the zero byte drop that section 7.6 singles out as the
@@ -1882,7 +1888,7 @@ screen rather than only the slips that happened to fail.
 | GET | /api/station/{accessKey}/status | 200 with the selected location's printer status |
 
 **The list is every open ticket, not only the broken ones.** A ticket is open when its status is
-anything other than `Printed`, `PrintedOnTestPrinter` or `HandledOnPaper`, which is to say `Queued`,
+anything other than `Printed` or `HandledOnPaper`, which is to say `Queued`,
 `Blocked`, `Printing`, `Unknown` and `Failed`. When a printer has died and no spare exists, the kitchen
 opens this page on somebody's phone and produces the orders straight off it, writing the table number
 on a scrap of paper and sending it out with the food. That only works if every order is on the screen,
@@ -1930,7 +1936,7 @@ The condition is evaluated on the server, and the page renders the button only w
 >
 > A location cannot print right now when any of these holds: `PrinterStatus.IsFaulty`,
 > `PrinterStatus.IsOnline` is false, `PrinterStatus.IsPaperEnd`, `PrinterStatus.IsCoverOpen`,
-> `PrinterStatus.IsInErrorState`, or `PrinterConfiguration.IsEnabled` is false.
+> `PrinterStatus.IsInErrorState`, or the location has no printer at all.
 
 Everything else is refused. `POST .../acknowledge` on a ticket at a working station answers **409 with
 `station.takeRefused`**, which tells the reader to fetch the slip at the printer and says that the
@@ -2015,7 +2021,7 @@ the group grants nothing the endpoint did not.
 | `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, failureReason, printerHasPaper, messageKey, parameters}` | `person:{placing}`, `admin`, `stations` | The phone updates that ticket's chip and, when the status needs a human, renders the message and its next step in its own language. The station page refetches its ticket list. |
 | `OrderStatusChanged` | `{orderId, status}` | `person:{placing}`, `admin` | The phone updates the order's headline state. |
 | `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | `devices`, `admin`, `stations` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. `waitingTicketCount` is appended to that banner with `header.stationWaiting`. The admin printer screen updates its indicator. The station page re-evaluates which rows offer the acknowledge button. |
-| `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap. Tapping it fills in the host and port **and sets `TransportKind` to `Network`**, so the station leaves the test printer in the one action. Filling in an address without changing the kind would leave the station on the mock with a printer address on its row, which is exactly the station nobody notices until a guest asks. |
+| `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap. Tapping it fills in the host and port on the network printer being edited. A printer's type is chosen when it is created and never changes, so there is no kind left to forget to switch. |
 | `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out stays in the picker, greyed and not selectable, and any quantity already in the basket for it is flagged rather than silently dropped. A changed price is picked up the same way, which is what keeps an open basket showing the backend's current prices. |
 | `EnrolmentCompleted` | `{staffMemberId, staffMemberName, deviceId}` | `admin` | The QR code is replaced by the person's name and the list gains their row, so the admin sees that somebody across the room finished without walking over to look at their phone. |
 | `DeviceRevoked` | `{deviceId}` | `device:{deviceId}`, `admin` | The phone clears its token and shows the enrolment screen with an explanation. **The half-built order on screen is kept**, and comes back when the phone is set up again. |
@@ -2072,17 +2078,28 @@ Ethernet). These are not preferences.
 * `DLE EOT n=2` bit 2 set means the cover is open.
 * `DLE EOT n=4` bits 5 and 6 both set (mask `0x60`) means paper end.
 
-### 7.2 The transport interface
+### 7.2 The driver interface
 
-Nothing above this interface knows which implementation it is talking to. A station's transport is
-configuration, not code, and a new transport is a new implementation rather than a branch inside an
-existing one.
+A `Printer` row records the device the volunteer configured, and its driver is the code that knows how
+to talk to that model. Nothing above this interface knows which driver it is talking to:
+`PrinterDriverRegistry` maps a printer's type to its driver and is the only place that mapping exists.
+A new supported printer is a new entity, a new driver and one registration, never a branch inside an
+existing driver.
+
+The driver owns the facts about the model, so characters per line, the code page, the timeouts and
+whether the `GS ( H` echo can be trusted live in code rather than in columns a volunteer types.
 
 ```csharp
-public interface IPrinterTransport
+public interface IPrinterDriver
 {
-    PrinterTransportKind Kind { get; }
-    Task<IPrinterSession> ConnectAsync(PrinterEndpoint endpoint, CancellationToken cancellationToken);
+    Type PrinterType { get; }
+    int CharactersPerLine { get; }
+    string CodePageName { get; }
+    TimeSpan ConnectTimeout { get; }
+    TimeSpan JobTimeout { get; }
+    TimeSpan HeartbeatInterval { get; }
+    TimeSpan StatusQueryTimeout { get; }
+    Task<IPrinterSession> ConnectAsync(Printer printer, CancellationToken cancellationToken);
 }
 
 public interface IPrinterSession : IAsyncDisposable
@@ -2131,7 +2148,6 @@ public enum PrintDispatchOutcome
     PrinterError
 }
 
-public enum PrinterTransportKind { Network, Agent, Mock }
 ```
 
 Every multi-value return is a named record read by name. `BytesWritten` is on the result rather than
@@ -2147,11 +2163,11 @@ a copy rather than a translation table somebody has to keep correct.
 
 Implementations:
 
-| Implementation | Talks to | State |
+| Driver | Talks to | State |
 |---|---|---|
-| `NetworkPrinterTransport` | Raw TCP to port 9100, ESC/POS both directions | Version 1 |
-| `AgentPrinterTransport` | The Python Pi agent over a small HTTP and WebSocket protocol, for USB attached printers | Deferred. The interface above is the whole contract it will implement. |
-| `MockPrinterTransport` | A folder of text files, one file per slip | Version 1, and a shipped product feature |
+| `EpsonTmT20ivNetworkPrinterDriver` | Raw TCP to port 9100, ESC/POS both directions | Version 1 |
+| `EpsonTmT20ivAgentPrinterDriver` | The Python Pi agent over a small HTTP and WebSocket protocol, for USB attached printers | Deferred. It holds the same rendering as the network driver rather than inheriting from it, because the model and the connection are independent axes. |
+| `TestPrinterDriver` | A folder of text files, one file per slip | Version 1, and a shipped product feature |
 
 ### 7.3 One worker per printer
 
@@ -2275,26 +2291,25 @@ produce so that the mock's behaviour can be read in one place, and section 3.5 s
 in prose. Where any of them disagrees with this table, this table is the one that binds, and the other
 is the defect.
 
-| Outcome | Transport | Bytes | Automatic retry | Job state | Ticket state |
-|---|---|---|---|---|---|
-| `Confirmed` | `Network` or `Agent` | all | no | `Confirmed` | `Printed` |
-| `Confirmed` | `Mock` | all | no | `Confirmed` | `PrintedOnTestPrinter` |
-| `Blocked` | any | 0 | yes, when the condition clears | `Blocked` | `Blocked` |
-| `Unreachable` | any | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
-| `SocketDropped` | any | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
-| `SocketDropped` | any | > 0 | **never** | `Unknown` | `Unknown` |
-| `Timeout` | any | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
-| `Timeout` | any | > 0 | **never** | `Unknown` | `Unknown` |
-| `PrinterError` | any | 0 | yes, when the error clears | `Blocked` | `Blocked` |
-| `PrinterError` | any | > 0 | **never** | `Unknown` | `Unknown` |
+| Outcome | Bytes | Automatic retry | Job state | Ticket state |
+|---|---|---|---|---|
+| `Confirmed` | all | no | `Confirmed` | `Printed` |
+| `Blocked` | 0 | yes, when the condition clears | `Blocked` | `Blocked` |
+| `Unreachable` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
+| `SocketDropped` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
+| `SocketDropped` | > 0 | **never** | `Unknown` | `Unknown` |
+| `Timeout` | 0 | yes, with backoff | `Queued` | `Queued`, then `Failed` after the give-up window |
+| `Timeout` | > 0 | **never** | `Unknown` | `Unknown` |
+| `PrinterError` | 0 | yes, when the error clears | `Blocked` | `Blocked` |
+| `PrinterError` | > 0 | **never** | `Unknown` | `Unknown` |
 
-**The transport kind changes exactly one row, and it is the row that matters most.** A confirmed
-dispatch on a real printer means paper in a tray. A confirmed dispatch on the mock means a text file on
-the laptop, which is not a slip and must never be reported as one. That is why the successful row is
-split by transport and every failure row is not: a socket that dies is the same event whichever
-transport reports it, and the mock exists precisely to reproduce those events faithfully. Section 7.8
-gives the reasoning behind `PrintedOnTestPrinter` and section 3.1 row 2 is what turns it into something
-a person sees.
+**The driver does not change any row.** An earlier draft split the confirmed row so that a slip written
+by the test printer reached its own ticket state, because a location nobody had configured was created
+on the mock and would have reported every order all evening as printed while the files piled up in a
+folder. A location is now created with no printer at all, so that trap is closed at the source: nothing
+prints, the overview names the location, and the people standing at it are told to work the orders off
+the phone. The test printer is one supported printer among others, chosen deliberately, and a slip it
+writes is printed.
 
 **The table maps by outcome and byte count, and deliberately not by phase.** A `SocketDropped` during
 `PreflightCheck` and a `SocketDropped` during `Sending` before the first byte are drawn as separate
@@ -2354,10 +2369,8 @@ reached the 20 minute outer bound on its own. Each affected location produces it
 stopped rather than one of them.
 
 A human ends it with the reconnect action on the printer screen. **`POST
-/api/admin/printers/{locationId}/reconnect` on any location sharing the endpoint clears `IsFaulty` on
-all of them and restarts the one worker**, because there is one thing to reconnect. Without that rule a
-location whose `PrinterStatus` was written by a breaker trip would have no button on its own row that
-could clear it. The tickets are reprinted from the order list or taken at the station on paper.
+/api/admin/printers/{printerId}/reconnect` clears the printer's `IsFaulty` and restarts its one
+worker**, which frees every location routing to it at once, because there is one thing to reconnect. The tickets are reprinted from the order list or taken at the station on paper.
 
 **Two consecutive unknown outcomes is the only trigger, and queue depth is deliberately not one.** An
 earlier draft also tripped the breaker at ten waiting tickets, and that rule was wrong in the way that
@@ -2453,7 +2466,7 @@ length in a dark marquee.
 
 **The URL is printed underneath the symbol as plain text as well**, wrapped over two lines at 48
 columns. That is what somebody reads out when a symbol will not scan, and it is what
-`MockPrinterTransport` writes into its file, because a text file cannot hold a symbol (section 7.8).
+`TestPrinterDriver` writes into its file, because a text file cannot hold a symbol (section 7.8).
 
 **The bracketed placeholder line in the rendered examples below, `[ QR-Code, 37 x 37 Module ]`, is a
 note for the reader of this document and never reaches `PrintPayload.RenderedText`.** The symbol itself
@@ -2597,7 +2610,7 @@ printable width wraps onto a continuation line indented by four spaces. A table 
 and a station name wrap the same way. Every line on the slip is a single field, so nothing shares a
 line with anything that could push it off the paper.
 
-### 7.8 MockPrinterTransport
+### 7.8 TestPrinterDriver
 
 The mock is a product feature, not a test fixture that leaked into this document. No printer has been
 bought, and none will be bought until the fire department has run an evening on the mock and said the
@@ -2651,32 +2664,27 @@ in `Failed` rather than in silence if nobody acts. The admin printer screen show
 `admin.printers.mockFolderUnwritable` with the path in it. Nothing is ever reported as printed when no
 file was written.
 
-**A ticket printed by the mock reaches `PrintedOnTestPrinter`, never `Printed`.** That distinction is
-the whole defence against the trap in section 3.5: a station whose printer was never configured is
-created on the mock, and if the mock reported `Printed` then that station would report every order all
-evening as successfully printed, to the phone, to the admin list, and to the attention filter, while the
-files piled up in a folder nobody has opened. The volunteer who set up two of three stations and missed
-the third would learn about it from a guest.
-
-During a practice run that state is shown as the normal outcome it is. During a real event it puts the
-order in `NeedsAttention` and tells the placing server that the order went to the test printer. Starting
-a real event refuses while any active station is still on the mock, which is the check that stops it
-from happening at all.
+**A slip the test printer wrote reaches `Printed`, like any other slip.** An earlier draft gave it a
+state of its own, to defend against a location whose printer was never configured reporting every order
+as printed while the files piled up in a folder. A location is created with no printer now, so that
+location prints nothing at all and says so, and the test printer is only ever there because somebody
+chose it. Nothing above `IPrinterDriver` knows which driver wrote the slip, and the domain no longer
+names one.
 
 **Fault injection stays, and it is one control.** The tests need every failure mode, and a person
 demonstrating the system needs to be able to produce one on request. That is the whole requirement, so
-a fault is armed in exactly two ways: `POST /api/admin/mock/{locationId}/fault` (section 5.5), and one
-row on the admin printer screen holding the list of faults and the choice between `Once` and `Sticky`.
-There is no button per fault, and no fake station screen to press it on.
+a fault is armed by saving the test printer itself (section 5.5), with the list of faults and the choice
+between `Once` and `Sticky` on that printer's own form. There is no endpoint named after the mock, no
+button per fault, and no fake station screen to press it on.
 
 **The ticket state column below is read out of section 7.6, not decided here.** Each row names the
 outcome and byte count the mock produces, and the ticket state is whatever the mapping table in 7.6
-gives for that outcome on a `Mock` transport. The column is written out so the mock can be read in one
+gives for that outcome. The column is written out so the mock can be read in one
 place; if it ever disagrees with 7.6, 7.6 binds.
 
 | Fault | What the mock does | Outcome returned | Bytes written | Resulting ticket state |
 |---|---|---|---|---|
-| `None` | Writes the file and returns | `Confirmed` | all | `PrintedOnTestPrinter` |
+| `None` | Writes the file and returns | `Confirmed` | all | `Printed` |
 | `PaperEnd` | Reports paper end in its status stream and refuses at pre-flight | `Blocked` | 0 | `Blocked` |
 | `CoverOpen` | Reports cover open, refuses at pre-flight | `Blocked` | 0 | `Blocked` |
 | `ConnectTimeout` | Never completes `ConnectAsync` | `Unreachable` | 0 | `Queued`, then `Failed` |
@@ -3312,7 +3320,7 @@ slip may still be sitting on the pile. The chip mirrors the reprint banner the s
 and blocked tickets, which is useless in the case the page exists for: when the printer is dead, every
 order is one the station has to make, and a list of three out of forty is a list of three orders that
 will be produced and thirty seven that will not. Section 5.6 defines open as anything not yet
-`Printed`, `PrintedOnTestPrinter` or `HandledOnPaper`.
+`Printed` or `HandledOnPaper`.
 
 **The filter is there because a printer can move.** When the admin has pointed a broken station at a
 working one (section 2.12), the person at the kitchen printer is tearing off the bar's slips too and
@@ -4198,7 +4206,7 @@ required for the order placement flow and the printing pipeline.
 | `OrderStatusCalculator` | The priority table in section 3.1, exhaustively over every combination of ticket states, including that no combination falls through |
 | `TicketStateMachine` | Every transition in section 3.2, and that every transition not listed is refused |
 | `PrintJobStateMachine` | Every transition in section 3.3, and specifically that a result with bytes written can never reach a retryable state |
-| `RetryPolicy` | The full table in section 7.6, one case per row, including both `Confirmed` rows, both `SocketDropped` rows and both `Timeout` rows. Specifically: `Confirmed` on a `Mock` transport maps the ticket to `PrintedOnTestPrinter` and never to `Printed`, and `Confirmed` on a `Network` or `Agent` transport maps it to `Printed`. |
+| `RetryPolicy` | The full table in section 7.6, one case per row, including both `SocketDropped` rows and both `Timeout` rows, and that the mapping does not depend on which driver reported the outcome |
 | `StationCircuitBreaker` | Two consecutive unknown outcomes trip it, a confirmed job resets the counter, tripping moves every waiting ticket at once, and **no queue depth trips it**: fifty tickets waiting at a station that is out of paper leave it untripped. The counter and the trip are keyed by printer endpoint: two locations sharing one endpoint share one counter, a trip sets `IsFaulty` and fails the waiting tickets at both, and a reconnect on either clears both |
 | `GiveUpWindow` | The window is measured from ticket creation, so a ticket that waited behind others expires on time. It accumulates unsuspended time across an alternating sequence of suspensions rather than reading the wall clock since the last cause cleared, proven with section 3.2's worked example. It is suspended for each of the four known causes in section 3.2 and resumes without resetting when the cause clears. A `Blocked` ticket whose cause is a mechanical error is not suspended and expires at five minutes. The 20 minute outer bound expires under every one of those causes, including a station that stayed blocked for the whole time, **and never fires on a ticket in `Printing`**: a ticket that is 20 minutes old with bytes on the wire stays `Printing`, and the bound is evaluated again the moment the job ends. |
 | `TicketAcknowledgePolicy` | The boolean expression in section 5.6, one case per clause: each ticket status that always allows it, each printer condition that allows it, a `Queued` or `Printing` ticket at a healthy station refused, and **a `Printing` ticket refused under every one of the six printer conditions in turn**, including the paper end, cover open and error state that arise while a job is in flight |
@@ -4235,7 +4243,7 @@ teardown. No test touches a developer's real database or filesystem.
 | Authentication | Valid token, unknown token, revoked token, a token revoked by issuing its owner a new QR code, admin path from a foreign address returns 404, admin path from the laptop's own address succeeds, admin page served with an explanation to a phone, station access key valid and regenerated |
 | Enrolment | Two invitations created concurrently leave exactly one outstanding, because the partial unique index refuses the second and the consumption of the previous one commits with the insert, the invitation is consumed by the first redemption and the second returns 410, expiry, creating an invitation consumes the one that was outstanding, creating one for a person revokes that person's phone in the same transaction, a redemption naming a person keeps that person's id and their earlier orders, a redemption naming nobody creates the person from the typed name, the device row and the consumption commit together, and a person can never hold two unrevoked devices |
 | SignalR | Each event reaches exactly the groups listed in section 6.2 and no others, including that ticket events reach every phone of the placing person, that `OrderAccepted` and `TicketStatusChanged` reach the one site-wide `stations` group so a page filtered to another location receives them, and that revoking a device removes its connection from every group and aborts it in the same transaction that sets `RevokedAtUtc` |
-| Printer worker | Every row of the failure table in section 3.5 against `MockPrinterTransport`, jobs attempted in sequence number order, and a blocked job holding the station rather than being overtaken |
+| Printer worker | Every row of the failure table in section 3.5 against `TestPrinterDriver`, jobs attempted in sequence number order, and a blocked job holding the station rather than being overtaken |
 | Mock transport | One file per slip in that location's folder holding exactly the rendered text, a reprint written beside its original rather than over it, two sessions in the same folder not colliding, two locations with the same name kept apart, all seven faults armable through the admin endpoint in both `Once` and `Sticky` modes, and a folder that cannot be written producing `PrinterError` with zero bytes rather than a reported print |
 | Circuit breaker | Two unknown outcomes trip the station, every waiting ticket fails in one transaction, the reconnect action clears it, and a station with fifty tickets queued behind a paper-out is never tripped by depth |
 | Circuit breaker on a shared endpoint | Two locations configured with one endpoint: two unknown outcomes trip once, `IsFaulty` is set on both `PrinterStatus` rows and the waiting tickets of both locations fail with `StationFaulty` in the one transaction, and `reconnect` on either location clears both and restarts the one worker |
@@ -4252,7 +4260,7 @@ teardown. No test touches a developer's real database or filesystem.
 
 ### 11.3 End to end tests
 
-Playwright, against the real backend with every station on `MockPrinterTransport`, inside a practice
+Playwright, against the real backend with every station on the test printer, inside a practice
 session so the test printer is the expected transport.
 
 **Order placement flow, required**
@@ -4283,7 +4291,7 @@ session so the test printer is the expected transport.
 
 | Scenario | Expected |
 |---|---|
-| Normal print | Ticket `Printed` on a real transport and `PrintedOnTestPrinter` on the mock, slip rendered, phone shows the matching state |
+| Normal print | Ticket `Printed` whichever driver wrote it, slip rendered, phone shows the matching state |
 | Paper out before sending | Ticket `Blocked`, order `NeedsAttention`, phone shows the paper message, zero bytes written |
 | Paper loaded afterwards | The parked slip prints by itself with no human action, and the ticket reaches its printed state |
 | Cover open before sending | Ticket `Blocked`, cover message, zero bytes written |
@@ -4339,7 +4347,7 @@ These are genuinely undecided and need the owner, or a printer on a desk, before
 
 **One owner decision has been taken since this document was written, and it moves two of the questions
 below rather than closing them.** No printer hardware will be bought until the fire department has run
-the system on `MockPrinterTransport` and agreed that it is a tool they want. That is why the mock is a
+the system on the test printer and agreed that it is a tool they want. That is why the mock is a
 shipped product feature rather than a test fixture, and why it is the vehicle the whole system is
 evaluated on (section 7.8). It also means that questions 1 and 11, which both need a TM-T20IV on a desk,
 cannot be answered until after that decision, rather than at leisure before the first festival.

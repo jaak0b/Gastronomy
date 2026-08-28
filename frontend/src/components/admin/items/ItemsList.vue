@@ -5,6 +5,7 @@ import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/i
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import ItemForm from './ItemForm.vue'
+import NewItemDialog from './NewItemDialog.vue'
 
 const { t } = useI18n()
 const items = useAdminItemsStore()
@@ -43,11 +44,12 @@ onMounted(async () => {
 
 <template>
   <v-container class="admin-items">
-    <h1 class="text-h5 mb-2">{{ t('admin.items.title') }}</h1>
-    <p class="help text-medium-emphasis">{{ t('admin.items.soldOutHelp') }}</p>
-    <p class="walk text-medium-emphasis mb-4">{{ t('admin.items.soldOutWalk') }}</p>
-
-    <v-alert v-if="items.errorKey !== null" class="error mb-4" type="error" variant="tonal">
+    <v-alert
+      v-if="items.errorKey !== null && editingId === null && !isCreating"
+      class="error mb-4"
+      type="error"
+      variant="tonal"
+    >
       {{ t(items.errorKey) }}
     </v-alert>
     <v-alert v-if="items.loadFailed" class="error" type="error" variant="tonal">
@@ -108,6 +110,7 @@ onMounted(async () => {
           v-if="editingId === item.itemId"
           :item="item"
           :stations="stations.stations"
+          :category-names="items.categoryNames"
           :error-key="items.errorKey"
           @save="save"
         />
@@ -118,14 +121,14 @@ onMounted(async () => {
       {{ t('admin.items.new') }}
     </v-btn>
 
-    <v-card v-if="isCreating" class="item-row mt-3">
-      <ItemForm
-        :item="null"
-        :stations="stations.stations"
-        :error-key="items.errorKey"
-        @save="save"
-      />
-    </v-card>
+    <NewItemDialog
+      v-if="isCreating"
+      :stations="stations.stations"
+      :category-names="items.categoryNames"
+      :error-key="items.errorKey"
+      @save="save"
+      @cancel="isCreating = false"
+    />
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.items.deactivateTitle')"

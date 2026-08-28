@@ -8,7 +8,7 @@ public sealed record SlipLine(int Quantity, string ItemName, string? LineNote);
 public sealed record SlipRenderRequest(
     string StationName,
     string LanguageCode,
-    int StationSequenceNumber,
+    int StationOrderNumber,
     int GlobalOrderNumber,
     string TableName,
     string StaffMemberName,
@@ -16,8 +16,7 @@ public sealed record SlipRenderRequest(
     TimeZoneInfo DisplayTimeZone,
     IReadOnlyList<SlipLine> Lines,
     string? OrderNote,
-    IReadOnlyList<string> AlsoGoesToStationNames,
-    string? ChosenStationNameIfDifferent);
+    IReadOnlyList<string> AlsoGoesToStationNames);
 
 public sealed record TestSlipRenderRequest(
     string StationName,
@@ -64,12 +63,16 @@ public sealed class EscPosSlipRenderer
 
     public RenderedSlip RenderInitialSlip(SlipRenderRequest request)
     {
-        return RenderSlip(request, null, null);
+        return RenderSlip(request, null, null, null);
     }
 
-    public RenderedSlip RenderReprintSlip(SlipRenderRequest request, DateTimeOffset reprintAtUtc, TimeZoneInfo displayTimeZone)
+    public RenderedSlip RenderCopySlip(
+        SlipRenderRequest request,
+        int copyNumber,
+        DateTimeOffset copyPrintedAtUtc,
+        TimeZoneInfo displayTimeZone)
     {
-        return RenderSlip(request, reprintAtUtc, displayTimeZone);
+        return RenderSlip(request, copyNumber, copyPrintedAtUtc, displayTimeZone);
     }
 
     public RenderedSlip RenderTestSlip(TestSlipRenderRequest request)
@@ -88,7 +91,11 @@ public sealed class EscPosSlipRenderer
         return Compose(segments);
     }
 
-    private RenderedSlip RenderSlip(SlipRenderRequest request, DateTimeOffset? reprintAtUtc, TimeZoneInfo? reprintTimeZone)
+    private RenderedSlip RenderSlip(
+        SlipRenderRequest request,
+        int? copyNumber,
+        DateTimeOffset? reprintAtUtc,
+        TimeZoneInfo? reprintTimeZone)
     {
         SlipStrings strings = slipTextProvider.GetStrings(request.LanguageCode);
         SlipTimeFormats formats = FormatsFor(request.LanguageCode);
@@ -96,7 +103,12 @@ public sealed class EscPosSlipRenderer
 
         if (reprintAtUtc is not null && reprintTimeZone is not null)
         {
-            segments.Add(new SlipSegment(LargeText(), WrapLarge(strings.ReprintBanner)));
+            segments.Add(new SlipSegment(
+                LargeText(),
+                WrapLarge(string.Format(
+                    CultureInfo.InvariantCulture,
+                    strings.ReprintBanner,
+                    copyNumber ?? 0))));
             segments.Add(new SlipSegment(
                 NormalText(),
                 [
@@ -107,7 +119,7 @@ public sealed class EscPosSlipRenderer
 
         segments.Add(new SlipSegment(LargeText(), WrapLarge(request.StationName)));
         segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
-        segments.Add(new SlipSegment(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.StationSequenceNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
+        segments.Add(new SlipSegment(LargeText(), WrapLarge($"{strings.SlipNumberPrefix} {request.StationOrderNumber.ToString("D3", CultureInfo.InvariantCulture)}")));
         segments.Add(new SlipSegment(NormalText(), [MajorSeparator()]));
         segments.Add(new SlipSegment(EmphasisedText(), Wrap($"{strings.OrderNumberPrefix} {request.GlobalOrderNumber.ToString(CultureInfo.InvariantCulture)}")));
 
@@ -144,11 +156,6 @@ public sealed class EscPosSlipRenderer
         if (request.AlsoGoesToStationNames.Count > 0)
         {
             footer.AddRange(Wrap($"{strings.AlsoGoesToPrefix} {string.Join(", ", request.AlsoGoesToStationNames)}"));
-        }
-
-        if (request.ChosenStationNameIfDifferent is not null)
-        {
-            footer.AddRange(Wrap($"{strings.ChosenStationWasPrefix} {request.ChosenStationNameIfDifferent}"));
         }
 
         footer.Add(MajorSeparator());

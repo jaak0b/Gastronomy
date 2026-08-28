@@ -10,14 +10,13 @@ public sealed class PrintJobConfiguration : IEntityTypeConfiguration<PrintJob>
     {
         builder.HasKey(job => job.Id);
         builder.Property(job => job.Id).ValueGeneratedNever();
-        builder.Property(job => job.LocationTicketId).IsRequired(false);
-        builder.Property(job => job.StationId).IsRequired();
-        builder.Property(job => job.Kind).IsRequired().HasConversion<string>().HasMaxLength(20);
-        builder.Property(job => job.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
-        builder.Property(job => job.ProcessId).IsRequired(false);
-        builder.Property(job => job.FailureReason).IsRequired(false).HasConversion<string>().HasMaxLength(24);
-        builder.Property(job => job.RequestedByDeviceId).IsRequired(false);
+        builder.Property(job => job.StationOrderId).IsRequired();
+        builder.Property(job => job.CopyNumber).IsRequired();
+        builder.Property(job => job.Status).IsRequired();
+        builder.Property(job => job.FailureReason).IsRequired(false);
+        builder.Property(job => job.PrinterJobId).IsRequired(false);
         builder.Property(job => job.CreatedAtUtc).IsRequired();
         builder.Property(job => job.CompletedAtUtc).IsRequired(false);
+        builder.HasIndex(job => new { job.StationOrderId, job.CopyNumber }).IsUnique();
     }
 }

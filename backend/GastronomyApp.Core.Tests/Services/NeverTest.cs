@@ -12,9 +12,9 @@ public sealed class NeverTest
         Never never = new();
 
         InvalidOperationException? thrown = Assert.Throws<InvalidOperationException>(
-            () => never.OfType<string>(LocationTicketStatus.HandledOnPaper));
+            () => never.OfType<string>(PrintJobStatus.HandledOnPaper));
 
-        Assert.That(thrown!.Message, Does.Contain(LocationTicketStatus.HandledOnPaper.ToString()));
+        Assert.That(thrown!.Message, Does.Contain(PrintJobStatus.HandledOnPaper.ToString()));
     }
 
     [Test]

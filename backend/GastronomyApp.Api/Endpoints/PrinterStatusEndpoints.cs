@@ -27,6 +27,13 @@ public static class PrinterStatusEndpoints
 
 public sealed class PrinterStatusReader
 {
+    private readonly StationPrinterStatusLookup statusLookup;
+
+    public PrinterStatusReader(StationPrinterStatusLookup statusLookup)
+    {
+        this.statusLookup = statusLookup;
+    }
+
     public async Task<PrinterStatusListView> ReadAsync(
         GastronomyAppDbContext dbContext,
         CancellationToken cancellationToken)
@@ -39,21 +46,20 @@ public sealed class PrinterStatusReader
 
         HashSet<Guid> stationIds = [.. stations.Select(station => station.Id)];
 
-        Dictionary<Guid, PrinterStatus> statuses = await dbContext.PrinterStatuses
-            .AsNoTracking()
-            .Where(status => stationIds.Contains(status.StationId))
-            .ToDictionaryAsync(status => status.StationId, cancellationToken);
+        Dictionary<Guid, PrinterStatus> statuses =
+            await statusLookup.ByStationAsync(dbContext, stationIds, cancellationToken);
 
         List<PrinterStatusView> views = [];
 
         foreach (Station station in stations)
         {
             statuses.TryGetValue(station.Id, out PrinterStatus? status);
+            bool hasNoPrinter = station.PrinterId is null;
 
             views.Add(new PrinterStatusView(
                 station.Id,
                 station.Name,
-                status?.IsOnline ?? false,
+                status?.IsOnline ?? hasNoPrinter,
                 status?.IsPaperEnd ?? false,
                 status?.IsPaperNearEnd ?? false,
                 status?.IsCoverOpen ?? false,

@@ -13,5 +13,10 @@ public sealed class StationConfiguration : IEntityTypeConfiguration<Station>
         builder.Property(station => station.Name).IsRequired().HasMaxLength(40);
         builder.Property(station => station.SortOrder).IsRequired();
         builder.Property(station => station.IsActive).IsRequired();
+        builder.Property(station => station.NextStationOrderNumber).IsRequired();
+        builder.HasOne<Printer>()
+            .WithMany()
+            .HasForeignKey(station => station.PrinterId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

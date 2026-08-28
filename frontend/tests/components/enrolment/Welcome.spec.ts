@@ -38,20 +38,6 @@ describe('the screen a phone lands on with no code', () => {
     expect(welcome.find('.code-field').exists()).toBe(false)
   })
 
-  it('offers the code entry underneath for somebody who was given a code', () => {
-    const welcome = mountWelcome()
-
-    expect(welcome.get('.open-code-entry').text()).toBe('Sechsstelligen Code eingeben')
-  })
-
-  it('opens the code entry when the reader says they have a code', async () => {
-    const welcome = mountWelcome()
-
-    await welcome.get('.open-code-entry').trigger('click')
-
-    expect(welcome.find('.code-field').exists()).toBe(true)
-  })
-
   it('says the same thing in English', () => {
     const welcome = mountWelcome('en')
 

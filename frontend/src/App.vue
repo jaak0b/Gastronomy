@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { currentRoute } from './router'
 import { bindLocaleToSession } from './localeBinding'
 import { assertNever } from './core/assertNever'
@@ -9,6 +9,7 @@ import { useOrderStore } from './stores/order'
 import { usePrinterStatusStore } from './stores/printerStatus'
 import { useConnectionStore } from './stores/connection'
 import AppHeader from './components/header/AppHeader.vue'
+import AppNotices from './components/header/AppNotices.vue'
 import EnrolQr from './views/EnrolQr.vue'
 import Welcome from './views/Welcome.vue'
 import Catalog from './views/Catalog.vue'
@@ -62,8 +63,19 @@ const showsHeader = computed(
   () => screen.value !== 'admin' && session.isEnrolled,
 )
 
+watch(
+  () => session.deviceToken,
+  async (token) => {
+    if (token === null || screen.value === 'admin') {
+      return
+    }
+    await connection.connect({ deviceToken: token })
+  },
+)
+
 onMounted(async () => {
   if (screen.value === 'admin') {
+    await connection.connect({})
     return
   }
   session.listenForRevocation()
@@ -84,6 +96,7 @@ onMounted(async () => {
   <v-app>
     <AppHeader v-if="showsHeader" />
     <v-main>
+    <AppNotices v-if="showsHeader" />
     <EnrolQr v-if="screen === 'enrolQr'" />
     <Welcome v-else-if="screen === 'welcome'" />
     <Catalog v-else-if="screen === 'catalog'" />

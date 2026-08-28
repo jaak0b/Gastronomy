@@ -5,7 +5,7 @@ import type {
   DraftLine,
   OrderSubmitResponse,
   OrderSummary,
-  TicketSummary,
+  StationOrderSummary,
 } from '../core/apiTypes'
 import {
   addLine,
@@ -16,7 +16,7 @@ import {
   setLineQuantity,
   setLineStation,
   setOrderNote,
-  setTableLabel,
+  setTableName,
 } from '../core/draftCart'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
 import { buildBasketView, basketItemCount, refreshLineSnapshots } from '../core/basket'
@@ -29,6 +29,8 @@ import { useSessionStore } from './session'
 
 export type SendState = 'idle' | 'sending' | 'failed' | 'accepted'
 
+export const ARRIVAL_NOTICE_MS = 8000
+
 export const useOrderStore = defineStore('order', () => {
   const draft = ref(loadDraft())
   const orders = ref<OrderSummary[]>([])
@@ -36,7 +38,7 @@ export const useOrderStore = defineStore('order', () => {
   const failure = ref<SendFailureMessage | null>(null)
   const failedAttempts = ref(0)
   const acceptedOrderNumber = ref<number | null>(null)
-  const acceptedTotalChangedTo = ref<number | null>(null)
+  let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
 
@@ -74,8 +76,8 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = setLineStation(draft.value, index, stationId)
   }
 
-  function setTable(tableLabel: string): void {
-    draft.value = setTableLabel(draft.value, tableLabel)
+  function setTable(tableName: string): void {
+    draft.value = setTableName(draft.value, tableName)
   }
 
   function setNote(note: string | null): void {
@@ -83,9 +85,12 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function dismissConfirmation(): void {
+    if (arrivalNoticeTimer !== null) {
+      clearTimeout(arrivalNoticeTimer)
+      arrivalNoticeTimer = null
+    }
     sendState.value = 'idle'
     acceptedOrderNumber.value = null
-    acceptedTotalChangedTo.value = null
   }
 
   function startNextOrder(): void {
@@ -97,20 +102,18 @@ export const useOrderStore = defineStore('order', () => {
     const session = useSessionStore()
     sendState.value = 'sending'
     draft.value = ensureClientOrderId(draft.value)
-    const expectedTotalCents = totalCents.value
     const result = await request<OrderSubmitResponse>('/api/orders', {
       method: 'POST',
-      body: buildSubmitRequest(draft.value, expectedTotalCents),
+      body: buildSubmitRequest(draft.value),
       token: session.deviceToken,
     })
     switch (result.kind) {
       case 'ok':
         acceptedOrderNumber.value = result.data.globalOrderNumber
-        acceptedTotalChangedTo.value =
-          result.data.totalCents === expectedTotalCents ? null : result.data.totalCents
         failure.value = null
         failedAttempts.value = 0
         sendState.value = 'accepted'
+        arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
         startNextOrder()
         await loadMine()
         return
@@ -142,12 +145,12 @@ export const useOrderStore = defineStore('order', () => {
 
   async function answerUnknown(
     orderId: string,
-    ticketId: string,
+    stationOrderId: string,
     slipIsOnThePile: boolean,
   ): Promise<string | null> {
     const session = useSessionStore()
-    const result = await request<TicketSummary>(
-      `/api/orders/${orderId}/tickets/${ticketId}/resolve`,
+    const result = await request<StationOrderSummary>(
+      `/api/orders/${orderId}/station-orders/${stationOrderId}/resolve`,
       { method: 'POST', body: { slipIsOnThePile }, token: session.deviceToken },
     )
     switch (result.kind) {
@@ -155,41 +158,41 @@ export const useOrderStore = defineStore('order', () => {
         await loadMine()
         return null
       case 'error':
-        return result.status === 409 ? 'ticket.unknown.answered' : 'review.sendFailed'
+        return result.status === 409 ? 'printJob.unknown.answered' : 'review.sendFailed'
       case 'unreachable':
         return 'header.reconnecting'
     }
   }
 
-  async function reprint(orderId: string, ticketId: string): Promise<void> {
+  async function printAnotherCopy(orderId: string, stationOrderId: string): Promise<void> {
     const session = useSessionStore()
-    await request(`/api/orders/${orderId}/tickets/${ticketId}/reprint`, {
+    await request(`/api/orders/${orderId}/station-orders/${stationOrderId}/print-another-copy`, {
       method: 'POST',
       token: session.deviceToken,
     })
     await loadMine()
   }
 
-  function applyTicketChange(payload: {
+  function applyPrintJobChange(payload: {
     orderId: string
-    ticketId: string
-    status: TicketSummary['status']
-    failureReason: TicketSummary['failureReason']
+    stationOrderId: string
+    status: StationOrderSummary['status']
+    failureReason: StationOrderSummary['failureReason']
     printerHasPaper: boolean | null
   }): void {
     const order = orderById(payload.orderId)
     if (order === null) {
       return
     }
-    order.tickets = order.tickets.map((ticket) =>
-      ticket.ticketId === payload.ticketId
+    order.stationOrders = order.stationOrders.map((stationOrder) =>
+      stationOrder.stationOrderId === payload.stationOrderId
         ? {
-            ...ticket,
+            ...stationOrder,
             status: payload.status,
             failureReason: payload.failureReason,
             printerHasPaper: payload.printerHasPaper,
           }
-        : ticket,
+        : stationOrder,
     )
   }
 
@@ -199,8 +202,8 @@ export const useOrderStore = defineStore('order', () => {
     connection.onEvent('OrderAccepted', () => {
       void loadMine()
     })
-    connection.onEvent<Parameters<typeof applyTicketChange>[0]>('TicketStatusChanged', (payload) => {
-      applyTicketChange(payload)
+    connection.onEvent<Parameters<typeof applyPrintJobChange>[0]>('PrintJobStatusChanged', (payload) => {
+      applyPrintJobChange(payload)
     })
     connection.onEvent<{ orderId: string; status: OrderSummary['status'] }>(
       'OrderStatusChanged',
@@ -220,7 +223,6 @@ export const useOrderStore = defineStore('order', () => {
     failure,
     failedAttempts,
     acceptedOrderNumber,
-    acceptedTotalChangedTo,
     basketLines,
     itemCount,
     totalCents,
@@ -237,7 +239,7 @@ export const useOrderStore = defineStore('order', () => {
     loadMine,
     orderById,
     answerUnknown,
-    reprint,
+    printAnotherCopy,
     listen,
   }
 })

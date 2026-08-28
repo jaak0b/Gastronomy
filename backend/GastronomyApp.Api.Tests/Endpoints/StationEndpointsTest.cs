@@ -19,10 +19,10 @@ public sealed class StationEndpointsTest
     {
         context = await new OrderTestContext.Builder().StartAsync(withRunningPrinters: false);
 
-        using HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700));
+        using HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
         JsonDocument body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
         orderId = body.RootElement.GetProperty("orderId").GetGuid();
-        ticketId = body.RootElement.GetProperty("tickets")[0].GetProperty("ticketId").GetGuid();
+        ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
     }
 
     [TearDown]
@@ -56,51 +56,51 @@ public sealed class StationEndpointsTest
     }
 
     [Test]
-    public async Task GetTickets_HealthyStation_ListsTheOpenTicketWithItsAcknowledgeDecision()
+    public async Task GetStationOrders_HealthyStation_ListsTheOpenTicketWithItsAcknowledgeDecision()
     {
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/tickets");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/station-orders");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement tickets = body.RootElement.GetProperty("tickets");
+        JsonElement tickets = body.RootElement.GetProperty("stationOrders");
 
         Assert.Multiple(() =>
         {
             Assert.That(tickets.GetArrayLength(), Is.EqualTo(1));
-            Assert.That(tickets[0].GetProperty("ticketId").GetGuid(), Is.EqualTo(ticketId));
+            Assert.That(tickets[0].GetProperty("stationOrderId").GetGuid(), Is.EqualTo(ticketId));
             Assert.That(tickets[0].GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
-            Assert.That(tickets[0].GetProperty("sequenceNumber").GetInt32(), Is.EqualTo(1));
-            Assert.That(tickets[0].GetProperty("tableLabel").GetString(), Is.EqualTo("Tisch 12"));
-            Assert.That(tickets[0].GetProperty("reprintCount").GetInt32(), Is.EqualTo(0));
-            Assert.That(tickets[0].GetProperty("lines").GetArrayLength(), Is.EqualTo(1));
-            Assert.That(tickets[0].GetProperty("canAcknowledge").GetBoolean(), Is.False);
+            Assert.That(tickets[0].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
+            Assert.That(tickets[0].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
+            Assert.That(tickets[0].GetProperty("copyNumber").GetInt32(), Is.EqualTo(0));
+            Assert.That(tickets[0].GetProperty("items").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(tickets[0].GetProperty("canHandleOnPaper").GetBoolean(), Is.False);
         });
     }
 
     [Test]
-    public async Task GetTickets_ClosedTicket_LeavesItOutOfTheList()
+    public async Task GetStationOrders_ClosedTicket_LeavesItOutOfTheList()
     {
-        await SetTicketStatusAsync(LocationTicketStatus.Printed);
+        await SetPrintJobStatusAsync(PrintJobStatus.Printed);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/tickets");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/station-orders");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-        Assert.That(body.RootElement.GetProperty("tickets").GetArrayLength(), Is.EqualTo(0));
+        Assert.That(body.RootElement.GetProperty("stationOrders").GetArrayLength(), Is.EqualTo(0));
     }
 
     [Test]
-    public async Task GetTickets_AnotherStation_ListsThatStationsBacklog()
+    public async Task GetStationOrders_AnotherStation_ListsThatStationsBacklog()
     {
         using HttpResponseMessage response = await context.SendAsync(
             HttpMethod.Get,
-            $"/api/stations/{context.World.BarStationId}/tickets");
+            $"/api/stations/{context.World.BarStationId}/station-orders");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-        Assert.That(body.RootElement.GetProperty("tickets").GetArrayLength(), Is.EqualTo(0));
+        Assert.That(body.RootElement.GetProperty("stationOrders").GetArrayLength(), Is.EqualTo(0));
     }
 
     [Test]
-    public async Task Acknowledge_HealthyStationPrinter_IsRefused()
+    public async Task HandOnPaper_HealthyStationPrinter_IsRefused()
     {
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
 
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -117,12 +117,12 @@ public sealed class StationEndpointsTest
     [TestCase("IsCoverOpen")]
     [TestCase("IsInErrorState")]
     [TestCase("IsDisabled")]
-    public async Task Acknowledge_PrintingTicketUnderEveryStationCondition_IsRefused(string condition)
+    public async Task HandOnPaper_PrintingTicketUnderEveryStationCondition_IsRefused(string condition)
     {
-        await SetTicketStatusAsync(LocationTicketStatus.Printing);
+        await SetPrintJobStatusAsync(PrintJobStatus.Sending);
         await ApplyStationConditionAsync(condition);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
     }
@@ -133,36 +133,31 @@ public sealed class StationEndpointsTest
     [TestCase("IsCoverOpen")]
     [TestCase("IsInErrorState")]
     [TestCase("IsDisabled")]
-    public async Task Acknowledge_QueuedTicketAtAStationThatCannotPrint_MovesItToHandledOnPaper(string condition)
+    public async Task HandOnPaper_QueuedTicketAtAStationThatCannotPrint_MovesItToHandledOnPaper(string condition)
     {
         await ApplyStationConditionAsync(condition);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        LocationTicket ticket = await database.LocationTickets.FirstAsync(candidate => candidate.Id == ticketId);
-        Order order = await database.Orders.FirstAsync(candidate => candidate.Id == orderId);
+        PrintJob job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(ticket.Status, Is.EqualTo(LocationTicketStatus.HandledOnPaper));
-            Assert.That(order.Status, Is.EqualTo(OrderStatus.Printed));
-        });
+        Assert.That(job.Status, Is.EqualTo(PrintJobStatus.HandledOnPaper));
     }
 
     [Test]
-    public async Task Acknowledge_SecondAttempt_IsRefusedAsAlreadyTaken()
+    public async Task HandOnPaper_SecondAttempt_IsRefusedAsAlreadyTaken()
     {
         await ApplyStationConditionAsync("IsPaperEnd");
 
-        using (HttpResponseMessage first = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge"))
+        using (HttpResponseMessage first = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper"))
         {
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
-        using HttpResponseMessage second = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage second = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
 
         JsonDocument body = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
 
@@ -174,11 +169,11 @@ public sealed class StationEndpointsTest
     }
 
     [Test]
-    public async Task Acknowledge_FailedTicketAtAHealthyStation_IsAllowed()
+    public async Task HandOnPaper_FailedTicketAtAHealthyStation_IsAllowed()
     {
-        await SetTicketStatusAsync(LocationTicketStatus.Failed);
+        await SetPrintJobStatusAsync(PrintJobStatus.Failed);
 
-        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge");
+        using HttpResponseMessage response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -188,11 +183,11 @@ public sealed class StationEndpointsTest
     {
         using HttpResponseMessage stations = await context.Client.GetAsync("/api/stations");
         using HttpResponseMessage tickets = await context.Client.GetAsync(
-            $"/api/stations/{context.World.KitchenStationId}/tickets");
+            $"/api/stations/{context.World.KitchenStationId}/station-orders");
         using HttpResponseMessage status = await context.Client.GetAsync(
             $"/api/stations/{context.World.KitchenStationId}/status");
         using HttpResponseMessage acknowledge = await context.Client.PostAsync(
-            $"/api/stations/{context.World.KitchenStationId}/tickets/{ticketId}/acknowledge",
+            $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper",
             content: null);
 
         Assert.Multiple(() =>
@@ -204,21 +199,21 @@ public sealed class StationEndpointsTest
         });
     }
 
-    private async Task SetTicketStatusAsync(LocationTicketStatus status)
+    private async Task SetPrintJobStatusAsync(PrintJobStatus status)
     {
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        LocationTicket ticket = await database.LocationTickets.FirstAsync(candidate => candidate.Id == ticketId);
-        ticket.Status = status;
+        PrintJob job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
+        job.Status = status;
         await database.SaveChangesAsync();
     }
 
     private async Task ApplyStationConditionAsync(string condition)
     {
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        Station station = await database.Stations.FirstAsync(
+            candidate => candidate.Id == context.World.KitchenStationId);
         PrinterStatus status = await database.PrinterStatuses.FirstAsync(
-            candidate => candidate.StationId == context.World.KitchenStationId);
-        PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-            candidate => candidate.StationId == context.World.KitchenStationId);
+            candidate => candidate.PrinterId == station.PrinterId);
 
         switch (condition)
         {
@@ -238,7 +233,7 @@ public sealed class StationEndpointsTest
                 status.IsInErrorState = true;
                 break;
             case "IsDisabled":
-                configuration.IsEnabled = false;
+                station.PrinterId = null;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(condition), condition, "Unknown station condition.");

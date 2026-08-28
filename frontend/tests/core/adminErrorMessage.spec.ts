@@ -74,26 +74,15 @@ describe('adminErrorMessage, a refusal the laptop worded itself', () => {
     expect(message.key).toBe('admin.stationHasOpenTickets')
   })
 
-  it('renders a person who has no phone to revoke', () => {
-    const message = adminErrorMessage({
-      code: 'NotFound',
-      messageKey: 'admin.personHasNoPhone',
-      parameters: {},
-      details: null,
-    })
-
-    expect(message.key).toBe('admin.personHasNoPhone')
-  })
-
   it('renders a refused printer setting', () => {
     const message = adminErrorMessage({
       code: 'ValidationFailed',
-      messageKey: 'admin.unknownTransportKind',
+      messageKey: 'admin.printerTypeCannotChange',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('admin.unknownTransportKind')
+    expect(message.key).toBe('admin.printerTypeCannotChange')
   })
 })
 

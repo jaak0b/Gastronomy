@@ -22,12 +22,12 @@ public static class StationEndpoints
             return await handler.ListStationsAsync(cancellationToken);
         });
 
-        group.MapGet("/{stationId:guid}/tickets", async (
+        group.MapGet("/{stationId:guid}/station-orders", async (
             Guid stationId,
             StationQueryHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.ListTicketsAsync(stationId, cancellationToken);
+            return await handler.ListStationOrdersAsync(stationId, cancellationToken);
         });
 
         group.MapGet("/{stationId:guid}/status", async (
@@ -38,12 +38,12 @@ public static class StationEndpoints
             return await handler.StatusAsync(stationId, cancellationToken);
         });
 
-        group.MapPost("/{stationId:guid}/tickets/{ticketId:guid}/acknowledge", async (
-            Guid ticketId,
-            StationAcknowledgeHandler handler,
+        group.MapPost("/{stationId:guid}/station-orders/{stationOrderId:guid}/hand-on-paper", async (
+            Guid stationOrderId,
+            StationHandOnPaperHandler handler,
             CancellationToken cancellationToken) =>
         {
-            return await handler.AcknowledgeAsync(ticketId, cancellationToken);
+            return await handler.HandOnPaperAsync(stationOrderId, cancellationToken);
         });
 
         return routes;
@@ -97,30 +97,39 @@ public sealed record StationPrintabilityRow(Guid StationId, StationPrintability 
 
 public sealed class StationPrintabilityReader
 {
+    private readonly StationPrinterStatusLookup statusLookup;
+
+    public StationPrintabilityReader(StationPrinterStatusLookup statusLookup)
+    {
+        this.statusLookup = statusLookup;
+    }
+
     public async Task<IReadOnlyDictionary<Guid, StationPrintability>> ReadAsync(
         GastronomyAppDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        List<PrinterStatus> statuses = await dbContext.PrinterStatuses.AsNoTracking().ToListAsync(cancellationToken);
-        List<PrinterConfiguration> configurations = await dbContext.PrinterConfigurations
+        List<Station> stations = await dbContext.Stations
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+        Dictionary<Guid, PrinterStatus> statuses = await statusLookup.ByStationAsync(
+            dbContext,
+            [.. stations.Select(station => station.Id)],
+            cancellationToken);
 
         Dictionary<Guid, StationPrintability> printability = [];
 
-        foreach (PrinterConfiguration configuration in configurations)
+        foreach (Station station in stations)
         {
-            PrinterStatus? status = statuses.FirstOrDefault(
-                candidate => candidate.StationId == configuration.StationId);
+            statuses.TryGetValue(station.Id, out PrinterStatus? status);
 
-            printability[configuration.StationId] = new StationPrintability
+            printability[station.Id] = new StationPrintability
             {
                 IsFaulty = status?.IsFaulty ?? true,
                 IsOnline = status?.IsOnline ?? false,
                 IsPaperEnd = status?.IsPaperEnd ?? false,
                 IsCoverOpen = status?.IsCoverOpen ?? false,
                 IsInErrorState = status?.IsInErrorState ?? false,
-                IsEnabled = configuration.IsEnabled,
+                IsEnabled = station.PrinterId is not null,
             };
         }
 

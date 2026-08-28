@@ -13,11 +13,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GastronomyApp.Api.Tests.Printing;
 
-public sealed record RecordedTicketStatus(Guid OrderId, Guid LocationTicketId, LocationTicketStatus Status, PrintFailureReason? FailureReason);
+public sealed record RecordedPrintJobStatus(Guid OrderId, Guid StationOrderId, PrintJobStatus Status, PrintFailureReason? FailureReason);
 
 public sealed class RecordingPrintCallbacks : IPrintCallbacks
 {
-    public List<RecordedTicketStatus> TicketStatusChanges { get; } = [];
+    public List<RecordedPrintJobStatus> PrintJobStatusChanges { get; } = [];
 
     public List<OrderStatus> OrderStatusChanges { get; } = [];
 
@@ -25,9 +25,9 @@ public sealed class RecordingPrintCallbacks : IPrintCallbacks
 
     public int PrinterStatusChangeCount { get; private set; }
 
-    public Task OnTicketStatusChangedAsync(Guid orderId, Guid locationTicketId, LocationTicketStatus newStatus, PrintFailureReason? failureReason, CancellationToken ct)
+    public Task OnPrintJobStatusChangedAsync(Guid orderId, Guid stationOrderId, PrintJobStatus newStatus, PrintFailureReason? failureReason, CancellationToken ct)
     {
-        TicketStatusChanges.Add(new RecordedTicketStatus(orderId, locationTicketId, newStatus, failureReason));
+        PrintJobStatusChanges.Add(new RecordedPrintJobStatus(orderId, stationOrderId, newStatus, failureReason));
         return Task.CompletedTask;
     }
 
@@ -37,12 +37,15 @@ public sealed class RecordingPrintCallbacks : IPrintCallbacks
         return Task.CompletedTask;
     }
 
-    public Task OnPrinterStatusChangedAsync(Guid stationId, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingTicketCount, CancellationToken ct)
+    public Task OnPrinterStatusChangedAsync(Guid printerId, IReadOnlyList<Guid> stationIds, PrinterStatusSnapshot snapshot, bool isFaulty, int waitingPrintJobCount, CancellationToken ct)
     {
         PrinterStatusChangeCount++;
         if (isFaulty)
         {
-            FaultyPrinterStations.Add(stationId);
+            foreach (Guid stationId in stationIds)
+            {
+                FaultyPrinterStations.Add(stationId);
+            }
         }
 
         return Task.CompletedTask;
@@ -54,19 +57,21 @@ public class PrinterWorkerIntegrationTest
     private PrintingSqliteFixture fixture = null!;
     private PrintingSeeder seeder = null!;
     private InMemoryMockFaultRegistry registry = null!;
-    private MockPrinterTransport mockTransport = null!;
+    private TestPrinterDriver testPrinterDriver = null!;
     private RecordingPrintCallbacks callbacks = null!;
     private EfCorePrinterWorkerDataAccess dataAccess = null!;
     private TestTimeProvider timeProvider = null!;
     private string dataDirectory = null!;
     private Guid kitchenId;
     private Guid barId;
+    private Guid printerId;
 
     [SetUp]
     public async Task SetUp()
     {
         kitchenId = Guid.NewGuid();
         barId = Guid.NewGuid();
+        printerId = Guid.NewGuid();
         dataDirectory = Path.Combine(Path.GetTempPath(), "gastronomy-printing-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dataDirectory);
 
@@ -74,7 +79,7 @@ public class PrinterWorkerIntegrationTest
         seeder = new PrintingSeeder();
         registry = new InMemoryMockFaultRegistry();
         timeProvider = new TestTimeProvider(new DateTimeOffset(2026, 8, 26, 19, 42, 0, TimeSpan.Zero));
-        mockTransport = new MockPrinterTransport(dataDirectory, registry, timeProvider);
+        testPrinterDriver = new TestPrinterDriver(dataDirectory, registry, timeProvider);
         callbacks = new RecordingPrintCallbacks();
         dataAccess = new EfCorePrinterWorkerDataAccess(
             fixture.CreateContext,
@@ -82,8 +87,8 @@ public class PrinterWorkerIntegrationTest
 
         await using GastronomyAppDbContext context = fixture.CreateContext();
         await seeder.SeedSessionAsync(context, true, CancellationToken.None);
-        await seeder.SeedStationAsync(context, kitchenId, "Küche", "10.0.0.5", 9100, CancellationToken.None);
-        await seeder.SeedStationAsync(context, barId, "Theke", "10.0.0.5", 9100, CancellationToken.None);
+        await seeder.SeedStationAsync(context, kitchenId, "Küche", printerId, "10.0.0.5", 9100, CancellationToken.None);
+        await seeder.SeedStationAsync(context, barId, "Theke", printerId, "10.0.0.5", 9100, CancellationToken.None);
     }
 
     [TearDown]
@@ -99,21 +104,15 @@ public class PrinterWorkerIntegrationTest
     private PrinterWorker Worker(params Guid[] served)
     {
         Guid[] stations = served.Length == 0 ? [kitchenId] : served;
-        PrinterEndpoint endpoint = new(
-            stations[0],
-            TransportKind.Mock,
-            "10.0.0.5",
-            9100,
-            null,
-            TimeSpan.FromSeconds(3),
-            TimeSpan.FromMilliseconds(200),
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(3));
 
         return new PrinterWorker(
-            endpoint,
+            new TestPrinter
+            {
+                Id = printerId,
+                Name = "Testdrucker",
+            },
             stations,
-            mockTransport,
+            testPrinterDriver,
             dataAccess,
             callbacks,
             new EscPosSlipRenderer(new ResxSlipTextProvider()),
@@ -121,19 +120,20 @@ public class PrinterWorkerIntegrationTest
                 new RetryPolicy(),
                 new GiveUpWindowCalculator(),
                 new OrderStatusCalculator(),
-                new TicketStateMachine(),
-                new PrintJobStateMachine(),
-                new PrinterEndpointKeyBuilder()),
+                new PrintJobStateMachine()),
             timeProvider,
             new AppLanguage(),
             NullLogger<PrinterWorker>.Instance);
     }
 
-    private async Task<LocationTicketStatus> TicketStatusAsync(Guid ticketId)
+    private async Task<PrintJobStatus> PrintJobStatusAsync(Guid stationOrderId)
     {
         await using GastronomyAppDbContext context = fixture.CreateContext();
-        LocationTicket ticket = await context.LocationTickets.SingleAsync(candidate => candidate.Id == ticketId);
-        return ticket.Status;
+        PrintJob job = await context.PrintJobs
+            .Where(candidate => candidate.StationOrderId == stationOrderId)
+            .OrderByDescending(candidate => candidate.CopyNumber)
+            .FirstAsync();
+        return job.Status;
     }
 
     private string[] SlipFiles(Guid stationId, string name)
@@ -142,99 +142,98 @@ public class PrinterWorkerIntegrationTest
         return Directory.Exists(folder) ? Directory.GetFiles(folder).Order().ToArray() : [];
     }
 
-    private async Task<SeededTicket> QueueTicketAsync(Guid stationId, int orderNumber, int sequenceNumber, int minutesAfterBaseline)
+    private async Task<SeededStationOrder> QueueTicketAsync(Guid stationId, int orderNumber, int sequenceNumber, int minutesAfterBaseline)
     {
         await using GastronomyAppDbContext context = fixture.CreateContext();
-        SeededTicket seeded = await seeder.SeedOrderAsync(
+        SeededStationOrder seeded = await seeder.SeedOrderAsync(
             context,
             stationId,
             orderNumber,
             sequenceNumber,
             minutesAfterBaseline,
-            LocationTicketStatus.Queued,
+            PrintJobStatus.Queued,
             CancellationToken.None);
 
-        await dataAccess.CreatePrintJobAsync(seeded.TicketId, stationId, PrintJobKind.Initial, CancellationToken.None);
         return seeded;
     }
 
     [Test]
     public async Task PaperOutMidEvening_TicketBlocksThenPrintsItselfWhenClearedNoAutoRetryQuestion()
     {
-        registry.Arm(kitchenId, MockFault.PaperEnd, MockFaultMode.Sticky);
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        registry.Arm(printerId, MockFault.PaperEnd, MockFaultMode.Sticky);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
         PrinterWorker worker = Worker();
-        worker.Enqueue(seeded.TicketId);
+        worker.Enqueue(seeded.PrintJobId);
 
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.Blocked));
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.Blocked));
         Assert.That(SlipFiles(kitchenId, "K_che"), Is.Empty);
         Assert.That(callbacks.PrinterStatusChangeCount, Is.GreaterThan(0));
 
-        registry.Arm(kitchenId, MockFault.None, MockFaultMode.Sticky);
+        registry.Arm(printerId, MockFault.None, MockFaultMode.Sticky);
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.PrintedOnTestPrinter));
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.Printed));
         Assert.That(SlipFiles(kitchenId, "K_che"), Has.Length.EqualTo(1));
     }
 
     [Test]
     public async Task DropSocketEarly_AutoRetriesWithNoQuestionAskedAndSlipEventuallyPrints()
     {
-        registry.Arm(kitchenId, MockFault.DropSocketEarly, MockFaultMode.Once);
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        registry.Arm(printerId, MockFault.DropSocketEarly, MockFaultMode.Once);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
         PrinterWorker worker = Worker();
-        worker.Enqueue(seeded.TicketId);
+        worker.Enqueue(seeded.PrintJobId);
 
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.Queued));
-        Assert.That(worker.PendingTicketIds, Does.Contain(seeded.TicketId));
-        Assert.That(callbacks.TicketStatusChanges.Any(change => change.Status == LocationTicketStatus.Unknown), Is.False);
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.Queued));
+        Assert.That(worker.PendingPrintJobIds, Does.Contain(seeded.PrintJobId));
+        Assert.That(callbacks.PrintJobStatusChanges.Any(change => change.Status == PrintJobStatus.Unknown), Is.False);
 
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.PrintedOnTestPrinter));
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.Printed));
     }
 
     [Test]
     public async Task BytesWrittenGreaterThanZero_DropsToUnknown_NeverAutoRetried()
     {
-        registry.Arm(kitchenId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        registry.Arm(printerId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
         PrinterWorker worker = Worker();
-        worker.Enqueue(seeded.TicketId);
+        worker.Enqueue(seeded.PrintJobId);
 
         await worker.RunOnceAsync(CancellationToken.None);
         int filesAfterFirstAttempt = SlipFiles(kitchenId, "K_che").Length;
         await worker.RunOnceAsync(CancellationToken.None);
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.Unknown));
-        Assert.That(worker.PendingTicketIds, Is.Empty);
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.Unknown));
+        Assert.That(worker.PendingPrintJobIds, Is.Empty);
         Assert.That(SlipFiles(kitchenId, "K_che"), Has.Length.EqualTo(filesAfterFirstAttempt));
     }
 
     [Test]
     public async Task TwoConsecutiveUnknownOutcomes_TripsBreakerFailsEveryWaitingTicketAtEndpointThenClearsOnReconnect()
     {
-        registry.Arm(kitchenId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
-        registry.Arm(barId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
-        SeededTicket kitchenTicket = await QueueTicketAsync(kitchenId, 137, 42, 0);
-        SeededTicket barTicket = await QueueTicketAsync(barId, 138, 11, 1);
-        SeededTicket waiting = await QueueTicketAsync(kitchenId, 139, 43, 2);
+        registry.Arm(printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+        registry.Arm(printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+        SeededStationOrder kitchenTicket = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        SeededStationOrder barTicket = await QueueTicketAsync(barId, 138, 11, 1);
+        SeededStationOrder waiting = await QueueTicketAsync(kitchenId, 139, 43, 2);
 
         PrinterWorker worker = Worker(kitchenId, barId);
-        worker.Enqueue(kitchenTicket.TicketId);
-        worker.Enqueue(barTicket.TicketId);
-        worker.Enqueue(waiting.TicketId);
+        worker.Enqueue(kitchenTicket.PrintJobId);
+        worker.Enqueue(barTicket.PrintJobId);
+        worker.Enqueue(waiting.PrintJobId);
 
         await worker.RunOnceAsync(CancellationToken.None);
         await worker.RunOnceAsync(CancellationToken.None);
 
         Assert.That(worker.IsFaulty, Is.True);
-        Assert.That(await TicketStatusAsync(waiting.TicketId), Is.EqualTo(LocationTicketStatus.Failed));
+        Assert.That(await PrintJobStatusAsync(waiting.StationOrderId), Is.EqualTo(PrintJobStatus.Failed));
 
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
@@ -244,8 +243,8 @@ public class PrinterWorkerIntegrationTest
 
         Assert.That(callbacks.FaultyPrinterStations, Is.EquivalentTo(new[] { kitchenId, barId }));
 
-        registry.Arm(kitchenId, MockFault.None, MockFaultMode.Sticky);
-        registry.Arm(barId, MockFault.None, MockFaultMode.Sticky);
+        registry.Arm(printerId, MockFault.None, MockFaultMode.Sticky);
+        registry.Arm(printerId, MockFault.None, MockFaultMode.Sticky);
         IReadOnlyList<Guid> cleared = await worker.ReconnectAsync(CancellationToken.None);
 
         Assert.That(cleared, Is.EquivalentTo(new[] { kitchenId, barId }));
@@ -257,26 +256,26 @@ public class PrinterWorkerIntegrationTest
             Assert.That(statuses.Any(status => status.IsFaulty), Is.False);
         }
 
-        SeededTicket afterReconnect = await QueueTicketAsync(kitchenId, 140, 44, 3);
-        worker.Enqueue(afterReconnect.TicketId);
+        SeededStationOrder afterReconnect = await QueueTicketAsync(kitchenId, 140, 44, 3);
+        worker.Enqueue(afterReconnect.PrintJobId);
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(afterReconnect.TicketId), Is.EqualTo(LocationTicketStatus.PrintedOnTestPrinter));
+        Assert.That(await PrintJobStatusAsync(afterReconnect.StationOrderId), Is.EqualTo(PrintJobStatus.Printed));
     }
 
     [Test]
     public async Task SharedEndpointInterleaving_PreservesPerStationSequenceOrder()
     {
-        SeededTicket kitchenFirst = await QueueTicketAsync(kitchenId, 137, 42, 0);
-        SeededTicket barFirst = await QueueTicketAsync(barId, 138, 11, 1);
-        SeededTicket kitchenSecond = await QueueTicketAsync(kitchenId, 139, 43, 2);
-        SeededTicket barSecond = await QueueTicketAsync(barId, 140, 12, 3);
+        SeededStationOrder kitchenFirst = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        SeededStationOrder barFirst = await QueueTicketAsync(barId, 138, 11, 1);
+        SeededStationOrder kitchenSecond = await QueueTicketAsync(kitchenId, 139, 43, 2);
+        SeededStationOrder barSecond = await QueueTicketAsync(barId, 140, 12, 3);
 
         PrinterWorker worker = Worker(kitchenId, barId);
-        worker.Enqueue(barSecond.TicketId);
-        worker.Enqueue(kitchenSecond.TicketId);
-        worker.Enqueue(barFirst.TicketId);
-        worker.Enqueue(kitchenFirst.TicketId);
+        worker.Enqueue(barSecond.PrintJobId);
+        worker.Enqueue(kitchenSecond.PrintJobId);
+        worker.Enqueue(barFirst.PrintJobId);
+        worker.Enqueue(kitchenFirst.PrintJobId);
 
         for (int index = 0; index < 4; index++)
         {
@@ -299,22 +298,26 @@ public class PrinterWorkerIntegrationTest
     }
 
     [Test]
-    public async Task Reprint_ReusesNumbersIncrementsReprintCountPrintsBanner()
+    public async Task AnotherCopy_ReusesTheStationOrderNumberAndPrintsTheCopyBanner()
     {
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
         PrinterWorker worker = Worker();
-        worker.Enqueue(seeded.TicketId);
+        worker.Enqueue(seeded.PrintJobId);
         await worker.RunOnceAsync(CancellationToken.None);
 
-        await dataAccess.CreatePrintJobAsync(seeded.TicketId, kitchenId, PrintJobKind.Reprint, CancellationToken.None);
-        worker.Enqueue(seeded.TicketId);
+        PrintJobEnsured copy = await dataAccess.EnsureNextCopyAsync(seeded.StationOrderId, CancellationToken.None);
+        worker.Enqueue(copy.PrintJobId!.Value);
         await worker.RunOnceAsync(CancellationToken.None);
 
         await using GastronomyAppDbContext context = fixture.CreateContext();
-        LocationTicket ticket = await context.LocationTickets.SingleAsync(candidate => candidate.Id == seeded.TicketId);
+        StationOrder stationOrder = await context.StationOrders.SingleAsync(candidate => candidate.Id == seeded.StationOrderId);
+        List<PrintJob> jobs = await context.PrintJobs
+            .Where(job => job.StationOrderId == seeded.StationOrderId)
+            .OrderBy(job => job.CopyNumber)
+            .ToListAsync();
 
-        Assert.That(ticket.ReprintCount, Is.EqualTo(1));
-        Assert.That(ticket.StationSequenceNumber, Is.EqualTo(42));
+        Assert.That(jobs.Select(job => job.CopyNumber), Is.EqualTo(new[] { 0, 1 }));
+        Assert.That(stationOrder.StationOrderNumber, Is.EqualTo(42));
 
         string[] files = SlipFiles(kitchenId, "K_che");
         Assert.That(files.Select(Path.GetFileName).ToArray(), Is.EqualTo(new[]
@@ -327,55 +330,50 @@ public class PrinterWorkerIntegrationTest
     }
 
     [Test]
-    public async Task FailJobOnlyAsync_TicketWasTakenOnPaper_FailsTheJobAndReturnsTheTicketUntouched()
+    public async Task FailPrintJobAsync_TheStationHandledItOnPaper_FailsTheJob()
     {
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
         Guid jobId;
 
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            LocationTicket ticket = await context.LocationTickets.SingleAsync(candidate => candidate.Id == seeded.TicketId);
-            ticket.Status = LocationTicketStatus.HandledOnPaper;
+            PrintJob job = await context.PrintJobs.SingleAsync(candidate => candidate.StationOrderId == seeded.StationOrderId);
+            job.Status = PrintJobStatus.HandledOnPaper;
             await context.SaveChangesAsync();
-            jobId = await context.PrintJobs.Where(job => job.LocationTicketId == seeded.TicketId).Select(job => job.Id).SingleAsync();
+            jobId = job.Id;
         }
 
-        LocationTicketStatus returned = await dataAccess.FailJobOnlyAsync(
-            jobId,
-            PrintFailureReason.TicketResolvedByHuman,
-            CancellationToken.None);
+        await dataAccess.FailPrintJobAsync(jobId, PrintFailureReason.HandledOnPaper, CancellationToken.None);
 
-        Assert.That(returned, Is.EqualTo(LocationTicketStatus.HandledOnPaper));
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.HandledOnPaper));
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.HandledOnPaper));
     }
 
     [Test]
-    public async Task TicketTakenOnPaperBeforeTheWorkerReachedIt_PrintsNothingAndKeepsHandledOnPaper()
+    public async Task StationHandledItOnPaperBeforeTheWorkerReachedIt_PrintsNothingAndKeepsHandledOnPaper()
     {
-        SeededTicket seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
+        SeededStationOrder seeded = await QueueTicketAsync(kitchenId, 137, 42, 0);
 
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            LocationTicket ticket = await context.LocationTickets.SingleAsync(candidate => candidate.Id == seeded.TicketId);
-            ticket.Status = LocationTicketStatus.HandledOnPaper;
+            PrintJob handled = await context.PrintJobs.SingleAsync(candidate => candidate.StationOrderId == seeded.StationOrderId);
+            handled.Status = PrintJobStatus.HandledOnPaper;
             await context.SaveChangesAsync();
         }
 
         PrinterWorker worker = Worker();
-        worker.Enqueue(seeded.TicketId);
+        worker.Enqueue(seeded.PrintJobId);
         await worker.RunOnceAsync(CancellationToken.None);
 
-        Assert.That(await TicketStatusAsync(seeded.TicketId), Is.EqualTo(LocationTicketStatus.HandledOnPaper));
+        Assert.That(await PrintJobStatusAsync(seeded.StationOrderId), Is.EqualTo(PrintJobStatus.HandledOnPaper));
         Assert.That(SlipFiles(kitchenId, "K_che"), Is.Empty);
 
         await using GastronomyAppDbContext check = fixture.CreateContext();
-        PrintJob job = await check.PrintJobs.SingleAsync(candidate => candidate.LocationTicketId == seeded.TicketId);
-        Assert.That(job.Status, Is.EqualTo(PrintJobStatus.Failed));
-        Assert.That(job.FailureReason, Is.EqualTo(PrintFailureReason.TicketResolvedByHuman));
+        PrintJob job = await check.PrintJobs.SingleAsync(candidate => candidate.StationOrderId == seeded.StationOrderId);
+        Assert.That(job.Status, Is.EqualTo(PrintJobStatus.HandledOnPaper));
         Assert.That(
-            callbacks.TicketStatusChanges.Any(change => change.Status == LocationTicketStatus.Failed),
+            callbacks.PrintJobStatusChanges.Any(change => change.Status == PrintJobStatus.Failed),
             Is.False,
-            "A ticket a station is already cooking from must never be announced as failed.");
+            "An order a station is already cooking from must never be announced as failed.");
     }
 
     [Test]
@@ -383,22 +381,18 @@ public class PrinterWorkerIntegrationTest
     {
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.StationId == kitchenId);
+            Station kitchen = await context.Stations.SingleAsync(candidate => candidate.Id == kitchenId);
+            PrinterStatus status = await context.PrinterStatuses
+                .SingleAsync(candidate => candidate.PrinterId == kitchen.PrinterId);
             status.IsInErrorState = true;
             await context.SaveChangesAsync();
         }
 
-        IReadOnlyList<SuspensionPeriod> network = await dataAccess.LoadSuspensionPeriodsAsync(
+        IReadOnlyList<SuspensionPeriod> periods = await dataAccess.LoadSuspensionPeriodsAsync(
             kitchenId,
-            TransportKind.Network,
-            CancellationToken.None);
-        IReadOnlyList<SuspensionPeriod> mock = await dataAccess.LoadSuspensionPeriodsAsync(
-            kitchenId,
-            TransportKind.Mock,
             CancellationToken.None);
 
-        Assert.That(network, Is.Empty);
-        Assert.That(mock, Has.Count.EqualTo(1));
+        Assert.That(periods, Has.Count.EqualTo(1));
     }
 
     [Test]
@@ -408,18 +402,18 @@ public class PrinterWorkerIntegrationTest
 
         await using (GastronomyAppDbContext context = fixture.CreateContext())
         {
-            await seeder.SeedStationAsync(context, quietStationId, "Zelt", "10.0.0.9", 9100, CancellationToken.None);
-            PrinterStatus status = await context.PrinterStatuses.SingleAsync(candidate => candidate.StationId == quietStationId);
+            await seeder.SeedStationAsync(context, quietStationId, "Zelt", Guid.NewGuid(), "10.0.0.9", 9100, CancellationToken.None);
+            Station station = await context.Stations
+                .SingleAsync(candidate => candidate.Id == quietStationId);
+            PrinterStatus status = await context.PrinterStatuses
+                .SingleAsync(candidate => candidate.PrinterId == station.PrinterId);
             context.PrinterStatuses.Remove(status);
-            PrinterConfiguration configuration = await context.PrinterConfigurations
-                .SingleAsync(candidate => candidate.StationId == quietStationId);
-            configuration.IsEnabled = false;
+            station.PrinterId = null;
             await context.SaveChangesAsync();
         }
 
         IReadOnlyList<SuspensionPeriod> periods = await dataAccess.LoadSuspensionPeriodsAsync(
             quietStationId,
-            TransportKind.Mock,
             CancellationToken.None);
 
         Assert.That(periods, Has.Count.EqualTo(1));

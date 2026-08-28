@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace GastronomyApp.Api.Contracts;
 
 public sealed record AdminStationView(
@@ -5,10 +6,8 @@ public sealed record AdminStationView(
     string Name,
     int SortOrder,
     bool IsActive,
-    string TransportKind,
-    string? Host,
-    int Port,
-    bool IsEnabled,
+    Guid? PrinterId,
+    string? PrinterName,
     bool IsOnline,
     bool IsPaperEnd,
     bool IsCoverOpen,
@@ -20,6 +19,7 @@ public sealed record SaveStationRequest
 {
     public required string? Name { get; init; }
     public required int SortOrder { get; init; }
+    public Guid? PrinterId { get; init; }
 }
 
 public sealed record SavedStationView(Guid StationId);
@@ -56,7 +56,6 @@ public sealed record AdminStaffMemberView(
     bool IsActive,
     bool HasDevice,
     DateTime? LastSeenAtUtc,
-    string? UserAgent,
     bool HasOutstandingInvitation);
 
 public sealed record AdminStaffMemberListView(IReadOnlyList<AdminStaffMemberView> StaffMembers);
@@ -74,58 +73,64 @@ public sealed record CreateInvitationRequest
 public sealed record InvitationView(
     Guid InvitationId,
     string QrUrl,
-    string SixDigitCode,
     DateTime ExpiresAtUtc,
     StaffMemberView? StaffMember,
     IReadOnlyList<string> AvailableAddresses);
 
-public sealed record AdminPrinterView(
-    Guid StationId,
-    string StationName,
-    string TransportKind,
-    string? Host,
-    int Port,
-    string? AgentIdentifier,
-    int CharactersPerLine,
-    string CodePageName,
-    int ConnectTimeoutSeconds,
-    int JobTimeoutSeconds,
-    int HeartbeatSeconds,
-    bool IsEnabled,
-    bool IsOnline,
-    bool IsPaperEnd,
-    bool IsPaperNearEnd,
-    bool IsCoverOpen,
-    bool IsFaulty,
-    int WaitingTicketCount,
-    DateTime? LastChangedAtUtc,
-    IReadOnlyList<string> SharedWithStationNames,
-    string? MockFolderPath);
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "printerType")]
+[JsonDerivedType(typeof(TestPrinterView), "TestPrinter")]
+[JsonDerivedType(typeof(EpsonTmT20ivNetworkPrinterView), "EpsonTmT20ivNetworkPrinter")]
+public abstract record AdminPrinterView
+{
+    public required Guid PrinterId { get; init; }
+    public required string Name { get; init; }
+    public required bool IsOnline { get; init; }
+    public required bool IsPaperEnd { get; init; }
+    public required bool IsPaperNearEnd { get; init; }
+    public required bool IsCoverOpen { get; init; }
+    public required bool IsFaulty { get; init; }
+    public required int WaitingTicketCount { get; init; }
+    public required DateTime? LastChangedAtUtc { get; init; }
+    public required string? StatusDetail { get; init; }
+    public required IReadOnlyList<string> StationNames { get; init; }
+}
+
+public sealed record TestPrinterView : AdminPrinterView
+{
+    public required string SimulatedFault { get; init; }
+    public required string SimulatedFaultMode { get; init; }
+}
+
+public sealed record EpsonTmT20ivNetworkPrinterView : AdminPrinterView
+{
+    public required string Host { get; init; }
+    public required int Port { get; init; }
+}
 
 public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printers);
 
-public sealed record SavePrinterRequest
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "printerType")]
+[JsonDerivedType(typeof(SaveTestPrinterRequest), "TestPrinter")]
+[JsonDerivedType(typeof(SaveEpsonTmT20ivNetworkPrinterRequest), "EpsonTmT20ivNetworkPrinter")]
+public abstract record SavePrinterRequest
 {
-    public required string? TransportKind { get; init; }
-    public string? Host { get; init; }
+    public required string? Name { get; init; }
+}
+
+public sealed record SaveTestPrinterRequest : SavePrinterRequest
+{
+    public string? SimulatedFault { get; init; }
+    public string? SimulatedFaultMode { get; init; }
+}
+
+public sealed record SaveEpsonTmT20ivNetworkPrinterRequest : SavePrinterRequest
+{
+    public required string? Host { get; init; }
     public required int Port { get; init; }
-    public string? AgentIdentifier { get; init; }
-    public required int CharactersPerLine { get; init; }
-    public required string? CodePageName { get; init; }
-    public required int ConnectTimeoutSeconds { get; init; }
-    public required int JobTimeoutSeconds { get; init; }
-    public required int HeartbeatSeconds { get; init; }
-    public required bool IsEnabled { get; init; }
 }
 
-public sealed record SharedEndpointView(Guid StationId, IReadOnlyList<Guid> StationsSharingThisEndpoint);
+public sealed record SavedPrinterView(Guid PrinterId, IReadOnlyList<string> StationNames);
 
-public sealed record ReconnectedView(Guid StationId, IReadOnlyList<Guid> ClearedStationIds);
-
-public sealed record ArmMockFaultRequest
-{
-    public required string? Fault { get; init; }
-    public required string? Mode { get; init; }
-}
+public sealed record ReconnectedView(Guid PrinterId, IReadOnlyList<Guid> ClearedStationIds);
 
 public sealed record ResetNumbersView(int StationCountersCleared);

@@ -53,30 +53,18 @@ public sealed class EnrolmentRedemptionHandler
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        bool hasQrCode = !string.IsNullOrWhiteSpace(request.Code);
-        bool hasSixDigitCode = !string.IsNullOrWhiteSpace(request.SixDigitCode);
-
-        if (hasQrCode == hasSixDigitCode)
+        if (string.IsNullOrWhiteSpace(request.Code))
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status400BadRequest,
                 "ValidationFailed",
-                "enrolment.oneCodeFormRequired");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return resultEnvelope.Problem(
-                StatusCodes.Status400BadRequest,
-                "ValidationFailed",
-                "enrolment.nameMissing");
+                "enrolment.codeMissing");
         }
 
         EnrolmentRedemptionResult redemption = await invitationStore.RedeemAsync(
             new EnrolmentRedemptionRequest(
-                hasQrCode ? request.Code : null,
-                hasSixDigitCode ? request.SixDigitCode : null,
-                request.Name.Trim(),
+                request.Code,
+                request.Name?.Trim(),
                 request.UserAgent ?? string.Empty,
                 httpContext.Request.Headers[AcceptLanguageHeaderName].ToString()),
             cancellationToken);
@@ -92,10 +80,14 @@ public sealed class EnrolmentRedemptionHandler
                 StatusCodes.Status410Gone,
                 "EnrolmentCodeNoLongerValid",
                 "enrolment.codeNoLongerValid"),
-            EnrolmentRedemptionOutcome.SixDigitAttemptsExhausted => resultEnvelope.Problem(
-                StatusCodes.Status422UnprocessableEntity,
-                "SixDigitCodeRetired",
-                "enrolment.sixDigitCodeRetired"),
+            EnrolmentRedemptionOutcome.StaffMemberIsOffTheList => resultEnvelope.Problem(
+                StatusCodes.Status410Gone,
+                "StaffMemberIsOffTheList",
+                "enrolment.staffMemberIsOffTheList"),
+            EnrolmentRedemptionOutcome.NameRequired => resultEnvelope.Problem(
+                StatusCodes.Status400BadRequest,
+                "ValidationFailed",
+                "enrolment.nameMissing"),
             _ => new GastronomyApp.Core.Services.Never().OfType<IResult>(redemption.Outcome),
         };
     }

@@ -3,7 +3,7 @@ import type { DraftLine, DraftOrder } from './apiTypes'
 export const DRAFT_STORAGE_KEY = 'draftOrder'
 
 export function emptyDraft(): DraftOrder {
-  return { tableLabel: '', note: null, lines: [], clientOrderId: null }
+  return { tableName: '', note: null, lines: [], clientOrderId: null }
 }
 
 function toDraftLine(value: unknown): DraftLine | null {
@@ -30,7 +30,7 @@ function toDraftOrder(value: unknown): DraftOrder | null {
     return null
   }
   const candidate = value as Record<string, unknown>
-  if (typeof candidate.tableLabel !== 'string' || !Array.isArray(candidate.lines)) {
+  if (typeof candidate.tableName !== 'string' || !Array.isArray(candidate.lines)) {
     return null
   }
   const lines: DraftLine[] = []
@@ -42,7 +42,7 @@ function toDraftOrder(value: unknown): DraftOrder | null {
     lines.push(line)
   }
   return {
-    tableLabel: candidate.tableLabel,
+    tableName: candidate.tableName,
     note: typeof candidate.note === 'string' ? candidate.note : null,
     lines,
     clientOrderId: typeof candidate.clientOrderId === 'string' ? candidate.clientOrderId : null,
@@ -66,7 +66,7 @@ export function saveDraft(draft: DraftOrder): void {
   localStorage.setItem(
     DRAFT_STORAGE_KEY,
     JSON.stringify({
-      tableLabel: draft.tableLabel,
+      tableName: draft.tableName,
       note: draft.note,
       lines: draft.lines.map((line) => ({
         catalogItemId: line.catalogItemId,
@@ -94,8 +94,29 @@ function withLines(draft: DraftOrder, lines: DraftLine[]): DraftOrder {
   return persisted({ ...draft, lines })
 }
 
+function joinsWith(existing: DraftLine, added: DraftLine): boolean {
+  return (
+    existing.catalogItemId === added.catalogItemId &&
+    existing.stationId === added.stationId &&
+    existing.note === null &&
+    added.note === null
+  )
+}
+
 export function addLine(draft: DraftOrder, line: DraftLine): DraftOrder {
-  return withLines(draft, [...draft.lines, { ...line }])
+  const position = draft.lines.findIndex((existing) => joinsWith(existing, line))
+  if (position === -1) {
+    return withLines(draft, [...draft.lines, { ...line }])
+  }
+
+  return withLines(
+    draft,
+    draft.lines.map((existing, index) =>
+      index === position
+        ? { ...existing, quantity: existing.quantity + line.quantity }
+        : existing,
+    ),
+  )
 }
 
 export function setLineQuantity(draft: DraftOrder, index: number, quantity: number): DraftOrder {
@@ -135,8 +156,8 @@ export function setLineStation(
   )
 }
 
-export function setTableLabel(draft: DraftOrder, tableLabel: string): DraftOrder {
-  return persisted({ ...draft, tableLabel })
+export function setTableName(draft: DraftOrder, tableName: string): DraftOrder {
+  return persisted({ ...draft, tableName })
 }
 
 export function setOrderNote(draft: DraftOrder, note: string | null): DraftOrder {

@@ -23,7 +23,7 @@ public sealed record HubGroupNames
 public sealed record HubEventNames
 {
     public string OrderAccepted { get; } = "OrderAccepted";
-    public string TicketStatusChanged { get; } = "TicketStatusChanged";
+    public string PrintJobStatusChanged { get; } = "PrintJobStatusChanged";
     public string OrderStatusChanged { get; } = "OrderStatusChanged";
     public string StationBacklogChanged { get; } = "StationBacklogChanged";
     public string PrinterStatusChanged { get; } = "PrinterStatusChanged";

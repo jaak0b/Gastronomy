@@ -1,7 +1,6 @@
 using GastronomyApp.Api.Options;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -142,45 +141,32 @@ public sealed class ApiSeeder
         AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenStationId);
         AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarStationId);
 
-        context.TableSuggestions.Add(new TableSuggestion
-        {
-            Id = Guid.NewGuid(),
-            Label = "Tisch 12",
-            SortOrder = 1,
-        });
-
         await context.SaveChangesAsync(cancellationToken);
         return world;
     }
 
     private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
     {
+        Guid printerId = Guid.NewGuid();
+        context.Printers.Add(new TestPrinter
+        {
+            Id = printerId,
+            Name = "Drucker " + name,
+        });
+
         context.Stations.Add(new Station
         {
             Id = stationId,
             Name = name,
             SortOrder = sortOrder,
             IsActive = true,
-        });
-
-        context.PrinterConfigurations.Add(new PrinterConfiguration
-        {
-            StationId = stationId,
-            TransportKind = TransportKind.Mock,
-            Host = null,
-            Port = 0,
-            AgentIdentifier = null,
-            CharactersPerLine = 48,
-            CodePageName = "PC858",
-            ConnectTimeoutSeconds = 3,
-            JobTimeoutSeconds = 90,
-            HeartbeatSeconds = 10,
-            IsEnabled = true,
+            NextStationOrderNumber = 1,
+            PrinterId = printerId,
         });
 
         context.PrinterStatuses.Add(new PrinterStatus
         {
-            StationId = stationId,
+            PrinterId = printerId,
             IsOnline = true,
             IsPaperEnd = false,
             IsPaperNearEnd = false,
@@ -208,8 +194,8 @@ public sealed class ApiSeeder
             Name = name,
             CategoryName = categoryName,
             PriceCents = priceCents,
-            SortOrder = sortOrder,
             IsActive = true,
+            SortOrder = sortOrder,
             IsAvailable = true,
         });
 

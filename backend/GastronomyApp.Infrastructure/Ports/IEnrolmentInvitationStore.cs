@@ -7,19 +7,18 @@ public enum EnrolmentRedemptionOutcome
     Redeemed,
     CodeInvalid,
     CodeExpired,
-    SixDigitAttemptsExhausted,
+    StaffMemberIsOffTheList,
+    NameRequired,
 }
 
 public sealed record EnrolmentInvitationCreated(
     Guid InvitationId,
     string QrCodeValue,
-    string SixDigitCode,
     DateTime ExpiresAtUtc);
 
 public sealed record EnrolmentRedemptionRequest(
-    string? Code,
-    string? SixDigitCode,
-    string Name,
+    string Code,
+    string? Name,
     string UserAgent,
     string AcceptLanguageHeader);
 

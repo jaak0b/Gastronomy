@@ -21,20 +21,20 @@ public static class AdminOrderEndpoints
             AdminOrderHandler handler,
             CancellationToken cancellationToken) => await handler.ListAsync(status, stationId, cancellationToken));
 
-        group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/resolve", async (
+        group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/resolve", async (
             Guid orderId,
-            Guid ticketId,
-            ResolveTicketRequest request,
-            TicketActionHandler handler,
+            Guid stationOrderId,
+            ResolveUnknownPrintRequest request,
+            StationOrderActionHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.ResolveAsync(orderId, ticketId, request, null, cancellationToken));
+                await handler.ResolveUnknownAsync(orderId, stationOrderId, request, null, cancellationToken));
 
-        group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/reprint", async (
+        group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/print-another-copy", async (
             Guid orderId,
-            Guid ticketId,
-            TicketActionHandler handler,
+            Guid stationOrderId,
+            StationOrderActionHandler handler,
             CancellationToken cancellationToken) =>
-                await handler.ReprintAsync(orderId, ticketId, null, cancellationToken));
+                await handler.PrintAnotherCopyAsync(orderId, stationOrderId, null, cancellationToken));
 
         return routes;
     }
@@ -65,22 +65,19 @@ public sealed class AdminOrderHandler
     {
         IQueryable<Order> query = dbContext.Orders.AsNoTracking();
 
-        if (Enum.TryParse(status, out OrderStatus parsedStatus))
-        {
-            query = query.Where(order => order.Status == parsedStatus);
-        }
-
         if (stationId is not null)
         {
-            List<Guid> orderIdsAtStation = await dbContext.LocationTickets
+            List<Guid> orderIdsAtStation = await dbContext.StationOrders
                 .AsNoTracking()
-                .Where(ticket => ticket.StationId == stationId)
-                .Select(ticket => ticket.OrderId)
+                .Where(stationOrder => stationOrder.StationId == stationId)
+                .Select(stationOrder => stationOrder.OrderId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
             query = query.Where(order => orderIdsAtStation.Contains(order.Id));
         }
+
+        bool filtersByStatus = Enum.TryParse(status, out OrderStatus parsedStatus);
 
         List<Order> orders = await query
             .OrderByDescending(order => order.CreatedAtUtc)
@@ -92,6 +89,12 @@ public sealed class AdminOrderHandler
         foreach (Order order in orders)
         {
             LoadedOrder loaded = (await orderReader.LoadAsync(dbContext, order.Id, cancellationToken))!;
+
+            if (filtersByStatus && orderReader.StatusOf(loaded) != parsedStatus)
+            {
+                continue;
+            }
+
             entries.Add(await orderQueryHandler.DescribeListEntryAsync(loaded, cancellationToken));
         }
 

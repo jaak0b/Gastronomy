@@ -52,15 +52,12 @@ public sealed class ApiServiceRegistration
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
         services.AddScoped<IStationRepository, StationRepository>();
-        services.AddScoped<INumberAllocator, NumberCounterAllocator>();
+        services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
 
         services.AddSingleton<OrderRoutingResolver>();
-        services.AddSingleton<OrderTotalCalculator>();
         services.AddSingleton<OrderStatusCalculator>();
-        services.AddSingleton<TicketStateMachine>();
-        services.AddSingleton<TicketAcknowledgePolicy>();
+        services.AddSingleton<HandledOnPaperPolicy>();
         services.AddSingleton<PrintJobStateMachine>();
-        services.AddSingleton<PrinterEndpointKeyBuilder>();
         services.AddSingleton<RetryPolicy>();
         services.AddSingleton<GiveUpWindowCalculator>();
 
@@ -79,10 +76,9 @@ public sealed class ApiServiceRegistration
 
         services.AddScoped<PrintJobEnqueuer>();
         services.AddScoped<OrderReader>();
-        services.AddScoped<OrderStatusProjectionWriter>();
         services.AddScoped<OrderPlacementHandler>();
         services.AddScoped<OrderQueryHandler>();
-        services.AddScoped<TicketActionHandler>();
+        services.AddScoped<StationOrderActionHandler>();
         services.AddSingleton<PrinterStatusReader>();
         services.AddSingleton<HealthReporter>();
         services.AddSingleton<OutstandingInvitationCache>();
@@ -97,11 +93,11 @@ public sealed class ApiServiceRegistration
         services.AddScoped<AdminOrderHandler>();
         services.AddScoped<EnrolmentRedemptionHandler>();
         services.AddSingleton<StationPrintabilityReader>();
-        services.AddSingleton<StationTicketDescriber>();
+        services.AddSingleton<StationScreenDescriber>();
         services.AddSingleton<StationShellResponder>();
         services.AddSingleton<ClientRouteFallbackResponder>();
         services.AddScoped<StationQueryHandler>();
-        services.AddScoped<StationAcknowledgeHandler>();
+        services.AddScoped<StationHandOnPaperHandler>();
 
         services.AddSignalR();
         services.AddSingleton<HubConnectionRegistry>();
@@ -111,25 +107,28 @@ public sealed class ApiServiceRegistration
 
         services.AddSingleton(options.Language);
         services.AddSingleton<IMockFaultRegistry, InMemoryMockFaultRegistry>();
-        services.AddSingleton(provider => new MockPrinterTransport(
+        services.AddSingleton(provider => new TestPrinterDriver(
             options.DataDirectory,
             provider.GetRequiredService<IMockFaultRegistry>(),
             provider.GetRequiredService<TimeProvider>()));
-        services.AddSingleton<NetworkPrinterTransport>();
-        services.AddSingleton<IPrinterTransportFactory, PrinterTransportFactory>();
-        services.AddSingleton<IPrinterConfigurationSource, DatabasePrinterConfigurationSource>();
+        services.AddSingleton<IPrinterDriver>(provider => provider.GetRequiredService<TestPrinterDriver>());
+        services.AddSingleton<EpsonTmT20ivNetworkPrinterDriver>();
+        services.AddSingleton<IPrinterDriver>(provider =>
+            provider.GetRequiredService<EpsonTmT20ivNetworkPrinterDriver>());
+        services.AddSingleton(provider => new PrinterDriverRegistry(
+            provider.GetServices<IPrinterDriver>()));
+        services.AddSingleton<IPrinterSource, DatabasePrinterSource>();
         services.AddSingleton<ISlipTextProvider, GastronomyApp.Infrastructure.Localization.ResxSlipTextProvider>();
         services.AddSingleton<EscPosSlipRenderer>();
         services.AddSingleton(provider => new PrinterWorkerDomainServices(
             provider.GetRequiredService<RetryPolicy>(),
             provider.GetRequiredService<GiveUpWindowCalculator>(),
             provider.GetRequiredService<OrderStatusCalculator>(),
-            provider.GetRequiredService<TicketStateMachine>(),
-            provider.GetRequiredService<PrintJobStateMachine>(),
-            provider.GetRequiredService<PrinterEndpointKeyBuilder>()));
+            provider.GetRequiredService<PrintJobStateMachine>()));
         services.AddSingleton<IPrinterWorkerDataAccess>(provider => new EfCorePrinterWorkerDataAccess(
             () => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext(),
             provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<StationPrinterStatusLookup>();
         services.AddSingleton<PrinterFleet>();
         services.AddSingleton<IPrinterFleet>(provider => provider.GetRequiredService<PrinterFleet>());
         services.AddHostedService(provider => provider.GetRequiredService<PrinterFleet>());

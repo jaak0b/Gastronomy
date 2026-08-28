@@ -1,52 +1,56 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminPrinter, TransportKind } from '../../../stores/admin/printers'
-import { assertNever } from '../../../core/assertNever'
+import type { AdminPrinter, PrinterType, SavePrinter } from '../../../stores/admin/printers'
+import TestPrinterFields from './TestPrinterFields.vue'
+import NetworkPrinterFields from './NetworkPrinterFields.vue'
 
-const props = defineProps<{ printer: AdminPrinter }>()
-const emit = defineEmits<{ save: [printer: AdminPrinter] }>()
+const props = defineProps<{
+  printer: AdminPrinter | null
+  printerType: PrinterType
+  isCancellable?: boolean
+}>()
+const emit = defineEmits<{ save: [value: SavePrinter]; cancel: [] }>()
 
 const { t } = useI18n()
-const transport = ref<TransportKind>(props.printer.transportKind)
-const host = ref(props.printer.host ?? '')
-const port = ref(props.printer.port ?? 9100)
 
-const TRANSPORTS: TransportKind[] = ['Network', 'Agent', 'Mock']
-
-function labelFor(kind: TransportKind): string {
-  switch (kind) {
-    case 'Network':
-      return t('admin.printers.kindNetwork')
-    case 'Agent':
-      return t('admin.printers.kindAgent')
-    case 'Mock':
-      return t('admin.printers.kindMock')
-    default:
-      return assertNever(kind)
-  }
+const FIELDS = {
+  TestPrinter: TestPrinterFields,
+  EpsonTmT20ivNetworkPrinter: NetworkPrinterFields,
 }
 
+const name = ref(props.printer?.name ?? '')
+const pending = ref<SavePrinter | null>(null)
+
 function save(): void {
-  emit('save', {
-    ...props.printer,
-    transportKind: transport.value,
-    host: host.value.trim().length === 0 ? null : host.value.trim(),
-    port: port.value,
-  })
+  if (pending.value !== null) {
+    emit('save', pending.value)
+  }
 }
 </script>
 
 <template>
-  <v-form class="printer-form pa-4" @submit.prevent="save">
-    <v-select
-      v-model="transport"
-      class="transport-field"
-      :label="t('admin.printers.title')"
-      :items="TRANSPORTS.map((kind) => ({ title: labelFor(kind), value: kind }))"
-    />
-    <v-text-field v-model="host" class="host-field" :label="t('admin.printers.hostHelp')" />
-    <p class="help text-medium-emphasis">{{ t('admin.printers.sharedHelp') }}</p>
-    <v-btn type="submit" color="primary" class="mt-2">{{ t('admin.save') }}</v-btn>
+  <v-form class="printer-form" @submit.prevent="save">
+    <v-card-text>
+      <v-text-field
+        v-model="name"
+        class="name-field mb-4"
+        :label="t('admin.printers.nameLabel')"
+      />
+      <component
+        :is="FIELDS[props.printerType]"
+        :printer="props.printer"
+        :name="name"
+        @change="(value: SavePrinter) => (pending = value)"
+      />
+    </v-card-text>
+    <v-card-actions>
+      <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
+        {{ t('admin.save') }}
+      </v-btn>
+      <v-btn v-if="props.isCancellable" class="cancel" variant="text" @click="emit('cancel')">
+        {{ t('admin.cancel') }}
+      </v-btn>
+    </v-card-actions>
   </v-form>
 </template>

@@ -5,7 +5,6 @@ using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
@@ -54,29 +53,38 @@ public static class OrderEndpoints
             return await handler.DetailAsync(orderId, caller.StaffMemberId, cancellationToken);
         });
 
-        group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/resolve", async (
+        group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/resolve", async (
             Guid orderId,
-            Guid ticketId,
-            ResolveTicketRequest request,
+            Guid stationOrderId,
+            ResolveUnknownPrintRequest request,
             HttpContext httpContext,
             CallerIdentity callerIdentity,
-            TicketActionHandler handler,
+            StationOrderActionHandler handler,
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.ResolveAsync(orderId, ticketId, request, caller.StaffMemberId, cancellationToken);
+            return await handler.ResolveUnknownAsync(
+                orderId,
+                stationOrderId,
+                request,
+                caller.StaffMemberId,
+                cancellationToken);
         });
 
-        group.MapPost("/{orderId:guid}/tickets/{ticketId:guid}/reprint", async (
+        group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/print-another-copy", async (
             Guid orderId,
-            Guid ticketId,
+            Guid stationOrderId,
             HttpContext httpContext,
             CallerIdentity callerIdentity,
-            TicketActionHandler handler,
+            StationOrderActionHandler handler,
             CancellationToken cancellationToken) =>
         {
             DeviceCaller caller = callerIdentity.ReadDevice(httpContext.User)!;
-            return await handler.ReprintAsync(orderId, ticketId, caller.StaffMemberId, cancellationToken);
+            return await handler.PrintAnotherCopyAsync(
+                orderId,
+                stationOrderId,
+                caller.StaffMemberId,
+                cancellationToken);
         });
 
         return routes;
@@ -88,7 +96,6 @@ public sealed class OrderPlacementHandler
     private readonly GastronomyAppDbContext dbContext;
     private readonly OrderAcceptanceTransaction acceptanceTransaction;
     private readonly OrderReader orderReader;
-    private readonly OrderStatusProjectionWriter projectionWriter;
     private readonly PrintJobEnqueuer printJobEnqueuer;
     private readonly HubNotificationDispatcher dispatcher;
     private readonly ResultEnvelope resultEnvelope;
@@ -97,7 +104,6 @@ public sealed class OrderPlacementHandler
         GastronomyAppDbContext dbContext,
         OrderAcceptanceTransaction acceptanceTransaction,
         OrderReader orderReader,
-        OrderStatusProjectionWriter projectionWriter,
         PrintJobEnqueuer printJobEnqueuer,
         HubNotificationDispatcher dispatcher,
         ResultEnvelope resultEnvelope)
@@ -105,7 +111,6 @@ public sealed class OrderPlacementHandler
         this.dbContext = dbContext;
         this.acceptanceTransaction = acceptanceTransaction;
         this.orderReader = orderReader;
-        this.projectionWriter = projectionWriter;
         this.printJobEnqueuer = printJobEnqueuer;
         this.dispatcher = dispatcher;
         this.resultEnvelope = resultEnvelope;
@@ -116,23 +121,20 @@ public sealed class OrderPlacementHandler
         DeviceCaller caller,
         CancellationToken cancellationToken)
     {
-        int expectedTotalCents = request.ExpectedTotalCents ?? 0;
-
         OrderAcceptanceRequest acceptanceRequest = new()
         {
             ClientOrderId = request.ClientOrderId,
             StaffMemberId = caller.StaffMemberId,
-            DeviceId = caller.DeviceId,
-            TableLabel = request.TableLabel ?? string.Empty,
+            TableName = request.TableName ?? string.Empty,
             Note = request.Note,
-            Lines =
+            Items =
             [
-                .. (request.Lines ?? []).Select(line => new OrderAcceptanceLineRequest
+                .. (request.Items ?? []).Select(item => new OrderAcceptanceItemRequest
                 {
-                    CatalogItemId = line.CatalogItemId,
-                    Quantity = line.Quantity,
-                    Note = line.Note,
-                    StationId = line.StationId,
+                    CatalogItemId = item.CatalogItemId,
+                    UnitPriceCents = item.UnitPriceCents,
+                    Note = item.Note,
+                    StationId = item.StationId,
                 }),
             ],
         };
@@ -167,41 +169,33 @@ public sealed class OrderPlacementHandler
                     "order.submissionIdReused");
             }
 
-            foreach (LocationTicket waiting in existing.Tickets)
+            foreach (StationOrder waiting in existing.StationOrders)
             {
-                await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(
-                    waiting.Id,
-                    PrintJobKind.Initial,
-                    cancellationToken);
+                await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(waiting.Id, cancellationToken);
             }
 
             return Results.Json(
-                orderReader.Describe(existing, expectedTotalCents),
+                orderReader.Describe(existing),
                 statusCode: StatusCodes.Status200OK);
         }
 
-        await projectionWriter.WriteAsync(dbContext, orderId, cancellationToken);
-
         LoadedOrder placed = (await orderReader.LoadAsync(dbContext, orderId, cancellationToken))!;
 
-        foreach (LocationTicket ticket in placed.Tickets)
+        foreach (StationOrder stationOrder in placed.StationOrders)
         {
-            await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(
-                ticket.Id,
-                PrintJobKind.Initial,
-                cancellationToken);
+            await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(stationOrder.Id, cancellationToken);
         }
 
-        PlacedOrderView view = orderReader.Describe(placed, expectedTotalCents);
+        PlacedOrderView view = orderReader.Describe(placed);
 
         await dispatcher.PushOrderAcceptedAsync(
             caller.StaffMemberId,
             new OrderAcceptedEvent(
                 view.OrderId,
                 view.GlobalOrderNumber,
-                placed.Order.TableLabel,
+                placed.Order.TableName,
                 view.TotalCents,
-                view.Tickets),
+                view.StationOrders),
             cancellationToken);
 
         return Results.Json(view, statusCode: StatusCodes.Status201Created);
@@ -212,7 +206,7 @@ public sealed class SubmissionComparison
 {
     public bool Matches(PlaceOrderRequest request, LoadedOrder existing)
     {
-        if (!string.Equals(request.TableLabel ?? string.Empty, existing.Order.TableLabel, StringComparison.Ordinal))
+        if (!string.Equals(request.TableName ?? string.Empty, existing.Order.TableName, StringComparison.Ordinal))
         {
             return false;
         }
@@ -222,22 +216,20 @@ public sealed class SubmissionComparison
             return false;
         }
 
-        List<OrderLineRequest> requestLines = [.. request.Lines ?? []];
+        List<OrderItemRequest> requestItems = [.. request.Items ?? []];
 
-        if (requestLines.Count != existing.Lines.Count)
+        if (requestItems.Count != existing.Items.Count)
         {
             return false;
         }
 
-        List<OrderLine> remaining = [.. existing.Lines];
+        List<OrderItem> remaining = [.. existing.Items];
 
-        foreach (OrderLineRequest line in requestLines)
+        foreach (OrderItemRequest item in requestItems)
         {
-            OrderLine? match = remaining.FirstOrDefault(candidate =>
-                candidate.CatalogItemId == line.CatalogItemId
-                && candidate.Quantity == line.Quantity
-                && string.Equals(candidate.Note ?? string.Empty, line.Note ?? string.Empty, StringComparison.Ordinal)
-                && candidate.ChosenStationId == line.StationId);
+            OrderItem? match = remaining.FirstOrDefault(candidate =>
+                candidate.CatalogItemId == item.CatalogItemId
+                && string.Equals(candidate.Note ?? string.Empty, item.Note ?? string.Empty, StringComparison.Ordinal));
 
             if (match is null)
             {
@@ -247,6 +239,6 @@ public sealed class SubmissionComparison
             remaining.Remove(match);
         }
 
-        return remaining.Count == 0;
+        return true;
     }
 }

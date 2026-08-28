@@ -8,6 +8,8 @@ export interface AdminStation {
   name: string
   sortOrder: number
   isActive: boolean
+  printerId: string | null
+  printerName: string | null
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
@@ -31,7 +33,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   async function save(
-    station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
+    station: Pick<AdminStation, 'name' | 'sortOrder' | 'printerId'> & { stationId?: string },
   ): Promise<void> {
     const path =
       station.stationId === undefined
@@ -42,6 +44,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       body: {
         name: station.name,
         sortOrder: station.sortOrder,
+        printerId: station.printerId,
       },
     })
     await load()

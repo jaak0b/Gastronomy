@@ -6,14 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record OrderLineBody(Guid CatalogItemId, int Quantity, string? Note, Guid? StationId);
+public sealed record OrderItemBody(Guid CatalogItemId, int Quantity, int UnitPriceCents, string? Note, Guid? StationId);
 
 public sealed record OrderBody(
     Guid ClientOrderId,
-    string TableLabel,
+    string TableName,
     string? Note,
-    int? ExpectedTotalCents,
-    IReadOnlyList<OrderLineBody> Lines);
+    IReadOnlyList<OrderItemBody> Items);
 
 public sealed class OrderTestContext : IAsyncDisposable
 {
@@ -38,14 +37,13 @@ public sealed class OrderTestContext : IAsyncDisposable
         get { return Factory.Client; }
     }
 
-    public OrderBody BuildOrder(Guid clientOrderId, int expectedTotalCents)
+    public OrderBody BuildOrder(Guid clientOrderId)
     {
         return new OrderBody(
             clientOrderId,
             "Tisch 12",
             null,
-            expectedTotalCents,
-            [new OrderLineBody(World.BratwurstItemId, 2, null, null)]);
+            [new OrderItemBody(World.BratwurstItemId, 2, 350, null, null)]);
     }
 
     public Task<HttpResponseMessage> PostOrderAsync(OrderBody body)

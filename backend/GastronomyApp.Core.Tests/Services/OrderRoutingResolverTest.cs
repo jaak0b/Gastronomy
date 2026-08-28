@@ -38,6 +38,7 @@ public sealed class OrderRoutingResolverTest
             Name = name,
             SortOrder = sortOrder,
             IsActive = true,
+            NextStationOrderNumber = 1,
         };
     }
 

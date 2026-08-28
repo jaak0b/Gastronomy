@@ -21,25 +21,25 @@ describe('the ten second delay before a slip is taken', () => {
       'fetch',
       vi.fn(async (url: string) => {
         fetchCalls.push(url)
-        return new Response(JSON.stringify({ tickets: [] }), { status: 200 })
+        return new Response(JSON.stringify({ stationOrders: [] }), { status: 200 })
       }),
     )
     const station = useStationStore()
     station.selectedStationId = 'station-kueche'
-    station.tickets = [
+    station.stationOrders = [
       {
-        ticketId: 'ticket-1',
+        stationOrderId: 'ticket-1',
         orderId: 'order-1',
         globalOrderNumber: 137,
-        sequenceNumber: 42,
-        tableLabel: 'Tisch 12',
+        stationOrderNumber: 42,
+        tableName: 'Tisch 12',
         orderCreatedAtUtc: '2026-08-27T19:00:00Z',
         status: 'Failed',
-        canAcknowledge: true,
-        canAcknowledgeReasonKey: null,
-        reprintCount: 0,
+        canHandleOnPaper: true,
+        canHandleOnPaperReasonKey: null,
+        copyNumber: 0,
         orderNote: null,
-        lines: [],
+        items: [],
       },
     ]
     return { station, fetchCalls }
@@ -67,7 +67,7 @@ describe('the ten second delay before a slip is taken', () => {
     station.beginTake('ticket-1')
     await vi.advanceTimersByTimeAsync(10000)
 
-    expect(fetchCalls).toContain('/api/stations/station-kueche/tickets/ticket-1/acknowledge')
+    expect(fetchCalls).toContain('/api/stations/station-kueche/station-orders/ticket-1/hand-on-paper')
   })
 
   it('never reaches the acknowledge endpoint when the cook taps undo', async () => {
@@ -106,7 +106,7 @@ describe('a station screen that lost the hub and got it back', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ tickets: [], stations: [] }), { status: 200 })
+        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
       }),
     )
     const station = useStationStore()
@@ -117,7 +117,7 @@ describe('a station screen that lost the hub and got it back', () => {
 
     await connection.refetchAll()
 
-    expect(urls.some((url) => url.includes('/tickets'))).toBe(true)
+    expect(urls.some((url) => url.includes('/station-orders'))).toBe(true)
   })
 
   it('asks after its printer again too, because a stale banner is a lie', async () => {
@@ -126,7 +126,7 @@ describe('a station screen that lost the hub and got it back', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ tickets: [], stations: [] }), { status: 200 })
+        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
       }),
     )
     const station = useStationStore()

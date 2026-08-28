@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import UnknownQuestion from '../../../src/components/orders/UnknownQuestion.vue'
-import type { TicketSummary } from '../../../src/core/apiTypes'
+import type { StationOrderSummary } from '../../../src/core/apiTypes'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
-function ticket(printerHasPaper: boolean | null): TicketSummary {
+function ticket(printerHasPaper: boolean | null): StationOrderSummary {
   return {
-    ticketId: 'ticket-1',
+    stationOrderId: 'ticket-1',
     stationId: 'station-kueche',
     stationName: 'Küche',
-    sequenceNumber: 42,
+    stationOrderNumber: 42,
     status: 'Unknown',
     failureReason: 'SocketDropped',
     printerHasPaper,
@@ -21,7 +21,7 @@ function ticket(printerHasPaper: boolean | null): TicketSummary {
 function mountQuestion(printerHasPaper: boolean | null, noticeKey: string | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(UnknownQuestion, {
-    props: { ticket: ticket(printerHasPaper), noticeKey },
+    props: { stationOrder: ticket(printerHasPaper), noticeKey },
     global: { plugins: [i18n] },
   })
 }
@@ -72,13 +72,13 @@ describe('UnknownQuestion', () => {
   })
 
   it('says the question was already answered when somebody else got there first', () => {
-    const question = mountQuestion(true, 'ticket.unknown.answered')
+    const question = mountQuestion(true, 'printJob.unknown.answered')
 
     expect(question.get('.notice').text()).toBe('Diese Frage wurde bereits beantwortet.')
   })
 
   it('offers no answer once the question was already answered', () => {
-    const question = mountQuestion(true, 'ticket.unknown.answered')
+    const question = mountQuestion(true, 'printJob.unknown.answered')
 
     expect(question.find('.slip-is-there').exists()).toBe(false)
     expect(question.find('.slip-is-missing').exists()).toBe(false)

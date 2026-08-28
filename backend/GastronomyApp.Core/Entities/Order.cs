@@ -1,5 +1,3 @@
-using GastronomyApp.Core.Enums;
-
 namespace GastronomyApp.Core.Entities;
 
 public sealed class Order
@@ -8,12 +6,8 @@ public sealed class Order
     public required Guid ClientOrderId { get; set; }
     public required int GlobalOrderNumber { get; set; }
     public required Guid StaffMemberId { get; set; }
-    public required Guid DeviceId { get; set; }
-    public required string TableLabel { get; set; }
+    public required string TableName { get; set; }
     public string? Note { get; set; }
-    public required int TotalCents { get; set; }
-    public required OrderStatus Status { get; set; }
     public required DateTime CreatedAtUtc { get; set; }
-    public List<OrderLine> Lines { get; set; } = [];
-    public List<LocationTicket> Tickets { get; set; } = [];
+    public List<StationOrder> StationOrders { get; set; } = [];
 }

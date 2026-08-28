@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isTableLabelValid } from '../core/tableLabel'
-import { formatPrice } from '../core/totals'
+import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
@@ -20,14 +19,14 @@ const session = useSessionStore()
 
 const lineAwaitingStation = ref<number | null>(null)
 
-const tableLabel = computed({
-  get: () => order.draft.tableLabel,
+const tableName = computed({
+  get: () => order.draft.tableName,
   set: (value: string) => order.setTable(value),
 })
 
 const canSend = computed(
   () =>
-    isTableLabelValid(order.draft.tableLabel) &&
+    isTableNameValid(order.draft.tableName) &&
     order.basketLines.length > 0 &&
     order.sendState !== 'sending',
 )
@@ -40,8 +39,6 @@ const itemAwaitingStation = computed(() => {
   return catalog.catalog.items.find((item) => item.id === line?.catalogItemId) ?? null
 })
 
-const totalChanged = computed(() => order.acceptedTotalChangedTo)
-
 function chooseStation(stationId: string): void {
   if (lineAwaitingStation.value === null) {
     return
@@ -52,6 +49,9 @@ function chooseStation(stationId: string): void {
 
 async function send(): Promise<void> {
   await order.send()
+  if (order.sendState === 'accepted') {
+    navigate('/')
+  }
 }
 
 function backToItems(): void {
@@ -77,7 +77,7 @@ function backToItems(): void {
       :station-name-for="catalog.stationName"
       @choose="chooseStation"
     />
-    <TableField v-model="tableLabel" :suggestions="catalog.tableSuggestions" />
+    <TableField v-model="tableName" />
     <v-textarea
       class="order-note"
       :label="t('review.orderNote')"
@@ -85,12 +85,10 @@ function backToItems(): void {
       @update:model-value="order.setNote($event || null)"
     />
     <TotalDisplay
-      v-if="order.sendState !== 'accepted'"
       :total-cents="order.totalCents"
       :language="session.language"
     />
     <v-btn
-      v-if="order.sendState !== 'accepted'"
       class="send"
       color="primary"
       block
@@ -101,7 +99,7 @@ function backToItems(): void {
       {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
     </v-btn>
     <v-alert
-      v-if="order.sendState !== 'accepted' && !isTableLabelValid(order.draft.tableLabel)"
+      v-if="!isTableNameValid(order.draft.tableName)"
       class="table-missing mt-2"
       type="info"
       variant="tonal"
@@ -113,14 +111,6 @@ function backToItems(): void {
       :failure="order.failure"
       @retry="send"
     />
-    <template v-if="order.sendState === 'accepted' && order.acceptedOrderNumber !== null">
-      <v-alert class="sent mt-4" type="success" variant="tonal">
-        {{ t('review.sent', { number: order.acceptedOrderNumber }) }}
-      </v-alert>
-      <v-alert v-if="totalChanged !== null" class="total-changed mt-2" type="info" variant="tonal">
-        {{ t('review.totalChanged', { total: formatPrice(totalChanged, session.language) }) }}
-      </v-alert>
-    </template>
     <v-btn class="back mt-4" variant="text" block @click="backToItems">
       {{ t('review.back') }}
     </v-btn>

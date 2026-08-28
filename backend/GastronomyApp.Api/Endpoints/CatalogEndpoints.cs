@@ -54,10 +54,6 @@ public sealed class CatalogReader
             .Where(assignment => itemIds.Contains(assignment.CatalogItemId))
             .ToListAsync(cancellationToken);
 
-        List<TableSuggestion> tableSuggestions = await dbContext.TableSuggestions
-            .OrderBy(suggestion => suggestion.SortOrder)
-            .ToListAsync(cancellationToken);
-
         List<CatalogItemView> itemViews =
         [
             .. items.Select(item => new CatalogItemView(
@@ -88,7 +84,6 @@ public sealed class CatalogReader
             timeProvider.GetUtcNow().ToString("O"),
             categories,
             itemViews,
-            [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))],
-            [.. tableSuggestions.Select(suggestion => new TableSuggestionView(suggestion.Label, suggestion.SortOrder))]);
+            [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))]);
     }
 }

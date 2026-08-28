@@ -10,9 +10,11 @@ import AssignmentEditor from './AssignmentEditor.vue'
 const props = defineProps<{
   item: AdminItem | null
   stations: AdminStation[]
+  categoryNames: string[]
   errorKey: string | null
+  isCancellable?: boolean
 }>()
-const emit = defineEmits<{ save: [item: AdminItemDraft] }>()
+const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
 const { t, locale } = useI18n()
 const name = ref(props.item?.name ?? '')
@@ -52,7 +54,12 @@ function save(): void {
     <v-form @submit.prevent="save">
       <v-card-text>
         <v-text-field v-model="name" class="mb-4" :label="t('admin.items.title')" />
-        <v-text-field v-model="categoryName" class="mb-4" :label="t('admin.items.category')" />
+        <v-combobox
+          v-model="categoryName"
+          class="category-field mb-4"
+          :label="t('admin.items.category')"
+          :items="categoryNames"
+        />
         <v-text-field
           v-model="priceText"
           class="price-field mb-2"
@@ -61,7 +68,6 @@ function save(): void {
           :error="priceIsUnreadable"
           :error-messages="priceIsUnreadable ? [t('admin.items.priceInvalid')] : []"
         />
-        <p class="help text-medium-emphasis">{{ t('admin.items.priceHelp') }}</p>
         <AssignmentEditor
           :item-name="name"
           :stations="stations"
@@ -75,6 +81,9 @@ function save(): void {
       <v-card-actions>
         <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
           {{ t('admin.save') }}
+        </v-btn>
+        <v-btn v-if="props.isCancellable" class="cancel" variant="text" @click="emit('cancel')">
+          {{ t('admin.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-form>

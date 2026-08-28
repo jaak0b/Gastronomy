@@ -14,15 +14,15 @@ const orderId = computed(() => {
 
 const shownOrder = computed(() => order.orderById(orderId.value))
 
-async function answer(ticketId: string, slipIsOnThePile: boolean): Promise<void> {
-  const noticeKey = await order.answerUnknown(orderId.value, ticketId, slipIsOnThePile)
+async function answer(stationOrderId: string, slipIsOnThePile: boolean): Promise<void> {
+  const noticeKey = await order.answerUnknown(orderId.value, stationOrderId, slipIsOnThePile)
   if (noticeKey !== null) {
-    detail.value?.showNotice(ticketId, noticeKey)
+    detail.value?.showNotice(stationOrderId, noticeKey)
   }
 }
 
-async function reprint(ticketId: string): Promise<void> {
-  await order.reprint(orderId.value, ticketId)
+async function printAnotherCopy(stationOrderId: string): Promise<void> {
+  await order.printAnotherCopy(orderId.value, stationOrderId)
 }
 </script>
 
@@ -32,6 +32,6 @@ async function reprint(ticketId: string): Promise<void> {
     ref="detail"
     :order="shownOrder"
     @answer="answer"
-    @reprint="reprint"
+    @print-another-copy="printAnotherCopy"
   />
 </template>

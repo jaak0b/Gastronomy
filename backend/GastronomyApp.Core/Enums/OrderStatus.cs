@@ -2,8 +2,8 @@ namespace GastronomyApp.Core.Enums;
 
 public enum OrderStatus
 {
-    Accepted,
-    Printing,
-    Printed,
-    NeedsAttention,
+    Accepted = 0,
+    Printing = 1,
+    Printed = 2,
+    NeedsAttention = 3,
 }

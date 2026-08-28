@@ -31,7 +31,7 @@ public sealed class EnrolmentEndpointsTest
     {
         EnrolmentInvitationCreated invitation = await CreateInvitationAsync();
 
-        using HttpResponseMessage response = await RedeemAsync(invitation.QrCodeValue, null, "Anna");
+        using HttpResponseMessage response = await RedeemAsync(invitation.QrCodeValue, "Anna");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.Multiple(() =>
@@ -47,34 +47,11 @@ public sealed class EnrolmentEndpointsTest
     }
 
     [Test]
-    public async Task PostRedeem_SixDigitForm_IsAccepted()
-    {
-        EnrolmentInvitationCreated invitation = await CreateInvitationAsync();
-
-        using HttpResponseMessage response = await RedeemAsync(null, invitation.SixDigitCode, "Bea");
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-    }
-
-    [Test]
     public async Task PostRedeem_NeitherCodeForm_IsRefused()
     {
         await CreateInvitationAsync();
 
-        using HttpResponseMessage response = await RedeemAsync(null, null, "Anna");
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-    }
-
-    [Test]
-    public async Task PostRedeem_BothCodeForms_IsRefused()
-    {
-        EnrolmentInvitationCreated invitation = await CreateInvitationAsync();
-
-        using HttpResponseMessage response = await RedeemAsync(
-            invitation.QrCodeValue,
-            invitation.SixDigitCode,
-            "Anna");
+        using HttpResponseMessage response = await RedeemAsync(null, "Anna");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
@@ -84,19 +61,9 @@ public sealed class EnrolmentEndpointsTest
     {
         EnrolmentInvitationCreated invitation = await CreateInvitationAsync();
 
-        using HttpResponseMessage response = await RedeemAsync(invitation.QrCodeValue, null, "   ");
+        using HttpResponseMessage response = await RedeemAsync(invitation.QrCodeValue, "   ");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-    }
-
-    [Test]
-    public async Task PostRedeem_WrongSixDigits_AnswersNotFound()
-    {
-        await CreateInvitationAsync();
-
-        using HttpResponseMessage response = await RedeemAsync(null, "000000", "Anna");
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
     [Test]
@@ -104,31 +71,14 @@ public sealed class EnrolmentEndpointsTest
     {
         EnrolmentInvitationCreated invitation = await CreateInvitationAsync();
 
-        using (HttpResponseMessage first = await RedeemAsync(invitation.QrCodeValue, null, "Anna"))
+        using (HttpResponseMessage first = await RedeemAsync(invitation.QrCodeValue, "Anna"))
         {
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
-        using HttpResponseMessage second = await RedeemAsync(invitation.QrCodeValue, null, "Anna");
+        using HttpResponseMessage second = await RedeemAsync(invitation.QrCodeValue, "Anna");
 
         Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-    }
-
-    [Test]
-    public async Task PostRedeem_TenWrongSixDigitAttempts_RetiresTheDigits()
-    {
-        await CreateInvitationAsync();
-
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            using HttpResponseMessage wrong = await RedeemAsync(null, "000000", "Anna");
-
-            Assert.That(wrong.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-        }
-
-        using HttpResponseMessage retired = await RedeemAsync(null, "000000", "Anna");
-
-        Assert.That(retired.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
     }
 
     [Test]
@@ -139,7 +89,7 @@ public sealed class EnrolmentEndpointsTest
         string firstToken;
         Guid staffMemberId;
 
-        using (HttpResponseMessage redeemed = await RedeemAsync(firstInvitation.QrCodeValue, null, "Anna"))
+        using (HttpResponseMessage redeemed = await RedeemAsync(firstInvitation.QrCodeValue, "Anna"))
         {
             Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             JsonDocument body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
@@ -152,7 +102,7 @@ public sealed class EnrolmentEndpointsTest
             Assert.That(authenticated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
-        using (HttpResponseMessage replayed = await RedeemAsync(firstInvitation.QrCodeValue, null, "Anna"))
+        using (HttpResponseMessage replayed = await RedeemAsync(firstInvitation.QrCodeValue, "Anna"))
         {
             Assert.That(replayed.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
         }
@@ -167,7 +117,7 @@ public sealed class EnrolmentEndpointsTest
                 "Issuing a new invitation must revoke the phone it replaces.");
         }
 
-        using HttpResponseMessage secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue, null, "Anna");
+        using HttpResponseMessage secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue, "Anna");
         JsonDocument secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
         string secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -184,11 +134,11 @@ public sealed class EnrolmentEndpointsTest
         });
     }
 
-    private Task<HttpResponseMessage> RedeemAsync(string? code, string? sixDigitCode, string name)
+    private Task<HttpResponseMessage> RedeemAsync(string? code, string? name)
     {
         return factory.Client.PostAsJsonAsync(
             "/api/enrolment/redeem",
-            new RedeemBody(code, sixDigitCode, name, "NUnit"));
+            new RedeemBody(code, name, "NUnit"));
     }
 
     private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)
@@ -221,9 +171,8 @@ public sealed class EnrolmentEndpointsTest
         return new EnrolmentInvitationCreated(
             body.RootElement.GetProperty("invitationId").GetGuid(),
             qrUrl[(qrUrl.LastIndexOf('/') + 1)..],
-            body.RootElement.GetProperty("sixDigitCode").GetString()!,
             body.RootElement.GetProperty("expiresAtUtc").GetDateTime());
     }
 }
 
-public sealed record RedeemBody(string? Code, string? SixDigitCode, string Name, string UserAgent);
+public sealed record RedeemBody(string? Code, string? Name, string UserAgent);

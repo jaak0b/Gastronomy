@@ -45,8 +45,6 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
             TokenLookupId = tokenLookupId,
             CreatedAtUtc = now,
             LastSeenAtUtc = now,
-            RevokedAtUtc = null,
-            UserAgentSnapshot = userAgentSnapshot,
         };
 
         _dbContext.Devices.Add(device);
@@ -63,7 +61,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
         Device? device = await _dbContext.Devices
             .FirstOrDefaultAsync(candidate => candidate.TokenLookupId == tokenLookupId, cancellationToken);
 
-        if (device is null || device.RevokedAtUtc is not null)
+        if (device is null)
         {
             return new DeviceVerificationResult(false, null);
         }
@@ -96,7 +94,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
             return;
         }
 
-        device.RevokedAtUtc = _clock.UtcNow;
+        _dbContext.Devices.Remove(device);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

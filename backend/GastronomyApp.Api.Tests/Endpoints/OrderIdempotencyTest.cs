@@ -1,5 +1,4 @@
 using System.Net;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +24,7 @@ public sealed class OrderIdempotencyTest
     [Test]
     public async Task PostOrder_SameSubmissionIdAndContent_ReturnsTheOriginalBodyByteForByte()
     {
-        OrderBody body = context.BuildOrder(Guid.NewGuid(), 700);
+        OrderBody body = context.BuildOrder(Guid.NewGuid());
 
         string firstBody;
         using (HttpResponseMessage first = await context.PostOrderAsync(body))
@@ -45,8 +44,8 @@ public sealed class OrderIdempotencyTest
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
         int orderCount = await database.Orders.CountAsync();
-        int ticketCount = await database.LocationTickets.CountAsync();
-        int printJobCount = await database.PrintJobs.CountAsync(job => job.Kind == PrintJobKind.Initial);
+        int ticketCount = await database.StationOrders.CountAsync();
+        int printJobCount = await database.PrintJobs.CountAsync(job => job.CopyNumber == 0);
 
         Assert.Multiple(() =>
         {
@@ -61,7 +60,7 @@ public sealed class OrderIdempotencyTest
     {
         Guid clientOrderId = Guid.NewGuid();
 
-        using (HttpResponseMessage first = await context.PostOrderAsync(context.BuildOrder(clientOrderId, 700)))
+        using (HttpResponseMessage first = await context.PostOrderAsync(context.BuildOrder(clientOrderId)))
         {
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         }
@@ -70,8 +69,7 @@ public sealed class OrderIdempotencyTest
             clientOrderId,
             "Tisch 99",
             null,
-            700,
-            [new OrderLineBody(context.World.BratwurstItemId, 2, null, null)]);
+                        [new OrderItemBody(context.World.BratwurstItemId, 2, 350, null, null)]);
 
         using HttpResponseMessage second = await context.PostOrderAsync(different);
 

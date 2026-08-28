@@ -42,6 +42,7 @@ public sealed class DomainSeeder
             Name = "Kueche",
             SortOrder = 1,
             IsActive = true,
+            NextStationOrderNumber = 1,
         });
 
         dbContext.Stations.Add(new Station
@@ -50,6 +51,7 @@ public sealed class DomainSeeder
             Name = "Theke",
             SortOrder = 2,
             IsActive = true,
+            NextStationOrderNumber = 1,
         });
 
         dbContext.CatalogItems.Add(new CatalogItem

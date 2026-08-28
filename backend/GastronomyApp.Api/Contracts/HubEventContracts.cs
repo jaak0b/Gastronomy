@@ -3,17 +3,17 @@ namespace GastronomyApp.Api.Contracts;
 public sealed record OrderAcceptedEvent(
     Guid OrderId,
     int GlobalOrderNumber,
-    string TableLabel,
+    string TableName,
     int TotalCents,
-    IReadOnlyList<OrderTicketView> Tickets);
+    IReadOnlyList<StationOrderView> StationOrders);
 
-public sealed record TicketStatusChangedEvent(
+public sealed record PrintJobStatusChangedEvent(
     Guid OrderId,
     int GlobalOrderNumber,
-    Guid TicketId,
+    Guid StationOrderId,
     Guid StationId,
     string StationName,
-    int SequenceNumber,
+    int StationOrderNumber,
     string Status,
     string? FailureReason,
     bool PrinterHasPaper,
@@ -32,7 +32,7 @@ public sealed record PrinterStatusChangedEvent(
     bool IsPaperNearEnd,
     bool IsCoverOpen,
     bool IsFaulty,
-    int WaitingTicketCount,
+    int WaitingPrintJobCount,
     DateTime LastChangedAtUtc,
     string LastDetail);
 

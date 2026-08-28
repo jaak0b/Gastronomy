@@ -13,11 +13,8 @@ public sealed record CatalogItemView(
 
 public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);
 
-public sealed record TableSuggestionView(string Label, int SortOrder);
-
 public sealed record CatalogView(
     string Version,
     IReadOnlyList<CatalogCategoryView> Categories,
     IReadOnlyList<CatalogItemView> Items,
-    IReadOnlyList<CatalogStationView> Stations,
-    IReadOnlyList<TableSuggestionView> TableSuggestions);
+    IReadOnlyList<CatalogStationView> Stations);

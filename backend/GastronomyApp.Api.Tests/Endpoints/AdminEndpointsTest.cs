@@ -28,7 +28,7 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task GetStations_LoopbackCaller_ListsEveryStationWithItsPrinterConfigurationAndStatus()
+    public async Task GetStations_LoopbackCaller_ListsEveryStationWithItsPrinterAndStatus()
     {
         using HttpResponseMessage response = await context.Client.GetAsync("/api/admin/stations");
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -38,13 +38,13 @@ public sealed class AdminEndpointsTest
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
-            Assert.That(stations[0].GetProperty("transportKind").GetString(), Is.EqualTo("Mock"));
+            Assert.That(stations[0].GetProperty("printerName").GetString(), Is.Not.Null);
             Assert.That(stations[0].GetProperty("isOnline").GetBoolean(), Is.True);
         });
     }
 
     [Test]
-    public async Task PostStation_NewStation_CreatesItWithAMockPrinterAndAFreshAccessKey()
+    public async Task PostStation_NewStation_CreatesItWithNoPrinterYet()
     {
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
             "/api/admin/stations",
@@ -56,13 +56,11 @@ public sealed class AdminEndpointsTest
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
         Station created = await database.Stations.FirstAsync(
             station => station.Id == stationId);
-        PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-            candidate => candidate.StationId == stationId);
 
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-            Assert.That(configuration.TransportKind, Is.EqualTo(TransportKind.Mock));
+            Assert.That(created.PrinterId, Is.Null);
         });
     }
 
@@ -97,6 +95,31 @@ public sealed class AdminEndpointsTest
             });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+    }
+
+    [Test]
+    public async Task PostItem_BlankCategory_NamesTheCategoryAsTheMissingPart()
+    {
+        using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
+            "/api/admin/items",
+            new
+            {
+                name = "Pommes",
+                categoryName = "  ",
+                priceCents = 250,
+                sortOrder = 3,
+                stationIds = new[] { context.World.KitchenStationId },
+            });
+
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+            Assert.That(
+                body.RootElement.GetProperty("messageKey").GetString(),
+                Is.EqualTo("admin.itemCategoryMissing"));
+        });
     }
 
     [Test]
@@ -175,10 +198,10 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task RevokeDevice_StaffMemberWithAPhone_InvalidatesTheirTokenImmediately()
+    public async Task Deactivate_StaffMemberWithAPhone_InvalidatesTheirTokenImmediately()
     {
         using HttpResponseMessage response = await context.Client.PostAsync(
-            $"/api/admin/staff-members/{context.World.StaffMemberId}/revoke-device",
+            $"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
             content: null);
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -201,7 +224,6 @@ public sealed class AdminEndpointsTest
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
             Assert.That(body.RootElement.GetProperty("qrUrl").GetString(), Does.Contain("/j/"));
-            Assert.That(body.RootElement.GetProperty("sixDigitCode").GetString(), Has.Length.EqualTo(6));
         });
     }
 
@@ -249,8 +271,9 @@ public sealed class AdminEndpointsTest
             Assert.That(printer.TryGetProperty("isPaperNearEnd", out _), Is.True);
             Assert.That(printer.TryGetProperty("waitingTicketCount", out _), Is.True);
             Assert.That(printer.TryGetProperty("lastChangedAtUtc", out _), Is.True);
-            Assert.That(printer.TryGetProperty("sharedWithStationNames", out _), Is.True);
-            Assert.That(printer.TryGetProperty("mockFolderPath", out _), Is.True);
+            Assert.That(printer.TryGetProperty("stationNames", out _), Is.True);
+            Assert.That(printer.TryGetProperty("statusDetail", out _), Is.True);
+            Assert.That(printer.GetProperty("printerType").GetString(), Is.EqualTo("TestPrinter"));
         });
     }
 
@@ -377,45 +400,119 @@ public sealed class AdminEndpointsTest
     }
 
     [Test]
-    public async Task PostMockFault_MockStation_ArmsTheFault()
+    public async Task PutPrinter_TestPrinterWithASimulatedFault_ArmsThatFault()
     {
-        using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            $"/api/admin/mock/{context.World.KitchenStationId}/fault",
-            new { fault = "PaperEnd", mode = "Sticky" });
+        Guid printerId = await KitchenPrinterIdAsync();
+
+        using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
+            $"/api/admin/printers/{printerId}",
+            new
+            {
+                printerType = "TestPrinter",
+                name = "Testdrucker Küche",
+                simulatedFault = "PaperEnd",
+                simulatedFaultMode = "Sticky",
+            });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
         IMockFaultRegistry registry = context.Factory.Services.GetRequiredService<IMockFaultRegistry>();
 
-        Assert.That(
-            registry.GetArmedFault(context.World.KitchenStationId),
-            Is.EqualTo(MockFault.PaperEnd));
+        Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(MockFault.PaperEnd));
     }
 
     [Test]
-    public async Task PostMockFault_StationThatIsNotOnTheMock_IsRefusedAsUnprocessable()
+    public async Task PutPrinter_ABodyForAnotherPrinterType_IsRefusedAsUnprocessable()
     {
-        await using (GastronomyAppDbContext database = context.Factory.CreateContext())
-        {
-            PrinterConfiguration configuration = await database.PrinterConfigurations.FirstAsync(
-                candidate => candidate.StationId == context.World.KitchenStationId);
-            configuration.TransportKind = TransportKind.Network;
-            configuration.Host = "192.0.2.10";
-            configuration.Port = 9100;
-            await database.SaveChangesAsync();
-        }
+        Guid printerId = await KitchenPrinterIdAsync();
 
-        using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            $"/api/admin/mock/{context.World.KitchenStationId}/fault",
-            new { fault = "PaperEnd", mode = "Sticky" });
+        using HttpResponseMessage response = await context.Client.PutAsJsonAsync(
+            $"/api/admin/printers/{printerId}",
+            new
+            {
+                printerType = "EpsonTmT20ivNetworkPrinter",
+                name = "Drucker Küche",
+                host = "192.0.2.10",
+                port = 9100,
+            });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
     }
 
     [Test]
+    public async Task PostTestPrint_PrinterNoStationUses_IsAcceptedBecauseTestingIsAboutTheDevice()
+    {
+        Guid printerId = await CreatePrinterAsync();
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/printers/{printerId}/test-print",
+            content: null);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
+    }
+
+    [Test]
+    public async Task PostReconnect_PrinterNoStationUses_IsAcceptedBecauseConnectingIsAboutTheDevice()
+    {
+        Guid printerId = await CreatePrinterAsync();
+
+        using HttpResponseMessage response = await context.Client.PostAsync(
+            $"/api/admin/printers/{printerId}/reconnect",
+            content: null);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
+    }
+
+    [Test]
+    public async Task DeletePrinter_PrinterNoStationUses_RemovesItFromTheList()
+    {
+        Guid printerId = await CreatePrinterAsync();
+
+        using HttpResponseMessage response = await context.Client.DeleteAsync(
+            $"/api/admin/printers/{printerId}");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        Assert.That(await database.Printers.AnyAsync(printer => printer.Id == printerId), Is.False);
+    }
+
+    [Test]
+    public async Task DeletePrinter_PrinterAStationStillUses_IsRefusedAndNamesTheStation()
+    {
+        Guid printerId = await KitchenPrinterIdAsync();
+
+        using HttpResponseMessage response = await context.Client.DeleteAsync(
+            $"/api/admin/printers/{printerId}");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+    }
+
+    private async Task<Guid> CreatePrinterAsync()
+    {
+        using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
+            "/api/admin/printers",
+            new { printerType = "TestPrinter", name = "Drucker ohne Ausgabestelle" });
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        return body.RootElement.GetProperty("printerId").GetGuid();
+    }
+
+    private async Task<Guid> KitchenPrinterIdAsync()
+    {
+        await using GastronomyAppDbContext database = context.Factory.CreateContext();
+        Station kitchen = await database.Stations.FirstAsync(
+            station => station.Id == context.World.KitchenStationId);
+        return kitchen.PrinterId!.Value;
+    }
+
+    [Test]
     public async Task GetAdminOrders_AfterAnOrderWasPlaced_ListsIt()
     {
-        using (HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700)))
+        using (HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
         {
             Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         }
@@ -432,23 +529,23 @@ public sealed class AdminEndpointsTest
         Guid orderId;
         Guid ticketId;
 
-        using (HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid(), 700)))
+        using (HttpResponseMessage created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
         {
             JsonDocument body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
             orderId = body.RootElement.GetProperty("orderId").GetGuid();
-            ticketId = body.RootElement.GetProperty("tickets")[0].GetProperty("ticketId").GetGuid();
+            ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
         }
 
         await using (GastronomyAppDbContext database = context.Factory.CreateContext())
         {
-            LocationTicket ticket = await database.LocationTickets.FirstAsync(
-                candidate => candidate.Id == ticketId);
-            ticket.Status = LocationTicketStatus.Unknown;
+            PrintJob job = await database.PrintJobs.FirstAsync(
+                candidate => candidate.StationOrderId == ticketId);
+            job.Status = PrintJobStatus.Unknown;
             await database.SaveChangesAsync();
         }
 
         using HttpResponseMessage response = await context.Client.PostAsJsonAsync(
-            $"/api/admin/orders/{orderId}/tickets/{ticketId}/resolve",
+            $"/api/admin/orders/{orderId}/station-orders/{ticketId}/resolve",
             new { slipIsOnThePile = true });
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

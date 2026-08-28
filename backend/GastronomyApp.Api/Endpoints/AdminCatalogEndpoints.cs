@@ -283,12 +283,20 @@ public sealed class AdminItemHandler
 
     private IResult? Validate(SaveItemRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.CategoryName))
+        if (string.IsNullOrWhiteSpace(request.Name))
         {
             return resultEnvelope.Problem(
                 StatusCodes.Status400BadRequest,
                 "ValidationFailed",
                 "admin.itemNameMissing");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CategoryName))
+        {
+            return resultEnvelope.Problem(
+                StatusCodes.Status400BadRequest,
+                "ValidationFailed",
+                "admin.itemCategoryMissing");
         }
 
         if (request.StationIds is null || request.StationIds.Count == 0)

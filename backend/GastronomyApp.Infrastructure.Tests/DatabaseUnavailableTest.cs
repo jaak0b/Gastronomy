@@ -101,12 +101,13 @@ public sealed class DatabaseUnavailableTest
         {
             ClientOrderId = Guid.NewGuid(),
             StaffMemberId = seeded.StaffMemberId,
-            DeviceId = seeded.DeviceId,
-            TableLabel = "Tisch 12",
+            TableName = "Tisch 12",
             Note = null,
-            Lines =
+            Items =
             [
-                new OrderAcceptanceLineRequest { CatalogItemId = seeded.SausageItemId, Quantity = 1, Note = null },
+                new OrderAcceptanceItemRequest { CatalogItemId = seeded.SausageItemId, Note = null,
+                    UnitPriceCents = 350,
+                },
             ],
         };
     }

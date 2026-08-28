@@ -1,4 +1,5 @@
 using GastronomyApp.Api.Contracts;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -25,6 +26,13 @@ public static class HealthEndpoints
 
 public sealed class HealthReporter
 {
+    private readonly StationPrinterStatusLookup statusLookup;
+
+    public HealthReporter(StationPrinterStatusLookup statusLookup)
+    {
+        this.statusLookup = statusLookup;
+    }
+
     public async Task<HealthView> ReportAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
     {
         List<Guid> activeStationIds = await dbContext.Stations
@@ -33,11 +41,13 @@ public sealed class HealthReporter
             .Select(station => station.Id)
             .ToListAsync(cancellationToken);
 
-        int printersOnline = await dbContext.PrinterStatuses
-            .AsNoTracking()
-            .CountAsync(
-                status => activeStationIds.Contains(status.StationId) && status.IsOnline,
-                cancellationToken);
+        Dictionary<Guid, PrinterStatus> statuses =
+            await statusLookup.ByStationAsync(dbContext, activeStationIds, cancellationToken);
+        int printersOnline = statuses.Values
+            .Where(status => status.IsOnline)
+            .Select(status => status.PrinterId)
+            .Distinct()
+            .Count();
 
         return new HealthView("ok", printersOnline, activeStationIds.Count);
     }

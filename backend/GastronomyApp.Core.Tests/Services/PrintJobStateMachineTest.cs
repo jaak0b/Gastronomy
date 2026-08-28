@@ -18,81 +18,43 @@ public sealed class PrintJobStateMachineTest
     {
         return
         [
-            (PrintJobStatus.AwaitingEcho, PrintJobStatus.Confirmed),
-            (PrintJobStatus.AwaitingEcho, PrintJobStatus.Unknown),
             (PrintJobStatus.Blocked, PrintJobStatus.Failed),
+            (PrintJobStatus.Blocked, PrintJobStatus.HandledOnPaper),
             (PrintJobStatus.Blocked, PrintJobStatus.Queued),
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Blocked),
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Queued),
-            (PrintJobStatus.PreflightCheck, PrintJobStatus.Sending),
-            (PrintJobStatus.Queued, PrintJobStatus.Failed),
-            (PrintJobStatus.Queued, PrintJobStatus.PreflightCheck),
-            (PrintJobStatus.Sending, PrintJobStatus.AwaitingEcho),
+            (PrintJobStatus.Failed, PrintJobStatus.HandledOnPaper),
+            (PrintJobStatus.Sending, PrintJobStatus.Printed),
             (PrintJobStatus.Sending, PrintJobStatus.Queued),
+            (PrintJobStatus.Sending, PrintJobStatus.Blocked),
             (PrintJobStatus.Sending, PrintJobStatus.Unknown),
-            (PrintJobStatus.Unknown, PrintJobStatus.ResolvedMissing),
-            (PrintJobStatus.Unknown, PrintJobStatus.ResolvedPrinted),
+            (PrintJobStatus.Queued, PrintJobStatus.Blocked),
+            (PrintJobStatus.Queued, PrintJobStatus.Failed),
+            (PrintJobStatus.Queued, PrintJobStatus.HandledOnPaper),
+            (PrintJobStatus.Queued, PrintJobStatus.Sending),
+            (PrintJobStatus.Unknown, PrintJobStatus.HandledOnPaper),
+            (PrintJobStatus.Unknown, PrintJobStatus.Printed),
+            (PrintJobStatus.Unknown, PrintJobStatus.Queued),
         ];
     }
 
     [Test]
-    public void CanTransition_QueuedToPreflightCheck_WorkerPickedItUpAndTheConnectionIsOpen_IsAllowed()
+    public void CanTransition_QueuedToPrinting_WorkerClaimedTheJob_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Queued, PrintJobStatus.PreflightCheck),
+            _stateMachine.CanTransition(PrintJobStatus.Queued, PrintJobStatus.Sending),
             Is.True);
     }
 
     [Test]
-    public void CanTransition_PreflightCheckToBlocked_TheStatusSaysPaperEndOrCoverOpen_IsAllowed()
+    public void CanTransition_PrintingToPrinted_PrinterEchoedTheProcessId_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.PreflightCheck, PrintJobStatus.Blocked),
+            _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.Printed),
             Is.True);
     }
 
-    [Test]
-    public void CanTransition_BlockedToQueued_TheStatusCleared_IsAllowed()
-    {
-        Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Blocked, PrintJobStatus.Queued),
-            Is.True);
-    }
 
     [Test]
-    public void CanTransition_PreflightCheckToQueued_TheConnectionWasLostBeforeAnyByte_IsAllowed()
-    {
-        Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.PreflightCheck, PrintJobStatus.Queued),
-            Is.True);
-    }
-
-    [Test]
-    public void CanTransition_PreflightCheckToSending_TheStatusIsClean_IsAllowed()
-    {
-        Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.PreflightCheck, PrintJobStatus.Sending),
-            Is.True);
-    }
-
-    [Test]
-    public void CanTransition_SendingToAwaitingEcho_EveryByteWasWritten_IsAllowed()
-    {
-        Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.AwaitingEcho),
-            Is.True);
-    }
-
-    [Test]
-    public void CanTransition_SendingToQueued_TheSocketDroppedBeforeTheFirstByte_IsAllowed()
-    {
-        Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.Queued),
-            Is.True);
-    }
-
-    [Test]
-    public void CanTransition_SendingToUnknown_TheSocketDroppedPartWayThroughTheWrite_IsAllowed()
+    public void CanTransition_PrintingToUnknown_TheSocketDroppedAfterBytesWereWritten_IsAllowed()
     {
         Assert.That(
             _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.Unknown),
@@ -100,23 +62,31 @@ public sealed class PrintJobStateMachineTest
     }
 
     [Test]
-    public void CanTransition_AwaitingEchoToConfirmed_ThePrinterReturnedTheProcessId_IsAllowed()
+    public void CanTransition_PrintingToQueued_TheAttemptFailedBeforeAnyByte_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.AwaitingEcho, PrintJobStatus.Confirmed),
+            _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.Queued),
             Is.True);
     }
 
     [Test]
-    public void CanTransition_AwaitingEchoToUnknown_TheSocketDroppedOrTheJobTimedOut_IsAllowed()
+    public void CanTransition_QueuedToBlocked_PreflightSaysPaperEndOrCoverOpen_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.AwaitingEcho, PrintJobStatus.Unknown),
+            _stateMachine.CanTransition(PrintJobStatus.Queued, PrintJobStatus.Blocked),
             Is.True);
     }
 
     [Test]
-    public void CanTransition_QueuedToFailed_TheGiveUpWindowExpiredOrTheStationIsGone_IsAllowed()
+    public void CanTransition_BlockedToQueued_ThePrinterReportsItIsReadyAgain_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Blocked, PrintJobStatus.Queued),
+            Is.True);
+    }
+
+    [Test]
+    public void CanTransition_QueuedToFailed_TheGiveUpWindowOrOuterBoundEnded_IsAllowed()
     {
         Assert.That(
             _stateMachine.CanTransition(PrintJobStatus.Queued, PrintJobStatus.Failed),
@@ -124,7 +94,7 @@ public sealed class PrintJobStateMachineTest
     }
 
     [Test]
-    public void CanTransition_BlockedToFailed_TheGiveUpWindowExpiredOrTheStationIsGone_IsAllowed()
+    public void CanTransition_BlockedToFailed_TheGiveUpWindowOrOuterBoundEnded_IsAllowed()
     {
         Assert.That(
             _stateMachine.CanTransition(PrintJobStatus.Blocked, PrintJobStatus.Failed),
@@ -132,18 +102,61 @@ public sealed class PrintJobStateMachineTest
     }
 
     [Test]
-    public void CanTransition_UnknownToResolvedPrinted_AHumanAnsweredTheSlipIsThere_IsAllowed()
+    public void CanTransition_UnknownToPrinted_AHumanAnsweredTheSlipIsOnThePile_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Unknown, PrintJobStatus.ResolvedPrinted),
+            _stateMachine.CanTransition(PrintJobStatus.Unknown, PrintJobStatus.Printed),
             Is.True);
     }
 
     [Test]
-    public void CanTransition_UnknownToResolvedMissing_AHumanAnsweredTheSlipIsMissing_IsAllowed()
+    public void CanTransition_UnknownToQueued_AHumanAnsweredTheSlipIsMissing_IsAllowed()
     {
         Assert.That(
-            _stateMachine.CanTransition(PrintJobStatus.Unknown, PrintJobStatus.ResolvedMissing),
+            _stateMachine.CanTransition(PrintJobStatus.Unknown, PrintJobStatus.Queued),
+            Is.True);
+    }
+
+
+    [Test]
+    public void CanTransition_FailedToHandledOnPaper_StationStaffAcknowledgedIt_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Failed, PrintJobStatus.HandledOnPaper),
+            Is.True);
+    }
+
+    [Test]
+    public void CanTransition_UnknownToHandledOnPaper_StationStaffAcknowledgedIt_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Unknown, PrintJobStatus.HandledOnPaper),
+            Is.True);
+    }
+
+    [Test]
+    public void CanTransition_BlockedToHandledOnPaper_AcknowledgedAtAStationThatCannotPrint_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Blocked, PrintJobStatus.HandledOnPaper),
+            Is.True);
+    }
+
+    [Test]
+    public void CanTransition_QueuedToHandledOnPaper_AcknowledgedAtAStationThatCannotPrint_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Queued, PrintJobStatus.HandledOnPaper),
+            Is.True);
+    }
+
+
+
+    [Test]
+    public void CanTransition_PrintingToBlocked_PreflightFoundPaperEndOrCoverOpenAfterTheClaim_IsAllowed()
+    {
+        Assert.That(
+            _stateMachine.CanTransition(PrintJobStatus.Sending, PrintJobStatus.Blocked),
             Is.True);
     }
 
@@ -171,7 +184,9 @@ public sealed class PrintJobStateMachineTest
             }
         }
 
-        Assert.That(refusedPairs, Is.EqualTo(100 - drawnEdges.Count));
+        int everyPair = Enum.GetValues<PrintJobStatus>().Length * Enum.GetValues<PrintJobStatus>().Length;
+
+        Assert.That(refusedPairs, Is.EqualTo(everyPair - drawnEdges.Count));
     }
 
     [Test]
@@ -187,55 +202,13 @@ public sealed class PrintJobStateMachineTest
     }
 
     [Test]
-    public void CanTransition_OutOfATerminalState_IsAlwaysRefused()
+    public void CanTransition_OutOfATerminalState_IsRefused()
     {
-        PrintJobStatus[] terminalStatuses =
-        [
-            PrintJobStatus.Confirmed,
-            PrintJobStatus.Failed,
-            PrintJobStatus.ResolvedPrinted,
-            PrintJobStatus.ResolvedMissing,
-        ];
-
-        foreach (PrintJobStatus terminal in terminalStatuses)
+        Assert.Multiple(() =>
         {
-            foreach (PrintJobStatus to in Enum.GetValues<PrintJobStatus>())
-            {
-                Assert.That(_stateMachine.CanTransition(terminal, to), Is.False, $"{terminal} to {to}");
-            }
-        }
-    }
-
-    [Test]
-    public void CanTransition_FromEveryJobStatusReachedWithBytesWritten_NeverLeadsBackToARetryableState()
-    {
-        RetryPolicy retryPolicy = new();
-        PrintAttemptOutcome[] outcomesTheTableDefinesWithBytesWritten =
-        [
-            PrintAttemptOutcome.Confirmed,
-            PrintAttemptOutcome.SocketDropped,
-            PrintAttemptOutcome.Timeout,
-            PrintAttemptOutcome.PrinterError,
-        ];
-
-        foreach (PrintAttemptOutcome outcome in outcomesTheTableDefinesWithBytesWritten)
-        {
-            foreach (TransportKind transportKind in Enum.GetValues<TransportKind>())
-            {
-                PrintJobStatus reachedStatus = retryPolicy.Map(outcome, transportKind, 128).JobStatus;
-
-                Assert.Multiple(() =>
-                {
-                    Assert.That(
-                        _stateMachine.CanTransition(reachedStatus, PrintJobStatus.Queued),
-                        Is.False,
-                        $"{outcome} on {transportKind} reached {reachedStatus}");
-                    Assert.That(
-                        _stateMachine.CanTransition(reachedStatus, PrintJobStatus.PreflightCheck),
-                        Is.False,
-                        $"{outcome} on {transportKind} reached {reachedStatus}");
-                });
-            }
-        }
+            Assert.That(_stateMachine.CanTransition(PrintJobStatus.Printed, PrintJobStatus.Queued), Is.False);
+            Assert.That(_stateMachine.CanTransition(PrintJobStatus.Printed, PrintJobStatus.Sending), Is.False);
+            Assert.That(_stateMachine.CanTransition(PrintJobStatus.HandledOnPaper, PrintJobStatus.Queued), Is.False);
+        });
     }
 }

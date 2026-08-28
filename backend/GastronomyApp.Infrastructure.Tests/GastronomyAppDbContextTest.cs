@@ -10,18 +10,16 @@ public sealed class GastronomyAppDbContextTest
         "Stations",
         "CatalogItems",
         "ItemStationAssignments",
-        "TableSuggestions",
         "StaffMembers",
         "Devices",
         "EnrolmentInvitations",
         "Orders",
-        "OrderLines",
-        "LocationTickets",
+        "StationOrders",
+        "OrderItems",
         "PrintJobs",
-        "PrintAttempts",
-        "PrinterConfigurations",
+        "Printers",
         "PrinterStatuses",
-        "NumberCounters",
+        "SequenceCounters",
     ];
 
     [Test]

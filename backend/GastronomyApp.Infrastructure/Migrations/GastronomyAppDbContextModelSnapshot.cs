@@ -65,9 +65,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("LastSeenAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("RevokedAtUtc")
-                        .HasColumnType("TEXT");
-
                     b.Property<Guid>("StaffMemberId")
                         .HasColumnType("TEXT");
 
@@ -92,12 +89,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("BLOB");
 
-                    b.Property<string>("UserAgentSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
+
+                    b.HasIndex("StaffMemberId")
+                        .IsUnique();
 
                     b.HasIndex("TokenLookupId")
                         .IsUnique();
@@ -109,14 +104,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("CodeAlgorithm")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("CodeIterations")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("ConsumedAtUtc")
                         .HasColumnType("TEXT");
@@ -130,27 +117,24 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("FailedSixDigitAttempts")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int?>("IsOutstandingMarker")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("INTEGER")
                         .HasComputedColumnSql("CASE WHEN ConsumedAtUtc IS NULL THEN 1 END", true);
 
+                    b.Property<string>("QrCodeAlgorithm")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
                     b.Property<byte[]>("QrCodeHash")
                         .IsRequired()
                         .HasColumnType("BLOB");
 
+                    b.Property<int>("QrCodeIterations")
+                        .HasColumnType("INTEGER");
+
                     b.Property<byte[]>("QrCodeSalt")
-                        .IsRequired()
-                        .HasColumnType("BLOB");
-
-                    b.Property<byte[]>("SixDigitHash")
-                        .IsRequired()
-                        .HasColumnType("BLOB");
-
-                    b.Property<byte[]>("SixDigitSalt")
                         .IsRequired()
                         .HasColumnType("BLOB");
 
@@ -184,67 +168,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("ItemStationAssignments");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.LocationTicket", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ReprintCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ResolutionNote")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("ResolvedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("StationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("StationSequenceNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId", "StationId")
-                        .IsUnique();
-
-                    b.ToTable("LocationTickets");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.NumberCounter", b =>
-                {
-                    b.Property<string>("CounterKind")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("StationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PrinterEndpointKey")
-                        .HasMaxLength(96)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("NextValue")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("CounterKind", "StationId", "PrinterEndpointKey");
-
-                    b.ToTable("NumberCounters");
-                });
-
             modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -254,9 +177,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("DeviceId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("GlobalOrderNumber")
@@ -269,18 +189,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("StaffMemberId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TableLabel")
+                    b.Property<string>("TableName")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("TotalCents")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -290,7 +202,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderLine", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
@@ -298,79 +210,26 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("ChosenStationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ItemNameSnapshot")
+                    b.Property<string>("ItemName")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("LocationTicketId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Note")
-                        .HasMaxLength(100)
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid>("StationOrderId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UnitPriceCentsSnapshot")
+                    b.Property<int>("UnitPriceCents")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("StationOrderId");
 
-                    b.ToTable("OrderLines");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.PrintAttempt", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("AttemptNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BytesWritten")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("EndedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Outcome")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Phase")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("PrintJobId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PrinterStatusSnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("StartedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TransportDetail")
-                        .IsRequired()
-                        .HasMaxLength(400)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PrintAttempts");
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.PrintJob", b =>
@@ -381,89 +240,59 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime?>("CompletedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("CopyNumber")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(24)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("LocationTicketId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("ProcessId")
+                    b.Property<int?>("FailureReason")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("RequestedByDeviceId")
+                    b.Property<int?>("PrinterJobId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("StationOrderId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("StationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("StationOrderId", "CopyNumber")
+                        .IsUnique();
 
                     b.ToTable("PrintJobs");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.PrinterConfiguration", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Printer", b =>
                 {
-                    b.Property<Guid>("StationId")
+                    b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AgentIdentifier")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("CharactersPerLine")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CodePageName")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ConnectTimeoutSeconds")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("HeartbeatSeconds")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Host")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("JobTimeoutSeconds")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Port")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("TransportKind")
+                    b.Property<string>("PrinterType")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(34)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("StationId");
+                    b.HasKey("Id");
 
-                    b.ToTable("PrinterConfigurations");
+                    b.ToTable("Printers", (string)null);
+
+                    b.HasDiscriminator<string>("PrinterType").HasValue("Printer");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.PrinterStatus", b =>
                 {
-                    b.Property<Guid>("StationId")
+                    b.Property<Guid>("PrinterId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsCoverOpen")
@@ -495,9 +324,25 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("LastHeardFromAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("StationId");
+                    b.HasKey("PrinterId");
 
                     b.ToTable("PrinterStatuses");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.SequenceCounters", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NextOrderNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NextPrinterJobId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SequenceCounters");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
@@ -534,55 +379,119 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("NextStationOrderNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("PrinterId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PrinterId");
 
                     b.ToTable("Stations");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.TableSuggestion", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasMaxLength(40)
+                    b.Property<Guid>("OrderId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("SortOrder")
+                    b.Property<Guid>("StationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StationOrderNumber")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.ToTable("TableSuggestions");
+                    b.HasIndex("StationId");
+
+                    b.HasIndex("OrderId", "StationId")
+                        .IsUnique();
+
+                    b.ToTable("StationOrders");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.LocationTicket", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.EpsonTmT20ivNetworkPrinter", b =>
                 {
-                    b.HasOne("GastronomyApp.Core.Entities.Order", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("OrderId")
+                    b.HasBaseType("GastronomyApp.Core.Entities.Printer");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER");
+
+                    b.HasDiscriminator().HasValue("EpsonTmT20ivNetworkPrinter");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.TestPrinter", b =>
+                {
+                    b.HasBaseType("GastronomyApp.Core.Entities.Printer");
+
+                    b.HasDiscriminator().HasValue("TestPrinter");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.StationOrder", null)
+                        .WithMany("Items")
+                        .HasForeignKey("StationOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderLine", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.PrintJob", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.StationOrder", null)
+                        .WithMany("PrintJobs")
+                        .HasForeignKey("StationOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Station", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Printer", null)
+                        .WithMany()
+                        .HasForeignKey("PrinterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.Order", null)
-                        .WithMany("Lines")
+                        .WithMany("StationOrders")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Station", null)
+                        .WithMany()
+                        .HasForeignKey("StationId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>
                 {
-                    b.Navigation("Lines");
+                    b.Navigation("StationOrders");
+                });
 
-                    b.Navigation("Tickets");
+            modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("PrintJobs");
                 });
 #pragma warning restore 612, 618
         }

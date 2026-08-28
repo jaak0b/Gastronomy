@@ -14,7 +14,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
 {
     private readonly IHubContext<GastronomyHub> hubContext;
     private readonly IDbContextFactory<GastronomyAppDbContext> contextFactory;
-    private readonly TicketFailureMessages failureMessages = new();
+    private readonly PrintFailureMessages failureMessages = new();
     private readonly HubGroupNames groupNames = new();
     private readonly HubEventNames eventNames = new();
 
@@ -26,39 +26,41 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
         this.contextFactory = contextFactory;
     }
 
-    public async Task OnTicketStatusChangedAsync(
+    public async Task OnPrintJobStatusChangedAsync(
         Guid orderId,
-        Guid locationTicketId,
-        LocationTicketStatus newStatus,
+        Guid stationOrderId,
+        PrintJobStatus newStatus,
         PrintFailureReason? failureReason,
         CancellationToken ct)
     {
         await using GastronomyAppDbContext context = await contextFactory.CreateDbContextAsync(ct);
 
         Order? order = await context.Orders.FirstOrDefaultAsync(candidate => candidate.Id == orderId, ct);
-        LocationTicket? ticket = await context.LocationTickets
-            .FirstOrDefaultAsync(candidate => candidate.Id == locationTicketId, ct);
+        StationOrder? stationOrder = await context.StationOrders
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationOrderId, ct);
 
-        if (order is null || ticket is null)
+        if (order is null || stationOrder is null)
         {
             return;
         }
 
         Station? station = await context.Stations
-            .FirstOrDefaultAsync(candidate => candidate.Id == ticket.StationId, ct);
+            .FirstOrDefaultAsync(candidate => candidate.Id == stationOrder.StationId, ct);
 
-        PrinterStatus? printerStatus = await context.PrinterStatuses
-            .FirstOrDefaultAsync(candidate => candidate.StationId == ticket.StationId, ct);
+        PrinterStatus? printerStatus = station?.PrinterId is null
+            ? null
+            : await context.PrinterStatuses
+                .FirstOrDefaultAsync(candidate => candidate.PrinterId == station.PrinterId, ct);
 
-        TicketMessage message = failureMessages.Describe(newStatus, failureReason, station?.Name ?? string.Empty);
+        PrintMessage message = failureMessages.Describe(newStatus, failureReason, station?.Name ?? string.Empty);
 
-        TicketStatusChangedEvent payload = new(
+        PrintJobStatusChangedEvent payload = new(
             order.Id,
             order.GlobalOrderNumber,
-            ticket.Id,
-            ticket.StationId,
+            stationOrder.Id,
+            stationOrder.StationId,
             station?.Name ?? string.Empty,
-            ticket.StationSequenceNumber,
+            stationOrder.StationOrderNumber,
             newStatus.ToString(),
             failureReason?.ToString(),
             printerStatus is not null && !printerStatus.IsPaperEnd,
@@ -66,7 +68,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             message.Parameters);
 
         await SendToAsync(
-            eventNames.TicketStatusChanged,
+            eventNames.PrintJobStatusChanged,
             payload,
             [groupNames.Devices, groupNames.Admin],
             ct);
@@ -90,33 +92,40 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
     }
 
     public async Task OnPrinterStatusChangedAsync(
-        Guid stationId,
+        Guid printerId,
+        IReadOnlyList<Guid> stationIds,
         PrinterStatusSnapshot snapshot,
         bool isFaulty,
-        int waitingTicketCount,
+        int waitingPrintJobCount,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(stationIds);
+
         await using GastronomyAppDbContext context = await contextFactory.CreateDbContextAsync(ct);
-        Station? station = await context.Stations
-            .FirstOrDefaultAsync(candidate => candidate.Id == stationId, ct);
 
-        PrinterStatusChangedEvent payload = new(
-            stationId,
-            station?.Name ?? string.Empty,
-            snapshot.IsOnline,
-            snapshot.IsPaperEnd,
-            snapshot.IsPaperNearEnd,
-            snapshot.IsCoverOpen,
-            isFaulty,
-            waitingTicketCount,
-            snapshot.ObservedAt.UtcDateTime,
-            snapshot.Detail);
+        foreach (Guid stationId in stationIds)
+        {
+            Station? station = await context.Stations
+                .FirstOrDefaultAsync(candidate => candidate.Id == stationId, ct);
 
-        await SendToAsync(
-            eventNames.PrinterStatusChanged,
-            payload,
-            [groupNames.Devices, groupNames.Admin],
-            ct);
+            PrinterStatusChangedEvent payload = new(
+                stationId,
+                station?.Name ?? string.Empty,
+                snapshot.IsOnline,
+                snapshot.IsPaperEnd,
+                snapshot.IsPaperNearEnd,
+                snapshot.IsCoverOpen,
+                isFaulty,
+                waitingPrintJobCount,
+                snapshot.ObservedAt.UtcDateTime,
+                snapshot.Detail);
+
+            await SendToAsync(
+                eventNames.PrinterStatusChanged,
+                payload,
+                [groupNames.Devices, groupNames.Admin],
+                ct);
+        }
     }
 
     public async Task PushOrderAcceptedAsync(Guid staffMemberId, OrderAcceptedEvent payload, CancellationToken ct)
@@ -127,7 +136,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
             [groupNames.StaffMember(staffMemberId), groupNames.Admin],
             ct);
 
-        foreach (Guid stationId in payload.Tickets.Select(ticket => ticket.StationId).Distinct())
+        foreach (Guid stationId in payload.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
         {
             await SendToAsync(
                 eventNames.StationBacklogChanged,
@@ -173,12 +182,12 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
     }
 }
 
-public sealed record TicketMessage(string? MessageKey, IReadOnlyDictionary<string, string> Parameters);
+public sealed record PrintMessage(string? MessageKey, IReadOnlyDictionary<string, string> Parameters);
 
-public sealed class TicketFailureMessages
+public sealed class PrintFailureMessages
 {
-    public TicketMessage Describe(
-        LocationTicketStatus status,
+    public PrintMessage Describe(
+        PrintJobStatus status,
         PrintFailureReason? failureReason,
         string stationName)
     {
@@ -186,20 +195,19 @@ public sealed class TicketFailureMessages
 
         if (failureReason is not null)
         {
-            return new TicketMessage(KeyFor(failureReason.Value), parameters);
+            return new PrintMessage(KeyFor(failureReason.Value), parameters);
         }
 
         return status switch
         {
-            LocationTicketStatus.Unknown => new TicketMessage("ticket.unknownOutcome", parameters),
-            LocationTicketStatus.Blocked => new TicketMessage("ticket.blocked", parameters),
-            LocationTicketStatus.Failed => new TicketMessage("ticket.failed", parameters),
-            LocationTicketStatus.Queued => new TicketMessage(null, parameters),
-            LocationTicketStatus.Printing => new TicketMessage(null, parameters),
-            LocationTicketStatus.Printed => new TicketMessage(null, parameters),
-            LocationTicketStatus.PrintedOnTestPrinter => new TicketMessage("ticket.printedOnTestPrinter", parameters),
-            LocationTicketStatus.HandledOnPaper => new TicketMessage("ticket.handledOnPaper", parameters),
-            _ => new Never().OfType<TicketMessage>(status),
+            PrintJobStatus.Unknown => new PrintMessage("printJob.unknownOutcome", parameters),
+            PrintJobStatus.Blocked => new PrintMessage("printJob.blocked", parameters),
+            PrintJobStatus.Failed => new PrintMessage("printJob.failed", parameters),
+            PrintJobStatus.Queued => new PrintMessage(null, parameters),
+            PrintJobStatus.Sending => new PrintMessage(null, parameters),
+            PrintJobStatus.Printed => new PrintMessage(null, parameters),
+            PrintJobStatus.HandledOnPaper => new PrintMessage("printJob.handledOnPaper", parameters),
+            _ => new Never().OfType<PrintMessage>(status),
         };
     }
 
@@ -207,15 +215,15 @@ public sealed class TicketFailureMessages
     {
         return failureReason switch
         {
-            PrintFailureReason.PaperEnd => "ticket.paperEnd",
-            PrintFailureReason.CoverOpen => "ticket.coverOpen",
-            PrintFailureReason.Unreachable => "ticket.unreachable",
-            PrintFailureReason.Timeout => "ticket.timeout",
-            PrintFailureReason.SocketDropped => "ticket.socketDropped",
-            PrintFailureReason.PrinterError => "ticket.printerError",
-            PrintFailureReason.StationDisabled => "ticket.stationDisabled",
-            PrintFailureReason.StationFaulty => "ticket.stationFaulty",
-            PrintFailureReason.TicketResolvedByHuman => "ticket.resolvedByHuman",
+            PrintFailureReason.PaperEnd => "printJob.paperEnd",
+            PrintFailureReason.CoverOpen => "printJob.coverOpen",
+            PrintFailureReason.Unreachable => "printJob.unreachable",
+            PrintFailureReason.Timeout => "printJob.timeout",
+            PrintFailureReason.SocketDropped => "printJob.socketDropped",
+            PrintFailureReason.PrinterError => "printJob.printerError",
+            PrintFailureReason.StationDisabled => "printJob.stationDisabled",
+            PrintFailureReason.StationFaulty => "printJob.stationFaulty",
+            PrintFailureReason.HandledOnPaper => "printJob.handledOnPaper",
             _ => new Never().OfType<string>(failureReason),
         };
     }

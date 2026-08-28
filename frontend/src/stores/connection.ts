@@ -5,7 +5,7 @@ import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@m
 export type ConnectionState = 'connected' | 'reconnecting' | 'offline'
 
 export interface HubCredential {
-  deviceToken: string
+  deviceToken?: string
 }
 
 export const POLLING_INTERVAL_MS = 15000
@@ -85,7 +85,11 @@ export const useConnectionStore = defineStore('connection', () => {
       return
     }
     const built = new HubConnectionBuilder()
-      .withUrl(`/hub?access_token=${encodeURIComponent(credential.deviceToken)}`)
+      .withUrl(
+        credential.deviceToken === undefined
+          ? '/hub'
+          : `/hub?access_token=${encodeURIComponent(credential.deviceToken)}`,
+      )
       .withAutomaticReconnect([...RECONNECT_DELAYS_MS])
       .build()
     connection = built

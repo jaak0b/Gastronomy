@@ -10,18 +10,18 @@ public sealed class GiveUpWindowCalculator
     public static readonly TimeSpan OuterBound = TimeSpan.FromMinutes(20);
 
     public GiveUpWindowEvaluation Evaluate(
-        DateTime ticketCreatedAtUtc,
+        DateTime printJobCreatedAtUtc,
         DateTime evaluatedAtUtc,
-        LocationTicketStatus currentStatus,
+        PrintJobStatus currentStatus,
         IReadOnlyCollection<SuspensionPeriod> suspensionPeriods)
     {
-        TimeSpan elapsed = evaluatedAtUtc - ticketCreatedAtUtc;
+        TimeSpan elapsed = evaluatedAtUtc - printJobCreatedAtUtc;
         TimeSpan suspended = TimeSpan.Zero;
 
         foreach (SuspensionPeriod period in suspensionPeriods)
         {
-            DateTime effectiveStart = period.StartedAtUtc < ticketCreatedAtUtc
-                ? ticketCreatedAtUtc
+            DateTime effectiveStart = period.StartedAtUtc < printJobCreatedAtUtc
+                ? printJobCreatedAtUtc
                 : period.StartedAtUtc;
             DateTime effectiveEnd = period.EndedAtUtc is null || period.EndedAtUtc > evaluatedAtUtc
                 ? evaluatedAtUtc
@@ -42,7 +42,7 @@ public sealed class GiveUpWindowCalculator
         return new GiveUpWindowEvaluation
         {
             HasReachedGiveUpWindow = accumulatedUnsuspendedTime >= GiveUpWindow,
-            HasReachedOuterBound = currentStatus != LocationTicketStatus.Printing && elapsed >= OuterBound,
+            HasReachedOuterBound = currentStatus != PrintJobStatus.Sending && elapsed >= OuterBound,
             AccumulatedUnsuspendedTime = accumulatedUnsuspendedTime,
         };
     }
