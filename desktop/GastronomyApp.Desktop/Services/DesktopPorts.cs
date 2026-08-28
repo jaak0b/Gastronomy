@@ -82,11 +82,15 @@ public interface ISettingsStore
 }
 
 public sealed record DesktopSettings(
-    int Port,
-    string BindAddress,
+    int? Port,
     string DataDirectory,
     string? SelectedNetworkInterface,
     string? Language);
+
+public interface IFreePortProvider
+{
+    public int Reserve();
+}
 
 public interface IElevatedSetupLauncher
 {

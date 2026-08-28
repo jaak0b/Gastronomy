@@ -43,13 +43,14 @@ public sealed class AppBootstrapperTests
 
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
+            .Returns(new DesktopSettings(5000, @"C:\ProgramData\GastronomyApp", null, null));
 
         return new MainWindowViewModel(
             _launcher,
             A.Fake<IPowerManager>(),
             settingsStore,
-            new DesktopTextProvider());
+            new DesktopTextProvider(),
+            A.Fake<IFreePortProvider>());
     }
 
     private AppBootstrapper CreateBootstrapper()

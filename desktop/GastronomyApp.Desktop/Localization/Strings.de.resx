@@ -70,32 +70,8 @@
   <data name="desktop.language.english" xml:space="preserve">
     <value>English</value>
   </data>
-  <data name="desktop.status.running" xml:space="preserve">
-    <value>Das Programm nimmt Bestellungen an.</value>
-  </data>
-  <data name="desktop.status.stopped" xml:space="preserve">
-    <value>Das Programm nimmt keine Bestellungen an.</value>
-  </data>
-  <data name="desktop.attention.none" xml:space="preserve">
-    <value>Es ist alles in Ordnung.</value>
-  </data>
-  <data name="desktop.attention.some" xml:space="preserve">
-    <value>Öffnen Sie die Verwaltung. Dort wartet etwas, um das Sie sich kümmern müssen.</value>
-  </data>
-  <data name="desktop.phones.none" xml:space="preserve">
-    <value>Es hat sich noch kein Telefon verbunden.</value>
-  </data>
-  <data name="desktop.phones.one" xml:space="preserve">
-    <value>Ein Telefon ist eingerichtet.</value>
-  </data>
-  <data name="desktop.phones.many" xml:space="preserve">
-    <value>{count} Telefone sind eingerichtet.</value>
-  </data>
   <data name="desktop.button.admin" xml:space="preserve">
     <value>Verwaltung öffnen</value>
-  </data>
-  <data name="desktop.button.settings" xml:space="preserve">
-    <value>Einstellungen</value>
   </data>
   <data name="desktop.button.quit" xml:space="preserve">
     <value>Programm beenden</value>
@@ -115,62 +91,20 @@
   <data name="desktop.quit.cancel" xml:space="preserve">
     <value>Weiterlaufen lassen</value>
   </data>
-  <data name="desktop.error.portInUse" xml:space="preserve">
-    <value>Wählen Sie in den Einstellungen einen anderen Port. Der Port {port} wird schon von einem anderen Programm benutzt.</value>
-  </data>
   <data name="desktop.error.dataFolderRepair" xml:space="preserve">
-    <value>Klicken Sie in den Einstellungen auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
+    <value>Klicken Sie auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
   </data>
   <data name="desktop.error.noNetwork" xml:space="preserve">
     <value>Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk.</value>
   </data>
   <data name="desktop.error.startFailed" xml:space="preserve">
-    <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, öffnen Sie die Einstellungen und wählen Sie "Einrichtung reparieren".</value>
-  </data>
-  <data name="desktop.settings.title" xml:space="preserve">
-    <value>Einstellungen</value>
-  </data>
-  <data name="desktop.settings.port" xml:space="preserve">
-    <value>Port</value>
-  </data>
-  <data name="desktop.settings.portHelp" xml:space="preserve">
-    <value>Ändern Sie den Port nur, wenn das Programm meldet, dass er belegt ist. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein.</value>
-  </data>
-  <data name="desktop.settings.bindAddress" xml:space="preserve">
-    <value>Adresse, auf der das Programm antwortet</value>
-  </data>
-  <data name="desktop.settings.bindAddressHelp" xml:space="preserve">
-    <value>Ändern Sie diese Adresse nur, bevor die ersten Telefone eingerichtet sind. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein.</value>
-  </data>
-  <data name="desktop.settings.addressLocked" xml:space="preserve">
-    <value>Beenden Sie den Server, um Port und Adresse zu ändern. Solange er läuft, würden die eingerichteten Telefone den Laptop sonst nicht mehr erreichen.</value>
-  </data>
-  <data name="desktop.settings.dataFolder" xml:space="preserve">
-    <value>Datenordner</value>
-  </data>
-  <data name="desktop.settings.dataFolderHelp" xml:space="preserve">
-    <value>Hier liegen die Datenbank und die Sicherungsdateien.</value>
-  </data>
-  <data name="desktop.settings.dataFolderLocked" xml:space="preserve">
-    <value>Beenden Sie den Server, um den Datenordner zu ändern. Solange er läuft, wird in diesem Ordner geschrieben.</value>
-  </data>
-  <data name="desktop.settings.dataFolderRestart" xml:space="preserve">
-    <value>Starten Sie das Programm neu, damit der neue Ordner gilt. Die bisherige Datenbank bleibt liegen, wo sie ist.</value>
+    <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
   <data name="desktop.settings.openDataFolder" xml:space="preserve">
     <value>Datenordner öffnen</value>
   </data>
-  <data name="desktop.settings.network" xml:space="preserve">
-    <value>Netzwerk, dessen Adresse angezeigt wird</value>
-  </data>
-  <data name="desktop.settings.networkHelp" xml:space="preserve">
-    <value>Wählen Sie das WLAN, in dem die Telefone sind. Der Laptop ist in mehr als einem Netzwerk.</value>
-  </data>
   <data name="desktop.settings.repairSetup" xml:space="preserve">
     <value>Einrichtung reparieren</value>
-  </data>
-  <data name="desktop.settings.repairSetupHelp" xml:space="preserve">
-    <value>Nehmen Sie das, wenn die Telefone den Laptop nicht erreichen oder das Programm nicht in seinen Datenordner schreiben kann. Windows fragt dabei einmal nach.</value>
   </data>
   <data name="desktop.settings.repairDeclined" xml:space="preserve">
     <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
@@ -182,6 +116,15 @@
     <value>Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an.</value>
   </data>
   <data name="desktop.firstRun.declined" xml:space="preserve">
-    <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, holen Sie das in den Einstellungen unter "Einrichtung reparieren" nach.</value>
+    <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
+  </data>
+  <data name="desktop.settings.repairDone" xml:space="preserve">
+    <value>Die Einrichtung wurde repariert. Starten Sie das Programm noch einmal, damit die Änderung wirkt.</value>
+  </data>
+  <data name="desktop.notice.addressChanged" xml:space="preserve">
+    <value>Alle müssen ihr Telefon noch einmal einrichten, da sich die Serveradresse geändert hat.</value>
+  </data>
+  <data name="desktop.error.noPortAvailable" xml:space="preserve">
+    <value>Ein anderes Programm auf diesem Laptop blockiert die Verbindung. Starten Sie den Laptop neu und öffnen Sie das Programm noch einmal.</value>
   </data>
 </root>

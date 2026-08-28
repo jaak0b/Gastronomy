@@ -3699,35 +3699,34 @@ button that opens the admin pages.
 
 #### What the window shows
 
-Deliberately minimal. A volunteer glances at it while carrying something.
+Deliberately minimal. A volunteer glances at it while carrying something, and everything that reports
+on the running festival lives on the admin pages instead.
 
-1. **The current address, in large type, with a QR code of it beside it.** This is the most useful
-   thing on the screen, and it is what a phone needs. Scanning that code opens the site on a phone,
-   which is how a volunteer proves the phones can reach the laptop.
-2. **Running or stopped**, and **one** attention indicator: either everything is in order, or something
-   needs looking at. The indicator links through to the admin pages and says nothing more. It does not
-   repeat printer status, order counts, ticket ages or any live feed: all of that is on the admin
-   overview already, and a second copy of it would be the second administrative surface this section
-   forbids.
-3. **How many phones are set up**, and, until the first phone has ever connected, a line saying that no
-   phone has connected yet. A firewall rule that was never created and a WiFi the laptop is not on both
-   look exactly like a working system until a server tries to take an order. This line is what turns
-   that into something visible during setup instead of during service.
-4. **Three buttons: open the admin pages, settings, quit.** The button that opens the admin pages is
+1. **Nothing at all while the server is healthy.** No line saying that the program is running, because
+   the window being on the screen is the proof. A window that always says everything is fine trains the
+   operator to stop reading it, which is worse than saying nothing.
+2. **Errors in plain language, on the window,** and this is the only text it carries. The port is
+   already taken, the data folder cannot be written to, no network was found, the server stopped. These
+   are shown where the person is looking, not written to a log nobody opens.
+3. **Three buttons: open the admin pages, settings, quit.** The button that opens the admin pages is
    the largest and is never hidden behind a menu, because it is the one a volunteer needs and the one
    they would otherwise be told to find by typing an address.
-5. **Errors in plain language, on the window.** The port is already taken, the data folder cannot be
-   written to, no network was found. These are shown in the window where the person is looking, not
-   written to a log nobody opens, and they replace both the console line and the startup refusal that
-   an earlier draft of this document specified.
+4. **The language picker**, because it is one of the few settings that cannot live in a web page served
+   by the very server being configured.
 
-**A QR encoder is a version 1 requirement, unconditionally.** The window draws this code on every start,
-and `GET /api/admin/locations/{id}/station-card` (section 5.5) renders a printable card carrying one
-too. Neither depends on what a printer's firmware turns out to do, so the encoder is needed whatever
-open question 11 decides. The window and the card use the one encoder, in one place: a second
-implementation for the sake of one window would be a second thing to get wrong. What question 11 still
-decides is only how the symbol reaches the slip, `GS ( k` from the printer's own firmware or a raster of
-this encoder's output.
+**The window shows no address, no QR code, no phone count and no attention indicator.** Earlier drafts
+of this document specified all four. The address and the phone count belong to the admin overview,
+which already carries them and is one tap away; a second copy would be a second thing to keep true. The
+attention indicator and the phone count were built as properties nothing ever wrote, so the window
+reported "everything is in order" and "no phone has connected yet" whatever was actually happening,
+which is exactly the kind of confident wrong answer this product must not give.
+
+**A QR encoder is a version 1 requirement, unconditionally**, but it does not belong to the window. The
+admin pages draw the enrolment code, and `GET /api/admin/locations/{id}/station-card` (section 5.5)
+renders a printable card carrying one. Neither depends on what a printer's firmware turns out to do, so
+the encoder is needed whatever open question 11 decides, and there is one encoder in one place. What
+question 11 still decides is only how the symbol reaches the slip, `GS ( k` from the printer's own
+firmware or a raster of this encoder's output.
 
 #### Closing the window may never end the evening
 
@@ -3759,127 +3758,41 @@ The port bind is the backstop for the case the mutex cannot catch, such as a sec
 signed in through fast user switching. That failure surfaces as the plain "the port is already taken"
 message from the list above rather than as a crash.
 
-#### The settings window
+#### There is no settings window
 
-It holds only what cannot live in a web page served by the server being configured, which is exactly
-four things:
+An earlier draft of this document specified one holding the port, the bind address, the database
+location and the network to display. All four are gone.
 
-| Setting | Why it cannot be a web page |
-|---|---|
-| Port | Changing it moves the address the admin page is being served on. |
-| Bind address | Same, and a wrong value makes the admin page unreachable. |
-| Data folder | The database has to be opened before anything can be served. |
-| Which network's address is shown | Only relevant when the laptop is on more than one network, and it decides which address the phones are given. |
+**The port is chosen by Windows and never typed.** On first start the program asks for a free port and
+writes it down. Every later start tries that port; when it is taken the program asks for another one,
+writes that down, and tells the operator in the window that everybody has to set their phone up again.
+That is not a courtesy: a phone's device token lives in `localStorage`, which browsers scope to the
+full origin, so a new port means the token is gone rather than merely stale. The retry happens only
+for "address already in use" and at most ten times, so a bind that fails for a permission or policy
+reason stops at once with its own message instead of spinning.
 
-Two buttons sit beside them: **open the data folder**, so a volunteer can find the backup file
-(section 10.8), and **repair the setup**, which re-runs the elevated step described in section 10.3.
-Everything else stays in the web admin.
+**The server always answers on every network interface.** The only value that keeps working when DHCP
+hands the laptop a different address tomorrow, and the only one a phone on the festival WiFi can reach.
+The admin pages are restricted separately, by refusing any `/api/admin` request whose caller is not the
+machine itself, so binding wide costs nothing.
 
-##### What a change to these settings costs, and when it is refused
+**The data folder is fixed** at `%ProgramData%\GastronomyApp\`. The "Datenordner öffnen" button
+remains, because copying the database file is how a volunteer takes a backup.
 
-Three of the four settings move the ground the phones are standing on, and the window says so before
-the change rather than after it.
+**The two machine level actions moved to the main window**: opening the data folder, and the elevated
+"Einrichtung reparieren" that creates the firewall rule and grants folder permissions. Both are
+idempotent.
 
-**The port and the bind address strand every phone that is already set up.** A phone's token lives in
-the browser's storage for the exact origin it was enrolled at, so changing `5000` to `8080` leaves every
-token and every draft cart at an origin nothing will visit again, and every server has to be set up
-from scratch. That is the same loss section 5.5 describes for a router handing out a new address, and
-it is worse here because the product provided the button. So both fields carry the consequence sentence
-`admin.overview.addressChanged` already carries, and **both are refused while any phone is enrolled and
-the current session has accepted an order.** Before that, during preparation at home, they change
-freely. `desktop.settings.portHelp` and `desktop.settings.bindAddressHelp` say when to touch them.
+#### Logging
 
-**The data folder cannot be changed while an event session is active.** The folder holds
-`gastronomy.db` (section 10.2), which holds every device token, the `NumberCounter` rows and the unique
-index on `ClientOrderId`. Pointing it somewhere else mid-evening opens an empty database there: every
-phone is logged out at once, the next order is `Bestellung 1` and `BON 001` into a pile that already
-holds a 001, and a retry of an order accepted a minute earlier creates a second order. Two of the three
-guarantees this product exists to provide fail in one click.
+Serilog writes a rolling daily file into `%ProgramData%\GastronomyApp\logs\`, kept for fourteen
+days. The window and the server it hosts write to the same file, so a firewall problem and a printer
+failure appear in one place. Before this existed the program logged to a console that a windowed
+application does not have, which meant nothing was kept anywhere.
 
-So the field is **disabled while a session is active**, with `desktop.settings.dataFolderLocked` under
-it saying why, which is the same class of guard section 2.3 puts on starting a session. When the field
-is enabled, a change takes effect on the next start and nothing is moved: the program says so with
-`desktop.settings.dataFolderRestart`, and the operator who wants the old database in the new place
-copies the file themselves. **No message anywhere in the product instructs a data folder change during
-service.** A folder that cannot be written to during an evening is repaired where it is, with the
-repair action in section 10.3 or by freeing disk space, and the station whose slips cannot be written
-is announced in person in the meantime.
-
-**`appsettings.json` is no longer a file any human opens.** Section 10.7 says what became of it.
-
-#### The laptop may not sleep while the server runs
-
-A sleeping laptop is a festival with no ordering system and no error message anywhere. While the
-server is running, the application tells Windows to keep the machine awake, and it releases that as
-soon as the server stops.
-
-Concretely, on Windows: `SetThreadExecutionState` with `ES_CONTINUOUS | ES_SYSTEM_REQUIRED` while
-running, and `ES_CONTINUOUS` alone to release it. The display is deliberately not held on, because
-the screen switching off costs nothing and the laptop stays awake behind it.
-
-**This replaces the checklist step that asked a volunteer to change the laptop's power settings, and
-that step is deleted.** What the application cannot override is a closed lid, which is a hardware
-policy rather than a timeout, so the checklist still says to leave the lid open.
-
-**On platforms other than Windows** no equivalent call is made in version 1. Avalonia keeps macOS and
-Linux open as targets and nothing here forbids them, but the sleep suppression, the firewall rule
-(section 10.3) and the `C:\ProgramData` data folder (section 10.2) are all Windows behaviour. On
-another platform the program runs, serves and prints, and the operator is responsible for keeping the
-machine awake and the port reachable.
-
-#### The window's text
-
-Strings live in the same resx pair as the rest of the backend (backend rule 2), because the desktop
-application is C#. German and English, complete, like everywhere else.
-
-| Key | Deutsch | English |
-|---|---|---|
-| `desktop.windowTitle` | Bestellsystem | Ordering system |
-| `desktop.addressLabel` | Adresse für die Telefone | Address for the phones |
-| `desktop.address` | Die Telefone erreichen den Laptop unter {url}. | Phones reach the laptop at {url}. |
-| `desktop.qrHelp` | Scannen Sie den Code mit einem Telefon, um zu prüfen, dass die Telefone den Laptop erreichen. | Scan the code with a phone to check that the phones reach the laptop. |
-| `desktop.status.running` | Das Programm nimmt Bestellungen an. | The program is taking orders. |
-| `desktop.status.stopped` | Das Programm nimmt keine Bestellungen an. | The program is not taking orders. |
-| `desktop.attention.none` | Es ist alles in Ordnung. | Everything is in order. |
-| `desktop.attention.some` | Öffnen Sie die Verwaltung. Dort wartet etwas, um das Sie sich kümmern müssen. | Open the admin pages. Something there needs you to deal with it. |
-| `desktop.phones.none` | Es hat sich noch kein Telefon verbunden. | No phone has connected yet. |
-| `desktop.phones.one` | Ein Telefon ist eingerichtet. | One phone is set up. |
-| `desktop.phones.many` | {count} Telefone sind eingerichtet. | {count} phones are set up. |
-| `desktop.button.admin` | Verwaltung öffnen | Open the admin pages |
-| `desktop.button.settings` | Einstellungen | Settings |
-| `desktop.button.quit` | Programm beenden | Quit the program |
-| `desktop.minimised` | Das Programm läuft weiter und nimmt weiter Bestellungen an. Sie holen es über die Taskleiste zurück. | The program keeps running and keeps taking orders. You get it back from the taskbar. |
-| `desktop.quit.title` | Programm wirklich beenden? | Really quit the program? |
-| `desktop.quit.body` | Die Telefone können danach keine Bestellungen mehr aufgeben. | Phones can no longer place orders afterwards. |
-| `desktop.quit.confirm` | Beenden | Quit |
-| `desktop.quit.cancel` | Weiterlaufen lassen | Keep it running |
-| `desktop.error.portInUse` | Wählen Sie in den Einstellungen einen anderen Port. Der Port {port} wird schon von einem anderen Programm benutzt. | Choose a different port in the settings. Port {port} is already being used by another program. |
-| `desktop.error.dataFolderRepair` | Klicken Sie in den Einstellungen auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach. | In the settings, click "Repair the setup". Nothing can be written into the folder {path}. Windows asks you once while it happens. |
-| `desktop.error.noNetwork` | Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk. | Connect the laptop to the WiFi the phones are on. The laptop is not on any network at the moment. |
-| `desktop.error.startFailed` | Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, öffnen Sie die Einstellungen und wählen Sie "Einrichtung reparieren". | The server could not be started. Quit the program and start it again. If that does not help, open the settings and choose "Repair the setup". |
-| `desktop.settings.title` | Einstellungen | Settings |
-| `desktop.settings.port` | Port | Port |
-| `desktop.settings.portHelp` | Ändern Sie den Port nur, wenn das Programm meldet, dass er belegt ist. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein. | Change the port only when the program reports that it is taken. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again. |
-| `desktop.settings.bindAddress` | Adresse, auf der das Programm antwortet | Address the program answers on |
-| `desktop.settings.bindAddressHelp` | Ändern Sie diese Adresse nur, bevor die ersten Telefone eingerichtet sind. Danach erreicht kein eingerichtetes Telefon den Laptop mehr, und Sie richten alle noch einmal ein. | Change this address only before the first phones are set up. Afterwards no phone that is set up reaches the laptop any more, and you set them all up again. |
-| `desktop.settings.addressLocked` | Port und Adresse lassen sich erst nach der Veranstaltung ändern. Die eingerichteten Telefone würden den Laptop sonst nicht mehr erreichen. | The port and the address can only be changed after the event. Otherwise the phones that are set up would no longer reach the laptop. |
-| `desktop.settings.dataFolder` | Datenordner | Data folder |
-| `desktop.settings.dataFolderHelp` | Hier liegen die Datenbank und die Sicherungsdateien. | The database and the backup files are here. |
-| `desktop.settings.dataFolderLocked` | Der Datenordner lässt sich erst nach der Veranstaltung ändern. In diesem Ordner liegen die Bestellungen des laufenden Abends. | The data folder can only be changed after the event. This folder holds the orders from the evening that is running. |
-| `desktop.settings.dataFolderRestart` | Starten Sie das Programm neu, damit der neue Ordner gilt. Die bisherige Datenbank bleibt liegen, wo sie ist. | Restart the program so the new folder takes effect. The database you have so far stays where it is. |
-| `desktop.settings.openDataFolder` | Datenordner öffnen | Open the data folder |
-| `desktop.settings.network` | Netzwerk, dessen Adresse angezeigt wird | Network whose address is shown |
-| `desktop.settings.networkHelp` | Wählen Sie das WLAN, in dem die Telefone sind. Der Laptop ist in mehr als einem Netzwerk. | Choose the WiFi the phones are on. The laptop is on more than one network. |
-| `desktop.settings.repairSetup` | Einrichtung reparieren | Repair the setup |
-| `desktop.settings.repairSetupHelp` | Nehmen Sie das, wenn die Telefone den Laptop nicht erreichen oder das Programm nicht in seinen Datenordner schreiben kann. Windows fragt dabei einmal nach. | Use this when the phones cannot reach the laptop, or the program cannot write into its data folder. Windows asks you once while it happens. |
-| `desktop.settings.repairDeclined` | Öffnen Sie in den Windows-Einstellungen "Firewall & Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann. | In the Windows settings, open "Firewall & network protection" and allow this program the incoming connection on the private network. For the data folder you need somebody who can confirm the question Windows asks. |
-| `desktop.firstRun.title` | Einmalige Einrichtung | One-time setup |
-| `desktop.firstRun.body` | Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an. | Confirm the question Windows asks. The program allows access from the network and creates its data folder. |
-| `desktop.firstRun.declined` | Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, holen Sie das in den Einstellungen unter "Einrichtung reparieren" nach. | The program runs anyway. If the phones cannot reach the laptop later, do this in the settings under "Repair the setup". |
-
-`desktop.phones.one` and `desktop.phones.many` are two keys rather than one, because these are backend
-resx strings and resx has no plural machinery. The web app's `{count}` strings go through vue-i18n
-plural forms as they always have; this table is not part of that.
+Recorded: the port asked for and granted, whether it differed from the one written down, the data
+folder, startup and shutdown, printer failures, and every bind exception. **Device tokens are never
+logged**, per section 2.
 
 ### 10.2 Where the data lives
 

@@ -27,7 +27,7 @@ public sealed class DesktopTextProviderTests
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
         IDesktopTextProvider text = new DesktopTextProvider();
 
-        Assert.That(text.Get("desktop.status.running"), Is.EqualTo("Das Programm nimmt Bestellungen an."));
+        Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Programm beenden"));
     }
 
     [Test]
@@ -38,7 +38,7 @@ public sealed class DesktopTextProviderTests
 
         text.UseLanguage("de");
 
-        Assert.That(text.Get("desktop.status.running"), Is.EqualTo("Das Programm nimmt Bestellungen an."));
+        Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Programm beenden"));
     }
 
     [Test]
@@ -50,7 +50,7 @@ public sealed class DesktopTextProviderTests
 
         text.UseLanguage(null);
 
-        Assert.That(text.Get("desktop.status.running"), Is.EqualTo("The program is taking orders."));
+        Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Quit the program"));
     }
 
     [Test]
@@ -71,6 +71,6 @@ public sealed class DesktopTextProviderTests
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
         IDesktopTextProvider text = new DesktopTextProvider();
 
-        Assert.That(text.Get("desktop.status.running"), Is.EqualTo("The program is taking orders."));
+        Assert.That(text.Get("desktop.button.quit"), Is.EqualTo("Quit the program"));
     }
 }

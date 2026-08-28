@@ -24,12 +24,6 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
-            <TextBlock Text="{Binding StatusText}" FontSize="18" />
-
-            <TextBlock Text="{Binding AttentionText}" TextWrapping="Wrap" />
-
-            <TextBlock Text="{Binding PhonesText}" TextWrapping="Wrap" />
-
             <Border IsVisible="{Binding HasNotice, FallbackValue=False}"
                     Padding="14"
                     CornerRadius="6"
@@ -44,13 +38,18 @@
                 <TextBlock Text="{Binding ErrorMessage, FallbackValue=''}" TextWrapping="Wrap" />
             </Border>
 
+            <Button Content="{Binding AdminButtonLabel}"
+                    Command="{Binding OpenAdminPagesCommand}"
+                    HorizontalAlignment="Left"
+                    FontSize="18"
+                    Padding="22,12" />
+
             <StackPanel Orientation="Horizontal" Spacing="14">
-                <Button Content="{Binding AdminButtonLabel}"
-                        Command="{Binding OpenAdminPagesCommand}"
-                        FontSize="18"
-                        Padding="22,12" />
-                <Button Content="{Binding SettingsButtonLabel}"
-                        Command="{Binding OpenSettingsCommand}"
+                <Button Content="{Binding DataFolderButtonLabel}"
+                        Command="{Binding OpenDataFolderCommand}"
+                        Padding="16,10" />
+                <Button Content="{Binding RepairButtonLabel}"
+                        Command="{Binding RepairSetupCommand}"
                         Padding="16,10" />
                 <Button Content="{Binding QuitButtonLabel}"
                         Command="{Binding RequestQuitCommand}"

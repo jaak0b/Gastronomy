@@ -12,16 +12,24 @@ sees a console, never edits a configuration file, and can never end the evening 
 
 ## The boundary that must stay sharp
 
-**The admin interface is the web page. This window is a launcher, a status light and an address
-display.** It shows the address with a QR code, running or stopped, one attention indicator, how many
-phones are set up, and buttons to open the admin page, open settings, and quit. It must never grow a
-second admin UI: no item editing, no printer management, no order views. The web admin has to exist
-for the phones regardless, and two admin surfaces would have to be kept true.
+**The admin interface is the web page. This window is a launcher and nothing else.** It shows the
+language picker, whatever has gone wrong, and buttons to open the admin page, open settings, and quit.
+While the server is healthy it carries no text at all. It must never grow a second admin UI: no item
+editing, no printer management, no order views, no address, no QR code, no counts and no status
+readouts. The web admin has to exist for the phones regardless, and two admin surfaces would have to be
+kept true.
 
-The settings window holds only what cannot live in a web page served by the very server being
-configured: port, bind address, database location, and which network to display, plus two actions
-that belong to the machine rather than the product: opening the data folder, and the elevated
-"Repair the setup" action (firewall rule and folder permissions, both idempotent). Nothing else.
+**There is no settings window.** There is nothing left to configure: the port is chosen automatically,
+the server always answers on every network interface, and the data folder is fixed. The two machine
+level actions that used to live there, opening the data folder and the elevated "Repair the setup",
+are buttons on the main window.
+
+**The port is never typed by a human.** On first start the program asks Windows for a free port and
+writes it down. Every later start tries the port it wrote down; if that one is taken it asks for
+another, writes that down, and tells the operator that everybody has to set their phone up again,
+which is the truth because a phone's device token is scoped to the origin and a new port is a new
+origin. It retries only on "address already in use", at most ten times; any other bind failure stops
+at once and is shown.
 
 ## Hard rules
 
@@ -43,10 +51,14 @@ that belong to the machine rather than the product: opening the data folder, and
    guess.
 6. **Errors appear on the window in plain language**, in German and English: port in use, data folder
    not writable, no network found. A log line is not a substitute for telling the operator.
-7. **Localization:** every user-visible string in the window exists in German and English, resolved
+7. **Everything is logged to a rolling file** in `%ProgramData%\GastronomyApp\logs\`, written by
+   Serilog and shared by the window and the server it hosts. Device tokens are credentials and never
+   appear in it. Ports, addresses and folder paths do, because they are what a phone call is about.
+
+8. **Localization:** every user-visible string in the window exists in German and English, resolved
    through the same resx mechanism as the backend (`Strings.de.resx` / `Strings.en.resx` or a
    desktop-specific pair). No string literals in axaml or code-behind.
-8. **MVVM.** ViewModels hold the state and commands; code-behind only where Avalonia forces it (see
+9. **MVVM.** ViewModels hold the state and commands; code-behind only where Avalonia forces it (see
    gotchas). No static methods or properties beyond `AvaloniaProperty.Register` and framework
    metadata.
 

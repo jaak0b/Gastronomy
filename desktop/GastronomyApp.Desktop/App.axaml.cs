@@ -59,7 +59,8 @@ public partial class App : Application
             () => lifetime.Shutdown());
 
         mainWindowViewModel.AdminPagesRequested += OpenAdminPages;
-        mainWindowViewModel.SettingsRequested += OpenSettings;
+        mainWindowViewModel.DataFolderRequested += OpenDataFolder;
+        mainWindowViewModel.RepairRequested += RepairSetup;
         mainWindowViewModel.QuitRequested += AskWhetherToQuit;
 
         mainWindow = new MainWindow { DataContext = mainWindowViewModel };
@@ -158,37 +159,16 @@ public partial class App : Application
         });
     }
 
-    private async void OpenSettings()
+    private async void RepairSetup()
     {
-        if (composition is null || mainWindow is null)
+        if (composition is null || mainWindowViewModel is null)
         {
             return;
         }
 
-        SettingsWindowViewModel viewModel = new(
-            composition.SettingsStore,
-            composition.NetworkAddressProvider,
-            composition.HostLauncher.IsRunning,
-            composition.ElevatedSetupLauncher,
-            composition.Text,
-            OpenWindowsFirewallSettings,
-            OpenDataFolder);
+        ElevatedSetupOutcome outcome = await composition.ElevatedSetupLauncher.RunElevatedSetupAsync();
 
-        await viewModel.InitializeAsync();
-
-        SettingsWindow window = new() { DataContext = viewModel };
-        await window.ShowDialog(mainWindow);
-
-        mainWindowViewModel?.ReloadSettings();
-    }
-
-    private void OpenWindowsFirewallSettings()
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "ms-settings:windowsdefender",
-            UseShellExecute = true,
-        });
+        mainWindowViewModel.ShowRepairOutcome(outcome);
     }
 
     private void OpenDataFolder()

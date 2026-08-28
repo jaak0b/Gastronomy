@@ -29,13 +29,14 @@ public sealed class MainWindowSmokeTests
     {
         ISettingsStore settingsStore = A.Fake<ISettingsStore>();
         A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
+            .Returns(new DesktopSettings(5000, @"C:\ProgramData\GastronomyApp", null, null));
 
         return new MainWindowViewModel(
             A.Fake<IHostLauncher>(),
             A.Fake<IPowerManager>(),
             settingsStore,
-            text);
+            text,
+            A.Fake<IFreePortProvider>());
     }
 
     [AvaloniaTest]
@@ -49,25 +50,4 @@ public sealed class MainWindowSmokeTests
         Assert.That(window.Title, Is.EqualTo(text.Get("desktop.windowTitle")));
     }
 
-    [AvaloniaTest]
-    public async Task SettingsWindow_Loads_WithTheTitleResolvedFromTheResxTable()
-    {
-        ISettingsStore settingsStore = A.Fake<ISettingsStore>();
-        A.CallTo(() => settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", @"C:\ProgramData\GastronomyApp", null, null));
-        SettingsWindowViewModel viewModel = new(
-            settingsStore,
-            A.Fake<INetworkAddressProvider>(),
-            false,
-            A.Fake<IElevatedSetupLauncher>(),
-            text,
-            () => { },
-            () => { });
-        await viewModel.InitializeAsync();
-
-        SettingsWindow window = new() { DataContext = viewModel };
-        window.Show();
-
-        Assert.That(window.Title, Is.EqualTo(text.Get("desktop.settings.title")));
-    }
 }

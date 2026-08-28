@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Services;
+using Serilog;
 
 namespace GastronomyApp.Desktop.ViewModels;
 
@@ -13,25 +14,19 @@ public enum HostStatus
     Running,
 }
 
-public enum AttentionState
-{
-    None,
-    Some,
-}
-
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly IHostLauncher launcher;
     private readonly IPowerManager power;
     private readonly ISettingsStore settingsStore;
     private readonly IDesktopTextProvider text;
+    private readonly IFreePortProvider freePorts;
     private readonly Never never = new();
 
+    private const int MaximumPortAttempts = 10;
+    private const string EveryNetworkInterface = "0.0.0.0";
+
     private HostStatus status = HostStatus.Stopped;
-    private AttentionState attention = AttentionState.None;
-    private int phoneCount;
-    private string addressUrl = string.Empty;
-    private string qrContent = string.Empty;
     private int adminPort;
     private LanguageOption? selectedLanguage;
     private readonly AppLanguage appLanguage = new();
@@ -43,18 +38,20 @@ public sealed class MainWindowViewModel : ViewModelBase
         IHostLauncher launcher,
         IPowerManager power,
         ISettingsStore settingsStore,
-        IDesktopTextProvider text)
+        IDesktopTextProvider text,
+        IFreePortProvider freePorts)
     {
         this.launcher = launcher;
         this.power = power;
         this.settingsStore = settingsStore;
         this.text = text;
+        this.freePorts = freePorts;
 
         Languages.Add(new LanguageOption("de", text.Get("desktop.language.german")));
         Languages.Add(new LanguageOption("en", text.Get("desktop.language.english")));
 
         DesktopSettings startupSettings = settingsStore.Load();
-        adminPort = startupSettings.Port;
+        adminPort = startupSettings.Port ?? 0;
 
         string storedLanguage = startupSettings.Language
             ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -66,19 +63,24 @@ public sealed class MainWindowViewModel : ViewModelBase
         text.LanguageChanged += OnLanguageChanged;
 
         OpenAdminPagesCommand = new RelayCommand(() => AdminPagesRequested?.Invoke(AdminUrl));
-        OpenSettingsCommand = new RelayCommand(() => SettingsRequested?.Invoke());
+        OpenDataFolderCommand = new RelayCommand(() => DataFolderRequested?.Invoke());
+        RepairSetupCommand = new RelayCommand(() => RepairRequested?.Invoke());
         RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
     }
 
     public event Action<string>? AdminPagesRequested;
 
-    public event Action? SettingsRequested;
+    public event Action? DataFolderRequested;
+
+    public event Action? RepairRequested;
 
     public event Action? QuitRequested;
 
     public IRelayCommand OpenAdminPagesCommand { get; }
 
-    public IRelayCommand OpenSettingsCommand { get; }
+    public IRelayCommand OpenDataFolderCommand { get; }
+
+    public IRelayCommand RepairSetupCommand { get; }
 
     public IRelayCommand RequestQuitCommand { get; }
 
@@ -110,78 +112,17 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string AdminButtonLabel => text.Get("desktop.button.admin");
 
-    public string SettingsButtonLabel => text.Get("desktop.button.settings");
+    public string DataFolderButtonLabel => text.Get("desktop.settings.openDataFolder");
+
+    public string RepairButtonLabel => text.Get("desktop.settings.repairSetup");
 
     public string QuitButtonLabel => text.Get("desktop.button.quit");
 
     public HostStatus Status
     {
         get => status;
-        private set
-        {
-            if (SetProperty(ref status, value))
-            {
-                OnPropertyChanged(nameof(StatusText));
-            }
-        }
+        private set => SetProperty(ref status, value);
     }
-
-    public string StatusText => text.Get(Status switch
-    {
-        HostStatus.Running => "desktop.status.running",
-        HostStatus.Stopped => "desktop.status.stopped",
-        _ => never.OfType<string>(Status),
-    });
-
-    public bool HasAttention
-    {
-        get => attention == AttentionState.Some;
-        set
-        {
-            AttentionState requested = value ? AttentionState.Some : AttentionState.None;
-            if (SetProperty(ref attention, requested, nameof(HasAttention)))
-            {
-                OnPropertyChanged(nameof(Attention));
-                OnPropertyChanged(nameof(AttentionTextKey));
-                OnPropertyChanged(nameof(AttentionText));
-            }
-        }
-    }
-
-    public AttentionState Attention => attention;
-
-    public string AttentionTextKey => Attention switch
-    {
-        AttentionState.None => "desktop.attention.none",
-        AttentionState.Some => "desktop.attention.some",
-        _ => never.OfType<string>(Attention),
-    };
-
-    public string AttentionText => text.Get(AttentionTextKey);
-
-    public int PhoneCount
-    {
-        get => phoneCount;
-        set
-        {
-            if (SetProperty(ref phoneCount, value))
-            {
-                OnPropertyChanged(nameof(PhonesTextKey));
-                OnPropertyChanged(nameof(PhonesText));
-            }
-        }
-    }
-
-    public string PhonesTextKey => PhoneCount switch
-    {
-        0 => "desktop.phones.none",
-        1 => "desktop.phones.one",
-        _ => "desktop.phones.many",
-    };
-
-    public string PhonesText => PhoneCount > 1
-        ? text.Format("desktop.phones.many", new TextPlaceholder("count", PhoneCount.ToString()))
-        : text.Get(PhonesTextKey);
 
     public string? ErrorMessageKey
     {
@@ -222,40 +163,64 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(string.Empty);
     }
 
-    public void ReloadSettings()
-    {
-        adminPort = settingsStore.Load().Port;
-        OnPropertyChanged(nameof(AdminUrl));
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        ReloadSettings();
-
         DesktopSettings settings = settingsStore.Load();
-        ApiHostOptions options = new()
+        int? writtenDownPort = settings.Port;
+        int port = writtenDownPort ?? freePorts.Reserve();
+
+        for (int attempt = 0; attempt < MaximumPortAttempts; attempt++)
+        {
+            HostLaunchResult result = await launcher.StartAsync(
+                OptionsFor(settings, port),
+                cancellationToken);
+
+            if (result is HostLaunchResult.PortInUse)
+            {
+                Log.Warning("Port {Port} is already in use. Asking Windows for another one.", port);
+                port = freePorts.Reserve();
+
+                continue;
+            }
+
+            if (result is HostLaunchResult.StartFailed failed)
+            {
+                Log.Error(failed.Failure, "The server could not be started on port {Port}.", port);
+            }
+
+            Apply(result, settings, writtenDownPort, port);
+
+            return;
+        }
+
+        Log.Error("No free port could be found after {Attempts} attempts.", MaximumPortAttempts);
+        ShowError("desktop.error.noPortAvailable");
+    }
+
+    private ApiHostOptions OptionsFor(DesktopSettings settings, int port)
+    {
+        return new ApiHostOptions
         {
             DataDirectory = settings.DataDirectory,
-            Port = settings.Port,
-            BindAddress = settings.BindAddress,
+            Port = port,
+            BindAddress = EveryNetworkInterface,
             Language = appLanguage,
         };
+    }
 
-        HostLaunchResult result = await launcher.StartAsync(options, cancellationToken);
-
+    private void Apply(HostLaunchResult result, DesktopSettings settings, int? writtenDownPort, int port)
+    {
         switch (result)
         {
             case HostLaunchResult.Started:
+                Log.Information(
+                    "The server is answering on port {Port} in {DataDirectory}.",
+                    port,
+                    settings.DataDirectory);
+                RememberPort(settings, writtenDownPort, port);
                 ClearError();
                 Status = HostStatus.Running;
                 power.PreventSleep();
-
-                break;
-
-            case HostLaunchResult.PortInUse portInUse:
-                ShowError(
-                    "desktop.error.portInUse",
-                    new TextPlaceholder("port", portInUse.Port.ToString()));
 
                 break;
 
@@ -283,11 +248,54 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private void RememberPort(DesktopSettings settings, int? writtenDownPort, int port)
+    {
+        adminPort = port;
+        OnPropertyChanged(nameof(AdminUrl));
+
+        if (writtenDownPort == port)
+        {
+            return;
+        }
+
+        settingsStore.Save(settings with { Port = port });
+
+        if (writtenDownPort is not null)
+        {
+            Log.Warning(
+                "The port changed from {PreviousPort} to {Port}. Every phone has to be set up again.",
+                writtenDownPort,
+                port);
+            NoticeText = text.Get("desktop.notice.addressChanged");
+        }
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         await launcher.StopAsync(cancellationToken);
         Status = HostStatus.Stopped;
         power.AllowSleep();
+    }
+
+    public void ShowRepairOutcome(ElevatedSetupOutcome outcome)
+    {
+        switch (outcome)
+        {
+            case ElevatedSetupOutcome.Completed:
+                NoticeText = text.Get("desktop.settings.repairDone");
+
+                break;
+
+            case ElevatedSetupOutcome.ElevationDeclined:
+                NoticeText = text.Get("desktop.settings.repairDeclined");
+
+                break;
+
+            default:
+                never.OfType<ElevatedSetupOutcome>(outcome);
+
+                break;
+        }
     }
 
     private void ShowError(string key, params TextPlaceholder[] placeholders)

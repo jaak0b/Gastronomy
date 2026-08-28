@@ -7,8 +7,6 @@ namespace GastronomyApp.Desktop.Services;
 public sealed class DesktopComposition
 {
     private const string ProductFolderName = "GastronomyApp";
-    private const string ShippedDefaultsFileName = "appsettings.json";
-
     public DesktopComposition()
     {
         ExecutablePath = Environment.ProcessPath ?? AppContext.BaseDirectory;
@@ -16,9 +14,8 @@ public sealed class DesktopComposition
 
         Text = new DesktopTextProvider();
         DataFolderSetup = new DataFolderSetup(DataDirectoryPath);
-        SettingsStore = new SettingsStore(
-            Path.Combine(AppContext.BaseDirectory, ShippedDefaultsFileName),
-            DataDirectoryPath);
+        SettingsStore = new SettingsStore(DataDirectoryPath);
+        FreePorts = new FreePortProvider();
         NetworkAddressProvider = new NetworkAddressProvider();
         HostLauncher = new HostLauncher(NetworkAddressProvider, path => new DataFolderSetup(path));
         SingleInstance = new SingleInstanceCoordinator();
@@ -46,6 +43,8 @@ public sealed class DesktopComposition
 
     public ISettingsStore SettingsStore { get; }
 
+    public IFreePortProvider FreePorts { get; }
+
     public INetworkAddressProvider NetworkAddressProvider { get; }
 
     public HostLauncher HostLauncher { get; }
@@ -64,7 +63,8 @@ public sealed class DesktopComposition
             HostLauncher,
             PowerManager,
             SettingsStore,
-            Text);
+            Text,
+            FreePorts);
     }
 
     public FirstRunViewModel CreateFirstRunViewModel()

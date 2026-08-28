@@ -14,6 +14,7 @@ public sealed class MainWindowViewModelTests
     private IPowerManager _power = null!;
     private ISettingsStore _settingsStore = null!;
     private IDesktopTextProvider _text = null!;
+    private IFreePortProvider _freePorts = null!;
 
     [SetUp]
     public void SetUp()
@@ -22,9 +23,11 @@ public sealed class MainWindowViewModelTests
         _power = A.Fake<IPowerManager>();
         _settingsStore = A.Fake<ISettingsStore>();
         _text = new DesktopTextProvider();
+        _freePorts = A.Fake<IFreePortProvider>();
+        A.CallTo(() => _freePorts.Reserve()).Returns(51234);
 
         A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, null));
+            .Returns(new DesktopSettings(5000, DataFolder, null, null));
     }
 
     private const string DataFolder = @"C:\ProgramData\GastronomyApp";
@@ -35,7 +38,8 @@ public sealed class MainWindowViewModelTests
             _launcher,
             _power,
             _settingsStore,
-            _text);
+            _text,
+            _freePorts);
     }
 
     private void LauncherReturns(HostLaunchResult result)
@@ -55,28 +59,9 @@ public sealed class MainWindowViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Running));
-            Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.status.running")));
             Assert.That(viewModel.ErrorMessageKey, Is.Null);
         });
         A.CallTo(() => _power.PreventSleep()).MustHaveHappenedOnceExactly();
-    }
-
-    [Test]
-    public async Task StartAsync_WhenThePortIsTaken_ShowsThePortInUseTextAndStaysStopped()
-    {
-        LauncherReturns(new HostLaunchResult.PortInUse(5000));
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        await viewModel.StartAsync();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.ErrorMessageKey, Is.EqualTo("desktop.error.portInUse"));
-            Assert.That(viewModel.ErrorMessage, Does.Contain("5000"));
-            Assert.That(viewModel.ErrorMessage, Does.Not.Contain("{port}"));
-            Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped));
-        });
-        A.CallTo(() => _power.PreventSleep()).MustNotHaveHappened();
     }
 
     [Test]
@@ -139,92 +124,17 @@ public sealed class MainWindowViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped));
-            Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.status.stopped")));
         });
         A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => _power.AllowSleep()).MustHaveHappenedOnceExactly();
     }
 
     [Test]
-    public void Attention_WithNothingWaiting_IsNoneAndNothingElse()
-    {
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        viewModel.HasAttention = false;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.Attention, Is.EqualTo(AttentionState.None));
-            Assert.That(viewModel.AttentionTextKey, Is.EqualTo("desktop.attention.none"));
-            Assert.That(viewModel.AttentionText, Is.EqualTo(_text.Get("desktop.attention.none")));
-        });
-    }
-
-    [Test]
-    public void Attention_WithSomethingWaiting_IsSomeAndNothingElse()
-    {
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        viewModel.HasAttention = true;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.Attention, Is.EqualTo(AttentionState.Some));
-            Assert.That(viewModel.AttentionTextKey, Is.EqualTo("desktop.attention.some"));
-            Assert.That(viewModel.AttentionText, Is.EqualTo(_text.Get("desktop.attention.some")));
-        });
-    }
-
-    [Test]
-    public void PhoneCount_WhenNoPhoneHasConnected_UsesTheNoneText()
-    {
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        viewModel.PhoneCount = 0;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.PhonesTextKey, Is.EqualTo("desktop.phones.none"));
-            Assert.That(viewModel.PhonesText, Is.EqualTo(_text.Get("desktop.phones.none")));
-        });
-    }
-
-    [Test]
-    public void PhoneCount_WhenOnePhoneIsSetUp_UsesTheSingularText()
-    {
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        viewModel.PhoneCount = 1;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.PhonesTextKey, Is.EqualTo("desktop.phones.one"));
-            Assert.That(viewModel.PhonesText, Is.EqualTo(_text.Get("desktop.phones.one")));
-        });
-    }
-
-    [Test]
-    public void PhoneCount_WhenSeveralPhonesAreSetUp_BindsTheCountIntoThePluralText()
-    {
-        MainWindowViewModel viewModel = CreateViewModel();
-
-        viewModel.PhoneCount = 4;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.PhonesTextKey, Is.EqualTo("desktop.phones.many"));
-            Assert.That(viewModel.PhonesText, Does.Contain("4"));
-            Assert.That(viewModel.PhonesText, Does.Not.Contain("{count}"));
-        });
-    }
-
-    [Test]
     public void OpenAdminPagesCommand_OpensTheAdminPageOnLoopbackWithTheConfiguredPort()
     {
         A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(8080, "0.0.0.0", DataFolder, null, null));
+            .Returns(new DesktopSettings(8080, DataFolder, null, null));
         MainWindowViewModel viewModel = CreateViewModel();
-        viewModel.ReloadSettings();
         string? opened = null;
         viewModel.AdminPagesRequested += url => opened = url;
 
@@ -237,7 +147,6 @@ public sealed class MainWindowViewModelTests
     public void OpenAdminPagesCommand_NeverOpensAnAddressFromTheNetwork()
     {
         MainWindowViewModel viewModel = CreateViewModel();
-        viewModel.ReloadSettings();
         string? opened = null;
         viewModel.AdminPagesRequested += url => opened = url;
 
@@ -284,7 +193,7 @@ public sealed class MainWindowViewModelTests
         CultureInfo original = CultureInfo.CurrentUICulture;
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
         A.CallTo(() => _settingsStore.Load())
-            .Returns(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, "de"));
+            .Returns(new DesktopSettings(5000, DataFolder, null, "de"));
 
         try
         {
@@ -293,7 +202,7 @@ public sealed class MainWindowViewModelTests
             Assert.Multiple(() =>
             {
                 Assert.That(viewModel.SelectedLanguage!.Code, Is.EqualTo("de"));
-                Assert.That(viewModel.StatusText, Is.EqualTo("Das Programm nimmt keine Bestellungen an."));
+                Assert.That(viewModel.AdminButtonLabel, Is.EqualTo("Verwaltung öffnen"));
             });
         }
         finally
@@ -318,7 +227,7 @@ public sealed class MainWindowViewModelTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(viewModel.StatusText, Is.EqualTo("Das Programm nimmt keine Bestellungen an."));
+                Assert.That(viewModel.AdminButtonLabel, Is.EqualTo("Verwaltung öffnen"));
                 Assert.That(viewModel.QuitButtonLabel, Is.EqualTo("Programm beenden"));
                 Assert.That(changedProperties, Does.Contain(string.Empty));
             });
@@ -336,8 +245,136 @@ public sealed class MainWindowViewModelTests
 
         viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
 
-        A.CallTo(() => _settingsStore.Save(new DesktopSettings(5000, "0.0.0.0", DataFolder, null, "de")))
+        A.CallTo(() => _settingsStore.Save(new DesktopSettings(5000, DataFolder, null, "de")))
             .MustHaveHappenedOnceExactly();
     }
 
+
+    [Test]
+    public async Task StartAsync_WithNoPortWrittenDownYet_AsksWindowsForOneAndWritesItDown()
+    {
+        A.CallTo(() => _settingsStore.Load())
+            .Returns(new DesktopSettings(null, DataFolder, null, null));
+        LauncherReturns(new HostLaunchResult.Started(null!));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+        A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234)))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public async Task StartAsync_WithAPortWrittenDownThatIsFree_UsesItAndSaysNothing()
+    {
+        LauncherReturns(new HostLaunchResult.Started(null!));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.HasNotice, Is.False);
+            Assert.That(viewModel.ErrorMessageKey, Is.Null);
+        });
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+        A.CallTo(() => _freePorts.Reserve()).MustNotHaveHappened();
+    }
+
+    [Test]
+    public async Task StartAsync_WhenTheWrittenDownPortIsTaken_MovesToAFreeOneAndWritesItDown()
+    {
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
+                A<CancellationToken>._))
+            .Returns(new HostLaunchResult.PortInUse(5000));
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
+                A<CancellationToken>._))
+            .Returns(new HostLaunchResult.Started(null!));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Running));
+            Assert.That(viewModel.ErrorMessageKey, Is.Null);
+        });
+        A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234)))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public async Task StartAsync_WhenThePortChanged_TellsTheOperatorEverybodyMustSetTheirPhoneUpAgain()
+    {
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
+                A<CancellationToken>._))
+            .Returns(new HostLaunchResult.PortInUse(5000));
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
+                A<CancellationToken>._))
+            .Returns(new HostLaunchResult.Started(null!));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.HasNotice, Is.True);
+            Assert.That(viewModel.NoticeText, Is.EqualTo(_text.Get("desktop.notice.addressChanged")));
+        });
+    }
+
+    [Test]
+    public async Task StartAsync_WhenEveryPortItTriesIsTaken_GivesUpAndSaysSo()
+    {
+        LauncherReturns(new HostLaunchResult.PortInUse(5000));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped));
+            Assert.That(viewModel.ErrorMessageKey, Is.EqualTo("desktop.error.noPortAvailable"));
+        });
+        A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._))
+            .MustHaveHappened(10, Times.Exactly);
+    }
+
+    [Test]
+    public async Task StartAsync_WhenTheFailureIsNotABusyPort_StopsAtOnceRatherThanLooping()
+    {
+        LauncherReturns(new HostLaunchResult.NoNetworkAvailable());
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+        A.CallTo(() => _freePorts.Reserve()).MustNotHaveHappened();
+    }
+
+    [Test]
+    public async Task StartAsync_Always_BindsEveryNetworkInterface()
+    {
+        LauncherReturns(new HostLaunchResult.Started(null!));
+        MainWindowViewModel viewModel = CreateViewModel();
+
+        await viewModel.StartAsync();
+
+        A.CallTo(() => _launcher.StartAsync(
+                A<ApiHostOptions>.That.Matches(options => options.BindAddress == "0.0.0.0"),
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+    }
 }
