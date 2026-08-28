@@ -1,22 +1,30 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ modelValue: string }>()
+defineProps<{ modelValue: string; isMissing: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const { t } = useI18n()
+const input = ref<HTMLElement | null>(null)
+
+function focus(): void {
+  input.value?.querySelector('input')?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
-  <div class="table-field my-4">
+  <div ref="input" class="table-field my-4" :class="{ 'is-missing': isMissing }">
     <v-text-field
       class="table-input"
-      :label="t('review.tableName')"
-      :placeholder="t('review.tablePlaceholder')"
+      :label="t('catalog.tableName')"
+      :placeholder="t('catalog.tablePlaceholder')"
       persistent-placeholder
+      :error="isMissing"
       :model-value="modelValue"
       @update:model-value="emit('update:modelValue', $event)"
     />
-    <p class="help text-medium-emphasis">{{ t('review.tableHelp') }}</p>
   </div>
 </template>

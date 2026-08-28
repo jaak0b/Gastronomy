@@ -45,7 +45,6 @@ describe('buildBasketView', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
-        quantity: 2,
         note: null,
         stationId: null,
         name: 'Bratwurst',
@@ -60,7 +59,6 @@ describe('buildBasketView', () => {
         catalogItemId: 'item-bratwurst',
         name: 'Bratwurst',
         unitPriceCents: 350,
-        quantity: 2,
         note: null,
         stationId: null,
         candidateStationIds: ['station-kueche'],
@@ -74,7 +72,6 @@ describe('buildBasketView', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Bratwurst',
@@ -91,7 +88,6 @@ describe('buildBasketView', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bier',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Bier',
@@ -110,7 +106,6 @@ describe('a line whose item was taken off the menu while the basket was open', (
     return draftWith([
       {
         catalogItemId: 'item-gone',
-        quantity: 2,
         note: 'ohne Zwiebeln',
         stationId: null,
         name: 'Currywurst',
@@ -152,14 +147,13 @@ describe('a line whose item was taken off the menu while the basket was open', (
   it('still counts towards the total the server reads out loud', () => {
     const view = buildBasketView(draftWithVanishedItem(), catalog())
 
-    expect(orderTotalCents(view)).toBe(800)
+    expect(orderTotalCents(view)).toBe(400)
   })
 
   it('carries no name at all when the draft predates the stored name', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-gone',
-        quantity: 1,
         note: null,
         stationId: null,
         name: '',
@@ -183,7 +177,6 @@ describe('refreshLineSnapshots', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Bratwurst alt',
@@ -200,7 +193,6 @@ describe('refreshLineSnapshots', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Bratwurst',
@@ -217,7 +209,6 @@ describe('refreshLineSnapshots', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-gone',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Currywurst',
@@ -229,7 +220,6 @@ describe('refreshLineSnapshots', () => {
 
     expect(refreshed.lines[0]).toEqual({
       catalogItemId: 'item-gone',
-      quantity: 1,
       note: null,
       stationId: null,
       name: 'Currywurst',
@@ -239,11 +229,17 @@ describe('refreshLineSnapshots', () => {
 })
 
 describe('basketItemCount', () => {
-  it('counts every article rather than every line', () => {
+  it('counts every position in the basket', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
-        quantity: 2,
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        unitPriceCents: 350,
+      },
+      {
+        catalogItemId: 'item-bratwurst',
         note: null,
         stationId: null,
         name: 'Bratwurst',
@@ -251,7 +247,6 @@ describe('basketItemCount', () => {
       },
       {
         catalogItemId: 'item-bier',
-        quantity: 3,
         note: null,
         stationId: null,
         name: 'Bier',
@@ -261,14 +256,13 @@ describe('basketItemCount', () => {
 
     const count = basketItemCount(draft)
 
-    expect(count).toBe(5)
+    expect(count).toBe(3)
   })
 
-  it('counts a line whose item was taken off the menu', () => {
+  it('counts a position whose item was taken off the menu', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-gone',
-        quantity: 2,
         note: null,
         stationId: null,
         name: 'Currywurst',
@@ -278,7 +272,7 @@ describe('basketItemCount', () => {
 
     const count = basketItemCount(draft)
 
-    expect(count).toBe(2)
+    expect(count).toBe(1)
   })
 
   it('counts nothing in an empty basket', () => {

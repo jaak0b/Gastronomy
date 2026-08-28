@@ -231,7 +231,6 @@ erDiagram
         Guid ChosenProductionLocationId FK "nullable"
         string ItemNameSnapshot
         int UnitPriceCentsSnapshot
-        int Quantity
         string Note "nullable"
     }
     LocationTicket {
@@ -623,7 +622,7 @@ dissolved rather than fixed. The mechanism it described a defect in no longer ex
 | DeviceId | Guid | Which phone submitted it, for the admin's diagnosis only |
 | TableLabel | string(40) | |
 | Note | string(200)? | An order level note, printed on every station's slip |
-| TotalCents | int | Sum of `Quantity * UnitPriceCentsSnapshot`, stored so the slip and the phone can never disagree |
+| TotalCents | int | Sum of `UnitPriceCentsSnapshot` over every line, stored so the slip and the phone can never disagree |
 | Status | string | See section 3.1 |
 | CreatedAtUtc | DateTime | |
 
@@ -636,13 +635,14 @@ dissolved rather than fixed. The mechanism it described a defect in no longer ex
 | ChosenProductionLocationId | Guid? | Null when the item had one candidate. Set when the server chose. |
 | ItemNameSnapshot | string(60) | |
 | UnitPriceCentsSnapshot | int | |
-| Quantity | int | 1 to 99 |
 | Note | string(100)? | For example "ohne Zwiebeln", printed under the line |
 
 Invariants:
 
-* An order has at least one line.
-* `Quantity >= 1`.
+* An order has at least one line, and at most 200.
+* One line is one physical item. There is no quantity column: three beers are three lines. Lines that
+  carry the same item and the same note are counted together when a slip or a screen is rendered, so
+  the reader still sees "3 x Bier" rather than three repeated lines.
 * `line.LocationTicket.OrderId == line.OrderId` for every line.
 * `TotalCents` equals the recomputed sum. This is asserted in the acceptance transaction and covered by
   a test, because the total is the only number a guest hears out loud.
@@ -1154,7 +1154,7 @@ state; it does not report job history. So:
 This happens several times an evening, and the product's answer is deliberately not a button.
 
 **Before the order is placed** there is nothing to specify. The order is a cart on the phone. Removing
-a line, changing a quantity, and starting over are ordinary editing, not state transitions, and the
+a line and starting over are ordinary editing, not state transitions, and the
 backend has never heard of the order.
 
 **After the order is placed there is no cancel action, anywhere, for anybody.** The moment the order is
@@ -1472,8 +1472,9 @@ Request:
   "note": null,
   "expectedTotalCents": 1050,
   "lines": [
-    { "catalogItemId": "...", "quantity": 2, "note": null, "productionLocationId": null },
-    { "catalogItemId": "...", "quantity": 1, "note": "ohne Ketchup", "productionLocationId": "bar-marquee-id" }
+    { "catalogItemId": "...", "note": null, "productionLocationId": null },
+    { "catalogItemId": "...", "note": null, "productionLocationId": null },
+    { "catalogItemId": "...", "note": "ohne Ketchup", "productionLocationId": "bar-marquee-id" }
   ]
 }
 ```
@@ -1496,8 +1497,8 @@ own answer.
 read it any other way.** It is compared against the recomputed total, echoed back in the response so
 the phone can show the difference, and then discarded. It is not stored on the order, not stored on any
 line, and it never contributes a cent to `Order.TotalCents`. **The phone never sends a price and never
-influences one.** There is no price field anywhere in this request: a line carries an item id, a
-quantity, an optional note and an optional station, and the money comes from `CatalogItem.PriceCents`
+influences one.** There is no price field anywhere in this request: a line carries an item id, an
+optional note and an optional station, and the money comes from `CatalogItem.PriceCents`
 as the backend reads it inside the acceptance transaction. A request whose `expectedTotalCents` is
 absent, zero, or wildly wrong is accepted exactly like any other, at the backend's own total.
 
@@ -1532,7 +1533,7 @@ front of a human, not in a log.
 |---|---|
 | 201 | Accepted and numbered |
 | 200 | The same `clientOrderId` was already accepted. The original order is returned unchanged, with its original numbers and its original tickets. No second order is created and no second print job is enqueued. |
-| 400 | Empty lines, quantity out of range, table label missing or too long |
+| 400 | Empty lines, more than 200 lines, table label missing or too long |
 | 401 | Unknown or revoked token |
 | 409 | The same `clientOrderId` was used with different content. The message tells the server to check their order list before ordering again. |
 | 422 | An item id is unknown, or a line names a location the item is not assigned to, or a line omits the station for an item that has more than one candidate |
@@ -2878,6 +2879,19 @@ server how much of the evening is parked behind the roll, and section 7.6 says w
 never acted on. It appears once the station has been held for longer than the give-up window, so an
 ordinary two second queue never draws it.
 
+**The row of destinations.** Three German labels and the settings control do not fit side by side on a
+phone, so each destination is an icon with its label under it in small type, and the labels wrap rather
+than being shortened or hidden. The count of orders needing attention rides on the orders icon as a
+badge, because as a chip beside the label it widened the row exactly when a server most needs to reach
+the other screens.
+
+The row stays at the top of the screen rather than moving to the thumb zone at the bottom. Navigation
+is tapped a handful of times an evening while "Weiter zur Übersicht" and "Bestellung senden" are tapped
+constantly, and on the summary screen a bottom row would sit directly under the send button. A server
+aiming for send in the dark and landing on a destination is thrown off the screen mid-send, which
+frightens the one person the product exists to reassure. Missing a tab at the top costs nothing but a
+second tap.
+
 | Key | Deutsch | English |
 |---|---|---|
 | `header.reconnecting` | Keine Verbindung zum Laptop. Es wird weiter versucht. | No connection to the laptop. The app keeps trying. |
@@ -2896,16 +2910,32 @@ ordinary two second queue never draws it.
 
 ### 8.6 Catalog and building an order
 
-**Purpose.** Turn what a guest says into lines and quantities with as few taps as possible, one handed,
-in the dark.
+**Purpose.** Turn what a guest says into lines with as few taps as possible, one handed, in the dark.
 
 **What is on it.**
 
-* Category strip across the top, horizontally scrollable.
-* A grid of item buttons. Each shows the name and the price. Touch targets are at least 56 by 56
-  logical pixels with 8 pixels of spacing.
-* Tapping an item adds one. Once an item has a quantity, a minus button and the count appear in the
-  button itself, so adding and removing never move the finger far.
+* The items, grouped under a heading per category. Categories are ordered by name, and so are the items
+  inside each one. There is no search field and no category filter: a festival menu is short enough to
+  scroll, and every control that is not there is one a volunteer cannot get lost in.
+* One row per item, showing the name and the price. Touch targets are at least 56 by 56 logical pixels
+  with 8 pixels of spacing.
+* Tapping the name or the price of an item row adds one of it and does nothing else: nothing opens and
+  nothing is asked. A count and a minus button appear at the start of the row, and the minus takes the
+  most recently added plain portion off again.
+* A **Hinweis** button on each row asks for the note before anything is added, in a dialog naming the
+  item. Confirming adds exactly one portion carrying that note; backing out adds nothing. An empty note
+  cannot be confirmed.
+* **A portion carrying a note leaves the group and stands on its own line under the item**, with its
+  own count, its own minus and a plus that adds another portion carrying the same note. Tapping the
+  note text reopens the dialog to correct the wording for every portion on that line. The same happens
+  for a portion routed to a station of its own, which is how the station is shown and changed. Only one
+  dialog is ever open, and no note field is drawn until somebody asks for one.
+* This is the display rule of section 3 seen from the phone: portions are grouped by item, note and
+  station, so "5 x Wasser" and "1 x Wasser, ohne Eis" are two lines without anybody splitting anything.
+* The table field and the note for the kitchen, below the items. The way to the summary stays open
+  while the table is empty: tapping it marks the field, scrolls to it and opens the keyboard on it,
+  rather than greying the button out or spending a line of the screen on a sentence explaining itself.
+  The mark disappears the moment a table is typed.
 * **A sold-out item stays in the grid**, greyed, not tappable, with `catalog.soldOut` under the name.
   Hiding it would send a server searching the categories for something that was there a minute ago. An
   item that was deactivated at the laptop is a different thing and is not in the catalog at all
@@ -2914,7 +2944,9 @@ in the dark.
 * The basket bar at the bottom, always visible, showing the number of items, the running total, and the
   button to the summary.
 
-**What the user can do.** Add and remove quantities, add a note to a line, and move on to the summary.
+**What the user can do.** Add items, take single ones off again, write a note that applies to one
+portion of an item or to the whole order, choose the station where an item has a choice, name the
+table, and move on to the summary.
 
 **Where an item is prepared.** Most items can be prepared in exactly one place, and for those the server
 is never asked and no station control is drawn. That is the normal case at a site with one kitchen and
@@ -2928,7 +2960,6 @@ a setting they never set.
 | Key | Deutsch | English |
 |---|---|---|
 | `catalog.title` | Bestellung aufnehmen | Take an order |
-| `catalog.searchPlaceholder` | Artikel suchen | Search for an item |
 | `catalog.soldOut` | Ausverkauft | Sold out |
 | `catalog.lineNote` | Hinweis für diese Position | Note for this item |
 | `catalog.lineNotePlaceholder` | Zum Beispiel: ohne Zwiebeln | For example: no onions |
@@ -2938,13 +2969,23 @@ a setting they never set.
 | `catalog.paperWarning` | Nehmen Sie weiter Bestellungen auf. Der Drucker an der Station {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt. | Keep taking orders. The printer at {name} has no paper, and the slip prints as soon as somebody loads a roll. |
 | `catalog.offlineWarning` | Nehmen Sie weiter Bestellungen auf. Die Station {name} antwortet gerade nicht, und der Bon wird nachgedruckt. | Keep taking orders. Station {name} is not answering right now, and the slip prints later. |
 | `catalog.itemSoldOut` | Fragen Sie den Gast, ob er etwas anderes möchte. {name} ist gerade ausverkauft. | Ask the guest whether they would like something else. {name} has just sold out. |
+| `catalog.addNote` | Hinweis | Note |
+| `catalog.noteTitle` | Hinweis für {name} | Note for {name} |
+| `catalog.noteAdd` | Hinzufügen | Add |
+| `catalog.noteSave` | Übernehmen | Save |
+| `catalog.noteCancel` | Abbrechen | Cancel |
+| `catalog.removeOne` | Ein {name} weniger | One less {name} |
+| `catalog.addOne` | Ein {name} mehr | One more {name} |
+| `catalog.tableName` | Tisch | Table |
+| `catalog.tablePlaceholder` | Zum Beispiel: Tisch 12 | For example: Table 12 |
+| `catalog.orderNote` | Hinweis für die Küche | Note for the kitchen |
 | `line.whereTitle` | Wo soll {item} zubereitet werden? | Where should {item} be prepared? |
 | `line.whereHelp` | Die Auswahl gilt nur für diese Position. | The choice applies to this item only. |
 | `line.station` | Station: {name} | Station: {name} |
 | `line.changeStation` | Station ändern | Change the station |
 
-**When an item sells out while it is already in the basket**, the quantity stays exactly where it is
-and the line is flagged with `catalog.itemSoldOut`. Silently deleting a line a guest already ordered
+**When an item sells out while it is already in the basket**, everything already chosen stays exactly
+where it is and the line is flagged with `catalog.itemSoldOut`. Silently deleting a line a guest already ordered
 would be a change the server never sees. The flag usually arrives while they are still standing at the
 table, which is the point of the live push: they ask the guest for a second choice instead of coming
 back to it with a tray. If they send it anyway, the order is accepted (section 5.4), the slip prints,
@@ -2953,41 +2994,42 @@ at that moment would solve nothing and lose the order.
 
 ### 8.7 Review and total
 
-**Purpose.** Two jobs: name the table, and show the total large enough to read out at arm's length in
-the dark.
+**Purpose.** Two jobs: let the server check what they took down, and show the total large enough to
+read out at arm's length in the dark.
 
 **What is on it.**
 
-* The lines, grouped by the station they will be printed at, so the split is visible before sending.
-* The table field, with suggestion chips above it.
-* An optional note for the whole order.
-* The total, in the largest type on the screen.
-* One sentence under the total saying what the total is for.
-* The send button, full width, at the bottom.
+* **One card per station, and the card is the slip that station will receive.** Its header names the
+  station, its rows are the lines, and the note for the kitchen sits at the bottom of every card it
+  will print on. Two stations are two cards, so the split is a thing the server can see rather than a
+  heading they have to read. A box on this screen means either "this is a slip" or "this is the money",
+  and nothing else is given one.
+* Lines are sorted by item name, and a line carrying a note follows the plain line of the same item.
+  Lines are written the way the slip writes them, `9 x Bier`, so the screen and the paper can be
+  compared without translating between two notations. The note stands under its own line.
+* The table, as a subtitle under the heading. It is context the server typed a moment ago, not content.
+* The total and the send button in a footer that stays within reach while the lines scroll, because
+  those are the two things needed at that moment and an order can be longer than one screen. The total
+  is in the largest type on the screen.
 
-**What the user can do.** Change quantities, change the station on a line that has a choice, set the
-table, add a note, and send. The send button is disabled while the table field is empty, with the reason
-directly under the button.
+**What the user can do.** Read the order, send it, or go back to the items. Nothing is editable on this
+screen: it is the check before sending, and every change is made where the order is built.
 
 | Key | Deutsch | English |
 |---|---|---|
 | `review.title` | Bestellung prüfen | Check the order |
-| `review.tableLabel` | Tisch | Table |
-| `review.tablePlaceholder` | Zum Beispiel: Tisch 12 | For example: Table 12 |
-| `review.tableHelp` | Tragen Sie den Tisch ein, damit das Tablett zum richtigen Tisch kommt. | Enter the table so the tray reaches the right table. |
-| `review.tableMissing` | Tragen Sie einen Tisch ein, bevor Sie senden. | Enter a table before you send. |
-| `review.orderNote` | Hinweis für die Küche | Note for the kitchen |
+| `review.tableIs` | Tisch: {name} | Table: {name} |
+| `review.line` | {count} x {item} | {count} x {item} |
 | `review.goesTo` | Geht an {name} | Goes to {name} |
 | `review.total` | Gesamt | Total |
-| `review.totalHelp` | Der Betrag ist nur eine Rechenhilfe. Das Geld nehmen Sie wie bisher am Tisch ein. | The amount is only an aid for adding up. You take the cash at the table as before. |
 | `review.send` | Bestellung senden | Send order |
 | `review.sending` | Wird gesendet | Sending |
 | `review.sent` | Bestellung {number} ist angekommen. | Order {number} has arrived. |
 | `review.totalChanged` | Sagen Sie dem Gast die neue Summe: {total}. Der Preis wurde gerade am Laptop geändert. | Tell the guest the new total: {total}. The price was changed at the laptop a moment ago. |
 | `review.back` | Zurück zur Auswahl | Back to the items |
 
-**When sending fails.** The screen keeps the order exactly as it was, with every line, quantity, station
-and the total, and shows the failure with the retry button directly under it. Nothing is cleared, and
+**When sending fails.** The screen keeps the order exactly as it was, with every line, station and the
+total, and shows the failure with the retry button directly under it. Nothing is cleared, and
 nothing is sent in the background. Section 9 describes the mechanism and why it is deliberately this
 plain.
 
@@ -3104,6 +3146,15 @@ running, so there is nothing left for the overview to warn about and the key is 
 
 **Stations, items, assignment, tables.** Plain list and form screens. The strings that carry a rule:
 
+**The item list** stands under a heading per category, with the categories ordered by name and the items
+inside each one ordered by name as well. That is the same order the phones show, so an admin looking for
+an item looks in the same place on both screens. There is no search field, because a festival menu is
+short enough to scroll and one list that always looks the same beats a control that hides rows. Each
+item takes a single line: the name on the left, and on the right the sold-out switch, the edit button
+and the button that takes it off the menu. Editing opens the form inside that line, so the list around
+it never moves.
+
+
 | Key | Deutsch | English |
 |---|---|---|
 | `admin.locations.title` | Stationen | Stations |
@@ -3173,7 +3224,6 @@ decision rather than leaving it open.
 | `admin.printers.coverOpen` | Klappe offen | Cover open |
 | `admin.printers.faulty` | Störung. Es wird nichts mehr an diesen Drucker gesendet. | Fault. Nothing more is being sent to this printer. |
 | `admin.printers.reconnect` | Wieder verbinden | Connect again |
-| `admin.printers.reconnectHelp` | Sehen Sie zuerst am Drucker nach Papierstau und Kabel. Danach nimmt der Drucker wieder Bons an. | Check the printer for a paper jam and a loose cable first. After that the printer accepts slips again. |
 | `admin.printers.waiting` | {count} Bons warten auf diesen Drucker. | {count} slips are waiting for this printer. |
 | `admin.printers.shared` | Diese Adresse ist auch bei {names} eingetragen. Die Bons dieser Stationen kommen aus demselben Drucker. | This address is also set at {names}. The slips for these stations come out of the same printer. |
 | `admin.printers.sharedHelp` | Das ist so vorgesehen. Wenn ein Drucker ausfällt, tragen Sie bei dieser Station die Adresse eines Druckers ein, der noch arbeitet. | This is intended. When a printer fails, enter the address of a printer that is still working for that station. |
@@ -3454,7 +3504,7 @@ Components read the store; they do not implement sending logic.
 ### 9.2 The draft cart, and why it is not a queue
 
 The order being built lives in `localStorage` under the key `draftOrder`, and it is written on every
-change: a line added, a quantity changed, a station chosen, a note typed, the table entered.
+change: a line added, a line removed, a station chosen, a note typed, the table entered.
 
 ```json
 {
@@ -3463,7 +3513,6 @@ change: a line added, a quantity changed, a station chosen, a note typed, the ta
   "lines": [
     {
       "catalogItemId": "...",
-      "quantity": 2,
       "note": null,
       "productionLocationId": null,
       "name": "Bratwurst mit Brot",
@@ -3480,7 +3529,7 @@ On page load the app reads `draftOrder` and puts the order back on the screen ex
 
 **Each line also carries `name` and `unitPriceCents`, a snapshot of the item as it stood when the line
 was added.** These two fields exist only in the stored draft and never travel over the wire: `POST
-/api/orders` still sends exactly `catalogItemId`, `quantity`, `note`, and `productionLocationId` per
+/api/orders` still sends exactly `catalogItemId`, `note`, and `productionLocationId` per
 line (section 5.4), because the backend prices the order itself and does not read a price from the
 phone. The snapshot is what lets the basket keep showing a name and a price for a line whose item the
 catalog no longer carries. While the item is still present, `CatalogChanged` refreshes both fields from
@@ -4220,13 +4269,16 @@ required for the order placement flow and the printing pipeline.
 
 | Module | What is proven |
 |---|---|
-| `basket` | Adding, removing, quantity limits, note handling, choosing and changing a line's station, and total formatting in both locales |
+| `basket` | Adding, removing, note handling, choosing and changing a line's station, and total formatting in both locales |
+| `collapse` | Lines carrying the same item and the same note are counted into one rendered line, a note keeps its line apart, and the order the items were chosen in is kept |
+| `itemPositions` | The portions of one item are found in the draft with their positions, and are grouped by note and station so a noted portion leaves the plain group |
+| `grouping` | Items are grouped under their category, and both the categories and the items inside them are ordered by name |
 | `routingPreview` | Same rules as the backend resolver, with a shared fixture set so the two cannot drift, including that a one candidate item never asks |
 | `draftCart` | Written on every change, restored on load exactly as it was, cleared only on acceptance, kept across a revocation, and holding no list, no timer, and no retry state |
 | `submission` | The id is generated once on the first send, reused by every retry, not regenerated by a reload or a re-enrolment, and a new order gets a new id |
 | `orderStateMachine` | Exhaustive switch coverage with `assertNever`, so a new state is a compile error |
 | `messageForTicket` | Each ticket state, and each of the eight client-facing failure reasons in section 2.11, maps to exactly one message key in both languages, and no mapping ever falls back to a transport string. `TicketResolvedByHuman` is admin-only and is asserted to have no key, because its ticket is `HandledOnPaper` and carries that state's message |
-| `catalogItemState` | A sold-out item is rendered and not selectable, a deactivated item is absent from the payload and so cannot be rendered at all, and a sold-out line already in the basket keeps its quantity and gains the flag |
+| `catalogItemState` | A sold-out item is rendered and not selectable, a deactivated item is absent from the payload and so cannot be rendered at all, and a sold-out line already in the basket stays and gains the flag |
 
 ### 11.2 Integration tests
 

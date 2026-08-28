@@ -2,16 +2,18 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CatalogItem } from '../core/apiTypes'
+import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import { needsStationChoice } from '../core/routingPreview'
+import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
 import { usePrinterStatusStore } from '../stores/printerStatus'
 import { navigate } from '../router'
-import CategoryStrip from '../components/catalog/CategoryStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
 import BasketBar from '../components/catalog/BasketBar.vue'
+import TableField from '../components/review/TableField.vue'
 
 const { t } = useI18n()
 const catalog = useCatalogStore()
@@ -19,83 +21,89 @@ const order = useOrderStore()
 const session = useSessionStore()
 const printerStatus = usePrinterStatusStore()
 
-const search = ref('')
+const tableField = ref<{ focus: () => void } | null>(null)
+const isTableMissing = ref(false)
 const itemAwaitingStation = ref<CatalogItem | null>(null)
-const headingElements: Record<string, HTMLElement> = {}
+const noteAwaitingStation = ref<string | null>(null)
+const linesAwaitingStation = ref<number[]>([])
 
-const isSearching = computed(() => search.value.trim().length > 0)
-
-const searchResults = computed(() => {
-  const typed = search.value.trim().toLowerCase()
-  return catalog.catalog.items.filter((item) => item.name.toLowerCase().includes(typed))
+const tableName = computed({
+  get: () => order.draft.tableName,
+  set: (value: string) => {
+    order.setTable(value)
+    if (isTableNameValid(value)) {
+      isTableMissing.value = false
+    }
+  },
 })
 
-const groups = computed(() =>
-  catalog.categories.map((category) => ({
-    name: category.name,
-    items: catalog.itemsInCategory(category.name),
-  })),
-)
-
-function rememberHeading(name: string, element: unknown): void {
-  if (element instanceof HTMLElement) {
-    headingElements[name] = element
-  }
-}
-
-function jumpTo(name: string): void {
-  headingElements[name]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function quantityFor(itemId: string): number {
-  return order.draft.lines
-    .filter((line) => line.catalogItemId === itemId)
-    .reduce((count, line) => count + line.quantity, 0)
-}
-
-function addItem(item: CatalogItem): void {
-  if (needsStationChoice(item)) {
-    itemAwaitingStation.value = item
+function goToTheSummary(): void {
+  if (!isTableNameValid(order.draft.tableName)) {
+    isTableMissing.value = true
+    tableField.value?.focus()
     return
   }
-  order.addItem({
-    catalogItemId: item.id,
-    quantity: 1,
-    note: null,
-    stationId: item.stationIds[0] ?? null,
-    name: item.name,
-    unitPriceCents: item.priceCents,
-  })
+  navigate('/review')
 }
 
-function chooseStation(stationId: string): void {
-  const item = itemAwaitingStation.value
-  if (item === null) {
-    return
+const itemBehindTheStationChoice = computed(() => {
+  if (linesAwaitingStation.value.length === 0) {
+    return itemAwaitingStation.value
   }
+  const line = order.draft.lines[linesAwaitingStation.value[0]]
+  return catalog.catalog.items.find((item) => item.id === line?.catalogItemId) ?? null
+})
+
+function positionsFor(itemId: string): ItemPosition[] {
+  const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
+  return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
+}
+
+function place(item: CatalogItem, note: string | null, stationId: string | null): void {
   order.addItem({
     catalogItemId: item.id,
-    quantity: 1,
-    note: null,
+    note: note,
     stationId: stationId,
     name: item.name,
     unitPriceCents: item.priceCents,
   })
-  itemAwaitingStation.value = null
 }
 
-function removeItem(item: CatalogItem): void {
-  const index = order.draft.lines.findIndex((line) => line.catalogItemId === item.id)
-  if (index === -1) {
+function addItem(item: CatalogItem, note: string | null = null): void {
+  if (needsStationChoice(item)) {
+    itemAwaitingStation.value = item
+    noteAwaitingStation.value = note
     return
   }
-  order.changeQuantity(index, order.draft.lines[index].quantity - 1)
+  place(item, note, item.stationIds[0] ?? null)
+}
+
+function addItemWithANote(item: CatalogItem, note: string): void {
+  addItem(item, note)
+}
+
+function renameNote(indexes: number[], note: string): void {
+  indexes.forEach((index) => order.noteLine(index, note))
+}
+
+function chooseStation(stationId: string): void {
+  if (linesAwaitingStation.value.length > 0) {
+    linesAwaitingStation.value.forEach((index) => order.chooseStation(index, stationId))
+    linesAwaitingStation.value = []
+    return
+  }
+  const item = itemAwaitingStation.value
+  if (item === null) {
+    return
+  }
+  place(item, noteAwaitingStation.value, stationId)
+  itemAwaitingStation.value = null
+  noteAwaitingStation.value = null
 }
 </script>
 
 <template>
   <v-container class="catalog">
-    <h1 class="text-h5 mb-2">{{ t('catalog.title') }}</h1>
     <v-alert
       v-for="(warning, index) in printerStatus.catalogWarnings"
       :key="index"
@@ -105,56 +113,48 @@ function removeItem(item: CatalogItem): void {
     >
       {{ t(warning.key, { name: warning.name }) }}
     </v-alert>
-    <v-text-field
-      v-model="search"
-      class="catalog-search"
-      type="search"
-      :placeholder="t('catalog.searchPlaceholder')"
-      hide-details
-    />
-    <CategoryStrip :categories="catalog.categories" @select="jumpTo" />
-    <ItemGrid
-      v-if="isSearching"
-      :items="searchResults"
-      :language="session.language"
-      :quantity-for="quantityFor"
-      @add="addItem"
-      @remove="removeItem"
-    />
-    <template v-else>
-      <section v-for="group in groups" :key="group.name" class="category-section">
-        <h2
-          :ref="(element) => rememberHeading(group.name, element)"
-          class="category-heading text-subtitle-1 font-weight-bold py-2"
-          :data-category="group.name"
-        >
-          {{ group.name }}
-        </h2>
-        <ItemGrid
-          :items="group.items"
-          :language="session.language"
-          :quantity-for="quantityFor"
-          @add="addItem"
-          @remove="removeItem"
-        />
-      </section>
-    </template>
+    <section v-for="group in catalog.groups" :key="group.name" class="category-section">
+      <h2 class="category-heading text-subtitle-1 font-weight-bold py-2" :data-category="group.name">
+        {{ group.name }}
+      </h2>
+      <ItemGrid
+        :items="group.items"
+        :language="session.language"
+        :positions-for="positionsFor"
+        @add="addItem"
+        @add-with-a-note="addItemWithANote"
+        @remove-one="order.dropLine"
+        @rename-note="renameNote"
+        @change-station="(indexes) => (linesAwaitingStation = indexes)"
+      />
+    </section>
     <LineStationSheet
-      v-if="itemAwaitingStation !== null"
-      :item="itemAwaitingStation"
+      v-if="itemBehindTheStationChoice !== null"
+      :item="itemBehindTheStationChoice"
       :station-name-for="catalog.stationName"
       @choose="chooseStation"
+    />
+    <TableField ref="tableField" v-model="tableName" :is-missing="isTableMissing" />
+    <v-textarea
+      class="order-note"
+      :label="t('catalog.orderNote')"
+      :model-value="order.draft.note ?? ''"
+      @update:model-value="order.setNote($event || null)"
     />
     <BasketBar
       :item-count="order.itemCount"
       :total-cents="order.totalCents"
       :language="session.language"
-      @review="navigate('/review')"
+      @review="goToTheSummary"
     />
   </v-container>
 </template>
 
 <style scoped>
+.catalog {
+  padding-bottom: 96px;
+}
+
 .category-heading {
   position: sticky;
   top: 0;

@@ -8,7 +8,6 @@ import {
   removeLine,
   saveDraft,
   setLineNote,
-  setLineQuantity,
   setLineStation,
   setOrderNote,
   setTableName,
@@ -18,7 +17,6 @@ import type { DraftLine } from '../../src/core/apiTypes'
 function bratwurstLine(): DraftLine {
   return {
     catalogItemId: 'item-1',
-    quantity: 1,
     note: null,
     stationId: null,
     name: 'Bratwurst',
@@ -69,7 +67,6 @@ describe('loadDraft', () => {
       lines: [
         {
           catalogItemId: 'item-1',
-          quantity: 1,
           note: null,
           stationId: null,
           name: 'Bratwurst',
@@ -83,7 +80,7 @@ describe('loadDraft', () => {
   it('reads a draft written before lines carried a name and a price without crashing', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","quantity":2,"note":null,"stationId":null}]}',
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null}]}',
     )
 
     const draft = loadDraft()
@@ -91,7 +88,6 @@ describe('loadDraft', () => {
     expect(draft.lines).toEqual([
       {
         catalogItemId: 'item-1',
-        quantity: 2,
         note: null,
         stationId: null,
         name: '',
@@ -122,7 +118,7 @@ describe('the stored draft shape', () => {
     expect(Object.keys(stored).sort()).toEqual(['clientOrderId', 'lines', 'note', 'tableName'])
   })
 
-  it('stores the item, the quantity, the note, the station and the name and price it was added at', () => {
+  it('stores the item, the note, the station and the name and price it was added at', () => {
     addLine(emptyDraft(), bratwurstLine())
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as {
@@ -133,7 +129,6 @@ describe('the stored draft shape', () => {
       'catalogItemId',
       'name',
       'note',
-      'quantity',
       'stationId',
       'unitPriceCents',
     ])
@@ -163,7 +158,6 @@ describe('draft mutators', () => {
     expect(loadDraft().lines).toEqual([
       {
         catalogItemId: 'item-1',
-        quantity: 1,
         note: null,
         stationId: null,
         name: 'Bratwurst',
@@ -180,20 +174,12 @@ describe('draft mutators', () => {
     expect(before.lines).toEqual([])
   })
 
-  it('persists a changed quantity', () => {
+  it('keeps one position per tap when the same item is added twice', () => {
     const draft = addLine(emptyDraft(), bratwurstLine())
 
-    setLineQuantity(draft, 0, 3)
+    addLine(draft, bratwurstLine())
 
-    expect(loadDraft().lines[0].quantity).toBe(3)
-  })
-
-  it('removes a line when its quantity reaches zero', () => {
-    const draft = addLine(emptyDraft(), bratwurstLine())
-
-    setLineQuantity(draft, 0, 0)
-
-    expect(loadDraft().lines).toEqual([])
+    expect(loadDraft().lines).toHaveLength(2)
   })
 
   it('persists a removed line', () => {
@@ -275,31 +261,22 @@ describe('clearDraft', () => {
 })
 
 describe('adding an item that is already in the basket', () => {
-  it('raises the quantity of the line it is already on', () => {
+  it('keeps every tap as its own position', () => {
     const once = addLine(emptyDraft(), bratwurstLine())
 
     const twice = addLine(once, bratwurstLine())
 
-    expect(twice.lines).toHaveLength(1)
-    expect(twice.lines[0].quantity).toBe(2)
+    expect(twice.lines).toHaveLength(2)
   })
 
-  it('adds the quantity that was handed in rather than one', () => {
-    const once = addLine(emptyDraft(), bratwurstLine())
-
-    const more = addLine(once, { ...bratwurstLine(), quantity: 3 })
-
-    expect(more.lines[0].quantity).toBe(4)
-  })
-
-  it('keeps a line with a note to itself, because the note names those portions', () => {
+  it('keeps a position with a note apart from a position without one', () => {
     const noted = addLine(emptyDraft(), { ...bratwurstLine(), note: 'ohne Senf' })
 
     const plain = addLine(noted, bratwurstLine())
 
     expect(plain.lines).toHaveLength(2)
     expect(plain.lines[0].note).toBe('ohne Senf')
-    expect(plain.lines[1].quantity).toBe(1)
+    expect(plain.lines[1].note).toBeNull()
   })
 
   it('keeps the same item apart when it was sent to different stations', () => {

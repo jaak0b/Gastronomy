@@ -84,7 +84,6 @@ describe('buildSubmitRequest', () => {
   it('sends the table, the note and every item with the price the phone showed', () => {
     const withLine = addLine(emptyDraft(), {
       catalogItemId: 'item-1',
-      quantity: 2,
       note: 'ohne Zwiebeln',
       stationId: 'station-2',
       name: 'Bratwurst',
@@ -101,7 +100,6 @@ describe('buildSubmitRequest', () => {
       items: [
         {
           catalogItemId: 'item-1',
-          quantity: 2,
           unitPriceCents: 350,
           note: 'ohne Zwiebeln',
           stationId: 'station-2',
@@ -113,7 +111,6 @@ describe('buildSubmitRequest', () => {
   it('sends no item name, because the laptop keeps the name from its own catalog', () => {
     const withLine = addLine(emptyDraft(), {
       catalogItemId: 'item-1',
-      quantity: 1,
       note: null,
       stationId: null,
       name: 'Bratwurst',
@@ -126,7 +123,6 @@ describe('buildSubmitRequest', () => {
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
       'note',
-      'quantity',
       'stationId',
       'unitPriceCents',
     ])

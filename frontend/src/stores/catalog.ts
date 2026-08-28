@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import type { Catalog, CatalogItem } from '../core/apiTypes'
+import { groupByCategory, type CategoryGroup } from '../core/grouping'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
@@ -15,16 +16,13 @@ const EMPTY_CATALOG: Catalog = {
 export const useCatalogStore = defineStore('catalog', () => {
   const catalog = ref<Catalog>(EMPTY_CATALOG)
 
-  const categories = computed(() =>
-    [...catalog.value.categories].sort((left, right) => left.sortOrder - right.sortOrder),
+  const groups = computed<CategoryGroup<CatalogItem>[]>(() =>
+    groupByCategory(
+      catalog.value.items,
+      (item) => item.categoryName,
+      (item) => item.name,
+    ),
   )
-
-
-  function itemsInCategory(categoryName: string): CatalogItem[] {
-    return catalog.value.items
-      .filter((item) => item.categoryName === categoryName)
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-  }
 
   function stationName(stationId: string): string {
     return catalog.value.stations.find((station) => station.id === stationId)?.name ?? ''
@@ -49,5 +47,5 @@ export const useCatalogStore = defineStore('catalog', () => {
     })
   }
 
-  return { catalog, categories, itemsInCategory, stationName, load, listen }
+  return { catalog, groups, stationName, load, listen }
 })

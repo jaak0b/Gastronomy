@@ -6,7 +6,6 @@ export interface BasketLineView {
   catalogItemId: string
   name: string
   unitPriceCents: number
-  quantity: number
   note: string | null
   stationId: string | null
   candidateStationIds: string[]
@@ -26,7 +25,6 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         catalogItemId: line.catalogItemId,
         name: line.name,
         unitPriceCents: line.unitPriceCents,
-        quantity: line.quantity,
         note: line.note,
         stationId: line.stationId,
         candidateStationIds: [],
@@ -38,7 +36,6 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       catalogItemId: item.id,
       name: item.name,
       unitPriceCents: item.priceCents,
-      quantity: line.quantity,
       note: line.note,
       stationId: line.stationId,
       candidateStationIds: candidateStations(item),
@@ -64,5 +61,5 @@ export function refreshLineSnapshots(draft: DraftOrder, catalog: Catalog): Draft
 }
 
 export function basketItemCount(draft: DraftOrder): number {
-  return draft.lines.reduce((count, line) => count + line.quantity, 0)
+  return draft.lines.length
 }

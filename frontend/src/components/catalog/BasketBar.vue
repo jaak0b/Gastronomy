@@ -21,11 +21,20 @@ const summary = computed(() =>
 </script>
 
 <template>
-  <v-footer class="basket-bar" app color="surface">
+  <v-sheet class="basket-bar d-flex align-center py-3" color="background">
     <span class="summary text-body-1">{{ summary }}</span>
     <v-spacer />
     <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
       {{ t('catalog.toReview') }}
     </v-btn>
-  </v-footer>
+  </v-sheet>
 </template>
+
+<style scoped>
+.basket-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+</style>

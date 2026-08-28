@@ -1,13 +1,14 @@
 import type { AppLanguage } from './apiTypes'
 import { assertNever } from './assertNever'
 import type { BasketLineView } from './basket'
+import type { CollapsedLine } from './collapse'
 
-export function lineTotalCents(line: BasketLineView): number {
-  return line.unitPriceCents * line.quantity
+export function collapsedTotalCents(entry: CollapsedLine<BasketLineView>): number {
+  return entry.line.unitPriceCents * entry.quantity
 }
 
 export function orderTotalCents(lines: BasketLineView[]): number {
-  return lines.reduce((total, line) => total + lineTotalCents(line), 0)
+  return lines.reduce((total, line) => total + line.unitPriceCents, 0)
 }
 
 function grouped(euros: string, separator: string): string {

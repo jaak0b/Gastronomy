@@ -11,12 +11,11 @@ function toDraftLine(value: unknown): DraftLine | null {
     return null
   }
   const candidate = value as Record<string, unknown>
-  if (typeof candidate.catalogItemId !== 'string' || typeof candidate.quantity !== 'number') {
+  if (typeof candidate.catalogItemId !== 'string') {
     return null
   }
   return {
     catalogItemId: candidate.catalogItemId,
-    quantity: candidate.quantity,
     note: typeof candidate.note === 'string' ? candidate.note : null,
     stationId:
       typeof candidate.stationId === 'string' ? candidate.stationId : null,
@@ -70,7 +69,6 @@ export function saveDraft(draft: DraftOrder): void {
       note: draft.note,
       lines: draft.lines.map((line) => ({
         catalogItemId: line.catalogItemId,
-        quantity: line.quantity,
         note: line.note,
         stationId: line.stationId,
         name: line.name,
@@ -94,39 +92,8 @@ function withLines(draft: DraftOrder, lines: DraftLine[]): DraftOrder {
   return persisted({ ...draft, lines })
 }
 
-function joinsWith(existing: DraftLine, added: DraftLine): boolean {
-  return (
-    existing.catalogItemId === added.catalogItemId &&
-    existing.stationId === added.stationId &&
-    existing.note === null &&
-    added.note === null
-  )
-}
-
 export function addLine(draft: DraftOrder, line: DraftLine): DraftOrder {
-  const position = draft.lines.findIndex((existing) => joinsWith(existing, line))
-  if (position === -1) {
-    return withLines(draft, [...draft.lines, { ...line }])
-  }
-
-  return withLines(
-    draft,
-    draft.lines.map((existing, index) =>
-      index === position
-        ? { ...existing, quantity: existing.quantity + line.quantity }
-        : existing,
-    ),
-  )
-}
-
-export function setLineQuantity(draft: DraftOrder, index: number, quantity: number): DraftOrder {
-  if (quantity <= 0) {
-    return removeLine(draft, index)
-  }
-  return withLines(
-    draft,
-    draft.lines.map((line, position) => (position === index ? { ...line, quantity } : line)),
-  )
+  return withLines(draft, [...draft.lines, { ...line }])
 }
 
 export function removeLine(draft: DraftOrder, index: number): DraftOrder {

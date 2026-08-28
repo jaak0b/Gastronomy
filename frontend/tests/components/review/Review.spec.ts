@@ -29,7 +29,6 @@ function prepareOrder() {
   const order = useOrderStore()
   order.addItem({
     catalogItemId: WASSER.id,
-    quantity: 1,
     note: null,
     stationId: 'station-bar',
     name: WASSER.name,
@@ -104,5 +103,23 @@ describe('sending the order from the review screen', () => {
     expect(review.find('.send-failure').exists()).toBe(true)
     expect(order.draft.tableName).toBe('Tisch 3')
     expect(order.basketLines).toHaveLength(1)
+  })
+
+  it('names the table under the heading rather than in a box of its own', () => {
+    prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect(review.get('.table-name').text()).toBe('Tisch: Tisch 3')
+    expect(review.find('.table-shown').exists()).toBe(false)
+  })
+
+  it('keeps the total and the send button within reach while the lines scroll', () => {
+    prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    const footer = review.get('.review-footer')
+
+    expect(footer.find('.total-display').exists()).toBe(true)
+    expect(footer.find('.send').exists()).toBe(true)
   })
 })

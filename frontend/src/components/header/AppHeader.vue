@@ -11,20 +11,35 @@ const settingsAreOpen = ref(false)
 </script>
 
 <template>
-  <v-app-bar class="app-header" density="comfortable" color="primary">
-    <v-btn class="catalog-link" variant="text" @click="navigate('/')">
-      {{ t('catalog.title') }}
-    </v-btn>
-    <v-btn class="stations-link" variant="text" @click="navigate('/stations')">
-      {{ t('header.stations') }}
-    </v-btn>
-    <v-btn class="orders-link" variant="text" @click="navigate('/orders')">
-      <span>{{ t('orders.title') }}</span>
-      <v-chip v-if="order.attentionCount > 0" class="attention ms-2" size="small" color="error">
-        {{ t('header.attention', { count: order.attentionCount }, order.attentionCount) }}
-      </v-chip>
-    </v-btn>
-    <v-spacer />
+  <v-app-bar class="app-header" height="72" color="primary">
+    <div class="destinations d-flex flex-grow-1">
+      <v-btn class="catalog-link flex-grow-1" variant="text" stacked @click="navigate('/')">
+        <v-icon icon="mdi-clipboard-text-outline" />
+        <span class="label">{{ t('catalog.title') }}</span>
+      </v-btn>
+      <v-btn
+        class="stations-link flex-grow-1"
+        variant="text"
+        stacked
+        @click="navigate('/stations')"
+      >
+        <v-icon icon="mdi-store-outline" />
+        <span class="label">{{ t('header.stations') }}</span>
+      </v-btn>
+      <v-btn class="orders-link flex-grow-1" variant="text" stacked @click="navigate('/orders')">
+        <v-badge
+          v-if="order.attentionCount > 0"
+          class="attention"
+          color="error"
+          :content="order.attentionCount"
+          :aria-label="t('header.attention', { count: order.attentionCount }, order.attentionCount)"
+        >
+          <v-icon icon="mdi-format-list-checks" />
+        </v-badge>
+        <v-icon v-else icon="mdi-format-list-checks" />
+        <span class="label">{{ t('orders.title') }}</span>
+      </v-btn>
+    </div>
     <v-btn
       class="settings"
       icon="mdi-cog"
@@ -38,3 +53,19 @@ const settingsAreOpen = ref(false)
   </v-app-bar>
   <SettingsSheet v-if="settingsAreOpen" @close="settingsAreOpen = false" />
 </template>
+
+<style scoped>
+.label {
+  font-size: 0.6875rem;
+  line-height: 1.1;
+  text-align: center;
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.destinations .v-btn {
+  min-width: 0;
+  padding-inline: 4px;
+}
+</style>

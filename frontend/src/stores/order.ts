@@ -13,7 +13,6 @@ import {
   loadDraft,
   removeLine,
   setLineNote,
-  setLineQuantity,
   setLineStation,
   setOrderNote,
   setTableName,
@@ -58,10 +57,6 @@ export const useOrderStore = defineStore('order', () => {
 
   function addItem(line: DraftLine): void {
     draft.value = addLine(draft.value, line)
-  }
-
-  function changeQuantity(index: number, quantity: number): void {
-    draft.value = setLineQuantity(draft.value, index, quantity)
   }
 
   function dropLine(index: number): void {
@@ -228,7 +223,6 @@ export const useOrderStore = defineStore('order', () => {
     totalCents,
     attentionCount,
     addItem,
-    changeQuantity,
     dropLine,
     noteLine,
     chooseStation,

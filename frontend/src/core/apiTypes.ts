@@ -28,7 +28,6 @@ export interface Catalog {
 
 export interface DraftLine {
   catalogItemId: string
-  quantity: number
   note: string | null
   stationId: string | null
   name: string
@@ -66,7 +65,6 @@ export type PrintFailureReason =
 
 export interface OrderSubmitItem {
   catalogItemId: string
-  quantity: number
   unitPriceCents: number
   note: string | null
   stationId: string | null

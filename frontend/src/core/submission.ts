@@ -41,7 +41,6 @@ export function buildSubmitRequest(draft: DraftOrder): OrderSubmitRequest {
     note: draft.note,
     items: draft.lines.map((line) => ({
       catalogItemId: line.catalogItemId,
-      quantity: line.quantity,
       unitPriceCents: line.unitPriceCents,
       note: line.note,
       stationId: line.stationId,

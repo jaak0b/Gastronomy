@@ -3,23 +3,20 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../core/apiTypes'
 import type { BasketLineView } from '../../core/basket'
-import { formatPrice, lineTotalCents } from '../../core/totals'
+import { collapseLines, type CollapsedLine } from '../../core/collapse'
+import { formatPrice, collapsedTotalCents } from '../../core/totals'
 
-interface StationGroup {
+interface StationSlip {
   stationId: string | null
   stationName: string
-  lines: { line: BasketLineView; index: number }[]
+  lines: CollapsedLine<BasketLineView>[]
 }
 
 const props = defineProps<{
   lines: BasketLineView[]
+  orderNote: string | null
   language: AppLanguage
   stationNameFor: (stationId: string) => string
-}>()
-defineEmits<{
-  changeQuantity: [index: number, quantity: number]
-  changeStation: [index: number]
-  changeNote: [index: number, note: string | null]
 }>()
 
 const { t } = useI18n()
@@ -31,126 +28,95 @@ function routedStationId(line: BasketLineView): string | null {
   return line.candidateStationIds.length === 1 ? line.candidateStationIds[0] : null
 }
 
-const groups = computed<StationGroup[]>(() => {
-  const byStation = new Map<string, StationGroup>()
-  props.lines.forEach((line, index) => {
-    const stationId = routedStationId(line)
-    const groupKey = stationId ?? ''
-    const existing = byStation.get(groupKey)
-    if (existing === undefined) {
-      byStation.set(groupKey, {
-        stationId,
-        stationName: stationId === null ? '' : props.stationNameFor(stationId),
-        lines: [{ line, index }],
-      })
-    } else {
-      existing.lines.push({ line, index })
-    }
-  })
-  return [...byStation.values()]
-})
-
-function priceOf(line: BasketLineView): string {
-  return formatPrice(lineTotalCents(line), props.language)
-}
-
 function nameOf(line: BasketLineView): string {
   return line.name.length > 0 ? line.name : t('catalog.lineNoLongerOnTheMenu')
 }
 
-function stationLabelFor(line: BasketLineView): string | null {
-  if (line.candidateStationIds.length <= 1) {
-    return null
+function readingOrder(
+  left: CollapsedLine<BasketLineView>,
+  right: CollapsedLine<BasketLineView>,
+): number {
+  const byName = nameOf(left.line).localeCompare(nameOf(right.line))
+  if (byName !== 0) {
+    return byName
   }
-  const stationId = routedStationId(line)
-  if (stationId === null) {
-    return null
-  }
-  return t('line.station', { name: props.stationNameFor(stationId) })
+  return (left.line.note ?? '').localeCompare(right.line.note ?? '')
 }
 
-function noteInput(event: Event): string | null {
-  const typed = (event.target as HTMLInputElement).value
-  return typed.trim().length === 0 ? null : typed
+const slips = computed<StationSlip[]>(() => {
+  const byStation = new Map<string, BasketLineView[]>()
+  props.lines.forEach((line) => {
+    const groupKey = routedStationId(line) ?? ''
+    byStation.set(groupKey, [...(byStation.get(groupKey) ?? []), line])
+  })
+
+  return [...byStation.entries()].map(([groupKey, lines]) => ({
+    stationId: groupKey.length === 0 ? null : groupKey,
+    stationName: groupKey.length === 0 ? '' : props.stationNameFor(groupKey),
+    lines: collapseLines(lines, nameOf, (line) => line.note).sort(readingOrder),
+  }))
+})
+
+function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
+  return t('review.line', { count: entry.quantity, item: nameOf(entry.line) })
+}
+
+function priceOf(entry: CollapsedLine<BasketLineView>): string {
+  return formatPrice(collapsedTotalCents(entry), props.language)
 }
 </script>
 
 <template>
   <div class="line-list">
-    <section v-for="group in groups" :key="group.stationId ?? group.stationName" class="group">
-      <h3 v-if="group.stationId !== null" class="text-subtitle-1 mt-4">
-        {{ t('review.goesTo', { name: group.stationName }) }}
-      </h3>
-      <v-card
-        v-for="entry in group.lines"
-        :key="entry.index"
-        class="line mb-2"
+    <v-card
+      v-for="slip in slips"
+      :key="slip.stationId ?? slip.stationName"
+      class="station-slip mb-4"
+      variant="outlined"
+    >
+      <v-card-title v-if="slip.stationId !== null" class="station-name text-subtitle-1">
+        {{ t('review.goesTo', { name: slip.stationName }) }}
+      </v-card-title>
+      <v-divider v-if="slip.stationId !== null" />
+      <div
+        v-for="(entry, position) in slip.lines"
+        :key="position"
+        class="line px-4 py-3"
         :class="{ 'is-unavailable': entry.line.isSoldOut || entry.line.isNoLongerOnTheMenu }"
-        variant="outlined"
       >
-        <v-card-item>
-          <v-card-title>
-            <span class="quantity">{{ entry.line.quantity }}</span>
-            <span class="name ms-2">{{ nameOf(entry.line) }}</span>
-            <span class="price ms-2 text-medium-emphasis">{{ priceOf(entry.line) }}</span>
-          </v-card-title>
-          <v-card-subtitle v-if="stationLabelFor(entry.line) !== null" class="line-station">
-            {{ stationLabelFor(entry.line) }}
-          </v-card-subtitle>
-        </v-card-item>
-        <v-card-text>
-          <v-text-field
-            class="line-note"
-            :label="t('catalog.itemNote')"
-            :placeholder="t('catalog.lineNotePlaceholder')"
-            persistent-placeholder
-            :model-value="entry.line.note ?? ''"
-            @input="$emit('changeNote', entry.index, noteInput($event))"
-          />
-          <v-alert
-            v-if="entry.line.isNoLongerOnTheMenu"
-            class="no-longer-on-the-menu"
-            type="warning"
-            variant="tonal"
-            density="compact"
-          >
-            {{ t('catalog.lineNoLongerOnTheMenu') }}
-          </v-alert>
-          <v-alert
-            v-else-if="entry.line.isSoldOut"
-            class="sold-out"
-            type="warning"
-            variant="tonal"
-            density="compact"
-          >
-            {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
-          </v-alert>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            class="less"
-            icon="mdi-minus"
-            variant="tonal"
-            :aria-label="t('catalog.removeOne')"
-            @click="$emit('changeQuantity', entry.index, entry.line.quantity - 1)"
-          />
-          <v-btn
-            class="more"
-            icon="mdi-plus"
-            variant="tonal"
-            :aria-label="t('catalog.addOne')"
-            @click="$emit('changeQuantity', entry.index, entry.line.quantity + 1)"
-          />
-          <v-btn
-            v-if="entry.line.candidateStationIds.length > 1"
-            class="change-station"
-            variant="text"
-            @click="$emit('changeStation', entry.index)"
-          >
-            {{ t('line.changeStation') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </section>
+        <div class="d-flex align-start">
+          <span class="line-name text-body-1 flex-grow-1">{{ countedNameOf(entry) }}</span>
+          <span class="price text-body-1">{{ priceOf(entry) }}</span>
+        </div>
+        <div v-if="entry.line.note !== null" class="line-note text-body-2 text-medium-emphasis ps-4">
+          {{ entry.line.note }}
+        </div>
+        <div
+          v-if="entry.line.isNoLongerOnTheMenu"
+          class="no-longer-on-the-menu text-body-2 text-warning ps-4"
+        >
+          {{ t('catalog.lineNoLongerOnTheMenu') }}
+        </div>
+        <div
+          v-else-if="entry.line.isSoldOut"
+          class="sold-out text-body-2 text-warning ps-4"
+        >
+          {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
+        </div>
+      </div>
+      <template v-if="orderNote !== null">
+        <v-divider />
+        <div class="order-note px-4 py-3">
+          <span class="label text-body-2 text-medium-emphasis">{{ t('catalog.orderNote') }}</span>
+          <div class="text-body-1">{{ orderNote }}</div>
+        </div>
+      </template>
+    </v-card>
   </div>
 </template>
+
+<style scoped>
+.line + .line {
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+</style>
