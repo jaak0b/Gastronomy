@@ -86,7 +86,7 @@ function mostRecentOf(group: PositionGroup): number {
 </script>
 
 <template>
-  <div class="item-row rounded border" :class="{ 'is-sold-out': isSoldOut }">
+  <div class="item-row" :class="{ 'is-sold-out': isSoldOut }">
     <div class="item-line d-flex align-center">
       <v-btn
         v-if="plainGroup !== null"
@@ -180,6 +180,10 @@ function mostRecentOf(group: PositionGroup): number {
 </template>
 
 <style scoped>
+.item-row + .item-row {
+  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
 .add :deep(.v-btn__content) {
   display: flex;
   width: 100%;

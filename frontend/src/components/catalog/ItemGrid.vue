@@ -18,7 +18,7 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="item-grid d-flex flex-column ga-2">
+  <div class="item-grid rounded border">
     <ItemRow
       v-for="item in items"
       :key="item.id"
@@ -33,3 +33,13 @@ defineEmits<{
     />
   </div>
 </template>
+
+<style scoped>
+.item-grid {
+  overflow: hidden;
+}
+
+.item-grid :deep(.item-row:nth-child(even)) {
+  background-color: rgba(var(--v-theme-on-surface), 0.05);
+}
+</style>
