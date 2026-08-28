@@ -46,7 +46,7 @@ public sealed class OrderEndpointsTest
             Assert.That(ticket.GetProperty("stationId").GetGuid(), Is.EqualTo(context.World.KitchenStationId));
             Assert.That(ticket.GetProperty("stationName").GetString(), Is.EqualTo("Kueche"));
             Assert.That(ticket.GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
-            Assert.That(ticket.GetProperty("itemIds").GetArrayLength(), Is.EqualTo(1));
+            Assert.That(ticket.GetProperty("itemIds").GetArrayLength(), Is.EqualTo(2));
         });
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
@@ -63,8 +63,8 @@ public sealed class OrderEndpointsTest
             "Tisch 12",
             null,
             [
-                new OrderItemBody(context.World.BratwurstItemId, 2, 350, null, null),
-                new OrderItemBody(context.World.BeerItemId, 1, 350, null, null),
+                new OrderItemBody(context.World.BratwurstItemId, 350, null, null), new OrderItemBody(context.World.BratwurstItemId, 350, null, null),
+                new OrderItemBody(context.World.BeerItemId, 350, null, null),
             ]);
 
         using HttpResponseMessage response = await context.PostOrderAsync(twoStations);
@@ -84,7 +84,7 @@ public sealed class OrderEndpointsTest
             Guid.NewGuid(),
             "Tisch 12",
             null,
-                        [new OrderItemBody(Guid.NewGuid(), 1, 350, null, null)]);
+                        [new OrderItemBody(Guid.NewGuid(), 350, null, null)]);
 
         using HttpResponseMessage response = await context.PostOrderAsync(unknownItem);
         JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -129,17 +129,18 @@ public sealed class OrderEndpointsTest
             Guid.NewGuid(),
             "Tisch 12",
             null,
-            [new OrderItemBody(context.World.BratwurstItemId, 2, 399, null, null)]);
+            [new OrderItemBody(context.World.BratwurstItemId, 399, null, null), new OrderItemBody(context.World.BratwurstItemId, 399, null, null)]);
 
         using HttpResponseMessage response = await context.PostOrderAsync(body);
         JsonDocument placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         await using GastronomyAppDbContext database = context.Factory.CreateContext();
-        OrderItem stored = await database.OrderItems.SingleAsync();
+        List<OrderItem> stored = await database.OrderItems.ToListAsync();
 
         Assert.Multiple(() =>
         {
-            Assert.That(stored.UnitPriceCents, Is.EqualTo(399));
+            Assert.That(stored.Select(item => item.UnitPriceCents), Is.All.EqualTo(399));
+            Assert.That(stored, Has.Count.EqualTo(2));
             Assert.That(placed.RootElement.GetProperty("totalCents").GetInt32(), Is.EqualTo(798));
         });
     }

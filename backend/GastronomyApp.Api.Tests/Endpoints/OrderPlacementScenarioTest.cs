@@ -137,8 +137,8 @@ public sealed class OrderPlacementScenarioTest
             "Tisch 12",
             null,
                         [
-                new OrderItemBody(selection.BratwurstItemId, 2, selection.BratwurstPriceCents, null, null),
-                new OrderItemBody(selection.BeerItemId, 1, selection.BeerPriceCents, null, null),
+                new OrderItemBody(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null), new OrderItemBody(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
+                new OrderItemBody(selection.BeerItemId, selection.BeerPriceCents, null, null),
             ]);
 
         using HttpResponseMessage response = await SendAsync(HttpMethod.Post, "/api/orders", deviceToken, body);

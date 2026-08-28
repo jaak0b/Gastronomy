@@ -69,7 +69,7 @@ public sealed class OrderIdempotencyTest
             clientOrderId,
             "Tisch 99",
             null,
-                        [new OrderItemBody(context.World.BratwurstItemId, 2, 350, null, null)]);
+                        [new OrderItemBody(context.World.BratwurstItemId, 350, null, null), new OrderItemBody(context.World.BratwurstItemId, 350, null, null)]);
 
         using HttpResponseMessage second = await context.PostOrderAsync(different);
 

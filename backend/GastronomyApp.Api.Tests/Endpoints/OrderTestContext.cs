@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record OrderItemBody(Guid CatalogItemId, int Quantity, int UnitPriceCents, string? Note, Guid? StationId);
+public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
 
 public sealed record OrderBody(
     Guid ClientOrderId,
@@ -43,7 +43,7 @@ public sealed class OrderTestContext : IAsyncDisposable
             clientOrderId,
             "Tisch 12",
             null,
-            [new OrderItemBody(World.BratwurstItemId, 2, 350, null, null)]);
+            [new OrderItemBody(World.BratwurstItemId, 350, null, null), new OrderItemBody(World.BratwurstItemId, 350, null, null)]);
     }
 
     public Task<HttpResponseMessage> PostOrderAsync(OrderBody body)

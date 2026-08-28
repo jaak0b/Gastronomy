@@ -334,6 +334,21 @@ public class PrinterWorkerTest
     }
 
     [Test]
+    public async Task RunAsync_TheSameItemTwice_PrintsOneLineWithTheCount()
+    {
+        PrinterWorker worker = Worker();
+        worker.Enqueue(stationOrderId);
+
+        await worker.RunOnceAsync(CancellationToken.None);
+
+        A.CallTo(() => session.SendJobAsync(
+                A<PrintPayload>.That.Matches(payload =>
+                    payload.RenderedText.Contains("2 x Bratwurst", StringComparison.Ordinal)),
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
     public async Task RunAsync_RendersBeforeAllocatingProcessId_ProcessIdNullUntilStep6()
     {
         PrinterWorker worker = Worker();
