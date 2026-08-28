@@ -1,52 +1,52 @@
-namespace GastronomyApp.Core.Results;
+﻿namespace GastronomyApp.Core.Results;
 
 public sealed class Result<TValue, TFailure>
 {
-    private readonly TValue? _value;
-    private readonly TFailure? _failure;
+  private readonly TValue? _value;
+  private readonly TFailure? _failure;
 
-    private Result(bool isSuccess, TValue? value, TFailure? failure)
+  private Result(bool isSuccess, TValue? value, TFailure? failure)
+  {
+    IsSuccess = isSuccess;
+    _value = value;
+    _failure = failure;
+  }
+
+  public bool IsSuccess { get; }
+
+  public TValue Value
+  {
+    get
     {
-        IsSuccess = isSuccess;
-        _value = value;
-        _failure = failure;
+      if (!IsSuccess)
+      {
+        throw new InvalidOperationException("The value of a failed result cannot be read.");
+      }
+
+      return _value!;
     }
+  }
 
-    public bool IsSuccess { get; }
-
-    public TValue Value
+  public TFailure Failure
+  {
+    get
     {
-        get
-        {
-            if (!IsSuccess)
-            {
-                throw new InvalidOperationException("The value of a failed result cannot be read.");
-            }
+      if (IsSuccess)
+      {
+        throw new InvalidOperationException("The failure of a successful result cannot be read.");
+      }
 
-            return _value!;
-        }
+      return _failure!;
     }
+  }
 
-    public TFailure Failure
-    {
-        get
-        {
-            if (IsSuccess)
-            {
-                throw new InvalidOperationException("The failure of a successful result cannot be read.");
-            }
+  public static Result<TValue, TFailure> Success(TValue value)
+  {
+    return new Result<TValue, TFailure>(true, value, default);
+  }
 
-            return _failure!;
-        }
-    }
-
-    public static Result<TValue, TFailure> Success(TValue value)
-    {
-        return new Result<TValue, TFailure>(true, value, default);
-    }
-
-    public static Result<TValue, TFailure> Failed(TFailure failure)
-    {
-        return new Result<TValue, TFailure>(false, default, failure);
-    }
+  public static Result<TValue, TFailure> Failed(TFailure failure)
+  {
+    return new Result<TValue, TFailure>(false, default, failure);
+  }
 }

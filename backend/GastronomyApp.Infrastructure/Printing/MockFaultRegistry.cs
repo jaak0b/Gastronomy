@@ -1,63 +1,63 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace GastronomyApp.Infrastructure.Printing;
 
 public enum MockFault
 {
-    None,
-    PaperEnd,
-    CoverOpen,
-    ConnectTimeout,
-    DropSocketEarly,
-    DropSocketMidJob,
-    UnknownOutcome,
+  None,
+  PaperEnd,
+  CoverOpen,
+  ConnectTimeout,
+  DropSocketEarly,
+  DropSocketMidJob,
+  UnknownOutcome,
 }
 
 public enum MockFaultMode
 {
-    Once,
-    Sticky,
+  Once,
+  Sticky,
 }
 
 public sealed record ArmedMockFault(MockFault Fault, MockFaultMode Mode);
 
 public interface IMockFaultRegistry
 {
-    public MockFault GetArmedFault(Guid printerId);
+  public MockFault GetArmedFault(Guid printerId);
 
-    public ArmedMockFault Armed(Guid printerId);
+  public ArmedMockFault Armed(Guid printerId);
 
-    public void Arm(Guid printerId, MockFault fault, MockFaultMode mode);
+  public void Arm(Guid printerId, MockFault fault, MockFaultMode mode);
 
-    public void ClearIfOnce(Guid printerId);
+  public void ClearIfOnce(Guid printerId);
 }
 
 public sealed class InMemoryMockFaultRegistry : IMockFaultRegistry
 {
-    private readonly ConcurrentDictionary<Guid, ArmedMockFault> armed = new();
+  private readonly ConcurrentDictionary<Guid, ArmedMockFault> armed = new();
 
-    public MockFault GetArmedFault(Guid printerId)
-    {
-        return Armed(printerId).Fault;
-    }
+  public MockFault GetArmedFault(Guid printerId)
+  {
+    return Armed(printerId).Fault;
+  }
 
-    public ArmedMockFault Armed(Guid printerId)
-    {
-        return armed.TryGetValue(printerId, out ArmedMockFault? entry)
-            ? entry
-            : new ArmedMockFault(MockFault.None, MockFaultMode.Once);
-    }
+  public ArmedMockFault Armed(Guid printerId)
+  {
+    return armed.TryGetValue(printerId, out ArmedMockFault? entry)
+        ? entry
+        : new ArmedMockFault(MockFault.None, MockFaultMode.Once);
+  }
 
-    public void Arm(Guid printerId, MockFault fault, MockFaultMode mode)
-    {
-        armed[printerId] = new ArmedMockFault(fault, mode);
-    }
+  public void Arm(Guid printerId, MockFault fault, MockFaultMode mode)
+  {
+    armed[printerId] = new ArmedMockFault(fault, mode);
+  }
 
-    public void ClearIfOnce(Guid printerId)
+  public void ClearIfOnce(Guid printerId)
+  {
+    if (armed.TryGetValue(printerId, out ArmedMockFault? entry) && entry.Mode == MockFaultMode.Once)
     {
-        if (armed.TryGetValue(printerId, out ArmedMockFault? entry) && entry.Mode == MockFaultMode.Once)
-        {
-            armed[printerId] = new ArmedMockFault(MockFault.None, MockFaultMode.Sticky);
-        }
+      armed[printerId] = new ArmedMockFault(MockFault.None, MockFaultMode.Sticky);
     }
+  }
 }

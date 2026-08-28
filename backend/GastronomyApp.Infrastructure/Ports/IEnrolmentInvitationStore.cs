@@ -1,14 +1,14 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Infrastructure.Ports;
 
 public enum EnrolmentRedemptionOutcome
 {
-    Redeemed,
-    CodeInvalid,
-    CodeExpired,
-    StaffMemberIsOffTheList,
-    NameRequired,
+  Redeemed,
+  CodeInvalid,
+  CodeExpired,
+  StaffMemberIsOffTheList,
+  NameRequired,
 }
 
 public sealed record EnrolmentInvitationCreated(
@@ -30,9 +30,9 @@ public sealed record EnrolmentRedemptionResult(
 
 public interface IEnrolmentInvitationStore
 {
-    public Task<EnrolmentInvitationCreated> CreateAsync(Guid? staffMemberId, CancellationToken cancellationToken);
+  public Task<EnrolmentInvitationCreated> CreateAsync(Guid? staffMemberId, CancellationToken cancellationToken);
 
-    public Task<EnrolmentRedemptionResult> RedeemAsync(
-        EnrolmentRedemptionRequest request,
-        CancellationToken cancellationToken);
+  public Task<EnrolmentRedemptionResult> RedeemAsync(
+      EnrolmentRedemptionRequest request,
+      CancellationToken cancellationToken);
 }

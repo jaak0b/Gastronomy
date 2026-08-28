@@ -1,34 +1,34 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 
 namespace GastronomyApp.Desktop.Views;
 
 public partial class QuitConfirmDialog : Window
 {
-    public QuitConfirmDialog()
+  public QuitConfirmDialog()
+  {
+    InitializeComponent();
+
+    Button? cancelButton = this.FindControl<Button>("CancelButton");
+    if (cancelButton is not null)
     {
-        InitializeComponent();
-
-        Button? cancelButton = this.FindControl<Button>("CancelButton");
-        if (cancelButton is not null)
-        {
-            cancelButton.Click += OnCancelClicked;
-        }
-
-        Button? confirmButton = this.FindControl<Button>("ConfirmButton");
-        if (confirmButton is not null)
-        {
-            confirmButton.Click += OnConfirmClicked;
-        }
+      cancelButton.Click += OnCancelClicked;
     }
 
-    private void OnCancelClicked(object? sender, RoutedEventArgs eventArgs)
+    Button? confirmButton = this.FindControl<Button>("ConfirmButton");
+    if (confirmButton is not null)
     {
-        Close(false);
+      confirmButton.Click += OnConfirmClicked;
     }
+  }
 
-    private void OnConfirmClicked(object? sender, RoutedEventArgs eventArgs)
-    {
-        Close(true);
-    }
+  private void OnCancelClicked(object? sender, RoutedEventArgs eventArgs)
+  {
+    Close(false);
+  }
+
+  private void OnConfirmClicked(object? sender, RoutedEventArgs eventArgs)
+  {
+    Close(true);
+  }
 }

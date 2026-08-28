@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Options;
+﻿using GastronomyApp.Api.Options;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,34 +11,34 @@ namespace GastronomyApp.Api;
 
 public sealed class GastronomyAppApiApplication
 {
-    public WebApplication Build(ApiHostOptions options)
+  public WebApplication Build(ApiHostOptions options)
+  {
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
     {
-        WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
-        {
-            ContentRootPath = AppContext.BaseDirectory,
-        });
+      ContentRootPath = AppContext.BaseDirectory,
+    });
 
-        builder.WebHost.UseUrls($"http://{options.BindAddress}:{options.Port}");
-        builder.Logging.ClearProviders();
-        builder.Logging.AddSerilog();
+    builder.WebHost.UseUrls($"http://{options.BindAddress}:{options.Port}");
+    builder.Logging.ClearProviders();
+    builder.Logging.AddSerilog();
 
-        new ApiServiceRegistration().Register(builder.Services, options);
+    new ApiServiceRegistration().Register(builder.Services, options);
 
-        WebApplication app = builder.Build();
+    WebApplication app = builder.Build();
 
-        new DatabaseInitializer().Initialize(app.Services);
-        new ApiPipeline().Configure(app);
+    new DatabaseInitializer().Initialize(app.Services);
+    new ApiPipeline().Configure(app);
 
-        return app;
-    }
+    return app;
+  }
 }
 
 public sealed class DatabaseInitializer
 {
-    public void Initialize(IServiceProvider services)
-    {
-        using IServiceScope scope = services.CreateScope();
-        GastronomyAppDbContext context = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
-        context.Database.Migrate();
-    }
+  public void Initialize(IServiceProvider services)
+  {
+    using IServiceScope scope = services.CreateScope();
+    GastronomyAppDbContext context = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+    context.Database.Migrate();
+  }
 }

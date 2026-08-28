@@ -1,6 +1,6 @@
-namespace GastronomyApp.Core.Ports;
+﻿namespace GastronomyApp.Core.Ports;
 
 public interface IClock
 {
-    public DateTime UtcNow { get; }
+  public DateTime UtcNow { get; }
 }

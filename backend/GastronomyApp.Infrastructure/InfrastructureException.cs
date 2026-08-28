@@ -1,18 +1,18 @@
-namespace GastronomyApp.Infrastructure;
+﻿namespace GastronomyApp.Infrastructure;
 
 public enum InfrastructureFailureReason
 {
-    DatabaseUnavailable,
-    ConflictingChange,
+  DatabaseUnavailable,
+  ConflictingChange,
 }
 
 public sealed class InfrastructureException : Exception
 {
-    public InfrastructureException(InfrastructureFailureReason reason, string message, Exception? inner = null)
-        : base(message, inner)
-    {
-        Reason = reason;
-    }
+  public InfrastructureException(InfrastructureFailureReason reason, string message, Exception? inner = null)
+      : base(message, inner)
+  {
+    Reason = reason;
+  }
 
-    public InfrastructureFailureReason Reason { get; }
+  public InfrastructureFailureReason Reason { get; }
 }

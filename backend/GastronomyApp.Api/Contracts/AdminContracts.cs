@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 namespace GastronomyApp.Api.Contracts;
 
 public sealed record AdminStationView(
@@ -17,9 +17,9 @@ public sealed record AdminStationListView(IReadOnlyList<AdminStationView> Statio
 
 public sealed record SaveStationRequest
 {
-    public required string? Name { get; init; }
-    public required int SortOrder { get; init; }
-    public Guid? PrinterId { get; init; }
+  public required string? Name { get; init; }
+  public required int SortOrder { get; init; }
+  public Guid? PrinterId { get; init; }
 }
 
 public sealed record SavedStationView(Guid StationId);
@@ -38,16 +38,16 @@ public sealed record AdminItemListView(IReadOnlyList<AdminItemView> Items);
 
 public sealed record SaveItemRequest
 {
-    public required string? Name { get; init; }
-    public required string? CategoryName { get; init; }
-    public required int PriceCents { get; init; }
-    public required int SortOrder { get; init; }
-    public required IReadOnlyList<Guid>? StationIds { get; init; }
+  public required string? Name { get; init; }
+  public required string? CategoryName { get; init; }
+  public required int PriceCents { get; init; }
+  public required int SortOrder { get; init; }
+  public required IReadOnlyList<Guid>? StationIds { get; init; }
 }
 
 public sealed record SetAvailabilityRequest
 {
-    public required bool IsAvailable { get; init; }
+  public required bool IsAvailable { get; init; }
 }
 
 public sealed record AdminStaffMemberView(
@@ -62,12 +62,12 @@ public sealed record AdminStaffMemberListView(IReadOnlyList<AdminStaffMemberView
 
 public sealed record RenameStaffMemberRequest
 {
-    public required string? Name { get; init; }
+  public required string? Name { get; init; }
 }
 
 public sealed record CreateInvitationRequest
 {
-    public Guid? StaffMemberId { get; init; }
+  public Guid? StaffMemberId { get; init; }
 }
 
 public sealed record InvitationView(
@@ -82,29 +82,29 @@ public sealed record InvitationView(
 [JsonDerivedType(typeof(EpsonTmT20ivNetworkPrinterView), "EpsonTmT20ivNetworkPrinter")]
 public abstract record AdminPrinterView
 {
-    public required Guid PrinterId { get; init; }
-    public required string Name { get; init; }
-    public required bool IsOnline { get; init; }
-    public required bool IsPaperEnd { get; init; }
-    public required bool IsPaperNearEnd { get; init; }
-    public required bool IsCoverOpen { get; init; }
-    public required bool IsFaulty { get; init; }
-    public required int WaitingTicketCount { get; init; }
-    public required DateTime? LastChangedAtUtc { get; init; }
-    public required string? StatusDetail { get; init; }
-    public required IReadOnlyList<string> StationNames { get; init; }
+  public required Guid PrinterId { get; init; }
+  public required string Name { get; init; }
+  public required bool IsOnline { get; init; }
+  public required bool IsPaperEnd { get; init; }
+  public required bool IsPaperNearEnd { get; init; }
+  public required bool IsCoverOpen { get; init; }
+  public required bool IsFaulty { get; init; }
+  public required int WaitingTicketCount { get; init; }
+  public required DateTime? LastChangedAtUtc { get; init; }
+  public required string? StatusDetail { get; init; }
+  public required IReadOnlyList<string> StationNames { get; init; }
 }
 
 public sealed record TestPrinterView : AdminPrinterView
 {
-    public required string SimulatedFault { get; init; }
-    public required string SimulatedFaultMode { get; init; }
+  public required string SimulatedFault { get; init; }
+  public required string SimulatedFaultMode { get; init; }
 }
 
 public sealed record EpsonTmT20ivNetworkPrinterView : AdminPrinterView
 {
-    public required string Host { get; init; }
-    public required int Port { get; init; }
+  public required string Host { get; init; }
+  public required int Port { get; init; }
 }
 
 public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printers);
@@ -114,19 +114,19 @@ public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printe
 [JsonDerivedType(typeof(SaveEpsonTmT20ivNetworkPrinterRequest), "EpsonTmT20ivNetworkPrinter")]
 public abstract record SavePrinterRequest
 {
-    public required string? Name { get; init; }
+  public required string? Name { get; init; }
 }
 
 public sealed record SaveTestPrinterRequest : SavePrinterRequest
 {
-    public string? SimulatedFault { get; init; }
-    public string? SimulatedFaultMode { get; init; }
+  public string? SimulatedFault { get; init; }
+  public string? SimulatedFaultMode { get; init; }
 }
 
 public sealed record SaveEpsonTmT20ivNetworkPrinterRequest : SavePrinterRequest
 {
-    public required string? Host { get; init; }
-    public required int Port { get; init; }
+  public required string? Host { get; init; }
+  public required int Port { get; init; }
 }
 
 public sealed record SavedPrinterView(Guid PrinterId, IReadOnlyList<string> StationNames);

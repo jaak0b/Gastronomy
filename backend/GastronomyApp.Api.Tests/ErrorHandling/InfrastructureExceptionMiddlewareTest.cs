@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http;
@@ -9,75 +9,75 @@ namespace GastronomyApp.Api.Tests.ErrorHandling;
 [TestFixture]
 public sealed class InfrastructureExceptionMiddlewareTest
 {
-    [Test]
-    public async Task InvokeAsync_DatabaseUnavailable_WritesTheServiceUnavailableEnvelope()
+  [Test]
+  public async Task InvokeAsync_DatabaseUnavailable_WritesTheServiceUnavailableEnvelope()
+  {
+    InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
+    DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
+    using MemoryStream body = new();
+    context.Response.Body = body;
+
+    await middleware.InvokeAsync(
+        context,
+        _ => throw new InfrastructureException(
+            InfrastructureFailureReason.DatabaseUnavailable,
+            "The database file could not be written."));
+
+    body.Position = 0;
+    ApiError? error = await JsonSerializer.DeserializeAsync<ApiError>(
+        body,
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+    Assert.Multiple(() =>
     {
-        InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
-        DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
-        using MemoryStream body = new();
-        context.Response.Body = body;
+      Assert.That(context.Response.StatusCode, Is.EqualTo(503));
+      Assert.That(error!.Code, Is.EqualTo("DatabaseUnavailable"));
+      Assert.That(error.MessageKey, Is.EqualTo("review.sendFailedDatabase"));
+    });
+  }
 
-        await middleware.InvokeAsync(
-            context,
-            _ => throw new InfrastructureException(
-                InfrastructureFailureReason.DatabaseUnavailable,
-                "The database file could not be written."));
+  [Test]
+  public async Task InvokeAsync_ConflictingChange_WritesARetryableConflictEnvelope()
+  {
+    InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
+    DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
+    using MemoryStream body = new();
+    context.Response.Body = body;
 
-        body.Position = 0;
-        ApiError? error = await JsonSerializer.DeserializeAsync<ApiError>(
-            body,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    await middleware.InvokeAsync(
+        context,
+        _ => throw new InfrastructureException(
+            InfrastructureFailureReason.ConflictingChange,
+            "Another write reached the same unique row first."));
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(context.Response.StatusCode, Is.EqualTo(503));
-            Assert.That(error!.Code, Is.EqualTo("DatabaseUnavailable"));
-            Assert.That(error.MessageKey, Is.EqualTo("review.sendFailedDatabase"));
-        });
-    }
+    body.Position = 0;
+    ApiError? error = await JsonSerializer.DeserializeAsync<ApiError>(
+        body,
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-    [Test]
-    public async Task InvokeAsync_ConflictingChange_WritesARetryableConflictEnvelope()
+    Assert.Multiple(() =>
     {
-        InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
-        DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
-        using MemoryStream body = new();
-        context.Response.Body = body;
+      Assert.That(context.Response.StatusCode, Is.EqualTo(409));
+      Assert.That(error!.Code, Is.EqualTo("ConflictingChange"));
+      Assert.That(error.MessageKey, Is.EqualTo("review.conflictingChange"));
+    });
+  }
 
-        await middleware.InvokeAsync(
-            context,
-            _ => throw new InfrastructureException(
-                InfrastructureFailureReason.ConflictingChange,
-                "Another write reached the same unique row first."));
+  [Test]
+  public void InvokeAsync_UnclassifiedException_RethrowsIt()
+  {
+    InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
+    DefaultHttpContext context = new();
 
-        body.Position = 0;
-        ApiError? error = await JsonSerializer.DeserializeAsync<ApiError>(
-            body,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    Assert.That(
+        async () => await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("unclassified")),
+        Throws.TypeOf<InvalidOperationException>());
+  }
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(context.Response.StatusCode, Is.EqualTo(409));
-            Assert.That(error!.Code, Is.EqualTo("ConflictingChange"));
-            Assert.That(error.MessageKey, Is.EqualTo("review.conflictingChange"));
-        });
-    }
-
-    [Test]
-    public void InvokeAsync_UnclassifiedException_RethrowsIt()
-    {
-        InfrastructureExceptionMiddleware middleware = new(new ResultEnvelope());
-        DefaultHttpContext context = new();
-
-        Assert.That(
-            async () => await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("unclassified")),
-            Throws.TypeOf<InvalidOperationException>());
-    }
-
-    private ServiceProvider BuildRequestServices()
-    {
-        ServiceCollection services = new();
-        services.AddLogging();
-        return services.BuildServiceProvider();
-    }
+  private ServiceProvider BuildRequestServices()
+  {
+    ServiceCollection services = new();
+    services.AddLogging();
+    return services.BuildServiceProvider();
+  }
 }

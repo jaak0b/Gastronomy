@@ -1,8 +1,8 @@
-namespace GastronomyApp.Core.Localization;
+﻿namespace GastronomyApp.Core.Localization;
 
 public interface ISlipTextProvider
 {
-    public SlipStrings GetStrings(string languageCode);
+  public SlipStrings GetStrings(string languageCode);
 }
 
 public sealed record SlipStrings(

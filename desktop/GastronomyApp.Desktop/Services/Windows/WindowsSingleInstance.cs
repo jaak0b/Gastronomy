@@ -1,119 +1,119 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 
 namespace GastronomyApp.Desktop.Services.Windows;
 
 public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
 {
-    private const string MutexName = @"Global\GastronomyApp.Desktop.SingleInstance";
-    private const string PipeName = "GastronomyApp.Desktop.Activation";
-    private const string ActivationSignal = "activate";
-    private const int ConnectAttempts = 5;
-    private const int ConnectAttemptMilliseconds = 400;
+  private const string MutexName = @"Global\GastronomyApp.Desktop.SingleInstance";
+  private const string PipeName = "GastronomyApp.Desktop.Activation";
+  private const string ActivationSignal = "activate";
+  private const int ConnectAttempts = 5;
+  private const int ConnectAttemptMilliseconds = 400;
 
-    private Mutex? mutex;
-    private CancellationTokenSource? listening;
+  private Mutex? mutex;
+  private CancellationTokenSource? listening;
 
-    public event Action? ActivationRequested;
+  public event Action? ActivationRequested;
 
-    public SingleInstanceOutcome AcquireOrSignalExisting()
+  public SingleInstanceOutcome AcquireOrSignalExisting()
+  {
+    mutex = new Mutex(initiallyOwned: true, MutexName, out bool acquired);
+
+    if (!acquired)
     {
-        mutex = new Mutex(initiallyOwned: true, MutexName, out bool acquired);
+      mutex.Dispose();
+      mutex = null;
+      SignalExisting();
 
-        if (!acquired)
-        {
-            mutex.Dispose();
-            mutex = null;
-            SignalExisting();
-
-            return SingleInstanceOutcome.SignaledExistingAndShouldExit;
-        }
-
-        listening = new CancellationTokenSource();
-        _ = ListenForActivationAsync(listening.Token);
-
-        return SingleInstanceOutcome.AcquiredPrimary;
+      return SingleInstanceOutcome.SignaledExistingAndShouldExit;
     }
 
-    public void Release()
+    listening = new CancellationTokenSource();
+    _ = ListenForActivationAsync(listening.Token);
+
+    return SingleInstanceOutcome.AcquiredPrimary;
+  }
+
+  public void Release()
+  {
+    listening?.Cancel();
+    listening?.Dispose();
+    listening = null;
+
+    mutex?.ReleaseMutex();
+    mutex?.Dispose();
+    mutex = null;
+  }
+
+  public void Dispose()
+  {
+    Release();
+  }
+
+  private void SignalExisting()
+  {
+    for (int attempt = 0; attempt < ConnectAttempts; attempt++)
     {
-        listening?.Cancel();
-        listening?.Dispose();
-        listening = null;
-
-        mutex?.ReleaseMutex();
-        mutex?.Dispose();
-        mutex = null;
+      if (TrySignalExisting())
+      {
+        return;
+      }
     }
+  }
 
-    public void Dispose()
+  private bool TrySignalExisting()
+  {
+    try
     {
-        Release();
-    }
+      using NamedPipeClientStream client = new(".", PipeName, PipeDirection.Out);
+      client.Connect(TimeSpan.FromMilliseconds(ConnectAttemptMilliseconds));
 
-    private void SignalExisting()
+      using StreamWriter writer = new(client);
+      writer.WriteLine(ActivationSignal);
+      writer.Flush();
+
+      return true;
+    }
+    catch (Exception failure) when (failure is TimeoutException or IOException or UnauthorizedAccessException)
     {
-        for (int attempt = 0; attempt < ConnectAttempts; attempt++)
-        {
-            if (TrySignalExisting())
-            {
-                return;
-            }
-        }
+      return false;
     }
+  }
 
-    private bool TrySignalExisting()
+  private async Task ListenForActivationAsync(CancellationToken cancellationToken)
+  {
+    try
     {
-        try
-        {
-            using NamedPipeClientStream client = new(".", PipeName, PipeDirection.Out);
-            client.Connect(TimeSpan.FromMilliseconds(ConnectAttemptMilliseconds));
-
-            using StreamWriter writer = new(client);
-            writer.WriteLine(ActivationSignal);
-            writer.Flush();
-
-            return true;
-        }
-        catch (Exception failure) when (failure is TimeoutException or IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
+      await ReceiveActivationSignalsAsync(cancellationToken);
     }
-
-    private async Task ListenForActivationAsync(CancellationToken cancellationToken)
+    catch (OperationCanceledException)
     {
-        try
-        {
-            await ReceiveActivationSignalsAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        catch (ObjectDisposedException)
-        {
-            return;
-        }
+      return;
     }
-
-    private async Task ReceiveActivationSignalsAsync(CancellationToken cancellationToken)
+    catch (ObjectDisposedException)
     {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            using NamedPipeServerStream server = new(
-                PipeName,
-                PipeDirection.In,
-                NamedPipeServerStream.MaxAllowedServerInstances);
-
-            await server.WaitForConnectionAsync(cancellationToken);
-
-            using StreamReader reader = new(server);
-            string? signal = await reader.ReadLineAsync(cancellationToken);
-
-            if (signal == ActivationSignal)
-            {
-                ActivationRequested?.Invoke();
-            }
-        }
+      return;
     }
+  }
+
+  private async Task ReceiveActivationSignalsAsync(CancellationToken cancellationToken)
+  {
+    while (!cancellationToken.IsCancellationRequested)
+    {
+      using NamedPipeServerStream server = new(
+          PipeName,
+          PipeDirection.In,
+          NamedPipeServerStream.MaxAllowedServerInstances);
+
+      await server.WaitForConnectionAsync(cancellationToken);
+
+      using StreamReader reader = new(server);
+      string? signal = await reader.ReadLineAsync(cancellationToken);
+
+      if (signal == ActivationSignal)
+      {
+        ActivationRequested?.Invoke();
+      }
+    }
+  }
 }

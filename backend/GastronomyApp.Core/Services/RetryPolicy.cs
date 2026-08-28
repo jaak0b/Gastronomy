@@ -1,62 +1,62 @@
-using GastronomyApp.Core.Enums;
+﻿using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class RetryPolicy
 {
-    public PrintOutcomeMapping Map(PrintOutcome outcome, int bytesWritten)
-    {
-        bool anyByteReachedThePrinter = bytesWritten > 0;
+  public PrintOutcomeMapping Map(PrintOutcome outcome, int bytesWritten)
+  {
+    bool anyByteReachedThePrinter = bytesWritten > 0;
 
-        return (outcome, anyByteReachedThePrinter) switch
-        {
-            (PrintOutcome.Confirmed, true) => ConfirmedOnPaper(),
-            (PrintOutcome.Blocked, false) => HeldByTheStation(),
-            (PrintOutcome.PrinterError, false) => HeldByTheStation(),
-            (PrintOutcome.Unreachable, false) => WaitingForAnotherAttempt(),
-            (PrintOutcome.SocketDropped, false) => WaitingForAnotherAttempt(),
-            (PrintOutcome.Timeout, false) => WaitingForAnotherAttempt(),
-            (PrintOutcome.SocketDropped, true) => OutcomeIsNotKnowable(),
-            (PrintOutcome.Timeout, true) => OutcomeIsNotKnowable(),
-            (PrintOutcome.PrinterError, true) => OutcomeIsNotKnowable(),
-            _ => new Never().OfType<PrintOutcomeMapping>(outcome),
-        };
-    }
-
-    private PrintOutcomeMapping ConfirmedOnPaper()
+    return (outcome, anyByteReachedThePrinter) switch
     {
-        return new PrintOutcomeMapping
-        {
-            JobStatus = PrintJobStatus.Printed,
-            ShouldRetryAutomatically = false,
-        };
-    }
+      (PrintOutcome.Confirmed, true) => ConfirmedOnPaper(),
+      (PrintOutcome.Blocked, false) => HeldByTheStation(),
+      (PrintOutcome.PrinterError, false) => HeldByTheStation(),
+      (PrintOutcome.Unreachable, false) => WaitingForAnotherAttempt(),
+      (PrintOutcome.SocketDropped, false) => WaitingForAnotherAttempt(),
+      (PrintOutcome.Timeout, false) => WaitingForAnotherAttempt(),
+      (PrintOutcome.SocketDropped, true) => OutcomeIsNotKnowable(),
+      (PrintOutcome.Timeout, true) => OutcomeIsNotKnowable(),
+      (PrintOutcome.PrinterError, true) => OutcomeIsNotKnowable(),
+      _ => new Never().OfType<PrintOutcomeMapping>(outcome),
+    };
+  }
 
-    private PrintOutcomeMapping HeldByTheStation()
+  private PrintOutcomeMapping ConfirmedOnPaper()
+  {
+    return new PrintOutcomeMapping
     {
-        return new PrintOutcomeMapping
-        {
-            JobStatus = PrintJobStatus.Blocked,
-            ShouldRetryAutomatically = true,
-        };
-    }
+      JobStatus = PrintJobStatus.Printed,
+      ShouldRetryAutomatically = false,
+    };
+  }
 
-    private PrintOutcomeMapping WaitingForAnotherAttempt()
+  private PrintOutcomeMapping HeldByTheStation()
+  {
+    return new PrintOutcomeMapping
     {
-        return new PrintOutcomeMapping
-        {
-            JobStatus = PrintJobStatus.Queued,
-            ShouldRetryAutomatically = true,
-        };
-    }
+      JobStatus = PrintJobStatus.Blocked,
+      ShouldRetryAutomatically = true,
+    };
+  }
 
-    private PrintOutcomeMapping OutcomeIsNotKnowable()
+  private PrintOutcomeMapping WaitingForAnotherAttempt()
+  {
+    return new PrintOutcomeMapping
     {
-        return new PrintOutcomeMapping
-        {
-            JobStatus = PrintJobStatus.Unknown,
-            ShouldRetryAutomatically = false,
-        };
-    }
+      JobStatus = PrintJobStatus.Queued,
+      ShouldRetryAutomatically = true,
+    };
+  }
+
+  private PrintOutcomeMapping OutcomeIsNotKnowable()
+  {
+    return new PrintOutcomeMapping
+    {
+      JobStatus = PrintJobStatus.Unknown,
+      ShouldRetryAutomatically = false,
+    };
+  }
 }

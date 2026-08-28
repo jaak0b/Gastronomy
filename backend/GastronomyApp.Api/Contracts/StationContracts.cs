@@ -1,4 +1,4 @@
-namespace GastronomyApp.Api.Contracts;
+﻿namespace GastronomyApp.Api.Contracts;
 
 public sealed record StationView(Guid StationId, string Name, int SortOrder, bool CanPrintRightNow);
 

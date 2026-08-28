@@ -7,7 +7,7 @@ insert_final_newline = true
 charset = utf-8-bom
 
 [*.cs]
-indent_size = 4
+indent_size = 2
 file_header_template = unset
 csharp_style_namespace_declarations = file_scoped:error
 dotnet_diagnostic.CS8321.severity = error

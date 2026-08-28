@@ -1,4 +1,4 @@
-namespace GastronomyApp.Api.Contracts;
+﻿namespace GastronomyApp.Api.Contracts;
 
 public sealed record OrderAcceptedEvent(
     Guid OrderId,

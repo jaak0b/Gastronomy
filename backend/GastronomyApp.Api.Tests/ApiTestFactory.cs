@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Options;
+﻿using GastronomyApp.Api.Options;
 using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
@@ -13,95 +13,95 @@ namespace GastronomyApp.Api.Tests;
 
 public sealed class ApiTestFactory : IAsyncDisposable
 {
-    private readonly WebApplication application;
+  private readonly WebApplication application;
 
-    private ApiTestFactory(
-        WebApplication application,
-        string dataDirectory,
-        Uri baseAddress,
-        AppLanguage language)
+  private ApiTestFactory(
+      WebApplication application,
+      string dataDirectory,
+      Uri baseAddress,
+      AppLanguage language)
+  {
+    this.application = application;
+    DataDirectory = dataDirectory;
+    BaseAddress = baseAddress;
+    Language = language;
+    Client = new HttpClient { BaseAddress = baseAddress };
+  }
+
+  public AppLanguage Language { get; }
+
+  public string DataDirectory { get; }
+
+  public Uri BaseAddress { get; }
+
+  public HttpClient Client { get; }
+
+  public IServiceProvider Services
+  {
+    get { return application.Services; }
+  }
+
+  public string MockSlipFolder
+  {
+    get { return Path.Combine(DataDirectory, "mock-slips"); }
+  }
+
+  public Task ReconcilePrintersAsync()
+  {
+    return Services.GetRequiredService<PrinterFleet>().ReconcileAsync(CancellationToken.None);
+  }
+
+  public GastronomyAppDbContext CreateContext()
+  {
+    return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    Client.Dispose();
+    await application.StopAsync();
+    await application.DisposeAsync();
+    SqliteConnection.ClearAllPools();
+
+    if (Directory.Exists(DataDirectory))
     {
-        this.application = application;
-        DataDirectory = dataDirectory;
-        BaseAddress = baseAddress;
-        Language = language;
-        Client = new HttpClient { BaseAddress = baseAddress };
+      try
+      {
+        Directory.Delete(DataDirectory, true);
+      }
+      catch (IOException)
+      {
+        await Task.Delay(200);
+        Directory.Delete(DataDirectory, true);
+      }
     }
+  }
 
-    public AppLanguage Language { get; }
-
-    public string DataDirectory { get; }
-
-    public Uri BaseAddress { get; }
-
-    public HttpClient Client { get; }
-
-    public IServiceProvider Services
+  public sealed class Builder
+  {
+    public async Task<ApiTestFactory> StartAsync()
     {
-        get { return application.Services; }
+      string dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
+      Directory.CreateDirectory(dataDirectory);
+
+      AppLanguage language = new();
+      WebApplication application = new GastronomyAppApiApplication().Build(new ApiHostOptions
+      {
+        DataDirectory = dataDirectory,
+        Port = 0,
+        BindAddress = "127.0.0.1",
+        Language = language,
+      });
+
+      await application.StartAsync();
+
+      IServerAddressesFeature addresses =
+          application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+      Uri baseAddress = new(addresses.Addresses.First());
+
+      return new ApiTestFactory(application, dataDirectory, baseAddress, language);
     }
-
-    public string MockSlipFolder
-    {
-        get { return Path.Combine(DataDirectory, "mock-slips"); }
-    }
-
-    public Task ReconcilePrintersAsync()
-    {
-        return Services.GetRequiredService<PrinterFleet>().ReconcileAsync(CancellationToken.None);
-    }
-
-    public GastronomyAppDbContext CreateContext()
-    {
-        return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        Client.Dispose();
-        await application.StopAsync();
-        await application.DisposeAsync();
-        SqliteConnection.ClearAllPools();
-
-        if (Directory.Exists(DataDirectory))
-        {
-            try
-            {
-                Directory.Delete(DataDirectory, true);
-            }
-            catch (IOException)
-            {
-                await Task.Delay(200);
-                Directory.Delete(DataDirectory, true);
-            }
-        }
-    }
-
-    public sealed class Builder
-    {
-        public async Task<ApiTestFactory> StartAsync()
-        {
-            string dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
-            Directory.CreateDirectory(dataDirectory);
-
-            AppLanguage language = new();
-            WebApplication application = new GastronomyAppApiApplication().Build(new ApiHostOptions
-            {
-                DataDirectory = dataDirectory,
-                Port = 0,
-                BindAddress = "127.0.0.1",
-                Language = language,
-            });
-
-            await application.StartAsync();
-
-            IServerAddressesFeature addresses =
-                application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
-            Uri baseAddress = new(addresses.Addresses.First());
-
-            return new ApiTestFactory(application, dataDirectory, baseAddress, language);
-        }
-    }
+  }
 }
 
 public sealed record SeededWorld(
@@ -114,96 +114,96 @@ public sealed record SeededWorld(
 
 public sealed class ApiSeeder
 {
-    private readonly DateTime baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
+  private readonly DateTime baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
 
-    public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
+  public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
+  {
+    SeededWorld world = new(
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        Guid.NewGuid());
+
+
+    context.StaffMembers.Add(new StaffMember
     {
-        SeededWorld world = new(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid());
+      Id = world.StaffMemberId,
+      Name = "Anna",
+      IsActive = true,
+      CreatedAtUtc = baseline,
+    });
 
+    AddStation(context, world.KitchenStationId, "Kueche", 1);
+    AddStation(context, world.BarStationId, "Bar", 2);
 
-        context.StaffMembers.Add(new StaffMember
-        {
-            Id = world.StaffMemberId,
-            Name = "Anna",
-            IsActive = true,
-            CreatedAtUtc = baseline,
-        });
+    AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenStationId);
+    AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarStationId);
 
-        AddStation(context, world.KitchenStationId, "Kueche", 1);
-        AddStation(context, world.BarStationId, "Bar", 2);
+    await context.SaveChangesAsync(cancellationToken);
+    return world;
+  }
 
-        AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenStationId);
-        AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarStationId);
-
-        await context.SaveChangesAsync(cancellationToken);
-        return world;
-    }
-
-    private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
+  private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
+  {
+    Guid printerId = Guid.NewGuid();
+    context.Printers.Add(new TestPrinter
     {
-        Guid printerId = Guid.NewGuid();
-        context.Printers.Add(new TestPrinter
-        {
-            Id = printerId,
-            Name = "Drucker " + name,
-        });
+      Id = printerId,
+      Name = "Drucker " + name,
+    });
 
-        context.Stations.Add(new Station
-        {
-            Id = stationId,
-            Name = name,
-            SortOrder = sortOrder,
-            IsActive = true,
-            NextStationOrderNumber = 1,
-            PrinterId = printerId,
-        });
-
-        context.PrinterStatuses.Add(new PrinterStatus
-        {
-            PrinterId = printerId,
-            IsOnline = true,
-            IsPaperEnd = false,
-            IsPaperNearEnd = false,
-            IsCoverOpen = false,
-            IsInErrorState = false,
-            IsFaulty = false,
-            LastDetail = "seeded",
-            LastChangedAtUtc = baseline,
-            LastHeardFromAtUtc = baseline,
-        });
-    }
-
-    private void AddItem(
-        GastronomyAppDbContext context,
-        Guid itemId,
-        string name,
-        string categoryName,
-        int priceCents,
-        int sortOrder,
-        Guid stationId)
+    context.Stations.Add(new Station
     {
-        context.CatalogItems.Add(new CatalogItem
-        {
-            Id = itemId,
-            Name = name,
-            CategoryName = categoryName,
-            PriceCents = priceCents,
-            IsActive = true,
-            SortOrder = sortOrder,
-            IsAvailable = true,
-        });
+      Id = stationId,
+      Name = name,
+      SortOrder = sortOrder,
+      IsActive = true,
+      NextStationOrderNumber = 1,
+      PrinterId = printerId,
+    });
 
-        context.ItemStationAssignments.Add(new ItemStationAssignment
-        {
-            Id = Guid.NewGuid(),
-            CatalogItemId = itemId,
-            StationId = stationId,
-        });
-    }
+    context.PrinterStatuses.Add(new PrinterStatus
+    {
+      PrinterId = printerId,
+      IsOnline = true,
+      IsPaperEnd = false,
+      IsPaperNearEnd = false,
+      IsCoverOpen = false,
+      IsInErrorState = false,
+      IsFaulty = false,
+      LastDetail = "seeded",
+      LastChangedAtUtc = baseline,
+      LastHeardFromAtUtc = baseline,
+    });
+  }
+
+  private void AddItem(
+      GastronomyAppDbContext context,
+      Guid itemId,
+      string name,
+      string categoryName,
+      int priceCents,
+      int sortOrder,
+      Guid stationId)
+  {
+    context.CatalogItems.Add(new CatalogItem
+    {
+      Id = itemId,
+      Name = name,
+      CategoryName = categoryName,
+      PriceCents = priceCents,
+      IsActive = true,
+      SortOrder = sortOrder,
+      IsAvailable = true,
+    });
+
+    context.ItemStationAssignments.Add(new ItemStationAssignment
+    {
+      Id = Guid.NewGuid(),
+      CatalogItemId = itemId,
+      StationId = stationId,
+    });
+  }
 }

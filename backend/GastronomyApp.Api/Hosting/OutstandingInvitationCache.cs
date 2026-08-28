@@ -1,34 +1,34 @@
-namespace GastronomyApp.Api.Hosting;
+﻿namespace GastronomyApp.Api.Hosting;
 
 public sealed record OutstandingInvitation(Guid InvitationId, string QrCodeValue, string QrUrl, DateTime ExpiresAtUtc);
 
 public sealed class OutstandingInvitationCache
 {
-    private readonly Lock guard = new();
+  private readonly Lock guard = new();
 
-    private OutstandingInvitation? outstanding;
+  private OutstandingInvitation? outstanding;
 
-    public void Remember(OutstandingInvitation invitation)
+  public void Remember(OutstandingInvitation invitation)
+  {
+    lock (guard)
     {
-        lock (guard)
-        {
-            outstanding = invitation;
-        }
+      outstanding = invitation;
     }
+  }
 
-    public OutstandingInvitation? Read()
+  public OutstandingInvitation? Read()
+  {
+    lock (guard)
     {
-        lock (guard)
-        {
-            return outstanding;
-        }
+      return outstanding;
     }
+  }
 
-    public void Forget()
+  public void Forget()
+  {
+    lock (guard)
     {
-        lock (guard)
-        {
-            outstanding = null;
-        }
+      outstanding = null;
     }
+  }
 }

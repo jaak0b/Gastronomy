@@ -1,4 +1,4 @@
-namespace GastronomyApp.Core.Entities;
+﻿namespace GastronomyApp.Core.Entities;
 
 public sealed class TestPrinter : Printer
 {

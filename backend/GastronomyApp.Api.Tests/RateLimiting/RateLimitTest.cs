@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -11,106 +11,106 @@ namespace GastronomyApp.Api.Tests.RateLimiting;
 [TestFixture]
 public sealed class RateLimitTest
 {
-    private const int DeviceRequestsPerMinute = 600;
-    private const int AddressRequestsPerMinute = 20;
+  private const int DeviceRequestsPerMinute = 600;
+  private const int AddressRequestsPerMinute = 20;
 
-    private ApiTestFactory factory = null!;
-    private string deviceToken = null!;
+  private ApiTestFactory factory = null!;
+  private string deviceToken = null!;
 
-    [SetUp]
-    public async Task SetUp()
+  [SetUp]
+  public async Task SetUp()
+  {
+    factory = await new ApiTestFactory.Builder().StartAsync();
+
+    SeededWorld world;
+    await using (GastronomyAppDbContext context = factory.CreateContext())
     {
-        factory = await new ApiTestFactory.Builder().StartAsync();
-
-        SeededWorld world;
-        await using (GastronomyAppDbContext context = factory.CreateContext())
-        {
-            world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
-        }
-
-        using IServiceScope scope = factory.Services.CreateScope();
-        IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-            .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
-        deviceToken = issued.PlaintextToken;
+      world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
     }
 
-    [TearDown]
-    public async Task TearDown()
+    using IServiceScope scope = factory.Services.CreateScope();
+    IssuedDeviceToken issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
+        .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+    deviceToken = issued.PlaintextToken;
+  }
+
+  [TearDown]
+  public async Task TearDown()
+  {
+    await factory.DisposeAsync();
+  }
+
+  [Test]
+  public async Task DeviceScopedEndpoint_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
+  {
+    IReadOnlyList<HttpResponseMessage> responses = await SendConcurrentlyAsync(DeviceRequestsPerMinute + 1);
+
+    int allowed = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
+    int refused = responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+    HttpResponseMessage? firstRefusal = responses
+        .FirstOrDefault(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+
+    string refusalBody = firstRefusal is null ? string.Empty : await firstRefusal.Content.ReadAsStringAsync();
+
+    foreach (HttpResponseMessage response in responses)
     {
-        await factory.DisposeAsync();
+      response.Dispose();
     }
 
-    [Test]
-    public async Task DeviceScopedEndpoint_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
+    Assert.Multiple(() =>
     {
-        IReadOnlyList<HttpResponseMessage> responses = await SendConcurrentlyAsync(DeviceRequestsPerMinute + 1);
+      Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
+      Assert.That(refused, Is.EqualTo(1));
+      Assert.That(
+              JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(),
+              Is.EqualTo("review.tooManyRequests"));
+    });
+  }
 
-        int allowed = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
-        int refused = responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
-        HttpResponseMessage? firstRefusal = responses
-            .FirstOrDefault(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+  private async Task<IReadOnlyList<HttpResponseMessage>> SendConcurrentlyAsync(int requestCount)
+  {
+    List<Task<HttpResponseMessage>> inFlight = [];
 
-        string refusalBody = firstRefusal is null ? string.Empty : await firstRefusal.Content.ReadAsStringAsync();
-
-        foreach (HttpResponseMessage response in responses)
-        {
-            response.Dispose();
-        }
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
-            Assert.That(refused, Is.EqualTo(1));
-            Assert.That(
-                JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(),
-                Is.EqualTo("review.tooManyRequests"));
-        });
+    for (int request = 0; request < requestCount; request++)
+    {
+      inFlight.Add(SendSessionRequestAsync());
     }
 
-    private async Task<IReadOnlyList<HttpResponseMessage>> SendConcurrentlyAsync(int requestCount)
+    return await Task.WhenAll(inFlight);
+  }
+
+  [Test]
+  public async Task EnrolmentRedeem_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
+  {
+    for (int request = 0; request < AddressRequestsPerMinute; request++)
     {
-        List<Task<HttpResponseMessage>> inFlight = [];
+      using HttpResponseMessage allowed = await SendRedeemRequestAsync();
 
-        for (int request = 0; request < requestCount; request++)
-        {
-            inFlight.Add(SendSessionRequestAsync());
-        }
-
-        return await Task.WhenAll(inFlight);
+      Assert.That(allowed.StatusCode, Is.Not.EqualTo(HttpStatusCode.TooManyRequests));
     }
 
-    [Test]
-    public async Task EnrolmentRedeem_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
+    using HttpResponseMessage refused = await SendRedeemRequestAsync();
+    JsonDocument body = JsonDocument.Parse(await refused.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
     {
-        for (int request = 0; request < AddressRequestsPerMinute; request++)
-        {
-            using HttpResponseMessage allowed = await SendRedeemRequestAsync();
+      Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("review.tooManyRequests"));
+    });
+  }
 
-            Assert.That(allowed.StatusCode, Is.Not.EqualTo(HttpStatusCode.TooManyRequests));
-        }
+  private Task<HttpResponseMessage> SendRedeemRequestAsync()
+  {
+    return factory.Client.PostAsJsonAsync(
+        "/api/enrolment/redeem",
+        new Endpoints.RedeemBody("not-a-real-code", "Anna", "NUnit"));
+  }
 
-        using HttpResponseMessage refused = await SendRedeemRequestAsync();
-        JsonDocument body = JsonDocument.Parse(await refused.Content.ReadAsStringAsync());
+  private async Task<HttpResponseMessage> SendSessionRequestAsync()
+  {
+    using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
+    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
-            Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("review.tooManyRequests"));
-        });
-    }
-
-    private Task<HttpResponseMessage> SendRedeemRequestAsync()
-    {
-        return factory.Client.PostAsJsonAsync(
-            "/api/enrolment/redeem",
-            new Endpoints.RedeemBody("not-a-real-code", "Anna", "NUnit"));
-    }
-
-    private async Task<HttpResponseMessage> SendSessionRequestAsync()
-    {
-        using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
-
-        return await factory.Client.SendAsync(request);
-    }
+    return await factory.Client.SendAsync(request);
+  }
 }

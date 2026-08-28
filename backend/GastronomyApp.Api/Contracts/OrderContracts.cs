@@ -1,19 +1,19 @@
-namespace GastronomyApp.Api.Contracts;
+﻿namespace GastronomyApp.Api.Contracts;
 
 public sealed record OrderItemRequest
 {
-    public required Guid CatalogItemId { get; init; }
-    public required int UnitPriceCents { get; init; }
-    public string? Note { get; init; }
-    public Guid? StationId { get; init; }
+  public required Guid CatalogItemId { get; init; }
+  public required int UnitPriceCents { get; init; }
+  public string? Note { get; init; }
+  public Guid? StationId { get; init; }
 }
 
 public sealed record PlaceOrderRequest
 {
-    public required Guid ClientOrderId { get; init; }
-    public required string? TableName { get; init; }
-    public string? Note { get; init; }
-    public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
+  public required Guid ClientOrderId { get; init; }
+  public required string? TableName { get; init; }
+  public string? Note { get; init; }
+  public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
 }
 
 public sealed record StationOrderView(
@@ -73,7 +73,7 @@ public sealed record OrderDetailView(
 
 public sealed record ResolveUnknownPrintRequest
 {
-    public required bool SlipIsOnThePile { get; init; }
+  public required bool SlipIsOnThePile { get; init; }
 }
 
 public sealed record PrinterStatusView(

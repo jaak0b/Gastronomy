@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Printing;
@@ -8,376 +8,376 @@ namespace GastronomyApp.Infrastructure.Tests.Printing;
 
 public class EpsonTmT20ivNetworkPrinterDriverTest
 {
-    private FakeEscPosPrinterServer server = null!;
-    private Guid stationId;
+  private FakeEscPosPrinterServer server = null!;
+  private Guid stationId;
 
-    [SetUp]
-    public async Task SetUp()
+  [SetUp]
+  public async Task SetUp()
+  {
+    server = new FakeEscPosPrinterServer(0);
+    await server.StartAsync(CancellationToken.None);
+    stationId = Guid.NewGuid();
+  }
+
+  [TearDown]
+  public async Task TearDown()
+  {
+    await server.DisposeAsync();
+  }
+
+  private async Task<IPrinterSession> OpenAsync(
+      TimeSpan? jobTimeout = null,
+      TimeSpan? heartbeat = null,
+      TimeSpan? statusQueryTimeout = null)
+  {
+    System.Net.Sockets.TcpClient client = new();
+    await client.ConnectAsync("127.0.0.1", server.Port, CancellationToken.None);
+    EpsonTmT20ivNetworkPrinterSession session = new(
+        client,
+        new PrinterSessionTimeouts(
+            jobTimeout ?? TimeSpan.FromSeconds(2),
+            heartbeat ?? TimeSpan.FromSeconds(30),
+            statusQueryTimeout ?? TimeSpan.FromMilliseconds(500)),
+        TimeProvider.System);
+    await session.StartAsync();
+    return session;
+  }
+
+  private PrintPayload Payload(int processId = 7, int sizeInBytes = 64)
+  {
+    byte[] bytes = Encoding.ASCII.GetBytes(new string('X', sizeInBytes));
+    return new PrintPayload(processId, bytes, new string('X', sizeInBytes), 0, 42, stationId, "Kueche", false);
+  }
+
+  private async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+  {
+    Stopwatch stopwatch = Stopwatch.StartNew();
+    while (stopwatch.Elapsed < timeout && !condition())
     {
-        server = new FakeEscPosPrinterServer(0);
-        await server.StartAsync(CancellationToken.None);
-        stationId = Guid.NewGuid();
+      await Task.Delay(10);
     }
+  }
 
-    [TearDown]
-    public async Task TearDown()
+  private bool ContainsSequence(IReadOnlyList<byte> haystack, byte[] needle)
+  {
+    for (int index = 0; index + needle.Length <= haystack.Count; index++)
     {
-        await server.DisposeAsync();
-    }
-
-    private async Task<IPrinterSession> OpenAsync(
-        TimeSpan? jobTimeout = null,
-        TimeSpan? heartbeat = null,
-        TimeSpan? statusQueryTimeout = null)
-    {
-        System.Net.Sockets.TcpClient client = new();
-        await client.ConnectAsync("127.0.0.1", server.Port, CancellationToken.None);
-        EpsonTmT20ivNetworkPrinterSession session = new(
-            client,
-            new PrinterSessionTimeouts(
-                jobTimeout ?? TimeSpan.FromSeconds(2),
-                heartbeat ?? TimeSpan.FromSeconds(30),
-                statusQueryTimeout ?? TimeSpan.FromMilliseconds(500)),
-            TimeProvider.System);
-        await session.StartAsync();
-        return session;
-    }
-
-    private PrintPayload Payload(int processId = 7, int sizeInBytes = 64)
-    {
-        byte[] bytes = Encoding.ASCII.GetBytes(new string('X', sizeInBytes));
-        return new PrintPayload(processId, bytes, new string('X', sizeInBytes), 0, 42, stationId, "Kueche", false);
-    }
-
-    private async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
-    {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        while (stopwatch.Elapsed < timeout && !condition())
+      bool match = true;
+      for (int offset = 0; offset < needle.Length; offset++)
+      {
+        if (haystack[index + offset] != needle[offset])
         {
-            await Task.Delay(10);
+          match = false;
+          break;
         }
+      }
+
+      if (match)
+      {
+        return true;
+      }
     }
 
-    private bool ContainsSequence(IReadOnlyList<byte> haystack, byte[] needle)
+    return false;
+  }
+
+  private int CountSequence(IReadOnlyList<byte> haystack, byte[] needle)
+  {
+    int count = 0;
+    for (int index = 0; index + needle.Length <= haystack.Count; index++)
     {
-        for (int index = 0; index + needle.Length <= haystack.Count; index++)
+      bool match = true;
+      for (int offset = 0; offset < needle.Length; offset++)
+      {
+        if (haystack[index + offset] != needle[offset])
         {
-            bool match = true;
-            for (int offset = 0; offset < needle.Length; offset++)
-            {
-                if (haystack[index + offset] != needle[offset])
-                {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (match)
-            {
-                return true;
-            }
+          match = false;
+          break;
         }
+      }
 
-        return false;
+      if (match)
+      {
+        count++;
+      }
     }
 
-    private int CountSequence(IReadOnlyList<byte> haystack, byte[] needle)
+    return count;
+  }
+
+  [Test]
+  public async Task ConnectAsync_Success_SendsEscAtThenEscT19ThenGsA15()
+  {
+    await using IPrinterSession session = await OpenAsync();
+
+    await WaitUntilAsync(() => server.ReceivedBytes.Count >= 8, TimeSpan.FromSeconds(2));
+
+    Assert.That(server.ReceivedBytes.Take(8), Is.EqualTo(new byte[] { 0x1B, 0x40, 0x1B, 0x74, 0x13, 0x1D, 0x61, 0x0F }));
+  }
+
+  [Test]
+  public async Task ConnectAsync_Success_HoldsOneConnectionAcrossMultipleJobs()
+  {
+    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    await using IPrinterSession session = await OpenAsync();
+
+    await session.SendJobAsync(Payload(1), CancellationToken.None);
+    await session.SendJobAsync(Payload(2), CancellationToken.None);
+
+    Assert.That(server.AcceptedConnectionCount, Is.EqualTo(1));
+  }
+
+  [Test]
+  public async Task SendJobAsync_EchoArrivesBeforeTimeout_ReturnsConfirmedWithFullByteCount()
+  {
+    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    await using IPrinterSession session = await OpenAsync();
+    PrintPayload payload = Payload();
+
+    PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
+    Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
+  }
+
+  [Test]
+  public async Task SendJobAsync_EchoNeverArrives_ReturnsTimeoutAfterJobTimeoutWithBytesWrittenGreaterThanZero()
+  {
+    server.ScriptNeverEchoProcessId();
+    await using IPrinterSession session = await OpenAsync(TimeSpan.FromMilliseconds(200));
+
+    PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
+    Assert.That(result.BytesWritten, Is.GreaterThan(0));
+  }
+
+  [Test]
+  public async Task SendJobAsync_ConnectionDropsBeforeFirstByte_ReturnsSocketDroppedWithZeroBytes()
+  {
+    server.ScriptDropConnectionImmediately();
+    await using IPrinterSession session = await OpenAsync();
+    await Task.Delay(150);
+
+    PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.SocketDropped));
+    Assert.That(result.BytesWritten, Is.Zero);
+  }
+
+  [Test]
+  public async Task SendJobAsync_ConnectionDropsMidWrite_ReturnsSocketDroppedWithPartialBytesGreaterThanZero()
+  {
+    server.ScriptDropConnectionAfterBytes(256);
+    await using IPrinterSession session = await OpenAsync();
+    PrintPayload payload = Payload(sizeInBytes: 200000);
+
+    PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.SocketDropped));
+    Assert.That(result.BytesWritten, Is.GreaterThan(0));
+    Assert.That(result.BytesWritten, Is.LessThan(payload.Bytes.Length));
+  }
+
+  [Test]
+  public async Task SendJobAsync_EchoOnReconnectedSocket_IsDiscarded()
+  {
+    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    await using (IPrinterSession first = await OpenAsync(TimeSpan.FromMilliseconds(300)))
     {
-        int count = 0;
-        for (int index = 0; index + needle.Length <= haystack.Count; index++)
+      await first.SendJobAsync(Payload(11), CancellationToken.None);
+    }
+
+    server.ScriptProcessIdEchoCarrying(11);
+    await using IPrinterSession second = await OpenAsync(TimeSpan.FromMilliseconds(300));
+    PrintDispatchResult result = await second.SendJobAsync(Payload(12), CancellationToken.None);
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
+  }
+
+  [Test]
+  public async Task QueryStatusAsync_PaperEndMaskSet_ReportsIsPaperEndTrue()
+  {
+    server.ScriptDleEotResponse(1, 0x16);
+    server.ScriptDleEotResponse(2, 0x12);
+    server.ScriptDleEotResponse(4, 0x72);
+    await using IPrinterSession session = await OpenAsync();
+
+    PrinterStatusSnapshot status = await session.QueryStatusAsync(CancellationToken.None);
+
+    Assert.That(status.IsPaperEnd, Is.True);
+  }
+
+  [Test]
+  public async Task QueryStatusAsync_CoverOpenBitSet_ReportsIsCoverOpenTrue()
+  {
+    server.ScriptDleEotResponse(1, 0x16);
+    server.ScriptDleEotResponse(2, 0x16);
+    server.ScriptDleEotResponse(4, 0x12);
+    await using IPrinterSession session = await OpenAsync();
+
+    PrinterStatusSnapshot status = await session.QueryStatusAsync(CancellationToken.None);
+
+    Assert.That(status.IsCoverOpen, Is.True);
+    Assert.That(status.IsPaperEnd, Is.False);
+  }
+
+  [Test]
+  public async Task StatusStream_AsbPushedUnprompted_SurfacesWithoutAQuery()
+  {
+    server.ScriptAsbOnConnect(0x60, 0x00);
+    await using IPrinterSession session = await OpenAsync();
+
+    using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
+    PrinterStatusSnapshot? seen = null;
+    await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
+    {
+      seen = snapshot;
+      break;
+    }
+
+    Assert.That(seen, Is.Not.Null);
+    Assert.That(seen!.IsPaperEnd, Is.True);
+  }
+
+  [Test]
+  public async Task BytesWritten_AlwaysCountsBytesHandedToSocket_NotBytesAcknowledged()
+  {
+    server.ScriptNeverEchoProcessId();
+    await using IPrinterSession session = await OpenAsync(TimeSpan.FromMilliseconds(200));
+    PrintPayload payload = Payload();
+
+    PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
+
+    Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
+  }
+
+  [Test]
+  public async Task ConnectAsync_HeartbeatEvery10Seconds_KeepsIdleTimeoutAlive()
+  {
+    await using IPrinterSession session = await OpenAsync(heartbeat: TimeSpan.FromMilliseconds(60));
+
+    await WaitUntilAsync(() => CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]) >= 3, TimeSpan.FromSeconds(3));
+
+    Assert.That(CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]), Is.GreaterThanOrEqualTo(3));
+  }
+
+  [TestCase(150)]
+  [TestCase(500)]
+  public async Task SendJobAsync_JobTimeoutDefaultsTo90Seconds_MatchesPrinterConfigurationDefault(int jobTimeoutMilliseconds)
+  {
+    server.ScriptNeverEchoProcessId();
+    TimeSpan jobTimeout = TimeSpan.FromMilliseconds(jobTimeoutMilliseconds);
+    await using IPrinterSession session = await OpenAsync(jobTimeout);
+
+    Stopwatch stopwatch = Stopwatch.StartNew();
+    PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
+    stopwatch.Stop();
+
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
+    Assert.That(stopwatch.Elapsed, Is.GreaterThanOrEqualTo(jobTimeout - TimeSpan.FromMilliseconds(50)));
+    Assert.That(stopwatch.Elapsed, Is.LessThan(jobTimeout + TimeSpan.FromSeconds(2)));
+  }
+
+  [Test]
+  public async Task DrainInbound_StatusQueryInFlightWhileEchoAndAsbArrive_DecodesAllThreeWithoutDesynchronising()
+  {
+    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    server.ScriptBurstOnProcessIdRequest(0x60, 0x00, 0x16);
+    await using IPrinterSession session = await OpenAsync(TimeSpan.FromSeconds(2), TimeSpan.FromMinutes(5), TimeSpan.FromMilliseconds(200));
+
+    Task<PrinterStatusSnapshot> pendingQuery = session.QueryStatusAsync(CancellationToken.None);
+    await Task.Delay(50);
+
+    PrintDispatchResult dispatch = await session.SendJobAsync(Payload(21), CancellationToken.None);
+    PrinterStatusSnapshot queried = await pendingQuery;
+
+    List<PrinterStatusSnapshot> pushed = [];
+    using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
+    try
+    {
+      await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
+      {
+        pushed.Add(snapshot);
+        if (pushed.Any(candidate => candidate.IsPaperEnd))
         {
-            bool match = true;
-            for (int offset = 0; offset < needle.Length; offset++)
-            {
-                if (haystack[index + offset] != needle[offset])
-                {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (match)
-            {
-                count++;
-            }
+          break;
         }
-
-        return count;
+      }
     }
-
-    [Test]
-    public async Task ConnectAsync_Success_SendsEscAtThenEscT19ThenGsA15()
+    catch (OperationCanceledException)
     {
-        await using IPrinterSession session = await OpenAsync();
-
-        await WaitUntilAsync(() => server.ReceivedBytes.Count >= 8, TimeSpan.FromSeconds(2));
-
-        Assert.That(server.ReceivedBytes.Take(8), Is.EqualTo(new byte[] { 0x1B, 0x40, 0x1B, 0x74, 0x13, 0x1D, 0x61, 0x0F }));
+      Assert.Fail("The automatic status back block never reached the status stream.");
     }
 
-    [Test]
-    public async Task ConnectAsync_Success_HoldsOneConnectionAcrossMultipleJobs()
+    Assert.That(dispatch.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
+    Assert.That(pushed.Any(snapshot => snapshot.IsPaperEnd), Is.True);
+    Assert.That(queried.IsOnline, Is.True);
+    Assert.That(((EpsonTmT20ivNetworkPrinterSession)session).UnrecognisedInboundByteCount, Is.Zero);
+  }
+
+  [Test]
+  public async Task StatusStream_AsbErrorBitSet_ReportsIsInErrorStateUsingTheOfflineStatusErrorBit()
+  {
+    server.ScriptAsbOnConnect(0x00, 0x40);
+    await using IPrinterSession session = await OpenAsync();
+
+    using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
+    PrinterStatusSnapshot? seen = null;
+    await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
     {
-        server.ScriptProcessIdEcho(TimeSpan.Zero);
-        await using IPrinterSession session = await OpenAsync();
-
-        await session.SendJobAsync(Payload(1), CancellationToken.None);
-        await session.SendJobAsync(Payload(2), CancellationToken.None);
-
-        Assert.That(server.AcceptedConnectionCount, Is.EqualTo(1));
+      seen = snapshot;
+      break;
     }
 
-    [Test]
-    public async Task SendJobAsync_EchoArrivesBeforeTimeout_ReturnsConfirmedWithFullByteCount()
+    Assert.That(seen, Is.Not.Null);
+    Assert.That(seen!.IsInErrorState, Is.True);
+  }
+
+  [Test]
+  public async Task StatusStream_AsbPaperFeedBitSet_IsNotReportedAsAnErrorState()
+  {
+    server.ScriptAsbOnConnect(0x00, 0x08);
+    await using IPrinterSession session = await OpenAsync();
+
+    using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
+    PrinterStatusSnapshot? seen = null;
+    await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
     {
-        server.ScriptProcessIdEcho(TimeSpan.Zero);
-        await using IPrinterSession session = await OpenAsync();
-        PrintPayload payload = Payload();
-
-        PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
-
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
-        Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
+      seen = snapshot;
+      break;
     }
 
-    [Test]
-    public async Task SendJobAsync_EchoNeverArrives_ReturnsTimeoutAfterJobTimeoutWithBytesWrittenGreaterThanZero()
-    {
-        server.ScriptNeverEchoProcessId();
-        await using IPrinterSession session = await OpenAsync(TimeSpan.FromMilliseconds(200));
+    Assert.That(seen, Is.Not.Null);
+    Assert.That(seen!.IsInErrorState, Is.False);
+  }
 
-        PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
+  [Test]
+  public async Task SendJobAsync_LargePayloadOnAHealthySilentSocket_IsNotAbortedAsSocketDropped()
+  {
+    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    await using IPrinterSession session = await OpenAsync(TimeSpan.FromSeconds(5));
+    PrintPayload payload = Payload(sizeInBytes: 200000);
 
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
-        Assert.That(result.BytesWritten, Is.GreaterThan(0));
-    }
+    PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
 
-    [Test]
-    public async Task SendJobAsync_ConnectionDropsBeforeFirstByte_ReturnsSocketDroppedWithZeroBytes()
-    {
-        server.ScriptDropConnectionImmediately();
-        await using IPrinterSession session = await OpenAsync();
-        await Task.Delay(150);
+    Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
+    Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
+  }
 
-        PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
+  [TestCase(150)]
+  [TestCase(600)]
+  public async Task QueryStatusAsync_UnansweredQuery_GivesUpAfterTheEndpointsStatusQueryTimeout(int statusQueryTimeoutMilliseconds)
+  {
+    TimeSpan statusQueryTimeout = TimeSpan.FromMilliseconds(statusQueryTimeoutMilliseconds);
+    await using IPrinterSession session = await OpenAsync(statusQueryTimeout: statusQueryTimeout);
 
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.SocketDropped));
-        Assert.That(result.BytesWritten, Is.Zero);
-    }
+    Stopwatch stopwatch = Stopwatch.StartNew();
+    await session.QueryStatusAsync(CancellationToken.None);
+    stopwatch.Stop();
 
-    [Test]
-    public async Task SendJobAsync_ConnectionDropsMidWrite_ReturnsSocketDroppedWithPartialBytesGreaterThanZero()
-    {
-        server.ScriptDropConnectionAfterBytes(256);
-        await using IPrinterSession session = await OpenAsync();
-        PrintPayload payload = Payload(sizeInBytes: 200000);
-
-        PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
-
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.SocketDropped));
-        Assert.That(result.BytesWritten, Is.GreaterThan(0));
-        Assert.That(result.BytesWritten, Is.LessThan(payload.Bytes.Length));
-    }
-
-    [Test]
-    public async Task SendJobAsync_EchoOnReconnectedSocket_IsDiscarded()
-    {
-        server.ScriptProcessIdEcho(TimeSpan.Zero);
-        await using (IPrinterSession first = await OpenAsync(TimeSpan.FromMilliseconds(300)))
-        {
-            await first.SendJobAsync(Payload(11), CancellationToken.None);
-        }
-
-        server.ScriptProcessIdEchoCarrying(11);
-        await using IPrinterSession second = await OpenAsync(TimeSpan.FromMilliseconds(300));
-        PrintDispatchResult result = await second.SendJobAsync(Payload(12), CancellationToken.None);
-
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
-    }
-
-    [Test]
-    public async Task QueryStatusAsync_PaperEndMaskSet_ReportsIsPaperEndTrue()
-    {
-        server.ScriptDleEotResponse(1, 0x16);
-        server.ScriptDleEotResponse(2, 0x12);
-        server.ScriptDleEotResponse(4, 0x72);
-        await using IPrinterSession session = await OpenAsync();
-
-        PrinterStatusSnapshot status = await session.QueryStatusAsync(CancellationToken.None);
-
-        Assert.That(status.IsPaperEnd, Is.True);
-    }
-
-    [Test]
-    public async Task QueryStatusAsync_CoverOpenBitSet_ReportsIsCoverOpenTrue()
-    {
-        server.ScriptDleEotResponse(1, 0x16);
-        server.ScriptDleEotResponse(2, 0x16);
-        server.ScriptDleEotResponse(4, 0x12);
-        await using IPrinterSession session = await OpenAsync();
-
-        PrinterStatusSnapshot status = await session.QueryStatusAsync(CancellationToken.None);
-
-        Assert.That(status.IsCoverOpen, Is.True);
-        Assert.That(status.IsPaperEnd, Is.False);
-    }
-
-    [Test]
-    public async Task StatusStream_AsbPushedUnprompted_SurfacesWithoutAQuery()
-    {
-        server.ScriptAsbOnConnect(0x60, 0x00);
-        await using IPrinterSession session = await OpenAsync();
-
-        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
-        PrinterStatusSnapshot? seen = null;
-        await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
-        {
-            seen = snapshot;
-            break;
-        }
-
-        Assert.That(seen, Is.Not.Null);
-        Assert.That(seen!.IsPaperEnd, Is.True);
-    }
-
-    [Test]
-    public async Task BytesWritten_AlwaysCountsBytesHandedToSocket_NotBytesAcknowledged()
-    {
-        server.ScriptNeverEchoProcessId();
-        await using IPrinterSession session = await OpenAsync(TimeSpan.FromMilliseconds(200));
-        PrintPayload payload = Payload();
-
-        PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
-
-        Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
-    }
-
-    [Test]
-    public async Task ConnectAsync_HeartbeatEvery10Seconds_KeepsIdleTimeoutAlive()
-    {
-        await using IPrinterSession session = await OpenAsync(heartbeat: TimeSpan.FromMilliseconds(60));
-
-        await WaitUntilAsync(() => CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]) >= 3, TimeSpan.FromSeconds(3));
-
-        Assert.That(CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]), Is.GreaterThanOrEqualTo(3));
-    }
-
-    [TestCase(150)]
-    [TestCase(500)]
-    public async Task SendJobAsync_JobTimeoutDefaultsTo90Seconds_MatchesPrinterConfigurationDefault(int jobTimeoutMilliseconds)
-    {
-        server.ScriptNeverEchoProcessId();
-        TimeSpan jobTimeout = TimeSpan.FromMilliseconds(jobTimeoutMilliseconds);
-        await using IPrinterSession session = await OpenAsync(jobTimeout);
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        PrintDispatchResult result = await session.SendJobAsync(Payload(), CancellationToken.None);
-        stopwatch.Stop();
-
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Timeout));
-        Assert.That(stopwatch.Elapsed, Is.GreaterThanOrEqualTo(jobTimeout - TimeSpan.FromMilliseconds(50)));
-        Assert.That(stopwatch.Elapsed, Is.LessThan(jobTimeout + TimeSpan.FromSeconds(2)));
-    }
-
-    [Test]
-    public async Task DrainInbound_StatusQueryInFlightWhileEchoAndAsbArrive_DecodesAllThreeWithoutDesynchronising()
-    {
-        server.ScriptProcessIdEcho(TimeSpan.Zero);
-        server.ScriptBurstOnProcessIdRequest(0x60, 0x00, 0x16);
-        await using IPrinterSession session = await OpenAsync(TimeSpan.FromSeconds(2), TimeSpan.FromMinutes(5), TimeSpan.FromMilliseconds(200));
-
-        Task<PrinterStatusSnapshot> pendingQuery = session.QueryStatusAsync(CancellationToken.None);
-        await Task.Delay(50);
-
-        PrintDispatchResult dispatch = await session.SendJobAsync(Payload(21), CancellationToken.None);
-        PrinterStatusSnapshot queried = await pendingQuery;
-
-        List<PrinterStatusSnapshot> pushed = [];
-        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
-        try
-        {
-            await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
-            {
-                pushed.Add(snapshot);
-                if (pushed.Any(candidate => candidate.IsPaperEnd))
-                {
-                    break;
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            Assert.Fail("The automatic status back block never reached the status stream.");
-        }
-
-        Assert.That(dispatch.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
-        Assert.That(pushed.Any(snapshot => snapshot.IsPaperEnd), Is.True);
-        Assert.That(queried.IsOnline, Is.True);
-        Assert.That(((EpsonTmT20ivNetworkPrinterSession)session).UnrecognisedInboundByteCount, Is.Zero);
-    }
-
-    [Test]
-    public async Task StatusStream_AsbErrorBitSet_ReportsIsInErrorStateUsingTheOfflineStatusErrorBit()
-    {
-        server.ScriptAsbOnConnect(0x00, 0x40);
-        await using IPrinterSession session = await OpenAsync();
-
-        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
-        PrinterStatusSnapshot? seen = null;
-        await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
-        {
-            seen = snapshot;
-            break;
-        }
-
-        Assert.That(seen, Is.Not.Null);
-        Assert.That(seen!.IsInErrorState, Is.True);
-    }
-
-    [Test]
-    public async Task StatusStream_AsbPaperFeedBitSet_IsNotReportedAsAnErrorState()
-    {
-        server.ScriptAsbOnConnect(0x00, 0x08);
-        await using IPrinterSession session = await OpenAsync();
-
-        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
-        PrinterStatusSnapshot? seen = null;
-        await foreach (PrinterStatusSnapshot snapshot in session.StatusStream.WithCancellation(cancellation.Token))
-        {
-            seen = snapshot;
-            break;
-        }
-
-        Assert.That(seen, Is.Not.Null);
-        Assert.That(seen!.IsInErrorState, Is.False);
-    }
-
-    [Test]
-    public async Task SendJobAsync_LargePayloadOnAHealthySilentSocket_IsNotAbortedAsSocketDropped()
-    {
-        server.ScriptProcessIdEcho(TimeSpan.Zero);
-        await using IPrinterSession session = await OpenAsync(TimeSpan.FromSeconds(5));
-        PrintPayload payload = Payload(sizeInBytes: 200000);
-
-        PrintDispatchResult result = await session.SendJobAsync(payload, CancellationToken.None);
-
-        Assert.That(result.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
-        Assert.That(result.BytesWritten, Is.EqualTo(payload.Bytes.Length));
-    }
-
-    [TestCase(150)]
-    [TestCase(600)]
-    public async Task QueryStatusAsync_UnansweredQuery_GivesUpAfterTheEndpointsStatusQueryTimeout(int statusQueryTimeoutMilliseconds)
-    {
-        TimeSpan statusQueryTimeout = TimeSpan.FromMilliseconds(statusQueryTimeoutMilliseconds);
-        await using IPrinterSession session = await OpenAsync(statusQueryTimeout: statusQueryTimeout);
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        await session.QueryStatusAsync(CancellationToken.None);
-        stopwatch.Stop();
-
-        TimeSpan expected = statusQueryTimeout + statusQueryTimeout + statusQueryTimeout;
-        Assert.That(stopwatch.Elapsed, Is.GreaterThanOrEqualTo(expected - TimeSpan.FromMilliseconds(80)));
-        Assert.That(stopwatch.Elapsed, Is.LessThan(expected + TimeSpan.FromSeconds(2)));
-    }
+    TimeSpan expected = statusQueryTimeout + statusQueryTimeout + statusQueryTimeout;
+    Assert.That(stopwatch.Elapsed, Is.GreaterThanOrEqualTo(expected - TimeSpan.FromMilliseconds(80)));
+    Assert.That(stopwatch.Elapsed, Is.LessThan(expected + TimeSpan.FromSeconds(2)));
+  }
 }

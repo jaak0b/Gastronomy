@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+﻿using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Core.Printing;
 
@@ -29,11 +29,11 @@ public sealed record PrintDispatchResult(
 
 public interface IPrinterSession : IAsyncDisposable
 {
-    public IAsyncEnumerable<PrinterStatusSnapshot> StatusStream { get; }
+  public IAsyncEnumerable<PrinterStatusSnapshot> StatusStream { get; }
 
-    public Task<PrinterStatusSnapshot> QueryStatusAsync(CancellationToken cancellationToken);
+  public Task<PrinterStatusSnapshot> QueryStatusAsync(CancellationToken cancellationToken);
 
-    public Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken);
+  public Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken);
 }
 
 public sealed record PrinterSessionTimeouts(

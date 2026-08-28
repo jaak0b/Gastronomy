@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
@@ -11,52 +11,52 @@ namespace GastronomyApp.Api.Endpoints;
 
 public static class CatalogEndpoints
 {
-    public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder routes)
+  public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder routes)
+  {
+    routes.MapGet("/api/catalog", async (
+        GastronomyAppDbContext dbContext,
+        CatalogReader catalogReader,
+        CancellationToken cancellationToken) =>
     {
-        routes.MapGet("/api/catalog", async (
-            GastronomyAppDbContext dbContext,
-            CatalogReader catalogReader,
-            CancellationToken cancellationToken) =>
-        {
-            return Results.Ok(await catalogReader.ReadAsync(dbContext, cancellationToken));
-        }).RequireAuthorization().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+      return Results.Ok(await catalogReader.ReadAsync(dbContext, cancellationToken));
+    }).RequireAuthorization().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
-        return routes;
-    }
+    return routes;
+  }
 }
 
 public sealed class CatalogReader
 {
-    private readonly TimeProvider timeProvider;
+  private readonly TimeProvider timeProvider;
 
-    public CatalogReader(TimeProvider timeProvider)
-    {
-        this.timeProvider = timeProvider;
-    }
+  public CatalogReader(TimeProvider timeProvider)
+  {
+    this.timeProvider = timeProvider;
+  }
 
-    public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
-    {
-        List<Station> stations = await dbContext.Stations
-            .Where(station => station.IsActive)
-            .OrderBy(station => station.SortOrder)
-            .ToListAsync(cancellationToken);
+  public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
+  {
+    List<Station> stations = await dbContext.Stations
+        .Where(station => station.IsActive)
+        .OrderBy(station => station.SortOrder)
+        .ToListAsync(cancellationToken);
 
-        HashSet<Guid> activeStationIds = [.. stations.Select(station => station.Id)];
+    HashSet<Guid> activeStationIds = [.. stations.Select(station => station.Id)];
 
-        List<CatalogItem> items = await dbContext.CatalogItems
-            .Where(item => item.IsActive)
-            .OrderBy(item => item.SortOrder)
-            .ToListAsync(cancellationToken);
+    List<CatalogItem> items = await dbContext.CatalogItems
+        .Where(item => item.IsActive)
+        .OrderBy(item => item.SortOrder)
+        .ToListAsync(cancellationToken);
 
-        HashSet<Guid> itemIds = [.. items.Select(item => item.Id)];
+    HashSet<Guid> itemIds = [.. items.Select(item => item.Id)];
 
-        List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
-            .Where(assignment => itemIds.Contains(assignment.CatalogItemId))
-            .ToListAsync(cancellationToken);
+    List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
+        .Where(assignment => itemIds.Contains(assignment.CatalogItemId))
+        .ToListAsync(cancellationToken);
 
-        List<CatalogItemView> itemViews =
-        [
-            .. items.Select(item => new CatalogItemView(
+    List<CatalogItemView> itemViews =
+    [
+        .. items.Select(item => new CatalogItemView(
                 item.Id,
                 item.Name,
                 item.CategoryName,
@@ -72,18 +72,18 @@ public sealed class CatalogReader
                 ])),
         ];
 
-        List<CatalogCategoryView> categories =
-        [
-            .. items
+    List<CatalogCategoryView> categories =
+    [
+        .. items
                 .GroupBy(item => item.CategoryName)
                 .Select(group => new CatalogCategoryView(group.Key, group.Min(item => item.SortOrder)))
                 .OrderBy(category => category.SortOrder),
         ];
 
-        return new CatalogView(
-            timeProvider.GetUtcNow().ToString("O"),
-            categories,
-            itemViews,
-            [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))]);
-    }
+    return new CatalogView(
+        timeProvider.GetUtcNow().ToString("O"),
+        categories,
+        itemViews,
+        [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))]);
+  }
 }

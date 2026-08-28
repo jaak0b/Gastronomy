@@ -1,81 +1,81 @@
-using GastronomyApp.Core.Services;
+﻿using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Services;
 
 public enum BootstrapOutcome
 {
-    ProceedToWindow,
-    ExitImmediately,
+  ProceedToWindow,
+  ExitImmediately,
 }
 
 public sealed class AppBootstrapper
 {
-    private readonly ISingleInstance singleInstance;
-    private readonly Func<MainWindowViewModel> mainWindowViewModelFactory;
-    private readonly Action bringExistingWindowToFront;
-    private readonly Action<Action> dispatchToUserInterface;
-    private readonly Never never = new();
+  private readonly ISingleInstance singleInstance;
+  private readonly Func<MainWindowViewModel> mainWindowViewModelFactory;
+  private readonly Action bringExistingWindowToFront;
+  private readonly Action<Action> dispatchToUserInterface;
+  private readonly Never never = new();
 
-    private bool holdsTheInstance;
+  private bool holdsTheInstance;
 
-    public AppBootstrapper(
-        ISingleInstance singleInstance,
-        Func<MainWindowViewModel> mainWindowViewModelFactory,
-        Action bringExistingWindowToFront,
-        Action<Action> dispatchToUserInterface)
+  public AppBootstrapper(
+      ISingleInstance singleInstance,
+      Func<MainWindowViewModel> mainWindowViewModelFactory,
+      Action bringExistingWindowToFront,
+      Action<Action> dispatchToUserInterface)
+  {
+    this.singleInstance = singleInstance;
+    this.mainWindowViewModelFactory = mainWindowViewModelFactory;
+    this.bringExistingWindowToFront = bringExistingWindowToFront;
+    this.dispatchToUserInterface = dispatchToUserInterface;
+    this.singleInstance.ActivationRequested += OnActivationRequested;
+  }
+
+  public MainWindowViewModel? MainWindowViewModel { get; private set; }
+
+  public BootstrapOutcome Start()
+  {
+    SingleInstanceOutcome outcome;
+
+    try
     {
-        this.singleInstance = singleInstance;
-        this.mainWindowViewModelFactory = mainWindowViewModelFactory;
-        this.bringExistingWindowToFront = bringExistingWindowToFront;
-        this.dispatchToUserInterface = dispatchToUserInterface;
-        this.singleInstance.ActivationRequested += OnActivationRequested;
+      outcome = singleInstance.AcquireOrSignalExisting();
+    }
+    catch (Exception failure) when (failure is IOException or TimeoutException or UnauthorizedAccessException)
+    {
+      return BootstrapOutcome.ExitImmediately;
     }
 
-    public MainWindowViewModel? MainWindowViewModel { get; private set; }
-
-    public BootstrapOutcome Start()
+    switch (outcome)
     {
-        SingleInstanceOutcome outcome;
+      case SingleInstanceOutcome.AcquiredPrimary:
+        holdsTheInstance = true;
+        MainWindowViewModel = mainWindowViewModelFactory();
 
-        try
-        {
-            outcome = singleInstance.AcquireOrSignalExisting();
-        }
-        catch (Exception failure) when (failure is IOException or TimeoutException or UnauthorizedAccessException)
-        {
-            return BootstrapOutcome.ExitImmediately;
-        }
+        return BootstrapOutcome.ProceedToWindow;
 
-        switch (outcome)
-        {
-            case SingleInstanceOutcome.AcquiredPrimary:
-                holdsTheInstance = true;
-                MainWindowViewModel = mainWindowViewModelFactory();
+      case SingleInstanceOutcome.SignaledExistingAndShouldExit:
+        return BootstrapOutcome.ExitImmediately;
 
-                return BootstrapOutcome.ProceedToWindow;
+      default:
+        return never.OfType<BootstrapOutcome>(outcome);
+    }
+  }
 
-            case SingleInstanceOutcome.SignaledExistingAndShouldExit:
-                return BootstrapOutcome.ExitImmediately;
+  public void Release()
+  {
+    singleInstance.ActivationRequested -= OnActivationRequested;
+    singleInstance.Release();
+  }
 
-            default:
-                return never.OfType<BootstrapOutcome>(outcome);
-        }
+  private void OnActivationRequested()
+  {
+    if (!holdsTheInstance)
+    {
+      return;
     }
 
-    public void Release()
-    {
-        singleInstance.ActivationRequested -= OnActivationRequested;
-        singleInstance.Release();
-    }
-
-    private void OnActivationRequested()
-    {
-        if (!holdsTheInstance)
-        {
-            return;
-        }
-
-        dispatchToUserInterface(bringExistingWindowToFront);
-    }
+    dispatchToUserInterface(bringExistingWindowToFront);
+  }
 }

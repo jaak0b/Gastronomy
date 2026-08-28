@@ -1,41 +1,41 @@
-using Avalonia;
+﻿using Avalonia;
 using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop;
 
 internal sealed class Program
 {
-    private const string SetupArgument = "--setup";
+  private const string SetupArgument = "--setup";
 
-    [STAThread]
-    public static void Main(string[] args)
+  [STAThread]
+  public static void Main(string[] args)
+  {
+    if (args.Contains(SetupArgument))
     {
-        if (args.Contains(SetupArgument))
-        {
-            new DesktopComposition().RunElevatedSetupSteps();
+      new DesktopComposition().RunElevatedSetupSteps();
 
-            return;
-        }
-
-        ApplicationLog log = new();
-
-        try
-        {
-            log.Start(new DesktopComposition().DataDirectoryPath);
-            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-        }
-        finally
-        {
-            log.Stop();
-        }
+      return;
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
+    ApplicationLog log = new();
+
+    try
+    {
+      log.Start(new DesktopComposition().DataDirectoryPath);
+      BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+    finally
+    {
+      log.Stop();
+    }
+  }
+
+  public static AppBuilder BuildAvaloniaApp()
+      => AppBuilder.Configure<App>()
+          .UsePlatformDetect()
 #if DEBUG
-            .WithDeveloperTools()
+          .WithDeveloperTools()
 #endif
-            .WithInterFont()
-            .LogToTrace();
+          .WithInterFont()
+          .LogToTrace();
 }

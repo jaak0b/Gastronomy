@@ -1,14 +1,14 @@
-namespace GastronomyApp.Api.Options;
+﻿namespace GastronomyApp.Api.Options;
 
 public sealed class AppLanguage
 {
-    private const string GermanCode = "de";
+  private const string GermanCode = "de";
 
-    private string current = GermanCode;
+  private string current = GermanCode;
 
-    public string Current
-    {
-        get => current;
-        set => current = string.IsNullOrWhiteSpace(value) ? GermanCode : value;
-    }
+  public string Current
+  {
+    get => current;
+    set => current = string.IsNullOrWhiteSpace(value) ? GermanCode : value;
+  }
 }

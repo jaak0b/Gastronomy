@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -8,11 +8,11 @@ namespace GastronomyApp.Api.Endpoints;
 
 public static class LanguageEndpoints
 {
-    public static IEndpointRouteBuilder MapLanguageEndpoints(this IEndpointRouteBuilder routes)
-    {
-        routes.MapGet("/api/language", (AppLanguage language) =>
-            Results.Ok(new LanguageView(language.Current)));
+  public static IEndpointRouteBuilder MapLanguageEndpoints(this IEndpointRouteBuilder routes)
+  {
+    routes.MapGet("/api/language", (AppLanguage language) =>
+        Results.Ok(new LanguageView(language.Current)));
 
-        return routes;
-    }
+    return routes;
+  }
 }
