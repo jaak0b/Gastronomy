@@ -72,16 +72,16 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
   public async Task OnOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct)
   {
     await using var context = await _contextFactory.CreateDbContextAsync(ct);
-    var order = await context.Orders.FirstOrDefaultAsync(candidate => candidate.Id == orderId, ct);
+    var orderExists = await context.Orders.AnyAsync(candidate => candidate.Id == orderId, ct);
 
-    if (order is null)
+    if (!orderExists)
     {
       return;
     }
 
     await SendToAsync(_eventNames.OrderStatusChanged,
                       new OrderStatusChangedEvent(orderId, newStatus.ToString()),
-                      [_groupNames.StaffMember(order.StaffMemberId), _groupNames.Admin],
+                      [_groupNames.Admin],
                       ct);
   }
 
@@ -119,11 +119,11 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
     }
   }
 
-  public async Task PushOrderAcceptedAsync(Guid staffMemberId, OrderAcceptedEvent payload, CancellationToken ct)
+  public async Task PushOrderAcceptedAsync(OrderAcceptedEvent payload, CancellationToken ct)
   {
     await SendToAsync(_eventNames.OrderAccepted,
                       payload,
-                      [_groupNames.StaffMember(staffMemberId), _groupNames.Admin],
+                      [_groupNames.Admin],
                       ct);
 
     foreach (var stationId in payload.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())

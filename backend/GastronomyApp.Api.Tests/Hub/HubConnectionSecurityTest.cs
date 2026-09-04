@@ -22,7 +22,6 @@ public sealed class HubConnectionSecurityTest
   }
 
   private readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
-  private readonly TimeSpan _silenceWindow = TimeSpan.FromSeconds(2);
 
   private OrderTestContext _context = null!;
 
@@ -54,23 +53,10 @@ public sealed class HubConnectionSecurityTest
   public async Task Deactivate_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
   {
     TaskCompletionSource<Guid> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    TaskCompletionSource<Guid> heardAfterRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var revoked = false;
 
     await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
-    connection.On<JsonElement>("OrderAccepted",
-                               payload =>
-                               {
-                                 var orderId = payload.GetProperty("orderId").GetGuid();
-
-                                 if (revoked)
-                                 {
-                                   heardAfterRevocation.TrySetResult(orderId);
-                                   return;
-                                 }
-
-                                 heardBeforeRevocation.TrySetResult(orderId);
-                               });
+    connection.On<JsonElement>("StationBacklogChanged",
+                               payload => heardBeforeRevocation.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await connection.StartAsync();
     await PlaceAnOrderAsync();
@@ -79,9 +65,7 @@ public sealed class HubConnectionSecurityTest
 
     Assert.That(beforeRevocation,
                 Is.SameAs(heardBeforeRevocation.Task),
-                "The phone must receive its own order events before it is revoked.");
-
-    revoked = true;
+                "The phone must receive live pushes before it is revoked.");
 
     using (var revocation = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate",
                                                            null))
@@ -107,18 +91,6 @@ public sealed class HubConnectionSecurityTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     return body.RootElement.GetProperty("orderId").GetGuid();
-  }
-
-  private async Task StartIgnoringRefusalAsync(HubConnection connection)
-  {
-    try
-    {
-      await connection.StartAsync();
-    }
-    catch (Exception exception) when (exception is not AssertionException)
-    {
-      TestContext.Out.WriteLine($"The refused connection reported: {exception.Message}");
-    }
   }
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)

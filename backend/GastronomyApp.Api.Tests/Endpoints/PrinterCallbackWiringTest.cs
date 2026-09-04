@@ -61,7 +61,7 @@ public sealed class PrinterCallbackWiringTest
   }
 
   [Test]
-  public async Task PlaceOrder_ConnectedHubClientInThePlacingStaffMembersGroup_ReceivesPrintJobStatusChanged()
+  public async Task PlaceOrder_ConnectedPhone_ReceivesPrintJobStatusChanged()
   {
     TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -88,9 +88,42 @@ public sealed class PrinterCallbackWiringTest
 
     var completed = await Task.WhenAny(received.Task, Task.Delay(_patience));
 
-    Assert.That(completed, Is.SameAs(received.Task), "No PrintJobStatusChanged push reached the staff member who placed the order.");
+    Assert.That(completed, Is.SameAs(received.Task), "No PrintJobStatusChanged push reached the phone.");
     Assert.That(await received.Task,
                 Is.EqualTo(PrintJobStatus.Printed.ToString()));
+  }
+
+  [Test]
+  public async Task PlaceOrder_ConnectedLaptopAdministration_ReceivesOrderStatusChanged()
+  {
+    TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    await using var connection = new HubConnectionBuilder()
+                                .WithUrl(new Uri(_context.Factory.BaseAddress, "hub"))
+                                .Build();
+
+    connection.On<JsonElement>("OrderStatusChanged",
+                               payload =>
+                               {
+                                 var status = payload.GetProperty("status").GetString() ?? string.Empty;
+
+                                 if (status == OrderStatus.Printed.ToString())
+                                 {
+                                   received.TrySetResult(status);
+                                 }
+                               });
+
+    await connection.StartAsync();
+
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+    var completed = await Task.WhenAny(received.Task, Task.Delay(_patience));
+
+    Assert.That(completed, Is.SameAs(received.Task), "No OrderStatusChanged push reached the laptop.");
+    Assert.That(await received.Task,
+                Is.EqualTo(OrderStatus.Printed.ToString()));
   }
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)

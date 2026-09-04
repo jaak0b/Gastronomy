@@ -128,8 +128,7 @@ public sealed class OrderPlacementHandler
 
     var view = _orderReader.Describe(placed);
 
-    await _dispatcher.PushOrderAcceptedAsync(caller.StaffMemberId,
-                                            new(view.OrderId,
+    await _dispatcher.PushOrderAcceptedAsync(new(view.OrderId,
                                                 view.GlobalOrderNumber,
                                                 placed.Order.TableName,
                                                 view.TotalCents,
