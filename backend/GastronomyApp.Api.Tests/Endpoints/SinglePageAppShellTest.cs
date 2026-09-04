@@ -9,25 +9,25 @@ public sealed class SinglePageAppShellTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
-    await using var context = factory.CreateContext();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
+    await using var context = _factory.CreateContext();
     await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
+  private ApiTestFactory _factory = null!;
 
   [TestCase("/")]
   [TestCase("/orders")]
   [TestCase("/admin")]
   public async Task Get_ClientRoutedPath_ServesTheSinglePageAppShell(string path)
   {
-    using var response = await factory.Client.GetAsync(path);
+    using var response = await _factory.Client.GetAsync(path);
 
     Assert.Multiple(() =>
                     {
@@ -39,7 +39,7 @@ public sealed class SinglePageAppShellTest
   [Test]
   public async Task Get_UnknownApiPath_IsNotAnsweredWithTheShell()
   {
-    using var response = await factory.Client.GetAsync("/api/does-not-exist");
+    using var response = await _factory.Client.GetAsync("/api/does-not-exist");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }

@@ -13,18 +13,18 @@ public sealed class EnrolmentEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
-    await using var context = factory.CreateContext();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
+    await using var context = _factory.CreateContext();
     await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
+  private ApiTestFactory _factory = null!;
 
   [Test]
   public async Task PostRedeem_QrCodeForm_ReturnsTheDeviceTokenOnce()
@@ -133,7 +133,7 @@ public sealed class EnrolmentEndpointsTest
 
   private Task<HttpResponseMessage> RedeemAsync(string? code, string? name)
   {
-    return factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                           new RedeemBody(code, name, "NUnit"));
   }
 
@@ -142,12 +142,12 @@ public sealed class EnrolmentEndpointsTest
     HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
     request.Headers.Authorization = new("Bearer", deviceToken);
 
-    return factory.Client.SendAsync(request);
+    return _factory.Client.SendAsync(request);
   }
 
   private async Task<EnrolmentInvitationCreated> CreateInvitationAsync()
   {
-    using var scope = factory.Services.CreateScope();
+    using var scope = _factory.Services.CreateScope();
 
     return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>()
                       .CreateAsync(null, CancellationToken.None);
@@ -155,7 +155,7 @@ public sealed class EnrolmentEndpointsTest
 
   private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid? staffMemberId)
   {
-    using var response = await factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+    using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                               new { staffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));

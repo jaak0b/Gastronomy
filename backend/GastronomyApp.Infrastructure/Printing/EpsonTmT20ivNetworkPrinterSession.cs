@@ -37,44 +37,44 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
   private const byte PaperEndMask = 0x60;
   private const byte PaperNearEndMask = 0x0C;
 
-  private readonly TcpClient client;
-  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
-  private readonly Lock guard = new();
-  private readonly List<byte> inbound = [];
+  private readonly TcpClient _client;
+  private readonly byte[] _enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
+  private readonly Lock _guard = new();
+  private readonly List<byte> _inbound = [];
 
-  private readonly byte[] initialise = [0x1B, 0x40];
-  private readonly CancellationTokenSource lifetime = new();
-  private readonly ConcurrentQueue<TaskCompletionSource<byte>> pendingQueries = new();
-  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
+  private readonly byte[] _initialise = [0x1B, 0x40];
+  private readonly CancellationTokenSource _lifetime = new();
+  private readonly ConcurrentQueue<TaskCompletionSource<byte>> _pendingQueries = new();
+  private readonly byte[] _selectCodePage = [0x1B, 0x74, 0x13];
   private readonly Channel<PrinterStatusSnapshot> statusChannel = Channel.CreateUnbounded<PrinterStatusSnapshot>();
-  private readonly NetworkStream stream;
-  private readonly PrinterSessionTimeouts timeouts;
-  private readonly TimeProvider timeProvider;
-  private readonly SemaphoreSlim writeGate = new(1, 1);
-  private Task? heartbeatLoop;
-  private PrinterStatusSnapshot lastKnownStatus;
+  private readonly NetworkStream _stream;
+  private readonly PrinterSessionTimeouts _timeouts;
+  private readonly TimeProvider _timeProvider;
+  private readonly SemaphoreSlim _writeGate = new(1, 1);
+  private Task? _heartbeatLoop;
+  private PrinterStatusSnapshot _lastKnownStatus;
 
-  private PendingProcessIdEcho? pendingEcho;
-  private Task? readLoop;
-  private bool remoteClosed;
-  private int unrecognisedInboundByteCount;
+  private PendingProcessIdEcho? _pendingEcho;
+  private Task? _readLoop;
+  private bool _remoteClosed;
+  private int _unrecognisedInboundByteCount;
 
   public EpsonTmT20ivNetworkPrinterSession(TcpClient client, PrinterSessionTimeouts timeouts, TimeProvider timeProvider)
   {
-    this.client = client;
-    this.timeouts = timeouts;
-    this.timeProvider = timeProvider;
-    stream = client.GetStream();
-    lastKnownStatus = new(true, false, false, false, false, "Connected.", timeProvider.GetUtcNow());
+    _client = client;
+    _timeouts = timeouts;
+    _timeProvider = timeProvider;
+    _stream = client.GetStream();
+    _lastKnownStatus = new(true, false, false, false, false, "Connected.", timeProvider.GetUtcNow());
   }
 
   public int UnrecognisedInboundByteCount
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return unrecognisedInboundByteCount;
+        return _unrecognisedInboundByteCount;
       }
     }
   }
@@ -93,7 +93,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
                                          offlineStatus is not null && (offlineStatus.Value & CoverOpenBit) != 0,
                                          offlineStatus is not null && (offlineStatus.Value & ErrorOccurredBit) != 0,
                                          $"DLE EOT n=1,2,4 answered {Describe(printerStatus)},{Describe(offlineStatus)},{Describe(paperStatus)}.",
-                                         timeProvider.GetUtcNow());
+                                         _timeProvider.GetUtcNow());
 
     Publish(snapshot);
     return snapshot;
@@ -102,13 +102,13 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
   public async Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken)
   {
     TaskCompletionSource<bool> echoCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    lock (guard)
+    lock (_guard)
     {
-      pendingEcho = new(payload.PrinterJobId, echoCompletion);
+      _pendingEcho = new(payload.PrinterJobId, echoCompletion);
     }
 
     var bytesWritten = 0;
-    await writeGate.WaitAsync(cancellationToken);
+    await _writeGate.WaitAsync(cancellationToken);
     try
     {
       if (RemoteHasClosed())
@@ -120,7 +120,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
       while (bytesWritten < bytes.Length)
       {
         var take = Math.Min(WriteChunkSize, bytes.Length - bytesWritten);
-        await stream.WriteAsync(bytes.Slice(bytesWritten, take), cancellationToken);
+        await _stream.WriteAsync(bytes.Slice(bytesWritten, take), cancellationToken);
         bytesWritten += take;
 
         if (RemoteHasClosed())
@@ -129,71 +129,71 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         }
       }
 
-      await stream.WriteAsync(ProcessIdRequest(payload.PrinterJobId), cancellationToken);
+      await _stream.WriteAsync(ProcessIdRequest(payload.PrinterJobId), cancellationToken);
     }
     catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException)
     {
       return Dropped(bytesWritten, error.Message);
     } finally
     {
-      writeGate.Release();
+      _writeGate.Release();
     }
 
-    var completed = await Task.WhenAny(echoCompletion.Task, Task.Delay(timeouts.JobTimeout, cancellationToken));
-    lock (guard)
+    var completed = await Task.WhenAny(echoCompletion.Task, Task.Delay(_timeouts.JobTimeout, cancellationToken));
+    lock (_guard)
     {
-      pendingEcho = null;
+      _pendingEcho = null;
     }
 
     if (completed != echoCompletion.Task)
     {
       return new(PrintOutcome.Timeout,
                  bytesWritten,
-                 lastKnownStatus,
-                 $"No process id echo for {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} arrived within {timeouts.JobTimeout}.");
+                 _lastKnownStatus,
+                 $"No process id echo for {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} arrived within {_timeouts.JobTimeout}.");
     }
 
     return new(PrintOutcome.Confirmed,
                bytesWritten,
-               lastKnownStatus,
+               _lastKnownStatus,
                $"Process id {payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)} echoed on the sending connection.");
   }
 
   public async ValueTask DisposeAsync()
   {
-    await lifetime.CancelAsync();
+    await _lifetime.CancelAsync();
     statusChannel.Writer.TryComplete();
-    client.Dispose();
+    _client.Dispose();
 
-    if (readLoop is not null)
+    if (_readLoop is not null)
     {
-      await Task.WhenAny(readLoop, Task.Delay(500));
+      await Task.WhenAny(_readLoop, Task.Delay(500));
     }
 
-    if (heartbeatLoop is not null)
+    if (_heartbeatLoop is not null)
     {
-      await Task.WhenAny(heartbeatLoop, Task.Delay(500));
+      await Task.WhenAny(_heartbeatLoop, Task.Delay(500));
     }
 
-    lifetime.Dispose();
-    writeGate.Dispose();
+    _lifetime.Dispose();
+    _writeGate.Dispose();
   }
 
   public async Task StartAsync()
   {
-    await WriteAllAsync([.. initialise, .. selectCodePage, .. enableAutomaticStatusBack], lifetime.Token);
-    readLoop = Task.Run(() => ReadLoopAsync(lifetime.Token), CancellationToken.None);
-    heartbeatLoop = Task.Run(() => HeartbeatLoopAsync(lifetime.Token), CancellationToken.None);
+    await WriteAllAsync([.. _initialise, .. _selectCodePage, .. _enableAutomaticStatusBack], _lifetime.Token);
+    _readLoop = Task.Run(() => ReadLoopAsync(_lifetime.Token), CancellationToken.None);
+    _heartbeatLoop = Task.Run(() => HeartbeatLoopAsync(_lifetime.Token), CancellationToken.None);
   }
 
   private PrintDispatchResult Dropped(int bytesWritten, string detail)
   {
-    lock (guard)
+    lock (_guard)
     {
-      pendingEcho = null;
+      _pendingEcho = null;
     }
 
-    return new(PrintOutcome.SocketDropped, bytesWritten, lastKnownStatus, detail);
+    return new(PrintOutcome.SocketDropped, bytesWritten, _lastKnownStatus, detail);
   }
 
   private string Describe(byte? value)
@@ -209,29 +209,29 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private bool RemoteHasClosed()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return remoteClosed;
+      return _remoteClosed;
     }
   }
 
   private void MarkRemoteClosed()
   {
-    lock (guard)
+    lock (_guard)
     {
-      remoteClosed = true;
+      _remoteClosed = true;
     }
   }
 
   private async Task<byte?> QueryAsync(int n, CancellationToken cancellationToken)
   {
     TaskCompletionSource<byte> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    pendingQueries.Enqueue(completion);
+    _pendingQueries.Enqueue(completion);
 
-    await writeGate.WaitAsync(cancellationToken);
+    await _writeGate.WaitAsync(cancellationToken);
     try
     {
-      await stream.WriteAsync(new[] { DataLinkEscape, EndOfTransmission, (byte)n }, cancellationToken);
+      await _stream.WriteAsync(new[] { DataLinkEscape, EndOfTransmission, (byte)n }, cancellationToken);
     }
     catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException)
     {
@@ -239,10 +239,10 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
       return null;
     } finally
     {
-      writeGate.Release();
+      _writeGate.Release();
     }
 
-    var finished = await Task.WhenAny(completion.Task, Task.Delay(timeouts.StatusQueryTimeout, cancellationToken));
+    var finished = await Task.WhenAny(completion.Task, Task.Delay(_timeouts.StatusQueryTimeout, cancellationToken));
     if (finished != completion.Task)
     {
       completion.TrySetCanceled();
@@ -260,7 +260,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
       int read;
       try
       {
-        read = await stream.ReadAsync(buffer, cancellationToken);
+        read = await _stream.ReadAsync(buffer, cancellationToken);
       }
       catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
       {
@@ -274,9 +274,9 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         return;
       }
 
-      lock (guard)
+      lock (_guard)
       {
-        inbound.AddRange(buffer[..read]);
+        _inbound.AddRange(buffer[..read]);
       }
 
       DrainInbound();
@@ -317,7 +317,7 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
         Publish(DecodeAsb(asb));
         return true;
       case InboundFrame.TransmitStatus:
-        if (!pendingQueries.TryDequeue(out TaskCompletionSource<byte>? query))
+        if (!_pendingQueries.TryDequeue(out TaskCompletionSource<byte>? query))
         {
           DiscardOneUnrecognisedByte();
           return true;
@@ -341,23 +341,23 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private InboundFrame PeekFrame()
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (inbound.Count == 0)
+      if (_inbound.Count == 0)
       {
         return InboundFrame.Incomplete;
       }
 
-      var head = inbound[0];
+      var head = _inbound[0];
 
       if (head == ProcessIdEchoHeader)
       {
-        if (inbound.Count < 2)
+        if (_inbound.Count < 2)
         {
           return InboundFrame.Incomplete;
         }
 
-        return inbound[1] == ProcessIdEchoIdentifier ? InboundFrame.ProcessIdEcho : InboundFrame.Unrecognised;
+        return _inbound[1] == ProcessIdEchoIdentifier ? InboundFrame.ProcessIdEcho : InboundFrame.Unrecognised;
       }
 
       if ((head & FixedBitMask) == AutomaticStatusBackFixedBits)
@@ -376,77 +376,77 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private void DiscardOneUnrecognisedByte()
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (inbound.Count == 0)
+      if (_inbound.Count == 0)
       {
         return;
       }
 
-      inbound.RemoveAt(0);
-      unrecognisedInboundByteCount++;
+      _inbound.RemoveAt(0);
+      _unrecognisedInboundByteCount++;
     }
   }
 
   private byte? TakeSingleByte()
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (inbound.Count == 0)
+      if (_inbound.Count == 0)
       {
         return null;
       }
 
-      var value = inbound[0];
-      inbound.RemoveAt(0);
+      var value = _inbound[0];
+      _inbound.RemoveAt(0);
       return value;
     }
   }
 
   private int? TakeProcessIdEcho()
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (inbound.Count < 2 || inbound[0] != ProcessIdEchoHeader || inbound[1] != ProcessIdEchoIdentifier)
+      if (_inbound.Count < 2 || _inbound[0] != ProcessIdEchoHeader || _inbound[1] != ProcessIdEchoIdentifier)
       {
         return null;
       }
 
-      var terminator = inbound.IndexOf(0x00);
+      var terminator = _inbound.IndexOf(0x00);
       if (terminator < 2)
       {
         return null;
       }
 
-      var digits = Encoding.ASCII.GetString([.. inbound.GetRange(2, terminator - 2)]);
-      inbound.RemoveRange(0, terminator + 1);
+      var digits = Encoding.ASCII.GetString([.. _inbound.GetRange(2, terminator - 2)]);
+      _inbound.RemoveRange(0, terminator + 1);
       return int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : -1;
     }
   }
 
   private byte[]? TakeAsbBlock()
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (inbound.Count < AsbBlockLength)
+      if (_inbound.Count < AsbBlockLength)
       {
         return null;
       }
 
-      byte[] block = [.. inbound.GetRange(0, AsbBlockLength)];
-      inbound.RemoveRange(0, AsbBlockLength);
+      byte[] block = [.. _inbound.GetRange(0, AsbBlockLength)];
+      _inbound.RemoveRange(0, AsbBlockLength);
       return block;
     }
   }
 
   private void CompleteEcho(int processId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (pendingEcho is not null && pendingEcho.ProcessId == processId)
+      if (_pendingEcho is not null && _pendingEcho.ProcessId == processId)
       {
-        pendingEcho.Completion.TrySetResult(true);
-        pendingEcho = null;
+        _pendingEcho.Completion.TrySetResult(true);
+        _pendingEcho = null;
       }
     }
   }
@@ -459,12 +459,12 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
                (block[1] & CoverOpenBit) != 0,
                (block[1] & ErrorOccurredBit) != 0,
                $"Automatic status back block {Convert.ToHexString(block)}.",
-               timeProvider.GetUtcNow());
+               _timeProvider.GetUtcNow());
   }
 
   private void Publish(PrinterStatusSnapshot snapshot)
   {
-    lastKnownStatus = snapshot;
+    _lastKnownStatus = snapshot;
     statusChannel.Writer.TryWrite(snapshot);
   }
 
@@ -475,19 +475,19 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
     {
       try
       {
-        await Task.Delay(timeouts.HeartbeatInterval, cancellationToken);
+        await Task.Delay(_timeouts.HeartbeatInterval, cancellationToken);
         var answer = await QueryAsync(4, cancellationToken);
         unanswered = answer is null ? unanswered + 1 : 0;
 
         if (unanswered == 2)
         {
           Publish(new(false,
-                      lastKnownStatus.IsPaperEnd,
-                      lastKnownStatus.IsPaperNearEnd,
-                      lastKnownStatus.IsCoverOpen,
-                      lastKnownStatus.IsInErrorState,
+                      _lastKnownStatus.IsPaperEnd,
+                      _lastKnownStatus.IsPaperNearEnd,
+                      _lastKnownStatus.IsCoverOpen,
+                      _lastKnownStatus.IsInErrorState,
                       "Two consecutive heartbeats went unanswered.",
-                      timeProvider.GetUtcNow()));
+                      _timeProvider.GetUtcNow()));
         }
       }
       catch (OperationCanceledException)
@@ -499,13 +499,13 @@ public sealed class EpsonTmT20ivNetworkPrinterSession : IPrinterSession
 
   private async Task WriteAllAsync(byte[] bytes, CancellationToken cancellationToken)
   {
-    await writeGate.WaitAsync(cancellationToken);
+    await _writeGate.WaitAsync(cancellationToken);
     try
     {
-      await stream.WriteAsync(bytes, cancellationToken);
+      await _stream.WriteAsync(bytes, cancellationToken);
     } finally
     {
-      writeGate.Release();
+      _writeGate.Release();
     }
   }
 }

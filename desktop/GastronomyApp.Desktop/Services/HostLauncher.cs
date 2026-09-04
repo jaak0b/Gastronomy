@@ -7,14 +7,14 @@ namespace GastronomyApp.Desktop.Services;
 
 public sealed class HostLauncher : IHostLauncher
 {
-  private readonly Func<string, IDataFolderSetup> dataFolderSetupFactory;
-  private readonly INetworkAddressProvider networkAddressProvider;
+  private readonly Func<string, IDataFolderSetup> _dataFolderSetupFactory;
+  private readonly INetworkAddressProvider _networkAddressProvider;
 
   public HostLauncher(INetworkAddressProvider networkAddressProvider,
                       Func<string, IDataFolderSetup> dataFolderSetupFactory)
   {
-    this.networkAddressProvider = networkAddressProvider;
-    this.dataFolderSetupFactory = dataFolderSetupFactory;
+    _networkAddressProvider = networkAddressProvider;
+    _dataFolderSetupFactory = dataFolderSetupFactory;
   }
 
   public WebApplication? Application { get; private set; }
@@ -24,12 +24,12 @@ public sealed class HostLauncher : IHostLauncher
   public async Task<HostLaunchResult> StartAsync(ApiHostOptions options,
                                                  CancellationToken cancellationToken = default)
   {
-    if (networkAddressProvider.GetAvailableAddresses().Count == 0)
+    if (_networkAddressProvider.GetAvailableAddresses().Count == 0)
     {
       return new HostLaunchResult.NoNetworkAvailable();
     }
 
-    var configuredFolder = dataFolderSetupFactory(options.DataDirectory);
+    var configuredFolder = _dataFolderSetupFactory(options.DataDirectory);
 
     if (!configuredFolder.Exists() || !configuredFolder.CurrentUserCanWrite())
     {

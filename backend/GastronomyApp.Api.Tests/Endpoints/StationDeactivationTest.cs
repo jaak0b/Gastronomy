@@ -14,16 +14,16 @@ public sealed class StationDeactivationTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task Deactivate_FreshStationThatOnlyEverTestPrinted_ReportsNoOpenSlipsAndSwitchesOff()
@@ -31,7 +31,7 @@ public sealed class StationDeactivationTest
     var printerId = await CreatePrinterAsync();
     var stationId = await CreateStationAsync(printerId);
 
-    using (var testPrint = await context.Client.PostAsync($"/api/admin/printers/{printerId}/test-print",
+    using (var testPrint = await _context.Client.PostAsync($"/api/admin/printers/{printerId}/test-print",
                                                           null))
     {
       Assert.That(testPrint.StatusCode,
@@ -39,7 +39,7 @@ public sealed class StationDeactivationTest
                   "A test print on a fresh station must be accepted.");
     }
 
-    using var response = await context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate",
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate",
                                                         null);
 
     var body = await response.Content.ReadAsStringAsync();
@@ -48,7 +48,7 @@ public sealed class StationDeactivationTest
                 Is.EqualTo(HttpStatusCode.OK),
                 $"A station with no orders must switch off. Body: {body}");
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var station = await database.Stations.FirstAsync(candidate => candidate.Id == stationId);
 
     Assert.That(station.IsActive, Is.False);
@@ -57,12 +57,12 @@ public sealed class StationDeactivationTest
   [Test]
   public async Task Deactivate_StationWithAGenuinelyOpenTicket_IsStillRefused()
   {
-    using (var placed = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    using var response = await context.Client.PostAsync($"/api/admin/stations/{context.World.KitchenStationId}/deactivate",
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate",
                                                         null);
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -79,7 +79,7 @@ public sealed class StationDeactivationTest
   [Test]
   public async Task Deactivate_StationWhoseItemsWouldLoseTheirOnlyStation_IsRefusedForThatReason()
   {
-    using var response = await context.Client.PostAsync($"/api/admin/stations/{context.World.BarStationId}/deactivate",
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{_context.World.BarStationId}/deactivate",
                                                         null);
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -96,12 +96,12 @@ public sealed class StationDeactivationTest
   [Test]
   public async Task Deactivate_StationWhoseTicketsAreAllSettled_SwitchesOff()
   {
-    using (var placed = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    await using (var database = context.Factory.CreateContext())
+    await using (var database = _context.Factory.CreateContext())
     {
       List<PrintJob> jobs = await database.PrintJobs.ToListAsync();
 
@@ -113,20 +113,20 @@ public sealed class StationDeactivationTest
       await database.SaveChangesAsync();
     }
 
-    using (var assigned = await context.Client.PutAsJsonAsync($"/api/admin/items/{context.World.BratwurstItemId}",
+    using (var assigned = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}",
                                                               new
                                                               {
                                                                 name = "Bratwurst mit Brot",
                                                                 categoryName = "Essen",
                                                                 priceCents = 350,
                                                                 sortOrder = 1,
-                                                                stationIds = new[] { context.World.BarStationId }
+                                                                stationIds = new[] { _context.World.BarStationId }
                                                               }))
     {
       Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await context.Client.PostAsync($"/api/admin/stations/{context.World.KitchenStationId}/deactivate",
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate",
                                                         null);
 
     Assert.That(response.StatusCode,
@@ -139,13 +139,13 @@ public sealed class StationDeactivationTest
   {
     var stationId = await CreateStationAsync();
 
-    using (var switchedOff = await context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate",
+    using (var switchedOff = await _context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate",
                                                             null))
     {
       Assert.That(switchedOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await context.Client.PostAsync($"/api/admin/stations/{stationId}/activate",
+    using var response = await _context.Client.PostAsync($"/api/admin/stations/{stationId}/activate",
                                                         null);
 
     var body = await response.Content.ReadAsStringAsync();
@@ -154,7 +154,7 @@ public sealed class StationDeactivationTest
                 Is.EqualTo(HttpStatusCode.OK),
                 $"A station that was switched off must be switchable back on. Body: {body}");
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var station = await database.Stations.FirstAsync(candidate => candidate.Id == stationId);
 
     Assert.That(station.IsActive, Is.True);
@@ -162,7 +162,7 @@ public sealed class StationDeactivationTest
 
   private async Task<Guid> CreatePrinterAsync()
   {
-    using var response = await context.Client.PostAsJsonAsync("/api/admin/printers",
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/printers",
                                                               new { printerType = "TestPrinter", name = "Drucker Zelt" });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
@@ -174,7 +174,7 @@ public sealed class StationDeactivationTest
 
   private async Task<Guid> CreateStationAsync(Guid? printerId = null)
   {
-    using var response = await context.Client.PostAsJsonAsync("/api/admin/stations",
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/stations",
                                                               new { name = "Zelt", sortOrder = 3, printerId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));

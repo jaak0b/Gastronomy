@@ -8,11 +8,11 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 {
   private const string RuleName = "GastronomyApp ordering system";
 
-  private readonly string executablePath;
+  private readonly string _executablePath;
 
   public WindowsFirewallSetup(string executablePath)
   {
-    this.executablePath = executablePath;
+    _executablePath = executablePath;
   }
 
   public bool IsRuleConfigured()
@@ -23,7 +23,7 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
   public void EnsureRuleConfigured()
   {
     var ruleSettings =
-      $"action=allow program=\"{executablePath}\" "
+      $"action=allow program=\"{_executablePath}\" "
       + "protocol=TCP profile=private remoteip=localsubnet enable=yes";
 
     var exitCode = IsRuleConfigured()

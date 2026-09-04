@@ -14,9 +14,9 @@ public sealed class ConcurrentOrderTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
 
-    using var scope = context.Factory.Services.CreateScope();
+    using var scope = _context.Factory.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
 
     var secondStaffMemberId = Guid.NewGuid();
@@ -31,23 +31,23 @@ public sealed class ConcurrentOrderTest
 
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
                             .IssueAsync(secondStaffMemberId, "de", "NUnit second phone", CancellationToken.None);
-    secondDeviceToken = issued.PlaintextToken;
+    _secondDeviceToken = issued.PlaintextToken;
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
-  private string secondDeviceToken = null!;
+  private OrderTestContext _context = null!;
+  private string _secondDeviceToken = null!;
 
   [Test]
   public async Task PostOrder_TwoServersSendingAtTheSameMoment_AcceptsBothWithDistinctNumbers()
   {
-    Task<HttpResponseMessage> first = SendOrderAsync(context.DeviceToken);
-    Task<HttpResponseMessage> second = SendOrderAsync(secondDeviceToken);
+    Task<HttpResponseMessage> first = SendOrderAsync(_context.DeviceToken);
+    Task<HttpResponseMessage> second = SendOrderAsync(_secondDeviceToken);
 
     HttpResponseMessage[] responses = await Task.WhenAll(first, second);
     IReadOnlyList<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
@@ -57,7 +57,7 @@ public sealed class ConcurrentOrderTest
       response.Dispose();
     }
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     List<int> orderNumbers = await database.Orders
                                            .Select(order => order.GlobalOrderNumber)
                                            .OrderBy(number => number)
@@ -76,8 +76,8 @@ public sealed class ConcurrentOrderTest
   {
     HttpRequestMessage request = new(HttpMethod.Post, "/api/orders");
     request.Headers.Authorization = new("Bearer", deviceToken);
-    request.Content = JsonContent.Create(context.BuildOrder(Guid.NewGuid()));
+    request.Content = JsonContent.Create(_context.BuildOrder(Guid.NewGuid()));
 
-    return context.Client.SendAsync(request);
+    return _context.Client.SendAsync(request);
   }
 }

@@ -16,7 +16,7 @@ public sealed record LoadedOrder(
 
 public sealed class OrderReader
 {
-  private readonly OrderStatusCalculator statusCalculator = new();
+  private readonly OrderStatusCalculator _statusCalculator = new();
 
   public async Task<LoadedOrder?> LoadAsync(GastronomyAppDbContext context,
                                             Guid orderId,
@@ -42,7 +42,7 @@ public sealed class OrderReader
 
   public OrderStatus StatusOf(LoadedOrder loaded)
   {
-    return statusCalculator.Calculate([
+    return _statusCalculator.Calculate([
                                         .. loaded.StationOrders.Select(stationOrder =>
                                                                          loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrder.Id, out var job)
                                                                            ? job.Status

@@ -6,7 +6,7 @@ namespace GastronomyApp.Api.Tests.ErrorHandling;
 [TestFixture]
 public sealed class ResultEnvelopeTest
 {
-  private readonly ResultEnvelope envelope = new();
+  private readonly ResultEnvelope _envelope = new();
 
   [TestCase(OrderValidationFailureReason.NoItems, 400, "ValidationFailed")]
   [TestCase(OrderValidationFailureReason.TooManyItems, 400, "ValidationFailed")]
@@ -19,7 +19,7 @@ public sealed class ResultEnvelopeTest
                                                                      int expectedStatusCode,
                                                                      string expectedCode)
   {
-    var problem = envelope.Describe(new OrderValidationFailure { Reason = reason });
+    var problem = _envelope.Describe(new OrderValidationFailure { Reason = reason });
 
     Assert.Multiple(() =>
                     {
@@ -32,7 +32,7 @@ public sealed class ResultEnvelopeTest
   [TestCase(RoutingFailureReason.StationNotAssignedToItem)]
   public void Describe_RoutingFailure_MapsToUnprocessableEntity(RoutingFailureReason reason)
   {
-    var problem = envelope.Describe(new RoutingFailure { Reason = reason });
+    var problem = _envelope.Describe(new RoutingFailure { Reason = reason });
 
     Assert.Multiple(() =>
                     {

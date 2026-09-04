@@ -10,21 +10,21 @@ namespace GastronomyApp.Infrastructure.Printing;
 
 public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 {
-  private readonly Func<GastronomyAppDbContext> contextFactory;
-  private readonly OrderStatusCalculator orderStatusCalculator = new();
-  private readonly TimeProvider timeProvider;
-  private readonly ImmediateTransactionRunner transactionRunner = new();
+  private readonly Func<GastronomyAppDbContext> _contextFactory;
+  private readonly OrderStatusCalculator _orderStatusCalculator = new();
+  private readonly TimeProvider _timeProvider;
+  private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public EfCorePrinterWorkerDataAccess(Func<GastronomyAppDbContext> contextFactory,
                                        TimeProvider timeProvider)
   {
-    this.contextFactory = contextFactory;
-    this.timeProvider = timeProvider;
+    _contextFactory = contextFactory;
+    _timeProvider = timeProvider;
   }
 
   public async Task<PrintJobLoadResult> LoadPrintJobAsync(Guid printJobId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
     var job = await context.PrintJobs.AsNoTracking()
                            .SingleAsync(candidate => candidate.Id == printJobId, ct);
@@ -77,9 +77,9 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<ClaimResult> TryClaimAsync(Guid printJobId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
-    return await transactionRunner.RunAsync(context,
+    return await _transactionRunner.RunAsync(context,
                                             async transactionCancellationToken =>
                                             {
                                               var job = await context.PrintJobs
@@ -127,9 +127,9 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<PrintOutcomeApplied> ApplyOutcomeAsync(PrintOutcomeApplication application, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
-    return await transactionRunner.RunAsync(context,
+    return await _transactionRunner.RunAsync(context,
                                             async transactionCancellationToken =>
                                             {
                                               var job = await context.PrintJobs
@@ -142,7 +142,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
                                                 job.Status = application.JobStatus;
                                                 job.FailureReason = application.FailureReason;
                                                 job.CompletedAtUtc = IsTerminal(application.JobStatus)
-                                                                       ? timeProvider.GetUtcNow().UtcDateTime
+                                                                       ? _timeProvider.GetUtcNow().UtcDateTime
                                                                        : null;
 
                                                 await context.SaveChangesAsync(transactionCancellationToken);
@@ -164,7 +164,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
   public async Task<IReadOnlyList<Guid>> LoadRecoverablePrintJobIdsAsync(IReadOnlyCollection<Guid> servedStationIds,
                                                                          CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     List<Guid> ids = servedStationIds.ToList();
 
     return await WaitingJobsAtStations(context, ids)
@@ -175,7 +175,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task MarkSendingJobsUnknownAsync(IReadOnlyCollection<Guid> servedStationIds, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     List<Guid> ids = servedStationIds.ToList();
 
     List<PrintJob> sending = await context.PrintJobs
@@ -194,7 +194,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<int> CountWaitingPrintJobsAsync(Guid stationId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
     return await WaitingJobsAtStations(context, [stationId]).CountAsync(ct);
   }
@@ -203,12 +203,12 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
                                                   PrintFailureReason failureReason,
                                                   CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     await using var transaction =
       await context.Database.BeginTransactionAsync(ct);
 
     List<Guid> ids = servedStationIds.ToList();
-    var now = timeProvider.GetUtcNow().UtcDateTime;
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
 
     List<Guid> faultyPrinterIds = await context.Stations.AsNoTracking()
                                                .Where(station => ids.Contains(station.Id) && station.PrinterId != null)
@@ -240,7 +240,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task ClearFaultyAtEndpointAsync(IReadOnlyCollection<Guid> servedStationIds, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     List<Guid> ids = servedStationIds.ToList();
 
     List<Guid> clearedPrinterIds = await context.Stations.AsNoTracking()
@@ -254,7 +254,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
     foreach (var status in statuses)
     {
       status.IsFaulty = false;
-      status.LastChangedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+      status.LastChangedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
       status.LastDetail = "A human reconnected this printer.";
     }
 
@@ -263,14 +263,14 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<int> AllocatePrinterJobIdAsync(CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     SequenceNumberAllocator allocator = new(context);
     return await allocator.AllocatePrinterJobIdAsync(ct);
   }
 
   public async Task<IReadOnlyList<Guid>> OrderQueueAsync(IReadOnlyCollection<Guid> printJobIds, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
     List<Guid> ids = printJobIds.ToList();
 
     return await context.PrintJobs.AsNoTracking()
@@ -282,21 +282,21 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<OrderPrintJobStatuses> LoadOrderPrintJobStatusesAsync(Guid orderId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
     List<PrintJobStatus> statuses = await LatestStatusesForOrderAsync(context, orderId, ct);
 
     return new()
            {
-             CurrentStatus = orderStatusCalculator.Calculate(statuses),
+             CurrentStatus = _orderStatusCalculator.Calculate(statuses),
              PrintJobStatuses = statuses
            };
   }
 
   public async Task WritePrinterStatusAsync(Guid printerId, PrinterStatusSnapshot snapshot, CancellationToken ct)
   {
-    await using var context = contextFactory();
-    var now = timeProvider.GetUtcNow().UtcDateTime;
+    await using var context = _contextFactory();
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
 
     var status = await context.PrinterStatuses
                               .SingleOrDefaultAsync(candidate => candidate.PrinterId == printerId, ct);
@@ -345,7 +345,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
   public async Task<IReadOnlyList<SuspensionPeriod>> LoadSuspensionPeriodsAsync(Guid stationId,
                                                                                 CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
     var station = await context.Stations.AsNoTracking()
                                .SingleOrDefaultAsync(candidate => candidate.Id == stationId, ct);
@@ -369,8 +369,8 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task FailPrintJobAsync(Guid printJobId, PrintFailureReason failureReason, CancellationToken ct)
   {
-    await using var context = contextFactory();
-    var now = timeProvider.GetUtcNow().UtcDateTime;
+    await using var context = _contextFactory();
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
 
     var job = await context.PrintJobs.SingleOrDefaultAsync(candidate => candidate.Id == printJobId, ct);
     if (job is null || IsTerminal(job.Status))
@@ -386,9 +386,9 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<PrintJobEnsured> EnsureNextCopyAsync(Guid stationOrderId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
-    return await transactionRunner.RunAsync(context,
+    return await _transactionRunner.RunAsync(context,
                                             async transactionCancellationToken =>
                                             {
                                               var stationId = await context.StationOrders.AsNoTracking()
@@ -427,7 +427,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
                                                                       Status = PrintJobStatus.Queued,
                                                                       PrinterJobId = null,
                                                                       FailureReason = null,
-                                                                      CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
+                                                                      CreatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime
                                                                     });
 
                                               await context.SaveChangesAsync(transactionCancellationToken);
@@ -443,7 +443,7 @@ public sealed class EfCorePrinterWorkerDataAccess : IPrinterWorkerDataAccess
 
   public async Task<Guid?> ResolveStationAsync(Guid printJobId, CancellationToken ct)
   {
-    await using var context = contextFactory();
+    await using var context = _contextFactory();
 
     return await context.PrintJobs.AsNoTracking()
                         .Where(job => job.Id == printJobId)

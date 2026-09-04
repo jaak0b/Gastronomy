@@ -54,30 +54,30 @@ public static class AdminItemEndpoints
 
 public sealed class AdminItemHandler
 {
-  private readonly CatalogReader catalogReader;
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly HubNotificationDispatcher dispatcher;
-  private readonly ResultEnvelope resultEnvelope;
+  private readonly CatalogReader _catalogReader;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly HubNotificationDispatcher _dispatcher;
+  private readonly ResultEnvelope _resultEnvelope;
 
   public AdminItemHandler(GastronomyAppDbContext dbContext,
                           CatalogReader catalogReader,
                           HubNotificationDispatcher dispatcher,
                           ResultEnvelope resultEnvelope)
   {
-    this.dbContext = dbContext;
-    this.catalogReader = catalogReader;
-    this.dispatcher = dispatcher;
-    this.resultEnvelope = resultEnvelope;
+    _dbContext = dbContext;
+    _catalogReader = catalogReader;
+    _dispatcher = dispatcher;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    List<CatalogItem> items = await dbContext.CatalogItems
+    List<CatalogItem> items = await _dbContext.CatalogItems
                                              .AsNoTracking()
                                              .OrderBy(item => item.SortOrder)
                                              .ToListAsync(cancellationToken);
 
-    List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
+    List<ItemStationAssignment> assignments = await _dbContext.ItemStationAssignments
                                                              .AsNoTracking()
                                                              .ToListAsync(cancellationToken);
 
@@ -116,7 +116,7 @@ public sealed class AdminItemHandler
 
     var itemId = Guid.NewGuid();
 
-    dbContext.CatalogItems.Add(new()
+    _dbContext.CatalogItems.Add(new()
                                {
                                  Id = itemId,
                                  Name = request.Name!,
@@ -129,7 +129,7 @@ public sealed class AdminItemHandler
 
     foreach (var stationId in request.StationIds!)
     {
-      dbContext.ItemStationAssignments.Add(new()
+      _dbContext.ItemStationAssignments.Add(new()
                                            {
                                              Id = Guid.NewGuid(),
                                              CatalogItemId = itemId,
@@ -137,7 +137,7 @@ public sealed class AdminItemHandler
                                            });
     }
 
-    await dbContext.SaveChangesAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
     await PushCatalogChangedAsync(cancellationToken);
 
     return Results.Json(new SavedItemView(itemId), statusCode: StatusCodes.Status201Created);
@@ -159,7 +159,7 @@ public sealed class AdminItemHandler
       return refusal;
     }
 
-    var item = await dbContext.CatalogItems
+    var item = await _dbContext.CatalogItems
                               .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
 
     if (item is null)
@@ -172,15 +172,15 @@ public sealed class AdminItemHandler
     item.PriceCents = request.PriceCents;
     item.SortOrder = request.SortOrder;
 
-    List<ItemStationAssignment> existing = await dbContext.ItemStationAssignments
+    List<ItemStationAssignment> existing = await _dbContext.ItemStationAssignments
                                                           .Where(assignment => assignment.CatalogItemId == itemId)
                                                           .ToListAsync(cancellationToken);
 
-    dbContext.ItemStationAssignments.RemoveRange(existing);
+    _dbContext.ItemStationAssignments.RemoveRange(existing);
 
     foreach (var stationId in request.StationIds!)
     {
-      dbContext.ItemStationAssignments.Add(new()
+      _dbContext.ItemStationAssignments.Add(new()
                                            {
                                              Id = Guid.NewGuid(),
                                              CatalogItemId = itemId,
@@ -188,7 +188,7 @@ public sealed class AdminItemHandler
                                            });
     }
 
-    await dbContext.SaveChangesAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
     await PushCatalogChangedAsync(cancellationToken);
 
     return Results.Ok(new SavedItemView(itemId));
@@ -198,7 +198,7 @@ public sealed class AdminItemHandler
                                                   SetAvailabilityRequest request,
                                                   CancellationToken cancellationToken)
   {
-    var item = await dbContext.CatalogItems
+    var item = await _dbContext.CatalogItems
                               .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
 
     if (item is null)
@@ -207,7 +207,7 @@ public sealed class AdminItemHandler
     }
 
     item.IsAvailable = request.IsAvailable;
-    await dbContext.SaveChangesAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
     await PushCatalogChangedAsync(cancellationToken);
 
     return Results.Ok(new SavedItemView(itemId));
@@ -215,7 +215,7 @@ public sealed class AdminItemHandler
 
   public async Task<IResult> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    var item = await dbContext.CatalogItems
+    var item = await _dbContext.CatalogItems
                               .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
 
     if (item is null)
@@ -223,7 +223,7 @@ public sealed class AdminItemHandler
       return Results.NotFound();
     }
 
-    List<Guid> assignedStationIds = await dbContext.ItemStationAssignments
+    List<Guid> assignedStationIds = await _dbContext.ItemStationAssignments
                                                    .AsNoTracking()
                                                    .Where(assignment => assignment.CatalogItemId == itemId)
                                                    .Select(assignment => assignment.StationId)
@@ -235,7 +235,7 @@ public sealed class AdminItemHandler
     }
 
     item.IsActive = true;
-    await dbContext.SaveChangesAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
     await PushCatalogChangedAsync(cancellationToken);
 
     return Results.Ok(new SavedItemView(itemId));
@@ -243,7 +243,7 @@ public sealed class AdminItemHandler
 
   public async Task<IResult> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    var item = await dbContext.CatalogItems
+    var item = await _dbContext.CatalogItems
                               .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
 
     if (item is null)
@@ -252,7 +252,7 @@ public sealed class AdminItemHandler
     }
 
     item.IsActive = false;
-    await dbContext.SaveChangesAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
     await PushCatalogChangedAsync(cancellationToken);
 
     return Results.Ok(new SavedItemView(itemId));
@@ -261,7 +261,7 @@ public sealed class AdminItemHandler
   private async Task<bool> AnyStationIsActiveAsync(IReadOnlyCollection<Guid> stationIds,
                                                    CancellationToken cancellationToken)
   {
-    return await dbContext.Stations
+    return await _dbContext.Stations
                           .AsNoTracking()
                           .AnyAsync(station => station.IsActive && stationIds.Contains(station.Id),
                                     cancellationToken);
@@ -269,7 +269,7 @@ public sealed class AdminItemHandler
 
   private IResult ItemHasNoActiveStation()
   {
-    return resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
+    return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                   "UnprocessableEntity",
                                   "admin.itemHasNoActiveStation");
   }
@@ -278,21 +278,21 @@ public sealed class AdminItemHandler
   {
     if (string.IsNullOrWhiteSpace(request.Name))
     {
-      return resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
                                     "admin.itemNameMissing");
     }
 
     if (string.IsNullOrWhiteSpace(request.CategoryName))
     {
-      return resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
                                     "admin.itemCategoryMissing");
     }
 
     if (request.StationIds is null || request.StationIds.Count == 0)
     {
-      return resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
+      return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                     "UnprocessableEntity",
                                     "admin.itemNeedsAStation");
     }
@@ -302,8 +302,8 @@ public sealed class AdminItemHandler
 
   private async Task PushCatalogChangedAsync(CancellationToken cancellationToken)
   {
-    var catalog = await catalogReader.ReadAsync(dbContext, cancellationToken);
-    await dispatcher.PushCatalogChangedAsync(catalog.Version, cancellationToken);
+    var catalog = await _catalogReader.ReadAsync(_dbContext, cancellationToken);
+    await _dispatcher.PushCatalogChangedAsync(catalog.Version, cancellationToken);
   }
 }
 

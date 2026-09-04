@@ -44,28 +44,28 @@ public sealed class AdminOrderHandler
 {
   private const int DefaultLimit = 200;
 
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly OrderQueryHandler orderQueryHandler;
-  private readonly OrderReader orderReader;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly OrderQueryHandler _orderQueryHandler;
+  private readonly OrderReader _orderReader;
 
   public AdminOrderHandler(GastronomyAppDbContext dbContext,
                            OrderReader orderReader,
                            OrderQueryHandler orderQueryHandler)
   {
-    this.dbContext = dbContext;
-    this.orderReader = orderReader;
-    this.orderQueryHandler = orderQueryHandler;
+    _dbContext = dbContext;
+    _orderReader = orderReader;
+    _orderQueryHandler = orderQueryHandler;
   }
 
   public async Task<IResult> ListAsync(string? status,
                                        Guid? stationId,
                                        CancellationToken cancellationToken)
   {
-    IQueryable<Order> query = dbContext.Orders.AsNoTracking();
+    IQueryable<Order> query = _dbContext.Orders.AsNoTracking();
 
     if (stationId is not null)
     {
-      List<Guid> orderIdsAtStation = await dbContext.StationOrders
+      List<Guid> orderIdsAtStation = await _dbContext.StationOrders
                                                     .AsNoTracking()
                                                     .Where(stationOrder => stationOrder.StationId == stationId)
                                                     .Select(stationOrder => stationOrder.OrderId)
@@ -86,14 +86,14 @@ public sealed class AdminOrderHandler
 
     foreach (var order in orders)
     {
-      var loaded = (await orderReader.LoadAsync(dbContext, order.Id, cancellationToken))!;
+      var loaded = (await _orderReader.LoadAsync(_dbContext, order.Id, cancellationToken))!;
 
-      if (filtersByStatus && orderReader.StatusOf(loaded) != parsedStatus)
+      if (filtersByStatus && _orderReader.StatusOf(loaded) != parsedStatus)
       {
         continue;
       }
 
-      entries.Add(await orderQueryHandler.DescribeListEntryAsync(loaded, cancellationToken));
+      entries.Add(await _orderQueryHandler.DescribeListEntryAsync(loaded, cancellationToken));
     }
 
     return Results.Ok(new OrderListView(entries));

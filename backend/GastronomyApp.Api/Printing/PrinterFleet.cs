@@ -44,18 +44,18 @@ public sealed record RunningWorker(PrinterWorker Worker, CancellationTokenSource
 
 public sealed class PrinterFleet : IPrinterFleet, IHostedService
 {
-  private readonly IPrintCallbacks callbacks;
-  private readonly IPrinterWorkerDataAccess dataAccess;
-  private readonly PrinterWorkerDomainServices domainServices;
-  private readonly PrinterDriverRegistry driverRegistry;
-  private readonly Lock guard = new();
+  private readonly IPrintCallbacks _callbacks;
+  private readonly IPrinterWorkerDataAccess _dataAccess;
+  private readonly PrinterWorkerDomainServices _domainServices;
+  private readonly PrinterDriverRegistry _driverRegistry;
+  private readonly Lock _guard = new();
 
-  private readonly AppLanguage language;
-  private readonly ILoggerFactory loggerFactory;
-  private readonly IPrinterSource printerSource;
-  private readonly EscPosSlipRenderer renderer;
-  private readonly TimeProvider timeProvider;
-  private readonly Dictionary<Guid, RunningWorker> workers = [];
+  private readonly AppLanguage _language;
+  private readonly ILoggerFactory _loggerFactory;
+  private readonly IPrinterSource _printerSource;
+  private readonly EscPosSlipRenderer _renderer;
+  private readonly TimeProvider _timeProvider;
+  private readonly Dictionary<Guid, RunningWorker> _workers = [];
 
   public PrinterFleet(IPrinterSource printerSource,
                       PrinterDriverRegistry driverRegistry,
@@ -67,24 +67,24 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
                       AppLanguage language,
                       ILoggerFactory loggerFactory)
   {
-    this.language = language;
-    this.printerSource = printerSource;
-    this.driverRegistry = driverRegistry;
-    this.dataAccess = dataAccess;
-    this.callbacks = callbacks;
-    this.renderer = renderer;
-    this.domainServices = domainServices;
-    this.timeProvider = timeProvider;
-    this.loggerFactory = loggerFactory;
+    _language = language;
+    _printerSource = printerSource;
+    _driverRegistry = driverRegistry;
+    _dataAccess = dataAccess;
+    _callbacks = callbacks;
+    _renderer = renderer;
+    _domainServices = domainServices;
+    _timeProvider = timeProvider;
+    _loggerFactory = loggerFactory;
   }
 
   public IReadOnlyList<PrinterWorker> Workers
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return [.. workers.Values.Select(running => running.Worker)];
+        return [.. _workers.Values.Select(running => running.Worker)];
       }
     }
   }
@@ -102,10 +102,10 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
   public async Task StopAsync(CancellationToken cancellationToken)
   {
     List<RunningWorker> running;
-    lock (guard)
+    lock (_guard)
     {
-      running = [.. workers.Values];
-      workers.Clear();
+      running = [.. _workers.Values];
+      _workers.Clear();
     }
 
     foreach (var entry in running)
@@ -116,7 +116,7 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
   public async Task<PrintJobEnsured> EnqueueAsync(Guid stationOrderId, CancellationToken cancellationToken)
   {
-    var ensured = await dataAccess.EnsureNextCopyAsync(stationOrderId, cancellationToken);
+    var ensured = await _dataAccess.EnsureNextCopyAsync(stationOrderId, cancellationToken);
 
     if (ensured.StationId is null)
     {
@@ -144,16 +144,16 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
   public async Task ReconcileAsync(CancellationToken cancellationToken)
   {
-    IReadOnlyList<PrinterWithStations> entries = await printerSource.LoadActiveAsync(cancellationToken);
+    IReadOnlyList<PrinterWithStations> entries = await _printerSource.LoadActiveAsync(cancellationToken);
     Dictionary<Guid, PrinterWithStations> wanted = entries.ToDictionary(entry => entry.Printer.Id);
 
     List<RunningWorker> retired = [];
-    lock (guard)
+    lock (_guard)
     {
-      foreach (var printerId in workers.Keys.Where(existing => !wanted.ContainsKey(existing)).ToList())
+      foreach (var printerId in _workers.Keys.Where(existing => !wanted.ContainsKey(existing)).ToList())
       {
-        retired.Add(workers[printerId]);
-        workers.Remove(printerId);
+        retired.Add(_workers[printerId]);
+        _workers.Remove(printerId);
       }
     }
 
@@ -166,9 +166,9 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
     {
       Guid[] served = [.. wantedPrinter.Value.StationIds];
       bool alreadyRunning;
-      lock (guard)
+      lock (_guard)
       {
-        alreadyRunning = workers.TryGetValue(wantedPrinter.Key, out var running)
+        alreadyRunning = _workers.TryGetValue(wantedPrinter.Key, out var running)
                          && running.Worker.ServedStationIds.OrderBy(id => id).SequenceEqual(served.OrderBy(id => id));
       }
 
@@ -178,12 +178,12 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
       }
 
       RunningWorker? replaced = null;
-      lock (guard)
+      lock (_guard)
       {
-        if (workers.TryGetValue(wantedPrinter.Key, out var previous))
+        if (_workers.TryGetValue(wantedPrinter.Key, out var previous))
         {
           replaced = previous;
-          workers.Remove(wantedPrinter.Key);
+          _workers.Remove(wantedPrinter.Key);
         }
       }
 
@@ -198,9 +198,9 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
   private PrinterWorker WorkerForStation(Guid stationId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      foreach (var running in workers.Values)
+      foreach (var running in _workers.Values)
       {
         if (running.Worker.ServedStationIds.Contains(stationId))
         {
@@ -214,9 +214,9 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
 
   private PrinterWorker WorkerForPrinter(Guid printerId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (workers.TryGetValue(printerId, out var running))
+      if (_workers.TryGetValue(printerId, out var running))
       {
         return running.Worker;
       }
@@ -229,21 +229,21 @@ public sealed class PrinterFleet : IPrinterFleet, IHostedService
   {
     PrinterWorker worker = new(entry.Printer,
                                served,
-                               driverRegistry.For(entry.Printer),
-                               dataAccess,
-                               callbacks,
-                               renderer,
-                               domainServices,
-                               timeProvider,
-                               language,
-                               loggerFactory.CreateLogger<PrinterWorker>());
+                               _driverRegistry.For(entry.Printer),
+                               _dataAccess,
+                               _callbacks,
+                               _renderer,
+                               _domainServices,
+                               _timeProvider,
+                               _language,
+                               _loggerFactory.CreateLogger<PrinterWorker>());
 
     CancellationTokenSource lifetime = new();
     var loop = worker.RunAsync(lifetime.Token);
 
-    lock (guard)
+    lock (_guard)
     {
-      workers[entry.Printer.Id] = new(worker, lifetime, loop);
+      _workers[entry.Printer.Id] = new(worker, lifetime, loop);
     }
   }
 

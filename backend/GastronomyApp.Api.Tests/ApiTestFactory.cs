@@ -13,14 +13,14 @@ namespace GastronomyApp.Api.Tests;
 
 public sealed class ApiTestFactory : IAsyncDisposable
 {
-  private readonly WebApplication application;
+  private readonly WebApplication _application;
 
   private ApiTestFactory(WebApplication application,
                          string dataDirectory,
                          Uri baseAddress,
                          AppLanguage language)
   {
-    this.application = application;
+    _application = application;
     DataDirectory = dataDirectory;
     BaseAddress = baseAddress;
     Language = language;
@@ -35,15 +35,15 @@ public sealed class ApiTestFactory : IAsyncDisposable
 
   public HttpClient Client { get; }
 
-  public IServiceProvider Services => application.Services;
+  public IServiceProvider Services => _application.Services;
 
   public string MockSlipFolder => Path.Combine(DataDirectory, "mock-slips");
 
   public async ValueTask DisposeAsync()
   {
     Client.Dispose();
-    await application.StopAsync();
-    await application.DisposeAsync();
+    await _application.StopAsync();
+    await _application.DisposeAsync();
     SqliteConnection.ClearAllPools();
 
     if (Directory.Exists(DataDirectory))
@@ -78,7 +78,7 @@ public sealed class ApiTestFactory : IAsyncDisposable
       Directory.CreateDirectory(dataDirectory);
 
       AppLanguage language = new();
-      var application = new GastronomyAppApiApplication().Build(new()
+      var _application = new GastronomyAppApiApplication().Build(new()
                                                                 {
                                                                   DataDirectory = dataDirectory,
                                                                   Port = 0,
@@ -86,13 +86,13 @@ public sealed class ApiTestFactory : IAsyncDisposable
                                                                   Language = language
                                                                 });
 
-      await application.StartAsync();
+      await _application.StartAsync();
 
       var addresses =
-        application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+        _application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
       Uri baseAddress = new(addresses.Addresses.First());
 
-      return new(application, dataDirectory, baseAddress, language);
+      return new(_application, dataDirectory, baseAddress, language);
     }
   }
 }
@@ -107,7 +107,7 @@ public sealed record SeededWorld(
 
 public sealed class ApiSeeder
 {
-  private readonly DateTime baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
+  private readonly DateTime _baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
 
   public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
   {
@@ -124,7 +124,7 @@ public sealed class ApiSeeder
                                Id = world.StaffMemberId,
                                Name = "Anna",
                                IsActive = true,
-                               CreatedAtUtc = baseline
+                               CreatedAtUtc = _baseline
                              });
 
     AddStation(context, world.KitchenStationId, "Kueche", 1);
@@ -166,8 +166,8 @@ public sealed class ApiSeeder
                                   IsInErrorState = false,
                                   IsFaulty = false,
                                   LastDetail = "seeded",
-                                  LastChangedAtUtc = baseline,
-                                  LastHeardFromAtUtc = baseline
+                                  LastChangedAtUtc = _baseline,
+                                  LastHeardFromAtUtc = _baseline
                                 });
   }
 

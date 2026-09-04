@@ -29,11 +29,11 @@ public static class CatalogEndpoints
 
 public sealed class CatalogReader
 {
-  private readonly TimeProvider timeProvider;
+  private readonly TimeProvider _timeProvider;
 
   public CatalogReader(TimeProvider timeProvider)
   {
-    this.timeProvider = timeProvider;
+    _timeProvider = timeProvider;
   }
 
   public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
@@ -81,7 +81,7 @@ public sealed class CatalogReader
         .OrderBy(category => category.SortOrder)
     ];
 
-    return new(timeProvider.GetUtcNow().ToString("O"),
+    return new(_timeProvider.GetUtcNow().ToString("O"),
                categories,
                itemViews,
                [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))]);

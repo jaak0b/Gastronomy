@@ -7,12 +7,12 @@ public sealed class Pc858Encoder
 {
   private const char Substitute = '?';
 
-  private readonly IReadOnlyDictionary<char, byte> highRange;
-  private readonly IReadOnlyDictionary<char, string> transliterations;
+  private readonly IReadOnlyDictionary<char, byte> _highRange;
+  private readonly IReadOnlyDictionary<char, string> _transliterations;
 
   public Pc858Encoder()
   {
-    highRange = new Dictionary<char, byte>
+    _highRange = new Dictionary<char, byte>
                 {
                   ['ü'] = 0x81,
                   ['é'] = 0x82,
@@ -45,7 +45,7 @@ public sealed class Pc858Encoder
                   ['°'] = 0xF8
                 };
 
-    transliterations = new Dictionary<char, string>
+    _transliterations = new Dictionary<char, string>
                        {
                          ['ł'] = "l",
                          ['Ł'] = "L",
@@ -107,17 +107,17 @@ public sealed class Pc858Encoder
       return (byte)character;
     }
 
-    return highRange.TryGetValue(character, out var mapped) ? mapped : (byte)Substitute;
+    return _highRange.TryGetValue(character, out var mapped) ? mapped : (byte)Substitute;
   }
 
   private bool IsRepresentable(char character)
   {
-    return character <= 0x7F || highRange.ContainsKey(character);
+    return character <= 0x7F || _highRange.ContainsKey(character);
   }
 
   private string Transliterate(char character)
   {
-    if (transliterations.TryGetValue(character, out var replacement))
+    if (_transliterations.TryGetValue(character, out var replacement))
     {
       return replacement;
     }

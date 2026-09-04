@@ -34,7 +34,7 @@ public interface IMockFaultRegistry
 
 public sealed class InMemoryMockFaultRegistry : IMockFaultRegistry
 {
-  private readonly ConcurrentDictionary<Guid, ArmedMockFault> armed = new();
+  private readonly ConcurrentDictionary<Guid, ArmedMockFault> _armed = new();
 
   public MockFault GetArmedFault(Guid printerId)
   {
@@ -43,21 +43,21 @@ public sealed class InMemoryMockFaultRegistry : IMockFaultRegistry
 
   public ArmedMockFault Armed(Guid printerId)
   {
-    return armed.TryGetValue(printerId, out var entry)
+    return _armed.TryGetValue(printerId, out var entry)
              ? entry
              : new(MockFault.None, MockFaultMode.Once);
   }
 
   public void Arm(Guid printerId, MockFault fault, MockFaultMode mode)
   {
-    armed[printerId] = new(fault, mode);
+    _armed[printerId] = new(fault, mode);
   }
 
   public void ClearIfOnce(Guid printerId)
   {
-    if (armed.TryGetValue(printerId, out var entry) && entry.Mode == MockFaultMode.Once)
+    if (_armed.TryGetValue(printerId, out var entry) && entry.Mode == MockFaultMode.Once)
     {
-      armed[printerId] = new(MockFault.None, MockFaultMode.Sticky);
+      _armed[printerId] = new(MockFault.None, MockFaultMode.Sticky);
     }
   }
 }

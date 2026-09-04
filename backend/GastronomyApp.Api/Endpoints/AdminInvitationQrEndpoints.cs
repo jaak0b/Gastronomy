@@ -27,36 +27,36 @@ public sealed class InvitationQrRenderer
 {
   private const string SvgMediaType = "image/svg+xml";
   private const int PixelsPerModule = 8;
-  private readonly IClock clock;
+  private readonly IClock _clock;
 
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly OutstandingInvitationCache invitationCache;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly OutstandingInvitationCache _invitationCache;
 
   public InvitationQrRenderer(GastronomyAppDbContext dbContext,
                               OutstandingInvitationCache invitationCache,
                               IClock clock)
   {
-    this.dbContext = dbContext;
-    this.invitationCache = invitationCache;
-    this.clock = clock;
+    _dbContext = dbContext;
+    _invitationCache = invitationCache;
+    _clock = clock;
   }
 
   public async Task<IResult> RenderCurrentAsync(HttpContext httpContext, CancellationToken cancellationToken)
   {
-    var remembered = invitationCache.Read();
+    var remembered = _invitationCache.Read();
 
     if (remembered is null)
     {
       return Results.NotFound();
     }
 
-    var invitation = await dbContext.EnrolmentInvitations
+    var invitation = await _dbContext.EnrolmentInvitations
                                     .AsNoTracking()
                                     .FirstOrDefaultAsync(candidate => candidate.Id == remembered.InvitationId, cancellationToken);
 
-    if (invitation is null || invitation.ConsumedAtUtc is not null || invitation.ExpiresAtUtc <= clock.UtcNow)
+    if (invitation is null || invitation.ConsumedAtUtc is not null || invitation.ExpiresAtUtc <= _clock.UtcNow)
     {
-      invitationCache.Forget();
+      _invitationCache.Forget();
 
       return Results.NotFound();
     }

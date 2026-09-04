@@ -14,31 +14,31 @@ public sealed class RateLimitTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
 
     SeededWorld world;
-    await using (var context = factory.CreateContext())
+    await using (var context = _factory.CreateContext())
     {
       world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
     }
 
-    using var scope = factory.Services.CreateScope();
+    using var scope = _factory.Services.CreateScope();
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
                             .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
-    deviceToken = issued.PlaintextToken;
+    _deviceToken = issued.PlaintextToken;
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
   private const int DeviceRequestsPerMinute = 600;
   private const int AddressRequestsPerMinute = 20;
 
-  private ApiTestFactory factory = null!;
-  private string deviceToken = null!;
+  private ApiTestFactory _factory = null!;
+  private string _deviceToken = null!;
 
   [Test]
   public async Task DeviceScopedEndpoint_OneRequestPastTheMinuteLimit_IsRefusedAsTooManyRequests()
@@ -100,15 +100,15 @@ public sealed class RateLimitTest
 
   private Task<HttpResponseMessage> SendRedeemRequestAsync()
   {
-    return factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                           new RedeemBody("not-a-real-code", "Anna", "NUnit"));
   }
 
   private async Task<HttpResponseMessage> SendSessionRequestAsync()
   {
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
-    request.Headers.Authorization = new("Bearer", deviceToken);
+    request.Headers.Authorization = new("Bearer", _deviceToken);
 
-    return await factory.Client.SendAsync(request);
+    return await _factory.Client.SendAsync(request);
   }
 }

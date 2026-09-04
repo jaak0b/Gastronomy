@@ -9,15 +9,15 @@ namespace GastronomyApp.Infrastructure.Printing;
 
 public sealed class TestPrinterSession : IPrinterSession
 {
-  private readonly IMockFaultRegistry faultRegistry;
-  private readonly UTF8Encoding fileEncoding = new(false);
-  private readonly TimeSpan jobTimeout;
-  private readonly Action onDisposed;
-  private readonly Guid printerId;
-  private readonly string sessionStartStamp;
-  private readonly string slipRootFolder;
+  private readonly IMockFaultRegistry _faultRegistry;
+  private readonly UTF8Encoding _fileEncoding = new(false);
+  private readonly TimeSpan _jobTimeout;
+  private readonly Action _onDisposed;
+  private readonly Guid _printerId;
+  private readonly string _sessionStartStamp;
+  private readonly string _slipRootFolder;
   private readonly Channel<PrinterStatusSnapshot> statusChannel = Channel.CreateUnbounded<PrinterStatusSnapshot>();
-  private readonly TimeProvider timeProvider;
+  private readonly TimeProvider _timeProvider;
 
   public TestPrinterSession(Guid printerId,
                             TimeSpan jobTimeout,
@@ -27,13 +27,13 @@ public sealed class TestPrinterSession : IPrinterSession
                             TimeProvider timeProvider,
                             Action onDisposed)
   {
-    this.printerId = printerId;
-    this.jobTimeout = jobTimeout;
-    this.slipRootFolder = slipRootFolder;
-    this.sessionStartStamp = sessionStartStamp;
-    this.faultRegistry = faultRegistry;
-    this.timeProvider = timeProvider;
-    this.onDisposed = onDisposed;
+    _printerId = printerId;
+    _jobTimeout = jobTimeout;
+    _slipRootFolder = slipRootFolder;
+    _sessionStartStamp = sessionStartStamp;
+    _faultRegistry = faultRegistry;
+    _timeProvider = timeProvider;
+    _onDisposed = onDisposed;
     statusChannel.Writer.TryWrite(CurrentStatus(Probe()));
   }
 
@@ -44,9 +44,9 @@ public sealed class TestPrinterSession : IPrinterSession
     cancellationToken.ThrowIfCancellationRequested();
     var snapshot = CurrentStatus(Probe());
 
-    if (SurfacesInStatus(faultRegistry.GetArmedFault(printerId)))
+    if (SurfacesInStatus(_faultRegistry.GetArmedFault(_printerId)))
     {
-      faultRegistry.ClearIfOnce(printerId);
+      _faultRegistry.ClearIfOnce(_printerId);
     }
 
     return Task.FromResult(snapshot);
@@ -55,14 +55,14 @@ public sealed class TestPrinterSession : IPrinterSession
   public async Task<PrintDispatchResult> SendJobAsync(PrintPayload payload, CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    var fault = faultRegistry.GetArmedFault(printerId);
+    var fault = _faultRegistry.GetArmedFault(_printerId);
     var probe = Probe();
 
     var result = probe.IsWritable
                    ? await DispatchAsync(payload, fault, probe, cancellationToken)
                    : new(PrintOutcome.PrinterError, 0, CurrentStatus(probe), probe.Detail);
 
-    faultRegistry.ClearIfOnce(printerId);
+    _faultRegistry.ClearIfOnce(_printerId);
     statusChannel.Writer.TryWrite(result.StatusAtEnd);
     return result;
   }
@@ -70,7 +70,7 @@ public sealed class TestPrinterSession : IPrinterSession
   public ValueTask DisposeAsync()
   {
     statusChannel.Writer.TryComplete();
-    onDisposed();
+    _onDisposed();
     return ValueTask.CompletedTask;
   }
 
@@ -94,7 +94,7 @@ public sealed class TestPrinterSession : IPrinterSession
       case MockFault.DropSocketMidJob:
         return WriteHalfSlip(payload, probe);
       case MockFault.UnknownOutcome:
-        await Task.Delay(jobTimeout, cancellationToken);
+        await Task.Delay(_jobTimeout, cancellationToken);
         return new(PrintOutcome.Timeout,
                    payload.Bytes.Length,
                    CurrentStatus(probe),
@@ -107,7 +107,7 @@ public sealed class TestPrinterSession : IPrinterSession
   private PrintDispatchResult WriteWholeSlip(PrintPayload payload, MockFolderProbeResult probe)
   {
     var path = SlipFilePath(payload);
-    var fileBytes = fileEncoding.GetBytes(payload.RenderedText);
+    var fileBytes = _fileEncoding.GetBytes(payload.RenderedText);
     File.WriteAllBytes(path, fileBytes);
     return new(PrintOutcome.Confirmed, fileBytes.Length, CurrentStatus(probe), path);
   }
@@ -116,7 +116,7 @@ public sealed class TestPrinterSession : IPrinterSession
   {
     var path = SlipFilePath(payload);
     var half = payload.RenderedText[..(payload.RenderedText.Length / 2)];
-    var fileBytes = fileEncoding.GetBytes(half);
+    var fileBytes = _fileEncoding.GetBytes(half);
     File.WriteAllBytes(path, fileBytes);
     return new(PrintOutcome.SocketDropped,
                fileBytes.Length,
@@ -132,12 +132,12 @@ public sealed class TestPrinterSession : IPrinterSession
   private string SlipFilePath(PrintPayload payload)
   {
     var folderName = StationFolderName(payload);
-    var folder = Path.Combine(slipRootFolder, folderName);
+    var folder = Path.Combine(_slipRootFolder, folderName);
     Directory.CreateDirectory(folder);
 
     var fileName = payload.IsTest
-                     ? $"{sessionStartStamp}_{folderName}_test-{payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)}.txt"
-                     : $"{sessionStartStamp}_{folderName}_slip-{payload.StationOrderNumber.ToString("D3", CultureInfo.InvariantCulture)}_print-{(payload.CopyNumber + 1).ToString(CultureInfo.InvariantCulture)}.txt";
+                     ? $"{_sessionStartStamp}_{folderName}_test-{payload.PrinterJobId.ToString(CultureInfo.InvariantCulture)}.txt"
+                     : $"{_sessionStartStamp}_{folderName}_slip-{payload.StationOrderNumber.ToString("D3", CultureInfo.InvariantCulture)}_print-{(payload.CopyNumber + 1).ToString(CultureInfo.InvariantCulture)}.txt";
 
     return Path.Combine(folder, fileName);
   }
@@ -161,23 +161,23 @@ public sealed class TestPrinterSession : IPrinterSession
 
   private MockFolderProbeResult Probe()
   {
-    var probeFile = Path.Combine(slipRootFolder, $"probe-{Guid.NewGuid().ToString("N")}.tmp");
+    var probeFile = Path.Combine(_slipRootFolder, $"probe-{Guid.NewGuid().ToString("N")}.tmp");
     try
     {
-      Directory.CreateDirectory(slipRootFolder);
+      Directory.CreateDirectory(_slipRootFolder);
       File.WriteAllText(probeFile, string.Empty);
       File.Delete(probeFile);
-      return new(true, slipRootFolder, slipRootFolder);
+      return new(true, _slipRootFolder, _slipRootFolder);
     }
     catch (Exception error) when (error is IOException or UnauthorizedAccessException or NotSupportedException)
     {
-      return new(false, slipRootFolder, $"{slipRootFolder}: {error.Message}");
+      return new(false, _slipRootFolder, $"{_slipRootFolder}: {error.Message}");
     }
   }
 
   private PrinterStatusSnapshot CurrentStatus(MockFolderProbeResult probe)
   {
-    var fault = faultRegistry.GetArmedFault(printerId);
+    var fault = _faultRegistry.GetArmedFault(_printerId);
 
     return new(probe.IsWritable,
                fault == MockFault.PaperEnd,
@@ -185,6 +185,6 @@ public sealed class TestPrinterSession : IPrinterSession
                fault == MockFault.CoverOpen,
                !probe.IsWritable,
                probe.IsWritable ? probe.StationFolderPath : probe.Detail,
-               timeProvider.GetUtcNow());
+               _timeProvider.GetUtcNow());
   }
 }

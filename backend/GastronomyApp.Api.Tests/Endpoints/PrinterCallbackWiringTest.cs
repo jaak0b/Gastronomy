@@ -13,29 +13,29 @@ public sealed class PrinterCallbackWiringTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private readonly TimeSpan patience = TimeSpan.FromSeconds(20);
+  private readonly TimeSpan _patience = TimeSpan.FromSeconds(20);
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task PlaceOrder_RealFleetOverTheMockTransport_WritesASlipFileForEveryTicket()
   {
-    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var slipAppeared = await WaitUntilAsync(() =>
-                                              Directory.Exists(context.Factory.MockSlipFolder)
-                                              && Directory.GetFiles(context.Factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length > 0);
+                                              Directory.Exists(_context.Factory.MockSlipFolder)
+                                              && Directory.GetFiles(_context.Factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length > 0);
 
     Assert.That(slipAppeared, Is.True, "No mock slip file appeared for the accepted order.");
   }
@@ -45,7 +45,7 @@ public sealed class PrinterCallbackWiringTest
   {
     Guid ticketId;
 
-    using (var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
+    using (var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
       var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
       ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
@@ -53,7 +53,7 @@ public sealed class PrinterCallbackWiringTest
 
     var reachedTestPrinterState = await WaitUntilAsync(async () =>
                                                        {
-                                                         await using var database = context.Factory.CreateContext();
+                                                         await using var database = _context.Factory.CreateContext();
                                                          return await database.PrintJobs.AnyAsync(job => job.StationOrderId == ticketId && job.Status == PrintJobStatus.Printed);
                                                        });
 
@@ -66,7 +66,7 @@ public sealed class PrinterCallbackWiringTest
     TaskCompletionSource<string> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = new HubConnectionBuilder()
-                                .WithUrl(new Uri(context.Factory.BaseAddress, $"hub?access_token={context.DeviceToken}"))
+                                .WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={_context.DeviceToken}"))
                                 .Build();
 
     connection.On<JsonElement>("PrintJobStatusChanged",
@@ -82,11 +82,11 @@ public sealed class PrinterCallbackWiringTest
 
     await connection.StartAsync();
 
-    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    var completed = await Task.WhenAny(received.Task, Task.Delay(patience));
+    var completed = await Task.WhenAny(received.Task, Task.Delay(_patience));
 
     Assert.That(completed, Is.SameAs(received.Task), "No PrintJobStatusChanged push reached the staff member who placed the order.");
     Assert.That(await received.Task,
@@ -100,7 +100,7 @@ public sealed class PrinterCallbackWiringTest
 
   private async Task<bool> WaitUntilAsync(Func<Task<bool>> condition)
   {
-    var deadline = DateTime.UtcNow.Add(patience);
+    var deadline = DateTime.UtcNow.Add(_patience);
 
     while (DateTime.UtcNow < deadline)
     {

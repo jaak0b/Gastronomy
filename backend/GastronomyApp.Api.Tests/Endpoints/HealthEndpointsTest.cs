@@ -10,23 +10,23 @@ public sealed class HealthEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
-    await using var context = factory.CreateContext();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
+    await using var context = _factory.CreateContext();
     await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
+  private ApiTestFactory _factory = null!;
 
   [Test]
   public async Task GetHealth_AnonymousCaller_ReportsThePrinterCounts()
   {
-    using var response = await factory.Client.GetAsync("/api/health");
+    using var response = await _factory.Client.GetAsync("/api/health");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>

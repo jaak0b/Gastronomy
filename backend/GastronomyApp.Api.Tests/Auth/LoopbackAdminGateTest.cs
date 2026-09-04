@@ -7,7 +7,7 @@ namespace GastronomyApp.Api.Tests.Auth;
 [TestFixture]
 public sealed class LoopbackAdminGateTest
 {
-  private readonly LoopbackAdminAuthorizationMiddleware middleware = new(new());
+  private readonly LoopbackAdminAuthorizationMiddleware _middleware = new(new());
 
   [TestCase("127.0.0.1")]
   [TestCase("::1")]
@@ -16,7 +16,7 @@ public sealed class LoopbackAdminGateTest
     var context = ContextFor("/api/admin/stations", remoteAddress);
     var reachedTheEndpoint = false;
 
-    await middleware.InvokeAsync(context,
+    await _middleware.InvokeAsync(context,
                                  _ =>
                                  {
                                    reachedTheEndpoint = true;
@@ -32,7 +32,7 @@ public sealed class LoopbackAdminGateTest
     var context = ContextFor("/api/admin/stations", "203.0.113.9");
     var reachedTheEndpoint = false;
 
-    await middleware.InvokeAsync(context,
+    await _middleware.InvokeAsync(context,
                                  _ =>
                                  {
                                    reachedTheEndpoint = true;
@@ -52,7 +52,7 @@ public sealed class LoopbackAdminGateTest
     var context = ContextFor("/admin", "203.0.113.9");
     var reachedTheEndpoint = false;
 
-    await middleware.InvokeAsync(context,
+    await _middleware.InvokeAsync(context,
                                  _ =>
                                  {
                                    reachedTheEndpoint = true;

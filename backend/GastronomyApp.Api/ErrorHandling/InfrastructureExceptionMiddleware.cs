@@ -5,11 +5,11 @@ namespace GastronomyApp.Api.ErrorHandling;
 
 public sealed class InfrastructureExceptionMiddleware : IMiddleware
 {
-  private readonly ResultEnvelope resultEnvelope;
+  private readonly ResultEnvelope _resultEnvelope;
 
   public InfrastructureExceptionMiddleware(ResultEnvelope resultEnvelope)
   {
-    this.resultEnvelope = resultEnvelope;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -21,7 +21,7 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
     catch (InfrastructureException exception)
       when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
     {
-      var problem = resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable,
+      var problem = _resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable,
                                            "DatabaseUnavailable",
                                            "review.sendFailedDatabase");
 
@@ -30,7 +30,7 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
     catch (InfrastructureException exception)
       when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
     {
-      var problem = resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      var problem = _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                            "ConflictingChange",
                                            "review.conflictingChange");
 

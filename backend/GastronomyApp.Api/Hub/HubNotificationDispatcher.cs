@@ -11,17 +11,17 @@ namespace GastronomyApp.Api.Hub;
 
 public sealed class HubNotificationDispatcher : IPrintCallbacks
 {
-  private readonly IDbContextFactory<GastronomyAppDbContext> contextFactory;
-  private readonly HubEventNames eventNames = new();
-  private readonly PrintFailureMessages failureMessages = new();
-  private readonly HubGroupNames groupNames = new();
-  private readonly IHubContext<GastronomyHub> hubContext;
+  private readonly IDbContextFactory<GastronomyAppDbContext> _contextFactory;
+  private readonly HubEventNames _eventNames = new();
+  private readonly PrintFailureMessages _failureMessages = new();
+  private readonly HubGroupNames _groupNames = new();
+  private readonly IHubContext<GastronomyHub> _hubContext;
 
   public HubNotificationDispatcher(IHubContext<GastronomyHub> hubContext,
                                    IDbContextFactory<GastronomyAppDbContext> contextFactory)
   {
-    this.hubContext = hubContext;
-    this.contextFactory = contextFactory;
+    _hubContext = hubContext;
+    _contextFactory = contextFactory;
   }
 
   public async Task OnPrintJobStatusChangedAsync(Guid orderId,
@@ -30,7 +30,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
                                                  PrintFailureReason? failureReason,
                                                  CancellationToken ct)
   {
-    await using var context = await contextFactory.CreateDbContextAsync(ct);
+    await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
     var order = await context.Orders.FirstOrDefaultAsync(candidate => candidate.Id == orderId, ct);
     var stationOrder = await context.StationOrders
@@ -49,7 +49,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
                           : await context.PrinterStatuses
                                          .FirstOrDefaultAsync(candidate => candidate.PrinterId == station.PrinterId, ct);
 
-    var message = failureMessages.Describe(newStatus, failureReason, station?.Name ?? string.Empty);
+    var message = _failureMessages.Describe(newStatus, failureReason, station?.Name ?? string.Empty);
 
     PrintJobStatusChangedEvent payload = new(order.Id,
                                              order.GlobalOrderNumber,
@@ -63,15 +63,15 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
                                              message.MessageKey,
                                              message.Parameters);
 
-    await SendToAsync(eventNames.PrintJobStatusChanged,
+    await SendToAsync(_eventNames.PrintJobStatusChanged,
                       payload,
-                      [groupNames.Devices, groupNames.Admin],
+                      [_groupNames.Devices, _groupNames.Admin],
                       ct);
   }
 
   public async Task OnOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct)
   {
-    await using var context = await contextFactory.CreateDbContextAsync(ct);
+    await using var context = await _contextFactory.CreateDbContextAsync(ct);
     var order = await context.Orders.FirstOrDefaultAsync(candidate => candidate.Id == orderId, ct);
 
     if (order is null)
@@ -79,9 +79,9 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
       return;
     }
 
-    await SendToAsync(eventNames.OrderStatusChanged,
+    await SendToAsync(_eventNames.OrderStatusChanged,
                       new OrderStatusChangedEvent(orderId, newStatus.ToString()),
-                      [groupNames.StaffMember(order.StaffMemberId), groupNames.Admin],
+                      [_groupNames.StaffMember(order.StaffMemberId), _groupNames.Admin],
                       ct);
   }
 
@@ -94,7 +94,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
   {
     ArgumentNullException.ThrowIfNull(stationIds);
 
-    await using var context = await contextFactory.CreateDbContextAsync(ct);
+    await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
     foreach (var stationId in stationIds)
     {
@@ -112,47 +112,47 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
                                               snapshot.ObservedAt.UtcDateTime,
                                               snapshot.Detail);
 
-      await SendToAsync(eventNames.PrinterStatusChanged,
+      await SendToAsync(_eventNames.PrinterStatusChanged,
                         payload,
-                        [groupNames.Devices, groupNames.Admin],
+                        [_groupNames.Devices, _groupNames.Admin],
                         ct);
     }
   }
 
   public async Task PushOrderAcceptedAsync(Guid staffMemberId, OrderAcceptedEvent payload, CancellationToken ct)
   {
-    await SendToAsync(eventNames.OrderAccepted,
+    await SendToAsync(_eventNames.OrderAccepted,
                       payload,
-                      [groupNames.StaffMember(staffMemberId), groupNames.Admin],
+                      [_groupNames.StaffMember(staffMemberId), _groupNames.Admin],
                       ct);
 
     foreach (var stationId in payload.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
     {
-      await SendToAsync(eventNames.StationBacklogChanged,
+      await SendToAsync(_eventNames.StationBacklogChanged,
                         new StationBacklogChangedEvent(stationId),
-                        [groupNames.Devices, groupNames.Admin],
+                        [_groupNames.Devices, _groupNames.Admin],
                         ct);
     }
   }
 
   public async Task PushCatalogChangedAsync(string version, CancellationToken ct)
   {
-    await SendToAsync(eventNames.CatalogChanged,
+    await SendToAsync(_eventNames.CatalogChanged,
                       new CatalogChangedEvent(version),
-                      [groupNames.Devices, groupNames.Admin],
+                      [_groupNames.Devices, _groupNames.Admin],
                       ct);
   }
 
   public async Task PushEnrolmentCompletedAsync(EnrolmentCompletedEvent payload, CancellationToken ct)
   {
-    await SendToAsync(eventNames.EnrolmentCompleted, payload, [groupNames.Admin], ct);
+    await SendToAsync(_eventNames.EnrolmentCompleted, payload, [_groupNames.Admin], ct);
   }
 
   public async Task PushDeviceRevokedAsync(Guid deviceId, CancellationToken ct)
   {
-    await SendToAsync(eventNames.DeviceRevoked,
+    await SendToAsync(_eventNames.DeviceRevoked,
                       new DeviceRevokedEvent(deviceId),
-                      [groupNames.Device(deviceId), groupNames.Admin],
+                      [_groupNames.Device(deviceId), _groupNames.Admin],
                       ct);
   }
 
@@ -163,7 +163,7 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
   {
     foreach (var group in groups)
     {
-      await hubContext.Clients.Group(group).SendAsync(eventName, payload, ct);
+      await _hubContext.Clients.Group(group).SendAsync(eventName, payload, ct);
     }
   }
 }

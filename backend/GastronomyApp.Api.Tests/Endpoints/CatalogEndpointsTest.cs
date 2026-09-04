@@ -13,25 +13,25 @@ public sealed class CatalogEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
-    await using var context = factory.CreateContext();
-    world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
+    _factory = await new ApiTestFactory.Builder().StartAsync();
+    await using var context = _factory.CreateContext();
+    _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
 
-    using var scope = factory.Services.CreateScope();
+    using var scope = _factory.Services.CreateScope();
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
-    deviceToken = issued.PlaintextToken;
+                            .IssueAsync(_world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+    _deviceToken = issued.PlaintextToken;
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
-  private SeededWorld world = null!;
-  private string deviceToken = null!;
+  private ApiTestFactory _factory = null!;
+  private SeededWorld _world = null!;
+  private string _deviceToken = null!;
 
   [Test]
   public async Task GetCatalog_SeededCatalog_ReturnsTheShapeTheOrderingScreenNeeds()
@@ -59,12 +59,12 @@ public sealed class CatalogEndpointsTest
   [Test]
   public async Task GetCatalog_SoldOutAndDeactivatedItems_KeepsSoldOutAndLeavesDeactivatedOut()
   {
-    await using (var context = factory.CreateContext())
+    await using (var context = _factory.CreateContext())
     {
-      var bratwurst = await context.CatalogItems.FirstAsync(item => item.Id == world.BratwurstItemId);
+      var bratwurst = await context.CatalogItems.FirstAsync(item => item.Id == _world.BratwurstItemId);
       bratwurst.IsAvailable = false;
 
-      var beer = await context.CatalogItems.FirstAsync(item => item.Id == world.BeerItemId);
+      var beer = await context.CatalogItems.FirstAsync(item => item.Id == _world.BeerItemId);
       beer.IsActive = false;
 
       await context.SaveChangesAsync();
@@ -76,7 +76,7 @@ public sealed class CatalogEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(items.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(items[0].GetProperty("id").GetGuid(), Is.EqualTo(world.BratwurstItemId));
+                      Assert.That(items[0].GetProperty("id").GetGuid(), Is.EqualTo(_world.BratwurstItemId));
                       Assert.That(items[0].GetProperty("isAvailable").GetBoolean(), Is.False);
                     });
   }
@@ -84,7 +84,7 @@ public sealed class CatalogEndpointsTest
   [Test]
   public async Task GetCatalog_NoDeviceToken_IsRefused()
   {
-    using var response = await factory.Client.GetAsync("/api/catalog");
+    using var response = await _factory.Client.GetAsync("/api/catalog");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -92,8 +92,8 @@ public sealed class CatalogEndpointsTest
   private async Task<JsonDocument> GetCatalogAsync()
   {
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/catalog");
-    request.Headers.Authorization = new("Bearer", deviceToken);
-    using var response = await factory.Client.SendAsync(request);
+    request.Headers.Authorization = new("Bearer", _deviceToken);
+    using var response = await _factory.Client.SendAsync(request);
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
   }

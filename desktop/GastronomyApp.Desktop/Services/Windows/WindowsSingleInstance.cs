@@ -9,9 +9,9 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
   private const string ActivationSignal = "activate";
   private const int ConnectAttempts = 5;
   private const int ConnectAttemptMilliseconds = 400;
-  private CancellationTokenSource? listening;
+  private CancellationTokenSource? _listening;
 
-  private Mutex? mutex;
+  private Mutex? _mutex;
 
   public void Dispose()
   {
@@ -22,32 +22,32 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
 
   public SingleInstanceOutcome AcquireOrSignalExisting()
   {
-    mutex = new(true, MutexName, out var acquired);
+    _mutex = new(true, MutexName, out var acquired);
 
     if (!acquired)
     {
-      mutex.Dispose();
-      mutex = null;
+      _mutex.Dispose();
+      _mutex = null;
       SignalExisting();
 
       return SingleInstanceOutcome.SignaledExistingAndShouldExit;
     }
 
-    listening = new();
-    _ = ListenForActivationAsync(listening.Token);
+    _listening = new();
+    _ = ListenForActivationAsync(_listening.Token);
 
     return SingleInstanceOutcome.AcquiredPrimary;
   }
 
   public void Release()
   {
-    listening?.Cancel();
-    listening?.Dispose();
-    listening = null;
+    _listening?.Cancel();
+    _listening?.Dispose();
+    _listening = null;
 
-    mutex?.ReleaseMutex();
-    mutex?.Dispose();
-    mutex = null;
+    _mutex?.ReleaseMutex();
+    _mutex?.Dispose();
+    _mutex = null;
   }
 
   private void SignalExisting()

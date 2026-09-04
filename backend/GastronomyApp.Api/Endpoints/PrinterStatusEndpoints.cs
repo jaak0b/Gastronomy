@@ -29,11 +29,11 @@ public static class PrinterStatusEndpoints
 
 public sealed class PrinterStatusReader
 {
-  private readonly StationPrinterStatusLookup statusLookup;
+  private readonly StationPrinterStatusLookup _statusLookup;
 
   public PrinterStatusReader(StationPrinterStatusLookup statusLookup)
   {
-    this.statusLookup = statusLookup;
+    _statusLookup = statusLookup;
   }
 
   public async Task<PrinterStatusListView> ReadAsync(GastronomyAppDbContext dbContext,
@@ -48,7 +48,7 @@ public sealed class PrinterStatusReader
     HashSet<Guid> stationIds = [.. stations.Select(station => station.Id)];
 
     Dictionary<Guid, PrinterStatus> statuses =
-      await statusLookup.ByStationAsync(dbContext, stationIds, cancellationToken);
+      await _statusLookup.ByStationAsync(dbContext, stationIds, cancellationToken);
 
     List<PrinterStatusView> views = [];
 

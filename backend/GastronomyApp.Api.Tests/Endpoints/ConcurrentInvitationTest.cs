@@ -12,16 +12,16 @@ public sealed class ConcurrentInvitationTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task PostInvitation_TwoAtTheSameMoment_NeverCrashesAndLeavesOneOutstanding()
@@ -37,7 +37,7 @@ public sealed class ConcurrentInvitationTest
       response.Dispose();
     }
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var stillOutstanding = await database.EnrolmentInvitations
                                          .CountAsync(invitation => invitation.ConsumedAtUtc == null);
 
@@ -61,7 +61,7 @@ public sealed class ConcurrentInvitationTest
       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     List<EnrolmentInvitation> invitations = await database.EnrolmentInvitations.ToListAsync();
 
     Assert.Multiple(() =>
@@ -73,7 +73,7 @@ public sealed class ConcurrentInvitationTest
 
   private Task<HttpResponseMessage> CreateInvitationAsync()
   {
-    return context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+    return _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                           new { staffMemberId = (Guid?)null });
   }
 }

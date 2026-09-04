@@ -6,11 +6,11 @@ namespace GastronomyApp.Infrastructure.Localization;
 
 public sealed class ResxSlipTextProvider : ISlipTextProvider
 {
-  private readonly ResourceManager resourceManager;
+  private readonly ResourceManager _resourceManager;
 
   public ResxSlipTextProvider()
   {
-    resourceManager = new("GastronomyApp.Infrastructure.Localization.SlipStrings",
+    _resourceManager = new("GastronomyApp.Infrastructure.Localization.SlipStrings",
                           typeof(ResxSlipTextProvider).Assembly);
   }
 
@@ -32,7 +32,7 @@ public sealed class ResxSlipTextProvider : ISlipTextProvider
 
   private string Read(string key, CultureInfo culture)
   {
-    var value = resourceManager.GetString(key, culture);
+    var value = _resourceManager.GetString(key, culture);
     if (value is null)
     {
       throw new MissingManifestResourceException($"Slip string '{key}' is missing for culture '{culture.Name}'.");

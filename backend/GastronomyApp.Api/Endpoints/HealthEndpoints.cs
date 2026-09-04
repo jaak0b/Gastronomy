@@ -27,11 +27,11 @@ public static class HealthEndpoints
 
 public sealed class HealthReporter
 {
-  private readonly StationPrinterStatusLookup statusLookup;
+  private readonly StationPrinterStatusLookup _statusLookup;
 
   public HealthReporter(StationPrinterStatusLookup statusLookup)
   {
-    this.statusLookup = statusLookup;
+    _statusLookup = statusLookup;
   }
 
   public async Task<HealthView> ReportAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public sealed class HealthReporter
                                                  .ToListAsync(cancellationToken);
 
     Dictionary<Guid, PrinterStatus> statuses =
-      await statusLookup.ByStationAsync(dbContext, activeStationIds, cancellationToken);
+      await _statusLookup.ByStationAsync(dbContext, activeStationIds, cancellationToken);
     var printersOnline = statuses.Values
                                  .Where(status => status.IsOnline)
                                  .Select(status => status.PrinterId)

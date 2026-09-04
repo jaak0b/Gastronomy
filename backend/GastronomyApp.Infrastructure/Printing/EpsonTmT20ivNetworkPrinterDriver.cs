@@ -6,11 +6,11 @@ namespace GastronomyApp.Infrastructure.Printing;
 
 public sealed class EpsonTmT20ivNetworkPrinterDriver : PrinterDriver<EpsonTmT20ivNetworkPrinter>
 {
-  private readonly TimeProvider timeProvider;
+  private readonly TimeProvider _timeProvider;
 
   public EpsonTmT20ivNetworkPrinterDriver(TimeProvider timeProvider)
   {
-    this.timeProvider = timeProvider;
+    _timeProvider = timeProvider;
   }
 
   override public int CharactersPerLine => 48;
@@ -46,7 +46,7 @@ public sealed class EpsonTmT20ivNetworkPrinterDriver : PrinterDriver<EpsonTmT20i
 
     EpsonTmT20ivNetworkPrinterSession session = new(client,
                                                     new(JobTimeout, HeartbeatInterval, StatusQueryTimeout),
-                                                    timeProvider);
+                                                    _timeProvider);
     await session.StartAsync();
     return session;
   }

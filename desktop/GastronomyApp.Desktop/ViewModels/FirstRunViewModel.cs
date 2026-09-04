@@ -5,55 +5,55 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class FirstRunViewModel : ViewModelBase
 {
-  private readonly IDataFolderSetup dataFolder;
-  private readonly IElevatedSetupLauncher elevatedSetup;
-  private readonly IFirewallSetup firewall;
-  private readonly Never never = new();
-  private readonly IDesktopTextProvider text;
-  private string? declinedText;
+  private readonly IDataFolderSetup _dataFolder;
+  private readonly IElevatedSetupLauncher _elevatedSetup;
+  private readonly IFirewallSetup _firewall;
+  private readonly Never _never = new();
+  private readonly IDesktopTextProvider _text;
+  private string? _declinedText;
 
-  private bool isSetupOffered;
-  private bool readyToStart;
+  private bool _isSetupOffered;
+  private bool _readyToStart;
 
   public FirstRunViewModel(IFirewallSetup firewall,
                            IDataFolderSetup dataFolder,
                            IElevatedSetupLauncher elevatedSetup,
                            IDesktopTextProvider text)
   {
-    this.firewall = firewall;
-    this.dataFolder = dataFolder;
-    this.elevatedSetup = elevatedSetup;
-    this.text = text;
+    _firewall = firewall;
+    _dataFolder = dataFolder;
+    _elevatedSetup = elevatedSetup;
+    _text = text;
   }
 
-  public string Title => text.Get("desktop.firstRun.title");
+  public string Title => _text.Get("desktop.firstRun.title");
 
-  public string Body => text.Get("desktop.firstRun.body");
+  public string Body => _text.Get("desktop.firstRun.body");
 
-  public string ContinueLabel => text.Get("desktop.firstRun.title");
+  public string ContinueLabel => _text.Get("desktop.firstRun.title");
 
   public bool IsSetupOffered
   {
-    get => isSetupOffered;
-    private set => SetProperty(ref isSetupOffered, value);
+    get => _isSetupOffered;
+    private set => SetProperty(ref _isSetupOffered, value);
   }
 
   public bool ReadyToStart
   {
-    get => readyToStart;
-    private set => SetProperty(ref readyToStart, value);
+    get => _readyToStart;
+    private set => SetProperty(ref _readyToStart, value);
   }
 
   public string? DeclinedText
   {
-    get => declinedText;
-    private set => SetProperty(ref declinedText, value);
+    get => _declinedText;
+    private set => SetProperty(ref _declinedText, value);
   }
 
   public void Evaluate()
   {
-    var firewallConfigured = firewall.IsRuleConfigured();
-    var dataFolderReady = dataFolder.Exists() && dataFolder.CurrentUserCanWrite();
+    var firewallConfigured = _firewall.IsRuleConfigured();
+    var dataFolderReady = _dataFolder.Exists() && _dataFolder.CurrentUserCanWrite();
     var everythingInPlace = firewallConfigured && dataFolderReady;
 
     IsSetupOffered = !everythingInPlace;
@@ -63,14 +63,14 @@ public sealed class FirstRunViewModel : ViewModelBase
 
   public void Decline()
   {
-    DeclinedText = text.Get("desktop.firstRun.declined");
+    DeclinedText = _text.Get("desktop.firstRun.declined");
     IsSetupOffered = false;
     ReadyToStart = true;
   }
 
   public async Task RunSetupAsync(CancellationToken cancellationToken = default)
   {
-    var outcome = await elevatedSetup.RunElevatedSetupAsync(cancellationToken);
+    var outcome = await _elevatedSetup.RunElevatedSetupAsync(cancellationToken);
 
     switch (outcome)
     {
@@ -80,12 +80,12 @@ public sealed class FirstRunViewModel : ViewModelBase
         break;
 
       case ElevatedSetupOutcome.ElevationDeclined:
-        DeclinedText = text.Get("desktop.firstRun.declined");
+        DeclinedText = _text.Get("desktop.firstRun.declined");
 
         break;
 
       default:
-        never.OfType<ElevatedSetupOutcome>(outcome);
+        _never.OfType<ElevatedSetupOutcome>(outcome);
 
         break;
     }

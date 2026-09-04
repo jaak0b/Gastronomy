@@ -16,45 +16,45 @@ public sealed record TrackedHubConnection
 
 public sealed class HubConnectionRegistry
 {
-  private readonly ConcurrentDictionary<string, TrackedHubConnection> connections = new();
+  private readonly ConcurrentDictionary<string, TrackedHubConnection> _connections = new();
 
   public void Add(TrackedHubConnection connection)
   {
-    connections[connection.ConnectionId] = connection;
+    _connections[connection.ConnectionId] = connection;
   }
 
   public void Remove(string connectionId)
   {
-    connections.TryRemove(connectionId, out _);
+    _connections.TryRemove(connectionId, out _);
   }
 
   public IReadOnlyList<TrackedHubConnection> FindByDevice(Guid deviceId)
   {
-    return [.. connections.Values.Where(connection => connection.DeviceId == deviceId)];
+    return [.. _connections.Values.Where(connection => connection.DeviceId == deviceId)];
   }
 }
 
 public sealed class DeviceConnectionTerminator
 {
-  private readonly IHubContext<GastronomyHub> hubContext;
-  private readonly HubConnectionRegistry registry;
+  private readonly IHubContext<GastronomyHub> _hubContext;
+  private readonly HubConnectionRegistry _registry;
 
   public DeviceConnectionTerminator(HubConnectionRegistry registry, IHubContext<GastronomyHub> hubContext)
   {
-    this.registry = registry;
-    this.hubContext = hubContext;
+    _registry = registry;
+    _hubContext = hubContext;
   }
 
   public async Task TerminateAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    foreach (var connection in registry.FindByDevice(deviceId))
+    foreach (var connection in _registry.FindByDevice(deviceId))
     {
       foreach (var group in connection.Groups)
       {
-        await hubContext.Groups.RemoveFromGroupAsync(connection.ConnectionId, group, cancellationToken);
+        await _hubContext.Groups.RemoveFromGroupAsync(connection.ConnectionId, group, cancellationToken);
       }
 
-      registry.Remove(connection.ConnectionId);
+      _registry.Remove(connection.ConnectionId);
       connection.CallerContext.Abort();
     }
   }

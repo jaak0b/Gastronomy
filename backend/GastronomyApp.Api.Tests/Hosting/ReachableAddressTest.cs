@@ -5,7 +5,7 @@ namespace GastronomyApp.Api.Tests.Hosting;
 [TestFixture]
 public sealed class ReachableAddressTest
 {
-  private readonly LocalNetworkAddressProvider addressProvider = new();
+  private readonly LocalNetworkAddressProvider _addressProvider = new();
 
   [TestCase("0.0.0.0")]
   [TestCase("::")]
@@ -36,7 +36,7 @@ public sealed class ReachableAddressTest
   [Test]
   public void Addresses_OnThisMachine_AreNonLoopbackVersionFourAddresses()
   {
-    IReadOnlyList<string> addresses = addressProvider.FindReachableAddresses();
+    IReadOnlyList<string> addresses = _addressProvider.FindReachableAddresses();
 
     Assert.That(addresses, Is.Not.Null);
 
@@ -58,6 +58,6 @@ public sealed class ReachableAddressTest
                  Port = 5000,
                  BindAddress = bindAddress
                },
-               addressProvider);
+               _addressProvider);
   }
 }

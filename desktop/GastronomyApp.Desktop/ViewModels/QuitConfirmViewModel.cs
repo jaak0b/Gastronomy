@@ -4,33 +4,33 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class QuitConfirmViewModel : ViewModelBase
 {
-  private readonly Action requestApplicationExit;
-  private readonly Func<CancellationToken, Task> stopServer;
-  private readonly IDesktopTextProvider text;
+  private readonly Action _requestApplicationExit;
+  private readonly Func<CancellationToken, Task> _stopServer;
+  private readonly IDesktopTextProvider _text;
 
-  private bool isConfirmationVisible;
+  private bool _isConfirmationVisible;
 
   public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer,
                               IDesktopTextProvider text,
                               Action requestApplicationExit)
   {
-    this.stopServer = stopServer;
-    this.text = text;
-    this.requestApplicationExit = requestApplicationExit;
+    _stopServer = stopServer;
+    _text = text;
+    _requestApplicationExit = requestApplicationExit;
   }
 
-  public string Title => text.Get("desktop.quit.title");
+  public string Title => _text.Get("desktop.quit.title");
 
-  public string Body => text.Get("desktop.quit.body");
+  public string Body => _text.Get("desktop.quit.body");
 
-  public string ConfirmLabel => text.Get("desktop.quit.confirm");
+  public string ConfirmLabel => _text.Get("desktop.quit.confirm");
 
-  public string CancelLabel => text.Get("desktop.quit.cancel");
+  public string CancelLabel => _text.Get("desktop.quit.cancel");
 
   public bool IsConfirmationVisible
   {
-    get => isConfirmationVisible;
-    private set => SetProperty(ref isConfirmationVisible, value);
+    get => _isConfirmationVisible;
+    private set => SetProperty(ref _isConfirmationVisible, value);
   }
 
   public void RequestQuit()
@@ -50,8 +50,8 @@ public sealed class QuitConfirmViewModel : ViewModelBase
       return;
     }
 
-    await stopServer(cancellationToken);
+    await _stopServer(cancellationToken);
     IsConfirmationVisible = false;
-    requestApplicationExit();
+    _requestApplicationExit();
   }
 }

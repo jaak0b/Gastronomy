@@ -9,16 +9,16 @@ public sealed class OrderLineCollapserTest
   [SetUp]
   public void SetUp()
   {
-    collapser = new();
+    _collapser = new();
   }
 
   private sealed record Line(string ItemName, string? Note);
 
-  private OrderLineCollapser collapser = null!;
+  private OrderLineCollapser _collapser = null!;
 
   private IReadOnlyList<CollapsedOrderLine<Line>> Collapse(params Line[] lines)
   {
-    return collapser.Collapse(lines, line => line.ItemName, line => line.Note);
+    return _collapser.Collapse(lines, line => line.ItemName, line => line.Note);
   }
 
   [Test]

@@ -41,39 +41,39 @@ public sealed record HubEventNames
 
 public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 {
-  private readonly CallerIdentity callerIdentity;
-  private readonly HubConnectionRegistry connectionRegistry;
-  private readonly HubGroupNames groupNames = new();
-  private readonly LocalAddressSet localAddresses;
+  private readonly CallerIdentity _callerIdentity;
+  private readonly HubConnectionRegistry _connectionRegistry;
+  private readonly HubGroupNames _groupNames = new();
+  private readonly LocalAddressSet _localAddresses;
 
   public GastronomyHub(CallerIdentity callerIdentity,
                        LocalAddressSet localAddresses,
                        HubConnectionRegistry connectionRegistry)
   {
-    this.callerIdentity = callerIdentity;
-    this.localAddresses = localAddresses;
-    this.connectionRegistry = connectionRegistry;
+    _callerIdentity = callerIdentity;
+    _localAddresses = localAddresses;
+    _connectionRegistry = connectionRegistry;
   }
 
   override public async Task OnConnectedAsync()
   {
-    var caller = Context.User is null ? null : callerIdentity.ReadDevice(Context.User);
+    var caller = Context.User is null ? null : _callerIdentity.ReadDevice(Context.User);
     var httpContext = Context.GetHttpContext();
 
     List<string> joinedGroups = [];
 
     if (caller is not null)
     {
-      joinedGroups.Add(groupNames.StaffMember(caller.StaffMemberId));
-      joinedGroups.Add(groupNames.Device(caller.DeviceId));
-      joinedGroups.Add(groupNames.Devices);
+      joinedGroups.Add(_groupNames.StaffMember(caller.StaffMemberId));
+      joinedGroups.Add(_groupNames.Device(caller.DeviceId));
+      joinedGroups.Add(_groupNames.Devices);
     }
 
     if (caller is null
         && httpContext is not null
-        && localAddresses.Contains(httpContext.Connection.RemoteIpAddress))
+        && _localAddresses.Contains(httpContext.Connection.RemoteIpAddress))
     {
-      joinedGroups.Add(groupNames.Admin);
+      joinedGroups.Add(_groupNames.Admin);
     }
 
     foreach (var group in joinedGroups)
@@ -81,7 +81,7 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
       await Groups.AddToGroupAsync(Context.ConnectionId, group);
     }
 
-    connectionRegistry.Add(new()
+    _connectionRegistry.Add(new()
                            {
                              ConnectionId = Context.ConnectionId,
                              DeviceId = caller?.DeviceId,
@@ -94,7 +94,7 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 
   override public async Task OnDisconnectedAsync(Exception? exception)
   {
-    connectionRegistry.Remove(Context.ConnectionId);
+    _connectionRegistry.Remove(Context.ConnectionId);
 
     await base.OnDisconnectedAsync(exception);
   }

@@ -52,16 +52,16 @@ public static class StationEndpoints
 
 public sealed class StationShellResponder
 {
-  private readonly IWebHostEnvironment environment;
+  private readonly IWebHostEnvironment _environment;
 
   public StationShellResponder(IWebHostEnvironment environment)
   {
-    this.environment = environment;
+    _environment = environment;
   }
 
   public IResult Respond()
   {
-    var shellPath = Path.Combine(environment.WebRootPath ?? string.Empty, "index.html");
+    var shellPath = Path.Combine(_environment.WebRootPath ?? string.Empty, "index.html");
 
     return File.Exists(shellPath)
              ? Results.File(shellPath, "text/html")
@@ -74,11 +74,11 @@ public sealed class ClientRouteFallbackResponder
   private const string ApiPrefix = "/api";
   private const string HubPrefix = "/hub";
 
-  private readonly StationShellResponder shellResponder;
+  private readonly StationShellResponder _shellResponder;
 
   public ClientRouteFallbackResponder(StationShellResponder shellResponder)
   {
-    this.shellResponder = shellResponder;
+    _shellResponder = shellResponder;
   }
 
   public IResult Respond(HttpContext httpContext)
@@ -89,7 +89,7 @@ public sealed class ClientRouteFallbackResponder
       return Results.NotFound();
     }
 
-    return shellResponder.Respond();
+    return _shellResponder.Respond();
   }
 }
 
@@ -97,11 +97,11 @@ public sealed record StationPrintabilityRow(Guid StationId, StationPrintability 
 
 public sealed class StationPrintabilityReader
 {
-  private readonly StationPrinterStatusLookup statusLookup;
+  private readonly StationPrinterStatusLookup _statusLookup;
 
   public StationPrintabilityReader(StationPrinterStatusLookup statusLookup)
   {
-    this.statusLookup = statusLookup;
+    _statusLookup = statusLookup;
   }
 
   public async Task<IReadOnlyDictionary<Guid, StationPrintability>> ReadAsync(GastronomyAppDbContext dbContext,
@@ -110,7 +110,7 @@ public sealed class StationPrintabilityReader
     List<Station> stations = await dbContext.Stations
                                             .AsNoTracking()
                                             .ToListAsync(cancellationToken);
-    Dictionary<Guid, PrinterStatus> statuses = await statusLookup.ByStationAsync(dbContext,
+    Dictionary<Guid, PrinterStatus> statuses = await _statusLookup.ByStationAsync(dbContext,
                                                                                  [.. stations.Select(station => station.Id)],
                                                                                  cancellationToken);
 

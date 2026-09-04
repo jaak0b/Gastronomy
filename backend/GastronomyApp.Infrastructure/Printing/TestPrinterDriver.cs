@@ -11,20 +11,20 @@ public sealed class TestPrinterDriver : PrinterDriver<TestPrinter>
 {
   private const string SlipRootFolderName = "mock-slips";
 
-  private readonly string dataDirectory;
-  private readonly IMockFaultRegistry faultRegistry;
-  private readonly ConcurrentDictionary<Guid, bool> openSessions = new();
-  private readonly string sessionStartStamp;
-  private readonly TimeProvider timeProvider;
+  private readonly string _dataDirectory;
+  private readonly IMockFaultRegistry _faultRegistry;
+  private readonly ConcurrentDictionary<Guid, bool> _openSessions = new();
+  private readonly string _sessionStartStamp;
+  private readonly TimeProvider _timeProvider;
 
   public TestPrinterDriver(string dataDirectory, IMockFaultRegistry faultRegistry, TimeProvider timeProvider)
   {
     ArgumentNullException.ThrowIfNull(timeProvider);
 
-    this.dataDirectory = dataDirectory;
-    this.faultRegistry = faultRegistry;
-    this.timeProvider = timeProvider;
-    sessionStartStamp = timeProvider.GetUtcNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+    _dataDirectory = dataDirectory;
+    _faultRegistry = faultRegistry;
+    _timeProvider = timeProvider;
+    _sessionStartStamp = timeProvider.GetUtcNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
   }
 
   override public int CharactersPerLine => 48;
@@ -43,12 +43,12 @@ public sealed class TestPrinterDriver : PrinterDriver<TestPrinter>
 
   override protected async Task<IPrinterSession> ConnectAsync(TestPrinter printer, CancellationToken cancellationToken)
   {
-    if (faultRegistry.GetArmedFault(printer.Id) == MockFault.ConnectTimeout)
+    if (_faultRegistry.GetArmedFault(printer.Id) == MockFault.ConnectTimeout)
     {
       await Task.Delay(Timeout.Infinite, cancellationToken);
     }
 
-    if (!openSessions.TryAdd(printer.Id, true))
+    if (!_openSessions.TryAdd(printer.Id, true))
     {
       throw new InvalidOperationException($"A test printer session is already open for the printer {printer.Name}.");
     }
@@ -56,14 +56,14 @@ public sealed class TestPrinterDriver : PrinterDriver<TestPrinter>
     return new TestPrinterSession(printer.Id,
                                   JobTimeout,
                                   SlipRootFolder(),
-                                  sessionStartStamp,
-                                  faultRegistry,
-                                  timeProvider,
-                                  () => openSessions.TryRemove(printer.Id, out _));
+                                  _sessionStartStamp,
+                                  _faultRegistry,
+                                  _timeProvider,
+                                  () => _openSessions.TryRemove(printer.Id, out _));
   }
 
   private string SlipRootFolder()
   {
-    return Path.Combine(dataDirectory, SlipRootFolderName);
+    return Path.Combine(_dataDirectory, SlipRootFolderName);
   }
 }

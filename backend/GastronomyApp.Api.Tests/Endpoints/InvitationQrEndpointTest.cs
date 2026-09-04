@@ -12,24 +12,24 @@ public sealed class InvitationQrEndpointTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
   private const string QrPath = "/api/admin/enrolment/invitations/current/qr.svg";
   private const int PixelsPerModule = 8;
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task GetQr_NoOutstandingInvitation_AnswersNotFound()
   {
-    using var response = await context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPath);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -39,7 +39,7 @@ public sealed class InvitationQrEndpointTest
   {
     var qrUrl = await CreateInvitationAsync();
 
-    using var response = await context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPath);
     var svg = await response.Content.ReadAsStringAsync();
 
     var side = ReadDeclaredSide(svg);
@@ -63,14 +63,14 @@ public sealed class InvitationQrEndpointTest
     await CreateInvitationAsync();
 
     string firstSvg;
-    using (var first = await context.Client.GetAsync(QrPath))
+    using (var first = await _context.Client.GetAsync(QrPath))
     {
       firstSvg = await first.Content.ReadAsStringAsync();
     }
 
     await CreateInvitationAsync();
 
-    using var second = await context.Client.GetAsync(QrPath);
+    using var second = await _context.Client.GetAsync(QrPath);
     var secondSvg = await second.Content.ReadAsStringAsync();
 
     Assert.That(secondSvg,
@@ -83,7 +83,7 @@ public sealed class InvitationQrEndpointTest
   {
     await CreateInvitationAsync();
 
-    using var response = await context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPath);
 
     Assert.Multiple(() =>
                     {
@@ -98,20 +98,20 @@ public sealed class InvitationQrEndpointTest
     var qrUrl = await CreateInvitationAsync();
     var code = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
 
-    using (var redeemed = await context.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                                new RedeemBody(code, "Anna", "NUnit")))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPath);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
 
   private async Task<string> CreateInvitationAsync()
   {
-    using var response = await context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                               new { staffMemberId = (Guid?)null });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));

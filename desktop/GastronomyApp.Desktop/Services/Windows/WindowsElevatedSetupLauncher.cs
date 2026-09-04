@@ -8,18 +8,18 @@ public sealed class WindowsElevatedSetupLauncher : IElevatedSetupLauncher
   private const int ElevationDeclinedByUser = 1223;
   private const string SetupArgument = "--setup";
 
-  private readonly string executablePath;
+  private readonly string _executablePath;
 
   public WindowsElevatedSetupLauncher(string executablePath)
   {
-    this.executablePath = executablePath;
+    _executablePath = executablePath;
   }
 
   public async Task<ElevatedSetupOutcome> RunElevatedSetupAsync(CancellationToken cancellationToken = default)
   {
     ProcessStartInfo startInfo = new()
                                  {
-                                   FileName = executablePath,
+                                   FileName = _executablePath,
                                    Arguments = SetupArgument,
                                    UseShellExecute = true,
                                    Verb = "runas"

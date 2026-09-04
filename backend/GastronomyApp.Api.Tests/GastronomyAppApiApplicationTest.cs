@@ -12,8 +12,8 @@ public sealed class GastronomyAppApiApplicationTest
   [SetUp]
   public void SetUp()
   {
-    dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
-    Directory.CreateDirectory(dataDirectory);
+    _dataDirectory = Path.Combine(Path.GetTempPath(), $"gastronomy-api-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(_dataDirectory);
   }
 
   [TearDown]
@@ -21,20 +21,20 @@ public sealed class GastronomyAppApiApplicationTest
   {
     SqliteConnection.ClearAllPools();
 
-    if (Directory.Exists(dataDirectory))
+    if (Directory.Exists(_dataDirectory))
     {
-      Directory.Delete(dataDirectory, true);
+      Directory.Delete(_dataDirectory, true);
     }
   }
 
-  private string dataDirectory = null!;
+  private string _dataDirectory = null!;
 
   [Test]
   public async Task Build_TempDataDirectoryAndPortZero_ResolvesTheDatabaseContext()
   {
     ApiHostOptions options = new()
                              {
-                               DataDirectory = dataDirectory,
+                               DataDirectory = _dataDirectory,
                                Port = 0,
                                BindAddress = "127.0.0.1"
                              };

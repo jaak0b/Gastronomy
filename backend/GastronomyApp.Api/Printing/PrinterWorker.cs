@@ -15,27 +15,27 @@ public sealed record PendingTestPrint(Guid PrintJobId);
 
 public sealed class PrinterWorker
 {
-  private readonly IPrintCallbacks callbacks;
-  private readonly StationCircuitBreaker circuitBreaker = new();
-  private readonly IPrinterWorkerDataAccess dataAccess;
-  private readonly PrinterWorkerDomainServices domainServices;
-  private readonly IPrinterDriver driver;
-  private readonly Lock guard = new();
+  private readonly IPrintCallbacks _callbacks;
+  private readonly StationCircuitBreaker _circuitBreaker = new();
+  private readonly IPrinterWorkerDataAccess _dataAccess;
+  private readonly PrinterWorkerDomainServices _domainServices;
+  private readonly IPrinterDriver _driver;
+  private readonly Lock _guard = new();
 
-  private readonly AppLanguage language;
-  private readonly OrderLineCollapser lineCollapser = new();
-  private readonly ILogger<PrinterWorker> logger;
-  private readonly List<Guid> pending = [];
-  private readonly List<PendingTestPrint> pendingTestPrints = [];
-  private readonly ReconnectBackoff reconnectBackoff = new();
-  private readonly EscPosSlipRenderer renderer;
-  private readonly TimeProvider timeProvider;
-  private PrinterStatusSnapshot? cachedStatus;
-  private DateTimeOffset lastHeartbeatAtUtc;
+  private readonly AppLanguage _language;
+  private readonly OrderLineCollapser _lineCollapser = new();
+  private readonly ILogger<PrinterWorker> _logger;
+  private readonly List<Guid> _pending = [];
+  private readonly List<PendingTestPrint> _pendingTestPrints = [];
+  private readonly ReconnectBackoff _reconnectBackoff = new();
+  private readonly EscPosSlipRenderer _renderer;
+  private readonly TimeProvider _timeProvider;
+  private PrinterStatusSnapshot? _cachedStatus;
+  private DateTimeOffset _lastHeartbeatAtUtc;
 
-  private IPrinterSession? openSession;
-  private DateTimeOffset? reconnectNotBeforeUtc;
-  private int unansweredHeartbeats;
+  private IPrinterSession? _openSession;
+  private DateTimeOffset? _reconnectNotBeforeUtc;
+  private int _unansweredHeartbeats;
 
   public PrinterWorker(Printer printer,
                        IReadOnlyCollection<Guid> servedStationIds,
@@ -48,34 +48,34 @@ public sealed class PrinterWorker
                        AppLanguage language,
                        ILogger<PrinterWorker> logger)
   {
-    this.language = language;
+    _language = language;
     this.Printer = printer;
-    this.driver = driver;
-    this.dataAccess = dataAccess;
-    this.callbacks = callbacks;
-    this.renderer = renderer;
-    this.domainServices = domainServices;
-    this.timeProvider = timeProvider;
-    this.logger = logger;
+    _driver = driver;
+    _dataAccess = dataAccess;
+    _callbacks = callbacks;
+    _renderer = renderer;
+    _domainServices = domainServices;
+    _timeProvider = timeProvider;
+    _logger = logger;
     ServedStationIds = [.. servedStationIds];
-    lastHeartbeatAtUtc = timeProvider.GetUtcNow();
+    _lastHeartbeatAtUtc = timeProvider.GetUtcNow();
   }
 
   public Guid[] ServedStationIds { get; }
 
   public Printer Printer { get; }
 
-  public bool IsFaulty => circuitBreaker.IsTripped;
+  public bool IsFaulty => _circuitBreaker.IsTripped;
 
-  public bool HasOpenSession => openSession is not null;
+  public bool HasOpenSession => _openSession is not null;
 
   public IReadOnlyList<Guid> PendingPrintJobIds
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return [.. pending];
+        return [.. _pending];
       }
     }
   }
@@ -84,50 +84,50 @@ public sealed class PrinterWorker
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return [.. pendingTestPrints.Select(pending => pending.PrintJobId)];
+        return [.. _pendingTestPrints.Select(_pending => _pending.PrintJobId)];
       }
     }
   }
 
   public void Enqueue(Guid printJobId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (!pending.Contains(printJobId))
+      if (!_pending.Contains(printJobId))
       {
-        pending.Add(printJobId);
+        _pending.Add(printJobId);
       }
     }
   }
 
   public void EnqueueTestPrint(Guid printJobId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      if (!pendingTestPrints.Any(candidate => candidate.PrintJobId == printJobId))
+      if (!_pendingTestPrints.Any(candidate => candidate.PrintJobId == printJobId))
       {
-        pendingTestPrints.Add(new(printJobId));
+        _pendingTestPrints.Add(new(printJobId));
       }
     }
   }
 
   public TimeSpan NextReconnectDelay()
   {
-    return reconnectBackoff.Next();
+    return _reconnectBackoff.Next();
   }
 
   public void AcceptStatusSnapshot(PrinterStatusSnapshot snapshot)
   {
-    cachedStatus = snapshot;
+    _cachedStatus = snapshot;
   }
 
   public async Task RecoverAtStartupAsync(CancellationToken cancellationToken)
   {
-    await dataAccess.MarkSendingJobsUnknownAsync(ServedStationIds, cancellationToken);
+    await _dataAccess.MarkSendingJobsUnknownAsync(ServedStationIds, cancellationToken);
     IReadOnlyList<Guid> recoverable =
-      await dataAccess.LoadRecoverablePrintJobIdsAsync(ServedStationIds, cancellationToken);
+      await _dataAccess.LoadRecoverablePrintJobIdsAsync(ServedStationIds, cancellationToken);
     foreach (var printJobId in recoverable)
     {
       Enqueue(printJobId);
@@ -136,11 +136,11 @@ public sealed class PrinterWorker
 
   public async Task<IReadOnlyList<Guid>> ReconnectAsync(CancellationToken cancellationToken)
   {
-    circuitBreaker.Reset();
-    reconnectBackoff.Reset();
-    reconnectNotBeforeUtc = null;
+    _circuitBreaker.Reset();
+    _reconnectBackoff.Reset();
+    _reconnectNotBeforeUtc = null;
     await CloseSessionAsync();
-    await dataAccess.ClearFaultyAtEndpointAsync(ServedStationIds, cancellationToken);
+    await _dataAccess.ClearFaultyAtEndpointAsync(ServedStationIds, cancellationToken);
 
     await PushPrinterStatusAsync(CurrentStatusOrOffline(), false, cancellationToken);
 
@@ -169,38 +169,38 @@ public sealed class PrinterWorker
   private TimeSpan RemainingBackoff()
   {
     var idle = TimeSpan.FromMilliseconds(50);
-    if (reconnectNotBeforeUtc is null)
+    if (_reconnectNotBeforeUtc is null)
     {
       return idle;
     }
 
-    var remaining = reconnectNotBeforeUtc.Value - timeProvider.GetUtcNow();
+    var remaining = _reconnectNotBeforeUtc.Value - _timeProvider.GetUtcNow();
     return remaining > idle ? remaining : idle;
   }
 
   public async Task HeartbeatAsync(CancellationToken cancellationToken)
   {
-    if (openSession is null || timeProvider.GetUtcNow() - lastHeartbeatAtUtc < driver.HeartbeatInterval)
+    if (_openSession is null || _timeProvider.GetUtcNow() - _lastHeartbeatAtUtc < _driver.HeartbeatInterval)
     {
       return;
     }
 
-    lastHeartbeatAtUtc = timeProvider.GetUtcNow();
+    _lastHeartbeatAtUtc = _timeProvider.GetUtcNow();
     try
     {
-      var snapshot = await openSession.QueryStatusAsync(cancellationToken);
-      unansweredHeartbeats = 0;
+      var snapshot = await _openSession.QueryStatusAsync(cancellationToken);
+      _unansweredHeartbeats = 0;
       AcceptStatusSnapshot(snapshot);
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException)
     {
-      unansweredHeartbeats++;
-      logger.LogWarning(error, "Heartbeat number {Unanswered} went unanswered at printer {PrinterName}.", unansweredHeartbeats, Printer.Name);
+      _unansweredHeartbeats++;
+      _logger.LogWarning(error, "Heartbeat number {Unanswered} went unanswered at printer {PrinterName}.", _unansweredHeartbeats, Printer.Name);
 
-      if (unansweredHeartbeats >= 2)
+      if (_unansweredHeartbeats >= 2)
       {
         await CloseSessionAsync();
-        unansweredHeartbeats = 0;
+        _unansweredHeartbeats = 0;
         await PushOfflineAsync("Two consecutive heartbeats went unanswered.", cancellationToken);
       }
     }
@@ -208,12 +208,12 @@ public sealed class PrinterWorker
 
   public async Task RunOnceAsync(CancellationToken cancellationToken)
   {
-    if (circuitBreaker.IsTripped)
+    if (_circuitBreaker.IsTripped)
     {
       return;
     }
 
-    if (reconnectNotBeforeUtc is not null && timeProvider.GetUtcNow() < reconnectNotBeforeUtc.Value)
+    if (_reconnectNotBeforeUtc is not null && _timeProvider.GetUtcNow() < _reconnectNotBeforeUtc.Value)
     {
       return;
     }
@@ -229,8 +229,8 @@ public sealed class PrinterWorker
       return;
     }
 
-    var job = await dataAccess.LoadPrintJobAsync(head.Value, cancellationToken);
-    var claim = await dataAccess.TryClaimAsync(head.Value, cancellationToken);
+    var job = await _dataAccess.LoadPrintJobAsync(head.Value, cancellationToken);
+    var claim = await _dataAccess.TryClaimAsync(head.Value, cancellationToken);
 
     switch (claim.Outcome)
     {
@@ -238,7 +238,7 @@ public sealed class PrinterWorker
         await EndAsHandledOnPaperAsync(job, cancellationToken);
         return;
       case ClaimOutcome.PrinterFaulty:
-        logger.LogInformation("Print job {PrintJobId} was left unclaimed because its printer is faulty.", head.Value);
+        _logger.LogInformation("Print job {PrintJobId} was left unclaimed because its printer is faulty.", head.Value);
         return;
       case ClaimOutcome.Claimed:
         break;
@@ -271,7 +271,7 @@ public sealed class PrinterWorker
     }
 
     var slip = Render(job);
-    var printerJobId = await dataAccess.AllocatePrinterJobIdAsync(cancellationToken);
+    var printerJobId = await _dataAccess.AllocatePrinterJobIdAsync(cancellationToken);
 
     PrintPayload payload = new(printerJobId,
                                slip.Bytes,
@@ -289,7 +289,7 @@ public sealed class PrinterWorker
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException)
     {
-      logger.LogWarning(error, "Sending print job {PrintJobId} failed at printer {PrinterName}.", job.PrintJobId, Printer.Name);
+      _logger.LogWarning(error, "Sending print job {PrintJobId} failed at printer {PrinterName}.", job.PrintJobId, Printer.Name);
       await CloseSessionAsync();
       dispatch = new(PrintOutcome.SocketDropped, 0, CurrentStatusOrOffline(), error.Message);
     }
@@ -299,36 +299,36 @@ public sealed class PrinterWorker
 
   private async Task<bool> TryRunTestPrintAsync(CancellationToken cancellationToken)
   {
-    PendingTestPrint pending;
-    lock (guard)
+    PendingTestPrint _pending;
+    lock (_guard)
     {
-      if (pendingTestPrints.Count == 0)
+      if (_pendingTestPrints.Count == 0)
       {
         return false;
       }
 
-      pending = pendingTestPrints[0];
-      pendingTestPrints.RemoveAt(0);
+      _pending = _pendingTestPrints[0];
+      _pendingTestPrints.RemoveAt(0);
     }
 
     var session = await EnsureSessionAsync(cancellationToken);
     if (session is null)
     {
-      logger.LogWarning("The test slip for printer {PrinterName} was not sent, because the printer could not be reached.",
+      _logger.LogWarning("The test slip for printer {PrinterName} was not sent, because the printer could not be reached.",
                         Printer.Name);
       return true;
     }
 
-    var slip = renderer.RenderTestSlip(new(Printer.Name,
-                                           language.Current,
-                                           timeProvider.GetUtcNow(),
+    var slip = _renderer.RenderTestSlip(new(Printer.Name,
+                                           _language.Current,
+                                           _timeProvider.GetUtcNow(),
                                            TimeZoneInfo.Local));
 
-    var printerJobId = await dataAccess.AllocatePrinterJobIdAsync(cancellationToken);
+    var printerJobId = await _dataAccess.AllocatePrinterJobIdAsync(cancellationToken);
     var dispatch = await session.SendJobAsync(new(printerJobId, slip.Bytes, slip.RenderedText, 0, 0, Printer.Id, Printer.Name, true),
                                               cancellationToken);
 
-    await dataAccess.WritePrinterStatusAsync(Printer.Id, dispatch.StatusAtEnd, cancellationToken);
+    await _dataAccess.WritePrinterStatusAsync(Printer.Id, dispatch.StatusAtEnd, cancellationToken);
     await PushPrinterStatusAsync(dispatch.StatusAtEnd, false, cancellationToken);
     return true;
   }
@@ -341,7 +341,7 @@ public sealed class PrinterWorker
       return null;
     }
 
-    IReadOnlyList<Guid> ordered = await dataAccess.OrderQueueAsync(snapshot, cancellationToken);
+    IReadOnlyList<Guid> ordered = await _dataAccess.OrderQueueAsync(snapshot, cancellationToken);
     foreach (var candidate in ordered)
     {
       if (snapshot.Contains(candidate))
@@ -356,7 +356,7 @@ public sealed class PrinterWorker
   private RenderedSlip Render(PrintJobLoadResult job)
   {
     SlipRenderRequest request = new(job.StationName,
-                                    language.Current,
+                                    _language.Current,
                                     job.StationOrderNumber,
                                     job.GlobalOrderNumber,
                                     job.TableName,
@@ -364,7 +364,7 @@ public sealed class PrinterWorker
                                     new(DateTime.SpecifyKind(job.OrderCreatedAtUtc, DateTimeKind.Utc)),
                                     TimeZoneInfo.Local,
                                     [
-                                      .. lineCollapser
+                                      .. _lineCollapser
                                         .Collapse(job.Items, item => item.ItemName, item => item.ItemNote)
                                         .Select(collapsed => new SlipLine(collapsed.Quantity,
                                                                           collapsed.Line.ItemName,
@@ -374,31 +374,31 @@ public sealed class PrinterWorker
                                     job.AlsoGoesToStationNames);
 
     return job.CopyNumber > 0
-             ? renderer.RenderCopySlip(request, job.CopyNumber, timeProvider.GetUtcNow(), TimeZoneInfo.Local)
-             : renderer.RenderInitialSlip(request);
+             ? _renderer.RenderCopySlip(request, job.CopyNumber, _timeProvider.GetUtcNow(), TimeZoneInfo.Local)
+             : _renderer.RenderInitialSlip(request);
   }
 
   private async Task<IPrinterSession?> EnsureSessionAsync(CancellationToken cancellationToken)
   {
-    if (openSession is not null)
+    if (_openSession is not null)
     {
-      return openSession;
+      return _openSession;
     }
 
     try
     {
-      openSession = await driver.ConnectAsync(Printer, cancellationToken);
-      reconnectBackoff.Reset();
-      reconnectNotBeforeUtc = null;
-      unansweredHeartbeats = 0;
-      lastHeartbeatAtUtc = timeProvider.GetUtcNow();
-      return openSession;
+      _openSession = await _driver.ConnectAsync(Printer, cancellationToken);
+      _reconnectBackoff.Reset();
+      _reconnectNotBeforeUtc = null;
+      _unansweredHeartbeats = 0;
+      _lastHeartbeatAtUtc = _timeProvider.GetUtcNow();
+      return _openSession;
     }
     catch (Exception error) when (error is PrinterUnreachableException or IOException or InvalidOperationException)
     {
-      var retryIn = reconnectBackoff.Next();
-      reconnectNotBeforeUtc = timeProvider.GetUtcNow() + retryIn;
-      logger.LogWarning(error, "Connecting to printer {PrinterName} failed; retrying in {RetryIn}.", Printer.Name, retryIn);
+      var retryIn = _reconnectBackoff.Next();
+      _reconnectNotBeforeUtc = _timeProvider.GetUtcNow() + retryIn;
+      _logger.LogWarning(error, "Connecting to printer {PrinterName} failed; retrying in {RetryIn}.", Printer.Name, retryIn);
       await PushOfflineAsync(error.Message, cancellationToken);
       return null;
     }
@@ -407,9 +407,9 @@ public sealed class PrinterWorker
   private async Task<PreflightResult> PreflightAsync(IPrinterSession session, CancellationToken cancellationToken)
   {
     PrinterStatusSnapshot snapshot;
-    if (cachedStatus is not null && timeProvider.GetUtcNow() - cachedStatus.ObservedAt < driver.HeartbeatInterval)
+    if (_cachedStatus is not null && _timeProvider.GetUtcNow() - _cachedStatus.ObservedAt < _driver.HeartbeatInterval)
     {
-      snapshot = cachedStatus;
+      snapshot = _cachedStatus;
     }
     else
     {
@@ -431,7 +431,7 @@ public sealed class PrinterWorker
   {
     Remove(job.PrintJobId);
 
-    await callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
+    await _callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
                                                  job.StationOrderId,
                                                  job.Status,
                                                  null,
@@ -446,12 +446,12 @@ public sealed class PrinterWorker
   {
     var mapping = MapOutcome(dispatch, job.PrintJobId);
 
-    if (!domainServices.PrintJobStateMachine.CanTransition(PrintJobStatus.Sending, mapping.JobStatus))
+    if (!_domainServices.PrintJobStateMachine.CanTransition(PrintJobStatus.Sending, mapping.JobStatus))
     {
       throw new InvalidOperationException($"The print job state machine refuses Sending to {mapping.JobStatus}, which the job sequence requires for print job {job.PrintJobId}.");
     }
 
-    var applied = await dataAccess.ApplyOutcomeAsync(new()
+    var applied = await _dataAccess.ApplyOutcomeAsync(new()
                                                      {
                                                        PrintJobId = claim.PrintJobId,
                                                        Outcome = dispatch.Outcome,
@@ -462,8 +462,8 @@ public sealed class PrinterWorker
                                                      },
                                                      cancellationToken);
 
-    await dataAccess.WritePrinterStatusAsync(Printer.Id, dispatch.StatusAtEnd, cancellationToken);
-    await callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
+    await _dataAccess.WritePrinterStatusAsync(Printer.Id, dispatch.StatusAtEnd, cancellationToken);
+    await _callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
                                                  job.StationOrderId,
                                                  applied.PrintJobStatus,
                                                  null,
@@ -494,21 +494,21 @@ public sealed class PrinterWorker
 
   private async Task ReQueryAfterUnknownAsync(CancellationToken cancellationToken)
   {
-    if (openSession is null)
+    if (_openSession is null)
     {
       return;
     }
 
     try
     {
-      var reQueried = await openSession.QueryStatusAsync(cancellationToken);
+      var reQueried = await _openSession.QueryStatusAsync(cancellationToken);
       AcceptStatusSnapshot(reQueried);
-      await dataAccess.WritePrinterStatusAsync(Printer.Id, reQueried, cancellationToken);
+      await _dataAccess.WritePrinterStatusAsync(Printer.Id, reQueried, cancellationToken);
       await PushPrinterStatusAsync(reQueried, false, cancellationToken);
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ObjectDisposedException)
     {
-      logger.LogWarning(error, "The status re-query after an unknown outcome failed at printer {PrinterName}.", Printer.Name);
+      _logger.LogWarning(error, "The status re-query after an unknown outcome failed at printer {PrinterName}.", Printer.Name);
       await CloseSessionAsync();
     }
   }
@@ -517,11 +517,11 @@ public sealed class PrinterWorker
   {
     try
     {
-      return domainServices.RetryPolicy.Map(dispatch.Outcome, dispatch.BytesWritten);
+      return _domainServices.RetryPolicy.Map(dispatch.Outcome, dispatch.BytesWritten);
     }
     catch (InvalidOperationException error)
     {
-      logger.LogError(error,
+      _logger.LogError(error,
                       "The retry policy has no row for outcome {Outcome} with {BytesWritten} bytes written, so print job {PrintJobId} is recorded as unknown.",
                       dispatch.Outcome,
                       dispatch.BytesWritten,
@@ -542,10 +542,10 @@ public sealed class PrinterWorker
                                        CancellationToken cancellationToken)
   {
     IReadOnlyList<SuspensionPeriod> suspensions =
-      await dataAccess.LoadSuspensionPeriodsAsync(job.StationId, cancellationToken);
+      await _dataAccess.LoadSuspensionPeriodsAsync(job.StationId, cancellationToken);
 
-    var evaluation = domainServices.GiveUpWindowCalculator.Evaluate(job.CreatedAtUtc,
-                                                                    timeProvider.GetUtcNow().UtcDateTime,
+    var evaluation = _domainServices.GiveUpWindowCalculator.Evaluate(job.CreatedAtUtc,
+                                                                    _timeProvider.GetUtcNow().UtcDateTime,
                                                                     mapping.JobStatus,
                                                                     suspensions);
 
@@ -555,8 +555,8 @@ public sealed class PrinterWorker
     }
 
     var reason = FailureReasonFor(dispatch);
-    await dataAccess.FailPrintJobAsync(claim.PrintJobId, reason, cancellationToken);
-    await callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
+    await _dataAccess.FailPrintJobAsync(claim.PrintJobId, reason, cancellationToken);
+    await _callbacks.OnPrintJobStatusChangedAsync(job.OrderId,
                                                  job.StationOrderId,
                                                  PrintJobStatus.Failed,
                                                  reason,
@@ -583,17 +583,17 @@ public sealed class PrinterWorker
                                               PrintOutcomeMapping mapping,
                                               CancellationToken cancellationToken)
   {
-    if (!circuitBreaker.RecordOutcome(dispatch.Outcome, mapping.JobStatus))
+    if (!_circuitBreaker.RecordOutcome(dispatch.Outcome, mapping.JobStatus))
     {
       return;
     }
 
-    logger.LogError("The printer {PrinterName} stopped making sense and its circuit breaker tripped.", Printer.Name);
-    await dataAccess.FailAllWaitingAtEndpointAsync(ServedStationIds, PrintFailureReason.StationFaulty, cancellationToken);
+    _logger.LogError("The printer {PrinterName} stopped making sense and its circuit breaker tripped.", Printer.Name);
+    await _dataAccess.FailAllWaitingAtEndpointAsync(ServedStationIds, PrintFailureReason.StationFaulty, cancellationToken);
 
-    lock (guard)
+    lock (_guard)
     {
-      pending.Clear();
+      _pending.Clear();
     }
 
     await PushPrinterStatusAsync(dispatch.StatusAtEnd, true, cancellationToken);
@@ -601,17 +601,17 @@ public sealed class PrinterWorker
 
   private async Task PushOrderProjectionAsync(Guid orderId, CancellationToken cancellationToken)
   {
-    var statuses = await dataAccess.LoadOrderPrintJobStatusesAsync(orderId, cancellationToken);
+    var statuses = await _dataAccess.LoadOrderPrintJobStatusesAsync(orderId, cancellationToken);
 
-    await callbacks.OnOrderStatusChangedAsync(orderId, statuses.CurrentStatus, cancellationToken);
+    await _callbacks.OnOrderStatusChangedAsync(orderId, statuses.CurrentStatus, cancellationToken);
   }
 
   private async Task PushOfflineAsync(string detail, CancellationToken cancellationToken)
   {
-    PrinterStatusSnapshot offline = new(false, false, false, false, false, detail, timeProvider.GetUtcNow());
-    cachedStatus = null;
+    PrinterStatusSnapshot offline = new(false, false, false, false, false, detail, _timeProvider.GetUtcNow());
+    _cachedStatus = null;
 
-    await dataAccess.WritePrinterStatusAsync(Printer.Id, offline, cancellationToken);
+    await _dataAccess.WritePrinterStatusAsync(Printer.Id, offline, cancellationToken);
     await PushPrinterStatusAsync(offline, false, cancellationToken);
   }
 
@@ -622,10 +622,10 @@ public sealed class PrinterWorker
     var waiting = 0;
     foreach (var stationId in ServedStationIds)
     {
-      waiting += await dataAccess.CountWaitingPrintJobsAsync(stationId, cancellationToken);
+      waiting += await _dataAccess.CountWaitingPrintJobsAsync(stationId, cancellationToken);
     }
 
-    await callbacks.OnPrinterStatusChangedAsync(Printer.Id,
+    await _callbacks.OnPrinterStatusChangedAsync(Printer.Id,
                                                 ServedStationIds,
                                                 snapshot,
                                                 isFaulty,
@@ -635,26 +635,26 @@ public sealed class PrinterWorker
 
   private PrinterStatusSnapshot CurrentStatusOrOffline()
   {
-    return cachedStatus ?? new PrinterStatusSnapshot(false, false, false, false, false, "No status has been observed yet.", timeProvider.GetUtcNow());
+    return _cachedStatus ?? new PrinterStatusSnapshot(false, false, false, false, false, "No status has been observed yet.", _timeProvider.GetUtcNow());
   }
 
   private void Remove(Guid printJobId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      pending.Remove(printJobId);
+      _pending.Remove(printJobId);
     }
   }
 
   private async Task CloseSessionAsync()
   {
-    if (openSession is null)
+    if (_openSession is null)
     {
       return;
     }
 
-    var closing = openSession;
-    openSession = null;
+    var closing = _openSession;
+    _openSession = null;
     await closing.DisposeAsync();
   }
 }

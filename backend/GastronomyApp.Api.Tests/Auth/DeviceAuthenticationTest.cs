@@ -12,24 +12,24 @@ public sealed class DeviceAuthenticationTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
-    await using var context = factory.CreateContext();
-    world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
+    _factory = await new ApiTestFactory.Builder().StartAsync();
+    await using var context = _factory.CreateContext();
+    _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
-  private SeededWorld world = null!;
+  private ApiTestFactory _factory = null!;
+  private SeededWorld _world = null!;
 
   [Test]
   public async Task Authenticate_NoAuthorizationHeader_IsRefused()
   {
-    using var response = await factory.Client.GetAsync("/api/session");
+    using var response = await _factory.Client.GetAsync("/api/session");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -41,7 +41,7 @@ public sealed class DeviceAuthenticationTest
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
     request.Headers.Authorization = new("Bearer", token);
 
-    using var response = await factory.Client.SendAsync(request);
+    using var response = await _factory.Client.SendAsync(request);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -54,7 +54,7 @@ public sealed class DeviceAuthenticationTest
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
     request.Headers.TryAddWithoutValidation("Authorization", issued.PlaintextToken);
 
-    using var response = await factory.Client.SendAsync(request);
+    using var response = await _factory.Client.SendAsync(request);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -64,7 +64,7 @@ public sealed class DeviceAuthenticationTest
   {
     var issued = await IssueTokenAsync();
 
-    using (var scope = factory.Services.CreateScope())
+    using (var scope = _factory.Services.CreateScope())
     {
       await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
                  .RevokeAsync(issued.Device.Id, CancellationToken.None);
@@ -73,7 +73,7 @@ public sealed class DeviceAuthenticationTest
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
     request.Headers.Authorization = new("Bearer", issued.PlaintextToken);
 
-    using var response = await factory.Client.SendAsync(request);
+    using var response = await _factory.Client.SendAsync(request);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -86,7 +86,7 @@ public sealed class DeviceAuthenticationTest
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/session");
     request.Headers.Authorization = new("Bearer", issued.PlaintextToken);
 
-    using var response = await factory.Client.SendAsync(request);
+    using var response = await _factory.Client.SendAsync(request);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -95,14 +95,14 @@ public sealed class DeviceAuthenticationTest
                       Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(),
                                   Is.EqualTo(issued.Device.Id));
                       Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(world.StaffMemberId));
+                                  Is.EqualTo(_world.StaffMemberId));
                     });
   }
 
   private async Task<IssuedDeviceToken> IssueTokenAsync()
   {
-    using var scope = factory.Services.CreateScope();
+    using var scope = _factory.Services.CreateScope();
     return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                      .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+                      .IssueAsync(_world.StaffMemberId, "de", "NUnit", CancellationToken.None);
   }
 }

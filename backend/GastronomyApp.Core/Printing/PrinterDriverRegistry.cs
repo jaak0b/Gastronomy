@@ -4,16 +4,16 @@ namespace GastronomyApp.Core.Printing;
 
 public sealed class PrinterDriverRegistry
 {
-  private readonly Dictionary<Type, IPrinterDriver> driversByPrinterType;
+  private readonly Dictionary<Type, IPrinterDriver> _driversByPrinterType;
 
   public PrinterDriverRegistry(IEnumerable<IPrinterDriver> drivers)
   {
     ArgumentNullException.ThrowIfNull(drivers);
 
-    driversByPrinterType = [];
+    _driversByPrinterType = [];
     foreach (var driver in drivers)
     {
-      if (!driversByPrinterType.TryAdd(driver.PrinterType, driver))
+      if (!_driversByPrinterType.TryAdd(driver.PrinterType, driver))
       {
         throw new DuplicatePrinterDriverException($"Two printer drivers claim {driver.PrinterType.Name}, so the app cannot tell which one to use.");
       }
@@ -24,7 +24,7 @@ public sealed class PrinterDriverRegistry
   {
     ArgumentNullException.ThrowIfNull(printer);
 
-    if (driversByPrinterType.TryGetValue(printer.GetType(), out var driver))
+    if (_driversByPrinterType.TryGetValue(printer.GetType(), out var driver))
     {
       return driver;
     }

@@ -10,16 +10,16 @@ public sealed class SqliteConnectionPolicyTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private ApiTestFactory factory = null!;
+  private ApiTestFactory _factory = null!;
 
   [Test]
   public async Task ResolvedContext_ConnectionFromTheBuiltApplication_CarriesTheBusyTimeoutPolicy()
@@ -41,7 +41,7 @@ public sealed class SqliteConnectionPolicyTest
 
   private async Task<string> ReadPragmaAsync(string pragmaName)
   {
-    await using var context = factory.CreateContext();
+    await using var context = _factory.CreateContext();
     await context.Database.OpenConnectionAsync();
 
     var connection = context.Database.GetDbConnection();

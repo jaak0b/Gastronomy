@@ -2,20 +2,20 @@
 
 public sealed class TestTimeProvider : TimeProvider
 {
-  private DateTimeOffset now;
+  private DateTimeOffset _now;
 
   public TestTimeProvider(DateTimeOffset start)
   {
-    now = start;
+    _now = start;
   }
 
   override public DateTimeOffset GetUtcNow()
   {
-    return now;
+    return _now;
   }
 
   public void Advance(TimeSpan amount)
   {
-    now += amount;
+    _now += amount;
   }
 }

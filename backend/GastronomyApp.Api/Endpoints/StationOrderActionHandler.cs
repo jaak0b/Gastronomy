@@ -14,14 +14,14 @@ namespace GastronomyApp.Api.Endpoints;
 
 public sealed class StationOrderActionHandler
 {
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly HubNotificationDispatcher dispatcher;
-  private readonly OrderReader orderReader;
-  private readonly IPrinterFleet printerFleet;
-  private readonly PrintJobEnqueuer printJobEnqueuer;
-  private readonly ResultEnvelope resultEnvelope;
-  private readonly PrintJobStateMachine stateMachine;
-  private readonly ImmediateTransactionRunner transactionRunner = new();
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly HubNotificationDispatcher _dispatcher;
+  private readonly OrderReader _orderReader;
+  private readonly IPrinterFleet _printerFleet;
+  private readonly PrintJobEnqueuer _printJobEnqueuer;
+  private readonly ResultEnvelope _resultEnvelope;
+  private readonly PrintJobStateMachine _stateMachine;
+  private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public StationOrderActionHandler(GastronomyAppDbContext dbContext,
                                    OrderReader orderReader,
@@ -31,13 +31,13 @@ public sealed class StationOrderActionHandler
                                    HubNotificationDispatcher dispatcher,
                                    ResultEnvelope resultEnvelope)
   {
-    this.dbContext = dbContext;
-    this.orderReader = orderReader;
-    this.stateMachine = stateMachine;
-    this.printJobEnqueuer = printJobEnqueuer;
-    this.printerFleet = printerFleet;
-    this.dispatcher = dispatcher;
-    this.resultEnvelope = resultEnvelope;
+    _dbContext = dbContext;
+    _orderReader = orderReader;
+    _stateMachine = stateMachine;
+    _printJobEnqueuer = printJobEnqueuer;
+    _printerFleet = printerFleet;
+    _dispatcher = dispatcher;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task<IResult> ResolveUnknownAsync(Guid orderId,
@@ -46,7 +46,7 @@ public sealed class StationOrderActionHandler
                                                  Guid? callerStaffMemberId,
                                                  CancellationToken cancellationToken)
   {
-    var order = await dbContext.Orders
+    var order = await _dbContext.Orders
                                .AsNoTracking()
                                .FirstOrDefaultAsync(candidate => candidate.Id == orderId, cancellationToken);
 
@@ -57,7 +57,7 @@ public sealed class StationOrderActionHandler
 
     if (callerStaffMemberId is not null && order.StaffMemberId != callerStaffMemberId)
     {
-      return resultEnvelope.Problem(StatusCodes.Status403Forbidden,
+      return _resultEnvelope.Problem(StatusCodes.Status403Forbidden,
                                     "NotYourOrder",
                                     "order.notYours");
     }
@@ -70,7 +70,7 @@ public sealed class StationOrderActionHandler
 
     if (latest.Status != PrintJobStatus.Unknown)
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "QuestionAlreadyAnswered",
                                     "printJob.questionAlreadyAnswered");
     }
@@ -79,17 +79,17 @@ public sealed class StationOrderActionHandler
                    ? PrintJobStatus.Printed
                    : PrintJobStatus.Queued;
 
-    if (!stateMachine.CanTransition(latest.Status, target))
+    if (!_stateMachine.CanTransition(latest.Status, target))
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "IllegalPrintJobTransition",
                                     "printJob.illegalTransition");
     }
 
-    var applied = await transactionRunner.RunAsync(dbContext,
+    var applied = await _transactionRunner.RunAsync(_dbContext,
                                                    async transactionCancellationToken =>
                                                    {
-                                                     var tracked = await dbContext.PrintJobs
+                                                     var tracked = await _dbContext.PrintJobs
                                                                                   .FirstAsync(candidate => candidate.Id == latest.Id, transactionCancellationToken);
 
                                                      if (tracked.Status != PrintJobStatus.Unknown)
@@ -98,7 +98,7 @@ public sealed class StationOrderActionHandler
                                                      }
 
                                                      tracked.Status = target;
-                                                     await dbContext.SaveChangesAsync(transactionCancellationToken);
+                                                     await _dbContext.SaveChangesAsync(transactionCancellationToken);
 
                                                      return new TransactionOutcome<bool> { Value = true, ShouldCommit = true };
                                                    },
@@ -106,22 +106,22 @@ public sealed class StationOrderActionHandler
 
     if (!applied)
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "QuestionAlreadyAnswered",
                                     "printJob.questionAlreadyAnswered");
     }
 
     if (target == PrintJobStatus.Queued)
     {
-      await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(stationOrderId, cancellationToken);
+      await _printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(stationOrderId, cancellationToken);
     }
 
-    var loaded = (await orderReader.LoadAsync(dbContext, orderId, cancellationToken))!;
+    var loaded = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
 
-    await dispatcher.OnPrintJobStatusChangedAsync(orderId, stationOrderId, target, null, cancellationToken);
-    await dispatcher.OnOrderStatusChangedAsync(orderId, orderReader.StatusOf(loaded), cancellationToken);
+    await _dispatcher.OnPrintJobStatusChangedAsync(orderId, stationOrderId, target, null, cancellationToken);
+    await _dispatcher.OnOrderStatusChangedAsync(orderId, _orderReader.StatusOf(loaded), cancellationToken);
 
-    return Results.Ok(orderReader.DescribeStationOrders(loaded).First(view => view.StationOrderId == stationOrderId));
+    return Results.Ok(_orderReader.DescribeStationOrders(loaded).First(view => view.StationOrderId == stationOrderId));
   }
 
   public async Task<IResult> PrintAnotherCopyAsync(Guid orderId,
@@ -129,7 +129,7 @@ public sealed class StationOrderActionHandler
                                                    Guid? callerStaffMemberId,
                                                    CancellationToken cancellationToken)
   {
-    var order = await dbContext.Orders
+    var order = await _dbContext.Orders
                                .AsNoTracking()
                                .FirstOrDefaultAsync(candidate => candidate.Id == orderId, cancellationToken);
 
@@ -140,7 +140,7 @@ public sealed class StationOrderActionHandler
 
     if (callerStaffMemberId is not null && order.StaffMemberId != callerStaffMemberId)
     {
-      return resultEnvelope.Problem(StatusCodes.Status403Forbidden,
+      return _resultEnvelope.Problem(StatusCodes.Status403Forbidden,
                                     "NotYourOrder",
                                     "order.notYours");
     }
@@ -153,7 +153,7 @@ public sealed class StationOrderActionHandler
 
     if (latest.Status is not (PrintJobStatus.Failed or PrintJobStatus.Printed))
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "AnotherCopyNotAllowed",
                                     "printJob.anotherCopyNotAllowed");
     }
@@ -162,7 +162,7 @@ public sealed class StationOrderActionHandler
 
     try
     {
-      ensured = await printerFleet.EnqueueAsync(stationOrderId, cancellationToken);
+      ensured = await _printerFleet.EnqueueAsync(stationOrderId, cancellationToken);
     }
     catch (UnknownStationOrderException)
     {
@@ -171,14 +171,14 @@ public sealed class StationOrderActionHandler
 
     if (!ensured.WasCreated)
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "PrintJobAlreadyRunning",
                                     "printJob.alreadyRunning");
     }
 
-    var loaded = (await orderReader.LoadAsync(dbContext, orderId, cancellationToken))!;
+    var loaded = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
 
-    return Results.Json(orderReader.DescribeStationOrders(loaded).First(view => view.StationOrderId == stationOrderId),
+    return Results.Json(_orderReader.DescribeStationOrders(loaded).First(view => view.StationOrderId == stationOrderId),
                         statusCode: StatusCodes.Status202Accepted);
   }
 
@@ -186,7 +186,7 @@ public sealed class StationOrderActionHandler
                                                     Guid orderId,
                                                     CancellationToken cancellationToken)
   {
-    var belongsToOrder = await dbContext.StationOrders
+    var belongsToOrder = await _dbContext.StationOrders
                                         .AsNoTracking()
                                         .AnyAsync(stationOrder => stationOrder.Id == stationOrderId && stationOrder.OrderId == orderId,
                                                   cancellationToken);
@@ -196,7 +196,7 @@ public sealed class StationOrderActionHandler
       return null;
     }
 
-    return await dbContext.PrintJobs
+    return await _dbContext.PrintJobs
                           .AsNoTracking()
                           .Where(job => job.StationOrderId == stationOrderId)
                           .OrderByDescending(job => job.CopyNumber)

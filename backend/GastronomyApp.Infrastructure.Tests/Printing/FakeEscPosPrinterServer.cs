@@ -9,34 +9,34 @@ sealed internal record ProcessIdEchoScript(bool Enabled, TimeSpan AfterDelay, in
 
 sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
 {
-  private readonly Dictionary<int, byte> dleEotResponses = [];
-  private readonly Lock guard = new();
-  private readonly CancellationTokenSource lifetime = new();
-  private readonly TcpListener listener;
-  private readonly List<byte> receivedBytes = [];
-  private int acceptedConnectionCount;
-  private Task? acceptLoop;
+  private readonly Dictionary<int, byte> _dleEotResponses = [];
+  private readonly Lock _guard = new();
+  private readonly CancellationTokenSource _lifetime = new();
+  private readonly TcpListener _listener;
+  private readonly List<byte> _receivedBytes = [];
+  private int _acceptedConnectionCount;
+  private Task? _acceptLoop;
 
-  private byte[]? asbOnConnect;
-  private byte[]? burstOnProcessIdRequest;
-  private int? dropAfterBytes;
-  private bool dropImmediately;
-  private ProcessIdEchoScript processIdEcho = new(true, TimeSpan.Zero, null);
+  private byte[]? _asbOnConnect;
+  private byte[]? _burstOnProcessIdRequest;
+  private int? _dropAfterBytes;
+  private bool _dropImmediately;
+  private ProcessIdEchoScript _processIdEcho = new(true, TimeSpan.Zero, null);
 
   public FakeEscPosPrinterServer(int port)
   {
-    listener = new(IPAddress.Loopback, port);
+    _listener = new(IPAddress.Loopback, port);
   }
 
-  public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
+  public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
   public int AcceptedConnectionCount
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return acceptedConnectionCount;
+        return _acceptedConnectionCount;
       }
     }
   }
@@ -45,93 +45,93 @@ sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
   {
     get
     {
-      lock (guard)
+      lock (_guard)
       {
-        return [.. receivedBytes];
+        return [.. _receivedBytes];
       }
     }
   }
 
   public async ValueTask DisposeAsync()
   {
-    await lifetime.CancelAsync();
-    listener.Stop();
-    if (acceptLoop is not null)
+    await _lifetime.CancelAsync();
+    _listener.Stop();
+    if (_acceptLoop is not null)
     {
-      await Task.WhenAny(acceptLoop, Task.Delay(500));
+      await Task.WhenAny(_acceptLoop, Task.Delay(500));
     }
 
-    lifetime.Dispose();
+    _lifetime.Dispose();
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
   {
-    listener.Start();
-    acceptLoop = Task.Run(() => AcceptLoopAsync(lifetime.Token), CancellationToken.None);
+    _listener.Start();
+    _acceptLoop = Task.Run(() => AcceptLoopAsync(_lifetime.Token), CancellationToken.None);
     return Task.CompletedTask;
   }
 
   public void ScriptAsbOnConnect(byte paperStatusMask, byte errorStatusMask)
   {
-    lock (guard)
+    lock (_guard)
     {
-      asbOnConnect = [0x14, errorStatusMask, paperStatusMask, 0x00];
+      _asbOnConnect = [0x14, errorStatusMask, paperStatusMask, 0x00];
     }
   }
 
   public void ScriptDleEotResponse(int n, byte statusByte)
   {
-    lock (guard)
+    lock (_guard)
     {
-      dleEotResponses[n] = statusByte;
+      _dleEotResponses[n] = statusByte;
     }
   }
 
   public void ScriptProcessIdEcho(TimeSpan afterDelay)
   {
-    lock (guard)
+    lock (_guard)
     {
-      processIdEcho = new(true, afterDelay, null);
+      _processIdEcho = new(true, afterDelay, null);
     }
   }
 
   public void ScriptProcessIdEchoCarrying(int processId)
   {
-    lock (guard)
+    lock (_guard)
     {
-      processIdEcho = new(true, TimeSpan.Zero, processId);
+      _processIdEcho = new(true, TimeSpan.Zero, processId);
     }
   }
 
   public void ScriptBurstOnProcessIdRequest(byte paperStatusMask, byte errorStatusMask, byte statusByte)
   {
-    lock (guard)
+    lock (_guard)
     {
-      burstOnProcessIdRequest = [0x14, errorStatusMask, paperStatusMask, 0x00, statusByte];
+      _burstOnProcessIdRequest = [0x14, errorStatusMask, paperStatusMask, 0x00, statusByte];
     }
   }
 
   public void ScriptNeverEchoProcessId()
   {
-    lock (guard)
+    lock (_guard)
     {
-      processIdEcho = new(false, TimeSpan.Zero, null);
+      _processIdEcho = new(false, TimeSpan.Zero, null);
     }
   }
 
   public void ScriptDropConnectionAfterBytes(int byteCount)
   {
-    lock (guard)
+    lock (_guard)
     {
-      dropAfterBytes = byteCount;
+      _dropAfterBytes = byteCount;
     }
   }
 
   public void ScriptDropConnectionImmediately()
   {
-    lock (guard)
+    lock (_guard)
     {
-      dropImmediately = true;
+      _dropImmediately = true;
     }
   }
 
@@ -142,16 +142,16 @@ sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
       TcpClient client;
       try
       {
-        client = await listener.AcceptTcpClientAsync(cancellationToken);
+        client = await _listener.AcceptTcpClientAsync(cancellationToken);
       }
       catch (Exception error) when (error is OperationCanceledException or SocketException or ObjectDisposedException)
       {
         return;
       }
 
-      lock (guard)
+      lock (_guard)
       {
-        acceptedConnectionCount++;
+        _acceptedConnectionCount++;
       }
 
       _ = Task.Run(() => ServeAsync(client, cancellationToken), CancellationToken.None);
@@ -196,9 +196,9 @@ sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
       }
 
       var chunk = buffer[..read];
-      lock (guard)
+      lock (_guard)
       {
-        receivedBytes.AddRange(chunk);
+        _receivedBytes.AddRange(chunk);
       }
 
       totalRead += read;
@@ -261,49 +261,49 @@ sealed internal class FakeEscPosPrinterServer : IAsyncDisposable
 
   private byte[]? ReadBurst()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return burstOnProcessIdRequest;
+      return _burstOnProcessIdRequest;
     }
   }
 
   private bool ReadDropImmediately()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return dropImmediately;
+      return _dropImmediately;
     }
   }
 
   private byte[]? ReadAsbOnConnect()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return asbOnConnect;
+      return _asbOnConnect;
     }
   }
 
   private int? ReadDropAfterBytes()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return dropAfterBytes;
+      return _dropAfterBytes;
     }
   }
 
   private byte? ReadDleEotResponse(byte n)
   {
-    lock (guard)
+    lock (_guard)
     {
-      return dleEotResponses.TryGetValue(n, out var response) ? response : null;
+      return _dleEotResponses.TryGetValue(n, out var response) ? response : null;
     }
   }
 
   private ProcessIdEchoScript ReadProcessIdEcho()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return processIdEcho;
+      return _processIdEcho;
     }
   }
 }

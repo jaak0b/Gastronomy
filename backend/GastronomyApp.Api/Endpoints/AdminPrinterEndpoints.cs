@@ -54,12 +54,12 @@ public static class AdminPrinterEndpoints
 
 public sealed class AdminPrinterHandler
 {
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly PrinterFleet fleet;
-  private readonly IMockFaultRegistry mockFaultRegistry;
-  private readonly IPrinterFleet printerFleet;
-  private readonly IPrinterWorkerDataAccess printerWorkerDataAccess;
-  private readonly ResultEnvelope resultEnvelope;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly PrinterFleet _fleet;
+  private readonly IMockFaultRegistry _mockFaultRegistry;
+  private readonly IPrinterFleet _printerFleet;
+  private readonly IPrinterWorkerDataAccess _printerWorkerDataAccess;
+  private readonly ResultEnvelope _resultEnvelope;
 
   public AdminPrinterHandler(GastronomyAppDbContext dbContext,
                              IPrinterFleet printerFleet,
@@ -68,27 +68,27 @@ public sealed class AdminPrinterHandler
                              IPrinterWorkerDataAccess printerWorkerDataAccess,
                              ResultEnvelope resultEnvelope)
   {
-    this.dbContext = dbContext;
-    this.printerFleet = printerFleet;
-    this.fleet = fleet;
-    this.mockFaultRegistry = mockFaultRegistry;
-    this.printerWorkerDataAccess = printerWorkerDataAccess;
-    this.resultEnvelope = resultEnvelope;
+    _dbContext = dbContext;
+    _printerFleet = printerFleet;
+    _fleet = fleet;
+    _mockFaultRegistry = mockFaultRegistry;
+    _printerWorkerDataAccess = printerWorkerDataAccess;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    List<Printer> printers = await dbContext.Printers
+    List<Printer> printers = await _dbContext.Printers
                                             .AsNoTracking()
                                             .OrderBy(printer => printer.Name)
                                             .ToListAsync(cancellationToken);
 
-    List<Station> stations = await dbContext.Stations
+    List<Station> stations = await _dbContext.Stations
                                             .AsNoTracking()
                                             .OrderBy(station => station.SortOrder)
                                             .ToListAsync(cancellationToken);
 
-    List<PrinterStatus> statuses = await dbContext.PrinterStatuses
+    List<PrinterStatus> statuses = await _dbContext.PrinterStatuses
                                                   .AsNoTracking()
                                                   .ToListAsync(cancellationToken);
 
@@ -102,7 +102,7 @@ public sealed class AdminPrinterHandler
       var waitingTicketCount = 0;
       foreach (var station in served)
       {
-        waitingTicketCount += await printerWorkerDataAccess.CountWaitingPrintJobsAsync(station.Id,
+        waitingTicketCount += await _printerWorkerDataAccess.CountWaitingPrintJobsAsync(station.Id,
                                                                                        cancellationToken);
       }
 
@@ -120,10 +120,10 @@ public sealed class AdminPrinterHandler
     }
 
     var printer = NewPrinterFrom(request);
-    dbContext.Printers.Add(printer);
+    _dbContext.Printers.Add(printer);
     ApplyTo(printer, request);
-    await dbContext.SaveChangesAsync(cancellationToken);
-    await fleet.ReconcileAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
+    await _fleet.ReconcileAsync(cancellationToken);
 
     return Results.Json(new SavedPrinterView(printer.Id, []),
                         statusCode: StatusCodes.Status201Created);
@@ -138,7 +138,7 @@ public sealed class AdminPrinterHandler
       return NameIsMissing();
     }
 
-    var printer = await dbContext.Printers
+    var printer = await _dbContext.Printers
                                  .FirstOrDefaultAsync(candidate => candidate.Id == printerId, cancellationToken);
 
     if (printer is null)
@@ -148,15 +148,15 @@ public sealed class AdminPrinterHandler
 
     if (!MatchesTypeOf(printer, request))
     {
-      return resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
+      return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                     "UnprocessableEntity",
                                     "admin.printerTypeCannotChange");
     }
 
     printer.Name = request.Name.Trim();
     ApplyTo(printer, request);
-    await dbContext.SaveChangesAsync(cancellationToken);
-    await fleet.ReconcileAsync(cancellationToken);
+    await _dbContext.SaveChangesAsync(cancellationToken);
+    await _fleet.ReconcileAsync(cancellationToken);
 
     IReadOnlyList<string> stationNames = await StationNamesOnAsync(printerId, cancellationToken);
     return Results.Ok(new SavedPrinterView(printerId, stationNames));
@@ -164,7 +164,7 @@ public sealed class AdminPrinterHandler
 
   public async Task<IResult> DeleteAsync(Guid printerId, CancellationToken cancellationToken)
   {
-    var printer = await dbContext.Printers
+    var printer = await _dbContext.Printers
                                  .FirstOrDefaultAsync(candidate => candidate.Id == printerId, cancellationToken);
 
     if (printer is null)
@@ -175,22 +175,22 @@ public sealed class AdminPrinterHandler
     IReadOnlyList<string> stationNames = await StationNamesOnAsync(printerId, cancellationToken);
     if (stationNames.Count > 0)
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "Conflict",
                                     "admin.printerStillHasStations",
                                     new Dictionary<string, string> { ["names"] = string.Join(", ", stationNames) });
     }
 
-    var status = await dbContext.PrinterStatuses
+    var status = await _dbContext.PrinterStatuses
                                 .FirstOrDefaultAsync(candidate => candidate.PrinterId == printerId, cancellationToken);
     if (status is not null)
     {
-      dbContext.PrinterStatuses.Remove(status);
+      _dbContext.PrinterStatuses.Remove(status);
     }
 
-    dbContext.Printers.Remove(printer);
-    await dbContext.SaveChangesAsync(cancellationToken);
-    await fleet.ReconcileAsync(cancellationToken);
+    _dbContext.Printers.Remove(printer);
+    await _dbContext.SaveChangesAsync(cancellationToken);
+    await _fleet.ReconcileAsync(cancellationToken);
 
     return Results.Ok(new SavedPrinterView(printerId, []));
   }
@@ -204,7 +204,7 @@ public sealed class AdminPrinterHandler
 
     try
     {
-      await printerFleet.TestPrintAsync(printerId, cancellationToken);
+      await _printerFleet.TestPrintAsync(printerId, cancellationToken);
     }
     catch (UnknownStationOrderException)
     {
@@ -225,7 +225,7 @@ public sealed class AdminPrinterHandler
 
     try
     {
-      clearedStationIds = await printerFleet.ReconnectAsync(printerId, cancellationToken);
+      clearedStationIds = await _printerFleet.ReconnectAsync(printerId, cancellationToken);
     }
     catch (UnknownStationOrderException)
     {
@@ -263,7 +263,7 @@ public sealed class AdminPrinterHandler
              };
     }
 
-    var armed = mockFaultRegistry.Armed(printer.Id);
+    var armed = _mockFaultRegistry.Armed(printer.Id);
     return new TestPrinterView
            {
              PrinterId = printer.Id,
@@ -320,7 +320,7 @@ public sealed class AdminPrinterHandler
       var mode = Enum.TryParse(testRequest.SimulatedFaultMode, out MockFaultMode parsedMode)
                    ? parsedMode
                    : MockFaultMode.Once;
-      mockFaultRegistry.Arm(printer.Id, fault, mode);
+      _mockFaultRegistry.Arm(printer.Id, fault, mode);
     }
   }
 
@@ -336,12 +336,12 @@ public sealed class AdminPrinterHandler
 
   private Task<bool> PrinterExistsAsync(Guid printerId, CancellationToken cancellationToken)
   {
-    return dbContext.Printers.AnyAsync(printer => printer.Id == printerId, cancellationToken);
+    return _dbContext.Printers.AnyAsync(printer => printer.Id == printerId, cancellationToken);
   }
 
   private async Task<IReadOnlyList<string>> StationNamesOnAsync(Guid printerId, CancellationToken cancellationToken)
   {
-    return await dbContext.Stations
+    return await _dbContext.Stations
                           .AsNoTracking()
                           .Where(station => station.PrinterId == printerId)
                           .OrderBy(station => station.SortOrder)
@@ -351,14 +351,14 @@ public sealed class AdminPrinterHandler
 
   private IResult NameIsMissing()
   {
-    return resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+    return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                   "ValidationFailed",
                                   "admin.printerNameMissing");
   }
 
   private IResult NoWorkerServesThisPrinter()
   {
-    return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+    return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                   "NoPrinterWorkerForStation",
                                   "admin.stationHasNoPrinterWorker");
   }

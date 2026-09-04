@@ -6,12 +6,12 @@ namespace GastronomyApp.Infrastructure.Tests.Printing;
 
 public class EscPosSlipRendererTest
 {
-  private EscPosSlipRenderer renderer = null!;
+  private EscPosSlipRenderer _renderer = null!;
 
   [SetUp]
   public void SetUp()
   {
-    renderer = new(new ResxSlipTextProvider());
+    _renderer = new(new ResxSlipTextProvider());
   }
 
   private string Joined(params string[] lines)
@@ -85,7 +85,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderInitialSlip_GermanFixture_MatchesSpecExample()
   {
-    var slip = renderer.RenderInitialSlip(GermanFixture());
+    var slip = _renderer.RenderInitialSlip(GermanFixture());
 
     Assert.That(slip.RenderedText,
                 Is.EqualTo(Joined("================================================",
@@ -123,7 +123,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderInitialSlip_EnglishFixture_MatchesSpecExample()
   {
-    var slip = renderer.RenderInitialSlip(EnglishFixture());
+    var slip = _renderer.RenderInitialSlip(EnglishFixture());
 
     Assert.That(slip.RenderedText,
                 Is.EqualTo(Joined("================================================",
@@ -155,7 +155,7 @@ public class EscPosSlipRendererTest
                     Lines = [new(1, "äöüÄÖÜß€", null)]
                   };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     AssertSequencesInOrder(slip.Bytes,
                            [0x84, 0x94, 0x81, 0x8E, 0x99, 0x9A, 0xE1, 0xD5]);
@@ -168,7 +168,7 @@ public class EscPosSlipRendererTest
     string longName = new('A', 60);
     var request = GermanFixture() with { Lines = [new(1, longName, null)] };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     Assert.That(slip.RenderedText, Does.Contain("1 x " + new string('A', 44) + "\r\n    " + new string('A', 16) + "\r\n"));
   }
@@ -182,7 +182,7 @@ public class EscPosSlipRendererTest
                     StaffMemberName = new('S', 60)
                   };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     Assert.That(slip.RenderedText, Does.Contain("Tisch " + new string('T', 42) + "\r\n    " + new string('T', 18)));
     Assert.That(slip.RenderedText, Does.Contain("Kellner: " + new string('S', 39) + "\r\n    " + new string('S', 21)));
@@ -192,7 +192,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderCopySlip_German_PrependsReprintBannerWithReprintTime()
   {
-    var slip = renderer.RenderCopySlip(GermanFixture(),
+    var slip = _renderer.RenderCopySlip(GermanFixture(),
                                        1,
                                        new(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
                                        TimeZoneInfo.Utc);
@@ -215,7 +215,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderInitialSlip_FooterCountsUnits_NotLines()
   {
-    var slip = renderer.RenderInitialSlip(GermanFixture());
+    var slip = _renderer.RenderInitialSlip(GermanFixture());
 
     Assert.That(slip.RenderedText, Does.Contain("Artikel gesamt: 6"));
   }
@@ -231,7 +231,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderTestSlip_German_NamesTheStationAndCarriesNoAddress()
   {
-    var slip = renderer.RenderTestSlip(GermanTestSlipFixture());
+    var slip = _renderer.RenderTestSlip(GermanTestSlipFixture());
 
     Assert.That(slip.RenderedText,
                 Is.EqualTo(Joined("================================================",
@@ -245,7 +245,7 @@ public class EscPosSlipRendererTest
   [Test]
   public void RenderTestSlip_English_NamesTheStationAndCarriesNoAddress()
   {
-    var slip = renderer.RenderTestSlip(GermanTestSlipFixture() with { StationName = "KITCHEN", LanguageCode = "en" });
+    var slip = _renderer.RenderTestSlip(GermanTestSlipFixture() with { StationName = "KITCHEN", LanguageCode = "en" });
 
     Assert.That(slip.RenderedText,
                 Is.EqualTo(Joined("================================================",
@@ -261,7 +261,7 @@ public class EscPosSlipRendererTest
   {
     var request = GermanFixture() with { StationName = new('K', 30) };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     Assert.That(slip.RenderedText, Does.Contain(new string('K', 24) + "\r\n    " + new string('K', 6) + "\r\n"));
   }
@@ -271,7 +271,7 @@ public class EscPosSlipRendererTest
   {
     var request = GermanFixture() with { TableName = new('T', 60) };
 
-    var slip = renderer.RenderCopySlip(request,
+    var slip = _renderer.RenderCopySlip(request,
                                        1,
                                        new(2026, 8, 26, 20, 31, 0, TimeSpan.Zero),
                                        TimeZoneInfo.Utc);
@@ -287,7 +287,7 @@ public class EscPosSlipRendererTest
                     Lines = [new(1, "Pierogi \u0142ososiowe \u2013 Cr\u0113me", null)]
                   };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     Assert.That(slip.RenderedText, Does.Contain("Pierogi lososiowe - Creme"));
     Assert.That(ContainsSequence(slip.Bytes, [0x3F], 0, out _), Is.False);
@@ -301,7 +301,7 @@ public class EscPosSlipRendererTest
                     Lines = [new(1, "Wasabi \u3042", null)]
                   };
 
-    var slip = renderer.RenderInitialSlip(request);
+    var slip = _renderer.RenderInitialSlip(request);
 
     Assert.That(slip.RenderedText, Does.Contain("Wasabi ?"));
   }

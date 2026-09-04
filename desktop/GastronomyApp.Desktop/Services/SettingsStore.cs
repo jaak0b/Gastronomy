@@ -23,11 +23,11 @@ public sealed class SettingsStore : ISettingsStore
                                                                WriteIndented = true
                                                              };
 
-  private readonly string settingsDirectory;
+  private readonly string _settingsDirectory;
 
   public SettingsStore(string settingsDirectory)
   {
-    this.settingsDirectory = settingsDirectory;
+    _settingsDirectory = settingsDirectory;
   }
 
   public DesktopSettings Load()
@@ -35,14 +35,14 @@ public sealed class SettingsStore : ISettingsStore
     var stored = ReadStoredSettings();
 
     return new(stored.Port,
-               stored.DataDirectory ?? settingsDirectory,
+               stored.DataDirectory ?? _settingsDirectory,
                stored.SelectedNetworkInterface,
                stored.Language);
   }
 
   public void Save(DesktopSettings settings)
   {
-    Directory.CreateDirectory(settingsDirectory);
+    Directory.CreateDirectory(_settingsDirectory);
 
     StoredSettings stored = new()
                             {
@@ -52,13 +52,13 @@ public sealed class SettingsStore : ISettingsStore
                               Language = settings.Language
                             };
 
-    File.WriteAllText(Path.Combine(settingsDirectory, SettingsFileName),
+    File.WriteAllText(Path.Combine(_settingsDirectory, SettingsFileName),
                       JsonSerializer.Serialize(stored, serializerOptions));
   }
 
   private StoredSettings ReadStoredSettings()
   {
-    var path = Path.Combine(settingsDirectory, SettingsFileName);
+    var path = Path.Combine(_settingsDirectory, SettingsFileName);
     if (!File.Exists(path))
     {
       return new();

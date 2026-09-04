@@ -6,16 +6,16 @@ namespace GastronomyApp.Api.Printing;
 
 public sealed class DatabasePrinterSource : IPrinterSource
 {
-  private readonly IDbContextFactory<GastronomyAppDbContext> contextFactory;
+  private readonly IDbContextFactory<GastronomyAppDbContext> _contextFactory;
 
   public DatabasePrinterSource(IDbContextFactory<GastronomyAppDbContext> contextFactory)
   {
-    this.contextFactory = contextFactory;
+    _contextFactory = contextFactory;
   }
 
   public async Task<IReadOnlyList<PrinterWithStations>> LoadActiveAsync(CancellationToken ct)
   {
-    await using var context = await contextFactory.CreateDbContextAsync(ct);
+    await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
     List<Station> stations = await context.Stations
                                           .Where(station => station.IsActive && station.PrinterId != null)

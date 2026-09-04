@@ -36,19 +36,19 @@ public sealed class LocalNetworkAddressProvider
 public sealed class ReachableHostResolver
 {
   private const string LoopbackHost = "127.0.0.1";
-  private readonly LocalNetworkAddressProvider addressProvider;
+  private readonly LocalNetworkAddressProvider _addressProvider;
 
-  private readonly ApiHostOptions hostOptions;
+  private readonly ApiHostOptions _hostOptions;
 
   public ReachableHostResolver(ApiHostOptions hostOptions, LocalNetworkAddressProvider addressProvider)
   {
-    this.hostOptions = hostOptions;
-    this.addressProvider = addressProvider;
+    _hostOptions = hostOptions;
+    _addressProvider = addressProvider;
   }
 
   public bool BindsEveryAddress()
   {
-    var bindAddress = hostOptions.BindAddress;
+    var bindAddress = _hostOptions.BindAddress;
 
     return string.IsNullOrWhiteSpace(bindAddress)
            || bindAddress is "0.0.0.0" or "::" or "*" or "+";
@@ -58,16 +58,16 @@ public sealed class ReachableHostResolver
   {
     if (!BindsEveryAddress())
     {
-      return hostOptions.BindAddress;
+      return _hostOptions.BindAddress;
     }
 
-    IReadOnlyList<string> addresses = addressProvider.FindReachableAddresses();
+    IReadOnlyList<string> addresses = _addressProvider.FindReachableAddresses();
 
     return addresses.Count == 0 ? LoopbackHost : addresses[0];
   }
 
   public IReadOnlyList<string> ReachableAddresses()
   {
-    return addressProvider.FindReachableAddresses();
+    return _addressProvider.FindReachableAddresses();
   }
 }

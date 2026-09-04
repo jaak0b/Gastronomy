@@ -12,9 +12,9 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private const string BearerPrefix = "Bearer ";
   private const string AccessTokenQueryKey = "access_token";
   private const string HubPathPrefix = "/hub";
-  private readonly DeviceClaimTypes claimTypes = new();
+  private readonly DeviceClaimTypes _claimTypes = new();
 
-  private readonly IDeviceTokenStore deviceTokenStore;
+  private readonly IDeviceTokenStore _deviceTokenStore;
 
   public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options,
                                      ILoggerFactory logger,
@@ -22,7 +22,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
                                      IDeviceTokenStore deviceTokenStore)
     : base(options, logger, encoder)
   {
-    this.deviceTokenStore = deviceTokenStore;
+    _deviceTokenStore = deviceTokenStore;
   }
 
   override protected async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -43,7 +43,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     var secret = presentedToken[(separatorIndex + 1)..];
 
     var verification =
-      await deviceTokenStore.VerifyAsync(tokenLookupId, secret, Context.RequestAborted);
+      await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, Context.RequestAborted);
 
     if (!verification.IsValid || verification.Device is null)
     {
@@ -53,8 +53,8 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     var device = verification.Device;
     ClaimsIdentity identity = new([
                                     new(ClaimTypes.NameIdentifier, device.StaffMemberId.ToString()),
-                                    new(claimTypes.DeviceId, device.Id.ToString()),
-                                    new(claimTypes.Language, device.Language)
+                                    new(_claimTypes.DeviceId, device.Id.ToString()),
+                                    new(_claimTypes.Language, device.Language)
                                   ],
                                   Scheme.Name);
 

@@ -41,11 +41,11 @@ public sealed class LoopbackAdminAuthorizationMiddleware : IMiddleware
 {
   private const string AdminApiPrefix = "/api/admin";
 
-  private readonly LocalAddressSet localAddresses;
+  private readonly LocalAddressSet _localAddresses;
 
   public LoopbackAdminAuthorizationMiddleware(LocalAddressSet localAddresses)
   {
-    this.localAddresses = localAddresses;
+    _localAddresses = localAddresses;
   }
 
   public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -56,7 +56,7 @@ public sealed class LoopbackAdminAuthorizationMiddleware : IMiddleware
       return;
     }
 
-    if (localAddresses.Contains(context.Connection.RemoteIpAddress))
+    if (_localAddresses.Contains(context.Connection.RemoteIpAddress))
     {
       await next(context);
       return;

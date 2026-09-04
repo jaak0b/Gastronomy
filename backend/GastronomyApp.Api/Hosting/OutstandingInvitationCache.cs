@@ -4,31 +4,31 @@ public sealed record OutstandingInvitation(Guid InvitationId, string QrCodeValue
 
 public sealed class OutstandingInvitationCache
 {
-  private readonly Lock guard = new();
+  private readonly Lock _guard = new();
 
-  private OutstandingInvitation? outstanding;
+  private OutstandingInvitation? _outstanding;
 
   public void Remember(OutstandingInvitation invitation)
   {
-    lock (guard)
+    lock (_guard)
     {
-      outstanding = invitation;
+      _outstanding = invitation;
     }
   }
 
   public OutstandingInvitation? Read()
   {
-    lock (guard)
+    lock (_guard)
     {
-      return outstanding;
+      return _outstanding;
     }
   }
 
   public void Forget()
   {
-    lock (guard)
+    lock (_guard)
     {
-      outstanding = null;
+      _outstanding = null;
     }
   }
 }

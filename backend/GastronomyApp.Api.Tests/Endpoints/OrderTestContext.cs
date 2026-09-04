@@ -6,6 +6,8 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 
 public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
 
+public sealed record SlipOnThePileBody(bool SlipIsOnThePile);
+
 public sealed record OrderBody(
   Guid ClientOrderId,
   string TableName,

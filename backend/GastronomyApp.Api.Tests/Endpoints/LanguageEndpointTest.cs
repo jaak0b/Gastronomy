@@ -10,21 +10,21 @@ public sealed class LanguageEndpointTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task GetLanguage_FreshLaptop_ReportsTheLanguageTheOperatorChose()
   {
-    using var response = await context.Client.GetAsync("/api/language");
+    using var response = await _context.Client.GetAsync("/api/language");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -37,9 +37,9 @@ public sealed class LanguageEndpointTest
   [Test]
   public async Task GetLanguage_OperatorSwitchedTheLaptop_ReportsTheNewLanguageWithoutARestart()
   {
-    context.Factory.Language.Current = "en";
+    _context.Factory.Language.Current = "en";
 
-    using var response = await context.Client.GetAsync("/api/language");
+    using var response = await _context.Client.GetAsync("/api/language");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("en"));

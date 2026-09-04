@@ -35,30 +35,30 @@ public sealed class EscPosSlipRenderer
   private const int ContinuationIndentWidth = 4;
   private const string ContinuationIndent = "    ";
   private const string LineBreak = "\r\n";
-  private readonly byte[] alignCentre = [0x1B, 0x61, 0x01];
-  private readonly byte[] alignLeft = [0x1B, 0x61, 0x00];
-  private readonly byte[] emphasisOff = [0x1B, 0x45, 0x00];
-  private readonly byte[] emphasisOn = [0x1B, 0x45, 0x01];
-  private readonly byte[] enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
-  private readonly Pc858Encoder encoder;
-  private readonly byte[] feed = [0x1B, 0x64, 0x04];
+  private readonly byte[] _alignCentre = [0x1B, 0x61, 0x01];
+  private readonly byte[] _alignLeft = [0x1B, 0x61, 0x00];
+  private readonly byte[] _emphasisOff = [0x1B, 0x45, 0x00];
+  private readonly byte[] _emphasisOn = [0x1B, 0x45, 0x01];
+  private readonly byte[] _enableAutomaticStatusBack = [0x1D, 0x61, 0x0F];
+  private readonly Pc858Encoder _encoder;
+  private readonly byte[] _feed = [0x1B, 0x64, 0x04];
 
-  private readonly byte[] initialise = [0x1B, 0x40];
-  private readonly byte[] partialCut = [0x1D, 0x56, 0x42, 0x03];
-  private readonly byte[] qrErrorCorrection = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
-  private readonly byte[] qrModuleSize = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
-  private readonly byte[] qrPrintSymbol = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
-  private readonly byte[] qrSelectModel = [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00];
-  private readonly byte[] selectCodePage = [0x1B, 0x74, 0x13];
-  private readonly byte[] sizeDouble = [0x1D, 0x21, 0x11];
-  private readonly byte[] sizeNormal = [0x1D, 0x21, 0x00];
+  private readonly byte[] _initialise = [0x1B, 0x40];
+  private readonly byte[] _partialCut = [0x1D, 0x56, 0x42, 0x03];
+  private readonly byte[] _qrErrorCorrection = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
+  private readonly byte[] _qrModuleSize = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
+  private readonly byte[] _qrPrintSymbol = [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
+  private readonly byte[] _qrSelectModel = [0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00];
+  private readonly byte[] _selectCodePage = [0x1B, 0x74, 0x13];
+  private readonly byte[] _sizeDouble = [0x1D, 0x21, 0x11];
+  private readonly byte[] _sizeNormal = [0x1D, 0x21, 0x00];
 
-  private readonly ISlipTextProvider slipTextProvider;
+  private readonly ISlipTextProvider _slipTextProvider;
 
   public EscPosSlipRenderer(ISlipTextProvider slipTextProvider)
   {
-    this.slipTextProvider = slipTextProvider;
-    encoder = new();
+    _slipTextProvider = slipTextProvider;
+    _encoder = new();
   }
 
   public RenderedSlip RenderInitialSlip(SlipRenderRequest request)
@@ -76,7 +76,7 @@ public sealed class EscPosSlipRenderer
 
   public RenderedSlip RenderTestSlip(TestSlipRenderRequest request)
   {
-    var strings = slipTextProvider.GetStrings(request.LanguageCode);
+    var strings = _slipTextProvider.GetStrings(request.LanguageCode);
     var formats = FormatsFor(request.LanguageCode);
     List<SlipSegment> segments =
     [
@@ -84,7 +84,7 @@ public sealed class EscPosSlipRenderer
       new(LargeText(), WrapLarge(request.StationName)),
       new(NormalText(), [MajorSeparator()]),
       new(LargeText(), WrapLarge(strings.TestSlipHeader)),
-      new(NormalText(), [encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()])
+      new(NormalText(), [_encoder.ToPrintableText(FormatMoment(request.PrintedAtUtc, request.DisplayTimeZone, formats.DateAndTime)), MajorSeparator()])
     ];
 
     return Compose(segments);
@@ -95,7 +95,7 @@ public sealed class EscPosSlipRenderer
                                   DateTimeOffset? reprintAtUtc,
                                   TimeZoneInfo? reprintTimeZone)
   {
-    var strings = slipTextProvider.GetStrings(request.LanguageCode);
+    var strings = _slipTextProvider.GetStrings(request.LanguageCode);
     var formats = FormatsFor(request.LanguageCode);
     List<SlipSegment> segments = [new(NormalText(), [MajorSeparator()])];
 
@@ -122,7 +122,7 @@ public sealed class EscPosSlipRenderer
     [
       .. Wrap($"{strings.TablePrefix} {request.TableName}"),
       .. Wrap($"{strings.StaffMemberPrefix} {request.StaffMemberName}"),
-      encoder.ToPrintableText(FormatMoment(request.OrderTakenAtUtc, request.DisplayTimeZone, formats.DateAndTime)),
+      _encoder.ToPrintableText(FormatMoment(request.OrderTakenAtUtc, request.DisplayTimeZone, formats.DateAndTime)),
       MinorSeparator()
     ];
     segments.Add(new(NormalText(), header));
@@ -161,7 +161,7 @@ public sealed class EscPosSlipRenderer
 
   private RenderedSlip Compose(IReadOnlyList<SlipSegment> segments)
   {
-    List<byte> bytes = [.. initialise, .. selectCodePage, .. enableAutomaticStatusBack];
+    List<byte> bytes = [.. _initialise, .. _selectCodePage, .. _enableAutomaticStatusBack];
     List<string> allLines = [];
 
     foreach (var segment in segments)
@@ -169,14 +169,14 @@ public sealed class EscPosSlipRenderer
       bytes.AddRange(segment.Commands);
       foreach (var line in segment.Lines)
       {
-        bytes.AddRange(encoder.GetBytes(line));
-        bytes.AddRange(encoder.GetBytes(LineBreak));
+        bytes.AddRange(_encoder.GetBytes(line));
+        bytes.AddRange(_encoder.GetBytes(LineBreak));
         allLines.Add(line);
       }
     }
 
-    bytes.AddRange(feed);
-    bytes.AddRange(partialCut);
+    bytes.AddRange(_feed);
+    bytes.AddRange(_partialCut);
 
     var renderedText = string.Join(LineBreak, allLines) + LineBreak;
     return new(bytes.ToArray(), renderedText);
@@ -184,17 +184,17 @@ public sealed class EscPosSlipRenderer
 
   private IReadOnlyList<byte> NormalText()
   {
-    return [.. alignLeft, .. sizeNormal, .. emphasisOff];
+    return [.. _alignLeft, .. _sizeNormal, .. _emphasisOff];
   }
 
   private IReadOnlyList<byte> EmphasisedText()
   {
-    return [.. alignLeft, .. sizeNormal, .. emphasisOn];
+    return [.. _alignLeft, .. _sizeNormal, .. _emphasisOn];
   }
 
   private IReadOnlyList<byte> LargeText()
   {
-    return [.. alignCentre, .. sizeDouble, .. emphasisOn];
+    return [.. _alignCentre, .. _sizeDouble, .. _emphasisOn];
   }
 
   private SlipTimeFormats FormatsFor(string languageCode)
@@ -237,7 +237,7 @@ public sealed class EscPosSlipRenderer
 
   private IReadOnlyList<string> WrapTo(string text, int width)
   {
-    var printable = encoder.ToPrintableText(text);
+    var printable = _encoder.ToPrintableText(text);
     if (printable.Length <= width)
     {
       return [printable];

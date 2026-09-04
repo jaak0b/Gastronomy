@@ -12,28 +12,28 @@ public sealed class StationEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
 
-    using var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
     var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
-    orderId = body.RootElement.GetProperty("orderId").GetGuid();
-    ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
+    _orderId = body.RootElement.GetProperty("orderId").GetGuid();
+    _ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
-  private Guid ticketId;
-  private Guid orderId;
+  private OrderTestContext _context = null!;
+  private Guid _ticketId;
+  private Guid _orderId;
 
   [Test]
   public async Task GetStations_NoDeviceToken_IsRefused()
   {
-    using var response = await context.Client.GetAsync("/api/stations");
+    using var response = await _context.Client.GetAsync("/api/stations");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
@@ -41,7 +41,7 @@ public sealed class StationEndpointsTest
   [Test]
   public async Task GetStations_EnrolledDevice_ListsEveryActiveStationWithItsCanPrintFlag()
   {
-    using var response = await context.SendAsync(HttpMethod.Get, "/api/stations");
+    using var response = await _context.SendAsync(HttpMethod.Get, "/api/stations");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -56,14 +56,14 @@ public sealed class StationEndpointsTest
   [Test]
   public async Task GetStationOrders_HealthyStation_ListsTheOpenTicketWithItsAcknowledgeDecision()
   {
-    using var response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/station-orders");
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/stations/{_context.World.KitchenStationId}/station-orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var tickets = body.RootElement.GetProperty("stationOrders");
 
     Assert.Multiple(() =>
                     {
                       Assert.That(tickets.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(tickets[0].GetProperty("stationOrderId").GetGuid(), Is.EqualTo(ticketId));
+                      Assert.That(tickets[0].GetProperty("stationOrderId").GetGuid(), Is.EqualTo(_ticketId));
                       Assert.That(tickets[0].GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(tickets[0].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(tickets[0].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
@@ -78,7 +78,7 @@ public sealed class StationEndpointsTest
   {
     await SetPrintJobStatusAsync(PrintJobStatus.Printed);
 
-    using var response = await context.SendAsync(HttpMethod.Get, $"/api/stations/{context.World.KitchenStationId}/station-orders");
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/stations/{_context.World.KitchenStationId}/station-orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.That(body.RootElement.GetProperty("stationOrders").GetArrayLength(), Is.EqualTo(0));
@@ -87,8 +87,8 @@ public sealed class StationEndpointsTest
   [Test]
   public async Task GetStationOrders_AnotherStation_ListsThatStationsBacklog()
   {
-    using var response = await context.SendAsync(HttpMethod.Get,
-                                                 $"/api/stations/{context.World.BarStationId}/station-orders");
+    using var response = await _context.SendAsync(HttpMethod.Get,
+                                                 $"/api/stations/{_context.World.BarStationId}/station-orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.That(body.RootElement.GetProperty("stationOrders").GetArrayLength(), Is.EqualTo(0));
@@ -97,7 +97,7 @@ public sealed class StationEndpointsTest
   [Test]
   public async Task HandOnPaper_HealthyStationPrinter_IsRefused()
   {
-    using var response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
+    using var response = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper");
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -119,7 +119,7 @@ public sealed class StationEndpointsTest
     await SetPrintJobStatusAsync(PrintJobStatus.Sending);
     await ApplyStationConditionAsync(condition);
 
-    using var response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
+    using var response = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
   }
@@ -134,12 +134,12 @@ public sealed class StationEndpointsTest
   {
     await ApplyStationConditionAsync(condition);
 
-    using var response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
+    using var response = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-    await using var database = context.Factory.CreateContext();
-    var job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
+    await using var database = _context.Factory.CreateContext();
+    var job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == _ticketId);
 
     Assert.That(job.Status, Is.EqualTo(PrintJobStatus.HandledOnPaper));
   }
@@ -149,12 +149,12 @@ public sealed class StationEndpointsTest
   {
     await ApplyStationConditionAsync("IsPaperEnd");
 
-    using (var first = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper"))
+    using (var first = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper"))
     {
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var second = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
+    using var second = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper");
 
     var body = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
 
@@ -170,7 +170,7 @@ public sealed class StationEndpointsTest
   {
     await SetPrintJobStatusAsync(PrintJobStatus.Failed);
 
-    using var response = await context.SendAsync(HttpMethod.Post, $"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper");
+    using var response = await _context.SendAsync(HttpMethod.Post, $"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
@@ -178,10 +178,10 @@ public sealed class StationEndpointsTest
   [Test]
   public async Task EveryStationRoute_NoDeviceToken_IsRefused()
   {
-    using var stations = await context.Client.GetAsync("/api/stations");
-    using var tickets = await context.Client.GetAsync($"/api/stations/{context.World.KitchenStationId}/station-orders");
-    using var status = await context.Client.GetAsync($"/api/stations/{context.World.KitchenStationId}/status");
-    using var acknowledge = await context.Client.PostAsync($"/api/stations/{context.World.KitchenStationId}/station-orders/{ticketId}/hand-on-paper",
+    using var stations = await _context.Client.GetAsync("/api/stations");
+    using var tickets = await _context.Client.GetAsync($"/api/stations/{_context.World.KitchenStationId}/station-orders");
+    using var status = await _context.Client.GetAsync($"/api/stations/{_context.World.KitchenStationId}/status");
+    using var acknowledge = await _context.Client.PostAsync($"/api/stations/{_context.World.KitchenStationId}/station-orders/{_ticketId}/hand-on-paper",
                                                            null);
 
     Assert.Multiple(() =>
@@ -195,16 +195,16 @@ public sealed class StationEndpointsTest
 
   private async Task SetPrintJobStatusAsync(PrintJobStatus status)
   {
-    await using var database = context.Factory.CreateContext();
-    var job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
+    await using var database = _context.Factory.CreateContext();
+    var job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == _ticketId);
     job.Status = status;
     await database.SaveChangesAsync();
   }
 
   private async Task ApplyStationConditionAsync(string condition)
   {
-    await using var database = context.Factory.CreateContext();
-    var station = await database.Stations.FirstAsync(candidate => candidate.Id == context.World.KitchenStationId);
+    await using var database = _context.Factory.CreateContext();
+    var station = await database.Stations.FirstAsync(candidate => candidate.Id == _context.World.KitchenStationId);
     var status = await database.PrinterStatuses.FirstAsync(candidate => candidate.PrinterId == station.PrinterId);
 
     switch (condition)

@@ -6,13 +6,13 @@ public sealed record DeviceCaller(Guid StaffMemberId, Guid DeviceId, string Lang
 
 public sealed class CallerIdentity
 {
-  private readonly DeviceClaimTypes claimTypes = new();
+  private readonly DeviceClaimTypes _claimTypes = new();
 
   public DeviceCaller? ReadDevice(ClaimsPrincipal principal)
   {
     var staffMemberId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-    var deviceId = principal.FindFirstValue(claimTypes.DeviceId);
-    var language = principal.FindFirstValue(claimTypes.Language);
+    var deviceId = principal.FindFirstValue(_claimTypes.DeviceId);
+    var language = principal.FindFirstValue(_claimTypes.Language);
 
     if (staffMemberId is null || deviceId is null || language is null)
     {

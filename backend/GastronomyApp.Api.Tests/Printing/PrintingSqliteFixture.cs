@@ -8,25 +8,25 @@ namespace GastronomyApp.Api.Tests.Printing;
 
 public sealed class PrintingSqliteFixture : IDisposable
 {
-  private readonly SqliteConnection connection;
+  private readonly SqliteConnection _connection;
 
   public PrintingSqliteFixture()
   {
-    connection = new("Data Source=:memory:");
-    connection.Open();
+    _connection = new("Data Source=:memory:");
+    _connection.Open();
     using var creator = CreateContext();
     creator.Database.Migrate();
   }
 
   public void Dispose()
   {
-    connection.Dispose();
+    _connection.Dispose();
   }
 
   public GastronomyAppDbContext CreateContext()
   {
     DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>()
-                                                      .UseSqlite(connection)
+                                                      .UseSqlite(_connection)
                                                       .Options;
 
     return new(options);
@@ -37,7 +37,7 @@ public sealed record SeededStationOrder(Guid OrderId, Guid StationOrderId, Guid 
 
 public sealed class PrintingSeeder
 {
-  private readonly DateTime baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
+  private readonly DateTime _baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
 
   public Guid EventSessionId { get; } = Guid.NewGuid();
 
@@ -52,7 +52,7 @@ public sealed class PrintingSeeder
                                Id = StaffMemberId,
                                Name = "Anna",
                                IsActive = true,
-                               CreatedAtUtc = baseline
+                               CreatedAtUtc = _baseline
                              });
 
     await context.SaveChangesAsync(cancellationToken);
@@ -98,8 +98,8 @@ public sealed class PrintingSeeder
                                     IsInErrorState = false,
                                     IsFaulty = false,
                                     LastDetail = "seeded",
-                                    LastChangedAtUtc = baseline,
-                                    LastHeardFromAtUtc = baseline
+                                    LastChangedAtUtc = _baseline,
+                                    LastHeardFromAtUtc = _baseline
                                   });
     }
 
@@ -117,7 +117,7 @@ public sealed class PrintingSeeder
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
     var printJobId = Guid.NewGuid();
-    var createdAtUtc = baseline.AddMinutes(minutesAfterBaseline);
+    var createdAtUtc = _baseline.AddMinutes(minutesAfterBaseline);
 
     context.Orders.Add(new()
                        {

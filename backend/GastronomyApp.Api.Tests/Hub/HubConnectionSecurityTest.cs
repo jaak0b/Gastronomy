@@ -12,25 +12,25 @@ public sealed class HubConnectionSecurityTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private readonly TimeSpan patience = TimeSpan.FromSeconds(10);
-  private readonly TimeSpan silenceWindow = TimeSpan.FromSeconds(2);
+  private readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
+  private readonly TimeSpan _silenceWindow = TimeSpan.FromSeconds(2);
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task Connect_ValidStationAccessKey_JoinsTheSiteWideStationGroup()
   {
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var accessKey = context.World.KitchenStationId.ToString("N");
+    var accessKey = _context.World.KitchenStationId.ToString("N");
 
     await using var connection = Connect($"hub?stationAccessKey={accessKey}");
     connection.On<JsonElement>("OrderAccepted",
@@ -39,7 +39,7 @@ public sealed class HubConnectionSecurityTest
     await connection.StartAsync();
 
     var orderId = await PlaceAnOrderAsync();
-    var received = await Task.WhenAny(heard.Task, Task.Delay(patience));
+    var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
     Assert.Multiple(() =>
                     {
@@ -57,7 +57,7 @@ public sealed class HubConnectionSecurityTest
     TaskCompletionSource<Guid> heardAfterRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
     var revoked = false;
 
-    await using var connection = Connect($"hub?access_token={context.DeviceToken}");
+    await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
     connection.On<JsonElement>("OrderAccepted",
                                payload =>
                                {
@@ -75,7 +75,7 @@ public sealed class HubConnectionSecurityTest
     await connection.StartAsync();
     await PlaceAnOrderAsync();
 
-    var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(patience));
+    var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(_patience));
 
     Assert.That(beforeRevocation,
                 Is.SameAs(heardBeforeRevocation.Task),
@@ -83,7 +83,7 @@ public sealed class HubConnectionSecurityTest
 
     revoked = true;
 
-    using (var revocation = await context.Client.PostAsync($"/api/admin/staff-members/{context.World.StaffMemberId}/deactivate",
+    using (var revocation = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate",
                                                            null))
     {
       Assert.That(revocation.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -93,14 +93,14 @@ public sealed class HubConnectionSecurityTest
 
     Assert.That(closed, Is.True, "Revoking a device must abort its live connection.");
 
-    using var afterRevocation = await context.SendAsync(HttpMethod.Get, "/api/session");
+    using var afterRevocation = await _context.SendAsync(HttpMethod.Get, "/api/session");
 
     Assert.That(afterRevocation.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
 
   private async Task<Guid> PlaceAnOrderAsync()
   {
-    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -123,7 +123,7 @@ public sealed class HubConnectionSecurityTest
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)
   {
-    var deadline = DateTime.UtcNow.Add(patience);
+    var deadline = DateTime.UtcNow.Add(_patience);
 
     while (DateTime.UtcNow < deadline)
     {
@@ -141,7 +141,7 @@ public sealed class HubConnectionSecurityTest
   private HubConnection Connect(string relativeUrl)
   {
     return new HubConnectionBuilder()
-          .WithUrl(new Uri(context.Factory.BaseAddress, relativeUrl))
+          .WithUrl(new Uri(_context.Factory.BaseAddress, relativeUrl))
           .Build();
   }
 }

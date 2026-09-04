@@ -6,7 +6,7 @@ public sealed class StationCircuitBreaker
 {
   private const int ConsecutiveOutcomesThatTrip = 2;
 
-  private int consecutiveUnknownOrTimeout;
+  private int _consecutiveUnknownOrTimeout;
 
   public bool IsTripped { get; private set; }
 
@@ -15,12 +15,12 @@ public sealed class StationCircuitBreaker
     var countsTowardsTrip = jobStatus == PrintJobStatus.Unknown || outcome == PrintOutcome.Timeout;
     if (!countsTowardsTrip)
     {
-      consecutiveUnknownOrTimeout = 0;
+      _consecutiveUnknownOrTimeout = 0;
       return false;
     }
 
-    consecutiveUnknownOrTimeout++;
-    if (consecutiveUnknownOrTimeout < ConsecutiveOutcomesThatTrip || IsTripped)
+    _consecutiveUnknownOrTimeout++;
+    if (_consecutiveUnknownOrTimeout < ConsecutiveOutcomesThatTrip || IsTripped)
     {
       return false;
     }
@@ -31,14 +31,14 @@ public sealed class StationCircuitBreaker
 
   public void Reset()
   {
-    consecutiveUnknownOrTimeout = 0;
+    _consecutiveUnknownOrTimeout = 0;
     IsTripped = false;
   }
 }
 
 public sealed class ReconnectBackoff
 {
-  private readonly IReadOnlyList<TimeSpan> schedule =
+  private readonly IReadOnlyList<TimeSpan> _schedule =
   [
     TimeSpan.FromSeconds(1),
     TimeSpan.FromSeconds(2),
@@ -47,17 +47,17 @@ public sealed class ReconnectBackoff
     TimeSpan.FromSeconds(30)
   ];
 
-  private int attempt;
+  private int _attempt;
 
   public TimeSpan Next()
   {
-    var delay = schedule[Math.Min(attempt, schedule.Count - 1)];
-    attempt++;
+    var delay = _schedule[Math.Min(_attempt, _schedule.Count - 1)];
+    _attempt++;
     return delay;
   }
 
   public void Reset()
   {
-    attempt = 0;
+    _attempt = 0;
   }
 }

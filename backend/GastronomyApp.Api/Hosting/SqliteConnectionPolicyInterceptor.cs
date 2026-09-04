@@ -6,16 +6,16 @@ namespace GastronomyApp.Api.Hosting;
 
 public sealed class SqliteConnectionPolicyInterceptor : DbConnectionInterceptor
 {
-  private readonly SqliteConnectionFactory connectionFactory;
+  private readonly SqliteConnectionFactory _connectionFactory;
 
   public SqliteConnectionPolicyInterceptor(SqliteConnectionFactory connectionFactory)
   {
-    this.connectionFactory = connectionFactory;
+    _connectionFactory = connectionFactory;
   }
 
   override public void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
   {
-    connectionFactory.ApplyConnectionPolicy(connection);
+    _connectionFactory.ApplyConnectionPolicy(connection);
 
     base.ConnectionOpened(connection, eventData);
   }
@@ -24,7 +24,7 @@ public sealed class SqliteConnectionPolicyInterceptor : DbConnectionInterceptor
                                                    ConnectionEndEventData eventData,
                                                    CancellationToken cancellationToken = default)
   {
-    await connectionFactory.ApplyConnectionPolicyAsync(connection, cancellationToken);
+    await _connectionFactory.ApplyConnectionPolicyAsync(connection, cancellationToken);
 
     await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
   }

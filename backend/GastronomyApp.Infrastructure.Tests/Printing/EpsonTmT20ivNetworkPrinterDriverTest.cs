@@ -9,21 +9,21 @@ namespace GastronomyApp.Infrastructure.Tests.Printing;
 
 public class EpsonTmT20ivNetworkPrinterDriverTest
 {
-  private FakeEscPosPrinterServer server = null!;
-  private Guid stationId;
+  private FakeEscPosPrinterServer _server = null!;
+  private Guid _stationId;
 
   [SetUp]
   public async Task SetUp()
   {
-    server = new(0);
-    await server.StartAsync(CancellationToken.None);
-    stationId = Guid.NewGuid();
+    _server = new(0);
+    await _server.StartAsync(CancellationToken.None);
+    _stationId = Guid.NewGuid();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await server.DisposeAsync();
+    await _server.DisposeAsync();
   }
 
   private async Task<IPrinterSession> OpenAsync(TimeSpan? jobTimeout = null,
@@ -31,7 +31,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
                                                 TimeSpan? statusQueryTimeout = null)
   {
     TcpClient client = new();
-    await client.ConnectAsync("127.0.0.1", server.Port, CancellationToken.None);
+    await client.ConnectAsync("127.0.0.1", _server.Port, CancellationToken.None);
     EpsonTmT20ivNetworkPrinterSession session = new(client,
                                                     new(jobTimeout ?? TimeSpan.FromSeconds(2),
                                                         heartbeat ?? TimeSpan.FromSeconds(30),
@@ -44,7 +44,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   private PrintPayload Payload(int processId = 7, int sizeInBytes = 64)
   {
     var bytes = Encoding.ASCII.GetBytes(new string('X', sizeInBytes));
-    return new(processId, bytes, new('X', sizeInBytes), 0, 42, stationId, "Kueche", false);
+    return new(processId, bytes, new('X', sizeInBytes), 0, 42, _stationId, "Kueche", false);
   }
 
   private async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
@@ -108,27 +108,27 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   {
     await using var session = await OpenAsync();
 
-    await WaitUntilAsync(() => server.ReceivedBytes.Count >= 8, TimeSpan.FromSeconds(2));
+    await WaitUntilAsync(() => _server.ReceivedBytes.Count >= 8, TimeSpan.FromSeconds(2));
 
-    Assert.That(server.ReceivedBytes.Take(8), Is.EqualTo(new byte[] { 0x1B, 0x40, 0x1B, 0x74, 0x13, 0x1D, 0x61, 0x0F }));
+    Assert.That(_server.ReceivedBytes.Take(8), Is.EqualTo(new byte[] { 0x1B, 0x40, 0x1B, 0x74, 0x13, 0x1D, 0x61, 0x0F }));
   }
 
   [Test]
   public async Task ConnectAsync_Success_HoldsOneConnectionAcrossMultipleJobs()
   {
-    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    _server.ScriptProcessIdEcho(TimeSpan.Zero);
     await using var session = await OpenAsync();
 
     await session.SendJobAsync(Payload(1), CancellationToken.None);
     await session.SendJobAsync(Payload(2), CancellationToken.None);
 
-    Assert.That(server.AcceptedConnectionCount, Is.EqualTo(1));
+    Assert.That(_server.AcceptedConnectionCount, Is.EqualTo(1));
   }
 
   [Test]
   public async Task SendJobAsync_EchoArrivesBeforeTimeout_ReturnsConfirmedWithFullByteCount()
   {
-    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    _server.ScriptProcessIdEcho(TimeSpan.Zero);
     await using var session = await OpenAsync();
     var payload = Payload();
 
@@ -141,7 +141,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task SendJobAsync_EchoNeverArrives_ReturnsTimeoutAfterJobTimeoutWithBytesWrittenGreaterThanZero()
   {
-    server.ScriptNeverEchoProcessId();
+    _server.ScriptNeverEchoProcessId();
     await using var session = await OpenAsync(TimeSpan.FromMilliseconds(200));
 
     var result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -153,7 +153,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task SendJobAsync_ConnectionDropsBeforeFirstByte_ReturnsSocketDroppedWithZeroBytes()
   {
-    server.ScriptDropConnectionImmediately();
+    _server.ScriptDropConnectionImmediately();
     await using var session = await OpenAsync();
     await Task.Delay(150);
 
@@ -166,7 +166,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task SendJobAsync_ConnectionDropsMidWrite_ReturnsSocketDroppedWithPartialBytesGreaterThanZero()
   {
-    server.ScriptDropConnectionAfterBytes(256);
+    _server.ScriptDropConnectionAfterBytes(256);
     await using var session = await OpenAsync();
     var payload = Payload(sizeInBytes: 200000);
 
@@ -180,13 +180,13 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task SendJobAsync_EchoOnReconnectedSocket_IsDiscarded()
   {
-    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    _server.ScriptProcessIdEcho(TimeSpan.Zero);
     await using (var first = await OpenAsync(TimeSpan.FromMilliseconds(300)))
     {
       await first.SendJobAsync(Payload(11), CancellationToken.None);
     }
 
-    server.ScriptProcessIdEchoCarrying(11);
+    _server.ScriptProcessIdEchoCarrying(11);
     await using var second = await OpenAsync(TimeSpan.FromMilliseconds(300));
     var result = await second.SendJobAsync(Payload(12), CancellationToken.None);
 
@@ -196,9 +196,9 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task QueryStatusAsync_PaperEndMaskSet_ReportsIsPaperEndTrue()
   {
-    server.ScriptDleEotResponse(1, 0x16);
-    server.ScriptDleEotResponse(2, 0x12);
-    server.ScriptDleEotResponse(4, 0x72);
+    _server.ScriptDleEotResponse(1, 0x16);
+    _server.ScriptDleEotResponse(2, 0x12);
+    _server.ScriptDleEotResponse(4, 0x72);
     await using var session = await OpenAsync();
 
     var status = await session.QueryStatusAsync(CancellationToken.None);
@@ -209,9 +209,9 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task QueryStatusAsync_CoverOpenBitSet_ReportsIsCoverOpenTrue()
   {
-    server.ScriptDleEotResponse(1, 0x16);
-    server.ScriptDleEotResponse(2, 0x16);
-    server.ScriptDleEotResponse(4, 0x12);
+    _server.ScriptDleEotResponse(1, 0x16);
+    _server.ScriptDleEotResponse(2, 0x16);
+    _server.ScriptDleEotResponse(4, 0x12);
     await using var session = await OpenAsync();
 
     var status = await session.QueryStatusAsync(CancellationToken.None);
@@ -223,7 +223,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task StatusStream_AsbPushedUnprompted_SurfacesWithoutAQuery()
   {
-    server.ScriptAsbOnConnect(0x60, 0x00);
+    _server.ScriptAsbOnConnect(0x60, 0x00);
     await using var session = await OpenAsync();
 
     using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
@@ -241,7 +241,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task BytesWritten_AlwaysCountsBytesHandedToSocket_NotBytesAcknowledged()
   {
-    server.ScriptNeverEchoProcessId();
+    _server.ScriptNeverEchoProcessId();
     await using var session = await OpenAsync(TimeSpan.FromMilliseconds(200));
     var payload = Payload();
 
@@ -255,16 +255,16 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   {
     await using var session = await OpenAsync(heartbeat: TimeSpan.FromMilliseconds(60));
 
-    await WaitUntilAsync(() => CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]) >= 3, TimeSpan.FromSeconds(3));
+    await WaitUntilAsync(() => CountSequence(_server.ReceivedBytes, [0x10, 0x04, 0x04]) >= 3, TimeSpan.FromSeconds(3));
 
-    Assert.That(CountSequence(server.ReceivedBytes, [0x10, 0x04, 0x04]), Is.GreaterThanOrEqualTo(3));
+    Assert.That(CountSequence(_server.ReceivedBytes, [0x10, 0x04, 0x04]), Is.GreaterThanOrEqualTo(3));
   }
 
   [TestCase(150)]
   [TestCase(500)]
   public async Task SendJobAsync_JobTimeoutDefaultsTo90Seconds_MatchesPrinterConfigurationDefault(int jobTimeoutMilliseconds)
   {
-    server.ScriptNeverEchoProcessId();
+    _server.ScriptNeverEchoProcessId();
     var jobTimeout = TimeSpan.FromMilliseconds(jobTimeoutMilliseconds);
     await using var session = await OpenAsync(jobTimeout);
 
@@ -280,8 +280,8 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task DrainInbound_StatusQueryInFlightWhileEchoAndAsbArrive_DecodesAllThreeWithoutDesynchronising()
   {
-    server.ScriptProcessIdEcho(TimeSpan.Zero);
-    server.ScriptBurstOnProcessIdRequest(0x60, 0x00, 0x16);
+    _server.ScriptProcessIdEcho(TimeSpan.Zero);
+    _server.ScriptBurstOnProcessIdRequest(0x60, 0x00, 0x16);
     await using var session = await OpenAsync(TimeSpan.FromSeconds(2), TimeSpan.FromMinutes(5), TimeSpan.FromMilliseconds(200));
 
     Task<PrinterStatusSnapshot> pendingQuery = session.QueryStatusAsync(CancellationToken.None);
@@ -317,7 +317,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task StatusStream_AsbErrorBitSet_ReportsIsInErrorStateUsingTheOfflineStatusErrorBit()
   {
-    server.ScriptAsbOnConnect(0x00, 0x40);
+    _server.ScriptAsbOnConnect(0x00, 0x40);
     await using var session = await OpenAsync();
 
     using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
@@ -335,7 +335,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task StatusStream_AsbPaperFeedBitSet_IsNotReportedAsAnErrorState()
   {
-    server.ScriptAsbOnConnect(0x00, 0x08);
+    _server.ScriptAsbOnConnect(0x00, 0x08);
     await using var session = await OpenAsync();
 
     using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
@@ -353,7 +353,7 @@ public class EpsonTmT20ivNetworkPrinterDriverTest
   [Test]
   public async Task SendJobAsync_LargePayloadOnAHealthySilentSocket_IsNotAbortedAsSocketDropped()
   {
-    server.ScriptProcessIdEcho(TimeSpan.Zero);
+    _server.ScriptProcessIdEcho(TimeSpan.Zero);
     await using var session = await OpenAsync(TimeSpan.FromSeconds(5));
     var payload = Payload(sizeInBytes: 200000);
 

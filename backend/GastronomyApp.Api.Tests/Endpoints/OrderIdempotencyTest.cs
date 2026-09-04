@@ -10,31 +10,31 @@ public sealed class OrderIdempotencyTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task PostOrder_SameSubmissionIdAndContent_ReturnsTheOriginalBodyByteForByte()
   {
-    var body = context.BuildOrder(Guid.NewGuid());
+    var body = _context.BuildOrder(Guid.NewGuid());
 
     string firstBody;
-    using (var first = await context.PostOrderAsync(body))
+    using (var first = await _context.PostOrderAsync(body))
     {
       firstBody = await first.Content.ReadAsStringAsync();
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
     string secondBody;
-    using (var second = await context.PostOrderAsync(body))
+    using (var second = await _context.PostOrderAsync(body))
     {
       secondBody = await second.Content.ReadAsStringAsync();
       Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -42,7 +42,7 @@ public sealed class OrderIdempotencyTest
 
     Assert.That(secondBody, Is.EqualTo(firstBody));
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var orderCount = await database.Orders.CountAsync();
     var ticketCount = await database.StationOrders.CountAsync();
     var printJobCount = await database.PrintJobs.CountAsync(job => job.CopyNumber == 0);
@@ -60,7 +60,7 @@ public sealed class OrderIdempotencyTest
   {
     var clientOrderId = Guid.NewGuid();
 
-    using (var first = await context.PostOrderAsync(context.BuildOrder(clientOrderId)))
+    using (var first = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId)))
     {
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
@@ -68,9 +68,9 @@ public sealed class OrderIdempotencyTest
     OrderBody different = new(clientOrderId,
                               "Tisch 99",
                               null,
-                              [new(context.World.BratwurstItemId, 350, null, null), new(context.World.BratwurstItemId, 350, null, null)]);
+                              [new(_context.World.BratwurstItemId, 350, null, null), new(_context.World.BratwurstItemId, 350, null, null)]);
 
-    using var second = await context.PostOrderAsync(different);
+    using var second = await _context.PostOrderAsync(different);
 
     Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
   }

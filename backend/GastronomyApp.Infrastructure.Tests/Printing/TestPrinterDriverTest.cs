@@ -9,31 +9,31 @@ namespace GastronomyApp.Infrastructure.Tests.Printing;
 
 public class TestPrinterDriverTest
 {
-  private string dataDirectory = null!;
-  private TestPrinterDriver driver = null!;
-  private Guid printerId;
-  private InMemoryMockFaultRegistry registry = null!;
-  private Guid stationId;
-  private TestTimeProvider timeProvider = null!;
+  private string _dataDirectory = null!;
+  private TestPrinterDriver _driver = null!;
+  private Guid _printerId;
+  private InMemoryMockFaultRegistry _registry = null!;
+  private Guid _stationId;
+  private TestTimeProvider _timeProvider = null!;
 
   [SetUp]
   public void SetUp()
   {
-    dataDirectory = Path.Combine(Path.GetTempPath(), "gastronomy-mock-" + Guid.NewGuid().ToString("N"));
-    Directory.CreateDirectory(dataDirectory);
-    registry = new();
-    timeProvider = new(new(2026, 8, 26, 17, 5, 9, TimeSpan.Zero));
-    stationId = Guid.Parse("8f2a1c4b-9d0e-7f6a-3b2c-1d0e9f8a7b6c");
-    printerId = Guid.Parse("2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f");
-    driver = new(dataDirectory, registry, timeProvider);
+    _dataDirectory = Path.Combine(Path.GetTempPath(), "gastronomy-mock-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(_dataDirectory);
+    _registry = new();
+    _timeProvider = new(new(2026, 8, 26, 17, 5, 9, TimeSpan.Zero));
+    _stationId = Guid.Parse("8f2a1c4b-9d0e-7f6a-3b2c-1d0e9f8a7b6c");
+    _printerId = Guid.Parse("2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f");
+    _driver = new(_dataDirectory, _registry, _timeProvider);
   }
 
   [TearDown]
   public void TearDown()
   {
-    if (Directory.Exists(dataDirectory))
+    if (Directory.Exists(_dataDirectory))
     {
-      Directory.Delete(dataDirectory, true);
+      Directory.Delete(_dataDirectory, true);
     }
   }
 
@@ -41,24 +41,24 @@ public class TestPrinterDriverTest
   {
     return new()
            {
-             Id = id ?? printerId,
+             Id = id ?? _printerId,
              Name = "Testdrucker"
            };
   }
 
   private Task<IPrinterSession> OpenAsync(Guid? id = null)
   {
-    return driver.ConnectAsync(Printer(id), CancellationToken.None);
+    return _driver.ConnectAsync(Printer(id), CancellationToken.None);
   }
 
   private IPrinterSession OpenWithJobTimeout(TimeSpan jobTimeout)
   {
-    return new TestPrinterSession(printerId,
+    return new TestPrinterSession(_printerId,
                                   jobTimeout,
-                                  Path.Combine(dataDirectory, "mock-slips"),
+                                  Path.Combine(_dataDirectory, "mock-slips"),
                                   "20260826-170509",
-                                  registry,
-                                  timeProvider,
+                                  _registry,
+                                  _timeProvider,
                                   () => { });
   }
 
@@ -75,15 +75,15 @@ public class TestPrinterDriverTest
                renderedText,
                copyNumber,
                stationOrderNumber,
-               id ?? stationId,
+               id ?? _stationId,
                name,
                isTest);
   }
 
   private string StationFolder(Guid? id = null, string name = "K_che")
   {
-    var effective = id ?? stationId;
-    return Path.Combine(dataDirectory, "mock-slips", $"{name}-{effective.ToString("D")[..8]}");
+    var effective = id ?? _stationId;
+    return Path.Combine(_dataDirectory, "mock-slips", $"{name}-{effective.ToString("D")[..8]}");
   }
 
   private string[] FilesIn(string folder)
@@ -113,7 +113,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_PaperEndArmed_ReturnsBlockedWithZeroBytesAndNoFile()
   {
-    registry.Arm(printerId, MockFault.PaperEnd, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.PaperEnd, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
 
     var result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -127,7 +127,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_CoverOpenArmed_ReturnsBlockedWithZeroBytesAndNoFile()
   {
-    registry.Arm(printerId, MockFault.CoverOpen, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.CoverOpen, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
 
     var result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -141,10 +141,10 @@ public class TestPrinterDriverTest
   [Test]
   public async Task ConnectAsync_ConnectTimeoutArmed_NeverCompletes()
   {
-    registry.Arm(printerId, MockFault.ConnectTimeout, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.ConnectTimeout, MockFaultMode.Sticky);
     using CancellationTokenSource cancellation = new();
 
-    Task<IPrinterSession> connect = driver.ConnectAsync(Printer(), cancellation.Token);
+    Task<IPrinterSession> connect = _driver.ConnectAsync(Printer(), cancellation.Token);
     var completed = await Task.WhenAny(connect, Task.Delay(250));
 
     Assert.That(completed, Is.Not.SameAs(connect));
@@ -154,7 +154,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_DropSocketEarlyArmed_ReturnsSocketDroppedZeroBytesNoFileWritten()
   {
-    registry.Arm(printerId, MockFault.DropSocketEarly, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.DropSocketEarly, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
 
     var result = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -167,7 +167,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_DropSocketMidJobArmed_WritesPartialFileAndReturnsSocketDroppedWithPartialBytes()
   {
-    registry.Arm(printerId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
     var payload = Payload(renderedText: new('X', 100));
 
@@ -186,7 +186,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_UnknownOutcomeArmed_AcceptsPayloadWritesNoFileNeverEchoesReturnsTimeout()
   {
-    registry.Arm(printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
     await using var session = OpenWithJobTimeout(TimeSpan.FromMilliseconds(150));
     var payload = Payload();
 
@@ -200,7 +200,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task Arm_OnceMode_ClearsAfterOneUseAndSubsequentJobSucceeds()
   {
-    registry.Arm(printerId, MockFault.PaperEnd, MockFaultMode.Once);
+    _registry.Arm(_printerId, MockFault.PaperEnd, MockFaultMode.Once);
     await using var session = await OpenAsync();
 
     var first = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -213,7 +213,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task Arm_StickyMode_StaysArmedAcrossMultipleJobs()
   {
-    registry.Arm(printerId, MockFault.PaperEnd, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.PaperEnd, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
 
     var first = await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -250,7 +250,7 @@ public class TestPrinterDriverTest
     }
 
     TestTimeProvider laterClock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
-    TestPrinterDriver laterDriver = new(dataDirectory, registry, laterClock);
+    TestPrinterDriver laterDriver = new(_dataDirectory, _registry, laterClock);
     await using (var second = await laterDriver.ConnectAsync(Printer(), CancellationToken.None))
     {
       await second.SendJobAsync(Payload(), CancellationToken.None);
@@ -281,9 +281,9 @@ public class TestPrinterDriverTest
   [Test]
   public async Task ConnectAsync_UnwritableDataDirectory_ReturnsPrinterErrorZeroBytesAndReportsPathAndReason()
   {
-    var blockingFile = Path.Combine(dataDirectory, "blocked");
+    var blockingFile = Path.Combine(_dataDirectory, "blocked");
     await File.WriteAllTextAsync(blockingFile, "not a directory");
-    TestPrinterDriver blocked = new(blockingFile, registry, timeProvider);
+    TestPrinterDriver blocked = new(blockingFile, _registry, _timeProvider);
 
     await using var session = await blocked.ConnectAsync(Printer(), CancellationToken.None);
     var status = await session.QueryStatusAsync(CancellationToken.None);
@@ -335,7 +335,7 @@ public class TestPrinterDriverTest
   [Test]
   public async Task StatusStream_UnknownOutcomeArmed_HoldsJobUntilJobTimeoutSecondsExpires()
   {
-    registry.Arm(printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
     await using var session = OpenWithJobTimeout(TimeSpan.FromMilliseconds(150));
 
     await session.SendJobAsync(Payload(), CancellationToken.None);
@@ -365,38 +365,38 @@ public class TestPrinterDriverTest
   [TestCase(MockFault.UnknownOutcome)]
   public void AllSevenFaults_ArmableThroughRegistryInBothOnceAndStickyModes(MockFault fault)
   {
-    registry.Arm(printerId, fault, MockFaultMode.Once);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(fault));
-    registry.ClearIfOnce(printerId);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(MockFault.None));
+    _registry.Arm(_printerId, fault, MockFaultMode.Once);
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(fault));
+    _registry.ClearIfOnce(_printerId);
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(MockFault.None));
 
-    registry.Arm(printerId, fault, MockFaultMode.Sticky);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(fault));
-    registry.ClearIfOnce(printerId);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(fault));
+    _registry.Arm(_printerId, fault, MockFaultMode.Sticky);
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(fault));
+    _registry.ClearIfOnce(_printerId);
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(fault));
 
-    registry.Arm(printerId, MockFault.None, MockFaultMode.Sticky);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(MockFault.None));
+    _registry.Arm(_printerId, MockFault.None, MockFaultMode.Sticky);
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(MockFault.None));
   }
 
   [Test]
   public async Task QueryStatusAsync_OnceModeFaultConsumedAtPreflight_ClearsSoTheNextJobSucceeds()
   {
-    registry.Arm(printerId, MockFault.PaperEnd, MockFaultMode.Once);
+    _registry.Arm(_printerId, MockFault.PaperEnd, MockFaultMode.Once);
     await using var session = await OpenAsync();
 
     var preflight = await session.QueryStatusAsync(CancellationToken.None);
     var afterPreflight = await session.SendJobAsync(Payload(), CancellationToken.None);
 
     Assert.That(preflight.IsPaperEnd, Is.True);
-    Assert.That(registry.GetArmedFault(printerId), Is.EqualTo(MockFault.None));
+    Assert.That(_registry.GetArmedFault(_printerId), Is.EqualTo(MockFault.None));
     Assert.That(afterPreflight.Outcome, Is.EqualTo(PrintOutcome.Confirmed));
   }
 
   [Test]
   public async Task SendJobAsync_UnknownOutcomeArmed_HoldsTheJobForTheDriverJobTimeout()
   {
-    registry.Arm(printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.UnknownOutcome, MockFaultMode.Sticky);
     await using var session = OpenWithJobTimeout(TimeSpan.FromMilliseconds(150));
 
     var stopwatch = Stopwatch.StartNew();
@@ -410,14 +410,14 @@ public class TestPrinterDriverTest
   [Test]
   public async Task SendJobAsync_DropSocketMidJob_ReportsExactlyTheBytesTheFileReceived()
   {
-    registry.Arm(printerId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
+    _registry.Arm(_printerId, MockFault.DropSocketMidJob, MockFaultMode.Sticky);
     await using var session = await OpenAsync();
     PrintPayload payload = new(7,
                                new byte[100],
                                "0123456789",
                                0,
                                42,
-                               stationId,
+                               _stationId,
                                "Küche",
                                false);
 
@@ -434,7 +434,7 @@ public class TestPrinterDriverTest
     await using var session = await OpenAsync();
     var first = await session.SendJobAsync(Payload(), CancellationToken.None);
 
-    var slipRoot = Path.Combine(dataDirectory, "mock-slips");
+    var slipRoot = Path.Combine(_dataDirectory, "mock-slips");
     Directory.Delete(slipRoot, true);
     await File.WriteAllTextAsync(slipRoot, "now a file, not a folder");
 
