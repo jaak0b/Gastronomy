@@ -178,7 +178,7 @@ function keysTheLaptopCanSend(): Map<string, string> {
   for (const file of backendSourceFiles(BACKEND_ROOT)) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(
-      /"((?:order|admin|ticket|enrolment|station|session|review)\.[a-zA-Z][\w.]*)"/g,
+      /"((?:order|admin|ticket|enrolment|station|session|review|printJob)\.[a-zA-Z][\w.]*)"/g,
     )) {
       sent.set(match[1], file.slice(BACKEND_ROOT.length + 1))
     }

@@ -155,7 +155,7 @@ public sealed class StationOrderActionHandler
     {
       return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "AnotherCopyNotAllowed",
-                                    "printJob.anotherCopyNotAllowed");
+                                    "printJob.reprintNotAllowed");
     }
 
     PrintJobEnsured ensured;
@@ -173,7 +173,7 @@ public sealed class StationOrderActionHandler
     {
       return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "PrintJobAlreadyRunning",
-                                    "printJob.alreadyRunning");
+                                    "printJob.printJobAlreadyRunning");
     }
 
     var loaded = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
