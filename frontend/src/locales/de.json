@@ -85,7 +85,6 @@
     "tooManyRequests": "Warten Sie einen Moment und tippen Sie dann auf \"Noch einmal senden\". Der Laptop bekommt gerade zu viele Anfragen auf einmal.",
     "retry": "Noch einmal senden",
     "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.",
-    "duplicateRisk": "Nehmen Sie die Änderung als neue Bestellung auf und sagen Sie an der Ausgabestelle Bescheid. Diese Bestellung wurde bereits gesendet.",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
   "order": {
@@ -96,7 +95,7 @@
     "tooManyItems": "Diese Bestellung hat zu viele Positionen. Nehmen Sie den Rest als zweite Bestellung auf.",
     "stationNotAssignedToItem": "Dieser Artikel wird an der gewählten Ausgabestelle nicht gemacht. Wählen Sie eine andere Ausgabestelle.",
     "stationRequired": "Wählen Sie für diesen Artikel eine Ausgabestelle aus.",
-    "submissionIdReused": "Diese Bestellung wurde schon einmal gesendet, aber mit anderem Inhalt. Prüfen Sie die Bestellliste, bevor Sie erneut senden.",
+    "submissionIdReused": "Nehmen Sie die Änderung als neue Bestellung auf und sagen Sie an der Ausgabestelle Bescheid. Diese Bestellung wurde schon einmal gesendet, aber mit anderem Inhalt.",
     "tableNameMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
     "tableNameTooLong": "Dieser Tisch ist zu lang. Schreiben Sie ihn kürzer, zum Beispiel: Tisch 12.",
     "unknownItem": "Einen Artikel auf dieser Bestellung gibt es nicht mehr. Laden Sie die Karte neu und stellen Sie die Bestellung noch einmal zusammen."

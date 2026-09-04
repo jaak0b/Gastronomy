@@ -2971,7 +2971,6 @@ plain.
 | `review.tooManyRequests` | Warten Sie einen Moment und tippen Sie dann auf "Noch einmal senden". Der Laptop bekommt gerade zu viele Anfragen auf einmal. | Wait a moment, then tap "Send again". The laptop is getting too many requests at once. |
 | `review.retry` | Noch einmal senden | Send again |
 | `review.sendFailedAgain` | Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Station. Das Senden hat mehrmals nicht geklappt. | Write the order on paper and take it to the station. Sending has failed several times. |
-| `review.duplicateRisk` | Nehmen Sie die Änderung als neue Bestellung auf und sagen Sie an der Station Bescheid. Diese Bestellung wurde bereits gesendet. | Take the change as a new order and tell the station. This order has already been sent. |
 
 Prices are formatted by locale: `10,50 €` in German and `€10.50` in English. Both use the euro sign
 because the money is euros in both languages, and the symbol goes where each language puts it, because

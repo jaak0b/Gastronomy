@@ -12,18 +12,22 @@ export interface SendFailureMessage {
 
 const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 
-function keyForRejection(status: number): string {
+function keyForStatus(status: number): string {
   switch (status) {
     case 429:
       return 'review.tooManyRequests'
-    case 409:
-      return 'review.duplicateRisk'
     case 500:
     case 503:
       return 'review.sendFailedDatabase'
     default:
       return 'review.sendFailed'
   }
+}
+
+function keyForRejection(status: number, body: ApiErrorBody | null): string {
+  const statedReason = body?.messageKey ?? ''
+
+  return statedReason.length > 0 ? statedReason : keyForStatus(status)
 }
 
 export function messageForSendFailure(
@@ -36,7 +40,7 @@ export function messageForSendFailure(
     case 'unreachable':
       return { key: 'review.sendFailed', paperFallbackKey }
     case 'error':
-      return { key: keyForRejection(failure.status), paperFallbackKey }
+      return { key: keyForRejection(failure.status, failure.body), paperFallbackKey }
     default:
       return assertNever(failure)
   }

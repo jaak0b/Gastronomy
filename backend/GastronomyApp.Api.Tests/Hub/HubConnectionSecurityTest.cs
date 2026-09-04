@@ -26,12 +26,11 @@ public sealed class HubConnectionSecurityTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task Connect_ValidStationAccessKey_JoinsTheSiteWideStationGroup()
+  public async Task Connect_LoopbackCallerWithoutDeviceToken_JoinsTheAdminGroupAndHearsOrderEvents()
   {
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var accessKey = _context.World.KitchenStationId.ToString("N");
 
-    await using var connection = Connect($"hub?stationAccessKey={accessKey}");
+    await using var connection = Connect("hub");
     connection.On<JsonElement>("OrderAccepted",
                                payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
 
@@ -42,7 +41,7 @@ public sealed class HubConnectionSecurityTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(received, Is.SameAs(heard.Task), "A valid station key must join the stations group.");
+                      Assert.That(received, Is.SameAs(heard.Task), "A loopback caller must join the admin group.");
                       Assert.That(connection.State, Is.EqualTo(HubConnectionState.Connected));
                     });
 

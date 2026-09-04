@@ -85,7 +85,6 @@
     "tooManyRequests": "Wait a moment, then tap \"Send again\". The laptop is getting too many requests at once.",
     "retry": "Send again",
     "sendFailedAgain": "Write the order on paper and take it to the station. Sending has failed several times.",
-    "duplicateRisk": "Take the change as a new order and tell the station. This order has already been sent.",
     "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
   "order": {
@@ -96,7 +95,7 @@
     "tooManyItems": "This order has too many items. Take the rest as a second order.",
     "stationNotAssignedToItem": "That station does not make this item. Choose another station.",
     "stationRequired": "Choose a station for this item.",
-    "submissionIdReused": "This order was already sent with different contents. Check the order list before you send again.",
+    "submissionIdReused": "Take the change as a new order and tell the station. This order was already sent with different contents.",
     "tableNameMissing": "Enter a table before you send.",
     "tableNameTooLong": "This table is too long. Write it shorter, for example: Table 12.",
     "unknownItem": "One item on this order no longer exists. Reload the menu and build the order again."

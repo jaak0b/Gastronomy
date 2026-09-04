@@ -26,10 +26,35 @@ describe('messageForSendFailure, what went wrong', () => {
     expect(message.key).toBe('review.sendFailedDatabase')
   })
 
-  it('warns that the order was already sent when the laptop reports a conflict', () => {
-    const message = messageForSendFailure({ kind: 'error', status: 409, body: null }, 1)
+  it('shows the reason the laptop gave when the laptop named one', () => {
+    const message = messageForSendFailure(
+      {
+        kind: 'error',
+        status: 409,
+        body: {
+          code: 'SubmissionIdReused',
+          messageKey: 'order.submissionIdReused',
+          parameters: {},
+          details: null,
+        },
+      },
+      1,
+    )
 
-    expect(message.key).toBe('review.duplicateRisk')
+    expect(message.key).toBe('order.submissionIdReused')
+  })
+
+  it('falls back to the status when the laptop answered without naming a reason', () => {
+    const message = messageForSendFailure(
+      {
+        kind: 'error',
+        status: 503,
+        body: { code: 'DatabaseUnavailable', messageKey: '', parameters: {}, details: null },
+      },
+      1,
+    )
+
+    expect(message.key).toBe('review.sendFailedDatabase')
   })
 
   it('falls back to the plain failure for a rejection it does not recognise', () => {
