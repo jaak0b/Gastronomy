@@ -38,4 +38,14 @@ public sealed class QuitConfirmDialogSmokeTests
                                   Is.EqualTo(Color.Parse("#B91C1C")));
                     });
   }
+
+  [AvaloniaTest]
+  public void QuitConfirmDialog_DrawsItsTextWithoutTheColouredFringesOfSubpixelSmoothing()
+  {
+    QuitConfirmDialog dialog = new() { DataContext = CreateQuitConfirmViewModel() };
+    dialog.Show();
+    Dispatcher.UIThread.RunJobs();
+
+    Assert.That(TextOptions.GetTextRenderingMode(dialog), Is.EqualTo(TextRenderingMode.Antialias));
+  }
 }

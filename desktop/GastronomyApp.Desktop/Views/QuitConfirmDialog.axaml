@@ -3,6 +3,7 @@
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
         x:Class="GastronomyApp.Desktop.Views.QuitConfirmDialog"
         x:DataType="vm:QuitConfirmViewModel"
+        TextOptions.TextRenderingMode="Antialias"
         Width="470"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"

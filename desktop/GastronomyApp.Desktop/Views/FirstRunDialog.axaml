@@ -3,6 +3,7 @@
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
         x:Class="GastronomyApp.Desktop.Views.FirstRunDialog"
         x:DataType="vm:FirstRunViewModel"
+        TextOptions.TextRenderingMode="Antialias"
         Width="470"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
