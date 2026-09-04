@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
         x:Class="GastronomyApp.Desktop.Views.FirstRunDialog"
@@ -16,7 +16,7 @@
                    IsVisible="{Binding DeclinedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
                    TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Name="ContinueButton" Content="{Binding ContinueLabel}" Padding="16,10" IsDefault="True" />
+            <Button Name="ContinueButton" Content="{Binding ContinueLabel}" Classes="accent" IsDefault="True" />
         </StackPanel>
     </StackPanel>
 

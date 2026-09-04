@@ -12,12 +12,12 @@ namespace GastronomyApp.Desktop;
 
 public class App : Application
 {
-  private AppBootstrapper? bootstrapper;
-  private DesktopComposition? composition;
-  private MainWindow? mainWindow;
-  private MainWindowViewModel? mainWindowViewModel;
-  private QuitConfirmViewModel? quitConfirmViewModel;
-  private TrayIcon? trayIcon;
+  private AppBootstrapper? _bootstrapper;
+  private DesktopComposition? _composition;
+  private MainWindow? _mainWindow;
+  private MainWindowViewModel? _mainWindowViewModel;
+  private QuitConfirmViewModel? _quitConfirmViewModel;
+  private TrayIcon? _trayIcon;
 
   override public void Initialize()
   {
@@ -36,13 +36,13 @@ public class App : Application
 
   private void StartDesktop(IClassicDesktopStyleApplicationLifetime lifetime)
   {
-    composition = new();
-    bootstrapper = new(composition.SingleInstance,
-                       composition.CreateMainWindowViewModel,
+    _composition = new();
+    _bootstrapper = new(_composition.SingleInstance,
+                       _composition.CreateMainWindowViewModel,
                        BringMainWindowToFront,
                        work => Dispatcher.UIThread.Post(work));
 
-    if (bootstrapper.Start() == BootstrapOutcome.ExitImmediately)
+    if (_bootstrapper.Start() == BootstrapOutcome.ExitImmediately)
     {
       lifetime.Shutdown();
 
@@ -52,25 +52,25 @@ public class App : Application
     lifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
     lifetime.ShutdownRequested += OnShutdownRequested;
 
-    mainWindowViewModel = bootstrapper.MainWindowViewModel!;
-    quitConfirmViewModel = composition.CreateQuitConfirmViewModel(mainWindowViewModel,
+    _mainWindowViewModel = _bootstrapper.MainWindowViewModel!;
+    _quitConfirmViewModel = _composition.CreateQuitConfirmViewModel(_mainWindowViewModel,
                                                                   () => lifetime.Shutdown());
 
-    mainWindowViewModel.AdminPagesRequested += OpenAdminPages;
-    mainWindowViewModel.DataFolderRequested += OpenDataFolder;
-    mainWindowViewModel.RepairRequested += RepairSetup;
-    mainWindowViewModel.QuitRequested += AskWhetherToQuit;
+    _mainWindowViewModel.AdminPagesRequested += OpenAdminPages;
+    _mainWindowViewModel.DataFolderRequested += OpenDataFolder;
+    _mainWindowViewModel.RepairRequested += RepairSetup;
+    _mainWindowViewModel.QuitRequested += AskWhetherToQuit;
 
-    mainWindow = new() { DataContext = mainWindowViewModel };
-    mainWindow.Opened += OnMainWindowOpened;
-    lifetime.MainWindow = mainWindow;
+    _mainWindow = new() { DataContext = _mainWindowViewModel };
+    _mainWindow.Opened += OnMainWindowOpened;
+    lifetime.MainWindow = _mainWindow;
 
     CreateTrayIcon();
   }
 
   private void CreateTrayIcon()
   {
-    if (mainWindowViewModel is null)
+    if (_mainWindowViewModel is null)
     {
       return;
     }
@@ -78,24 +78,24 @@ public class App : Application
     NativeMenu menu = new();
     menu.Items.Add(new NativeMenuItem
                    {
-                     Header = mainWindowViewModel.AdminButtonLabel,
-                     Command = mainWindowViewModel.OpenAdminPagesCommand
+                     Header = _mainWindowViewModel.AdminButtonLabel,
+                     Command = _mainWindowViewModel.OpenAdminPagesCommand
                    });
     menu.Items.Add(new NativeMenuItem
                    {
-                     Header = mainWindowViewModel.QuitButtonLabel,
-                     Command = mainWindowViewModel.RequestQuitCommand
+                     Header = _mainWindowViewModel.QuitButtonLabel,
+                     Command = _mainWindowViewModel.RequestQuitCommand
                    });
 
-    trayIcon = new()
+    _trayIcon = new()
                {
-                 ToolTipText = mainWindowViewModel.MinimisedText,
+                 ToolTipText = _mainWindowViewModel.MinimisedText,
                  IsVisible = true,
                  Menu = menu
                };
 
-    trayIcon.Clicked += OnTrayIconClicked;
-    TrayIcon.SetIcons(this, [trayIcon]);
+    _trayIcon.Clicked += OnTrayIconClicked;
+    TrayIcon.SetIcons(this, [_trayIcon]);
   }
 
   private void OnTrayIconClicked(object? sender, EventArgs eventArgs)
@@ -105,14 +105,14 @@ public class App : Application
 
   private void BringMainWindowToFront()
   {
-    mainWindow?.BringToFront();
+    _mainWindow?.BringToFront();
   }
 
   private async void OnMainWindowOpened(object? sender, EventArgs eventArgs)
   {
-    if (mainWindow is not null)
+    if (_mainWindow is not null)
     {
-      mainWindow.Opened -= OnMainWindowOpened;
+      _mainWindow.Opened -= OnMainWindowOpened;
     }
 
     await RunFirstRunThenStartAsync();
@@ -120,18 +120,18 @@ public class App : Application
 
   private async Task RunFirstRunThenStartAsync()
   {
-    if (composition is null || mainWindowViewModel is null || mainWindow is null)
+    if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
     {
       return;
     }
 
-    var firstRun = composition.CreateFirstRunViewModel();
+    var firstRun = _composition.CreateFirstRunViewModel();
     firstRun.Evaluate();
 
     if (firstRun.IsSetupOffered)
     {
       FirstRunDialog dialog = new() { DataContext = firstRun };
-      var accepted = await dialog.ShowDialog<bool>(mainWindow);
+      var accepted = await dialog.ShowDialog<bool>(_mainWindow);
 
       if (accepted)
       {
@@ -142,10 +142,13 @@ public class App : Application
         firstRun.Decline();
       }
 
-      mainWindowViewModel.NoticeText = firstRun.DeclinedText;
+      if (firstRun.DeclinedText is not null)
+      {
+        _mainWindowViewModel.ShowSetupDeclined();
+      }
     }
 
-    await mainWindowViewModel.StartAsync();
+    await _mainWindowViewModel.StartAsync();
   }
 
   private void OpenAdminPages(string adminUrl)
@@ -159,55 +162,55 @@ public class App : Application
 
   private async void RepairSetup()
   {
-    if (composition is null || mainWindowViewModel is null)
+    if (_composition is null || _mainWindowViewModel is null)
     {
       return;
     }
 
-    var outcome = await composition.ElevatedSetupLauncher.RunElevatedSetupAsync();
+    var outcome = await _composition.ElevatedSetupLauncher.RunElevatedSetupAsync();
 
-    mainWindowViewModel.ShowRepairOutcome(outcome);
+    _mainWindowViewModel.ShowRepairOutcome(outcome);
   }
 
   private void OpenDataFolder()
   {
-    if (composition is null)
+    if (_composition is null)
     {
       return;
     }
 
     Process.Start(new ProcessStartInfo
                   {
-                    FileName = composition.DataDirectoryPath,
+                    FileName = _composition.DataDirectoryPath,
                     UseShellExecute = true
                   });
   }
 
   private async void AskWhetherToQuit()
   {
-    if (quitConfirmViewModel is null || mainWindow is null)
+    if (_quitConfirmViewModel is null || _mainWindow is null)
     {
       return;
     }
 
-    quitConfirmViewModel.RequestQuit();
+    _quitConfirmViewModel.RequestQuit();
 
-    QuitConfirmDialog dialog = new() { DataContext = quitConfirmViewModel };
-    var confirmed = await dialog.ShowDialog<bool>(mainWindow);
+    QuitConfirmDialog dialog = new() { DataContext = _quitConfirmViewModel };
+    var confirmed = await dialog.ShowDialog<bool>(_mainWindow);
 
     if (confirmed)
     {
-      await quitConfirmViewModel.ConfirmAsync();
+      await _quitConfirmViewModel.ConfirmAsync();
 
       return;
     }
 
-    quitConfirmViewModel.Cancel();
+    _quitConfirmViewModel.Cancel();
   }
 
   private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs eventArgs)
   {
-    trayIcon?.Dispose();
-    bootstrapper?.Release();
+    _trayIcon?.Dispose();
+    _bootstrapper?.Release();
   }
 }

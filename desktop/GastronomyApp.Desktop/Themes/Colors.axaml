@@ -1,0 +1,50 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="BackgroundColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceColor">#F4F5F7</Color>
+    <Color x:Key="SurfaceAltColor">#FFFFFF</Color>
+    <Color x:Key="PrimaryColor">#991B1B</Color>
+    <Color x:Key="PrimaryHoverColor">#B91C1C</Color>
+    <Color x:Key="PrimaryPressedColor">#7F1D1D</Color>
+    <Color x:Key="PrimaryForegroundColor">#FFFFFF</Color>
+    <Color x:Key="TextPrimaryColor">#1F2937</Color>
+    <Color x:Key="TextSecondaryColor">#6B7280</Color>
+    <Color x:Key="TextDisabledColor">#9CA3AF</Color>
+    <Color x:Key="BorderColor">#E5E7EB</Color>
+    <Color x:Key="BorderStrongColor">#991B1B</Color>
+    <Color x:Key="ControlHoverColor">#EEF2F7</Color>
+    <Color x:Key="FocusRingColor">#991B1B</Color>
+    <Color x:Key="DangerColor">#DC2626</Color>
+    <Color x:Key="DangerHoverColor">#EF4444</Color>
+    <Color x:Key="DangerPressedColor">#B91C1C</Color>
+    <Color x:Key="DangerForegroundColor">#FFFFFF</Color>
+    <Color x:Key="StatusRunningColor">#15803D</Color>
+    <Color x:Key="StatusWarningColor">#B45309</Color>
+    <Color x:Key="StatusDownColor">#DC2626</Color>
+    <Color x:Key="StatusStartingColor">#9CA3AF</Color>
+    <Color x:Key="StatusForegroundColor">#FFFFFF</Color>
+
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}"/>
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="{StaticResource PrimaryForegroundColor}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabledColor}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}"/>
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="{StaticResource ControlHoverColor}"/>
+    <SolidColorBrush x:Key="FocusRingBrush" Color="{StaticResource FocusRingColor}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="{StaticResource DangerHoverColor}"/>
+    <SolidColorBrush x:Key="DangerPressedBrush" Color="{StaticResource DangerPressedColor}"/>
+    <SolidColorBrush x:Key="DangerForegroundBrush" Color="{StaticResource DangerForegroundColor}"/>
+    <SolidColorBrush x:Key="StatusRunningBrush" Color="{StaticResource StatusRunningColor}"/>
+    <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}"/>
+    <SolidColorBrush x:Key="StatusDownBrush" Color="{StaticResource StatusDownColor}"/>
+    <SolidColorBrush x:Key="StatusStartingBrush" Color="{StaticResource StatusStartingColor}"/>
+    <SolidColorBrush x:Key="StatusForegroundBrush" Color="{StaticResource StatusForegroundColor}"/>
+</ResourceDictionary>

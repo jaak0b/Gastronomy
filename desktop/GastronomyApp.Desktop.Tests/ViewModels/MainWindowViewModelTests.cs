@@ -366,4 +366,147 @@ public sealed class MainWindowViewModelTests
                                         A<CancellationToken>._))
      .MustHaveHappenedOnceExactly();
   }
+
+  [Test]
+  public void CurrentStatus_OnAWindowThatHasNotStartedTheServerYet_IsStarting()
+  {
+    var viewModel = CreateViewModel();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Starting));
+                      Assert.That(viewModel.StatusText, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task CurrentStatus_WhenTheServerAnswers_IsRunningAndSaysNothing()
+  {
+    LauncherReturns(new HostLaunchResult.Started(null!));
+    var viewModel = CreateViewModel();
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Running));
+                      Assert.That(viewModel.StatusText, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task CurrentStatus_WhenTheServerCannotStart_IsDownAndCarriesTheErrorText()
+  {
+    LauncherReturns(new HostLaunchResult.NoNetworkAvailable());
+    var viewModel = CreateViewModel();
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Down));
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.error.noNetwork")));
+                    });
+  }
+
+  [Test]
+  public void CurrentStatus_WhenTheRepairWasDeclined_IsWarningAndCarriesTheDeclinedText()
+  {
+    var viewModel = CreateViewModel();
+
+    viewModel.ShowRepairOutcome(ElevatedSetupOutcome.ElevationDeclined);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Warning));
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.settings.repairDeclined")));
+                    });
+  }
+
+  [Test]
+  public async Task CurrentStatus_WhenTheRepairWasCompleted_StaysRunningAndCarriesTheDoneText()
+  {
+    LauncherReturns(new HostLaunchResult.Started(null!));
+    var viewModel = CreateViewModel();
+    await viewModel.StartAsync();
+
+    viewModel.ShowRepairOutcome(ElevatedSetupOutcome.Completed);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Running));
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.settings.repairDone")));
+                    });
+  }
+
+  [Test]
+  public async Task CurrentStatus_WhenTheAddressChanged_WarnsAndCarriesTheNoticeText()
+  {
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
+                                        A<CancellationToken>._))
+     .Returns(new HostLaunchResult.PortInUse(5000));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
+                                        A<CancellationToken>._))
+     .Returns(new HostLaunchResult.Started(null!));
+    var viewModel = CreateViewModel();
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Warning));
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.notice.addressChanged")));
+                    });
+  }
+
+  [Test]
+  public async Task CurrentStatus_WhenAnErrorAndANoticeArriveTogether_ShowsTheError()
+  {
+    LauncherReturns(new HostLaunchResult.NoNetworkAvailable());
+    var viewModel = CreateViewModel();
+    viewModel.ShowRepairOutcome(ElevatedSetupOutcome.Completed);
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Down));
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.error.noNetwork")));
+                    });
+  }
+
+  [Test]
+  public void StatusText_OfANotice_WhenTheLanguageChanges_ChangesWithIt()
+  {
+    var viewModel = CreateViewModel();
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "en");
+    viewModel.ShowRepairOutcome(ElevatedSetupOutcome.ElevationDeclined);
+    var english = viewModel.StatusText;
+
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.settings.repairDeclined")));
+                      Assert.That(viewModel.StatusText, Is.Not.EqualTo(english));
+                    });
+  }
+
+  [Test]
+  public async Task StatusText_OfAnError_WhenTheLanguageChanges_ChangesWithIt()
+  {
+    LauncherReturns(new HostLaunchResult.NoNetworkAvailable());
+    var viewModel = CreateViewModel();
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "en");
+    await viewModel.StartAsync();
+    var english = viewModel.StatusText;
+
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.error.noNetwork")));
+                      Assert.That(viewModel.StatusText, Is.Not.EqualTo(english));
+                    });
+  }
 }

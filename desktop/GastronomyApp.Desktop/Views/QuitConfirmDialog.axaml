@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
         x:Class="GastronomyApp.Desktop.Views.QuitConfirmDialog"
@@ -13,8 +13,8 @@
         <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Name="CancelButton" Content="{Binding CancelLabel}" Padding="16,10" IsDefault="True" />
-            <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Padding="16,10" />
+            <Button Name="CancelButton" Content="{Binding CancelLabel}" IsDefault="True" />
+            <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Classes="danger" />
         </StackPanel>
     </StackPanel>
 

@@ -1,62 +1,116 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
         xmlns:svc="using:GastronomyApp.Desktop.Services"
+        xmlns:conv="using:GastronomyApp.Desktop.Converters"
         x:Class="GastronomyApp.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Width="620"
-        Height="520"
+        TextOptions.TextRenderingMode="Antialias"
+        Width="460"
+        Height="400"
+        MinWidth="420"
+        MinHeight="340"
         Title="{Binding WindowTitle}">
 
-    <ScrollViewer>
-        <StackPanel Margin="28" Spacing="18">
+    <Window.Resources>
+        <conv:StatusLevelConverter x:Key="StatusLevelIs" />
+    </Window.Resources>
 
-            <ComboBox ItemsSource="{Binding Languages}"
-                      SelectedItem="{Binding SelectedLanguage}"
-                      HorizontalAlignment="Right"
-                      MinWidth="140"
-                      ToolTip.Tip="{Binding LanguageLabel}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="svc:LanguageOption">
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+    <Window.Styles>
+        <Style Selector="Button.action">
+            <Setter Property="Width" Value="250" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Button.action.accent">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="MinHeight" Value="44" />
+        </Style>
 
-            <Border IsVisible="{Binding HasNotice, FallbackValue=False}"
-                    Padding="14"
-                    CornerRadius="6"
-                    Background="#EEF2F7">
-                <TextBlock Text="{Binding NoticeText, FallbackValue=''}" TextWrapping="Wrap" />
-            </Border>
+        <Style Selector="Border#StatusBar">
+            <Setter Property="MinHeight" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource StatusStartingBrush}" />
+        </Style>
+        <Style Selector="Border#StatusBar.running">
+            <Setter Property="Background" Value="{DynamicResource StatusRunningBrush}" />
+        </Style>
+        <Style Selector="Border#StatusBar.warning">
+            <Setter Property="Background" Value="{DynamicResource StatusWarningBrush}" />
+        </Style>
+        <Style Selector="Border#StatusBar.down">
+            <Setter Property="Background" Value="{DynamicResource StatusDownBrush}" />
+        </Style>
+        <Style Selector="Border#StatusBar.withText">
+            <Setter Property="Padding" Value="20,12" />
+        </Style>
+    </Window.Styles>
 
-            <Border IsVisible="{Binding HasError, FallbackValue=False}"
-                    Padding="14"
-                    CornerRadius="6"
-                    Background="#FFF4E5">
-                <TextBlock Text="{Binding ErrorMessage, FallbackValue=''}" TextWrapping="Wrap" />
-            </Border>
+    <DockPanel LastChildFill="True">
 
-            <Button Content="{Binding AdminButtonLabel}"
-                    Command="{Binding OpenAdminPagesCommand}"
-                    HorizontalAlignment="Left"
-                    FontSize="18"
-                    Padding="22,12" />
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="20,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding WindowTitle}"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding LanguageLabel}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding Languages}"
+                              SelectedItem="{Binding SelectedLanguage}"
+                              MinWidth="120"
+                              VerticalAlignment="Center">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="svc:LanguageOption">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-            <StackPanel Orientation="Horizontal" Spacing="14">
-                <Button Content="{Binding DataFolderButtonLabel}"
-                        Command="{Binding OpenDataFolderCommand}"
-                        Padding="16,10" />
-                <Button Content="{Binding RepairButtonLabel}"
-                        Command="{Binding RepairSetupCommand}"
-                        Padding="16,10" />
+        <Border Name="StatusBar"
+                DockPanel.Dock="Bottom"
+                Classes.running="{Binding CurrentStatus, Converter={StaticResource StatusLevelIs}, ConverterParameter=Running, FallbackValue=False}"
+                Classes.warning="{Binding CurrentStatus, Converter={StaticResource StatusLevelIs}, ConverterParameter=Warning, FallbackValue=False}"
+                Classes.down="{Binding CurrentStatus, Converter={StaticResource StatusLevelIs}, ConverterParameter=Down, FallbackValue=False}"
+                Classes.withText="{Binding HasStatusText, FallbackValue=False}">
+            <TextBlock Name="StatusMessage"
+                       Text="{Binding StatusText, FallbackValue=''}"
+                       IsVisible="{Binding HasStatusText, FallbackValue=False}"
+                       Foreground="{DynamicResource StatusForegroundBrush}"
+                       TextWrapping="Wrap" />
+        </Border>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Name="Actions" Margin="20,14" VerticalAlignment="Center">
+                <Button Content="{Binding AdminButtonLabel}"
+                        Command="{Binding OpenAdminPagesCommand}"
+                        Classes="action accent" />
+
+                <StackPanel Spacing="8" Margin="0,20,0,0">
+                    <Button Content="{Binding DataFolderButtonLabel}"
+                            Command="{Binding OpenDataFolderCommand}"
+                            Classes="action" />
+                    <Button Content="{Binding RepairButtonLabel}"
+                            Command="{Binding RepairSetupCommand}"
+                            Classes="action" />
+                </StackPanel>
+
                 <Button Content="{Binding QuitButtonLabel}"
                         Command="{Binding RequestQuitCommand}"
-                        Padding="16,10" />
+                        Classes="action"
+                        Margin="0,24,0,0" />
             </StackPanel>
+        </ScrollViewer>
 
-        </StackPanel>
-    </ScrollViewer>
+    </DockPanel>
 
 </Window>
