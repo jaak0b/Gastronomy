@@ -8,7 +8,6 @@ import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
-import { usePrinterStatusStore } from '../stores/printerStatus'
 import { navigate } from '../router'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
@@ -19,7 +18,6 @@ const { t } = useI18n()
 const catalog = useCatalogStore()
 const order = useOrderStore()
 const session = useSessionStore()
-const printerStatus = usePrinterStatusStore()
 
 const tableField = ref<{ focus: () => void } | null>(null)
 const isTableMissing = ref(false)
@@ -104,15 +102,6 @@ function chooseStation(stationId: string): void {
 
 <template>
   <v-container class="catalog">
-    <v-alert
-      v-for="(warning, index) in printerStatus.catalogWarnings"
-      :key="index"
-      class="station-warning mb-2"
-      type="warning"
-      variant="tonal"
-    >
-      {{ t(warning.key, { name: warning.name }) }}
-    </v-alert>
     <section v-for="group in catalog.groups" :key="group.name" class="category-section">
       <h2 class="category-heading text-subtitle-1 font-weight-bold py-2" :data-category="group.name">
         {{ group.name }}

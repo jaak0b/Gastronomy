@@ -27,9 +27,9 @@
   "header": {
     "reconnecting": "Keine Verbindung zum Laptop. Es wird weiter versucht.",
     "backOnline": "Die Verbindung ist wieder da.",
-    "stationPaperOut": "Der Drucker an der Ausgabestelle {name} hat kein Papier.",
-    "stationOffline": "Die Ausgabestelle {name} antwortet gerade nicht.",
-    "stationFaulty": "Sagen Sie an der Ausgabestelle {name} Bescheid. Der Drucker dort nimmt nichts mehr an.",
+    "stationPaperOut": "Nehmen Sie weiter Bestellungen auf. Der Drucker an der Ausgabestelle {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt.",
+    "stationOffline": "Nehmen Sie weiter Bestellungen auf. Die Ausgabestelle {name} antwortet gerade nicht, und der Bon wird gedruckt, sobald sie wieder antwortet.",
+    "stationFaulty": "Sagen Sie jede Bestellung an der Ausgabestelle {name} persönlich an. Der Drucker dort nimmt nichts mehr an.",
     "stationWaiting": "Dort wartet {count} Bon. | Dort warten {count} Bons.",
     "settings": "Einstellungen",
     "stations": "Ausgabestellen"
@@ -59,8 +59,6 @@
     "basketEmpty": "Noch nichts ausgewählt",
     "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
     "toReview": "Weiter zur Übersicht",
-    "paperWarning": "Nehmen Sie weiter Bestellungen auf. Der Drucker an der Ausgabestelle {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt.",
-    "offlineWarning": "Nehmen Sie weiter Bestellungen auf. Die Ausgabestelle {name} antwortet gerade nicht, und der Bon wird nachgedruckt.",
     "itemSoldOut": "Fragen Sie den Gast, ob er etwas anderes möchte. {name} ist gerade ausverkauft.",
     "lineNoLongerOnTheMenu": "Nicht mehr auf der Karte."
   },

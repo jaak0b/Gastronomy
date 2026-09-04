@@ -27,9 +27,9 @@
   "header": {
     "reconnecting": "No connection to the laptop. The app keeps trying.",
     "backOnline": "The connection is back.",
-    "stationPaperOut": "The printer at {name} has no paper.",
-    "stationOffline": "Station {name} is not answering right now.",
-    "stationFaulty": "Tell the people at {name}. The printer there is not accepting anything any more.",
+    "stationPaperOut": "Keep taking orders. The printer at {name} has no paper, and the slip prints as soon as somebody loads a roll.",
+    "stationOffline": "Keep taking orders. Station {name} is not answering right now, and the slip prints as soon as it answers again.",
+    "stationFaulty": "Tell the people at {name} about every order in person. The printer there is not accepting anything any more.",
     "stationWaiting": "{count} slip is waiting there. | {count} slips are waiting there.",
     "settings": "Settings",
     "stations": "Stations"
@@ -59,8 +59,6 @@
     "basketEmpty": "Nothing chosen yet",
     "basketSummary": "{count} item, {total} | {count} items, {total}",
     "toReview": "Go to the summary",
-    "paperWarning": "Keep taking orders. The printer at {name} has no paper, and the slip prints as soon as somebody loads a roll.",
-    "offlineWarning": "Keep taking orders. Station {name} is not answering right now, and the slip prints later.",
     "itemSoldOut": "Ask the guest whether they would like something else. {name} has just sold out.",
     "lineNoLongerOnTheMenu": "No longer on the menu."
   },

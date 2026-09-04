@@ -89,4 +89,38 @@ describe('a printer status that arrives over the live connection', () => {
 
     expect(printerStatus.stations[0].isPaperEnd).toBe(true)
   })
+
+  it('derives one message about the station, carrying the slips waiting there', async () => {
+    const printerStatus = await pushOneStatus()
+
+    expect(printerStatus.banners).toEqual([
+      { key: 'header.stationPaperOut', name: 'Küche', waitingCount: 2 },
+    ])
+  })
+
+  it('derives one message about a station that stopped answering', async () => {
+    const printerStatus = await pushOneStatus({
+      ...PUSHED_STATUS,
+      isOnline: false,
+      isPaperEnd: false,
+      waitingTicketCount: 0,
+    })
+
+    expect(printerStatus.banners).toEqual([
+      { key: 'header.stationOffline', name: 'Küche', waitingCount: null },
+    ])
+  })
+
+  it('derives one message about a station whose printer is broken', async () => {
+    const printerStatus = await pushOneStatus({
+      ...PUSHED_STATUS,
+      isPaperEnd: false,
+      isFaulty: true,
+      waitingTicketCount: 0,
+    })
+
+    expect(printerStatus.banners).toEqual([
+      { key: 'header.stationFaulty', name: 'Küche', waitingCount: null },
+    ])
+  })
 })

@@ -41,24 +41,6 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     return shown
   })
 
-  const catalogWarnings = computed<StationBanner[]>(() => {
-    const shown: StationBanner[] = []
-    for (const row of stations.value) {
-      if (row.isFaulty) {
-        shown.push({ key: 'header.stationFaulty', name: row.name, waitingCount: null })
-        continue
-      }
-      if (!row.isOnline) {
-        shown.push({ key: 'catalog.offlineWarning', name: row.name, waitingCount: null })
-        continue
-      }
-      if (row.isPaperEnd) {
-        shown.push({ key: 'catalog.paperWarning', name: row.name, waitingCount: null })
-      }
-    }
-    return shown
-  })
-
   async function load(): Promise<void> {
     const session = useSessionStore()
     if (session.deviceToken === null) {
@@ -110,5 +92,5 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     })
   }
 
-  return { stations, waitingCounts, banners, catalogWarnings, load, listen }
+  return { stations, waitingCounts, banners, load, listen }
 })
