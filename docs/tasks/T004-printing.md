@@ -882,7 +882,7 @@ step is done without having run it and pasted the result, per root hard rule 5.
 Explicitly not part of this task; do not attempt any of it here even if it seems like a natural next
 step:
 
-- Any REST endpoint (`POST /api/orders/{orderId}/tickets/{ticketId}/reprint`,
+- Any REST endpoint (`POST /api/admin/orders/{orderId}/tickets/{ticketId}/reprint`,
   `POST /api/admin/printers/{locationId}/reconnect`, `POST /api/admin/mock/{locationId}/fault`,
   `GET /api/printers/status`, or any other route named in spec section 5). This task defines and
   proves the worker's behaviour; another task wires HTTP handlers that call into

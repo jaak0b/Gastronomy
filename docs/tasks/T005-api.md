@@ -58,7 +58,7 @@ T005-1 and T005-3:
   say the identical thing): **"Whoever changes a ticket writes the order status projection in the
   same transaction through this calculator: T004's worker on the print path, T005 on the HTTP paths
   (acceptance, resolve, acknowledge). The calculator itself never writes."** This task is the writer
-  on exactly the three HTTP paths that sentence names; see step 8 and step 9 below for where each
+  on exactly the three HTTP paths that sentence names; see steps 8, 9 and 10 below for where each
   write happens. `OrderStatusCalculator` computes; it never opens a transaction and never persists
   anything, so this task's own repository call around it is what commits the write.
 - `GastronomyApp.Core.Services.TicketAcknowledgePolicy.CanAcknowledge(LocationTicketStatus
@@ -583,10 +583,6 @@ Red first, one test per row:
 | `POST /api/orders`, unknown item id | 422, via `ResultEnvelope.ToProblem` on `OrderValidationFailureReason.UnknownCatalogItemId` |
 | `POST /api/orders`, sold-out or deactivated item id present in lines | 201 (accepted, not rejected, per section 5.4) |
 | `POST /api/orders`, `expectedTotalCents` absent/zero/wrong | 201, stored total is the backend-computed one, response echoes both totals |
-| `GET /api/orders/mine` | Scoped by `ServerPersonId`, not `DeviceId`; a re-enrolled device (same person, new device id) still sees the same list |
-| `GET /api/orders/{orderId}` | 404 for a different person's order, 200 for the owner, 200 for an admin caller |
-| `POST /api/orders/{orderId}/tickets/{ticketId}/resolve` | 200 moves ticket per body via `TicketStateMachine.CanTransition`, then this endpoint writes the order's projected status through `OrderStatusCalculator` in the same transaction; 403 wrong person; 409 already resolved |
-| `POST /api/orders/{orderId}/tickets/{ticketId}/reprint` | 202, 409 if a job is already running for that ticket |
 | `GET /api/printers/status` | Shape from section 5.4 |
 
 The byte-for-byte assertion for the 200-versus-201 case is written as a literal string/JSON-document
@@ -610,10 +606,10 @@ This handler performs no idempotency check of its own beyond reading `WasAlready
 section 5.4 assigns that check to the unique index inside `OrderAcceptanceService`'s own transaction
 and duplicating it here would be the second producer of a figure root rule 6 forbids.
 
-The resolve and acknowledge handlers (this step and step 9) follow the same two-part shape: call the
-Core policy or state machine that decides whether the write is legal, then, only if it is, write the
-new ticket status and recompute-and-write the order's projected status through `OrderStatusCalculator`
-in one transaction, before pushing anything over SignalR.
+The acknowledge handler in step 9 and the resolve handler in step 10 follow the same two-part shape:
+call the Core policy or state machine that decides whether the write is legal, then, only if it is,
+write the new ticket status and recompute-and-write the order's projected status through
+`OrderStatusCalculator` in one transaction, before pushing anything over SignalR.
 
 ### Step 9: Station break-glass endpoints
 
@@ -673,8 +669,10 @@ calls through the test factory's client with `RemoteIpAddress` set to loopback):
   guard from section 2.3 that T002's own event-session start service is assumed to enforce (this
   task tests only that the guard's 409 and its blocking-conditions body reach the caller, not that
   the guard logic is correct, which is T002's own test).
-- `GET /api/admin/orders`, `POST .../tickets/{ticketId}/resolve`, `POST .../tickets/{ticketId}/reprint`
-  (the laptop-side mirrors of the phone endpoints from step 8, same projection-write rule).
+- `GET /api/admin/orders`, `POST .../tickets/{ticketId}/resolve`, `POST .../tickets/{ticketId}/reprint`.
+  Resolve moves the ticket per body via `TicketStateMachine.CanTransition` and then writes the order's
+  projected status through `OrderStatusCalculator` in the same transaction, exactly as the order
+  endpoints in step 8 do; reprint answers 202, or 409 when a job is already running for that ticket.
 
 Green: one `Endpoints/Admin*Endpoints.cs` file per group as laid out in section 3. None of these
 re-implements a guard T002 or T003 already owns; the endpoints that touch no business rule (plain
@@ -866,7 +864,7 @@ Explicit, not attempted in this task even where an adjacent endpoint makes it lo
   be triggered from this task's own code** is resolved by ruling 4 and stated identically in T002,
   T004 and this document (section 2's quoted sentence): T004 writes on the print path, this task
   writes on its own three HTTP paths (acceptance, resolve, acknowledge), both through the one
-  `OrderStatusCalculator`. There is no longer a seam here to reconcile; step 8 and step 9 name where
+  `OrderStatusCalculator`. There is no longer a seam here to reconcile; steps 8, 9 and 10 name where
   each of this task's three writes happens.
 - **The direction of the fleet/callback contract** (whether `IPrinterFleet` pushes notifications
   outward or this task's dispatcher implements a callback interface T004 calls into) is resolved by
