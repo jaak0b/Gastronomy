@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { request } from '../api/client'
-import type {
-  DraftLine,
-  OrderSubmitResponse,
-  OrderSummary,
-  StationOrderSummary,
-} from '../core/apiTypes'
+import type { DraftLine, OrderSubmitResponse } from '../core/apiTypes'
 import {
   addLine,
   clearDraft,
@@ -21,9 +16,7 @@ import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
 import { buildBasketView, basketItemCount, refreshLineSnapshots } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
 import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
-import { presentOrderState } from '../core/orderStateMachine'
 import { useCatalogStore } from './catalog'
-import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
 export type SendState = 'idle' | 'sending' | 'failed' | 'accepted'
@@ -32,7 +25,6 @@ export const ARRIVAL_NOTICE_MS = 8000
 
 export const useOrderStore = defineStore('order', () => {
   const draft = ref(loadDraft())
-  const orders = ref<OrderSummary[]>([])
   const sendState = ref<SendState>('idle')
   const failure = ref<SendFailureMessage | null>(null)
   const failedAttempts = ref(0)
@@ -51,9 +43,6 @@ export const useOrderStore = defineStore('order', () => {
   const basketLines = computed(() => buildBasketView(draft.value, catalogStore.catalog))
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
-  const attentionCount = computed(
-    () => orders.value.filter((order) => presentOrderState(order) === 'NeedsAttention').length,
-  )
 
   function addItem(line: DraftLine): void {
     draft.value = addLine(draft.value, line)
@@ -110,7 +99,6 @@ export const useOrderStore = defineStore('order', () => {
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
         startNextOrder()
-        await loadMine()
         return
       case 'unreachable':
       case 'error':
@@ -121,99 +109,8 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function loadMine(): Promise<void> {
-    const session = useSessionStore()
-    if (session.deviceToken === null) {
-      return
-    }
-    const result = await request<{ orders: OrderSummary[] }>('/api/orders/mine', {
-      token: session.deviceToken,
-    })
-    if (result.kind === 'ok') {
-      orders.value = result.data.orders
-    }
-  }
-
-  function orderById(orderId: string): OrderSummary | null {
-    return orders.value.find((order) => order.orderId === orderId) ?? null
-  }
-
-  async function answerUnknown(
-    orderId: string,
-    stationOrderId: string,
-    slipIsOnThePile: boolean,
-  ): Promise<string | null> {
-    const session = useSessionStore()
-    const result = await request<StationOrderSummary>(
-      `/api/orders/${orderId}/station-orders/${stationOrderId}/resolve`,
-      { method: 'POST', body: { slipIsOnThePile }, token: session.deviceToken },
-    )
-    switch (result.kind) {
-      case 'ok':
-        await loadMine()
-        return null
-      case 'error':
-        return result.status === 409 ? 'printJob.unknown.answered' : 'review.sendFailed'
-      case 'unreachable':
-        return 'header.reconnecting'
-    }
-  }
-
-  async function printAnotherCopy(orderId: string, stationOrderId: string): Promise<void> {
-    const session = useSessionStore()
-    await request(`/api/orders/${orderId}/station-orders/${stationOrderId}/print-another-copy`, {
-      method: 'POST',
-      token: session.deviceToken,
-    })
-    await loadMine()
-  }
-
-  function applyPrintJobChange(payload: {
-    orderId: string
-    stationOrderId: string
-    status: StationOrderSummary['status']
-    failureReason: StationOrderSummary['failureReason']
-    printerHasPaper: boolean | null
-  }): void {
-    const order = orderById(payload.orderId)
-    if (order === null) {
-      return
-    }
-    order.stationOrders = order.stationOrders.map((stationOrder) =>
-      stationOrder.stationOrderId === payload.stationOrderId
-        ? {
-            ...stationOrder,
-            status: payload.status,
-            failureReason: payload.failureReason,
-            printerHasPaper: payload.printerHasPaper,
-          }
-        : stationOrder,
-    )
-  }
-
-  function listen(): void {
-    const connection = useConnectionStore()
-    connection.registerRefetch(loadMine)
-    connection.onEvent('OrderAccepted', () => {
-      void loadMine()
-    })
-    connection.onEvent<Parameters<typeof applyPrintJobChange>[0]>('PrintJobStatusChanged', (payload) => {
-      applyPrintJobChange(payload)
-    })
-    connection.onEvent<{ orderId: string; status: OrderSummary['status'] }>(
-      'OrderStatusChanged',
-      (payload) => {
-        const order = orderById(payload.orderId)
-        if (order !== null) {
-          order.status = payload.status
-        }
-      },
-    )
-  }
-
   return {
     draft,
-    orders,
     sendState,
     failure,
     failedAttempts,
@@ -221,7 +118,6 @@ export const useOrderStore = defineStore('order', () => {
     basketLines,
     itemCount,
     totalCents,
-    attentionCount,
     addItem,
     dropLine,
     noteLine,
@@ -230,10 +126,5 @@ export const useOrderStore = defineStore('order', () => {
     setNote,
     dismissConfirmation,
     send,
-    loadMine,
-    orderById,
-    answerUnknown,
-    printAnotherCopy,
-    listen,
   }
 })

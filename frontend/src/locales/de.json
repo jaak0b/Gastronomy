@@ -27,7 +27,6 @@
   "header": {
     "reconnecting": "Keine Verbindung zum Laptop. Es wird weiter versucht.",
     "backOnline": "Die Verbindung ist wieder da.",
-    "attention": "{count} Bestellung muss geprüft werden. | {count} Bestellungen müssen geprüft werden.",
     "stationPaperOut": "Der Drucker an der Ausgabestelle {name} hat kein Papier.",
     "stationOffline": "Die Ausgabestelle {name} antwortet gerade nicht.",
     "stationFaulty": "Sagen Sie an der Ausgabestelle {name} Bescheid. Der Drucker dort nimmt nichts mehr an.",
@@ -86,24 +85,10 @@
     "tooManyRequests": "Warten Sie einen Moment und tippen Sie dann auf \"Noch einmal senden\". Der Laptop bekommt gerade zu viele Anfragen auf einmal.",
     "retry": "Noch einmal senden",
     "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.",
-    "duplicateRisk": "Sehen Sie in Ihren Bestellungen nach, bevor Sie diese noch einmal aufnehmen. Sie wurde bereits gesendet.",
+    "duplicateRisk": "Nehmen Sie die Änderung als neue Bestellung auf und sagen Sie an der Ausgabestelle Bescheid. Diese Bestellung wurde bereits gesendet.",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
-  "orders": {
-    "title": "Meine Bestellungen",
-    "empty": "Sie haben heute noch keine Bestellung aufgenommen.",
-    "row": "Bestellung {number}, {table}",
-    "status": {
-      "printing": "Wird gedruckt",
-      "printed": "Gedruckt",
-      "handledOnPaper": "Von der Ausgabestelle übernommen",
-      "attention": "Bitte prüfen"
-    },
-    "detailTitle": "Bestellung {number}",
-    "stationOrder": "{station}, Bon {sequence}"
-  },
   "order": {
-    "changedMind": "Sagen Sie an der Ausgabestelle Bescheid und nehmen Sie die Änderung als neue Bestellung auf. Eine gesendete Bestellung lässt sich hier nicht zurücknehmen, weil der Bon schon gedruckt wird.",
     "itemHasNoStation": "Für einen Artikel auf dieser Bestellung ist keine Ausgabestelle eingerichtet. Sagen Sie am Laptop Bescheid und geben Sie die Bestellung so lange persönlich auf.",
     "noItems": "Wählen Sie zuerst etwas aus, bevor Sie senden.",
     "notYours": "Diese Bestellung gehört zu einem anderen Telefon. Sie können nur Ihre eigenen Bestellungen ändern.",
@@ -340,18 +325,9 @@
     "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
   },
   "printJob": {
-    "unknown": {
-      "action": "Schauen Sie am Stapel bei {station} nach Bon {sequence} und antworten Sie hier.",
-      "reason": "Die Verbindung zum Drucker ist abgerissen, während der Bon gesendet wurde, deshalb ist hier nicht bekannt, ob er gedruckt wurde.",
-      "paperHint": "Der Drucker hat außerdem kein Papier mehr.",
-      "yes": "Der Bon liegt da",
-      "no": "Der Bon fehlt",
-      "answered": "Diese Frage wurde bereits beantwortet."
-    },
     "paperEnd": "Legen Sie eine neue Papierrolle in den Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
     "coverOpen": "Schließen Sie die Klappe am Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",
     "failed": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort antwortet nicht.",
-    "failedAfterWaiting": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Bon wartet dort seit {minutes} Minuten auf den Druck.",
     "stationFaulty": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Der Drucker dort nimmt nichts mehr an.",
     "stationDisabled": "Sagen Sie die Bestellung {number} bei {station} persönlich an. Die Ausgabestelle ist am Laptop ausgeschaltet.",
     "printerError": "Holen Sie jemanden, der sich den Drucker bei {station} ansehen kann. Der Drucker meldet eine Störung.",
@@ -366,7 +342,6 @@
     "socketDropped": "Die Verbindung zum Drucker ist abgerissen. Ob der Bon gedruckt wurde, ist offen.",
     "timeout": "Der Drucker hat zu lange nicht geantwortet.",
     "unknownOutcome": "Ob dieser Bon gedruckt wurde, ist offen. Schauen Sie an der Ausgabestelle nach.",
-    "unreachable": "Der Drucker der Ausgabestelle ist nicht erreichbar.",
-    "anotherCopy": "Erneut drucken"
+    "unreachable": "Der Drucker der Ausgabestelle ist nicht erreichbar."
   }
 }

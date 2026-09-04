@@ -52,17 +52,6 @@ export type PrintJobStatus =
   | 'Printed'
   | 'HandledOnPaper'
 
-export type PrintFailureReason =
-  | 'PaperEnd'
-  | 'CoverOpen'
-  | 'Unreachable'
-  | 'Timeout'
-  | 'SocketDropped'
-  | 'PrinterError'
-  | 'StationDisabled'
-  | 'StationFaulty'
-  | 'HandledOnPaper'
-
 export interface OrderSubmitItem {
   catalogItemId: string
   unitPriceCents: number
@@ -75,26 +64,6 @@ export interface OrderSubmitRequest {
   tableName: string
   note: string | null
   items: OrderSubmitItem[]
-}
-
-export interface StationOrderSummary {
-  stationOrderId: string
-  stationId: string
-  stationName: string
-  stationOrderNumber: number
-  status: PrintJobStatus
-  failureReason: PrintFailureReason | null
-  printerHasPaper: boolean | null
-}
-
-export interface OrderSummary {
-  orderId: string
-  globalOrderNumber: number
-  tableName: string
-  totalCents: number
-  status: OrderStatus
-  createdAtUtc: string
-  stationOrders: StationOrderSummary[]
 }
 
 export interface OrderSubmitResponse {

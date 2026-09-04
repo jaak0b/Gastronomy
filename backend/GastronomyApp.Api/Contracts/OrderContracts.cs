@@ -57,26 +57,6 @@ public sealed record OrderListEntryView(
 
 public sealed record OrderListView(IReadOnlyList<OrderListEntryView> Orders);
 
-public sealed record OrderDetailItemView(
-  Guid ItemId,
-  Guid CatalogItemId,
-  string ItemName,
-  int Quantity,
-  int UnitPriceCents,
-  string? Note,
-  string StationName);
-
-public sealed record OrderDetailView(
-  Guid OrderId,
-  int GlobalOrderNumber,
-  string TableName,
-  string? Note,
-  int TotalCents,
-  string Status,
-  DateTime CreatedAtUtc,
-  IReadOnlyList<OrderDetailItemView> Items,
-  IReadOnlyList<StationOrderView> StationOrders);
-
 public sealed record ResolveUnknownPrintRequest
 {
   public required bool SlipIsOnThePile { get; init; }

@@ -13,28 +13,28 @@ namespace GastronomyApp.Api.Endpoints;
 
 public sealed class StationQueryHandler
 {
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly StationPrintabilityReader printabilityReader;
-  private readonly PrinterStatusReader printerStatusReader;
-  private readonly StationScreenDescriber screenDescriber;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly StationPrintabilityReader _printabilityReader;
+  private readonly PrinterStatusReader _printerStatusReader;
+  private readonly StationScreenDescriber _screenDescriber;
 
   public StationQueryHandler(GastronomyAppDbContext dbContext,
                              StationPrintabilityReader printabilityReader,
                              StationScreenDescriber screenDescriber,
                              PrinterStatusReader printerStatusReader)
   {
-    this.dbContext = dbContext;
-    this.printabilityReader = printabilityReader;
-    this.screenDescriber = screenDescriber;
-    this.printerStatusReader = printerStatusReader;
+    _dbContext = dbContext;
+    _printabilityReader = printabilityReader;
+    _screenDescriber = screenDescriber;
+    _printerStatusReader = printerStatusReader;
   }
 
   public async Task<IResult> ListStationsAsync(CancellationToken cancellationToken)
   {
     IReadOnlyDictionary<Guid, StationPrintability> printability =
-      await printabilityReader.ReadAsync(dbContext, cancellationToken);
+      await _printabilityReader.ReadAsync(_dbContext, cancellationToken);
 
-    List<Station> stations = await dbContext.Stations
+    List<Station> stations = await _dbContext.Stations
                                             .AsNoTracking()
                                             .Where(station => station.IsActive)
                                             .OrderBy(station => station.SortOrder)
@@ -46,7 +46,7 @@ public sealed class StationQueryHandler
                                                     station.Name,
                                                     station.SortOrder,
                                                     printability.TryGetValue(station.Id, out var stationPrintability)
-                                                    && printabilityReader.CanPrintRightNow(stationPrintability)))
+                                                    && _printabilityReader.CanPrintRightNow(stationPrintability)))
     ];
 
     return Results.Ok(new StationListView(views));
@@ -55,12 +55,12 @@ public sealed class StationQueryHandler
   public async Task<IResult> ListStationOrdersAsync(Guid stationId, CancellationToken cancellationToken)
   {
     return Results.Ok(new StationScreenListView(stationId,
-                                                await screenDescriber.DescribeOpenStationOrdersAsync(dbContext, stationId, cancellationToken)));
+                                                await _screenDescriber.DescribeOpenStationOrdersAsync(_dbContext, stationId, cancellationToken)));
   }
 
   public async Task<IResult> StatusAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    var all = await printerStatusReader.ReadAsync(dbContext, cancellationToken);
+    var all = await _printerStatusReader.ReadAsync(_dbContext, cancellationToken);
     var selected = all.Stations.FirstOrDefault(view => view.StationId == stationId);
 
     return selected is null ? Results.NotFound() : Results.Ok(selected);
@@ -71,29 +71,29 @@ public sealed record LatestPrintJob(Guid StationOrderId, PrintJobStatus Status, 
 
 public sealed class StationScreenDescriber
 {
-  private readonly HandledOnPaperPolicy handledOnPaperPolicy;
-  private readonly OrderLineCollapser lineCollapser = new();
-  private readonly StationPrintabilityReader printabilityReader;
+  private readonly HandledOnPaperPolicy _handledOnPaperPolicy;
+  private readonly OrderLineCollapser _lineCollapser = new();
+  private readonly StationPrintabilityReader _printabilityReader;
 
   public StationScreenDescriber(HandledOnPaperPolicy handledOnPaperPolicy,
                                 StationPrintabilityReader printabilityReader)
   {
-    this.handledOnPaperPolicy = handledOnPaperPolicy;
-    this.printabilityReader = printabilityReader;
+    _handledOnPaperPolicy = handledOnPaperPolicy;
+    _printabilityReader = printabilityReader;
   }
 
-  public async Task<IReadOnlyList<StationScreenOrderView>> DescribeOpenStationOrdersAsync(GastronomyAppDbContext dbContext,
+  public async Task<IReadOnlyList<StationScreenOrderView>> DescribeOpenStationOrdersAsync(GastronomyAppDbContext _dbContext,
                                                                                           Guid stationId,
                                                                                           CancellationToken cancellationToken)
   {
     IReadOnlyDictionary<Guid, StationPrintability> printability =
-      await printabilityReader.ReadAsync(dbContext, cancellationToken);
+      await _printabilityReader.ReadAsync(_dbContext, cancellationToken);
 
-    var station = await dbContext.Stations
+    var station = await _dbContext.Stations
                                  .AsNoTracking()
                                  .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
-    List<StationOrder> stationOrders = await dbContext.StationOrders
+    List<StationOrder> stationOrders = await _dbContext.StationOrders
                                                       .AsNoTracking()
                                                       .Where(stationOrder => stationOrder.StationId == stationId)
                                                       .OrderBy(stationOrder => stationOrder.StationOrderNumber)
@@ -102,16 +102,16 @@ public sealed class StationScreenDescriber
     List<Guid> stationOrderIds = [.. stationOrders.Select(stationOrder => stationOrder.Id)];
 
     Dictionary<Guid, LatestPrintJob> latestJobs =
-      await LoadLatestPrintJobsAsync(dbContext, stationOrderIds, cancellationToken);
+      await LoadLatestPrintJobsAsync(_dbContext, stationOrderIds, cancellationToken);
 
     HashSet<Guid> orderIds = [.. stationOrders.Select(stationOrder => stationOrder.OrderId)];
 
-    Dictionary<Guid, Order> orders = await dbContext.Orders
+    Dictionary<Guid, Order> orders = await _dbContext.Orders
                                                     .AsNoTracking()
                                                     .Where(order => orderIds.Contains(order.Id))
                                                     .ToDictionaryAsync(order => order.Id, cancellationToken);
 
-    List<OrderItem> items = await dbContext.OrderItems
+    List<OrderItem> items = await _dbContext.OrderItems
                                            .AsNoTracking()
                                            .Where(item => stationOrderIds.Contains(item.StationOrderId))
                                            .OrderBy(item => item.Id)
@@ -137,7 +137,7 @@ public sealed class StationScreenDescriber
 
       printability.TryGetValue(stationId, out var stationPrintability);
       var resolved = stationPrintability ?? UnknownStation();
-      var canHandleOnPaper = handledOnPaperPolicy.CanHandleOnPaper(latest.Status, resolved);
+      var canHandleOnPaper = _handledOnPaperPolicy.CanHandleOnPaper(latest.Status, resolved);
 
       views.Add(new(stationOrder.Id,
                     order.Id,
@@ -153,7 +153,7 @@ public sealed class StationScreenDescriber
                     canHandleOnPaper,
                     canHandleOnPaper ? null : RefusalKeyFor(latest.Status),
                     [
-                      .. lineCollapser
+                      .. _lineCollapser
                         .Collapse([.. items.Where(item => item.StationOrderId == stationOrder.Id)],
                                   item => item.ItemName,
                                   item => item.Note)
@@ -171,13 +171,13 @@ public sealed class StationScreenDescriber
     return status == PrintJobStatus.HandledOnPaper ? "station.alreadyTaken" : "station.takeRefused";
   }
 
-  public async static Task<Dictionary<Guid, LatestPrintJob>> LoadLatestPrintJobsAsync(GastronomyAppDbContext dbContext,
+  public async static Task<Dictionary<Guid, LatestPrintJob>> LoadLatestPrintJobsAsync(GastronomyAppDbContext _dbContext,
                                                                                       IReadOnlyCollection<Guid> stationOrderIds,
                                                                                       CancellationToken cancellationToken)
   {
     List<Guid> ids = stationOrderIds.ToList();
 
-    List<PrintJob> jobs = await dbContext.PrintJobs
+    List<PrintJob> jobs = await _dbContext.PrintJobs
                                          .AsNoTracking()
                                          .Where(job => ids.Contains(job.StationOrderId))
                                          .ToListAsync(cancellationToken);
@@ -208,15 +208,15 @@ public sealed class StationScreenDescriber
 
 public sealed class StationHandOnPaperHandler
 {
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly HubNotificationDispatcher dispatcher;
-  private readonly HandledOnPaperPolicy handledOnPaperPolicy;
-  private readonly OrderReader orderReader;
-  private readonly StationPrintabilityReader printabilityReader;
-  private readonly ResultEnvelope resultEnvelope;
-  private readonly StationScreenDescriber screenDescriber;
-  private readonly PrintJobStateMachine stateMachine;
-  private readonly ImmediateTransactionRunner transactionRunner = new();
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly HubNotificationDispatcher _dispatcher;
+  private readonly HandledOnPaperPolicy _handledOnPaperPolicy;
+  private readonly OrderReader _orderReader;
+  private readonly StationPrintabilityReader _printabilityReader;
+  private readonly ResultEnvelope _resultEnvelope;
+  private readonly StationScreenDescriber _screenDescriber;
+  private readonly PrintJobStateMachine _stateMachine;
+  private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public StationHandOnPaperHandler(GastronomyAppDbContext dbContext,
                                    HandledOnPaperPolicy handledOnPaperPolicy,
@@ -227,19 +227,19 @@ public sealed class StationHandOnPaperHandler
                                    HubNotificationDispatcher dispatcher,
                                    ResultEnvelope resultEnvelope)
   {
-    this.dbContext = dbContext;
-    this.handledOnPaperPolicy = handledOnPaperPolicy;
-    this.stateMachine = stateMachine;
-    this.printabilityReader = printabilityReader;
-    this.screenDescriber = screenDescriber;
-    this.orderReader = orderReader;
-    this.dispatcher = dispatcher;
-    this.resultEnvelope = resultEnvelope;
+    _dbContext = dbContext;
+    _handledOnPaperPolicy = handledOnPaperPolicy;
+    _stateMachine = stateMachine;
+    _printabilityReader = printabilityReader;
+    _screenDescriber = screenDescriber;
+    _orderReader = orderReader;
+    _dispatcher = dispatcher;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task<IResult> HandOnPaperAsync(Guid stationOrderId, CancellationToken cancellationToken)
   {
-    var stationOrder = await dbContext.StationOrders
+    var stationOrder = await _dbContext.StationOrders
                                       .AsNoTracking()
                                       .FirstOrDefaultAsync(candidate => candidate.Id == stationOrderId, cancellationToken);
 
@@ -249,14 +249,14 @@ public sealed class StationHandOnPaperHandler
     }
 
     IReadOnlyDictionary<Guid, StationPrintability> printability =
-      await printabilityReader.ReadAsync(dbContext, cancellationToken);
+      await _printabilityReader.ReadAsync(_dbContext, cancellationToken);
 
     if (!printability.TryGetValue(stationOrder.StationId, out var station))
     {
       return Results.NotFound();
     }
 
-    Dictionary<Guid, LatestPrintJob> latestJobs = await StationScreenDescriber.LoadLatestPrintJobsAsync(dbContext,
+    Dictionary<Guid, LatestPrintJob> latestJobs = await StationScreenDescriber.LoadLatestPrintJobsAsync(_dbContext,
                                                                                                         [stationOrderId],
                                                                                                         cancellationToken);
 
@@ -267,45 +267,45 @@ public sealed class StationHandOnPaperHandler
 
     if (latest.Status is PrintJobStatus.HandledOnPaper)
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "HandOnPaperRefused",
                                     "station.alreadyTaken");
     }
 
-    if (!handledOnPaperPolicy.CanHandleOnPaper(latest.Status, station))
+    if (!_handledOnPaperPolicy.CanHandleOnPaper(latest.Status, station))
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "HandOnPaperRefused",
-                                    screenDescriber.RefusalKeyFor(latest.Status));
+                                    _screenDescriber.RefusalKeyFor(latest.Status));
     }
 
-    if (!stateMachine.CanTransition(latest.Status, PrintJobStatus.HandledOnPaper))
+    if (!_stateMachine.CanTransition(latest.Status, PrintJobStatus.HandledOnPaper))
     {
-      return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "IllegalPrintJobTransition",
                                     "printJob.illegalTransition");
     }
 
     var orderId = stationOrder.OrderId;
 
-    await transactionRunner.RunAsync(dbContext,
+    await _transactionRunner.RunAsync(_dbContext,
                                      async transactionCancellationToken =>
                                      {
-                                       var tracked = await dbContext.PrintJobs
+                                       var tracked = await _dbContext.PrintJobs
                                                                     .Where(job => job.StationOrderId == stationOrderId)
                                                                     .OrderByDescending(job => job.CopyNumber)
                                                                     .FirstAsync(transactionCancellationToken);
 
                                        tracked.Status = PrintJobStatus.HandledOnPaper;
-                                       await dbContext.SaveChangesAsync(transactionCancellationToken);
+                                       await _dbContext.SaveChangesAsync(transactionCancellationToken);
 
                                        return new TransactionOutcome<bool> { Value = true, ShouldCommit = true };
                                      },
                                      cancellationToken);
 
-    var loaded = await orderReader.LoadAsync(dbContext, orderId, cancellationToken);
+    var loaded = await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken);
 
-    await dispatcher.OnPrintJobStatusChangedAsync(orderId,
+    await _dispatcher.OnPrintJobStatusChangedAsync(orderId,
                                                   stationOrderId,
                                                   PrintJobStatus.HandledOnPaper,
                                                   null,
@@ -313,7 +313,7 @@ public sealed class StationHandOnPaperHandler
 
     if (loaded is not null)
     {
-      await dispatcher.OnOrderStatusChangedAsync(orderId, orderReader.StatusOf(loaded), cancellationToken);
+      await _dispatcher.OnOrderStatusChangedAsync(orderId, _orderReader.StatusOf(loaded), cancellationToken);
     }
 
     return Results.Ok(new HandledOnPaperView(stationOrderId, PrintJobStatus.HandledOnPaper.ToString()));

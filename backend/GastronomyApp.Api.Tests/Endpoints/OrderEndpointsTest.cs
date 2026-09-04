@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -13,21 +12,21 @@ public sealed class OrderEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task PostOrder_FirstSubmission_IsAcceptedNumberedAndProjected()
   {
-    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -43,13 +42,13 @@ public sealed class OrderEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(ticket.GetProperty("stationId").GetGuid(), Is.EqualTo(context.World.KitchenStationId));
+                      Assert.That(ticket.GetProperty("stationId").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
                       Assert.That(ticket.GetProperty("stationName").GetString(), Is.EqualTo("Kueche"));
                       Assert.That(ticket.GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(ticket.GetProperty("itemIds").GetArrayLength(), Is.EqualTo(2));
                     });
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var stored = await database.Orders.SingleAsync();
 
     Assert.That(stored.GlobalOrderNumber, Is.EqualTo(1));
@@ -62,15 +61,15 @@ public sealed class OrderEndpointsTest
                                 "Tisch 12",
                                 null,
                                 [
-                                  new(context.World.BratwurstItemId, 350, null, null), new(context.World.BratwurstItemId, 350, null, null),
-                                  new(context.World.BeerItemId, 350, null, null)
+                                  new(_context.World.BratwurstItemId, 350, null, null), new(_context.World.BratwurstItemId, 350, null, null),
+                                  new(_context.World.BeerItemId, 350, null, null)
                                 ]);
 
-    using var response = await context.PostOrderAsync(twoStations);
+    using var response = await _context.PostOrderAsync(twoStations);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var printJobCount = await database.PrintJobs.CountAsync(job => job.CopyNumber == 0);
 
     Assert.That(printJobCount, Is.EqualTo(2));
@@ -84,7 +83,7 @@ public sealed class OrderEndpointsTest
                                 null,
                                 [new(Guid.NewGuid(), 350, null, null)]);
 
-    using var response = await context.PostOrderAsync(unknownItem);
+    using var response = await _context.PostOrderAsync(unknownItem);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -99,7 +98,7 @@ public sealed class OrderEndpointsTest
   {
     OrderBody empty = new(Guid.NewGuid(), "Tisch 12", null, []);
 
-    using var response = await context.PostOrderAsync(empty);
+    using var response = await _context.PostOrderAsync(empty);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
   }
@@ -107,14 +106,14 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_SoldOutItem_IsStillAccepted()
   {
-    await using (var database = context.Factory.CreateContext())
+    await using (var database = _context.Factory.CreateContext())
     {
-      var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == context.World.BratwurstItemId);
+      var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BratwurstItemId);
       item.IsAvailable = false;
       await database.SaveChangesAsync();
     }
 
-    using var response = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
   }
@@ -125,12 +124,12 @@ public sealed class OrderEndpointsTest
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
                          null,
-                         [new(context.World.BratwurstItemId, 399, null, null), new(context.World.BratwurstItemId, 399, null, null)]);
+                         [new(_context.World.BratwurstItemId, 399, null, null), new(_context.World.BratwurstItemId, 399, null, null)]);
 
-    using var response = await context.PostOrderAsync(body);
+    using var response = await _context.PostOrderAsync(body);
     var placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
 
     Assert.Multiple(() =>
@@ -142,88 +141,22 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
-  public async Task GetMine_OrderPlaced_ListsTheOrdersOfTheStaffMemberBehindTheDevice()
-  {
-    using (var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    using var response = await context.SendAsync(HttpMethod.Get, "/api/orders/mine");
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.EqualTo(1));
-  }
-
-  [Test]
-  public async Task PostResolve_UnknownTicket_MovesItAndRewritesTheProjectedOrderStatus()
-  {
-    Guid orderId;
-    Guid ticketId;
-
-    using (var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
-    {
-      var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
-      orderId = body.RootElement.GetProperty("orderId").GetGuid();
-      ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
-    }
-
-    await using (var database = context.Factory.CreateContext())
-    {
-      var job = await database.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
-      job.Status = PrintJobStatus.Unknown;
-      await database.SaveChangesAsync();
-    }
-
-    using var response = await context.SendAsync(HttpMethod.Post,
-                                                 $"/api/orders/{orderId}/station-orders/{ticketId}/resolve",
-                                                 new SlipOnThePileBody(true));
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-    await using var verification = context.Factory.CreateContext();
-    var resolved = await verification.PrintJobs.FirstAsync(candidate => candidate.StationOrderId == ticketId);
-
-    Assert.That(resolved.Status, Is.EqualTo(PrintJobStatus.Printed));
-  }
-
-  [Test]
-  public async Task PostResolve_TicketNoLongerUnknown_IsRefused()
-  {
-    Guid orderId;
-    Guid ticketId;
-
-    using (var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid())))
-    {
-      var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
-      orderId = body.RootElement.GetProperty("orderId").GetGuid();
-      ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
-    }
-
-    using var response = await context.SendAsync(HttpMethod.Post,
-                                                 $"/api/orders/{orderId}/station-orders/{ticketId}/resolve",
-                                                 new SlipOnThePileBody(true));
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-  }
-
-  [Test]
   public async Task GetPrinterStatus_StationWithNoPrinter_IsOnlineBecauseNothingAboutItHasFailed()
   {
-    await using (var database = context.Factory.CreateContext())
+    await using (var database = _context.Factory.CreateContext())
     {
-      var kitchen = await database.Stations.FirstAsync(station => station.Id == context.World.KitchenStationId);
+      var kitchen = await database.Stations.FirstAsync(station => station.Id == _context.World.KitchenStationId);
       kitchen.PrinterId = null;
       await database.SaveChangesAsync();
     }
 
-    using var response = await context.SendAsync(HttpMethod.Get, "/api/printers/status");
+    using var response = await _context.SendAsync(HttpMethod.Get, "/api/printers/status");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     var kitchenStatus = body.RootElement
                             .GetProperty("stations")
                             .EnumerateArray()
-                            .Single(station => station.GetProperty("stationId").GetGuid() == context.World.KitchenStationId);
+                            .Single(station => station.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
 
     Assert.Multiple(() =>
                     {
@@ -235,7 +168,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task GetPrinterStatus_SeededStations_ReportsEveryStation()
   {
-    using var response = await context.SendAsync(HttpMethod.Get, "/api/printers/status");
+    using var response = await _context.SendAsync(HttpMethod.Get, "/api/printers/status");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -245,5 +178,3 @@ public sealed class OrderEndpointsTest
                     });
   }
 }
-
-public sealed record SlipOnThePileBody(bool SlipIsOnThePile);

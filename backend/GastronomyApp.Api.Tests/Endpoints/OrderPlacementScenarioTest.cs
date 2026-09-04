@@ -12,29 +12,29 @@ public sealed class OrderPlacementScenarioTest
   [SetUp]
   public async Task SetUp()
   {
-    factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactory.Builder().StartAsync();
 
-    await using (var context = factory.CreateContext())
+    await using (var context = _factory.CreateContext())
     {
-      world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
+      _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
     }
 
-    await factory.ReconcilePrintersAsync();
+    await _factory.ReconcilePrintersAsync();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await factory.DisposeAsync();
+    await _factory.DisposeAsync();
   }
 
-  private readonly TimeSpan patience = TimeSpan.FromSeconds(20);
+  private readonly TimeSpan _patience = TimeSpan.FromSeconds(20);
 
-  private ApiTestFactory factory = null!;
-  private SeededWorld world = null!;
+  private ApiTestFactory _factory = null!;
+  private SeededWorld _world = null!;
 
   [Test]
-  public async Task OrderPlacementFlow_EnrolStartPracticeFetchCatalogAndSend_PrintsASlipPerStationAndTellsThePhone()
+  public async Task OrderPlacementFlow_EnrolStartPracticeFetchCatalogAndSend_PrintsASlipPerStation()
   {
     var deviceToken = await EnrolAPhoneAsync();
 
@@ -53,22 +53,22 @@ public sealed class OrderPlacementScenarioTest
                     });
 
     var bothSlipsWritten = await WaitUntilAsync(() =>
-                                                  Directory.Exists(factory.MockSlipFolder)
-                                                  && Directory.GetFiles(factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length >= 2);
+                                                  Directory.Exists(_factory.MockSlipFolder)
+                                                  && Directory.GetFiles(_factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length >= 2);
 
     Assert.That(bothSlipsWritten, Is.True, "One slip file per station must appear in the mock folder.");
 
-    var phoneSeesBothPrinted = await WaitUntilAsync(async () =>
-                                                    {
-                                                      IReadOnlyList<string> statuses = await ReadMyTicketStatusesAsync(deviceToken);
+    var bothSlipsRead = await WaitUntilAsync(async () =>
+                                            {
+                                              IReadOnlyList<string> statuses = await ReadTicketStatusesAsync();
 
-                                                      return statuses.Count == 2
-                                                             && statuses.All(status => status == PrintJobStatus.Printed.ToString());
-                                                    });
+                                              return statuses.Count == 2
+                                                     && statuses.All(status => status == PrintJobStatus.Printed.ToString());
+                                            });
 
-    Assert.That(phoneSeesBothPrinted, Is.True, "The print state must come back to the phone's own endpoints.");
+    Assert.That(bothSlipsRead, Is.True, "The print state of every slip must be readable once the printers have run.");
 
-    var orderStatus = await ReadMyOrderStatusAsync(deviceToken);
+    var orderStatus = await ReadOrderStatusAsync();
 
     Assert.That(orderStatus,
                 Is.EqualTo(OrderStatus.Printed.ToString()),
@@ -79,7 +79,7 @@ public sealed class OrderPlacementScenarioTest
   {
     string qrCodeValue;
 
-    using (var invitation = await factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+    using (var invitation = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                                  new { staffMemberId = (Guid?)null }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
@@ -88,7 +88,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                               new RedeemBody(qrCodeValue, "Anna", "NUnit"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -108,9 +108,9 @@ public sealed class OrderPlacementScenarioTest
     var items = body.RootElement.GetProperty("items");
 
     var bratwurst = items.EnumerateArray()
-                         .First(item => item.GetProperty("id").GetGuid() == world.BratwurstItemId);
+                         .First(item => item.GetProperty("id").GetGuid() == _world.BratwurstItemId);
     var beer = items.EnumerateArray()
-                    .First(item => item.GetProperty("id").GetGuid() == world.BeerItemId);
+                    .First(item => item.GetProperty("id").GetGuid() == _world.BeerItemId);
 
     Assert.Multiple(() =>
                     {
@@ -118,9 +118,9 @@ public sealed class OrderPlacementScenarioTest
                       Assert.That(beer.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
                     });
 
-    return new(world.BratwurstItemId,
+    return new(_world.BratwurstItemId,
                bratwurst.GetProperty("priceCents").GetInt32(),
-               world.BeerItemId,
+               _world.BeerItemId,
                beer.GetProperty("priceCents").GetInt32());
   }
 
@@ -148,9 +148,9 @@ public sealed class OrderPlacementScenarioTest
                [.. tickets.EnumerateArray().Select(ticket => ticket.GetProperty("stationOrderNumber").GetInt32())]);
   }
 
-  private async Task<IReadOnlyList<string>> ReadMyTicketStatusesAsync(string deviceToken)
+  private async Task<IReadOnlyList<string>> ReadTicketStatusesAsync()
   {
-    using var response = await SendAsync(HttpMethod.Get, "/api/orders/mine", deviceToken);
+    using var response = await _factory.Client.GetAsync("/api/admin/orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var orders = body.RootElement.GetProperty("orders");
 
@@ -168,9 +168,9 @@ public sealed class OrderPlacementScenarioTest
     ];
   }
 
-  private async Task<string> ReadMyOrderStatusAsync(string deviceToken)
+  private async Task<string> ReadOrderStatusAsync()
   {
-    using var response = await SendAsync(HttpMethod.Get, "/api/orders/mine", deviceToken);
+    using var response = await _factory.Client.GetAsync("/api/admin/orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     return body.RootElement.GetProperty("orders")[0].GetProperty("status").GetString() ?? string.Empty;
@@ -189,7 +189,7 @@ public sealed class OrderPlacementScenarioTest
       request.Content = JsonContent.Create(body, body.GetType());
     }
 
-    return await factory.Client.SendAsync(request);
+    return await _factory.Client.SendAsync(request);
   }
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)
@@ -199,7 +199,7 @@ public sealed class OrderPlacementScenarioTest
 
   private async Task<bool> WaitUntilAsync(Func<Task<bool>> condition)
   {
-    var deadline = DateTime.UtcNow.Add(patience);
+    var deadline = DateTime.UtcNow.Add(_patience);
 
     while (DateTime.UtcNow < deadline)
     {

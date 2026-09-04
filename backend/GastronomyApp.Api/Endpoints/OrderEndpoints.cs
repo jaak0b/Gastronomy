@@ -32,71 +32,18 @@ public static class OrderEndpoints
                     return await handler.PlaceAsync(request, caller, cancellationToken);
                   });
 
-    group.MapGet("/mine",
-                 async (HttpContext httpContext,
-                        CallerIdentity callerIdentity,
-                        OrderQueryHandler handler,
-                        CancellationToken cancellationToken) =>
-                 {
-                   var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                   return await handler.ListForStaffMemberAsync(caller.StaffMemberId, cancellationToken);
-                 });
-
-    group.MapGet("/{orderId:guid}",
-                 async (Guid orderId,
-                        HttpContext httpContext,
-                        CallerIdentity callerIdentity,
-                        OrderQueryHandler handler,
-                        CancellationToken cancellationToken) =>
-                 {
-                   var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                   return await handler.DetailAsync(orderId, caller.StaffMemberId, cancellationToken);
-                 });
-
-    group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/resolve",
-                  async (Guid orderId,
-                         Guid stationOrderId,
-                         ResolveUnknownPrintRequest request,
-                         HttpContext httpContext,
-                         CallerIdentity callerIdentity,
-                         StationOrderActionHandler handler,
-                         CancellationToken cancellationToken) =>
-                  {
-                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                    return await handler.ResolveUnknownAsync(orderId,
-                                                             stationOrderId,
-                                                             request,
-                                                             caller.StaffMemberId,
-                                                             cancellationToken);
-                  });
-
-    group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/print-another-copy",
-                  async (Guid orderId,
-                         Guid stationOrderId,
-                         HttpContext httpContext,
-                         CallerIdentity callerIdentity,
-                         StationOrderActionHandler handler,
-                         CancellationToken cancellationToken) =>
-                  {
-                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                    return await handler.PrintAnotherCopyAsync(orderId,
-                                                               stationOrderId,
-                                                               caller.StaffMemberId,
-                                                               cancellationToken);
-                  });
-
     return routes;
   }
 }
 
 public sealed class OrderPlacementHandler
 {
-  private readonly OrderAcceptanceTransaction acceptanceTransaction;
-  private readonly GastronomyAppDbContext dbContext;
-  private readonly HubNotificationDispatcher dispatcher;
-  private readonly OrderReader orderReader;
-  private readonly PrintJobEnqueuer printJobEnqueuer;
-  private readonly ResultEnvelope resultEnvelope;
+  private readonly OrderAcceptanceTransaction _acceptanceTransaction;
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly HubNotificationDispatcher _dispatcher;
+  private readonly OrderReader _orderReader;
+  private readonly PrintJobEnqueuer _printJobEnqueuer;
+  private readonly ResultEnvelope _resultEnvelope;
 
   public OrderPlacementHandler(GastronomyAppDbContext dbContext,
                                OrderAcceptanceTransaction acceptanceTransaction,
@@ -105,12 +52,12 @@ public sealed class OrderPlacementHandler
                                HubNotificationDispatcher dispatcher,
                                ResultEnvelope resultEnvelope)
   {
-    this.dbContext = dbContext;
-    this.acceptanceTransaction = acceptanceTransaction;
-    this.orderReader = orderReader;
-    this.printJobEnqueuer = printJobEnqueuer;
-    this.dispatcher = dispatcher;
-    this.resultEnvelope = resultEnvelope;
+    _dbContext = dbContext;
+    _acceptanceTransaction = acceptanceTransaction;
+    _orderReader = orderReader;
+    _printJobEnqueuer = printJobEnqueuer;
+    _dispatcher = dispatcher;
+    _resultEnvelope = resultEnvelope;
   }
 
   public async Task<IResult> PlaceAsync(PlaceOrderRequest request,
@@ -136,52 +83,52 @@ public sealed class OrderPlacementHandler
                                                };
 
     Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
-      await acceptanceTransaction.AcceptAsync(acceptanceRequest, cancellationToken);
+      await _acceptanceTransaction.AcceptAsync(acceptanceRequest, cancellationToken);
 
     if (!acceptance.IsSuccess)
     {
-      return resultEnvelope.ToResult(resultEnvelope.Describe(acceptance.Failure));
+      return _resultEnvelope.ToResult(_resultEnvelope.Describe(acceptance.Failure));
     }
 
     var orderId = acceptance.Value.Order.Id;
 
     if (acceptance.Value.WasAlreadyAccepted)
     {
-      var existing = await orderReader.LoadAsync(dbContext, orderId, cancellationToken);
+      var existing = await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken);
 
       if (existing is null)
       {
-        return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+        return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                       "SubmissionIdReused",
                                       "order.submissionIdReused");
       }
 
       if (!new SubmissionComparison().Matches(request, existing))
       {
-        return resultEnvelope.Problem(StatusCodes.Status409Conflict,
+        return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                       "SubmissionIdReused",
                                       "order.submissionIdReused");
       }
 
       foreach (var waiting in existing.StationOrders)
       {
-        await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(waiting.Id, cancellationToken);
+        await _printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(waiting.Id, cancellationToken);
       }
 
-      return Results.Json(orderReader.Describe(existing),
+      return Results.Json(_orderReader.Describe(existing),
                           statusCode: StatusCodes.Status200OK);
     }
 
-    var placed = (await orderReader.LoadAsync(dbContext, orderId, cancellationToken))!;
+    var placed = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
 
     foreach (var stationOrder in placed.StationOrders)
     {
-      await printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(stationOrder.Id, cancellationToken);
+      await _printJobEnqueuer.EnqueueWithoutFailingTheCallerAsync(stationOrder.Id, cancellationToken);
     }
 
-    var view = orderReader.Describe(placed);
+    var view = _orderReader.Describe(placed);
 
-    await dispatcher.PushOrderAcceptedAsync(caller.StaffMemberId,
+    await _dispatcher.PushOrderAcceptedAsync(caller.StaffMemberId,
                                             new(view.OrderId,
                                                 view.GlobalOrderNumber,
                                                 placed.Order.TableName,

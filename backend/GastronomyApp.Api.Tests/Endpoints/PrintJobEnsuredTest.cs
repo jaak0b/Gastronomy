@@ -11,35 +11,35 @@ public sealed class PrintJobEnsuredTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task PostOrder_RetriedAfterATicketWasNeverHandedToAPrinter_HandsItOverOnTheRetry()
   {
     var clientOrderId = Guid.NewGuid();
-    using var first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var first = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId));
     var body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
     var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    await using (var database = context.Factory.CreateContext())
+    await using (var database = _context.Factory.CreateContext())
     {
       await database.PrintJobs
                     .Where(job => job.StationOrderId == stationOrderId)
                     .ExecuteDeleteAsync();
     }
 
-    using var retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var retry = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId));
 
-    await using var verification = context.Factory.CreateContext();
+    await using var verification = _context.Factory.CreateContext();
     Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
                 Is.EqualTo(1));
   }
@@ -48,13 +48,13 @@ public sealed class PrintJobEnsuredTest
   public async Task PostOrder_RetriedWhileTheSlipIsStillWaiting_DoesNotQueueASecondPrint()
   {
     var clientOrderId = Guid.NewGuid();
-    using var first = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var first = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId));
     var body = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
     var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    using var retry = await context.PostOrderAsync(context.BuildOrder(clientOrderId));
+    using var retry = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId));
 
-    await using var verification = context.Factory.CreateContext();
+    await using var verification = _context.Factory.CreateContext();
     Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId),
                 Is.EqualTo(1));
   }
@@ -62,12 +62,12 @@ public sealed class PrintJobEnsuredTest
   [Test]
   public async Task PostReprint_TwoSimultaneousTaps_QueuesAtMostOneJob()
   {
-    using var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
     var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
     var orderId = body.RootElement.GetProperty("orderId").GetGuid();
     var stationOrderId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    await using (var database = context.Factory.CreateContext())
+    await using (var database = _context.Factory.CreateContext())
     {
       await database.PrintJobs
                     .Where(job => job.StationOrderId == stationOrderId)
@@ -84,14 +84,14 @@ public sealed class PrintJobEnsuredTest
       response.Dispose();
     }
 
-    await using var verification = context.Factory.CreateContext();
+    await using var verification = _context.Factory.CreateContext();
     Assert.That(await verification.PrintJobs.CountAsync(job => job.StationOrderId == stationOrderId && job.CopyNumber == 1),
                 Is.EqualTo(1));
   }
 
   private Task<HttpResponseMessage> ReprintAsync(Guid orderId, Guid stationOrderId)
   {
-    return context.SendAsync(HttpMethod.Post,
-                             $"/api/orders/{orderId}/station-orders/{stationOrderId}/print-another-copy");
+    return _context.Client.PostAsync($"/api/admin/orders/{orderId}/station-orders/{stationOrderId}/print-another-copy",
+                                    null);
   }
 }

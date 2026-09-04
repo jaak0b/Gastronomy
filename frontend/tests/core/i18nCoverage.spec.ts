@@ -6,7 +6,6 @@ import en from '../../src/locales/en.json'
 type LocaleTree = { [key: string]: string | LocaleTree }
 
 const PLURAL_KEYS = [
-  'header.attention',
   'header.stationWaiting',
   'catalog.basketSummary',
   'admin.overview.itemsWithoutStation',

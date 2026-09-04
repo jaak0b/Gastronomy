@@ -27,7 +27,6 @@
   "header": {
     "reconnecting": "No connection to the laptop. The app keeps trying.",
     "backOnline": "The connection is back.",
-    "attention": "{count} order needs checking. | {count} orders need checking.",
     "stationPaperOut": "The printer at {name} has no paper.",
     "stationOffline": "Station {name} is not answering right now.",
     "stationFaulty": "Tell the people at {name}. The printer there is not accepting anything any more.",
@@ -86,24 +85,10 @@
     "tooManyRequests": "Wait a moment, then tap \"Send again\". The laptop is getting too many requests at once.",
     "retry": "Send again",
     "sendFailedAgain": "Write the order on paper and take it to the station. Sending has failed several times.",
-    "duplicateRisk": "Check your orders before you take this one again. It has already been sent.",
+    "duplicateRisk": "Take the change as a new order and tell the station. This order has already been sent.",
     "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
-  "orders": {
-    "title": "My orders",
-    "empty": "You have not taken an order yet today.",
-    "row": "Order {number}, {table}",
-    "status": {
-      "printing": "Printing",
-      "printed": "Printed",
-      "handledOnPaper": "Taken by the station",
-      "attention": "Please check"
-    },
-    "detailTitle": "Order {number}",
-    "stationOrder": "{station}, slip {sequence}"
-  },
   "order": {
-    "changedMind": "Tell the station and take the change as a new order. A sent order cannot be taken back here, because its slip is already printing.",
     "itemHasNoStation": "One item on this order has no station set up. Tell whoever is at the laptop, and pass the order on in person until then.",
     "noItems": "Choose something before you send.",
     "notYours": "This order belongs to another phone. You can only change your own orders.",
@@ -340,18 +325,9 @@
     "unsupportedLanguage": "The program does not have that language. Choose German or English."
   },
   "printJob": {
-    "unknown": {
-      "action": "Check the pile at {station} for slip {sequence} and answer here.",
-      "reason": "The connection to the printer broke while the slip was being sent, so nobody can tell from here whether it printed.",
-      "paperHint": "The printer has also run out of paper.",
-      "yes": "The slip is there",
-      "no": "The slip is missing",
-      "answered": "This question has already been answered."
-    },
     "paperEnd": "Put a new paper roll into the printer at {station}. The slip prints by itself afterwards.",
     "coverOpen": "Close the cover on the printer at {station}. The slip prints by itself afterwards.",
     "failed": "Tell {station} about order {number} in person. The printer there is not answering.",
-    "failedAfterWaiting": "Tell {station} about order {number} in person. The slip has been waiting there {minutes} minutes to print.",
     "stationFaulty": "Tell {station} about order {number} in person. The printer there is not accepting anything any more.",
     "stationDisabled": "Tell {station} about order {number} in person. The station is switched off at the laptop.",
     "printerError": "Fetch somebody who can look at the printer at {station}. The printer is reporting a fault.",
@@ -366,7 +342,6 @@
     "socketDropped": "The connection to the printer broke. Whether the slip printed is still open.",
     "timeout": "The printer did not answer in time.",
     "unknownOutcome": "Whether this slip printed is still open. Check at the station.",
-    "unreachable": "The station printer cannot be reached.",
-    "anotherCopy": "Print again"
+    "unreachable": "The station printer cannot be reached."
   }
 }

@@ -38,12 +38,7 @@ running backend serving the built frontend.
 | 11 | Reads under the send button before typing a table | `Tragen Sie einen Tisch ein, bevor Sie senden.` and the send button is disabled |
 | 12 | Types `Tisch 12` into the table field | The send button `Bestellung senden` becomes enabled |
 | 13 | Taps `Bestellung senden` | `Bestellung {number} ist angekommen.` where `{number}` matches `^\d+$`, no `#` and no `Nr.` |
-| 14 | Opens the order list from the header | `Meine Bestellungen`, with a row reading `Bestellung {number}, Tisch 12` |
-| 15 | Reads the row's status chip | One of `Wird gedruckt`, `Gedruckt` or `Bitte prüfen`, never an empty chip |
-| 16 | Opens that row | The detail, heading `Bestellung {number}`, one slip line per station |
-| 17 | Reads the slip line | `Küche, Bon {sequence}` where `{sequence}` is zero padded to three digits |
-| 18 | Reads the bottom of the detail | `order.changedMind` in full, on every order |
-| 19 | Returns to the catalog and reads the basket bar | `Noch nichts ausgewählt`, because an accepted order clears the draft |
+| 14 | Returns to the catalog and reads the basket bar | `Noch nichts ausgewählt`, because an accepted order clears the draft |
 
 ## What this test is not
 

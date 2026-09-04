@@ -31,22 +31,4 @@ describe('a phone that is not enrolled', () => {
 
     expect(app.find('.welcome').exists()).toBe(true)
   })
-
-  it('is sent back to the welcome screen when it opens the order list', async () => {
-    currentRoute.value = { name: 'orders' }
-
-    const app = mountApp()
-    await vi.waitFor(() => expect(app.html().length).toBeGreaterThan(0))
-
-    expect(app.find('.welcome').exists()).toBe(true)
-  })
-
-  it('is sent back to the welcome screen when it opens a single order', async () => {
-    currentRoute.value = { name: 'orderDetail', orderId: 'order-1' }
-
-    const app = mountApp()
-    await vi.waitFor(() => expect(app.html().length).toBeGreaterThan(0))
-
-    expect(app.find('.welcome').exists()).toBe(true)
-  })
 })

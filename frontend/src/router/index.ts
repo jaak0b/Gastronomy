@@ -11,8 +11,6 @@ export type AppRoute =
   | { name: 'enrolQr'; code: string }
   | { name: 'home' }
   | { name: 'review' }
-  | { name: 'orders' }
-  | { name: 'orderDetail'; orderId: string }
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection }
 
@@ -45,11 +43,6 @@ export function resolveRoute(path: string): AppRoute {
   }
   if (first === 'review') {
     return { name: 'review' }
-  }
-  if (first === 'orders') {
-    return segments.length >= 2
-      ? { name: 'orderDetail', orderId: segments[1] }
-      : { name: 'orders' }
   }
   if (first === 'stations') {
     return { name: 'stations' }

@@ -13,16 +13,16 @@ public sealed class ResolveRaceTest
   [SetUp]
   public async Task SetUp()
   {
-    context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync(false);
 
-    using var created = await context.PostOrderAsync(context.BuildOrder(Guid.NewGuid()));
+    using var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
     var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
-    orderId = body.RootElement.GetProperty("orderId").GetGuid();
-    ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
+    _orderId = body.RootElement.GetProperty("orderId").GetGuid();
+    _ticketId = body.RootElement.GetProperty("stationOrders")[0].GetProperty("stationOrderId").GetGuid();
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     await database.PrintJobs
-                  .Where(job => job.StationOrderId == ticketId)
+                  .Where(job => job.StationOrderId == _ticketId)
                   .ExecuteUpdateAsync(job => job.SetProperty(entry => entry.Status, PrintJobStatus.Unknown));
     await database.SaveChangesAsync();
   }
@@ -30,12 +30,12 @@ public sealed class ResolveRaceTest
   [TearDown]
   public async Task TearDown()
   {
-    await context.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private OrderTestContext context = null!;
-  private Guid orderId;
-  private Guid ticketId;
+  private OrderTestContext _context = null!;
+  private Guid _orderId;
+  private Guid _ticketId;
 
   [Test]
   public async Task PostResolve_TwoSimultaneousAnswers_AcceptsOneAndNeverReprintsTwice()
@@ -53,7 +53,7 @@ public sealed class ResolveRaceTest
       response.Dispose();
     }
 
-    await using var database = context.Factory.CreateContext();
+    await using var database = _context.Factory.CreateContext();
     var printJobs = await database.PrintJobs.CountAsync();
 
     Assert.Multiple(() =>
@@ -66,15 +66,13 @@ public sealed class ResolveRaceTest
 
   private Task<HttpResponseMessage> ResolveAsync()
   {
-    return context.Client.SendAsync(BuildRequest());
+    return _context.Client.SendAsync(BuildRequest());
   }
 
   private HttpRequestMessage BuildRequest()
   {
     HttpRequestMessage request = new(HttpMethod.Post,
-                                     $"/api/orders/{orderId}/station-orders/{ticketId}/resolve");
-    request.Headers.Authorization =
-      new("Bearer", context.DeviceToken);
+                                     $"/api/admin/orders/{_orderId}/station-orders/{_ticketId}/resolve");
     request.Content = JsonContent.Create(new SlipOnThePileBody(false));
 
     return request;
