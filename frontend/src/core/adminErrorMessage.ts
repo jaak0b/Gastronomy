@@ -41,6 +41,13 @@ export function adminErrorMessage(body: ApiErrorBody | null): AdminErrorMessage 
   return { key: body.messageKey, parameters, count: countFrom(parameters) }
 }
 
+export function adminMessage(
+  messageKey: string,
+  parameters: Record<string, string | number> = {},
+): AdminErrorMessage {
+  return adminErrorMessage({ code: '', messageKey, parameters, details: null })
+}
+
 function conditionsFrom(value: unknown): unknown[] {
   if (Array.isArray(value)) {
     return value
@@ -66,12 +73,7 @@ export function adminBlockingConditions(value: unknown): AdminErrorMessage[] {
       typeof candidate.parameters === 'object' && candidate.parameters !== null
         ? (candidate.parameters as Record<string, string | number>)
         : {}
-    const resolved = adminErrorMessage({
-      code: '',
-      messageKey,
-      parameters,
-      details: null,
-    })
+    const resolved = adminMessage(messageKey, parameters)
     if (listed.some((shown) => shown.key === resolved.key && resolved.key === GENERIC_ADMIN_ERROR_KEY)) {
       continue
     }

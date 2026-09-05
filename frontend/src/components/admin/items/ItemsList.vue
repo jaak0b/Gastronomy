@@ -24,6 +24,15 @@ const groups = computed(() =>
   ),
 )
 
+const refusal = computed(() => {
+  const message = items.errorMessage
+  if (message === null) {
+    return null
+  }
+  return message.count === null
+    ? t(message.key, message.parameters)
+    : t(message.key, message.parameters, message.count)
+})
 
 async function save(item: AdminItemDraft): Promise<void> {
   const saved = await items.save(item)
@@ -50,12 +59,12 @@ onMounted(async () => {
 <template>
   <v-container class="admin-items">
     <v-alert
-      v-if="items.errorKey !== null && editingId === null && !isCreating"
+      v-if="refusal !== null && editingId === null && !isCreating"
       class="error mb-4"
       type="error"
       variant="tonal"
     >
-      {{ t(items.errorKey) }}
+      {{ refusal }}
     </v-alert>
     <v-alert v-if="items.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
@@ -115,7 +124,7 @@ onMounted(async () => {
             :item="item"
             :stations="stations.stations"
             :category-names="items.categoryNames"
-            :error-key="items.errorKey"
+            :error-text="refusal"
             @save="save"
           />
         </v-expand-transition>
@@ -130,7 +139,7 @@ onMounted(async () => {
       v-if="isCreating"
       :stations="stations.stations"
       :category-names="items.categoryNames"
-      :error-key="items.errorKey"
+      :error-text="refusal"
       @save="save"
       @cancel="isCreating = false"
     />

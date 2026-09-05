@@ -40,7 +40,7 @@ public sealed class RateLimitPolicies
                            ApiError error = new()
                                             {
                                               Code = "TooManyRequests",
-                                              MessageKey = "review.tooManyRequests",
+                                              MessageKey = "session.tooManyRequests",
                                               Parameters = new Dictionary<string, string>()
                                             };
 

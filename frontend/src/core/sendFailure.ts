@@ -15,7 +15,7 @@ const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 function keyForStatus(status: number): string {
   switch (status) {
     case 429:
-      return 'review.tooManyRequests'
+      return 'session.tooManyRequests'
     case 500:
     case 503:
       return 'review.sendFailedDatabase'

@@ -75,6 +75,27 @@ describe('landing on a QR code link', () => {
     await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
   })
 
+  it('tells the volunteer to wait when the laptop has too many requests at once', async () => {
+    answerInTurn(
+      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
+      {
+        status: 429,
+        body: { code: 'TooManyRequests', messageKey: 'session.tooManyRequests', parameters: {} },
+      },
+    )
+
+    const landing = mountLanding()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    await landing.get('.name-field input').setValue('Bernd')
+    await landing.get('.continue').trigger('click')
+
+    await vi.waitFor(() => expect(landing.find('.error').exists()).toBe(true))
+    expect(landing.get('.error').text()).toBe(
+      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal.',
+    )
+  })
+
   it('asks for a name only when the laptop says the name is missing', async () => {
     answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
 

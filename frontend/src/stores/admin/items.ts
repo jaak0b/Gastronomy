@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { listFrom, request } from '../../api/client'
+import {
+  adminErrorMessage,
+  adminMessage,
+  type AdminErrorMessage,
+} from '../../core/adminErrorMessage'
 
 export interface AdminItem {
   itemId: string
@@ -20,7 +25,7 @@ export type AdminItemDraft = Omit<AdminItem, 'itemId' | 'isActive' | 'isAvailabl
 export const useAdminItemsStore = defineStore('adminItems', () => {
   const items = ref<AdminItem[]>([])
   const loadFailed = ref(false)
-  const errorKey = ref<string | null>(null)
+  const errorMessage = ref<AdminErrorMessage | null>(null)
 
   const categoryNames = computed(() =>
     [...new Set(items.value.map((item) => item.categoryName).filter((name) => name.length > 0))]
@@ -43,9 +48,9 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   async function save(item: AdminItemDraft): Promise<boolean> {
-    errorKey.value = null
+    errorMessage.value = null
     if (item.stationIds.length === 0) {
-      errorKey.value = 'admin.items.needsStation'
+      errorMessage.value = adminMessage('admin.items.needsStation')
       return false
     }
     const path =
@@ -60,8 +65,8 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
         stationIds: item.stationIds,
       },
     })
-    if (result.kind === 'error') {
-      errorKey.value = result.body?.messageKey ?? 'admin.items.needsStation'
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return false
     }
     await load()
@@ -77,15 +82,24 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   async function setActive(id: string, isActive: boolean): Promise<void> {
-    errorKey.value = null
+    errorMessage.value = null
     const action = isActive ? 'activate' : 'deactivate'
     const result = await request(`/api/admin/items/${id}/${action}`, { method: 'POST' })
-    if (result.kind === 'error') {
-      errorKey.value = result.body?.messageKey ?? 'admin.items.deactivateBlocked'
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return
     }
     await load()
   }
 
-  return { items, loadFailed, errorKey, categoryNames, load, save, setAvailability, setActive }
+  return {
+    items,
+    loadFailed,
+    errorMessage,
+    categoryNames,
+    load,
+    save,
+    setAvailability,
+    setActive,
+  }
 })

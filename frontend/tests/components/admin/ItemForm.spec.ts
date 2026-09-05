@@ -26,7 +26,7 @@ const BRATWURST: AdminItem = {
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemForm, {
-    props: { item, stations: STATIONS, errorKey: null, categoryNames: ['Essen', 'Getränke'] },
+    props: { item, stations: STATIONS, errorText: null, categoryNames: ['Essen', 'Getränke'] },
     global: { plugins: [i18n] },
   })
 }

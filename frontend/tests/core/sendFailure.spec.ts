@@ -11,7 +11,7 @@ describe('messageForSendFailure, what went wrong', () => {
   it('tells the server to wait a moment when the laptop has too many requests at once', () => {
     const message = messageForSendFailure({ kind: 'error', status: 429, body: null }, 1)
 
-    expect(message.key).toBe('review.tooManyRequests')
+    expect(message.key).toBe('session.tooManyRequests')
   })
 
   it('names the saving problem when the laptop could not store the order', () => {

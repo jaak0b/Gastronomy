@@ -11,7 +11,7 @@ const props = defineProps<{
   item: AdminItem | null
   stations: AdminStation[]
   categoryNames: string[]
-  errorKey: string | null
+  errorText: string | null
   isCancellable?: boolean
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
@@ -74,8 +74,8 @@ function save(): void {
           :selected-station-ids="stationIds"
           @toggle="toggle"
         />
-        <v-alert v-if="errorKey !== null" class="error" type="error" variant="tonal">
-          {{ t(errorKey) }}
+        <v-alert v-if="errorText !== null" class="error" type="error" variant="tonal">
+          {{ errorText }}
         </v-alert>
       </v-card-text>
       <v-card-actions>
