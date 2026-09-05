@@ -1,9 +1,10 @@
-﻿using System.Diagnostics;
+﻿﻿﻿using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Services;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
@@ -12,6 +13,7 @@ namespace GastronomyApp.Desktop;
 
 public class App : Application
 {
+  private readonly Never _never = new();
   private AppBootstrapper? _bootstrapper;
   private DesktopComposition? _composition;
   private MainWindow? _mainWindow;
@@ -42,7 +44,9 @@ public class App : Application
                        BringMainWindowToFront,
                        work => Dispatcher.UIThread.Post(work));
 
-    if (_bootstrapper.Start() == BootstrapOutcome.ExitImmediately)
+    var outcome = _bootstrapper.Start();
+
+    if (outcome == BootstrapOutcome.ExitImmediately)
     {
       lifetime.Shutdown();
 
@@ -62,10 +66,26 @@ public class App : Application
     _mainWindowViewModel.QuitRequested += AskWhetherToQuit;
 
     _mainWindow = new() { DataContext = _mainWindowViewModel };
-    _mainWindow.Opened += OnMainWindowOpened;
+
+    if (ServesTheOrderPages(outcome))
+    {
+      _mainWindow.Opened += OnMainWindowOpened;
+    }
+
     lifetime.MainWindow = _mainWindow;
 
     CreateTrayIcon();
+  }
+
+  private bool ServesTheOrderPages(BootstrapOutcome outcome)
+  {
+    return outcome switch
+           {
+             BootstrapOutcome.ProceedToWindow => true,
+             BootstrapOutcome.ProceedToWindowWithoutServer => false,
+             BootstrapOutcome.ExitImmediately => false,
+             _ => _never.OfType<bool>(outcome)
+           };
   }
 
   private void CreateTrayIcon()

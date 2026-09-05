@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+﻿﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
@@ -311,6 +311,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         break;
     }
+  }
+
+  public void ShowInstanceCheckFailed()
+  {
+    ShowError("desktop.error.instanceCheckFailed");
   }
 
   public void ShowSetupDeclined()

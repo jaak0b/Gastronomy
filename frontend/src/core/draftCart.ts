@@ -48,17 +48,33 @@ function toDraftOrder(value: unknown): DraftOrder | null {
   }
 }
 
-export function loadDraft(): DraftOrder {
+export type DraftRestoration =
+  | { outcome: 'nothingStored'; draft: DraftOrder }
+  | { outcome: 'restored'; draft: DraftOrder }
+  | { outcome: 'unreadableDraftDiscarded'; draft: DraftOrder }
+
+function parsedDraft(stored: string): DraftOrder | null {
+  try {
+    return toDraftOrder(JSON.parse(stored))
+  } catch {
+    return null
+  }
+}
+
+export function restoreDraft(): DraftRestoration {
   const stored = localStorage.getItem(DRAFT_STORAGE_KEY)
   if (stored === null) {
-    return emptyDraft()
+    return { outcome: 'nothingStored', draft: emptyDraft() }
   }
-  try {
-    const restored = toDraftOrder(JSON.parse(stored))
-    return restored === null ? emptyDraft() : restored
-  } catch {
-    return emptyDraft()
+  const restored = parsedDraft(stored)
+  if (restored === null) {
+    return { outcome: 'unreadableDraftDiscarded', draft: emptyDraft() }
   }
+  return { outcome: 'restored', draft: restored }
+}
+
+export function loadDraft(): DraftOrder {
+  return restoreDraft().draft
 }
 
 export function saveDraft(draft: DraftOrder): void {

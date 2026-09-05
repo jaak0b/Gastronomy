@@ -1,11 +1,13 @@
 ﻿using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.ViewModels;
+using Serilog;
 
 namespace GastronomyApp.Desktop.Services;
 
 public enum BootstrapOutcome
 {
   ProceedToWindow,
+  ProceedToWindowWithoutServer,
   ExitImmediately
 }
 
@@ -43,7 +45,12 @@ public sealed class AppBootstrapper
     }
     catch (Exception failure) when (failure is IOException or TimeoutException or UnauthorizedAccessException)
     {
-      return BootstrapOutcome.ExitImmediately;
+      Log.Error(failure,
+                "Whether the program is already running could not be checked, so no server was started.");
+      MainWindowViewModel = _mainWindowViewModelFactory();
+      MainWindowViewModel.ShowInstanceCheckFailed();
+
+      return BootstrapOutcome.ProceedToWindowWithoutServer;
     }
 
     switch (outcome)

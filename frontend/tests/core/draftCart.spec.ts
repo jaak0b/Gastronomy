@@ -6,6 +6,7 @@ import {
   emptyDraft,
   loadDraft,
   removeLine,
+  restoreDraft,
   saveDraft,
   setLineNote,
   setLineStation,
@@ -94,6 +95,62 @@ describe('loadDraft', () => {
         unitPriceCents: 0,
       },
     ])
+  })
+})
+
+describe('restoreDraft', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('reports that nothing was ever stored', () => {
+    const restoration = restoreDraft()
+
+    expect(restoration).toEqual({
+      outcome: 'nothingStored',
+      draft: { tableName: '', note: null, lines: [], clientOrderId: null },
+    })
+  })
+
+  it('reports the half built order it put back on the screen', () => {
+    saveDraft({
+      tableName: 'Tisch 12',
+      note: null,
+      lines: [bratwurstLine()],
+      clientOrderId: null,
+    })
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('restored')
+    expect(restoration.draft.lines).toHaveLength(1)
+  })
+
+  it('reports that an unreadable draft was thrown away instead of losing it in silence', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, 'not json')
+
+    const restoration = restoreDraft()
+
+    expect(restoration).toEqual({
+      outcome: 'unreadableDraftDiscarded',
+      draft: { tableName: '', note: null, lines: [], clientOrderId: null },
+    })
+  })
+
+  it('reports a stored draft that no longer has the shape of an order as thrown away', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":12,"lines":[]}')
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('reports a stored draft whose lines are unreadable as thrown away', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":"Tisch 12","lines":[{"note":"ohne Eis"}]}')
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('unreadableDraftDiscarded')
   })
 })
 

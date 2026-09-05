@@ -132,4 +132,7 @@
     <data name="desktop.error.noPortAvailable" xml:space="preserve">
     <value>Ein anderes Programm auf diesem Laptop blockiert die Verbindung. Starten Sie den Laptop neu und öffnen Sie das Programm noch einmal.</value>
   </data>
+    <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
+    <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Laptop neu und öffnen Sie das Programm noch einmal. Das Programm konnte nicht prüfen, ob es schon läuft, und hat den Server nicht gestartet.</value>
+  </data>
 </root>
