@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { sourceFilesUnder } from '../support/sourceFiles'
 import de from '../../src/locales/de.json'
 import en from '../../src/locales/en.json'
 
@@ -106,22 +107,9 @@ describe('the keys that carry a count', () => {
 
 const SOURCE_ROOT = `${process.cwd()}/src`
 
-function sourceFiles(directory: string): string[] {
-  const found: string[] = []
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const full = `${directory}/${entry.name}`
-    if (entry.isDirectory()) {
-      found.push(...sourceFiles(full))
-    } else if (entry.name.endsWith('.ts') || entry.name.endsWith('.vue')) {
-      found.push(full)
-    }
-  }
-  return found
-}
-
 function keysUsedInSource(): Map<string, string> {
   const used = new Map<string, string>()
-  for (const file of sourceFiles(SOURCE_ROOT)) {
+  for (const file of sourceFilesUnder(SOURCE_ROOT)) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(/\$?\bt\(\s*'([a-zA-Z][\w.]*)'/g)) {
       used.set(match[1], file.slice(SOURCE_ROOT.length + 1))

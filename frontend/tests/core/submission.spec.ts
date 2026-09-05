@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildSubmitRequest, ensureClientOrderId } from '../../src/core/submission'
-import { addLine, clearDraft, emptyDraft, loadDraft, setTableName } from '../../src/core/draftCart'
+import {
+  addLine,
+  clearDraft,
+  emptyDraft,
+  restoreDraft,
+  setTableName,
+} from '../../src/core/draftCart'
 
 describe('ensureClientOrderId', () => {
   beforeEach(() => {
@@ -16,7 +22,7 @@ describe('ensureClientOrderId', () => {
   it('persists the submission id before the request starts', () => {
     const sent = ensureClientOrderId(emptyDraft())
 
-    expect(loadDraft().clientOrderId).toBe(sent.clientOrderId)
+    expect(restoreDraft().draft.clientOrderId).toBe(sent.clientOrderId)
   })
 
   it('keeps the same submission id when the server taps send again', () => {
@@ -30,7 +36,7 @@ describe('ensureClientOrderId', () => {
   it('keeps the same submission id across a reload', () => {
     const firstAttempt = ensureClientOrderId(emptyDraft())
 
-    const afterReload = ensureClientOrderId(loadDraft())
+    const afterReload = ensureClientOrderId(restoreDraft().draft)
 
     expect(afterReload.clientOrderId).toBe(firstAttempt.clientOrderId)
   })
