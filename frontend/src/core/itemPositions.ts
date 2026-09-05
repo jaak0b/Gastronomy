@@ -1,4 +1,4 @@
-import type { CatalogItem, DraftOrder } from './apiTypes'
+import type { CatalogItem, DraftLine, DraftOrder } from './apiTypes'
 import { needsStationChoice } from './routingPreview'
 
 export interface ItemPosition {
@@ -8,6 +8,21 @@ export interface ItemPosition {
   stationName: string | null
 }
 
+interface NumberedLine {
+  line: DraftLine
+  index: number
+}
+
+function linesOfItem(draft: DraftOrder, catalogItemId: string): NumberedLine[] {
+  return draft.lines
+    .map((line, index) => ({ line, index }))
+    .filter((entry) => entry.line.catalogItemId === catalogItemId)
+}
+
+export function portionsOfItem(draft: DraftOrder, catalogItemId: string): number {
+  return linesOfItem(draft, catalogItemId).length
+}
+
 export function positionsForItem(
   draft: DraftOrder,
   item: CatalogItem,
@@ -15,9 +30,7 @@ export function positionsForItem(
 ): ItemPosition[] {
   const hasAStationChoice = needsStationChoice(item)
 
-  return draft.lines
-    .map((line, index) => ({ line, index }))
-    .filter((entry) => entry.line.catalogItemId === item.id)
+  return linesOfItem(draft, item.id)
     .map((entry) => ({
       index: entry.index,
       note: entry.line.note,

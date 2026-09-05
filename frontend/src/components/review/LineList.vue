@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../core/apiTypes'
 import type { BasketLineView } from '../../core/basket'
 import { collapseLines, type CollapsedLine } from '../../core/collapse'
+import { countedName } from '../../core/countedName'
 import { formatPrice, collapsedTotalCents } from '../../core/totals'
 
 interface StationSlip {
@@ -58,7 +59,7 @@ const slips = computed<StationSlip[]>(() => {
 })
 
 function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
-  return t('review.line', { count: entry.quantity, item: nameOf(entry.line) })
+  return countedName(entry.quantity, nameOf(entry.line), t)
 }
 
 function priceOf(entry: CollapsedLine<BasketLineView>): string {
