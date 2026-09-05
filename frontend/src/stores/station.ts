@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
+import { assertNever } from '../core/assertNever'
 import type { PrinterStatusRow, StationScreenOrderRow } from '../core/apiTypes'
 
 export const TAKE_DELAY_SECONDS = 10
@@ -74,6 +75,13 @@ export const useStationStore = defineStore('station', () => {
     }
   }
 
+  function noteAgainstTicket(stationOrderId: string, noticeKey: string): void {
+    noticeKeyByTicketId.value = {
+      ...noticeKeyByTicketId.value,
+      [stationOrderId]: noticeKey,
+    }
+  }
+
   function isPending(stationOrderId: string): boolean {
     return pendingTicketIds.value.includes(stationOrderId)
   }
@@ -87,11 +95,17 @@ export const useStationStore = defineStore('station', () => {
       `/api/stations/${selectedStationId.value}/station-orders/${stationOrder.stationOrderId}/hand-on-paper`,
       { method: 'POST', token: deviceToken() },
     )
-    if (result.kind === 'error') {
-      noticeKeyByTicketId.value = {
-        ...noticeKeyByTicketId.value,
-        [stationOrderId]: result.body?.messageKey ?? 'station.takeRefused',
-      }
+    switch (result.kind) {
+      case 'ok':
+        break
+      case 'error':
+        noteAgainstTicket(stationOrderId, result.body?.messageKey ?? 'station.takeRefused')
+        break
+      case 'unreachable':
+        noteAgainstTicket(stationOrderId, 'station.takeNotReached')
+        break
+      default:
+        assertNever(result)
     }
     await loadTickets()
   }

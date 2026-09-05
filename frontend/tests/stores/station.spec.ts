@@ -240,3 +240,52 @@ describe('a station screen that lost the hub and got it back', () => {
     expect(urls.some((url) => url.includes('/status'))).toBe(true)
   })
 })
+
+describe('a Take that never reached the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  function seedUnreachableLaptop() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    const station = useStationStore()
+    station.selectedStationId = 'station-kueche'
+    station.stationOrders = [
+      {
+        stationOrderId: 'ticket-1',
+        orderId: 'order-1',
+        globalOrderNumber: 137,
+        stationOrderNumber: 42,
+        tableName: 'Tisch 12',
+        orderCreatedAtUtc: '2026-08-27T19:00:00Z',
+        status: 'Failed',
+        canHandleOnPaper: true,
+        copyNumber: 0,
+        orderNote: null,
+        items: [],
+      },
+    ]
+    return station
+  }
+
+  it('tells the station that the slip was not taken', async () => {
+    const station = seedUnreachableLaptop()
+
+    station.beginTake('ticket-1')
+    await vi.advanceTimersByTimeAsync(10000)
+
+    expect(station.noticeKeyByTicketId['ticket-1']).toBe('station.takeNotReached')
+  })
+})

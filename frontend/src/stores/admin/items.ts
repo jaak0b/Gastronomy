@@ -50,7 +50,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   async function save(item: AdminItemDraft): Promise<boolean> {
     errorMessage.value = null
     if (item.stationIds.length === 0) {
-      errorMessage.value = adminMessage('admin.items.needsStation')
+      errorMessage.value = adminMessage('admin.itemNeedsAStation')
       return false
     }
     const path =

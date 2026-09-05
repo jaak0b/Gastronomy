@@ -93,7 +93,7 @@ describe('an item the laptop would not save', () => {
 
     await items.save({ ...AN_ITEM, stationIds: [] })
 
-    expect(items.errorMessage?.key).toBe('admin.items.needsStation')
+    expect(items.errorMessage?.key).toBe('admin.itemNeedsAStation')
   })
 })
 
