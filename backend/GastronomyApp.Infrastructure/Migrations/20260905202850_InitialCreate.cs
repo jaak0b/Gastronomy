@@ -218,7 +218,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                     CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ItemName = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
                     UnitPriceCents = table.Column<int>(type: "INTEGER", nullable: false),
-                    Note = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
+                    Note = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    SettledAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ChargedPriceCents = table.Column<int>(type: "INTEGER", nullable: true),
+                    PaymentNotice = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -278,6 +281,11 @@ namespace GastronomyApp.Infrastructure.Migrations
                 table: "ItemStationAssignments",
                 columns: new[] { "CatalogItemId", "StationId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_SettledAtUtc",
+                table: "OrderItems",
+                column: "SettledAtUtc");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_StationOrderId",

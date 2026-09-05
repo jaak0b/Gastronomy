@@ -37,7 +37,7 @@ describe('the notice that an order has arrived', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send()
+    await order.send(false)
     expect(order.sendState).toBe('accepted')
 
     vi.advanceTimersByTime(ARRIVAL_NOTICE_MS)
@@ -118,7 +118,7 @@ describe('an order in progress that could not be read back', () => {
     answerWith(0)
     const order = useOrderStore()
 
-    await order.send()
+    await order.send(false)
 
     expect(order.draftWasLost).toBe(false)
   })

@@ -30,7 +30,7 @@ public sealed class ImmediateTransactionRunnerTest
   }
 
   [Test]
-  public async Task RunAsync_NestedCallOnTheSameContext_FailsWithAStatedReason()
+  public void RunAsync_NestedCallOnTheSameContext_FailsWithAStatedReason()
   {
     using SqliteInMemoryFixture fixture = new();
     ImmediateTransactionRunner runner = new();
@@ -80,6 +80,7 @@ public sealed class ImmediateTransactionRunnerTest
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Note = null,
+             SettleOnSend = false,
              Items =
              [
                new()

@@ -41,6 +41,7 @@ public sealed class OrderAcceptanceServiceTest
                    _stationRepository,
                    _numberAllocator,
                    new(),
+                   new(),
                    _clock);
   }
 
@@ -108,7 +109,8 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items,
-                                             string tableName = "Tisch 12")
+                                             string tableName = "Tisch 12",
+                                             bool settleOnSend = false)
   {
     return new()
            {
@@ -116,6 +118,7 @@ public sealed class OrderAcceptanceServiceTest
              StaffMemberId = _staffMemberId,
              TableName = tableName,
              Note = null,
+             SettleOnSend = settleOnSend,
              Items = items
            };
   }

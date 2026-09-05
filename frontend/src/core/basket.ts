@@ -60,6 +60,15 @@ export function refreshLineSnapshots(draft: DraftOrder, catalog: Catalog): Draft
   return refreshed
 }
 
+export function withoutLinesNoLongerOnTheMenu(draft: DraftOrder, catalog: Catalog): DraftOrder {
+  const kept: DraftOrder = {
+    ...draft,
+    lines: draft.lines.filter((line) => findCatalogItem(catalog, line.catalogItemId) !== null),
+  }
+  saveDraft(kept)
+  return kept
+}
+
 export function basketItemCount(draft: DraftOrder): number {
   return draft.lines.length
 }

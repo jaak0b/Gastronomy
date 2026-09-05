@@ -16,6 +16,15 @@ const settingsAreOpen = ref(false)
         <span class="label">{{ t('catalog.title') }}</span>
       </v-btn>
       <v-btn
+        class="open-items-link flex-grow-1"
+        variant="text"
+        stacked
+        @click="navigate('/open-items')"
+      >
+        <v-icon icon="mdi-cash-register" />
+        <span class="label">{{ t('header.openItems') }}</span>
+      </v-btn>
+      <v-btn
         class="stations-link flex-grow-1"
         variant="text"
         stacked

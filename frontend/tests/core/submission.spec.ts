@@ -97,12 +97,13 @@ describe('buildSubmitRequest', () => {
     })
     const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready)
+    const request = buildSubmitRequest(ready, false)
 
     expect(request).toEqual({
       clientOrderId: ready.clientOrderId,
       tableName: 'Tisch 12',
       note: null,
+      settleOnSend: false,
       items: [
         {
           catalogItemId: 'item-1',
@@ -124,7 +125,7 @@ describe('buildSubmitRequest', () => {
     })
     const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready)
+    const request = buildSubmitRequest(ready, false)
 
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
@@ -134,7 +135,22 @@ describe('buildSubmitRequest', () => {
     ])
   })
 
+  it('tells the laptop that the guest paid on the spot', () => {
+    const withLine = addLine(emptyDraft(), {
+      catalogItemId: 'item-1',
+      note: null,
+      stationId: null,
+      name: 'Bratwurst',
+      unitPriceCents: 350,
+    })
+    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+
+    const request = buildSubmitRequest(ready, true)
+
+    expect(request.settleOnSend).toBe(true)
+  })
+
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft())).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft(), false)).toThrow()
   })
 })

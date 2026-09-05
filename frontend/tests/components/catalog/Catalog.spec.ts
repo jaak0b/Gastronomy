@@ -38,7 +38,6 @@ const CATALOG: CatalogData = {
     { id: 'station-kueche', name: 'Küche', sortOrder: 1 },
     { id: 'station-bar', name: 'Bar', sortOrder: 2 },
   ],
-  tableSuggestions: [],
 }
 
 function mountCatalog() {
@@ -59,33 +58,106 @@ describe('the ordering screen', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
-  it('shows the items of every category at once', () => {
+  it('offers every category as a tab, sorted by name', () => {
+    const view = mountCatalog()
+
+    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+
+    expect(tabs).toEqual(['Essen', 'Getränke'])
+  })
+
+  it('shows the items of the first category when the screen opens', () => {
     const view = mountCatalog()
 
     const names = view.findAll('.item-row .name').map((element) => element.text())
 
-    expect(names).toEqual(['Bratwurst', 'Wasser'])
+    expect(names).toEqual(['Bratwurst'])
   })
 
-  it('heads each category so a long list stays readable', () => {
+  it('shows the items of another category once its tab is tapped', async () => {
     const view = mountCatalog()
 
-    const headings = view.findAll('.category-heading').map((element) => element.text())
+    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
 
-    expect(headings).toEqual(['Essen', 'Getränke'])
+    const names = view.findAll('.item-row .name').map((element) => element.text())
+
+    expect(names).toEqual(['Wasser'])
   })
 
-  it('sorts the categories and the items inside them by name', () => {
+  it('keeps the portions already ordered while the server looks at another category', async () => {
+    const view = mountCatalog()
+    const order = useOrderStore()
+
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
+    await view.findAll('.category-tabs .category-tab')[0].trigger('click')
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(view.findAll('.item-row .count')[0].text()).toBe('1')
+  })
+
+  it('writes in front of the category name how many portions of it are on the order', async () => {
     const view = mountCatalog()
 
-    expect(view.findAll('.category-heading').map((element) => element.text())).toEqual([
-      'Essen',
-      'Getränke',
-    ])
-    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
-      'Bratwurst',
-      'Wasser',
-    ])
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+
+    expect(tabs).toEqual(['2 x Essen', 'Getränke'])
+  })
+
+  it('marks the tab of a category that already has portions on the order', async () => {
+    const view = mountCatalog()
+
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    const marked = view
+      .findAll('.category-tabs .category-tab')
+      .map((element) => element.classes()).map((classes) => classes.includes('holds-portions'))
+
+    expect(marked).toEqual([true, false])
+  })
+
+  it('takes the mark off the tab once the last portion of that category is removed', async () => {
+    const view = mountCatalog()
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    await view.findAll('.item-row .remove-one')[0].trigger('click')
+
+    expect(view.findAll('.category-tabs .category-tab')[0].classes()).not.toContain('holds-portions')
+  })
+
+  it('writes the category name on its own again once its portions are taken off', async () => {
+    const view = mountCatalog()
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    await view.findAll('.item-row .remove-one')[0].trigger('click')
+
+    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+
+    expect(tabs).toEqual(['Essen', 'Getränke'])
+  })
+
+  it('keeps counting the portions of the category the server is not looking at', async () => {
+    const view = mountCatalog()
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+
+    expect(tabs).toEqual(['1 x Essen', '1 x Getränke'])
+  })
+
+  it('shows no items and no tab when the catalog is still empty', () => {
+    const catalog = useCatalogStore()
+    catalog.catalog = { ...CATALOG, categories: [], items: [] }
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect(view.findAll('.category-tabs .category-tab')).toHaveLength(0)
+    expect(view.findAll('.item-row')).toHaveLength(0)
   })
 
   it('puts one portion on the order when an item is tapped', async () => {

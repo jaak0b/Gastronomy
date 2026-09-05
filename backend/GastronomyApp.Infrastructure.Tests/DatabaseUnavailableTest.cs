@@ -96,6 +96,7 @@ public sealed class DatabaseUnavailableTest
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Note = null,
+             SettleOnSend = false,
              Items =
              [
                new()

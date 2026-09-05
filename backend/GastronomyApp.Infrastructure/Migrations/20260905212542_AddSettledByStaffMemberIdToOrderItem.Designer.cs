@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    [Migration("20260828121024_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260905212542_AddSettledByStaffMemberIdToOrderItem")]
+    partial class AddSettledByStaffMemberIdToOrderItem
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -213,6 +213,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ChargedPriceCents")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -222,6 +225,16 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PaymentNotice")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SettledAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SettledByStaffMemberId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("StationOrderId")
                         .HasColumnType("TEXT");
 
@@ -229,6 +242,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SettledAtUtc");
 
                     b.HasIndex("StationOrderId");
 

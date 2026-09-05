@@ -30,7 +30,10 @@ export function ensureClientOrderId(draft: DraftOrder): DraftOrder {
   return identified
 }
 
-export function buildSubmitRequest(draft: DraftOrder): OrderSubmitRequest {
+export function buildSubmitRequest(
+  draft: DraftOrder,
+  settleOnSend: boolean,
+): OrderSubmitRequest {
   const clientOrderId = draft.clientOrderId
   if (clientOrderId === null) {
     throw new Error('A draft without a clientOrderId must not be submitted')
@@ -39,6 +42,7 @@ export function buildSubmitRequest(draft: DraftOrder): OrderSubmitRequest {
     clientOrderId,
     tableName: draft.tableName,
     note: draft.note,
+    settleOnSend,
     items: draft.lines.map((line) => ({
       catalogItemId: line.catalogItemId,
       unitPriceCents: line.unitPriceCents,

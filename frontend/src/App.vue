@@ -13,6 +13,7 @@ import EnrolQr from './views/EnrolQr.vue'
 import Welcome from './views/Welcome.vue'
 import Catalog from './views/Catalog.vue'
 import Review from './views/Review.vue'
+import OpenItems from './views/OpenItems.vue'
 import StationPage from './views/StationPage.vue'
 import AdminShell from './views/admin/AdminShell.vue'
 
@@ -28,6 +29,7 @@ type ScreenName =
   | 'welcome'
   | 'catalog'
   | 'review'
+  | 'openItems'
   | 'stations'
   | 'admin'
 
@@ -40,6 +42,8 @@ const screen = computed<ScreenName>(() => {
       return session.isEnrolled ? 'catalog' : 'welcome'
     case 'review':
       return session.isEnrolled ? 'review' : 'welcome'
+    case 'openItems':
+      return session.isEnrolled ? 'openItems' : 'welcome'
     case 'stations':
       return session.isEnrolled ? 'stations' : 'welcome'
     case 'admin':
@@ -89,6 +93,7 @@ onMounted(async () => {
     <Welcome v-else-if="screen === 'welcome'" />
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
+    <OpenItems v-else-if="screen === 'openItems'" />
     <StationPage v-else-if="screen === 'stations'" />
     <AdminShell v-else />
     </v-main>

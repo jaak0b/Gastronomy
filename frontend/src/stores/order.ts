@@ -14,7 +14,12 @@ import {
 } from '../core/draftCart'
 import { assertNever } from '../core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
-import { buildBasketView, basketItemCount, refreshLineSnapshots } from '../core/basket'
+import {
+  buildBasketView,
+  basketItemCount,
+  refreshLineSnapshots,
+  withoutLinesNoLongerOnTheMenu,
+} from '../core/basket'
 import { orderTotalCents } from '../core/totals'
 import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
 import { useCatalogStore } from './catalog'
@@ -46,6 +51,7 @@ export const useOrderStore = defineStore('order', () => {
   const failure = ref<SendFailureMessage | null>(null)
   const failedAttempts = ref(0)
   const acceptedOrderNumber = ref<number | null>(null)
+  const settledOnSend = ref(false)
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
@@ -60,6 +66,9 @@ export const useOrderStore = defineStore('order', () => {
   const basketLines = computed(() => buildBasketView(draft.value, catalogStore.catalog))
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
+  const hasLinesNoLongerOnTheMenu = computed(() =>
+    basketLines.value.some((line) => line.isNoLongerOnTheMenu),
+  )
 
   function dismissDraftLoss(): void {
     draftWasLost.value = false
@@ -72,6 +81,10 @@ export const useOrderStore = defineStore('order', () => {
 
   function dropLine(index: number): void {
     draft.value = removeLine(draft.value, index)
+  }
+
+  function dropLinesNoLongerOnTheMenu(): void {
+    draft.value = withoutLinesNoLongerOnTheMenu(draft.value, catalogStore.catalog)
   }
 
   function noteLine(index: number, note: string | null): void {
@@ -104,13 +117,14 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = draftFromStorage()
   }
 
-  async function send(): Promise<void> {
+  async function send(settleOnSend: boolean): Promise<void> {
     const session = useSessionStore()
     sendState.value = 'sending'
+    settledOnSend.value = settleOnSend
     draft.value = ensureClientOrderId(draft.value)
     const result = await request<OrderSubmitResponse>('/api/orders', {
       method: 'POST',
-      body: buildSubmitRequest(draft.value),
+      body: buildSubmitRequest(draft.value, settleOnSend),
       token: session.deviceToken,
     })
     switch (result.kind) {
@@ -131,6 +145,10 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  async function sendAgain(): Promise<void> {
+    await send(settledOnSend.value)
+  }
+
   return {
     draft,
     draftWasLost,
@@ -138,11 +156,14 @@ export const useOrderStore = defineStore('order', () => {
     failure,
     failedAttempts,
     acceptedOrderNumber,
+    settledOnSend,
     basketLines,
     itemCount,
     totalCents,
+    hasLinesNoLongerOnTheMenu,
     addItem,
     dropLine,
+    dropLinesNoLongerOnTheMenu,
     noteLine,
     chooseStation,
     setTable,
@@ -150,5 +171,6 @@ export const useOrderStore = defineStore('order', () => {
     dismissConfirmation,
     dismissDraftLoss,
     send,
+    sendAgain,
   }
 })

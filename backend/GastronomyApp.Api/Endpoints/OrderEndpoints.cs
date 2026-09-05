@@ -70,6 +70,7 @@ public sealed class OrderPlacementHandler
                                                  StaffMemberId = caller.StaffMemberId,
                                                  TableName = request.TableName ?? string.Empty,
                                                  Note = request.Note,
+                                                 SettleOnSend = request.SettleOnSend,
                                                  Items =
                                                  [
                                                    .. (request.Items ?? []).Select(item => new OrderAcceptanceItemRequest

@@ -95,7 +95,12 @@ One order, split per station, printed per copy.
   shows for that station. Unique on `(OrderId, StationId)`, so a station can never receive two slices
   of one order.
 - **OrderItem**: one entry of that slice. The item name comes from the catalog; the price is the one
-  the phone displayed to the guest and the laptop stores it untouched.
+  the phone displayed to the guest and the laptop stores it untouched, including when the item is given
+  away. It also carries whether it has been settled: `SettledAtUtc` is the paid flag (null means still
+  open, so a flag and a timestamp can never disagree), `ChargedPriceCents` is what was actually
+  collected, and `PaymentNotice` is the reason typed when less than the displayed price was collected.
+  A settled item is never settled again, so a double tap cannot double count. What a table still owes
+  and what was given away are derived from these on every read, never stored.
 - **PrintJob**: one printing of a station order. `CopyNumber` 0 is the original, anything above prints
   "NACHDRUCK Nr. x". Unique on `(StationOrderId, CopyNumber)`. This is the only object with a status.
 - **Device**: one phone, 1:1 with a staff member. Setting a phone up again deletes the row, which is

@@ -33,7 +33,8 @@
     "stationFaulty": "Sagen Sie jede Bestellung an der Ausgabestelle {name} persönlich an. Der Drucker dort nimmt nichts mehr an.",
     "stationWaiting": "Dort wartet {count} Bon. | Dort warten {count} Bons.",
     "settings": "Einstellungen",
-    "stations": "Ausgabestellen"
+    "stations": "Ausgabestellen",
+    "openItems": "Offene Posten"
   },
   "settings": {
     "title": "Einstellungen",
@@ -76,9 +77,11 @@
     "goesTo": "Geht an {name}",
     "total": "Gesamt",
     "send": "Bestellung senden",
+    "sendAndSettle": "Bestellung senden und abrechnen",
     "sending": "Wird gesendet",
     "sent": "Bestellung {number} ist angekommen.",
     "back": "Zurück zur Auswahl",
+    "removeLinesNoLongerOnTheMenu": "Artikel entfernen, die nicht mehr auf der Karte stehen",
     "sendFailed": "Tippen Sie auf \"Noch einmal senden\". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.",
     "sendFailedDatabase": "Tippen Sie auf \"Noch einmal senden\". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.",
     "retry": "Noch einmal senden",
@@ -97,7 +100,39 @@
     "submissionIdReused": "Nehmen Sie die Änderung als neue Bestellung auf und sagen Sie an der Ausgabestelle Bescheid. Diese Bestellung wurde schon einmal gesendet, aber mit anderem Inhalt.",
     "tableNameMissing": "Tragen Sie einen Tisch ein, bevor Sie senden.",
     "tableNameTooLong": "Dieser Tisch ist zu lang. Schreiben Sie ihn kürzer, zum Beispiel: Tisch 12.",
-    "unknownItem": "Einen Artikel auf dieser Bestellung gibt es nicht mehr. Laden Sie die Karte neu und stellen Sie die Bestellung noch einmal zusammen."
+    "unknownItem": "Tippen Sie auf \"Artikel entfernen, die nicht mehr auf der Karte stehen\" und senden Sie die Bestellung dann noch einmal. Ein Artikel auf dieser Bestellung steht nicht mehr auf der Karte.",
+    "settlementNoItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
+    "settlementTooManyItemsSelected": "Rechnen Sie den Tisch in mehreren Schritten ab. Auf einmal sind es zu viele Positionen.",
+    "settlementNoticeMissing": "Tragen Sie einen Grund ein, bevor Sie kostenlos abrechnen.",
+    "settlementNoticeTooLong": "Fassen Sie den Grund kürzer. So lang lässt er sich nicht speichern.",
+    "settlementUnknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Laptop nicht mehr, deshalb wurde nichts abgerechnet."
+  },
+  "openItems": {
+    "title": "Offene Posten",
+    "empty": "Es ist nichts offen. Alle Tische sind abgerechnet.",
+    "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
+    "tableOpen": "Offen: {amount}",
+    "wholeTable": "Ganzen Tisch auswählen",
+    "fromOrder": "Bestellung {number}",
+    "itemNote": "Hinweis: {note}",
+    "selected": "Ausgewählt: {amount}",
+    "settle": "Abrechnen",
+    "settleFreeOfCharge": "Kostenlos abrechnen",
+    "freeOfChargeTitle": "Kostenlos abrechnen",
+    "freeOfChargeHelp": "Schreiben Sie auf, warum diese Positionen nichts kosten. Der Grund bleibt bei der Bestellung gespeichert.",
+    "reason": "Grund",
+    "reasonPlaceholder": "Zum Beispiel: Essen für die Kapelle",
+    "reasonMissing": "Tragen Sie einen Grund ein, bevor Sie kostenlos abrechnen.",
+    "confirmFreeOfCharge": "Kostenlos abrechnen",
+    "cancel": "Abbrechen",
+    "givenAwayHeading": "In den letzten 24 Stunden kostenlos abgegeben: {amount}",
+    "givenAwayHelp": "Für diese Positionen wurde kein Geld genommen.",
+    "givenAwayReason": "Grund: {reason}",
+    "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Laptop die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Laptop die Bestellungen dazu nicht mehr findet.",
+    "someWereAlreadySettled": "{count} Position aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück. | {count} Positionen aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück.",
+    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet. Die anderen Telefone wurden aber nicht benachrichtigt, deshalb kann ihre Liste noch veraltet sein.",
+    "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen hat nicht geklappt.",
+    "settleNotReached": "Tippen Sie noch einmal auf \"Abrechnen\". Der Laptop war nicht erreichbar, deshalb wurde nichts abgerechnet."
   },
   "admin": {
     "notOnLaptop": "Klicken Sie am Laptop im Fenster \"Bestellsystem\" auf \"Verwaltung öffnen\". Auf dem Telefon lässt sich die Verwaltung nicht öffnen.",
@@ -219,7 +254,12 @@
       "copied": "Adresse kopiert",
       "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
       "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
-      "qrAlt": "QR-Code zum Einrichten des Telefons"
+      "qrAlt": "QR-Code zum Einrichten des Telefons",
+      "qrAlreadyUsed": "Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Telefon benutzt.",
+      "qrReplaced": "Verwenden Sie den neueren QR-Code. Dieser hier wurde ersetzt, als ein neuer erstellt wurde.",
+      "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
+      "qrUnreachable": "Laden Sie die Seite neu. Der Laptop hat den QR-Code nicht geliefert.",
+      "newQrCode": "Neuen QR-Code erstellen"
     },
     "orders": {
       "title": "Bestellungen",

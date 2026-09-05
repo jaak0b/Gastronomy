@@ -21,7 +21,6 @@ function catalogWith(items: CatalogItem[]): Catalog {
     categories: [{ name: 'Essen', sortOrder: 1 }],
     items,
     stations: [{ id: 'station-kueche', name: 'Kueche', sortOrder: 1 }],
-    tableSuggestions: [],
   }
 }
 

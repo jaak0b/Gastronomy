@@ -55,6 +55,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderStatusCalculator>();
+    services.AddSingleton<OrderItemSettlementService>();
     services.AddSingleton<HandledOnPaperPolicy>();
     services.AddSingleton<PrintJobStateMachine>();
     services.AddSingleton<RetryPolicy>();
@@ -77,6 +78,9 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderReader>();
     services.AddScoped<OrderPlacementHandler>();
     services.AddScoped<OrderQueryHandler>();
+    services.AddSingleton<OpenItemsReader>();
+    services.AddScoped<OpenItemQueryHandler>();
+    services.AddScoped<OrderItemSettlementHandler>();
     services.AddScoped<StationOrderActionHandler>();
     services.AddSingleton<PrinterStatusReader>();
     services.AddSingleton<HealthReporter>();

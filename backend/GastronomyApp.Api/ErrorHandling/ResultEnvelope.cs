@@ -35,6 +35,24 @@ public sealed class ResultEnvelope
            };
   }
 
+  public ProblemDescription Describe(SettlementFailure failure)
+  {
+    return failure.Reason switch
+           {
+             SettlementFailureReason.NoItemsSelected =>
+               Validation("order.settlementNoItemsSelected"),
+             SettlementFailureReason.TooManyItemsSelected =>
+               Validation("order.settlementTooManyItemsSelected"),
+             SettlementFailureReason.PaymentNoticeMissing =>
+               Validation("order.settlementNoticeMissing"),
+             SettlementFailureReason.PaymentNoticeTooLong =>
+               Validation("order.settlementNoticeTooLong"),
+             SettlementFailureReason.UnknownOrderItemId =>
+               Unprocessable("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
+             _ => new Never().OfType<ProblemDescription>(failure.Reason)
+           };
+  }
+
   public ProblemDescription Describe(RoutingFailure failure)
   {
     return failure.Reason switch
@@ -83,10 +101,15 @@ public sealed class ResultEnvelope
 
   private ProblemDescription Unprocessable(string messageKey, Guid? offendingCatalogItemId)
   {
+    return Unprocessable(messageKey, "catalogItemId", offendingCatalogItemId);
+  }
+
+  private ProblemDescription Unprocessable(string messageKey, string parameterName, Guid? offendingId)
+  {
     Dictionary<string, string> parameters = [];
-    if (offendingCatalogItemId is not null)
+    if (offendingId is not null)
     {
-      parameters["catalogItemId"] = offendingCatalogItemId.Value.ToString();
+      parameters[parameterName] = offendingId.Value.ToString();
     }
 
     return new()

@@ -1,4 +1,4 @@
-﻿namespace GastronomyApp.Core.Entities;
+namespace GastronomyApp.Core.Entities;
 
 public sealed class OrderItem
 {
@@ -13,4 +13,12 @@ public sealed class OrderItem
   public required int UnitPriceCents { get; set; }
 
   public string? Note { get; set; }
+
+  public DateTime? SettledAtUtc { get; set; }
+
+  public int? ChargedPriceCents { get; set; }
+
+  public Guid? SettledByStaffMemberId { get; set; }
+
+  public string? PaymentNotice { get; set; }
 }

@@ -14,13 +14,17 @@ off, and a server with a free hand still delivers the tray.
 Flow:
 
 1. A server opens a web page on their own phone, picks items and quantities, enters a table name, sees
-   the running total (a calculation aid only, cash is handled by hand), and places the order.
+   the running total (a calculation aid only, cash is handled by hand), and places the order. They
+   either send it settled, when the guest pays on the spot, or send it open, when the table runs a tab.
 2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor) and prints
    each location's slice on that location's thermal receipt printer.
 3. Staff produce the items, put them on a tray with the printed slip, and a server delivers it.
+4. A separate screen on the phone lists what each table still has open, so a server can settle a
+   table's items later, or settle them at zero with a typed reason when something is given away.
 
-**No money is handled.** The app displays prices to help the server add up. It takes no payment, stores
-no payment data, and issues no receipts to guests.
+**No money changes hands in the app.** It displays prices to help the server add up, and it records
+whether items have been settled so the people running the stand can see what a table still owes. It
+takes no payment, handles no cash, and never prints or issues a receipt.
 
 ## Structure
 

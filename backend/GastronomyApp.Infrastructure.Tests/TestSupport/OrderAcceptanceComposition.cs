@@ -14,6 +14,7 @@ public sealed class OrderAcceptanceComposition
                                                    new StationRepository(dbContext),
                                                    new SequenceNumberAllocator(dbContext),
                                                    new(),
+                                                   new(),
                                                    new SystemClock());
 
     return new(dbContext, orderRepository, acceptanceService);

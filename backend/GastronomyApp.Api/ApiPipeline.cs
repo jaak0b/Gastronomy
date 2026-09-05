@@ -23,6 +23,7 @@ public sealed class ApiPipeline
     app.MapSessionEndpoints();
     app.MapCatalogEndpoints();
     app.MapOrderEndpoints();
+    app.MapOpenItemEndpoints();
     app.MapPrinterStatusEndpoints();
     app.MapStationEndpoints();
     app.MapHealthEndpoints();

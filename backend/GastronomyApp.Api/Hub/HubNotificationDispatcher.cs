@@ -135,6 +135,14 @@ public sealed class HubNotificationDispatcher : IPrintCallbacks
     }
   }
 
+  public async Task PushOrderItemsSettledAsync(OrderItemsSettledEvent payload, CancellationToken ct)
+  {
+    await SendToAsync(_eventNames.OrderItemsSettled,
+                      payload,
+                      [_groupNames.Devices, _groupNames.Admin],
+                      ct);
+  }
+
   public async Task PushCatalogChangedAsync(string version, CancellationToken ct)
   {
     await SendToAsync(_eventNames.CatalogChanged,

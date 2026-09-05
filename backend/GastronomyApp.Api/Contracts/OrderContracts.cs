@@ -19,6 +19,8 @@ public sealed record PlaceOrderRequest
 
   public string? Note { get; init; }
 
+  public bool SettleOnSend { get; init; }
+
   public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
 }
 

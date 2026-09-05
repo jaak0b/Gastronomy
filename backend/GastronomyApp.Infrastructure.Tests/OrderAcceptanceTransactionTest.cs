@@ -111,6 +111,7 @@ public sealed class OrderAcceptanceTransactionTest
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Note = null,
+             SettleOnSend = false,
              Items =
              [
                new()

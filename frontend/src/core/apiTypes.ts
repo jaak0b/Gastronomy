@@ -63,7 +63,51 @@ export interface OrderSubmitRequest {
   clientOrderId: string
   tableName: string
   note: string | null
+  settleOnSend: boolean
   items: OrderSubmitItem[]
+}
+
+export interface OpenOrderItem {
+  orderItemId: string
+  orderId: string
+  globalOrderNumber: number
+  itemName: string
+  note: string | null
+  unitPriceCents: number
+  orderedAtUtc: string
+}
+
+export interface GivenAwayOrderItem {
+  orderItemId: string
+  orderId: string
+  globalOrderNumber: number
+  itemName: string
+  waivedAmountCents: number
+  paymentNotice: string | null
+  settledAtUtc: string
+}
+
+export interface OpenTable {
+  tableName: string
+  openAmountCents: number
+  givenAwayAmountCents: number
+  items: OpenOrderItem[]
+  givenAwayItems: GivenAwayOrderItem[]
+}
+
+export interface OpenItemsResponse {
+  tables: OpenTable[]
+  itemsWithoutAnOrderCount: number
+}
+
+export interface TableNamesResponse {
+  tableNames: string[]
+}
+
+export interface SettlementResponse {
+  settledOrderItemIds: string[]
+  alreadySettledOrderItemIds: string[]
+  otherPhonesWereTold: boolean
 }
 
 export interface OrderSubmitResponse {

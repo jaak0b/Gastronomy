@@ -23,6 +23,8 @@ public sealed record HubEventNames
 
   public string OrderStatusChanged { get; } = "OrderStatusChanged";
 
+  public string OrderItemsSettled { get; } = "OrderItemsSettled";
+
   public string StationBacklogChanged { get; } = "StationBacklogChanged";
 
   public string PrinterStatusChanged { get; } = "PrinterStatusChanged";

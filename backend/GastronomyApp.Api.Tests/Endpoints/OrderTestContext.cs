@@ -12,7 +12,12 @@ public sealed record OrderBody(
   Guid ClientOrderId,
   string TableName,
   string? Note,
-  IReadOnlyList<OrderItemBody> Items);
+  IReadOnlyList<OrderItemBody> Items,
+  bool SettleOnSend = false);
+
+public sealed record SettleItemsBody(IReadOnlyList<Guid> OrderItemIds);
+
+public sealed record SettleFreeOfChargeBody(IReadOnlyList<Guid> OrderItemIds, string? PaymentNotice);
 
 public sealed class OrderTestContext : IAsyncDisposable
 {

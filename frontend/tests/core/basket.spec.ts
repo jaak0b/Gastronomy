@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { basketItemCount, buildBasketView, refreshLineSnapshots } from '../../src/core/basket'
+import {
+  basketItemCount,
+  buildBasketView,
+  refreshLineSnapshots,
+  withoutLinesNoLongerOnTheMenu,
+} from '../../src/core/basket'
 import { orderTotalCents } from '../../src/core/totals'
+import { DRAFT_STORAGE_KEY } from '../../src/core/draftCart'
 import type { Catalog, DraftOrder } from '../../src/core/apiTypes'
 
 function catalog(): Catalog {
@@ -32,7 +38,6 @@ function catalog(): Catalog {
       { id: 'station-theke-innen', name: 'Theke innen', sortOrder: 2 },
       { id: 'station-theke-aussen', name: 'Theke aussen', sortOrder: 3 },
     ],
-    tableSuggestions: [{ label: 'Tisch 1', sortOrder: 1 }],
   }
 }
 
@@ -225,6 +230,94 @@ describe('refreshLineSnapshots', () => {
       name: 'Currywurst',
       unitPriceCents: 400,
     })
+  })
+})
+
+describe('withoutLinesNoLongerOnTheMenu', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  function draftWithOneVanishedItem(): DraftOrder {
+    return draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        unitPriceCents: 350,
+      },
+      {
+        catalogItemId: 'item-gone',
+        note: 'ohne Zwiebeln',
+        stationId: null,
+        name: 'Currywurst',
+        unitPriceCents: 400,
+      },
+    ])
+  }
+
+  it('takes out the line the laptop no longer knows, so the order can be sent', () => {
+    const remaining = withoutLinesNoLongerOnTheMenu(draftWithOneVanishedItem(), catalog())
+
+    expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bratwurst'])
+  })
+
+  it('leaves a line whose item only sold out, because that item still exists', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-bier',
+        note: null,
+        stationId: null,
+        name: 'Bier',
+        unitPriceCents: 420,
+      },
+    ])
+
+    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+
+    expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bier'])
+  })
+
+  it('keeps the table and the note the server has already typed', () => {
+    const draft = { ...draftWithOneVanishedItem(), tableName: 'Tisch 12', note: 'schnell bitte' }
+
+    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+
+    expect(remaining.tableName).toBe('Tisch 12')
+    expect(remaining.note).toBe('schnell bitte')
+  })
+
+  it('writes the shortened order to storage, so a reload does not bring the line back', () => {
+    withoutLinesNoLongerOnTheMenu(draftWithOneVanishedItem(), catalog())
+
+    const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) ?? 'null')
+
+    expect(stored.lines).toEqual([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        unitPriceCents: 350,
+      },
+    ])
+  })
+
+  it('changes nothing when every item on the order is still on the menu', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        unitPriceCents: 350,
+      },
+    ])
+
+    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+
+    expect(remaining.lines).toHaveLength(1)
   })
 })
 

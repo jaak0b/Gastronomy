@@ -15,5 +15,10 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
     builder.Property(item => item.ItemName).IsRequired().HasMaxLength(60);
     builder.Property(item => item.UnitPriceCents).IsRequired();
     builder.Property(item => item.Note).IsRequired(false).HasMaxLength(200);
+    builder.Property(item => item.SettledAtUtc).IsRequired(false);
+    builder.Property(item => item.ChargedPriceCents).IsRequired(false);
+    builder.Property(item => item.SettledByStaffMemberId).IsRequired(false);
+    builder.Property(item => item.PaymentNotice).IsRequired(false).HasMaxLength(200);
+    builder.HasIndex(item => item.SettledAtUtc);
   }
 }

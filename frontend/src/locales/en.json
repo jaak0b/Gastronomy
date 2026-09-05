@@ -33,7 +33,8 @@
     "stationFaulty": "Tell the people at {name} about every order in person. The printer there is not accepting anything any more.",
     "stationWaiting": "{count} slip is waiting there. | {count} slips are waiting there.",
     "settings": "Settings",
-    "stations": "Stations"
+    "stations": "Stations",
+    "openItems": "Open items"
   },
   "settings": {
     "title": "Settings",
@@ -75,10 +76,12 @@
     "tableIs": "Table: {name}",
     "goesTo": "Goes to {name}",
     "total": "Total",
-    "send": "Send order",
+    "send": "Send the order",
+    "sendAndSettle": "Send the order and settle it",
     "sending": "Sending",
     "sent": "Order {number} has arrived.",
     "back": "Back to the items",
+    "removeLinesNoLongerOnTheMenu": "Remove the items that are no longer on the menu",
     "sendFailed": "Tap \"Send again\". The laptop could not be reached, and the order is still here in full.",
     "sendFailedDatabase": "Tap \"Send again\". The laptop could not save the order just now, and the order is still here in full.",
     "retry": "Send again",
@@ -97,7 +100,39 @@
     "submissionIdReused": "Take the change as a new order and tell the station. This order was already sent with different contents.",
     "tableNameMissing": "Enter a table before you send.",
     "tableNameTooLong": "This table is too long. Write it shorter, for example: Table 12.",
-    "unknownItem": "One item on this order no longer exists. Reload the menu and build the order again."
+    "unknownItem": "Tap \"Remove the items that are no longer on the menu\", then send the order again. One item on this order is no longer on the menu.",
+    "settlementNoItemsSelected": "Choose the items you want to settle first.",
+    "settlementTooManyItemsSelected": "Settle the table in several steps. This is too many items at once.",
+    "settlementNoticeMissing": "Enter a reason before you settle free of charge.",
+    "settlementNoticeTooLong": "Write the reason more briefly. It cannot be saved at this length.",
+    "settlementUnknownItem": "Reload the list. The laptop no longer knows one of the selected items, so nothing was settled."
+  },
+  "openItems": {
+    "title": "Open items",
+    "empty": "Nothing is open. Every table is settled.",
+    "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",
+    "tableOpen": "Open: {amount}",
+    "wholeTable": "Select the whole table",
+    "fromOrder": "Order {number}",
+    "itemNote": "Note: {note}",
+    "selected": "Selected: {amount}",
+    "settle": "Settle",
+    "settleFreeOfCharge": "Settle free of charge",
+    "freeOfChargeTitle": "Settle free of charge",
+    "freeOfChargeHelp": "Write down why these items cost nothing. The reason stays saved with the order.",
+    "reason": "Reason",
+    "reasonPlaceholder": "For example: food for the band",
+    "reasonMissing": "Enter a reason before you settle free of charge.",
+    "confirmFreeOfCharge": "Settle free of charge",
+    "cancel": "Cancel",
+    "givenAwayHeading": "Given away free of charge in the last 24 hours: {amount}",
+    "givenAwayHelp": "No money was taken for these items.",
+    "givenAwayReason": "Reason: {reason}",
+    "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the laptop can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the laptop can no longer find the orders they belong to.",
+    "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Check whether you took money for it and give that money back to the guest. | Somebody else had already settled {count} items in your selection. Check whether you took money for them and give that money back to the guest.",
+    "otherPhonesWereNotTold": "The items are settled. The other phones were not told, so their list may still be out of date.",
+    "settleFailed": "Try again. Settling did not work.",
+    "settleNotReached": "Tap \"Settle\" again. The laptop could not be reached, so nothing was settled."
   },
   "admin": {
     "notOnLaptop": "Press \"Open the admin pages\" in the Ordering system window on the laptop. The admin pages do not open on a phone.",
@@ -219,7 +254,12 @@
       "copied": "Address copied",
       "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
-      "qrAlt": "QR code for setting the phone up"
+      "qrAlt": "QR code for setting the phone up",
+      "qrAlreadyUsed": "Create a new QR code. This one has already been used by a phone.",
+      "qrReplaced": "Use the newer QR code. This one was replaced when a newer one was created.",
+      "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
+      "qrUnreachable": "Reload the page. The laptop did not deliver the QR code.",
+      "newQrCode": "Create a new QR code"
     },
     "orders": {
       "title": "Orders",

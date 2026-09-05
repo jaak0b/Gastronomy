@@ -26,6 +26,8 @@ public sealed record OrderAcceptanceRequest
 
   public string? Note { get; init; }
 
+  public required bool SettleOnSend { get; init; }
+
   public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
 }
 
@@ -39,6 +41,7 @@ public sealed class OrderAcceptanceService
 
   private readonly IOrderRepository _orderRepository;
   private readonly OrderRoutingResolver _routingResolver;
+  private readonly OrderItemSettlementService _settlementService;
   private readonly IStationRepository _stationRepository;
 
   public OrderAcceptanceService(IOrderRepository orderRepository,
@@ -46,6 +49,7 @@ public sealed class OrderAcceptanceService
                                 IStationRepository stationRepository,
                                 INumberAllocator numberAllocator,
                                 OrderRoutingResolver routingResolver,
+                                OrderItemSettlementService settlementService,
                                 IClock clock)
   {
     _orderRepository = orderRepository;
@@ -53,6 +57,7 @@ public sealed class OrderAcceptanceService
     _stationRepository = stationRepository;
     _numberAllocator = numberAllocator;
     _routingResolver = routingResolver;
+    _settlementService = settlementService;
     _clock = clock;
   }
 
@@ -227,15 +232,22 @@ public sealed class OrderAcceptanceService
         order.StationOrders.Add(stationOrder);
       }
 
-      stationOrder.Items.Add(new()
-                             {
-                               Id = Guid.NewGuid(),
-                               StationOrderId = stationOrder.Id,
-                               CatalogItemId = resolvedItem.CatalogItem.Id,
-                               ItemName = resolvedItem.CatalogItem.Name,
-                               UnitPriceCents = resolvedItem.Request.UnitPriceCents,
-                               Note = resolvedItem.Request.Note
-                             });
+      OrderItem orderItem = new()
+                            {
+                              Id = Guid.NewGuid(),
+                              StationOrderId = stationOrder.Id,
+                              CatalogItemId = resolvedItem.CatalogItem.Id,
+                              ItemName = resolvedItem.CatalogItem.Name,
+                              UnitPriceCents = resolvedItem.Request.UnitPriceCents,
+                              Note = resolvedItem.Request.Note
+                            };
+
+      if (request.SettleOnSend)
+      {
+        _settlementService.SettleAtTheDisplayedPrice(orderItem, request.StaffMemberId, createdAtUtc);
+      }
+
+      stationOrder.Items.Add(orderItem);
     }
 
     return order;

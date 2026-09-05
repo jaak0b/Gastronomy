@@ -459,33 +459,34 @@ admin preview in the assignment screen, and by tests. It is not reimplemented an
 
 ### 2.7 Table naming: free text, with suggestions
 
-**Decision: a table is a free text label on the order, not an entity that orders point to.** A
-`TableSuggestion` table exists purely to prefill a list of buttons on the phone.
+**Decision: a table is a free text label on the order, not an entity that orders point to.** There is
+no table entity and no separate list of table names to maintain.
 
 Justification. At a festival the tables are beer benches. They get moved, added, and joined together
 during the evening, and guests sit at whatever is standing. If the order required a foreign key into a
 table list, then the first table that is not in the list blocks an order, and blocking an order is the
-exact failure this product exists to prevent. Free text can never block. The suggestion list gives the
-common case one tap and keeps spellings consistent, which is all the structure that is actually needed:
-nothing in the system aggregates by table.
+exact failure this product exists to prevent. Free text can never block.
 
-| TableSuggestion field | Type | Notes |
-|---|---|---|
-| Id | Guid | |
-| Label | string(40) | For example "Tisch 12" |
-| SortOrder | int | |
+**The suggestions come from the table names already typed on existing orders**, which
+`GET /api/open-items/table-names` returns. It is read when the ordering screen opens, not on the
+push that follows every placed order, and it looks only at the most recent 200 orders, so the list
+cannot grow without a bound over a long festival. The table field on the phone is a combobox: the
+server types freely, and the names already in use sit in its dropdown, exactly as the category field in
+the admin item form works. That is what keeps spellings consistent, and it needs no admin screen and no
+entity of its own.
 
 Invariants:
 
-* `Order.TableLabel` is required, trimmed, collapsed to single spaces, between 1 and 40 characters.
-* `Order.TableLabel` need not match any suggestion.
+* `Order.TableName` is required and between 1 and 40 characters.
+* `Order.TableName` need not match any name already in use.
 
-"Tisch 12", "tisch 12" and "T12" are three labels for one table, and that is accepted rather than
-normalised, because nothing aggregates by table and normalising would be work for no gain.
+**The stored name is not normalised.** "Tisch 12", "tisch 12" and "T12" stay three different tables,
+because grouping on the exact string is the rule a volunteer can predict, and normalising is code that
+is easy to get subtly wrong. The dropdown of names already in use is what prevents the typo in the
+first place, at the moment it would be made.
 
-After the first evening the department has a real list for free: the admin screen offers to add every
-distinct label that servers actually typed during the last session, so the second festival starts with
-suggestions that match how this crew names its tables.
+The open items screen groups by that exact name, so a table settles together rather than order by
+order. Section 5.4 describes the endpoints behind it.
 
 ### 2.8 StaffMember, Device, EnrolmentInvitation
 
@@ -555,9 +556,11 @@ the slip, the phone's settings sheet and the admin list all read it from there.
 | ConsumedAtUtc, ConsumedByDeviceId | | Set atomically by the successful redemption |
 
 The QR URL and the six digits are returned once, in the response that created the invitation, and after
-that they exist only on the admin's screen. They are never written to the database and never fetchable
-again, because persisting them beside their own hash would make the hashing decorative. An admin who
-reloads the page creates a new invitation instead, which is one click.
+that they exist only on the admin's screen and in one in-memory slot on the laptop that holds the
+single outstanding invitation so the QR picture can be drawn. They are never written to the database
+and never fetchable again, because persisting them beside their own hash would make the hashing
+decorative. Restarting the laptop empties that slot, so an admin who reloads the page creates a new
+invitation instead, which is one click.
 
 Invariants:
 
@@ -635,8 +638,36 @@ dissolved rather than fixed. The mechanism it described a defect in no longer ex
 | CatalogItemId | Guid | |
 | ChosenProductionLocationId | Guid? | Null when the item had one candidate. Set when the server chose. |
 | ItemNameSnapshot | string(60) | |
-| UnitPriceCentsSnapshot | int | |
+| UnitPriceCentsSnapshot | int | The price the phone displayed. Never overwritten, not even when the line is given away. |
 | Note | string(100)? | For example "ohne Zwiebeln", printed under the line |
+| SettledAtUtc | DateTime? | Null means the line is still open. Non-null means it has been settled. This is the paid flag: there is no separate boolean, so a flag and a timestamp can never disagree. |
+| ChargedPriceCents | int? | What was actually collected. Null while open, equal to the unit price on a normal settle, zero when the line was given away. |
+| PaymentNotice | string(200)? | The reason a line was given away. Required whenever `ChargedPriceCents` is below the unit price, otherwise null. |
+| SettledByStaffMemberId | Guid? | Which waiter collected the money for this line. Null while the line is open. It holds no foreign key, exactly like `Order.StaffMemberId`, so a waiter can be taken off the list without rewriting the history of what was collected. |
+
+**Who took the order and who collected the money are two different people often enough that both are
+recorded.** The waiter who walks the table writes `Order.StaffMemberId`; the waiter who later takes the
+cash writes `SettledByStaffMemberId` on each line they settle, whether that is on send, in a later
+settle, or when the line is given away free of charge. The field is stored and nothing more: no API
+response carries it and no screen shows it. It is there for the takings-per-waiter figures the fire
+department will want after the festival.
+
+**Payment is tracked per line, because a table often pays for only part of what is open**, and because
+food and drink are sometimes given away, for example to the band playing at the festival. Everything
+above the line is derived and never stored, exactly as an order has no stored status or total:
+
+* An order is fully settled when all of its lines are.
+* A table's open amount is the sum of the unit prices over its unsettled lines.
+* What was given away is the unit price minus `ChargedPriceCents`, summed over settled lines.
+
+`POST /api/orders` carries `settleOnSend`. When it is true every line of the order is settled at its
+displayed price the moment the order is accepted, which is the guest who pays on the spot, and the
+waiter sending the order is recorded as the one who collected the money. When it is
+false every line is left open, which is the table running a tab. The printed slip is identical either
+way, and no printing behaviour depends on this field.
+
+**No receipt is ever printed or issued to a guest.** Settlement is a note for the people running the
+stand about what is still owed, not an accounting record and not a till.
 
 Invariants:
 
@@ -647,8 +678,14 @@ Invariants:
 * `line.LocationTicket.OrderId == line.OrderId` for every line.
 * `TotalCents` equals the recomputed sum. This is asserted in the acceptance transaction and covered by
   a test, because the total is the only number a guest hears out loud.
-* An accepted order is immutable except for its status. Lines are never added, removed, or edited, and
-  an order is never cancelled or deleted.
+* An accepted order is immutable except for its status and the settlement of its lines. Lines are never
+  added, removed, renamed or repriced, and an order is never cancelled or deleted.
+* A settled line is never settled a second time. Settling a line that is already settled leaves the
+  first settlement standing, so a double tap cannot double count and cannot overwrite the reason
+  somebody typed earlier.
+* `SettledAtUtc`, `ChargedPriceCents` and `SettledByStaffMemberId` are either all three null or all
+  three set. One place in the code settles a line and it writes the three together, so a settled line
+  can never be missing the time, the amount, or the name of the waiter who collected it.
 * `ClientOrderId` carries a unique index and is the whole duplicate protection for a resubmission.
   Section 9.3 describes it from the phone's side.
 
@@ -1428,10 +1465,13 @@ Device auth. One call, everything the ordering screen needs.
       "locationIds": ["kitchen-id"]
     }
   ],
-  "locations": [ { "id": "kitchen-id", "name": "Küche", "sortOrder": 1 } ],
-  "tableSuggestions": [ { "label": "Tisch 12", "sortOrder": 1 } ]
+  "locations": [ { "id": "kitchen-id", "name": "Küche", "sortOrder": 1 } ]
 }
 ```
+
+**Table names are not in this payload.** They change with every order, while the catalog changes when
+somebody edits the menu, so the two would go stale at different rates. The phone gets the table names
+already in use from `GET /api/open-items` instead, as section 2.7 explains.
 
 `locationIds` holds the item's active candidate locations, always at least one. An item with exactly
 one is routed silently. An item with more than one makes the phone ask, once, as the line is added.
@@ -1468,6 +1508,7 @@ Request:
   "clientOrderId": "3f7c9d2e-...",
   "tableLabel": "Tisch 12",
   "note": null,
+  "settleOnSend": false,
   "expectedTotalCents": 1050,
   "lines": [
     { "catalogItemId": "...", "note": null, "productionLocationId": null },
@@ -1481,6 +1522,13 @@ Request:
 and reuses the same value for every retry of that same order.** It is never regenerated, not by a
 retry, not by a reload, and not by a re-enrolment. Section 9.3 covers it from the phone's side, and it
 is the whole reason a manual retry cannot produce a second order.
+
+`settleOnSend` says whether the guest paid on the spot. True settles every line of the order at its
+displayed price as the order is accepted; false leaves every line open for the table to settle later.
+It changes nothing about the slip, the routing or the printing. A retry carries the same value the
+server chose, because the phone remembers which of the two send buttons was tapped; a repeat of an
+already accepted `clientOrderId` returns the original order unchanged either way, and the payment state
+of an order that already exists is corrected on the open items screen rather than by resending it.
 
 `productionLocationId` is the server's choice for that line. It is required when the item has more than
 one active candidate location and is omitted otherwise. When supplied it must name one of that item's
@@ -1574,6 +1622,126 @@ There is no endpoint that cancels, edits, or deletes an order. Section 3.6 gives
 section 1.5 records it as a non-goal so the question is answered once rather than every time it is
 asked.
 
+#### The open items endpoints
+
+All of them are device authenticated. They belong to the phones, not to the admin pages.
+
+#### GET /api/open-items
+
+Everything the open items screen needs, in one call.
+
+```json
+{
+  "tables": [
+    {
+      "tableName": "Tisch 12",
+      "openAmountCents": 700,
+      "givenAwayAmountCents": 400,
+      "items": [
+        {
+          "orderItemId": "...",
+          "orderId": "...",
+          "globalOrderNumber": 137,
+          "itemName": "Bratwurst mit Brot",
+          "note": null,
+          "unitPriceCents": 350,
+          "orderedAtUtc": "2026-08-26T17:42:03Z"
+        }
+      ],
+      "givenAwayItems": [
+        {
+          "orderItemId": "...",
+          "orderId": "...",
+          "globalOrderNumber": 137,
+          "itemName": "Bier",
+          "waivedAmountCents": 400,
+          "paymentNotice": "Getränk für die Kapelle",
+          "settledAtUtc": "2026-08-26T18:10:31Z"
+        }
+      ]
+    }
+  ],
+  "itemsWithoutAnOrderCount": 0
+}
+```
+
+`items` holds only what is still unsettled, grouped by the exact table name, so a table settles
+together rather than order by order. `openAmountCents` is the sum of the unit prices of that table's
+unsettled lines and is derived on every read, never stored.
+
+`givenAwayItems` is the record of what the table was given for free, so the reason somebody typed is
+readable afterwards instead of only being stored. It covers the last 24 hours, which is the working
+window of one festival evening, and `givenAwayAmountCents` is the sum of what was waived, derived on
+every read exactly like the open amount. A table whose lines were all given away and which owes
+nothing still appears in the list, otherwise the record would be invisible again.
+
+`itemsWithoutAnOrderCount` counts unsettled lines whose order the laptop can no longer resolve.
+Those lines cannot be grouped under a table and are therefore missing from the list, so the count is
+reported rather than dropped: the laptop logs each id at error level and the phone tells the server
+that the list is short and to ask at the table. The read does not fail over it, because one broken
+row must not take the only screen showing what the tables owe away from every table.
+
+#### GET /api/open-items/table-names
+
+The names the table field on the ordering screen offers in its dropdown.
+
+```json
+{ "tableNames": ["Tisch 12", "Tisch 3"] }
+```
+
+Distinct table names taken from the most recent 200 orders, settled or not, sorted. The phone reads
+it when the ordering screen opens rather than on every push, because the dropdown is the only thing
+that needs it and a name list has no business riding the path that runs on every placed order.
+
+#### POST /api/open-items/settle
+
+Settles the named lines at the price the phone displayed.
+
+Request: `{ "orderItemIds": ["...", "..."] }`
+
+#### POST /api/open-items/settle-free-of-charge
+
+Settles the named lines at zero and stores the typed reason on each one.
+
+Request: `{ "orderItemIds": ["...", "..."], "paymentNotice": "Essen für die Kapelle" }`
+
+Response 200 for both, naming what actually changed:
+
+```json
+{
+  "settledOrderItemIds": ["..."],
+  "alreadySettledOrderItemIds": [],
+  "otherPhonesWereTold": true
+}
+```
+
+| Status | When |
+|---|---|
+| 200 | Applied. Lines that were already settled are listed under `alreadySettledOrderItemIds` and were left exactly as they were. |
+| 400 | Nothing selected, more than 500 lines selected, or a free settle without a reason |
+| 401 | Unknown or revoked token |
+| 422 | One of the ids is not a line the laptop knows. Nothing at all is settled. |
+| 503 | The database could not be written. Nothing was settled and the phone offers the action again. |
+
+**What happens when a step fails, stated plainly.** The whole call runs in one `BEGIN IMMEDIATE`
+transaction, so a selection holding one bad id settles none of the selection rather than half of it.
+An id that is already settled is skipped rather than settled again, so a double tap cannot collect
+twice and cannot overwrite the reason somebody typed earlier. **Whenever `alreadySettledOrderItemIds`
+comes back non-empty the phone says so, including when the rest of the selection settled normally**,
+and it names how many lines somebody else had already taken so the server can check whether they
+collected that cash a second time. A partly overlapping settle is never reported as a plain success.
+A request that never reached the laptop leaves the selection standing on screen with the action
+offered again, and nothing is settled in the background. Every refusal comes back as a message key
+the phone renders in the server's language, never as a stack trace.
+
+A successful settle pushes `OrderItemsSettled` (section 6) to every phone, so a second phone looking at
+the same table sees the lines disappear instead of settling them a second time. That push happens
+after the transaction has committed and is a side channel: if it fails the laptop logs it and answers
+`"otherPhonesWereTold": false`, and the phone says that the lines are settled but the other phones may
+still show a stale list. A committed settle is never reported back as a failed one, because telling a
+server that settling did not work when it did is the same money error as reporting a clash as a
+success.
+
 #### GET /api/printers/status
 
 Device auth. The list the phone uses to warn before an order is even placed.
@@ -1662,18 +1830,44 @@ the invitation endpoint below is how that is started.
 | Method | Path | Body | Response |
 |---|---|---|---|
 | POST | /api/admin/enrolment/invitations | `{}` for somebody new, or `{staffMemberId}` for somebody already in the list | 201 `{invitationId, qrUrl, sixDigitCode, expiresAtUtc, staffMember}`. Consumes any invitation still outstanding. With a `staffMemberId` it also revokes that person's phone in the same transaction and pushes `DeviceRevoked` to it. 404 when that person does not exist. |
+| GET | /api/admin/enrolment/invitations/{invitationId}/qr.svg | | 200, the QR code for that one invitation as an SVG, with `Cache-Control: no-store`. 410 when the invitation was already used by a phone (`admin.enrol.qrAlreadyUsed`), when a newer invitation replaced it (`admin.enrol.qrReplaced`), or when its five minutes ran out (`admin.enrol.expired`). 404 with `admin.enrol.qrUnavailable` when no invitation of that id exists, or when the laptop no longer holds the code the picture would have to encode, which is what a restart costs. |
 
-That is the whole enrolment API, and the revoke inside it is the point of the call rather than a side
-effect of it. The usual reason to issue somebody a second QR code is that their first phone has to stop
-working immediately: it is lost, or it is flat and its owner is picking up a different handset. Waiting
-until the new phone is set up would leave the old one able to order in the meantime, so the revoke
-happens when the code is created. An invitation nobody scans therefore leaves that person without a
-phone until the admin creates another one, which is the right outcome for a phone that is gone.
+That is the whole enrolment API, and the revoke inside the first call is the point of it rather than a
+side effect of it. The usual reason to issue somebody a second QR code is that their first phone has to
+stop working immediately: it is lost, or it is flat and its owner is picking up a different handset.
+Waiting until the new phone is set up would leave the old one able to order in the meantime, so the
+revoke happens when the code is created. An invitation nobody scans therefore leaves that person
+without a phone until the admin creates another one, which is the right outcome for a phone that is
+gone.
+
+**The QR image is addressed by the invitation it belongs to, never by "the current one".** The picture
+and the URL printed under it come from one invitation, so creating a second invitation can never leave
+a panel showing one code as a picture and another as text, and a new invitation always means a new
+address for the browser to fetch. The plaintext code is only ever held in memory for the one
+outstanding invitation, which is why the endpoint cannot re-render a code after a restart and says so
+in words instead of serving a broken picture.
 
 The QR URL is built from the address the laptop is actually reachable on. The backend enumerates its
-non-loopback IPv4 addresses at startup and whenever an invitation is created. When there is more than
-one, the admin picks which network the phones are on, and the choice is remembered. The URL has the
-form `http://192.168.1.23:5000/j/8f2a1c...`.
+IPv4 addresses at startup and whenever an invitation is created, and picks the first one of the
+following order:
+
+1. **Anything a phone cannot reach is left out**: an interface that is not up, a loopback interface, a
+   tunnel interface, any IPv6 address, any loopback address, and **any IPv4 link-local address in
+   `169.254.0.0/16`**. Every Windows laptop carries two or three of those link-local addresses on
+   virtual Wi-Fi Direct and cellular adapters, and the operating system does not enumerate them in a
+   stable order, so without this rule the QR code carries a dead address on some starts and a working
+   one on others.
+2. What is left is ordered: a private site address (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`)
+   before anything else, an address on an Ethernet or Wi-Fi interface before one on any other kind,
+   and otherwise the numerically lowest address. The order therefore does not depend on the order the
+   operating system happened to report, so the same laptop on the same network picks the same address
+   every start.
+3. When nothing is left, the laptop falls back to `127.0.0.1`, which is honest: no phone can reach it
+   and the operator is told there is no network.
+
+This rule lives in one place, `ReachableAddressPolicy` in the backend, and the desktop window's own
+network check calls the same code rather than repeating it. The URL has the form
+`http://192.168.1.23:5000/j/8f2a1c...`.
 
 **The address the phones hold is the address in that QR code, and nothing else in the product survives
 it changing.** A phone's stored token lives in the browser's storage for that exact origin, so a router
@@ -1959,6 +2153,7 @@ the group grants nothing the endpoint did not.
 | `OrderAccepted` | `{orderId, globalOrderNumber, tableLabel, totalCents, tickets[]}` | `admin`, `stations` | The admin list gains a row. The station page refetches its ticket list, because its list is every open ticket (section 5.6) rather than only the failed ones. |
 | `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, failureReason, printerHasPaper, messageKey, parameters}` | `admin`, `stations` | The admin list updates that ticket's row and, when the status needs a human, renders the message and its next step in the laptop's language. The station page refetches its ticket list. |
 | `OrderStatusChanged` | `{orderId, status}` | `admin` | The admin list updates the order's headline state. |
+| `OrderItemsSettled` | `{orderItemIds, tableNames}` | `devices`, `admin` | The open items screen refetches `GET /api/open-items`, so a second phone looking at the same table sees the lines disappear instead of settling them again. The payload names what changed and is never rendered from directly. |
 | `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | `devices`, `admin`, `stations` | Phones show a banner when a station has no paper, is not answering, or has been declared faulty, so the server knows before they take the next order. `waitingTicketCount` is appended to that banner with `header.stationWaiting`. The admin printer screen updates its indicator. The station page re-evaluates which rows offer the acknowledge button. |
 | `PrinterDiscovered` | `{host, port, respondedAtUtc}` | `admin` | The printer search screen adds a row the admin can tap. Tapping it fills in the host and port on the network printer being edited. A printer's type is chosen when it is created and never changes, so there is no kind left to forget to switch. |
 | `CatalogChanged` | `{version}` | `devices`, `admin` | The phone refetches `/api/catalog`. An item that just sold out stays in the picker, greyed and not selectable, and any quantity already in the basket for it is flagged rather than silently dropped. A changed price is picked up the same way, which is what keeps an open basket showing the backend's current prices. |
@@ -2845,9 +3040,11 @@ second tap.
 
 **What is on it.**
 
-* The items, grouped under a heading per category. Categories are ordered by name, and so are the items
-  inside each one. There is no search field and no category filter: a festival menu is short enough to
-  scroll, and every control that is not there is one a volunteer cannot get lost in.
+* A tab per category across the top of the screen, and under it the items of the category whose tab is
+  open. Categories are ordered by name, and so are the items inside each one. The first category is
+  open when the screen opens. There is no search field and no tab that shows everything at once: a
+  festival menu is short enough that one tap reaches any category, and every control that is not there
+  is one a volunteer cannot get lost in.
 * One row per item, showing the name and the price. Touch targets are at least 56 by 56 logical pixels
   with 8 pixels of spacing.
 * Tapping the name or the price of an item row adds one of it and does nothing else: nothing opens and
@@ -2958,6 +3155,13 @@ screen: it is the check before sending, and every change is made where the order
 | `review.sent` | Bestellung {number} ist angekommen. | Order {number} has arrived. |
 | `review.totalChanged` | Sagen Sie dem Gast die neue Summe: {total}. Der Preis wurde gerade am Laptop geändert. | Tell the guest the new total: {total}. The price was changed at the laptop a moment ago. |
 | `review.back` | Zurück zur Auswahl | Back to the items |
+| `review.removeLinesNoLongerOnTheMenu` | Artikel entfernen, die nicht mehr auf der Karte stehen | Remove the items that are no longer on the menu |
+
+**Lines whose item the laptop no longer has.** They are marked in the list as no longer on the menu,
+and while at least one of them is on the order the summary carries a button that takes exactly those
+lines out. Nothing is removed on its own: a guest really did order the item, and the waiter has to see
+what disappears so they can offer a replacement. The button is not shown while every item on the order
+is still on the menu.
 
 **When sending fails.** The screen keeps the order exactly as it was, with every line, station and the
 total, and shows the failure with the retry button directly under it. Nothing is cleared, and
@@ -3164,6 +3368,19 @@ to the person with the phone.
 | `admin.enrol.done` | {name} hat das Telefon eingerichtet. | {name} has set up their phone. |
 | `admin.enrol.expired` | Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt. | Create a new QR code. This one was not scanned for five minutes. |
 | `admin.enrol.codeRetired` | Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen. | Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more. |
+| `admin.enrol.qrAlreadyUsed` | Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Telefon benutzt. | Create a new QR code. This one has already been used by a phone. |
+| `admin.enrol.qrReplaced` | Verwenden Sie den neueren QR-Code. Dieser hier wurde ersetzt, als ein neuer erstellt wurde. | Use the newer QR code. This one was replaced when a newer one was created. |
+| `admin.enrol.qrUnavailable` | Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen. | Create a new QR code. This one cannot be shown any more. |
+| `admin.enrol.qrUnreachable` | Laden Sie die Seite neu. Der Laptop hat den QR-Code nicht geliefert. | Reload the page. The laptop did not deliver the QR code. |
+| `admin.enrol.newQrCode` | Neuen QR-Code erstellen | Create a new QR code |
+
+**A QR code that cannot be drawn is a sentence, never a broken picture.** When the laptop refuses to
+render the code, the panel drops the picture, the validity line and the printed address, because all
+three would be lying, and puts one of the four sentences above in their place with the
+`admin.enrol.newQrCode` button under it. The first three reasons are the ones the laptop can tell apart
+honestly from the invitation row itself: consumed by a device, consumed because a newer invitation
+replaced it, or past its five minutes. The fourth is what the browser says when the request never
+reached the laptop at all.
 
 **Nothing here has to stay open.** The invitation lives in the database for its five minutes, so a
 closed tab, a reload, or a hub connection that dropped does not cancel it, and no phone is waiting on
@@ -3428,6 +3645,12 @@ since vanished from the catalog, the line renders greyed from its last snapshot,
 it still counts toward the line count and the total, and it is still submitted like any other line when
 the order is sent.
 
+**The laptop refuses an order that names an item it does not have**, so those lines have to leave the
+draft before the order can be sent. The summary screen offers a button that removes exactly the lines
+whose item is gone and leaves every other line alone, and the refusal on screen names that button. The
+app never removes such a line by itself, because the guest ordered something and the waiter needs to
+see what falls away in order to offer them something else.
+
 **This is a draft cart and not a queue, and the distinction is load-bearing.** A draft cart holds one
 order, the one on the screen, and nothing ever sends it except a person tapping the send button. It has
 no retry loop, no ordering, no head, no ages, and no state beyond "the server has not sent this yet".
@@ -3683,6 +3906,20 @@ Recorded: the port asked for and granted, whether it differed from the one writt
 folder, startup and shutdown, printer failures, and every bind exception. **Device tokens are never
 logged**, per section 2.
 
+**The whole enrolment lifecycle is recorded too**, because when phones fail to set up at a festival the
+log is the only account of what happened:
+
+| Moment | Level | What the line carries |
+|---|---|---|
+| An invitation was created | Information | The invitation id, the staff member id or nothing when the code is for somebody new, the origin the QR code carries, and when the code stops being valid |
+| An invitation was redeemed | Information | The invitation id, the new device id, and the staff member id the device belongs to |
+| A redemption was refused | Warning | The invitation id where one is known, and the reason in words: the code does not match the invitation that is outstanding, the outstanding invitation had already expired, no invitation is outstanding so the last one was already used or replaced, the person the invitation names is off the list, or the invitation names nobody and the phone sent no name |
+| A phone asked to be set up and sent no code at all | Warning | Nothing beyond that fact |
+
+**Neither the device token nor the enrolment code ever appears in any of those lines.** Both are
+credentials. Ids, addresses and outcomes are what a phone call about a failed setup is actually about,
+and those are what is written.
+
 ### 10.2 Where the data lives
 
 **The database, the log, the mock's slip folder and the backup files live in
@@ -3767,6 +4004,16 @@ missing, which is what makes it a repair as well as a first run.
 `desktop.firstRun.body` says what the Windows prompt is for before it appears. If the elevation is
 declined, `desktop.firstRun.declined` says what still works and where to repair it, and the program
 starts normally.
+
+**The two actions are attempted independently, and a failure in one is never told as a decline.** A
+laptop whose policy forbids firewall changes fails the first action, and the second one still has to
+happen, because a data folder nobody can write to fails every order. The elevated process therefore
+attempts both, writes what went wrong for each into the log file, and reports back with its own exit
+code that elevation was granted and a step still failed. The window then shows
+`desktop.firstRun.setupFailed` after the first run, or `desktop.settings.repairFailed` after the
+repair button, both of which say that the setup could not be completed although the operator confirmed
+the Windows prompt, and where the reason is written down. Telling somebody they declined a prompt they
+accepted sends them to fix the wrong thing.
 
 #### Why the firewall rule is created deliberately and never left to the prompt
 

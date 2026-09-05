@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ modelValue: string; isMissing: boolean }>()
+defineProps<{ modelValue: string; isMissing: boolean; knownTableNames: string[] }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const { t } = useI18n()
@@ -12,19 +12,24 @@ function focus(): void {
   input.value?.querySelector('input')?.focus()
 }
 
+function announce(typed: string | null): void {
+  emit('update:modelValue', typed ?? '')
+}
+
 defineExpose({ focus })
 </script>
 
 <template>
   <div ref="input" class="table-field my-4" :class="{ 'is-missing': isMissing }">
-    <v-text-field
+    <v-combobox
       class="table-input"
       :label="t('catalog.tableName')"
       :placeholder="t('catalog.tablePlaceholder')"
       persistent-placeholder
       :error="isMissing"
+      :items="knownTableNames"
       :model-value="modelValue"
-      @update:model-value="emit('update:modelValue', $event)"
+      @update:model-value="announce($event)"
     />
   </div>
 </template>

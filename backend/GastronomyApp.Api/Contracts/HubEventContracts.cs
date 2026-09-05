@@ -22,6 +22,10 @@ public sealed record PrintJobStatusChangedEvent(
 
 public sealed record OrderStatusChangedEvent(Guid OrderId, string Status);
 
+public sealed record OrderItemsSettledEvent(
+  IReadOnlyList<Guid> OrderItemIds,
+  IReadOnlyList<string> TableNames);
+
 public sealed record StationBacklogChangedEvent(Guid StationId);
 
 public sealed record PrinterStatusChangedEvent(

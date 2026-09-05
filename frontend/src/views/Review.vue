@@ -22,8 +22,15 @@ const canSend = computed(
     order.sendState !== 'sending',
 )
 
-async function send(): Promise<void> {
-  await order.send()
+async function send(settleOnSend: boolean): Promise<void> {
+  await order.send(settleOnSend)
+  if (order.sendState === 'accepted') {
+    navigate('/')
+  }
+}
+
+async function sendAgain(): Promise<void> {
+  await order.sendAgain()
   if (order.sendState === 'accepted') {
     navigate('/')
   }
@@ -47,26 +54,50 @@ function backToItems(): void {
       :language="session.language"
       :station-name-for="catalog.stationName"
     />
+    <v-btn
+      v-if="order.hasLinesNoLongerOnTheMenu"
+      class="drop-lines-no-longer-on-the-menu mt-2"
+      color="warning"
+      variant="outlined"
+      block
+      size="large"
+      @click="order.dropLinesNoLongerOnTheMenu"
+    >
+      {{ t('review.removeLinesNoLongerOnTheMenu') }}
+    </v-btn>
     <SendFailurePanel
       v-if="order.sendState === 'failed' && order.failure !== null"
       :failure="order.failure"
-      @retry="send"
+      @retry="sendAgain"
     />
     <v-btn class="back mt-2 mb-4" variant="text" block @click="backToItems">
       {{ t('review.back') }}
     </v-btn>
     <v-sheet class="review-footer pt-3 pb-4" color="background">
       <TotalDisplay :total-cents="order.totalCents" :language="session.language" />
-      <v-btn
-        class="send mt-2"
-        color="primary"
-        block
-        size="x-large"
-        :disabled="!canSend"
-        @click="send"
-      >
-        {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
-      </v-btn>
+      <template v-if="order.sendState !== 'failed'">
+        <v-btn
+          class="send-and-settle mt-2"
+          color="primary"
+          block
+          size="x-large"
+          :disabled="!canSend"
+          @click="send(true)"
+        >
+          {{ order.sendState === 'sending' ? t('review.sending') : t('review.sendAndSettle') }}
+        </v-btn>
+        <v-btn
+          class="send mt-2"
+          color="primary"
+          variant="outlined"
+          block
+          size="x-large"
+          :disabled="!canSend"
+          @click="send(false)"
+        >
+          {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
+        </v-btn>
+      </template>
     </v-sheet>
   </v-container>
 </template>

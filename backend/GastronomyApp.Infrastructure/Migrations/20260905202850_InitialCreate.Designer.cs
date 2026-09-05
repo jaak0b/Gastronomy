@@ -3,6 +3,7 @@ using System;
 using GastronomyApp.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    partial class GastronomyAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905202850_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.19");
@@ -227,9 +230,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("SettledAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("SettledByStaffMemberId")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("StationOrderId")
