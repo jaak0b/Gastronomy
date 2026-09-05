@@ -6,6 +6,7 @@ import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
 export interface StationBanner {
+  stationId: string
   key: string
   name: string
   waitingCount: number | null
@@ -25,6 +26,9 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
     if (row.isPaperEnd) {
       return 'header.stationPaperOut'
     }
+    if (row.isCoverOpen) {
+      return 'header.stationCoverOpen'
+    }
     return null
   }
 
@@ -36,7 +40,12 @@ export const usePrinterStatusStore = defineStore('printerStatus', () => {
         continue
       }
       const waiting = waitingCounts.value[row.stationId] ?? 0
-      shown.push({ key, name: row.name, waitingCount: waiting > 0 ? waiting : null })
+      shown.push({
+        stationId: row.stationId,
+        key,
+        name: row.name,
+        waitingCount: waiting > 0 ? waiting : null,
+      })
     }
     return shown
   })

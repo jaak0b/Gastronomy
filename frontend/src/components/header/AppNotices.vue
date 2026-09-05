@@ -30,7 +30,7 @@ const connectionKey = computed<string | null>(() => {
 
 const banners = computed(() =>
   printerStatus.banners.map((banner) => ({
-    key: banner.key,
+    stationId: banner.stationId,
     text:
       banner.waitingCount === null
         ? t(banner.key, { name: banner.name })
@@ -63,7 +63,7 @@ const banners = computed(() =>
   </v-alert>
   <v-alert
     v-for="banner in banners"
-    :key="banner.key"
+    :key="banner.stationId"
     class="station-banner"
     type="warning"
     variant="tonal"
