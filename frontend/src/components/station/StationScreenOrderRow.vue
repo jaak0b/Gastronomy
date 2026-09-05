@@ -45,7 +45,7 @@ const statusKey = computed(() => {
   switch (props.stationOrder.status) {
     case 'Queued':
       return 'station.status.waiting'
-    case 'Printing':
+    case 'Sending':
       return 'station.status.printing'
     case 'Blocked':
       return 'station.status.cannotPrint'
@@ -104,7 +104,7 @@ const isReprint = computed(() => props.stationOrder.copyNumber > 0)
         {{ t('station.takeHelp') }}
       </p>
       <p v-else class="take-unavailable">
-        {{ t(stationOrder.canHandleOnPaperReasonKey ?? 'station.takeUnavailable') }}
+        {{ t('station.takeUnavailable') }}
       </p>
       <v-alert
         v-if="noticeKey !== null && noticeKey !== undefined"

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
@@ -18,7 +18,12 @@ export const useStationStore = defineStore('station', () => {
   const selectedStationId = ref<string | null>(null)
   const stationOrders = ref<StationScreenOrderRow[]>([])
   const printer = ref<PrinterStatusRow | null>(null)
-  const loadFailed = ref(false)
+  const stationListLoadFailed = ref(false)
+  const stationOrderLoadFailed = ref(false)
+  const printerLoadFailed = ref(false)
+  const loadFailed = computed(
+    () => stationListLoadFailed.value || stationOrderLoadFailed.value || printerLoadFailed.value,
+  )
   const pendingTicketIds = ref<string[]>([])
   const noticeKeyByTicketId = ref<Record<string, string>>({})
   const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -28,12 +33,11 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function loadStations(): Promise<void> {
-    loadFailed.value = false
     const result = await request<{ stations: Station[] }>('/api/stations', {
       token: deviceToken(),
     })
+    stationListLoadFailed.value = result.kind !== 'ok'
     if (result.kind !== 'ok') {
-      loadFailed.value = true
       return
     }
     stations.value = result.data.stations
@@ -50,6 +54,7 @@ export const useStationStore = defineStore('station', () => {
       `/api/stations/${selectedStationId.value}/station-orders`,
       { token: deviceToken() },
     )
+    stationOrderLoadFailed.value = result.kind !== 'ok'
     if (result.kind === 'ok') {
       stationOrders.value = result.data.stationOrders
     }
@@ -63,6 +68,7 @@ export const useStationStore = defineStore('station', () => {
       `/api/stations/${selectedStationId.value}/status`,
       { token: deviceToken() },
     )
+    printerLoadFailed.value = result.kind !== 'ok'
     if (result.kind === 'ok') {
       printer.value = result.data
     }
@@ -115,6 +121,9 @@ export const useStationStore = defineStore('station', () => {
   }
 
   async function refresh(): Promise<void> {
+    if (stationListLoadFailed.value || stations.value.length === 0) {
+      await loadStations()
+    }
     await loadTickets()
     await loadPrinter()
   }
@@ -131,7 +140,7 @@ export const useStationStore = defineStore('station', () => {
 
   async function selectStation(stationId: string): Promise<void> {
     selectedStationId.value = stationId
-    await loadTickets()
+    await refresh()
   }
 
   return {

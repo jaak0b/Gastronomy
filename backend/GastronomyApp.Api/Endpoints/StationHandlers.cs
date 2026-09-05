@@ -151,7 +151,6 @@ public sealed class StationScreenDescriber
                     latest.Status.ToString(),
                     latest.CopyNumber,
                     canHandleOnPaper,
-                    canHandleOnPaper ? null : RefusalKeyFor(latest.Status),
                     [
                       .. _lineCollapser
                         .Collapse([.. items.Where(item => item.StationOrderId == stationOrder.Id)],
@@ -164,11 +163,6 @@ public sealed class StationScreenDescriber
     }
 
     return views;
-  }
-
-  public string RefusalKeyFor(PrintJobStatus status)
-  {
-    return status == PrintJobStatus.HandledOnPaper ? "station.alreadyTaken" : "station.takeRefused";
   }
 
   public async static Task<Dictionary<Guid, LatestPrintJob>> LoadLatestPrintJobsAsync(GastronomyAppDbContext _dbContext,
@@ -214,7 +208,6 @@ public sealed class StationHandOnPaperHandler
   private readonly OrderReader _orderReader;
   private readonly StationPrintabilityReader _printabilityReader;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly StationScreenDescriber _screenDescriber;
   private readonly PrintJobStateMachine _stateMachine;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
@@ -222,7 +215,6 @@ public sealed class StationHandOnPaperHandler
                                    HandledOnPaperPolicy handledOnPaperPolicy,
                                    PrintJobStateMachine stateMachine,
                                    StationPrintabilityReader printabilityReader,
-                                   StationScreenDescriber screenDescriber,
                                    OrderReader orderReader,
                                    HubNotificationDispatcher dispatcher,
                                    ResultEnvelope resultEnvelope)
@@ -231,7 +223,6 @@ public sealed class StationHandOnPaperHandler
     _handledOnPaperPolicy = handledOnPaperPolicy;
     _stateMachine = stateMachine;
     _printabilityReader = printabilityReader;
-    _screenDescriber = screenDescriber;
     _orderReader = orderReader;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
@@ -276,7 +267,7 @@ public sealed class StationHandOnPaperHandler
     {
       return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "HandOnPaperRefused",
-                                    _screenDescriber.RefusalKeyFor(latest.Status));
+                                    "station.takeRefused");
     }
 
     if (!_stateMachine.CanTransition(latest.Status, PrintJobStatus.HandledOnPaper))

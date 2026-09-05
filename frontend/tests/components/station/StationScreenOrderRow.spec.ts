@@ -9,7 +9,6 @@ import en from '../../../src/locales/en.json'
 interface RowOverrides {
   status?: PrintJobStatus
   canHandleOnPaper?: boolean
-  canHandleOnPaperReasonKey?: string | null
   copyNumber?: number
 }
 
@@ -23,7 +22,6 @@ function row(overrides: RowOverrides = {}): StationScreenOrderRow {
     orderCreatedAtUtc: '2026-08-27T19:00:00Z',
     status: overrides.status ?? 'Queued',
     canHandleOnPaper: overrides.canHandleOnPaper ?? false,
-    canHandleOnPaperReasonKey: overrides.canHandleOnPaperReasonKey ?? null,
     copyNumber: overrides.copyNumber ?? 0,
     orderNote: null,
     items: [{ quantity: 2, itemName: 'Bratwurst', itemNote: 'ohne Zwiebeln' }],
@@ -51,7 +49,6 @@ const BACKEND_TICKET = {
   status: 'Queued',
   copyNumber: 0,
   canHandleOnPaper: false,
-  canHandleOnPaperReasonKey: 'station.alreadyTaken',
   items: [{ quantity: 2, itemName: 'Bratwurst', itemNote: 'ohne Zwiebeln' }],
 }
 
@@ -66,14 +63,6 @@ describe('StationScreenOrderRow, fed exactly what the laptop sends', () => {
     const ticket = mountRow(BACKEND_TICKET as unknown as StationScreenOrderRow)
 
     expect(ticket.get('.row-time').text()).toContain('2026-08-27T19:00:00Z')
-  })
-
-  it('gives the stated reason a slip cannot be taken', () => {
-    const ticket = mountRow(BACKEND_TICKET as unknown as StationScreenOrderRow)
-
-    expect(ticket.get('.take-unavailable').text()).toBe(
-      'Dieser Bon wurde gerade von jemand anderem übernommen. Sprechen Sie sich ab, damit die Bestellung nur einmal gemacht wird.',
-    )
   })
 })
 
@@ -129,12 +118,20 @@ describe('StationScreenOrderRow, the button that is dangerous', () => {
     const ticket = mountRow(row({ canHandleOnPaper: false }))
 
     expect(ticket.get('.take-unavailable').text()).toBe(
-      'Holen Sie diesen Bon am Drucker. Der Drucker dieser Ausgabestelle arbeitet.',
+      'Holen Sie diesen Bon am Drucker. Er ist auf dem Weg zum Drucker und kann nicht übernommen werden.',
+    )
+  })
+
+  it('says the same on a slip that is being sent to a printer that cannot print', () => {
+    const ticket = mountRow(row({ status: 'Sending', canHandleOnPaper: false }))
+
+    expect(ticket.get('.take-unavailable').text()).toBe(
+      'Holen Sie diesen Bon am Drucker. Er ist auf dem Weg zum Drucker und kann nicht übernommen werden.',
     )
   })
 
   it('never offers the button on a slip that is printing right now', () => {
-    const ticket = mountRow(row({ status: 'Printing', canHandleOnPaper: false }))
+    const ticket = mountRow(row({ status: 'Sending', canHandleOnPaper: false }))
 
     expect(ticket.find('.take').exists()).toBe(false)
     expect(ticket.get('.status').text()).toBe('Wird gerade gedruckt')

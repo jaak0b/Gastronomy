@@ -25,7 +25,7 @@ onMounted(async () => {
     connection.onEvent('StationBacklogChanged', () => {
       void station.loadTickets()
     }),
-    connection.onEvent('TicketStatusChanged', () => {
+    connection.onEvent('PrintJobStatusChanged', () => {
       void station.loadTickets()
     }),
     connection.onEvent('PrinterStatusChanged', () => {
@@ -43,20 +43,35 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-container v-if="station.loadFailed" class="station-page-failed">
-    <v-alert class="error" type="error" variant="tonal">{{ t('admin.loadFailed') }}</v-alert>
-  </v-container>
-  <v-container v-else class="station-page">
+  <v-container class="station-page">
     <h1 class="text-h5 mb-2">{{ t('station.title', { name: selectedName }) }}</h1>
     <StationFilter
       :stations="station.stations"
       :selected-station-id="station.selectedStationId"
       @select="station.selectStation"
     />
-    <v-alert v-if="station.printer === null" class="no-printer mb-2" type="info" variant="tonal">
+    <v-alert
+      v-if="station.loadFailed"
+      class="station-load-failed mb-2"
+      type="warning"
+      variant="tonal"
+    >
+      {{ t('station.loadFailed') }}
+    </v-alert>
+    <v-alert
+      v-if="station.printer === null && !station.loadFailed"
+      class="no-printer mb-2"
+      type="info"
+      variant="tonal"
+    >
       {{ t('station.noPrinter') }}
     </v-alert>
-    <v-alert v-if="station.stationOrders.length === 0" class="empty" type="info" variant="tonal">
+    <v-alert
+      v-if="station.stationOrders.length === 0 && !station.loadFailed"
+      class="empty"
+      type="info"
+      variant="tonal"
+    >
       {{ t('station.empty') }}
     </v-alert>
     <StationScreenOrderRow

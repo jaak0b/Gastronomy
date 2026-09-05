@@ -28,6 +28,7 @@
     "reconnecting": "Keine Verbindung zum Laptop. Es wird weiter versucht.",
     "backOnline": "Die Verbindung ist wieder da.",
     "stationPaperOut": "Nehmen Sie weiter Bestellungen auf. Der Drucker an der Ausgabestelle {name} hat kein Papier, und der Bon wird gedruckt, sobald jemand eine Rolle einlegt.",
+    "stationCoverOpen": "Schließen Sie den Deckel des Druckers an der Ausgabestelle {name}. Der Drucker nimmt nichts an, solange der Deckel offen ist, und der Bon wird gedruckt, sobald er wieder geschlossen ist.",
     "stationOffline": "Nehmen Sie weiter Bestellungen auf. Die Ausgabestelle {name} antwortet gerade nicht, und der Bon wird gedruckt, sobald sie wieder antwortet.",
     "stationFaulty": "Sagen Sie jede Bestellung an der Ausgabestelle {name} persönlich an. Der Drucker dort nimmt nichts mehr an.",
     "stationWaiting": "Dort wartet {count} Bon. | Dort warten {count} Bons.",
@@ -80,7 +81,6 @@
     "back": "Zurück zur Auswahl",
     "sendFailed": "Tippen Sie auf \"Noch einmal senden\". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.",
     "sendFailedDatabase": "Tippen Sie auf \"Noch einmal senden\". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.",
-    "tooManyRequests": "Warten Sie einen Moment und tippen Sie dann auf \"Noch einmal senden\". Der Laptop bekommt gerade zu viele Anfragen auf einmal.",
     "retry": "Noch einmal senden",
     "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
@@ -99,7 +99,7 @@
     "unknownItem": "Einen Artikel auf dieser Bestellung gibt es nicht mehr. Laden Sie die Karte neu und stellen Sie die Bestellung noch einmal zusammen."
   },
   "admin": {
-    "notOnLaptop": "Öffnen Sie die Verwaltung direkt am Laptop unter {url}.",
+    "notOnLaptop": "Klicken Sie am Laptop im Fenster \"Bestellsystem\" auf \"Verwaltung öffnen\". Auf dem Telefon lässt sich die Verwaltung nicht öffnen.",
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone einrichten.",
@@ -276,6 +276,7 @@
   "station": {
     "title": "{name}: Bestellungen am Bildschirm",
     "empty": "Es liegen keine offenen Bestellungen an.",
+    "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
     "language": "Sprache",
     "filterLabel": "Ausgabestelle",
     "filterHelp": "Wählen Sie die Ausgabestelle, deren Bons Sie hier sehen wollen.",
@@ -294,7 +295,7 @@
     "reprint": "NACHDRUCK",
     "take": "Übernommen",
     "takeHelp": "Schreiben Sie die Tischnummer auf einen Zettel und legen Sie ihn zum Essen.",
-    "takeUnavailable": "Holen Sie diesen Bon am Drucker. Der Drucker dieser Ausgabestelle arbeitet.",
+    "takeUnavailable": "Holen Sie diesen Bon am Drucker. Er ist auf dem Weg zum Drucker und kann nicht übernommen werden.",
     "takeRefused": "Holen Sie den Bon am Drucker. Der Drucker dieser Ausgabestelle druckt wieder, deshalb wurde dieser Bon nicht übernommen.",
     "undo": "Rückgängig",
     "takenPending": "Tippen Sie auf \"Rückgängig\", wenn Sie sich vertippt haben. Dieser Bon wird in {seconds} Sekunden übernommen.",
@@ -319,7 +320,8 @@
     "staffMemberIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste."
   },
   "session": {
-    "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch."
+    "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch.",
+    "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal."
   },
   "printJob": {
     "paperEnd": "Legen Sie eine neue Papierrolle in den Drucker bei {station}. Der Bon wird danach von selbst gedruckt.",

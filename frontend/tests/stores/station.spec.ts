@@ -36,7 +36,6 @@ describe('the ten second delay before a slip is taken', () => {
         orderCreatedAtUtc: '2026-08-27T19:00:00Z',
         status: 'Failed',
         canHandleOnPaper: true,
-        canHandleOnPaperReasonKey: null,
         copyNumber: 0,
         orderNote: null,
         items: [],
@@ -87,6 +86,107 @@ describe('the ten second delay before a slip is taken', () => {
     station.undoTake('ticket-1')
 
     expect(station.isPending('ticket-1')).toBe(false)
+  })
+})
+
+describe('a load that does not reach the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function stubLaptop(reachablePaths: string[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        reachablePaths.some((path) => url.includes(path))
+          ? new Response(
+              JSON.stringify({
+                stationOrders: [],
+                stations: [{ stationId: 'station-kueche', name: 'Küche', canPrint: true }],
+              }),
+              { status: 200 },
+            )
+          : new Response('{}', { status: 500 }),
+      ),
+    )
+  }
+
+  it('is admitted when the slip list could not be fetched', async () => {
+    stubLaptop(['/status'])
+    const station = useStationStore()
+    station.selectedStationId = 'station-kueche'
+
+    await station.loadTickets()
+
+    expect(station.loadFailed).toBe(true)
+  })
+
+  it('is admitted when the printer status could not be fetched', async () => {
+    stubLaptop(['/station-orders'])
+    const station = useStationStore()
+    station.selectedStationId = 'station-kueche'
+
+    await station.loadPrinter()
+
+    expect(station.loadFailed).toBe(true)
+  })
+
+  it('is taken back once the slip list arrives again', async () => {
+    stubLaptop([])
+    const station = useStationStore()
+    station.selectedStationId = 'station-kueche'
+    await station.loadTickets()
+
+    stubLaptop(['/station-orders'])
+    await station.loadTickets()
+
+    expect(station.loadFailed).toBe(false)
+  })
+
+  it('asks for the station list again once the screen catches up', async () => {
+    stubLaptop([])
+    const station = useStationStore()
+    await station.open()
+
+    stubLaptop(['/api/stations', '/station-orders', '/status'])
+    await station.refresh()
+
+    expect(station.stations).toHaveLength(1)
+    expect(station.loadFailed).toBe(false)
+  })
+})
+
+describe('the station a cook switches to', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is asked after with its own printer, because the banner belongs to that station', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
+      }),
+    )
+    const station = useStationStore()
+    station.selectedStationId = 'station-kueche'
+    urls.length = 0
+
+    await station.selectStation('station-theke')
+
+    expect(urls).toContain('/api/stations/station-theke/status')
   })
 })
 

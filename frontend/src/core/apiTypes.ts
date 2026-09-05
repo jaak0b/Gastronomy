@@ -45,11 +45,11 @@ export type OrderStatus = 'Accepted' | 'Printing' | 'Printed' | 'NeedsAttention'
 
 export type PrintJobStatus =
   | 'Queued'
-  | 'Blocked'
-  | 'Printing'
-  | 'Unknown'
-  | 'Failed'
+  | 'Sending'
   | 'Printed'
+  | 'Blocked'
+  | 'Failed'
+  | 'Unknown'
   | 'HandledOnPaper'
 
 export interface OrderSubmitItem {
@@ -122,7 +122,6 @@ export interface StationScreenOrderRow {
   orderCreatedAtUtc: string
   status: PrintJobStatus
   canHandleOnPaper: boolean
-  canHandleOnPaperReasonKey: string | null
   copyNumber: number
   orderNote: string | null
   items: { quantity: number; itemName: string; itemNote: string | null }[]

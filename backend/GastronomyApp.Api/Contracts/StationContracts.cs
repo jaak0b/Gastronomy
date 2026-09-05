@@ -19,7 +19,6 @@ public sealed record StationScreenOrderView(
   string Status,
   int CopyNumber,
   bool CanHandleOnPaper,
-  string? CanHandleOnPaperReasonKey,
   IReadOnlyList<StationOrderItemView> Items);
 
 public sealed record StationScreenListView(Guid StationId, IReadOnlyList<StationScreenOrderView> StationOrders);
