@@ -53,6 +53,25 @@ describe('landing on a QR code link', () => {
     await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
   })
 
+  it('leaves no way back to the used invitation once the phone is set up', async () => {
+    answerWith(200, {
+      deviceToken: 'token-3',
+      staffMember: { id: 'staff-3', name: 'Carla' },
+      language: 'de',
+    })
+
+    mountLanding()
+    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
+
+    const popped = new Promise<void>((resolve) => {
+      window.addEventListener('popstate', () => resolve(), { once: true })
+    })
+    window.history.back()
+    await popped
+
+    expect(window.location.pathname).toBe('/')
+  })
+
   it('opens the order screen once the name has been entered', async () => {
     answerInTurn(
       { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },

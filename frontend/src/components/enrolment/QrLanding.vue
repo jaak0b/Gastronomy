@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
 import { useSessionStore } from '../../stores/session'
-import { navigate } from '../../router'
+import { replace } from '../../router'
 import LanguageSwitch from '../LanguageSwitch.vue'
 
 const props = defineProps<{ code: string }>()
@@ -19,14 +19,14 @@ const canContinue = computed(() => name.value.trim().length > 0)
 async function submit(): Promise<void> {
   const redeemed = await session.redeem({ code: props.code, name: name.value.trim() })
   if (redeemed) {
-    navigate('/')
+    replace('/')
   }
 }
 
 onMounted(async () => {
   const redeemed = await session.redeem({ code: props.code })
   if (redeemed) {
-    navigate('/')
+    replace('/')
     return
   }
 
@@ -51,7 +51,7 @@ onMounted(async () => {
       class="carry-on mt-4"
       color="primary"
       block
-      @click="navigate('/')"
+      @click="replace('/')"
     >
       {{ t('enrol.carryOn') }}
     </v-btn>
