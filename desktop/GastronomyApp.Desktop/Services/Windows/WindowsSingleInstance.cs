@@ -68,15 +68,28 @@ public sealed class ActivationPipeListener
 
 public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
 {
-  private const string MutexName = @"Global\GastronomyApp.Desktop.SingleInstance";
-  private const string PipeName = "GastronomyApp.Desktop.Activation";
+  private const string ProductMutexName = @"Global\GastronomyApp.Desktop.SingleInstance";
+  private const string ProductPipeName = "GastronomyApp.Desktop.Activation";
   private const string ActivationSignal = "activate";
   private const int ConnectAttempts = 5;
   private const int ConnectAttemptMilliseconds = 400;
-  private readonly ActivationPipeListener _listener = new(PipeName);
+  private readonly ActivationPipeListener _listener;
+  private readonly string _mutexName;
+  private readonly string _pipeName;
   private CancellationTokenSource? _listening;
 
   private Mutex? _mutex;
+
+  public SingleInstanceCoordinator() : this(ProductMutexName, ProductPipeName)
+  {
+  }
+
+  public SingleInstanceCoordinator(string mutexName, string pipeName)
+  {
+    _mutexName = mutexName;
+    _pipeName = pipeName;
+    _listener = new(pipeName);
+  }
 
   public void Dispose()
   {
@@ -91,7 +104,7 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
 
   public SingleInstanceOutcome AcquireOrSignalExisting()
   {
-    _mutex = new(true, MutexName, out var acquired);
+    _mutex = new(true, _mutexName, out var acquired);
 
     if (!acquired)
     {
@@ -121,31 +134,40 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
 
   private void SignalExisting()
   {
+    Exception? lastFailure = null;
+
     for (var attempt = 0; attempt < ConnectAttempts; attempt++)
     {
-      if (TrySignalExisting())
+      lastFailure = TrySignalExisting();
+
+      if (lastFailure is null)
       {
         return;
       }
     }
+
+    Log.Error(lastFailure,
+              "The program is already running, but it did not answer, so its window was not brought "
+              + "to the front. This second start is closing again and the operator sees nothing "
+              + "happen.");
   }
 
-  private bool TrySignalExisting()
+  private Exception? TrySignalExisting()
   {
     try
     {
-      using NamedPipeClientStream client = new(".", PipeName, PipeDirection.Out);
+      using NamedPipeClientStream client = new(".", _pipeName, PipeDirection.Out);
       client.Connect(TimeSpan.FromMilliseconds(ConnectAttemptMilliseconds));
 
       using StreamWriter writer = new(client);
       writer.WriteLine(ActivationSignal);
       writer.Flush();
 
-      return true;
+      return null;
     }
     catch (Exception failure) when (failure is TimeoutException or IOException or UnauthorizedAccessException)
     {
-      return false;
+      return failure;
     }
   }
 }
