@@ -306,6 +306,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         break;
 
+      case ElevatedSetupOutcome.SetupStepFailed:
+        ShowNotice("desktop.settings.repairFailed", NoticeLevel.Warning);
+
+        break;
+
       default:
         _never.OfType<ElevatedSetupOutcome>(outcome);
 
@@ -321,6 +326,11 @@ public sealed class MainWindowViewModel : ViewModelBase
   public void ShowSetupDeclined()
   {
     ShowNotice("desktop.firstRun.declined", NoticeLevel.Warning);
+  }
+
+  public void ShowSetupFailed()
+  {
+    ShowNotice("desktop.firstRun.setupFailed", NoticeLevel.Warning);
   }
 
   private void ShowNotice(string key, NoticeLevel level)

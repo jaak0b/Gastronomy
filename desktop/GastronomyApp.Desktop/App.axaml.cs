@@ -162,7 +162,11 @@ public class App : Application
         firstRun.Decline();
       }
 
-      if (firstRun.DeclinedText is not null)
+      if (firstRun.SetupFailed)
+      {
+        _mainWindowViewModel.ShowSetupFailed();
+      }
+      else if (firstRun.DeclinedText is not null)
       {
         _mainWindowViewModel.ShowSetupDeclined();
       }

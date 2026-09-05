@@ -112,7 +112,7 @@
     <value>Repair the setup</value>
   </data>
     <data name="desktop.settings.repairDeclined" xml:space="preserve">
-    <value>In the Windows settings, open "Firewall &amp; network protection" and allow this program the incoming connection on the private network. For the data folder you need somebody who can confirm the question Windows asks.</value>
+    <value>In the Windows settings, open "Firewall &amp; network protection" and allow this program the incoming connection on all networks. For the data folder you need somebody who can confirm the question Windows asks.</value>
   </data>
     <data name="desktop.firstRun.title" xml:space="preserve">
     <value>One-time setup</value>
@@ -122,6 +122,12 @@
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
     <value>The program runs anyway. If the phones cannot reach the laptop later, click "Repair the setup".</value>
+  </data>
+    <data name="desktop.firstRun.setupFailed" xml:space="preserve">
+    <value>The setup could not be completed, although you confirmed the question Windows asked. The program runs anyway. If the phones cannot reach the laptop, or if orders cannot be saved, click "Repair the setup".</value>
+  </data>
+    <data name="desktop.settings.repairFailed" xml:space="preserve">
+    <value>The setup could not be completed, although you confirmed the question Windows asked. Click "Repair the setup" once more. If that does not help, click "Open the data folder" and give the newest file in the folder "logs" to somebody who knows this laptop.</value>
   </data>
     <data name="desktop.settings.repairDone" xml:space="preserve">
     <value>The setup was repaired. Start the program again so the change takes effect.</value>

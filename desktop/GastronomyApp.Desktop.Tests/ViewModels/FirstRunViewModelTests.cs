@@ -154,6 +154,26 @@ public sealed class FirstRunViewModelTests
                       Assert.That(viewModel.DeclinedText, Is.EqualTo(_text.Get("desktop.firstRun.declined")));
                       Assert.That(viewModel.ReadyToStart, Is.True);
                       Assert.That(viewModel.IsSetupOffered, Is.False);
+                      Assert.That(viewModel.SetupFailed, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task RunSetupAsync_WhenAStepOfTheSetupFailed_SaysSoInsteadOfBlamingTheOperator()
+  {
+    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._))
+     .Returns(ElevatedSetupOutcome.SetupStepFailed);
+    var viewModel = CreateViewModel(false, false);
+    viewModel.Evaluate();
+
+    await viewModel.RunSetupAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.SetupFailed, Is.True);
+                      Assert.That(viewModel.DeclinedText, Is.Null);
+                      Assert.That(viewModel.ReadyToStart, Is.True);
+                      Assert.That(viewModel.IsSetupOffered, Is.False);
                     });
   }
 }

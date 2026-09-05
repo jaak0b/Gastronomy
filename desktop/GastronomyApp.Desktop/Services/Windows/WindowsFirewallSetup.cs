@@ -1,4 +1,3 @@
-﻿using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace GastronomyApp.Desktop.Services.Windows;
@@ -8,55 +7,56 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 {
   private const string RuleName = "GastronomyApp ordering system";
 
+  private const string CoveredProfiles = "private,public";
+
   private readonly string _executablePath;
 
-  public WindowsFirewallSetup(string executablePath)
+  private readonly INetshCommand _netsh;
+
+  public WindowsFirewallSetup(string executablePath, INetshCommand netsh)
   {
     _executablePath = executablePath;
+    _netsh = netsh;
   }
 
   public bool IsRuleConfigured()
   {
-    return RunNetsh($"advfirewall firewall show rule name=\"{RuleName}\"") == 0;
+    return ShowRule($" profile={CoveredProfiles}").ExitCode == 0;
   }
 
   public void EnsureRuleConfigured()
   {
     var ruleSettings =
       $"action=allow program=\"{_executablePath}\" "
-      + "protocol=TCP profile=private remoteip=localsubnet enable=yes";
+      + $"protocol=TCP profile={CoveredProfiles} remoteip=localsubnet enable=yes";
 
-    var exitCode = IsRuleConfigured()
-                     ? RunNetsh($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}")
-                     : RunNetsh($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
+    var result = RuleExists()
+                   ? _netsh.Run($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}")
+                   : _netsh.Run($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
 
-    if (exitCode != 0)
+    if (result.ExitCode != 0)
     {
-      throw new InvalidOperationException($"Configuring the inbound firewall rule failed with exit code {exitCode}.");
+      throw new InvalidOperationException(DescribeFailure(result));
     }
   }
 
-  private int RunNetsh(string arguments)
+  private string DescribeFailure(NetshResult result)
   {
-    ProcessStartInfo startInfo = new()
-                                 {
-                                   FileName = "netsh",
-                                   Arguments = arguments,
-                                   UseShellExecute = false,
-                                   CreateNoWindow = true,
-                                   RedirectStandardOutput = true,
-                                   RedirectStandardError = true
-                                 };
+    var reportedProblem = result.ErrorOutput.Trim();
 
-    using var process = Process.Start(startInfo);
-    if (process is null)
-    {
-      throw new InvalidOperationException("The netsh command could not be started.");
-    }
+    return reportedProblem.Length == 0
+             ? $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}."
+             : $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}: {reportedProblem}";
+  }
 
-    process.WaitForExit();
+  private bool RuleExists()
+  {
+    return ShowRule(string.Empty).ExitCode == 0;
+  }
 
-    return process.ExitCode;
+  private NetshResult ShowRule(string profileFilter)
+  {
+    return _netsh.Run($"advfirewall firewall show rule name=\"{RuleName}\"{profileFilter}");
   }
 }
 

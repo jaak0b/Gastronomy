@@ -6,6 +6,7 @@ namespace GastronomyApp.Desktop.Services.Windows;
 public sealed class WindowsElevatedSetupLauncher : IElevatedSetupLauncher
 {
   private const int ElevationDeclinedByUser = 1223;
+  private const int SetupFinishedExitCode = 0;
   private const string SetupArgument = "--setup";
 
   private readonly string _executablePath;
@@ -35,9 +36,9 @@ public sealed class WindowsElevatedSetupLauncher : IElevatedSetupLauncher
 
       await process.WaitForExitAsync(cancellationToken);
 
-      return process.ExitCode == 0
+      return process.ExitCode == SetupFinishedExitCode
                ? ElevatedSetupOutcome.Completed
-               : ElevatedSetupOutcome.ElevationDeclined;
+               : ElevatedSetupOutcome.SetupStepFailed;
     }
     catch (Win32Exception failure) when (failure.NativeErrorCode == ElevationDeclinedByUser)
     {

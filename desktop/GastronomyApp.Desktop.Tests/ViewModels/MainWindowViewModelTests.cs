@@ -424,6 +424,52 @@ public sealed class MainWindowViewModelTests
   }
 
   [Test]
+  public void CurrentStatus_WhenAStepOfTheRepairFailed_IsWarningAndCarriesTheFailureText()
+  {
+    var viewModel = CreateViewModel();
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "en");
+
+    viewModel.ShowRepairOutcome(ElevatedSetupOutcome.SetupStepFailed);
+    var english = viewModel.StatusText;
+    var expectedEnglish = _text.Get("desktop.settings.repairFailed");
+
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+    var german = viewModel.StatusText;
+    var expectedGerman = _text.Get("desktop.settings.repairFailed");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Warning));
+                      Assert.That(english, Is.EqualTo(expectedEnglish));
+                      Assert.That(german, Is.EqualTo(expectedGerman));
+                      Assert.That(german, Is.Not.EqualTo(english));
+                    });
+  }
+
+  [Test]
+  public void CurrentStatus_WhenAStepOfTheFirstRunSetupFailed_IsWarningAndCarriesTheFailureText()
+  {
+    var viewModel = CreateViewModel();
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "en");
+
+    viewModel.ShowSetupFailed();
+    var english = viewModel.StatusText;
+    var expectedEnglish = _text.Get("desktop.firstRun.setupFailed");
+
+    viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
+    var german = viewModel.StatusText;
+    var expectedGerman = _text.Get("desktop.firstRun.setupFailed");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.CurrentStatus, Is.EqualTo(StatusLevel.Warning));
+                      Assert.That(english, Is.EqualTo(expectedEnglish));
+                      Assert.That(german, Is.EqualTo(expectedGerman));
+                      Assert.That(german, Is.Not.EqualTo(english));
+                    });
+  }
+
+  [Test]
   public async Task CurrentStatus_WhenTheRepairWasCompleted_StaysRunningAndCarriesTheDoneText()
   {
     LauncherReturns(new HostLaunchResult.Started(null!));

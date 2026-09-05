@@ -10,7 +10,7 @@ public sealed class SqliteFailureTranslatorTest
   private readonly SqliteFailureTranslator _translator = new();
 
   [Test]
-  public async Task IsUniqueConstraintViolation_RealUniqueIndexCollision_IsRecognised()
+  public void IsUniqueConstraintViolation_RealUniqueIndexCollision_IsRecognised()
   {
     using SqliteInMemoryFixture fixture = new();
     DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

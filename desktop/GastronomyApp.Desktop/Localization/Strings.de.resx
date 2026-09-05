@@ -112,7 +112,7 @@
     <value>Einrichtung reparieren</value>
   </data>
     <data name="desktop.settings.repairDeclined" xml:space="preserve">
-    <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung im privaten Netzwerk. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
+    <value>Öffnen Sie in den Windows-Einstellungen "Firewall &amp; Netzwerkschutz" und erlauben Sie diesem Programm die eingehende Verbindung in allen Netzwerken. Für den Datenordner brauchen Sie jemanden, der die Nachfrage von Windows bestätigen kann.</value>
   </data>
     <data name="desktop.firstRun.title" xml:space="preserve">
     <value>Einmalige Einrichtung</value>
@@ -122,6 +122,12 @@
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
     <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
+  </data>
+    <data name="desktop.firstRun.setupFailed" xml:space="preserve">
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Das Programm läuft trotzdem. Wenn die Telefone den Laptop nicht erreichen oder Bestellungen nicht gespeichert werden können, klicken Sie auf "Einrichtung reparieren".</value>
+  </data>
+    <data name="desktop.settings.repairFailed" xml:space="preserve">
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Klicken Sie noch einmal auf "Einrichtung reparieren". Hilft das nicht, klicken Sie auf "Datenordner öffnen" und geben Sie die neueste Datei im Ordner "logs" jemandem, der sich mit dem Laptop auskennt.</value>
   </data>
     <data name="desktop.settings.repairDone" xml:space="preserve">
     <value>Die Einrichtung wurde repariert. Starten Sie das Programm noch einmal, damit die Änderung wirkt.</value>

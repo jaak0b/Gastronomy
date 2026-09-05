@@ -14,6 +14,7 @@ public sealed class FirstRunViewModel : ViewModelBase
 
   private bool _isSetupOffered;
   private bool _readyToStart;
+  private bool _setupFailed;
 
   public FirstRunViewModel(IFirewallSetup firewall,
                            IDataFolderSetup dataFolder,
@@ -50,6 +51,12 @@ public sealed class FirstRunViewModel : ViewModelBase
     private set => SetProperty(ref _declinedText, value);
   }
 
+  public bool SetupFailed
+  {
+    get => _setupFailed;
+    private set => SetProperty(ref _setupFailed, value);
+  }
+
   public void Evaluate()
   {
     var firewallConfigured = _firewall.IsRuleConfigured();
@@ -59,6 +66,7 @@ public sealed class FirstRunViewModel : ViewModelBase
     IsSetupOffered = !everythingInPlace;
     ReadyToStart = everythingInPlace;
     DeclinedText = null;
+    SetupFailed = false;
   }
 
   public void Decline()
@@ -76,11 +84,19 @@ public sealed class FirstRunViewModel : ViewModelBase
     {
       case ElevatedSetupOutcome.Completed:
         DeclinedText = null;
+        SetupFailed = false;
 
         break;
 
       case ElevatedSetupOutcome.ElevationDeclined:
         DeclinedText = _text.Get("desktop.firstRun.declined");
+        SetupFailed = false;
+
+        break;
+
+      case ElevatedSetupOutcome.SetupStepFailed:
+        DeclinedText = null;
+        SetupFailed = true;
 
         break;
 

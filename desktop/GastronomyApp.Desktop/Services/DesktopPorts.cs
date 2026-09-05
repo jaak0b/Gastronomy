@@ -101,7 +101,8 @@ public interface IElevatedSetupLauncher
 public enum ElevatedSetupOutcome
 {
   Completed,
-  ElevationDeclined
+  ElevationDeclined,
+  SetupStepFailed
 }
 
 public sealed record LanguageOption(string Code, string Name);

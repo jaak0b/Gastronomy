@@ -10,18 +10,21 @@ sealed internal class Program
   [STAThread]
   public static void Main(string[] args)
   {
-    if (args.Contains(SetupArgument))
-    {
-      new DesktopComposition().RunElevatedSetupSteps();
-
-      return;
-    }
-
     ApplicationLog log = new();
+    DesktopComposition composition = new();
 
     try
     {
-      log.Start(new DesktopComposition().DataDirectoryPath);
+      if (args.Contains(SetupArgument))
+      {
+        Environment.ExitCode = new ElevatedSetupEntryPoint(log,
+                                                           composition.DataDirectoryPath,
+                                                           composition.ElevatedSetupSteps).Run();
+
+        return;
+      }
+
+      log.Start(composition.DataDirectoryPath);
       BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     } finally
     {

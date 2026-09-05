@@ -26,12 +26,14 @@ public sealed class DesktopComposition
                      : new NoOpPowerManager();
 
     FirewallSetup = OperatingSystem.IsWindows()
-                      ? new WindowsFirewallSetup(ExecutablePath)
+                      ? new WindowsFirewallSetup(ExecutablePath, new NetshCommand())
                       : new NoFirewallSetup();
 
     ElevatedSetupLauncher = OperatingSystem.IsWindows()
                               ? new WindowsElevatedSetupLauncher(ExecutablePath)
                               : new UnavailableElevatedSetupLauncher();
+
+    ElevatedSetupSteps = new(FirewallSetup, DataFolderSetup);
   }
 
   public string ExecutablePath { get; }
@@ -58,6 +60,8 @@ public sealed class DesktopComposition
 
   public IElevatedSetupLauncher ElevatedSetupLauncher { get; }
 
+  public ElevatedSetupSteps ElevatedSetupSteps { get; }
+
   public MainWindowViewModel CreateMainWindowViewModel()
   {
     return new(HostLauncher,
@@ -76,20 +80,6 @@ public sealed class DesktopComposition
                                                          Action requestApplicationExit)
   {
     return new(mainWindowViewModel.StopAsync, Text, requestApplicationExit);
-  }
-
-  public void RunElevatedSetupSteps()
-  {
-    FirewallSetup.EnsureRuleConfigured();
-
-    if (DataFolderSetup.Exists())
-    {
-      DataFolderSetup.GrantUsersModifyOnExisting();
-
-      return;
-    }
-
-    DataFolderSetup.CreateWithUsersModifyGrant();
   }
 
   private string ResolveDataDirectory()
