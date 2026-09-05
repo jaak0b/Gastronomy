@@ -52,6 +52,18 @@ const banners = computed(() =>
     {{ t('review.sent', { number: order.acceptedOrderNumber }) }}
   </v-alert>
   <v-alert
+    v-if="order.draftWasLost"
+    class="draft-lost"
+    type="warning"
+    variant="tonal"
+    rounded="0"
+    density="compact"
+    closable
+    @click:close="order.dismissDraftLoss"
+  >
+    {{ t('order.draftLost') }}
+  </v-alert>
+  <v-alert
     v-if="connectionKey !== null"
     class="connection"
     type="info"

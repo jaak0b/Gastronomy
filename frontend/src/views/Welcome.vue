@@ -16,7 +16,7 @@ const session = useSessionStore()
     />
     <h1 class="text-h4 mt-4">{{ t('welcome.title') }}</h1>
     <p class="welcome-body text-body-1 mt-2">{{ t('welcome.body') }}</p>
-    <v-alert v-if="session.heldDraftExists" class="order-held mt-4" type="info" variant="tonal">
+    <v-alert v-if="session.heldDraftExists()" class="order-held mt-4" type="info" variant="tonal">
       {{ t('enrol.orderHeld') }}
     </v-alert>
   </v-container>

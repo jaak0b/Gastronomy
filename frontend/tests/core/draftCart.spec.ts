@@ -4,7 +4,6 @@ import {
   addLine,
   clearDraft,
   emptyDraft,
-  loadDraft,
   removeLine,
   restoreDraft,
   saveDraft,
@@ -30,71 +29,6 @@ describe('emptyDraft', () => {
     const draft = emptyDraft()
 
     expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
-  })
-})
-
-describe('loadDraft', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('returns an empty draft when nothing was ever stored', () => {
-    const draft = loadDraft()
-
-    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
-  })
-
-  it('returns an empty draft when the stored value is not readable', () => {
-    localStorage.setItem(DRAFT_STORAGE_KEY, 'not json')
-
-    const draft = loadDraft()
-
-    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
-  })
-
-  it('puts a half built order back on the screen after a reload', () => {
-    saveDraft({
-      tableName: 'Tisch 12',
-      note: 'ohne Eis',
-      lines: [bratwurstLine()],
-      clientOrderId: null,
-    })
-
-    const draft = loadDraft()
-
-    expect(draft).toEqual({
-      tableName: 'Tisch 12',
-      note: 'ohne Eis',
-      lines: [
-        {
-          catalogItemId: 'item-1',
-          note: null,
-          stationId: null,
-          name: 'Bratwurst',
-          unitPriceCents: 350,
-        },
-      ],
-      clientOrderId: null,
-    })
-  })
-
-  it('reads a draft written before lines carried a name and a price without crashing', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null}]}',
-    )
-
-    const draft = loadDraft()
-
-    expect(draft.lines).toEqual([
-      {
-        catalogItemId: 'item-1',
-        note: null,
-        stationId: null,
-        name: '',
-        unitPriceCents: 0,
-      },
-    ])
   })
 })
 
@@ -137,12 +71,39 @@ describe('restoreDraft', () => {
     })
   })
 
+  it('throws the unreadable value away, so the loss is reported once and not on every reload', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, 'not json')
+
+    restoreDraft()
+
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull()
+  })
+
   it('reports a stored draft that no longer has the shape of an order as thrown away', () => {
     localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":12,"lines":[]}')
 
     const restoration = restoreDraft()
 
     expect(restoration.outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('reads a draft written before lines carried a name and a price without crashing', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null}]}',
+    )
+
+    const restoration = restoreDraft()
+
+    expect(restoration.draft.lines).toEqual([
+      {
+        catalogItemId: 'item-1',
+        note: null,
+        stationId: null,
+        name: '',
+        unitPriceCents: 0,
+      },
+    ])
   })
 
   it('reports a stored draft whose lines are unreadable as thrown away', () => {
@@ -194,13 +155,13 @@ describe('the stored draft shape', () => {
   it('keeps the name the item carried when the line was added', () => {
     addLine(emptyDraft(), bratwurstLine())
 
-    expect(loadDraft().lines[0].name).toBe('Bratwurst')
+    expect(restoreDraft().draft.lines[0].name).toBe('Bratwurst')
   })
 
   it('keeps the price the item carried when the line was added', () => {
     addLine(emptyDraft(), bratwurstLine())
 
-    expect(loadDraft().lines[0].unitPriceCents).toBe(350)
+    expect(restoreDraft().draft.lines[0].unitPriceCents).toBe(350)
   })
 })
 
@@ -212,7 +173,7 @@ describe('draft mutators', () => {
   it('persists an added line without the caller saving it', () => {
     addLine(emptyDraft(), bratwurstLine())
 
-    expect(loadDraft().lines).toEqual([
+    expect(restoreDraft().draft.lines).toEqual([
       {
         catalogItemId: 'item-1',
         note: null,
@@ -236,7 +197,7 @@ describe('draft mutators', () => {
 
     addLine(draft, bratwurstLine())
 
-    expect(loadDraft().lines).toHaveLength(2)
+    expect(restoreDraft().draft.lines).toHaveLength(2)
   })
 
   it('persists a removed line', () => {
@@ -244,7 +205,7 @@ describe('draft mutators', () => {
 
     removeLine(draft, 0)
 
-    expect(loadDraft().lines).toEqual([])
+    expect(restoreDraft().draft.lines).toEqual([])
   })
 
   it('persists a line note', () => {
@@ -252,7 +213,7 @@ describe('draft mutators', () => {
 
     setLineNote(draft, 0, 'ohne Zwiebeln')
 
-    expect(loadDraft().lines[0].note).toBe('ohne Zwiebeln')
+    expect(restoreDraft().draft.lines[0].note).toBe('ohne Zwiebeln')
   })
 
   it('persists the station chosen for a line', () => {
@@ -260,7 +221,7 @@ describe('draft mutators', () => {
 
     setLineStation(draft, 0, 'station-2')
 
-    expect(loadDraft().lines[0].stationId).toBe('station-2')
+    expect(restoreDraft().draft.lines[0].stationId).toBe('station-2')
   })
 
   it('leaves the next line without a station after one line got a choice', () => {
@@ -275,13 +236,13 @@ describe('draft mutators', () => {
   it('persists the table', () => {
     setTableName(emptyDraft(), 'Tisch 12')
 
-    expect(loadDraft().tableName).toBe('Tisch 12')
+    expect(restoreDraft().draft.tableName).toBe('Tisch 12')
   })
 
   it('persists the order note', () => {
     setOrderNote(emptyDraft(), 'Hinweis fuer die Kueche')
 
-    expect(loadDraft().note).toBe('Hinweis fuer die Kueche')
+    expect(restoreDraft().draft.note).toBe('Hinweis fuer die Kueche')
   })
 })
 
@@ -313,7 +274,7 @@ describe('clearDraft', () => {
 
     clearDraft()
 
-    expect(loadDraft()).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
+    expect(restoreDraft().draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
   })
 })
 

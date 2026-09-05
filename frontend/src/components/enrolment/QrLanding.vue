@@ -10,7 +10,7 @@ const props = defineProps<{ code: string }>()
 const { t } = useI18n()
 const session = useSessionStore()
 const name = ref('')
-const draftIsHeld = ref(session.heldDraftExists)
+const draftIsHeld = ref(session.heldDraftExists())
 const asksForAName = ref(false)
 const codeIsSpent = ref(false)
 

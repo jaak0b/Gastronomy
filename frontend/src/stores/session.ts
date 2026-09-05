@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import type { AppLanguage, RedeemResponse, StaffMember, SessionInfo } from '../core/apiTypes'
-import { loadDraft } from '../core/draftCart'
+import { restoreDraft } from '../core/draftCart'
 import { useConnectionStore } from './connection'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
@@ -20,7 +20,10 @@ export const useSessionStore = defineStore('session', () => {
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
-  const heldDraftExists = computed(() => loadDraft().lines.length > 0)
+
+  function heldDraftExists(): boolean {
+    return restoreDraft().draft.lines.length > 0
+  }
 
   function storeToken(token: string): void {
     deviceToken.value = token

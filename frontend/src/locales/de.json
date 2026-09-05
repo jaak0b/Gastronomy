@@ -86,6 +86,7 @@
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
   "order": {
+    "draftLost": "Geben Sie die Bestellung noch einmal ein. Ihre angefangene Bestellung konnte nicht gelesen werden und ist weg.",
     "itemHasNoStation": "Für einen Artikel auf dieser Bestellung ist keine Ausgabestelle eingerichtet. Sagen Sie am Laptop Bescheid und geben Sie die Bestellung so lange persönlich auf.",
     "noItems": "Wählen Sie zuerst etwas aus, bevor Sie senden.",
     "notYours": "Diese Bestellung gehört zu einem anderen Telefon. Sie können nur Ihre eigenen Bestellungen ändern.",
@@ -129,10 +130,8 @@
     },
     "items": {
       "title": "Artikel",
-      "needsStation": "Kreuzen Sie mindestens eine Ausgabestelle an. Ohne Ausgabestelle kann dieser Artikel nicht bestellt werden.",
       "soldOut": "Ausverkauft",
       "soldOutUndo": "Wieder verfügbar",
-      "deactivateBlocked": "Schalten Sie den Artikel stattdessen auf \"Ausverkauft\". Während einer laufenden Veranstaltung lässt er sich nicht von der Karte nehmen.",
       "new": "Neuer Artikel",
       "category": "Kategorie",
       "price": "Preis in Euro",
@@ -297,6 +296,7 @@
     "takeHelp": "Schreiben Sie die Tischnummer auf einen Zettel und legen Sie ihn zum Essen.",
     "takeUnavailable": "Holen Sie diesen Bon am Drucker. Er ist auf dem Weg zum Drucker und kann nicht übernommen werden.",
     "takeRefused": "Holen Sie den Bon am Drucker. Der Drucker dieser Ausgabestelle druckt wieder, deshalb wurde dieser Bon nicht übernommen.",
+    "takeNotReached": "Tippen Sie noch einmal auf \"Übernommen\". Der Laptop war nicht erreichbar, deshalb wurde dieser Bon nicht übernommen.",
     "undo": "Rückgängig",
     "takenPending": "Tippen Sie auf \"Rückgängig\", wenn Sie sich vertippt haben. Dieser Bon wird in {seconds} Sekunden übernommen.",
     "alreadyTaken": "Dieser Bon wurde gerade von jemand anderem übernommen. Sprechen Sie sich ab, damit die Bestellung nur einmal gemacht wird.",

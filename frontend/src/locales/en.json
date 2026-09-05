@@ -86,6 +86,7 @@
     "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
   "order": {
+    "draftLost": "Enter the order again. The order you had started could not be read and is gone.",
     "itemHasNoStation": "One item on this order has no station set up. Tell whoever is at the laptop, and pass the order on in person until then.",
     "noItems": "Choose something before you send.",
     "notYours": "This order belongs to another phone. You can only change your own orders.",
@@ -129,10 +130,8 @@
     },
     "items": {
       "title": "Items",
-      "needsStation": "Tick at least one station. Without one this item cannot be ordered.",
       "soldOut": "Sold out",
       "soldOutUndo": "Available again",
-      "deactivateBlocked": "Switch the item to \"Sold out\" instead. It cannot be taken off the menu while an event is running.",
       "new": "New item",
       "category": "Category",
       "price": "Price in euros",
@@ -297,6 +296,7 @@
     "takeHelp": "Write the table number on a piece of paper and put it with the food.",
     "takeUnavailable": "Fetch this slip at the printer. It is on its way to the printer and cannot be taken over.",
     "takeRefused": "Fetch the slip at the printer. This station's printer is printing again, so this slip was not taken.",
+    "takeNotReached": "Tap \"Taken\" again. The laptop could not be reached, so this slip was not taken.",
     "undo": "Undo",
     "takenPending": "Tap \"Undo\" if you tapped the wrong row. This slip is taken in {seconds} seconds.",
     "alreadyTaken": "Somebody else has just taken this slip. Talk to each other so the order is made only once.",

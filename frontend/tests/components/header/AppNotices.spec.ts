@@ -159,3 +159,43 @@ describe('the notices above the screen', () => {
     expect(stationBannerKeys(notices)).toEqual(['station-kueche', 'station-bar-aussen'])
   })
 })
+
+describe('the notice that an order in progress was lost', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('says in German that the order is gone and has to be entered again', async () => {
+    localStorage.setItem('draftOrder', 'not json')
+    const notices = mountNotices()
+    useOrderStore()
+    await notices.vm.$nextTick()
+
+    expect(notices.get('.draft-lost').text()).toBe(
+      'Geben Sie die Bestellung noch einmal ein. Ihre angefangene Bestellung konnte nicht gelesen '
+        + 'werden und ist weg.',
+    )
+  })
+
+  it('says the same in English', async () => {
+    localStorage.setItem('draftOrder', 'not json')
+    const notices = mountNotices('en')
+    useOrderStore()
+    await notices.vm.$nextTick()
+
+    expect(notices.get('.draft-lost').text()).toBe(
+      'Enter the order again. The order you had started could not be read and is gone.',
+    )
+  })
+
+  it('stays off the screen when the order in progress came back', async () => {
+    const notices = mountNotices()
+    useOrderStore()
+    await notices.vm.$nextTick()
+
+    expect(notices.find('.draft-lost').exists()).toBe(false)
+  })
+})

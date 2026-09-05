@@ -68,13 +68,10 @@ export function restoreDraft(): DraftRestoration {
   }
   const restored = parsedDraft(stored)
   if (restored === null) {
+    clearDraft()
     return { outcome: 'unreadableDraftDiscarded', draft: emptyDraft() }
   }
   return { outcome: 'restored', draft: restored }
-}
-
-export function loadDraft(): DraftOrder {
-  return restoreDraft().draft
 }
 
 export function saveDraft(draft: DraftOrder): void {

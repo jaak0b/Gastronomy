@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { request } from '../api/client'
-import type { DraftLine, OrderSubmitResponse } from '../core/apiTypes'
+import type { DraftLine, DraftOrder, OrderSubmitResponse } from '../core/apiTypes'
 import {
   addLine,
   clearDraft,
-  loadDraft,
   removeLine,
+  restoreDraft,
   setLineNote,
   setLineStation,
   setOrderNote,
   setTableName,
 } from '../core/draftCart'
+import { assertNever } from '../core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
 import { buildBasketView, basketItemCount, refreshLineSnapshots } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
@@ -24,7 +25,23 @@ export type SendState = 'idle' | 'sending' | 'failed' | 'accepted'
 export const ARRIVAL_NOTICE_MS = 8000
 
 export const useOrderStore = defineStore('order', () => {
-  const draft = ref(loadDraft())
+  const draftWasLost = ref(false)
+
+  function draftFromStorage(): DraftOrder {
+    const restoration = restoreDraft()
+    switch (restoration.outcome) {
+      case 'nothingStored':
+      case 'restored':
+        return restoration.draft
+      case 'unreadableDraftDiscarded':
+        draftWasLost.value = true
+        return restoration.draft
+      default:
+        return assertNever(restoration)
+    }
+  }
+
+  const draft = ref(draftFromStorage())
   const sendState = ref<SendState>('idle')
   const failure = ref<SendFailureMessage | null>(null)
   const failedAttempts = ref(0)
@@ -44,7 +61,12 @@ export const useOrderStore = defineStore('order', () => {
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
 
+  function dismissDraftLoss(): void {
+    draftWasLost.value = false
+  }
+
   function addItem(line: DraftLine): void {
+    dismissDraftLoss()
     draft.value = addLine(draft.value, line)
   }
 
@@ -79,7 +101,7 @@ export const useOrderStore = defineStore('order', () => {
 
   function startNextOrder(): void {
     clearDraft()
-    draft.value = loadDraft()
+    draft.value = draftFromStorage()
   }
 
   async function send(): Promise<void> {
@@ -111,6 +133,7 @@ export const useOrderStore = defineStore('order', () => {
 
   return {
     draft,
+    draftWasLost,
     sendState,
     failure,
     failedAttempts,
@@ -125,6 +148,7 @@ export const useOrderStore = defineStore('order', () => {
     setTable,
     setNote,
     dismissConfirmation,
+    dismissDraftLoss,
     send,
   }
 })
