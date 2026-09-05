@@ -1,7 +1,8 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -21,29 +22,41 @@ public sealed class InvitationQrEndpointTest
     await _context.DisposeAsync();
   }
 
-  private const string QrPath = "/api/admin/enrolment/invitations/current/qr.svg";
   private const int PixelsPerModule = 8;
 
   private OrderTestContext _context = null!;
 
-  [Test]
-  public async Task GetQr_NoOutstandingInvitation_AnswersNotFound()
-  {
-    using var response = await _context.Client.GetAsync(QrPath);
+  private sealed record CreatedInvitation(Guid InvitationId, string QrUrl);
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+  private string QrPathFor(Guid invitationId)
+  {
+    return $"/api/admin/enrolment/invitations/{invitationId}/qr.svg";
+  }
+
+  [Test]
+  public async Task GetQr_AnInvitationThatNeverExisted_AnswersNotFoundWithWordingForTheAdmin()
+  {
+    using var response = await _context.Client.GetAsync(QrPathFor(Guid.NewGuid()));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.enrol.qrUnavailable"));
+                    });
   }
 
   [Test]
   public async Task GetQr_OutstandingInvitation_RendersScalableVectorGraphicsForItsUrl()
   {
-    var qrUrl = await CreateInvitationAsync();
+    var invitation = await CreateInvitationAsync();
 
-    using var response = await _context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
     var svg = await response.Content.ReadAsStringAsync();
 
     var side = ReadDeclaredSide(svg);
-    var smallestSideThatHolds = SmallestModuleCountFor(qrUrl.Length) * PixelsPerModule;
+    var smallestSideThatHolds = SmallestModuleCountFor(invitation.QrUrl.Length) * PixelsPerModule;
 
     Assert.Multiple(() =>
                     {
@@ -52,38 +65,61 @@ public sealed class InvitationQrEndpointTest
                       Assert.That(svg, Does.Contain("<svg"));
                       Assert.That(side,
                                   Is.GreaterThanOrEqualTo(smallestSideThatHolds),
-                                  $"A QR carrying {qrUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
+                                  $"A QR carrying {invitation.QrUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
                       Assert.That(side % PixelsPerModule, Is.EqualTo(0), "The QR must be drawn in whole modules.");
                     });
   }
 
   [Test]
-  public async Task GetQr_SecondInvitation_EncodesTheNewUrlRatherThanTheOld()
+  public async Task GetQr_SecondInvitation_HasAnAddressOfItsOwnAndEncodesTheNewUrl()
   {
-    await CreateInvitationAsync();
+    var first = await CreateInvitationAsync();
 
     string firstSvg;
-    using (var first = await _context.Client.GetAsync(QrPath))
+    using (var firstResponse = await _context.Client.GetAsync(QrPathFor(first.InvitationId)))
     {
-      firstSvg = await first.Content.ReadAsStringAsync();
+      firstSvg = await firstResponse.Content.ReadAsStringAsync();
     }
 
+    var second = await CreateInvitationAsync();
+
+    using var secondResponse = await _context.Client.GetAsync(QrPathFor(second.InvitationId));
+    var secondSvg = await secondResponse.Content.ReadAsStringAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(second.InvitationId,
+                                  Is.Not.EqualTo(first.InvitationId),
+                                  "Each invitation must be addressable on its own, so the picture and the printed URL cannot drift apart.");
+                      Assert.That(secondSvg,
+                                  Is.Not.EqualTo(firstSvg),
+                                  "The rendered QR must encode the invitation it was asked for.");
+                    });
+  }
+
+  [Test]
+  public async Task GetQr_TheInvitationReplacedByANewerOne_SaysSoRatherThanRenderingTheNewOne()
+  {
+    var first = await CreateInvitationAsync();
     await CreateInvitationAsync();
 
-    using var second = await _context.Client.GetAsync(QrPath);
-    var secondSvg = await second.Content.ReadAsStringAsync();
+    using var response = await _context.Client.GetAsync(QrPathFor(first.InvitationId));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    Assert.That(secondSvg,
-                Is.Not.EqualTo(firstSvg),
-                "The rendered QR must encode the current invitation, not a stale or placeholder image.");
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.enrol.qrReplaced"));
+                    });
   }
 
   [Test]
   public async Task GetQr_OutstandingInvitation_IsNeverCached()
   {
-    await CreateInvitationAsync();
+    var invitation = await CreateInvitationAsync();
 
-    using var response = await _context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
 
     Assert.Multiple(() =>
                     {
@@ -93,10 +129,10 @@ public sealed class InvitationQrEndpointTest
   }
 
   [Test]
-  public async Task GetQr_InvitationAlreadyRedeemed_AnswersNotFound()
+  public async Task GetQr_InvitationAlreadyRedeemed_SaysAPhoneHasUsedIt()
   {
-    var qrUrl = await CreateInvitationAsync();
-    var code = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
+    var invitation = await CreateInvitationAsync();
+    var code = invitation.QrUrl[(invitation.QrUrl.LastIndexOf('/') + 1)..];
 
     using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                                new RedeemBody(code, "Anna", "NUnit")))
@@ -104,12 +140,42 @@ public sealed class InvitationQrEndpointTest
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await _context.Client.GetAsync(QrPath);
+    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.enrol.qrAlreadyUsed"));
+                    });
   }
 
-  private async Task<string> CreateInvitationAsync()
+  [Test]
+  public async Task GetQr_InvitationPastItsFiveMinutes_SaysItExpiredRatherThanRenderingABrokenPicture()
+  {
+    var invitation = await CreateInvitationAsync();
+
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var row = await database.EnrolmentInvitations
+                              .SingleAsync(candidate => candidate.Id == invitation.InvitationId);
+      row.ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
+      await database.SaveChangesAsync();
+    }
+
+    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.enrol.expired"));
+                    });
+  }
+
+  private async Task<CreatedInvitation> CreateInvitationAsync()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                               new { staffMemberId = (Guid?)null });
@@ -118,7 +184,8 @@ public sealed class InvitationQrEndpointTest
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return body.RootElement.GetProperty("qrUrl").GetString()!;
+    return new(body.RootElement.GetProperty("invitationId").GetGuid(),
+               body.RootElement.GetProperty("qrUrl").GetString()!);
   }
 
   private int ReadDeclaredSide(string svg)

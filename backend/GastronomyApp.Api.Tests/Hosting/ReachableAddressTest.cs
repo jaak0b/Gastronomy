@@ -34,9 +34,9 @@ public sealed class ReachableAddressTest
   }
 
   [Test]
-  public void Addresses_OnThisMachine_AreNonLoopbackVersionFourAddresses()
+  public void Addresses_OnThisMachine_AreVersionFourAddressesAPhoneCouldReach()
   {
-    IReadOnlyList<string> addresses = _addressProvider.FindReachableAddresses();
+    IReadOnlyList<LocalNetworkAddress> addresses = _addressProvider.FindReachableAddresses();
 
     Assert.That(addresses, Is.Not.Null);
 
@@ -44,10 +44,21 @@ public sealed class ReachableAddressTest
     {
       Assert.Multiple(() =>
                       {
-                        Assert.That(address, Does.Not.StartWith("127."));
-                        Assert.That(address.Split('.'), Has.Length.EqualTo(4));
+                        Assert.That(address.IPAddress, Does.Not.StartWith("127."));
+                        Assert.That(address.IPAddress, Does.Not.StartWith("169.254."));
+                        Assert.That(address.IPAddress.Split('.'), Has.Length.EqualTo(4));
+                        Assert.That(address.InterfaceName, Is.Not.Empty);
                       });
     }
+  }
+
+  [Test]
+  public void Addresses_OnThisMachineAskedTwice_ComeBackInTheSameOrder()
+  {
+    IReadOnlyList<LocalNetworkAddress> first = _addressProvider.FindReachableAddresses();
+    IReadOnlyList<LocalNetworkAddress> second = _addressProvider.FindReachableAddresses();
+
+    Assert.That(second, Is.EqualTo(first));
   }
 
   private ReachableHostResolver BuildResolver(string bindAddress)

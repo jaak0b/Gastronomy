@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
+import { fetchInvitationQr } from '../../api/invitationQr'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import type { InvitationQr } from '../../core/invitationQr'
 import { useConnectionStore } from '../connection'
 
 export interface AdminStaffMember {
@@ -25,6 +27,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   const staffMembers = ref<AdminStaffMember[]>([])
   const loadFailed = ref(false)
   const invitation = ref<Invitation | null>(null)
+  const invitationQr = ref<InvitationQr>({ kind: 'loading' })
   const errorMessage = ref<AdminErrorMessage | null>(null)
   const enrolledName = ref<string | null>(null)
 
@@ -66,6 +69,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   async function createInvitation(staffMemberId?: string): Promise<void> {
     enrolledName.value = null
     errorMessage.value = null
+    invitationQr.value = { kind: 'loading' }
     const result = await request<Invitation>('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: staffMemberId === undefined ? {} : { staffMemberId },
@@ -75,10 +79,12 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
       return
     }
     invitation.value = result.data
+    invitationQr.value = await fetchInvitationQr(result.data.invitationId)
   }
 
   function closeInvitation(): void {
     invitation.value = null
+    invitationQr.value = { kind: 'loading' }
   }
 
   function listen(): void {
@@ -86,7 +92,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     connection.registerRefetch(load)
     connection.onEvent<{ staffMemberName: string }>('EnrolmentCompleted', (payload) => {
       enrolledName.value = payload.staffMemberName
-      invitation.value = null
+      closeInvitation()
       void load()
     })
   }
@@ -96,6 +102,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     loadFailed,
     errorMessage,
     invitation,
+    invitationQr,
     enrolledName,
     load,
     rename,

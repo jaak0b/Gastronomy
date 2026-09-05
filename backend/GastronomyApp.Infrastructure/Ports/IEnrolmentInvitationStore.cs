@@ -8,7 +8,8 @@ public enum EnrolmentRedemptionOutcome
   CodeInvalid,
   CodeExpired,
   StaffMemberIsOffTheList,
-  NameRequired
+  NameRequired,
+  NoInvitationOutstanding
 }
 
 public sealed record EnrolmentInvitationCreated(
@@ -26,7 +27,8 @@ public sealed record EnrolmentRedemptionResult(
   EnrolmentRedemptionOutcome Outcome,
   Device? Device,
   StaffMember? StaffMember,
-  string? PlaintextToken);
+  string? PlaintextToken,
+  Guid? InvitationId);
 
 public interface IEnrolmentInvitationStore
 {

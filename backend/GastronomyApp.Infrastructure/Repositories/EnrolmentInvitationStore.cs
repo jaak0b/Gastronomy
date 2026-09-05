@@ -83,11 +83,16 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                                                                                  CancellationToken cancellationToken)
   {
     var now = _clock.UtcNow;
-    var invitation = await LoadOutstandingInvitationAsync(now, cancellationToken);
+    var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
 
     if (invitation is null)
     {
-      return Rejected(EnrolmentRedemptionOutcome.CodeExpired);
+      return Rejected(EnrolmentRedemptionOutcome.NoInvitationOutstanding, null);
+    }
+
+    if (invitation.ExpiresAtUtc <= now)
+    {
+      return Rejected(EnrolmentRedemptionOutcome.CodeExpired, invitation.Id);
     }
 
     var qrCodeMatches = _secretHasher.Verify(request.Code,
@@ -98,7 +103,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     if (!qrCodeMatches)
     {
-      return Rejected(EnrolmentRedemptionOutcome.CodeInvalid);
+      return Rejected(EnrolmentRedemptionOutcome.CodeInvalid, invitation.Id);
     }
 
     if (invitation.StaffMemberId is not null)
@@ -108,22 +113,21 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
       if (!staffMemberIsOnTheList)
       {
-        return Rejected(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList);
+        return Rejected(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList, invitation.Id);
       }
     }
     else if (string.IsNullOrWhiteSpace(request.Name))
     {
-      return Rejected(EnrolmentRedemptionOutcome.NameRequired);
+      return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
     }
 
     return await CompleteRedemptionAsync(invitation, request, now, cancellationToken);
   }
 
-  private async Task<EnrolmentInvitation?> LoadOutstandingInvitationAsync(DateTime now,
-                                                                          CancellationToken cancellationToken)
+  private async Task<EnrolmentInvitation?> LoadUnconsumedInvitationAsync(CancellationToken cancellationToken)
   {
     var invitation = await _dbContext.EnrolmentInvitations
-                                     .FirstOrDefaultAsync(candidate => candidate.ConsumedAtUtc == null && candidate.ExpiresAtUtc > now,
+                                     .FirstOrDefaultAsync(candidate => candidate.ConsumedAtUtc == null,
                                                           cancellationToken);
 
     if (invitation is null)
@@ -133,14 +137,15 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     await _dbContext.Entry(invitation).ReloadAsync(cancellationToken);
 
-    return invitation.ConsumedAtUtc is null && invitation.ExpiresAtUtc > now ? invitation : null;
+    return invitation.ConsumedAtUtc is null ? invitation : null;
   }
 
-  private TransactionOutcome<EnrolmentRedemptionResult> Rejected(EnrolmentRedemptionOutcome outcome)
+  private TransactionOutcome<EnrolmentRedemptionResult> Rejected(EnrolmentRedemptionOutcome outcome,
+                                                                 Guid? invitationId)
   {
     return new()
            {
-             Value = new(outcome, null, null, null),
+             Value = new(outcome, null, null, null, invitationId),
              ShouldCommit = false
            };
   }
@@ -168,7 +173,8 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
              Value = new(EnrolmentRedemptionOutcome.Redeemed,
                          issued.Device,
                          staffMember,
-                         issued.PlaintextToken),
+                         issued.PlaintextToken,
+                         invitation.Id),
              ShouldCommit = true
            };
   }

@@ -122,7 +122,9 @@ onMounted(async () => {
         <InvitationPanel
           v-if="staff.invitation?.staffMember?.id === staffMember.staffMemberId"
           :invitation="staff.invitation"
+          :qr="staff.invitationQr"
           @close="staff.closeInvitation"
+          @renew="staff.createInvitation(staffMember.staffMemberId)"
         />
       </v-expand-transition>
     </v-card>
@@ -142,7 +144,9 @@ onMounted(async () => {
     <InvitationPanel
       v-if="staff.invitation !== null && staff.invitation.staffMember === null"
       :invitation="staff.invitation"
+      :qr="staff.invitationQr"
       @close="staff.closeInvitation"
+      @renew="staff.createInvitation()"
     />
   </v-container>
 </template>

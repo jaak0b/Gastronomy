@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Endpoints;
 
@@ -59,6 +60,7 @@ public sealed class AdminStaffMembersHandler
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly OutstandingInvitationCache _invitationCache;
   private readonly IEnrolmentInvitationStore _invitationStore;
+  private readonly ILogger<AdminStaffMembersHandler> _log;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly EnrolmentUrlBuilder _urlBuilder;
 
@@ -70,6 +72,7 @@ public sealed class AdminStaffMembersHandler
                                   HubNotificationDispatcher dispatcher,
                                   DeviceConnectionTerminator connectionTerminator,
                                   ResultEnvelope resultEnvelope,
+                                  ILogger<AdminStaffMembersHandler> log,
                                   IClock clock)
   {
     _dbContext = dbContext;
@@ -80,6 +83,7 @@ public sealed class AdminStaffMembersHandler
     _dispatcher = dispatcher;
     _connectionTerminator = connectionTerminator;
     _resultEnvelope = resultEnvelope;
+    _log = log;
     _clock = clock;
   }
 
@@ -222,6 +226,13 @@ public sealed class AdminStaffMembersHandler
                                  created.QrCodeValue,
                                  qrUrl,
                                  created.ExpiresAtUtc));
+
+    _log.LogInformation("Enrolment invitation {InvitationId} was created for staff member {StaffMemberId} "
+                        + "at {Origin}, and is valid until {ExpiresAtUtc}.",
+                        created.InvitationId,
+                        request.StaffMemberId,
+                        _urlBuilder.Origin(),
+                        created.ExpiresAtUtc);
 
     if (request.StaffMemberId is not null)
     {
