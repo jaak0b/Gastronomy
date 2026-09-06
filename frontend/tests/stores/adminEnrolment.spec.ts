@@ -152,6 +152,67 @@ describe('creating an invitation from the admin screen', () => {
     })
   })
 
+  it('takes the previous code off the screen when the laptop would not create a new one', async () => {
+    let wasAskedBefore = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/qr.svg')) {
+          return renderedQr()
+        }
+        if (url.endsWith('/invitations') && wasAskedBefore) {
+          return new Response(
+            JSON.stringify({ code: 'Conflict', messageKey: 'admin.actionFailed', parameters: {} }),
+            { status: 409 },
+          )
+        }
+        wasAskedBefore = true
+        return new Response(
+          JSON.stringify({
+            invitationId: INVITATION_ID,
+            qrUrl: 'http://192.168.1.20:5000/j/CODE',
+            expiresAtUtc: '2026-08-27T20:00:00Z',
+            staffMember: null,
+            station: null,
+          }),
+          { status: 201 },
+        )
+      }),
+    )
+    const enrolment = useAdminEnrolmentStore()
+    await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
+
+    await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
+
+    expect(enrolment.invitation).toBeNull()
+  })
+
+  it('says why the laptop would not create the code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'enrolment.exactlyOneOwnerRequired',
+              parameters: {},
+            }),
+            { status: 400 },
+          ),
+      ),
+    )
+    const enrolment = useAdminEnrolmentStore()
+
+    await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
+
+    expect(enrolment.errorMessage).toEqual({
+      key: 'enrolment.exactlyOneOwnerRequired',
+      parameters: {},
+      count: null,
+    })
+  })
+
   it('drops the drawing again when the panel is closed', async () => {
     stubLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()

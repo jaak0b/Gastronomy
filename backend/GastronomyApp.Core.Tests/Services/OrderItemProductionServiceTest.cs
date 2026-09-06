@@ -95,6 +95,47 @@ public sealed class OrderItemProductionServiceTest
   }
 
   [Test]
+  public void Advance_TheStatusAnItemAlreadyHolds_IsAcceptedAndAppendsNoSecondLogRow()
+  {
+    var bratwurst = WaitingItem();
+    _service.Advance(RequestFor([bratwurst.Id], ProductionStatus.InProduction), [bratwurst], _placedAt);
+
+    var outcome = _service.Advance(RequestFor([bratwurst.Id], ProductionStatus.InProduction), [bratwurst], _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(outcome.IsSuccess, Is.True);
+                      Assert.That(outcome.Value.ChangedItems, Is.Empty);
+                      Assert.That(outcome.Value.AlreadyAtTheTargetStatus, Has.Count.EqualTo(1));
+                      Assert.That(outcome.Value.AlreadyAtTheTargetStatus[0], Is.SameAs(bratwurst));
+                      Assert.That(bratwurst.ProductionStatus, Is.EqualTo(ProductionStatus.InProduction));
+                      Assert.That(bratwurst.StatusChanges, Has.Count.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public void Advance_OneItemAlreadyThereBesideOneStillWaiting_MovesOnlyTheOneThatIsBehind()
+  {
+    var bratwurst = WaitingItem();
+    var beer = WaitingItem();
+    _service.Advance(RequestFor([bratwurst.Id], ProductionStatus.InProduction), [bratwurst], _placedAt);
+
+    var outcome = _service.Advance(RequestFor([bratwurst.Id, beer.Id], ProductionStatus.InProduction),
+                                   [bratwurst, beer],
+                                   _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(outcome.IsSuccess, Is.True);
+                      Assert.That(outcome.Value.ChangedItems, Has.Count.EqualTo(1));
+                      Assert.That(outcome.Value.ChangedItems[0], Is.SameAs(beer));
+                      Assert.That(outcome.Value.AlreadyAtTheTargetStatus, Has.Count.EqualTo(1));
+                      Assert.That(bratwurst.StatusChanges, Has.Count.EqualTo(2));
+                      Assert.That(beer.StatusChanges, Has.Count.EqualTo(2));
+                    });
+  }
+
+  [Test]
   public void Advance_AnIdThatIsNotAmongTheKnownItems_IsRefusedAndChangesNothing()
   {
     var bratwurst = WaitingItem();

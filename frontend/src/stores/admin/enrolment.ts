@@ -63,6 +63,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      closeInvitation()
       return
     }
     invitation.value = result.data

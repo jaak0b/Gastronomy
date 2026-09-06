@@ -19,4 +19,6 @@ public sealed record ProductionStatusFailure
 public sealed record ProductionStatusChangeResult
 {
   public required IReadOnlyList<OrderItem> ChangedItems { get; init; }
+
+  public required IReadOnlyList<OrderItem> AlreadyAtTheTargetStatus { get; init; }
 }

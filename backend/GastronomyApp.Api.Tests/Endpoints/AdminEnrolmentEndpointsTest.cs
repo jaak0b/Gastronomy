@@ -117,18 +117,43 @@ public sealed class AdminEnrolmentEndpointsTest
   }
 
   [Test]
-  public async Task PostInvitation_ForAStationThatAlreadyHasATablet_RevokesTheOldTabletImmediately()
+  public async Task PostInvitation_ForAStationThatAlreadyHasATablet_LeavesThatTabletWorking()
   {
-    var firstToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    var tokenInUse = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
 
     using (var invitation = await CreateInvitationAsync(new { stationId = _context.World.KitchenStationId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    using var response = await _context.SendAsAsync(firstToken, HttpMethod.Get, "/api/session");
+    using var response = await _context.SendAsAsync(tokenInUse, HttpMethod.Get, "/api/session");
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+  }
+
+  [Test]
+  public async Task PostRedeem_ForAStationThatAlreadyHasATablet_ReplacesItAndTheOldTokenStopsWorking()
+  {
+    var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    var idOfTheOldTablet = await DeviceIdOfTheKitchenAsync();
+    var code = await CodeOfNewInvitationAsync(new { stationId = _context.World.KitchenStationId });
+
+    using var redeemed = await RedeemAsync(code);
+    var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
+
+    using var refused = await _context.SendAsAsync(tokenOfTheOldTablet, HttpMethod.Get, "/api/session");
+
+    await using var database = _context.Factory.CreateContext();
+    var station = await database.Stations.SingleAsync(candidate => candidate.Id == _context.World.KitchenStationId);
+    var oldTabletIsGone = !await database.Devices.AnyAsync(device => device.Id == idOfTheOldTablet);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+                      Assert.That(station.DeviceId, Is.EqualTo(body.RootElement.GetProperty("deviceId").GetGuid()));
+                      Assert.That(oldTabletIsGone, Is.True);
+                    });
   }
 
   [Test]
@@ -161,6 +186,16 @@ public sealed class AdminEnrolmentEndpointsTest
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
                                   Is.EqualTo("admin.staff.nameMissing"));
                     });
+  }
+
+  private async Task<Guid?> DeviceIdOfTheKitchenAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+
+    return await database.Stations
+                         .Where(candidate => candidate.Id == _context.World.KitchenStationId)
+                         .Select(candidate => candidate.DeviceId)
+                         .SingleAsync();
   }
 
   private Task<HttpResponseMessage> CreateInvitationAsync(object body)

@@ -40,7 +40,8 @@ public sealed class OrderItemProductionService
     }
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
-    List<OrderItem> selected = [];
+    List<OrderItem> toMove = [];
+    List<OrderItem> alreadyAtTheTargetStatus = [];
 
     foreach (var orderItemId in selectedIds)
     {
@@ -53,24 +54,48 @@ public sealed class OrderItemProductionService
                                                                                     });
       }
 
-      if (!_transition.IsAllowed(item.ProductionStatus, request.TargetStatus))
-      {
-        return Result<ProductionStatusChangeResult, ProductionStatusFailure>.Failed(new()
-                                                                                    {
-                                                                                      Reason = ProductionStatusFailureReason.TransitionNotAllowed,
-                                                                                      OffendingOrderItemId = orderItemId
-                                                                                    });
-      }
+      var refusal = Classify(item, request.TargetStatus, toMove, alreadyAtTheTargetStatus);
 
-      selected.Add(item);
+      if (refusal is not null)
+      {
+        return Result<ProductionStatusChangeResult, ProductionStatusFailure>.Failed(refusal);
+      }
     }
 
-    foreach (var item in selected)
+    foreach (var item in toMove)
     {
       Move(item, request.TargetStatus, changedAtUtc);
     }
 
-    return Result<ProductionStatusChangeResult, ProductionStatusFailure>.Success(new() { ChangedItems = selected });
+    return Result<ProductionStatusChangeResult, ProductionStatusFailure>.Success(new()
+                                                                                  {
+                                                                                    ChangedItems = toMove,
+                                                                                    AlreadyAtTheTargetStatus = alreadyAtTheTargetStatus
+                                                                                  });
+  }
+
+  private ProductionStatusFailure? Classify(OrderItem item,
+                                            ProductionStatus targetStatus,
+                                            List<OrderItem> toMove,
+                                            List<OrderItem> alreadyAtTheTargetStatus)
+  {
+    switch (_transition.StepFrom(item.ProductionStatus, targetStatus))
+    {
+      case ProductionStatusStep.Forward:
+        toMove.Add(item);
+        return null;
+      case ProductionStatusStep.AlreadyThere:
+        alreadyAtTheTargetStatus.Add(item);
+        return null;
+      case ProductionStatusStep.Backwards:
+        return new()
+               {
+                 Reason = ProductionStatusFailureReason.TransitionNotAllowed,
+                 OffendingOrderItemId = item.Id
+               };
+      default:
+        return new Never().OfType<ProductionStatusFailure?>(item.ProductionStatus);
+    }
   }
 
   private void Move(OrderItem item, ProductionStatus status, DateTime changedAtUtc)

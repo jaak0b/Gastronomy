@@ -239,6 +239,38 @@ describe('moving work on from the station screen', () => {
   })
 })
 
+describe('a station tablet that has lost contact with the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('says the list may be out of date, so nobody trusts an empty screen', async () => {
+    const page = await mountPage()
+
+    expect(page.get('.load-failed').text()).toBe(
+      'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+    )
+  })
+
+  it('never claims there is nothing to prepare while it is out of contact', async () => {
+    const page = await mountPage()
+
+    expect(page.find('.empty').exists()).toBe(false)
+  })
+})
+
 describe('a station with nothing to prepare', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

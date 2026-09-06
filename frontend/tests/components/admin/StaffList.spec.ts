@@ -328,6 +328,50 @@ describe('adding somebody new to the waiter list', () => {
     )
   })
 
+  it('adds one person only, however often the save button is tapped', async () => {
+    let releaseTheAdd: () => void = () => undefined
+    const theAddIsHeldUp = new Promise<void>((resolve) => {
+      releaseTheAdd = resolve
+    })
+    const calls: RecordedCall[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({
+          url,
+          method: init?.method ?? 'GET',
+          body: init?.body === undefined ? null : JSON.parse(String(init.body)),
+        })
+        if (url === '/api/admin/staff-members' && init?.method === 'POST') {
+          await theAddIsHeldUp
+          return new Response(JSON.stringify({ id: NEW_STAFF_MEMBER_ID, name: 'Bernd' }), {
+            status: 201,
+          })
+        }
+        if (url.includes('/qr.svg')) {
+          return new Response('<svg></svg>', {
+            status: 200,
+            headers: { 'Content-Type': 'image/svg+xml' },
+          })
+        }
+        return new Response(JSON.stringify(ONE_STAFF_MEMBER), { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await firstStaffMember(list)
+    await list.get('.new-staff-member').trigger('click')
+    await list.get('.new-person-name input').setValue('Bernd')
+    await list.get('.save-new-person').trigger('click')
+    await list.get('.save-new-person').trigger('click')
+    releaseTheAdd()
+    await vi.waitFor(() => expect(list.find('.new-person').exists()).toBe(false))
+
+    expect(
+      calls.filter((call) => call.url === '/api/admin/staff-members' && call.method === 'POST'),
+    ).toHaveLength(1)
+  })
+
   it('says why the laptop would not add the person', async () => {
     vi.stubGlobal(
       'fetch',
@@ -352,6 +396,62 @@ describe('adding somebody new to the waiter list', () => {
 
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
     expect(list.get('.refusal').text()).toBe('Geben Sie dem Kellner einen Namen, bevor Sie speichern.')
+  })
+})
+
+describe('two refusals one after the other', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the newest one, not the one the admin has already read', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/invitations')) {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'enrolment.exactlyOneOwnerRequired',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        if (init?.method === 'PUT') {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'admin.staff.nameMissing',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        return new Response(JSON.stringify(ONE_STAFF_MEMBER), { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await firstStaffMember(list)
+    await list.get('.new-code').trigger('click')
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+    await list.get('.rename').trigger('click')
+    await list.get('.rename-field input').setValue('Anna B')
+    await list.get('.save-name').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(list.get('.refusal').text()).toBe(
+        'Geben Sie dem Kellner einen Namen, bevor Sie speichern.',
+      ),
+    )
   })
 })
 

@@ -89,8 +89,6 @@ public sealed class AdminEnrolmentHandler
       return Results.NotFound();
     }
 
-    var deviceToReplace = ownerRecord.DeviceId;
-
     var created = await _invitationStore.CreateAsync(owner, cancellationToken);
     var qrUrl = _urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
     _invitationCache.Remember(new(created.InvitationId, created.QrCodeValue, qrUrl, created.ExpiresAtUtc));
@@ -102,11 +100,6 @@ public sealed class AdminEnrolmentHandler
                         owner.Id,
                         _urlBuilder.Origin(),
                         created.ExpiresAtUtc);
-
-    if (deviceToReplace is not null)
-    {
-      await _deviceRevoker.RevokeAsync(deviceToReplace.Value, cancellationToken);
-    }
 
     return Results.Json(new InvitationView(created.InvitationId,
                                            qrUrl,

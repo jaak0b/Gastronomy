@@ -73,7 +73,7 @@ public sealed class EnrolmentEndpointsTest
   }
 
   [Test]
-  public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDevice()
+  public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDeviceOnTheScan()
   {
     var firstInvitation = await CreateInvitationOverHttpAsync(_world.StaffMemberId);
 
@@ -100,11 +100,11 @@ public sealed class EnrolmentEndpointsTest
 
     var secondInvitation = await CreateInvitationOverHttpAsync(staffMemberId);
 
-    using (var afterReplacement = await GetSessionAsync(firstToken))
+    using (var whileTheCodeIsOnScreen = await GetSessionAsync(firstToken))
     {
-      Assert.That(afterReplacement.StatusCode,
-                  Is.EqualTo(HttpStatusCode.Unauthorized),
-                  "Issuing a new invitation must revoke the phone it replaces.");
+      Assert.That(whileTheCodeIsOnScreen.StatusCode,
+                  Is.EqualTo(HttpStatusCode.OK),
+                  "Showing a QR code must leave the phone that is still in service signed in.");
     }
 
     using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue);
@@ -112,6 +112,7 @@ public sealed class EnrolmentEndpointsTest
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
     using var secondPhone = await GetSessionAsync(secondToken);
+    using var firstPhoneAfterTheScan = await GetSessionAsync(firstToken);
 
     Assert.Multiple(() =>
                     {
@@ -120,6 +121,9 @@ public sealed class EnrolmentEndpointsTest
                                   Is.EqualTo(staffMemberId),
                                   "The replacement phone belongs to the same staff member.");
                       Assert.That(secondPhone.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(firstPhoneAfterTheScan.StatusCode,
+                                  Is.EqualTo(HttpStatusCode.Unauthorized),
+                                  "The scan replaces the phone the code was created for.");
                     });
   }
 

@@ -35,19 +35,25 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   async function save(
     station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
-  ): Promise<void> {
+  ): Promise<boolean> {
+    errorMessage.value = null
     const path =
       station.stationId === undefined
         ? '/api/admin/stations'
         : `/api/admin/stations/${station.stationId}`
-    await request(path, {
+    const result = await request(path, {
       method: station.stationId === undefined ? 'POST' : 'PUT',
       body: {
         name: station.name,
         sortOrder: station.sortOrder,
       },
     })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return false
+    }
     await load()
+    return true
   }
 
   async function setActive(id: string, isActive: boolean): Promise<void> {

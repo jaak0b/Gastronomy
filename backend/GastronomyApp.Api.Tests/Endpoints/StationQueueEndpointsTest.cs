@@ -183,6 +183,53 @@ public sealed class StationQueueEndpointsTest
   }
 
   [Test]
+  public async Task PostItemStatus_TheStatusTheItemsAlreadyHold_IsAcceptedAndStillNamesTheTableAndTheSlices()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await KitchenItemIdsOfAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+
+    using (var first = await AdvanceAsync(_kitchenToken, kitchenItemIds, "inProduction"))
+    {
+      Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using var response = await AdvanceAsync(_kitchenToken, kitchenItemIds, "inProduction");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                      Assert.That(body.RootElement.GetProperty("slices").GetArrayLength(), Is.EqualTo(1));
+                      Assert.That(body.RootElement.GetProperty("slices")[0].GetProperty("items")[0]
+                                      .GetProperty("productionStatus").GetString(),
+                                  Is.EqualTo("inProduction"));
+                    });
+  }
+
+  [Test]
+  public async Task PostItemStatus_TheStatusTheItemsAlreadyHold_WritesNoSecondRowIntoTheStatusChangeLog()
+  {
+    IReadOnlyList<Guid> kitchenItemIds = await KitchenItemIdsOfAsync(await PlaceOrderAcrossBothStationsAsync("Tisch 3"));
+
+    using (var first = await AdvanceAsync(_kitchenToken, kitchenItemIds, "inProduction"))
+    {
+      Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    using (var second = await AdvanceAsync(_kitchenToken, kitchenItemIds, "inProduction"))
+    {
+      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges
+                                                        .Where(change => kitchenItemIds.Contains(change.OrderItemId))
+                                                        .ToListAsync();
+
+    Assert.That(changes.Count(change => change.Status == ProductionStatus.InProduction), Is.EqualTo(2));
+  }
+
+  [Test]
   public async Task GetStationOrders_TheOtherStationTablet_SeesOnlyItsOwnSlice()
   {
     await PlaceOrderAcrossBothStationsAsync("Tisch 3");

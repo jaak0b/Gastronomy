@@ -5,6 +5,7 @@ import { useAdminStaffStore } from '../../../stores/admin/staff'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
+import { useRefusalText } from '../refusalText'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
@@ -14,6 +15,7 @@ const newName = ref('')
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const isAddingPerson = ref(false)
+const isSavingTheNewPerson = ref(false)
 const newPersonName = ref('')
 let stopListening: (() => void) | null = null
 
@@ -21,17 +23,7 @@ const shown = computed(() =>
   staff.staffMembers.filter((staffMember) => showsDeactivated.value || staffMember.isActive),
 )
 
-const refusal = computed(() => enrolment.errorMessage ?? staff.errorMessage)
-
-const refusalText = computed(() => {
-  const message = refusal.value
-  if (message === null || message === undefined) {
-    return null
-  }
-  return message.count === null
-    ? t(message.key, message.parameters)
-    : t(message.key, message.parameters, message.count)
-})
+const refusalText = useRefusalText([() => enrolment.errorMessage, () => staff.errorMessage])
 
 function inviteStaffMember(staffMemberId: string): void {
   void enrolment.createInvitation({ kind: 'staffMember', staffMemberId })
@@ -48,7 +40,12 @@ function stopAddingPerson(): void {
 }
 
 async function addPerson(): Promise<void> {
+  if (isSavingTheNewPerson.value) {
+    return
+  }
+  isSavingTheNewPerson.value = true
   const staffMemberId = await staff.create(newPersonName.value.trim())
+  isSavingTheNewPerson.value = false
   if (staffMemberId === null) {
     return
   }
@@ -182,7 +179,7 @@ onUnmounted(() => {
         <v-btn
           class="save-new-person me-2"
           color="primary"
-          :disabled="newPersonName.trim().length === 0"
+          :disabled="newPersonName.trim().length === 0 || isSavingTheNewPerson"
           @click="addPerson"
         >
           {{ t('admin.save') }}

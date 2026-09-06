@@ -103,6 +103,56 @@ describe('the orders a station tablet is showing', () => {
   })
 })
 
+describe('a station tablet that has not heard the list from the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('says nothing about having nothing to prepare before the first list has arrived', () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+
+    const station = useStationStore()
+
+    expect(station.hasNothingToPrepare).toBe(false)
+  })
+
+  it('says nothing about having nothing to prepare when the list could not be loaded', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.load()
+
+    expect(station.hasNothingToPrepare).toBe(false)
+  })
+
+  it('says there is nothing to prepare once the laptop has answered with an empty list', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () => new Response(JSON.stringify({ station: KITCHEN, slices: [] }), { status: 200 }),
+      ),
+    )
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.load()
+
+    expect(station.hasNothingToPrepare).toBe(true)
+  })
+})
+
 describe('moving an item on', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

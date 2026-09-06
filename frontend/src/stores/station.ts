@@ -20,6 +20,7 @@ import { useSessionStore } from './session'
 export const useStationStore = defineStore('station', () => {
   const station = ref<StationIdentity | null>(null)
   const slices = ref<StationSlice[]>([])
+  const hasLoaded = ref(false)
   const loadFailed = ref(false)
   const failureKey = ref<string | null>(null)
   const readyTableName = ref<string | null>(null)
@@ -27,7 +28,11 @@ export const useStationStore = defineStore('station', () => {
 
   const board = computed(() => splitSlices(slices.value))
   const hasNothingToPrepare = computed(
-    () => board.value.together.length === 0 && board.value.single.length === 0,
+    () =>
+      hasLoaded.value
+      && !loadFailed.value
+      && board.value.together.length === 0
+      && board.value.single.length === 0,
   )
 
   function deviceToken(): string | null {
@@ -48,6 +53,7 @@ export const useStationStore = defineStore('station', () => {
     loadFailed.value = false
     station.value = result.data.station
     slices.value = result.data.slices
+    hasLoaded.value = true
   }
 
   function dismissReadyNotice(): void {

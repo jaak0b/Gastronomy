@@ -245,7 +245,10 @@ public sealed class StationQueueHandler
       return Refuse(outcome.Failure);
     }
 
-    List<Guid> affectedSliceIds = [.. outcome.Value.ChangedItems.Select(item => item.StationOrderId).Distinct()];
+    List<Guid> affectedSliceIds = [.. outcome.Value.ChangedItems
+                                          .Concat(outcome.Value.AlreadyAtTheTargetStatus)
+                                          .Select(item => item.StationOrderId)
+                                          .Distinct()];
 
     IReadOnlyList<StationQueueSliceView> slices =
       await _queueReader.DescribeSlicesAsync(_dbContext, affectedSliceIds, cancellationToken);

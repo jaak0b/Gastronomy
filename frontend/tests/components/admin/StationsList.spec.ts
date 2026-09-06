@@ -290,6 +290,112 @@ describe('setting up the tablet of a station', () => {
   })
 })
 
+describe('a rename the laptop refuses', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  function refuseTheRename() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'admin.stationNameMissing',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+  }
+
+  async function renameFirstStation(list: ReturnType<typeof mountList>) {
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.edit').trigger('click')
+    await list.get('.station-form input').setValue('Küche hinten')
+    await list.get('.station-form').trigger('submit')
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+  }
+
+  it('says why the new name was not taken', async () => {
+    refuseTheRename()
+
+    const list = mountList()
+    await renameFirstStation(list)
+
+    expect(list.get('.refusal').text()).toBe(
+      'Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.',
+    )
+  })
+
+  it('keeps the name the admin typed on screen, so it is not typed again', async () => {
+    refuseTheRename()
+
+    const list = mountList()
+    await renameFirstStation(list)
+
+    expect((list.get('.station-form input').element as HTMLInputElement).value).toBe('Küche hinten')
+  })
+})
+
+describe('two refusals one after the other', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('shows the newest one, not the one the admin has already read', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/invitations')) {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'enrolment.exactlyOneOwnerRequired',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        if (init?.method === 'POST') {
+          return new Response(
+            JSON.stringify({
+              code: 'Conflict',
+              messageKey: 'admin.stationHasUnfinishedItems',
+              parameters: { count: 3 },
+              details: null,
+            }),
+            { status: 409 },
+          )
+        }
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.set-up-device').trigger('click')
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await pressInDialog('.confirm')
+
+    await vi.waitFor(() =>
+      expect(list.get('.refusal').text()).toBe(
+        'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
+      ),
+    )
+  })
+})
+
 describe('the station screen the admin has left', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

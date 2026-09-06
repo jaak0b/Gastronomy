@@ -5,6 +5,7 @@ import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
+import { useRefusalText } from '../refusalText'
 import StationForm from './StationForm.vue'
 
 const { t } = useI18n()
@@ -20,22 +21,17 @@ const shown = computed(() =>
   stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
 
-const refusal = computed(() => {
-  const message = enrolment.errorMessage ?? stations.errorMessage
-  if (message === null) {
-    return null
-  }
-  return message.count === null
-    ? t(message.key, message.parameters)
-    : t(message.key, message.parameters, message.count)
-})
+const refusalText = useRefusalText([() => enrolment.errorMessage, () => stations.errorMessage])
 
 function inviteStation(stationId: string): void {
   void enrolment.createInvitation({ kind: 'station', stationId })
 }
 
 async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
-  await stations.save(value)
+  const wasSaved = await stations.save(value)
+  if (!wasSaved) {
+    return
+  }
   editingId.value = null
   isCreating.value = false
 }
@@ -72,8 +68,8 @@ onUnmounted(() => {
     >
       {{ t('admin.enrol.doneStation', { name: enrolment.enrolledStationName }) }}
     </v-alert>
-    <v-alert v-if="refusal !== null" class="refusal mb-4" type="warning" variant="tonal">
-      {{ refusal }}
+    <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
+      {{ refusalText }}
     </v-alert>
     <v-alert v-if="stations.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}

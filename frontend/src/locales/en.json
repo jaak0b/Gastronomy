@@ -231,6 +231,7 @@
       "codeRetired": "Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more.",
       "copyUrl": "Copy the address",
       "copied": "Address copied",
+      "copyUnavailable": "Type the address above by hand. Copying does not work on this page.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
       "forStation": "Scan this QR code with the camera of the tablet at {name}.",
       "qrAlt": "QR code for setting the device up",

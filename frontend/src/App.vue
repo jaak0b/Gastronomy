@@ -30,6 +30,16 @@ const isAWaiterScreen = computed(
   () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
 )
 
+let isListeningToTheCatalog = false
+
+async function followTheCatalog(): Promise<void> {
+  if (!isListeningToTheCatalog) {
+    isListeningToTheCatalog = true
+    catalog.listen()
+  }
+  await catalog.load()
+}
+
 watch(
   () => session.deviceToken,
   async (token) => {
@@ -39,6 +49,12 @@ watch(
     await connection.connect({ deviceToken: token })
   },
 )
+
+watch(isAWaiterScreen, async (isTheWaiterApp) => {
+  if (isTheWaiterApp) {
+    await followTheCatalog()
+  }
+})
 
 onMounted(async () => {
   if (screen.value === 'admin') {
@@ -52,8 +68,7 @@ onMounted(async () => {
   }
   await connection.connect({ deviceToken: session.deviceToken })
   if (isAWaiterScreen.value) {
-    catalog.listen()
-    await catalog.load()
+    await followTheCatalog()
   }
 })
 </script>

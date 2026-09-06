@@ -38,6 +38,30 @@ public sealed class ProductionStatusTransitionTest
     Assert.That(_transition.IsAllowed(status, status), Is.False);
   }
 
+  [TestCase(ProductionStatus.Waiting, ProductionStatus.InProduction)]
+  [TestCase(ProductionStatus.Waiting, ProductionStatus.Finished)]
+  [TestCase(ProductionStatus.InProduction, ProductionStatus.Finished)]
+  public void StepFrom_AStepForward_IsForward(ProductionStatus from, ProductionStatus to)
+  {
+    Assert.That(_transition.StepFrom(from, to), Is.EqualTo(ProductionStatusStep.Forward));
+  }
+
+  [TestCase(ProductionStatus.Waiting)]
+  [TestCase(ProductionStatus.InProduction)]
+  [TestCase(ProductionStatus.Finished)]
+  public void StepFrom_TheStatusItAlreadyHolds_IsAlreadyThere(ProductionStatus status)
+  {
+    Assert.That(_transition.StepFrom(status, status), Is.EqualTo(ProductionStatusStep.AlreadyThere));
+  }
+
+  [TestCase(ProductionStatus.InProduction, ProductionStatus.Waiting)]
+  [TestCase(ProductionStatus.Finished, ProductionStatus.Waiting)]
+  [TestCase(ProductionStatus.Finished, ProductionStatus.InProduction)]
+  public void StepFrom_AStepBackwards_IsBackwards(ProductionStatus from, ProductionStatus to)
+  {
+    Assert.That(_transition.StepFrom(from, to), Is.EqualTo(ProductionStatusStep.Backwards));
+  }
+
   [Test]
   public void IsAllowed_EveryPairOfStatuses_IsDecidedByWhetherItMovesForward()
   {

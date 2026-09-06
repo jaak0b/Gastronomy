@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import InvitationPanel from '../../../src/components/admin/enrolment/InvitationPanel.vue'
 import type { InvitationQr } from '../../../src/core/invitationQr'
@@ -48,6 +48,62 @@ describe('the invitation panel', () => {
 
     expect(panel.get('.instruction').text()).toBe(
       'Scannen Sie diesen QR-Code mit der Kamera des Telefons.',
+    )
+  })
+})
+
+describe('the copy button beside the address', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'clipboard')
+  })
+
+  function offerAClipboard(written: string[]): void {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          written.push(text)
+        },
+      },
+    })
+  }
+
+  it('hands the address to the clipboard when the browser offers one', async () => {
+    const written: string[] = []
+    offerAClipboard(written)
+    const panel = mountPanel()
+
+    await panel.get('.copy-url').trigger('click')
+
+    expect(written).toEqual(['http://192.168.1.20:5000/j/abc123'])
+  })
+
+  it('says nothing while nobody has pressed it', () => {
+    const panel = mountPanel()
+
+    expect(panel.find('.copy-unavailable').exists()).toBe(false)
+  })
+
+  it('says to type the address instead when the browser offers no clipboard', async () => {
+    const panel = mountPanel()
+
+    await panel.get('.copy-url').trigger('click')
+
+    expect(panel.get('.copy-unavailable').text()).toBe(
+      'Tippen Sie die Adresse oben von Hand ab. Das Kopieren funktioniert auf dieser Seite nicht.',
+    )
+  })
+
+  it('says the same in English', async () => {
+    const panel = mount(InvitationPanel, {
+      props: { invitation: INVITATION, qr: READY },
+      global: { plugins: testPlugins('en') },
+    })
+
+    await panel.get('.copy-url').trigger('click')
+
+    expect(panel.get('.copy-unavailable').text()).toBe(
+      'Type the address above by hand. Copying does not work on this page.',
     )
   })
 })

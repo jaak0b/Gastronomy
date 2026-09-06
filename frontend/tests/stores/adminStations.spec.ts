@@ -65,3 +65,59 @@ describe('the station list the admin configures', () => {
   })
 
 })
+
+describe('a station the laptop would not save', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function refuseTheSave() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'admin.stationNameMissing',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        return new Response(JSON.stringify({ stations: [BACKEND_STATION] }), { status: 200 })
+      }),
+    )
+  }
+
+  it('reports that the change did not happen', async () => {
+    refuseTheSave()
+    const stations = useAdminStationsStore()
+
+    const wasSaved = await stations.save({
+      stationId: BACKEND_STATION.stationId,
+      name: '   ',
+      sortOrder: 1,
+    })
+
+    expect(wasSaved).toBe(false)
+  })
+
+  it('holds the reason the laptop gave', async () => {
+    refuseTheSave()
+    const stations = useAdminStationsStore()
+
+    await stations.save({ stationId: BACKEND_STATION.stationId, name: '   ', sortOrder: 1 })
+
+    expect(stations.errorMessage).toEqual({
+      key: 'admin.stationNameMissing',
+      parameters: {},
+      count: null,
+    })
+  })
+})

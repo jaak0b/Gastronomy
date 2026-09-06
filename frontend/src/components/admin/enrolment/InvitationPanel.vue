@@ -9,6 +9,7 @@ defineEmits<{ close: []; renew: [] }>()
 
 const { t } = useI18n()
 const wasCopied = ref(false)
+const copyingIsUnavailable = ref(false)
 
 const view = computed(() => invitationQrView(props.qr))
 
@@ -28,12 +29,24 @@ watch(
   () => props.invitation.invitationId,
   () => {
     wasCopied.value = false
+    copyingIsUnavailable.value = false
   },
 )
 
 async function copyUrl(): Promise<void> {
-  await navigator.clipboard.writeText(props.invitation.qrUrl)
-  wasCopied.value = true
+  const clipboard = navigator.clipboard ?? null
+  if (clipboard === null) {
+    copyingIsUnavailable.value = true
+    return
+  }
+  try {
+    await clipboard.writeText(props.invitation.qrUrl)
+    wasCopied.value = true
+    copyingIsUnavailable.value = false
+  } catch {
+    wasCopied.value = false
+    copyingIsUnavailable.value = true
+  }
 }
 </script>
 
@@ -62,6 +75,9 @@ async function copyUrl(): Promise<void> {
             @click="copyUrl"
           />
         </div>
+        <p v-if="copyingIsUnavailable" class="copy-unavailable text-medium-emphasis mt-2">
+          {{ t('admin.enrol.copyUnavailable') }}
+        </p>
       </template>
       <v-alert v-else class="qr-gone" type="warning" variant="tonal">
         {{ t(view.messageKey) }}
