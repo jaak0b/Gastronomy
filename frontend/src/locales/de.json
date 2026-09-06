@@ -1,5 +1,9 @@
 {
   "enrol": {
+    "title": "Dieses Telefon einrichten",
+    "intro": "Geben Sie Ihren Namen ein, damit die Küche sieht, wer die Bestellung aufgenommen hat.",
+    "nameLabel": "Ihr Name",
+    "continue": "Weiter",
     "error": {
       "codeUsed": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
       "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht."
@@ -197,8 +201,6 @@
       "title": "Kellner",
       "help": "Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon.",
       "new": "Neuer Kellner",
-      "newName": "Name des neuen Kellners",
-      "newHelp": "Geben Sie den Namen ein und speichern Sie. Danach erscheint der QR-Code für das Telefon dieses Kellners.",
       "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern.",
       "noPhone": "Kein Telefon eingerichtet",
       "newCode": "Telefon neu einrichten",
@@ -232,6 +234,7 @@
       "copyUrl": "Adresse kopieren",
       "copied": "Adresse kopiert",
       "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren funktioniert auf dieser Seite nicht.",
+      "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
       "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
       "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
       "qrAlt": "QR-Code zum Einrichten des Geräts",
@@ -316,12 +319,13 @@
     "english": "English"
   },
   "enrolment": {
+    "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
     "codeUnknown": "Diesen Code kennt der Laptop nicht. Lassen Sie sich am Laptop einen neuen Code zeigen.",
     "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Laptop einen neuen Code zeigen.",
     "codeMissing": "Scannen Sie den QR-Code am Laptop noch einmal. Diese Seite wurde ohne Code geöffnet.",
     "staffMemberIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
     "stationIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet.",
-    "exactlyOneOwnerRequired": "Wählen Sie entweder einen Kellner oder eine Ausgabestelle aus. Ein QR-Code gehört immer zu genau einem von beiden."
+    "atMostOneOwner": "Wählen Sie entweder einen Kellner oder eine Ausgabestelle aus, nicht beides. Ein QR-Code gehört zu höchstens einem von beiden."
   },
   "auth": {
     "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Laptop neu einrichten."

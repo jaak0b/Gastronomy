@@ -73,18 +73,17 @@ public sealed class AdminEnrolmentHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    var owner = OwnerOf(request);
-
-    if (owner is null)
+    if (request.StaffMemberId is not null && request.StationId is not null)
     {
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
-                                    "enrolment.exactlyOneOwnerRequired");
+                                    "enrolment.atMostOneOwner");
     }
 
-    var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
+    var owner = OwnerOf(request);
+    var ownerRecord = owner is null ? null : await _ownerStore.FindAsync(owner, cancellationToken);
 
-    if (ownerRecord is null)
+    if (owner is not null && ownerRecord is null)
     {
       return Results.NotFound();
     }
@@ -94,22 +93,23 @@ public sealed class AdminEnrolmentHandler
     _invitationCache.Remember(new(created.InvitationId, created.QrCodeValue, qrUrl, created.ExpiresAtUtc));
 
     _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} "
-                        + "at {Origin}, and is valid until {ExpiresAtUtc}.",
+                        + "at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter "
+                        + "who types their name when they scan it.",
                         created.InvitationId,
-                        owner.Kind,
-                        owner.Id,
+                        owner?.Kind,
+                        owner?.Id,
                         _urlBuilder.Origin(),
                         created.ExpiresAtUtc);
 
     return Results.Json(new InvitationView(created.InvitationId,
                                            qrUrl,
                                            created.ExpiresAtUtc,
-                                           owner.Kind,
-                                           owner.Kind == DeviceOwnerKind.StaffMember
-                                             ? new StaffMemberView(owner.Id, ownerRecord.Name)
+                                           owner?.Kind,
+                                           owner?.Kind == DeviceOwnerKind.StaffMember
+                                             ? new StaffMemberView(owner.Id, ownerRecord!.Name)
                                              : null,
-                                           owner.Kind == DeviceOwnerKind.Station
-                                             ? new StationSummaryView(owner.Id, ownerRecord.Name)
+                                           owner?.Kind == DeviceOwnerKind.Station
+                                             ? new StationSummaryView(owner.Id, ownerRecord!.Name)
                                              : null,
                                            _urlBuilder.ReachableAddresses()),
                         statusCode: StatusCodes.Status201Created);
@@ -209,12 +209,12 @@ public sealed class AdminEnrolmentHandler
 
   private DeviceOwner? OwnerOf(CreateInvitationRequest request)
   {
-    if (request.StaffMemberId is not null && request.StationId is null)
+    if (request.StaffMemberId is not null)
     {
       return new(DeviceOwnerKind.StaffMember, request.StaffMemberId.Value);
     }
 
-    if (request.StationId is not null && request.StaffMemberId is null)
+    if (request.StationId is not null)
     {
       return new(DeviceOwnerKind.Station, request.StationId.Value);
     }

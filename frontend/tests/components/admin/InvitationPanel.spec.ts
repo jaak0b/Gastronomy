@@ -50,6 +50,14 @@ describe('the invitation panel', () => {
       'Scannen Sie diesen QR-Code mit der Kamera des Telefons.',
     )
   })
+
+  it('names the name step when the code belongs to nobody yet', () => {
+    const panel = mountPanel(READY, { ...INVITATION, staffMember: null })
+
+    expect(panel.get('.instruction').text()).toBe(
+      'Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.',
+    )
+  })
 })
 
 describe('the copy button beside the address', () => {

@@ -69,6 +69,7 @@ public sealed class EnrolmentRedemptionHandler
     }
 
     var redemption = await _invitationStore.RedeemAsync(new(request.Code,
+                                                           request.Name?.Trim(),
                                                            request.UserAgent ?? string.Empty,
                                                            httpContext.Request.Headers[AcceptLanguageHeaderName].ToString()),
                                                        cancellationToken);
@@ -102,6 +103,11 @@ public sealed class EnrolmentRedemptionHandler
                                                                        StatusCodes.Status410Gone,
                                                                        "StationIsOffTheList",
                                                                        "enrolment.stationIsOffTheList"),
+             EnrolmentRedemptionOutcome.NameRequired => Refused(redemption,
+                                                                "the invitation names nobody and the phone sent no name",
+                                                                StatusCodes.Status400BadRequest,
+                                                                "ValidationFailed",
+                                                                "enrolment.nameMissing"),
              _ => new Never().OfType<IResult>(redemption.Outcome)
            };
   }

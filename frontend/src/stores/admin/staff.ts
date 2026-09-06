@@ -2,11 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { StaffMember } from '../../core/apiTypes'
 import { useConnectionStore } from '../connection'
 import { useAdminEnrolmentStore } from './enrolment'
-
-type Committed<T> = { accepted: true; data: T } | { accepted: false }
 
 export interface AdminStaffMember {
   staffMemberId: string
@@ -37,33 +34,24 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     staffMembers.value = rows
   }
 
-  async function create(name: string): Promise<string | null> {
-    const written = await commit<StaffMember>('/api/admin/staff-members', 'POST', { name })
-    return written.accepted ? written.data.id : null
-  }
-
   async function rename(id: string, name: string): Promise<boolean> {
-    return (await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })).accepted
+    return await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })
   }
 
   async function setActive(id: string, isActive: boolean): Promise<boolean> {
     const action = isActive ? 'activate' : 'deactivate'
-    return (await commit(`/api/admin/staff-members/${id}/${action}`, 'POST', undefined)).accepted
+    return await commit(`/api/admin/staff-members/${id}/${action}`, 'POST', undefined)
   }
 
-  async function commit<T>(
-    path: string,
-    method: 'POST' | 'PUT',
-    body: unknown,
-  ): Promise<Committed<T>> {
+  async function commit(path: string, method: 'POST' | 'PUT', body: unknown): Promise<boolean> {
     errorMessage.value = null
-    const result = await request<T>(path, { method, body })
+    const result = await request(path, { method, body })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return { accepted: false }
+      return false
     }
     await load()
-    return { accepted: true, data: result.data }
+    return true
   }
 
   function listen(): () => void {
@@ -86,7 +74,6 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     loadFailed,
     errorMessage,
     load,
-    create,
     rename,
     setActive,
     listen,

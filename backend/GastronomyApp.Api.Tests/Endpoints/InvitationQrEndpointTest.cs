@@ -135,7 +135,7 @@ public sealed class InvitationQrEndpointTest
     var code = invitation.QrUrl[(invitation.QrUrl.LastIndexOf('/') + 1)..];
 
     using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                               new RedeemBody(code, "NUnit")))
+                                                               new RedeemBody(code, null, "NUnit")))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }

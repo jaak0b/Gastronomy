@@ -112,12 +112,12 @@ describe('adminErrorMessage, a refusal the laptop worded itself', () => {
   it('renders a refused enrolment invitation', () => {
     const message = adminErrorMessage({
       code: 'ValidationFailed',
-      messageKey: 'enrolment.exactlyOneOwnerRequired',
+      messageKey: 'enrolment.atMostOneOwner',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('enrolment.exactlyOneOwnerRequired')
+    expect(message.key).toBe('enrolment.atMostOneOwner')
   })
 })
 

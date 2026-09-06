@@ -23,16 +23,18 @@ public sealed class AdminEnrolmentEndpointsTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task PostInvitation_NeitherAPersonNorAStation_IsRefused()
+  public async Task PostInvitation_NeitherAPersonNorAStation_BelongsToNobodyYet()
   {
     using var response = await CreateInvitationAsync(new { });
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("enrolment.exactlyOneOwnerRequired"));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(body.RootElement.GetProperty("staffMember").ValueKind,
+                                  Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(body.RootElement.GetProperty("station").ValueKind,
+                                  Is.EqualTo(JsonValueKind.Null));
                     });
   }
 
@@ -50,7 +52,7 @@ public sealed class AdminEnrolmentEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("enrolment.exactlyOneOwnerRequired"));
+                                  Is.EqualTo("enrolment.atMostOneOwner"));
                     });
   }
 
@@ -156,38 +158,6 @@ public sealed class AdminEnrolmentEndpointsTest
                     });
   }
 
-  [Test]
-  public async Task PostStaffMember_ANewName_PutsThemOnTheListAsActive()
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/staff-members", new { name = "Bernd" });
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    await using var database = _context.Factory.CreateContext();
-    var created = await database.StaffMembers
-                                .SingleAsync(candidate => candidate.Id == body.RootElement.GetProperty("id").GetGuid());
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-                      Assert.That(created.Name, Is.EqualTo("Bernd"));
-                      Assert.That(created.IsActive, Is.True);
-                    });
-  }
-
-  [Test]
-  public async Task PostStaffMember_ABlankName_IsRefused()
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/staff-members", new { name = "   " });
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.staff.nameMissing"));
-                    });
-  }
-
   private async Task<Guid?> DeviceIdOfTheKitchenAsync()
   {
     await using var database = _context.Factory.CreateContext();
@@ -205,7 +175,7 @@ public sealed class AdminEnrolmentEndpointsTest
 
   private Task<HttpResponseMessage> RedeemAsync(string code)
   {
-    return _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, "NUnit"));
+    return _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, null, "NUnit"));
   }
 
   private async Task<string> CodeOfNewInvitationAsync(object body)

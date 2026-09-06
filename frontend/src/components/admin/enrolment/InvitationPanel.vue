@@ -14,16 +14,20 @@ const copyingIsUnavailable = ref(false)
 const view = computed(() => invitationQrView(props.qr))
 
 const station = computed(() => props.invitation.station ?? null)
+const staffMember = computed(() => props.invitation.staffMember ?? null)
 
 const title = computed(() =>
   station.value === null ? t('admin.enrol.title') : t('admin.enrol.titleStation'),
 )
 
-const instruction = computed(() =>
-  station.value === null
-    ? t('admin.enrol.forSomebodyKnown')
-    : t('admin.enrol.forStation', { name: station.value.name }),
-)
+const instruction = computed(() => {
+  if (station.value !== null) {
+    return t('admin.enrol.forStation', { name: station.value.name })
+  }
+  return staffMember.value === null
+    ? t('admin.enrol.forSomebodyNew')
+    : t('admin.enrol.forSomebodyKnown')
+})
 
 watch(
   () => props.invitation.invitationId,

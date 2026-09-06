@@ -13,6 +13,18 @@ function answerWith(status: number, body: object) {
   )
 }
 
+function answerInTurn(...answers: { status: number; body: object }[]) {
+  let next = 0
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => {
+      const answer = answers[Math.min(next, answers.length - 1)]
+      next += 1
+      return new Response(JSON.stringify(answer.body), { status: answer.status })
+    }),
+  )
+}
+
 function refuseEveryConnection() {
   vi.stubGlobal(
     'fetch',
@@ -72,6 +84,58 @@ describe('landing on a QR code link', () => {
     await popped
 
     expect(window.location.pathname).toBe('/')
+  })
+
+  it('asks for a name when the invitation belongs to nobody yet', async () => {
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+
+    const landing = mountLanding()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    expect(landing.find('.failure-notice').exists()).toBe(false)
+  })
+
+  it('opens the order screen once the name has been entered', async () => {
+    answerInTurn(
+      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
+      {
+        status: 200,
+        body: {
+          deviceToken: 'token-2',
+          staffMember: { id: 'staff-2', name: 'Bernd' },
+          language: 'de',
+        },
+      },
+    )
+
+    const landing = mountLanding()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    await landing.get('.name-field input').setValue('Bernd')
+    await landing.get('.continue').trigger('click')
+
+    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
+  })
+
+  it('tells the volunteer to wait when the laptop has too many requests at once', async () => {
+    answerInTurn(
+      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
+      {
+        status: 429,
+        body: { code: 'TooManyRequests', messageKey: 'session.tooManyRequests', parameters: {} },
+      },
+    )
+
+    const landing = mountLanding()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    await landing.get('.name-field input').setValue('Bernd')
+    await landing.get('.continue').trigger('click')
+
+    await vi.waitFor(() => expect(landing.find('.error').exists()).toBe(true))
+    expect(landing.get('.error').text()).toBe(
+      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal.',
+    )
   })
 
   it('says the code is no longer valid when the laptop refuses it', async () => {

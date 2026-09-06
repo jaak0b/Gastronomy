@@ -14,9 +14,6 @@ const renamingId = ref<string | null>(null)
 const newName = ref('')
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
-const isAddingPerson = ref(false)
-const isSavingTheNewPerson = ref(false)
-const newPersonName = ref('')
 let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
@@ -29,28 +26,8 @@ function inviteStaffMember(staffMemberId: string): void {
   void enrolment.createInvitation({ kind: 'staffMember', staffMemberId })
 }
 
-function startAddingPerson(): void {
-  isAddingPerson.value = true
-  newPersonName.value = ''
-}
-
-function stopAddingPerson(): void {
-  isAddingPerson.value = false
-  newPersonName.value = ''
-}
-
-async function addPerson(): Promise<void> {
-  if (isSavingTheNewPerson.value) {
-    return
-  }
-  isSavingTheNewPerson.value = true
-  const staffMemberId = await staff.create(newPersonName.value.trim())
-  isSavingTheNewPerson.value = false
-  if (staffMemberId === null) {
-    return
-  }
-  stopAddingPerson()
-  inviteStaffMember(staffMemberId)
+function inviteSomebodyNew(): void {
+  void enrolment.createInvitation({ kind: 'somebodyNew' })
 }
 
 async function deactivate(): Promise<void> {
@@ -168,29 +145,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-card v-if="isAddingPerson" class="new-person mb-3">
-      <v-card-text>
-        <v-text-field
-          v-model="newPersonName"
-          class="new-person-name"
-          :label="t('admin.staff.newName')"
-        />
-        <p class="help text-medium-emphasis mb-4">{{ t('admin.staff.newHelp') }}</p>
-        <v-btn
-          class="save-new-person me-2"
-          color="primary"
-          :disabled="newPersonName.trim().length === 0 || isSavingTheNewPerson"
-          @click="addPerson"
-        >
-          {{ t('admin.save') }}
-        </v-btn>
-        <v-btn class="cancel-new-person" variant="text" @click="stopAddingPerson">
-          {{ t('admin.cancel') }}
-        </v-btn>
-      </v-card-text>
-    </v-card>
-
-    <v-btn v-else class="new-staff-member" color="primary" @click="startAddingPerson">
+    <v-btn class="new-staff-member" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.new') }}
     </v-btn>
 
@@ -201,6 +156,17 @@ onUnmounted(() => {
       :confirm-label="t('admin.staff.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
+    />
+    <InvitationPanel
+      v-if="
+        enrolment.invitation !== null &&
+        enrolment.invitation.staffMember === null &&
+        enrolment.invitation.station === null
+      "
+      :invitation="enrolment.invitation"
+      :qr="enrolment.invitationQr"
+      @close="enrolment.closeInvitation"
+      @renew="inviteSomebodyNew"
     />
   </v-container>
 </template>

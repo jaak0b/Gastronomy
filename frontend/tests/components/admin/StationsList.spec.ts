@@ -359,7 +359,7 @@ describe('two refusals one after the other', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'enrolment.exactlyOneOwnerRequired',
+              messageKey: 'enrolment.atMostOneOwner',
               parameters: {},
               details: null,
             }),

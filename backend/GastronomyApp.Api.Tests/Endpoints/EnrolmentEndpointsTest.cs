@@ -58,6 +58,40 @@ public sealed class EnrolmentEndpointsTest
   }
 
   [Test]
+  public async Task PostRedeem_AnInvitationForNobodyAndABlankName_AsksForTheName()
+  {
+    var invitation = await CreateInvitationForNobodyAsync();
+
+    using var response = await RedeemAsync(invitation.QrCodeValue, "   ");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("enrolment.nameMissing"));
+                    });
+  }
+
+  [Test]
+  public async Task PostRedeem_AnInvitationForNobodyAndATypedName_PutsThatWaiterOnTheList()
+  {
+    var invitation = await CreateInvitationForNobodyAsync();
+
+    using var response = await RedeemAsync(invitation.QrCodeValue, "  Bernd  ");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("staffMember"));
+                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(),
+                                  Is.EqualTo("Bernd"));
+                      Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
+                    });
+  }
+
+  [Test]
   public async Task PostRedeem_AlreadyConsumedInvitation_AnswersGone()
   {
     var invitation = await CreateInvitationAsync();
@@ -127,10 +161,10 @@ public sealed class EnrolmentEndpointsTest
                     });
   }
 
-  private Task<HttpResponseMessage> RedeemAsync(string? code)
+  private Task<HttpResponseMessage> RedeemAsync(string? code, string? name = null)
   {
     return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                          new RedeemBody(code, "NUnit"));
+                                          new RedeemBody(code, name, "NUnit"));
   }
 
   private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)
@@ -149,6 +183,14 @@ public sealed class EnrolmentEndpointsTest
                       .CreateAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), CancellationToken.None);
   }
 
+  private async Task<EnrolmentInvitationCreated> CreateInvitationForNobodyAsync()
+  {
+    using var scope = _factory.Services.CreateScope();
+
+    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>()
+                      .CreateAsync(null, CancellationToken.None);
+  }
+
   private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid staffMemberId)
   {
     using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
@@ -165,4 +207,4 @@ public sealed class EnrolmentEndpointsTest
   }
 }
 
-public sealed record RedeemBody(string? Code, string UserAgent);
+public sealed record RedeemBody(string? Code, string? Name, string UserAgent);

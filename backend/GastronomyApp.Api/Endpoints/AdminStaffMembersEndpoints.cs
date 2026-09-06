@@ -20,11 +20,6 @@ public static class AdminStaffMembersEndpoints
                  async (AdminStaffMembersHandler handler,
                         CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
 
-    group.MapPost(string.Empty,
-                  async (CreateStaffMemberRequest request,
-                         AdminStaffMembersHandler handler,
-                         CancellationToken cancellationToken) => await handler.CreateAsync(request, cancellationToken));
-
     group.MapPut("/{staffMemberId:guid}",
                  async (Guid staffMemberId,
                         RenameStaffMemberRequest request,
@@ -92,32 +87,6 @@ public sealed class AdminStaffMembersHandler
     ];
 
     return Results.Ok(new AdminStaffMemberListView(views));
-  }
-
-  public async Task<IResult> CreateAsync(CreateStaffMemberRequest request, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-
-    if (string.IsNullOrWhiteSpace(request.Name))
-    {
-      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                    "ValidationFailed",
-                                    "admin.staff.nameMissing");
-    }
-
-    StaffMember staffMember = new()
-                              {
-                                Id = Guid.NewGuid(),
-                                Name = request.Name.Trim(),
-                                IsActive = true,
-                                CreatedAtUtc = _clock.UtcNow
-                              };
-
-    _dbContext.StaffMembers.Add(staffMember);
-    await _dbContext.SaveChangesAsync(cancellationToken);
-
-    return Results.Json(new StaffMemberView(staffMember.Id, staffMember.Name),
-                        statusCode: StatusCodes.Status201Created);
   }
 
   public async Task<IResult> RenameAsync(Guid staffMemberId,

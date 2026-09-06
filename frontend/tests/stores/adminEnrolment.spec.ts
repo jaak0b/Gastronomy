@@ -125,6 +125,15 @@ describe('creating an invitation from the admin screen', () => {
     expect(bodies).toEqual([{ staffMemberId: STAFF_MEMBER_ID }])
   })
 
+  it('names nobody when the waiter is not on the list yet', async () => {
+    const { bodies } = stubLaptop(renderedQr)
+    const enrolment = useAdminEnrolmentStore()
+
+    await enrolment.createInvitation({ kind: 'somebodyNew' })
+
+    expect(bodies).toEqual([{}])
+  })
+
   it('names the station the code belongs to and nothing else', async () => {
     const { bodies } = stubLaptop(renderedQr)
     const enrolment = useAdminEnrolmentStore()
@@ -195,7 +204,7 @@ describe('creating an invitation from the admin screen', () => {
           new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'enrolment.exactlyOneOwnerRequired',
+              messageKey: 'enrolment.atMostOneOwner',
               parameters: {},
             }),
             { status: 400 },
@@ -207,7 +216,7 @@ describe('creating an invitation from the admin screen', () => {
     await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
 
     expect(enrolment.errorMessage).toEqual({
-      key: 'enrolment.exactlyOneOwnerRequired',
+      key: 'enrolment.atMostOneOwner',
       parameters: {},
       count: null,
     })

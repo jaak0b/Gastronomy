@@ -10,6 +10,7 @@ public enum EnrolmentRedemptionOutcome
   CodeExpired,
   StaffMemberIsOffTheList,
   StationIsOffTheList,
+  NameRequired,
   NoInvitationOutstanding
 }
 
@@ -20,6 +21,7 @@ public sealed record EnrolmentInvitationCreated(
 
 public sealed record EnrolmentRedemptionRequest(
   string Code,
+  string? Name,
   string UserAgent,
   string AcceptLanguageHeader);
 
@@ -34,7 +36,7 @@ public sealed record EnrolmentRedemptionResult(
 
 public interface IEnrolmentInvitationStore
 {
-  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner owner, CancellationToken cancellationToken);
+  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken);
 
   public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
                                                      CancellationToken cancellationToken);

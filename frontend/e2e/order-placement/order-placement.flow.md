@@ -26,7 +26,7 @@ the skip.
 | # | The server does | The screen shows, literally |
 |---|---|---|
 | 1 | Opens the app root with no token | `Einrichten mit dem sechsstelligen Code` as the heading |
-| 2 | Reads the code off the laptop and types it | The continue button `Weiter` becomes enabled |
+| 2 | Reads the code off the laptop and types it, then types the name `Anna` | The continue button `Weiter` becomes enabled |
 | 3 | Taps `Weiter` | The catalog, heading `Bestellung aufnehmen` |
 | 4 | Reads the basket bar before touching anything | `Noch nichts ausgewählt` |
 | 5 | Taps `Bratwurst` once | The item button carries the count `1` |

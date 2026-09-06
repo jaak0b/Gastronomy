@@ -1,5 +1,9 @@
 {
   "enrol": {
+    "title": "Set up this phone",
+    "intro": "Enter your name so the kitchen can see who took the order.",
+    "nameLabel": "Your name",
+    "continue": "Continue",
     "error": {
       "codeUsed": "Ask at the laptop for a new QR code. This code is no longer valid.",
       "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the laptop."
@@ -197,8 +201,6 @@
       "title": "Waiters",
       "help": "Set the phones up one after another. A waiter has exactly one phone.",
       "new": "New waiter",
-      "newName": "Name of the new waiter",
-      "newHelp": "Type the name and save it. The QR code for that waiter's phone appears afterwards.",
       "nameMissing": "Give the waiter a name before you save.",
       "noPhone": "No phone set up",
       "newCode": "Set the phone up again",
@@ -232,6 +234,7 @@
       "copyUrl": "Copy the address",
       "copied": "Address copied",
       "copyUnavailable": "Type the address above by hand. Copying does not work on this page.",
+      "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
       "forStation": "Scan this QR code with the camera of the tablet at {name}.",
       "qrAlt": "QR code for setting the device up",
@@ -316,12 +319,13 @@
     "english": "English"
   },
   "enrolment": {
+    "nameMissing": "Enter your name so the kitchen knows who took the order.",
     "codeUnknown": "The laptop does not know this code. Ask for a new code at the laptop.",
     "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the laptop.",
     "codeMissing": "Scan the QR code on the laptop again. This page was opened without a code.",
     "staffMemberIsOffTheList": "Ask for a new QR code at the laptop. This waiter is no longer on the list.",
     "stationIsOffTheList": "Ask for a new QR code at the laptop. This station is switched off.",
-    "exactlyOneOwnerRequired": "Choose either a waiter or a station. A QR code always belongs to exactly one of the two."
+    "atMostOneOwner": "Choose either a waiter or a station, not both. A QR code belongs to at most one of the two."
   },
   "auth": {
     "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the laptop."

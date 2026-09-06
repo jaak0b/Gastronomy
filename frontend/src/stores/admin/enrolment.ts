@@ -10,6 +10,7 @@ import { useConnectionStore } from '../connection'
 
 
 export type InvitationOwner =
+  | { kind: 'somebodyNew' }
   | { kind: 'staffMember'; staffMemberId: string }
   | { kind: 'station'; stationId: string }
 
@@ -20,6 +21,8 @@ export interface EnrolledDevice {
 
 function bodyFor(owner: InvitationOwner): Record<string, string> {
   switch (owner.kind) {
+    case 'somebodyNew':
+      return {}
     case 'staffMember':
       return { staffMemberId: owner.staffMemberId }
     case 'station':

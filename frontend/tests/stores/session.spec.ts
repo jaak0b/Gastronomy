@@ -91,3 +91,39 @@ describe('the order a phone was holding when it was set up again', () => {
     expect(session.heldDraftExists()).toBe(false)
   })
 })
+
+describe('setting a phone up for a waiter who is not on the list yet', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sends the name the waiter typed along with the code', async () => {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, options?: RequestInit) => {
+        bodies.push(JSON.parse(String(options?.body ?? 'null')))
+        return new Response(
+          JSON.stringify({
+            deviceToken: 'token-1',
+            deviceKind: 'staffMember',
+            staffMember: { id: 'staff-1', name: 'Bernd' },
+            language: 'de',
+          }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    await useSessionStore().redeem({ code: 'abc123', name: 'Bernd' })
+
+    expect(bodies).toEqual([
+      { code: 'abc123', name: 'Bernd', userAgent: navigator.userAgent },
+    ])
+  })
+})

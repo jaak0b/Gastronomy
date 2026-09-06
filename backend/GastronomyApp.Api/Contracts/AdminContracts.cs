@@ -70,11 +70,6 @@ public sealed record RenameStaffMemberRequest
   public required string? Name { get; init; }
 }
 
-public sealed record CreateStaffMemberRequest
-{
-  public required string? Name { get; init; }
-}
-
 public sealed record CreateInvitationRequest
 {
   public Guid? StaffMemberId { get; init; }
@@ -86,7 +81,7 @@ public sealed record InvitationView(
   Guid InvitationId,
   string QrUrl,
   DateTime ExpiresAtUtc,
-  DeviceOwnerKind OwnerKind,
+  DeviceOwnerKind? OwnerKind,
   StaffMemberView? StaffMember,
   StationSummaryView? Station,
   IReadOnlyList<string> AvailableAddresses);
