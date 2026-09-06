@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../../core/apiTypes'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
+import {
+  formatProductionMinutes,
+  parseProductionMinutes,
+} from '../../../core/productionMinutes'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
 import type { AdminStation } from '../../../stores/admin/stations'
 import AssignmentEditor from './AssignmentEditor.vue'
@@ -23,6 +27,8 @@ const priceText = ref(
   formatEuroInput(props.item?.priceCents ?? null, locale.value as AppLanguage),
 )
 const priceIsUnreadable = ref(false)
+const productionMinutesText = ref(formatProductionMinutes(props.item?.productionMinutes ?? null))
+const productionMinutesAreUnreadable = ref(false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
 const stationIds = ref<string[]>([...(props.item?.stationIds ?? [])])
 
@@ -35,7 +41,9 @@ function toggle(stationId: string): void {
 function save(): void {
   const priceCents = parseEuroInput(priceText.value)
   priceIsUnreadable.value = priceCents === null
-  if (priceCents === null) {
+  const minutes = parseProductionMinutes(productionMinutesText.value)
+  productionMinutesAreUnreadable.value = minutes.kind === 'invalid'
+  if (priceCents === null || minutes.kind === 'invalid') {
     return
   }
   emit('save', {
@@ -45,6 +53,7 @@ function save(): void {
     priceCents,
     sortOrder: sortOrder.value,
     stationIds: stationIds.value,
+    productionMinutes: minutes.minutes,
   })
 }
 </script>
@@ -67,6 +76,18 @@ function save(): void {
           inputmode="decimal"
           :error="priceIsUnreadable"
           :error-messages="priceIsUnreadable ? [t('admin.items.priceInvalid')] : []"
+        />
+        <v-text-field
+          v-model="productionMinutesText"
+          class="production-minutes-field mb-2"
+          :label="t('admin.items.productionMinutes')"
+          :hint="t('admin.items.productionMinutesHelp')"
+          persistent-hint
+          inputmode="numeric"
+          :error="productionMinutesAreUnreadable"
+          :error-messages="
+            productionMinutesAreUnreadable ? [t('admin.items.productionMinutesInvalid')] : []
+          "
         />
         <AssignmentEditor
           :item-name="name"

@@ -7,14 +7,12 @@ import en from '../../src/locales/en.json'
 type LocaleTree = { [key: string]: string | LocaleTree }
 
 const PLURAL_KEYS = [
-  'header.stationWaiting',
   'catalog.basketSummary',
+  'catalog.readyIn',
+  'review.sliceReadyIn',
   'admin.overview.itemsWithoutStation',
-  'admin.overview.openTickets',
-  'admin.overview.stationBlocked',
-  'admin.stations.openTickets',
-  'admin.printers.waiting',
   'admin.itemsWouldHaveNoStation',
+  'admin.stationHasUnfinishedItems',
   'openItems.listIncomplete',
   'openItems.someWereAlreadySettled',
 ]
@@ -168,7 +166,7 @@ function keysTheLaptopCanSend(): Map<string, string> {
   for (const file of backendSourceFiles(BACKEND_ROOT)) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(
-      /"((?:order|admin|ticket|enrolment|station|session|review|printJob)\.[a-zA-Z][\w.]*)"/g,
+      /"((?:order|admin|auth|catalog|enrolment|station|session|review)\.[a-zA-Z][\w.]*)"/g,
     )) {
       sent.set(match[1], file.slice(BACKEND_ROOT.length + 1))
     }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import AdminOverview from '../../../src/components/admin/overview/AdminOverview.vue'
@@ -19,7 +19,7 @@ describe('the address the phones connect to', () => {
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ stations: [], items: [], printers: [] }), { status: 200 }),
+          new Response(JSON.stringify({ stations: [], items: [] }), { status: 200 }),
       ),
     )
   })
@@ -49,5 +49,47 @@ describe('the address the phones connect to', () => {
 
     expect(overview.find('img').exists()).toBe(false)
     expect(overview.find('canvas').exists()).toBe(false)
+  })
+})
+
+describe('what the overview says is still missing', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    window.history.replaceState({}, '', '/admin')
+  })
+
+  function stubStations(stations: unknown[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () => new Response(JSON.stringify({ stations, items: [] }), { status: 200 }),
+      ),
+    )
+  }
+
+  it('asks for the tablet of a station that has none yet', async () => {
+    stubStations([
+      { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: false },
+    ])
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
+      'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
+    )
+  })
+
+  it('says nothing about a station whose tablet is already set up', async () => {
+    stubStations([
+      { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: true },
+    ])
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
+      'Richten Sie das Tablet für Küche ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.',
+    )
   })
 })

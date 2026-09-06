@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n'
 import type { CatalogItem } from '../core/apiTypes'
 import { portionsOfCategory } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
+import { pickerEstimateMinutes } from '../core/estimates'
 import { needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
+import { useEstimatesStore } from '../stores/estimates'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
@@ -19,6 +21,7 @@ import TableField from '../components/review/TableField.vue'
 
 const { t } = useI18n()
 const catalog = useCatalogStore()
+const estimates = useEstimatesStore()
 const openItems = useOpenItemsStore()
 const order = useOrderStore()
 const session = useSessionStore()
@@ -32,6 +35,7 @@ const linesAwaitingStation = ref<number[]>([])
 
 onMounted(async () => {
   await openItems.loadTableNames()
+  await estimates.load()
 })
 
 const categoryNames = computed(() => catalog.groups.map((group) => group.name))
@@ -89,6 +93,11 @@ function positionsFor(itemId: string): ItemPosition[] {
   return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
 }
 
+function readyInMinutesFor(itemId: string): number | null {
+  const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
+  return item === undefined ? null : pickerEstimateMinutes(item, estimates.stations)
+}
+
 function place(item: CatalogItem, note: string | null, stationId: string | null): void {
   order.addItem({
     catalogItemId: item.id,
@@ -135,11 +144,15 @@ function chooseStation(stationId: string): void {
 <template>
   <v-container class="catalog">
     <CategoryTabs v-model="openCategory" :categories="categoryNames" :portions-for="portionsIn" />
+    <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
+      {{ t('estimates.loadFailed') }}
+    </v-alert>
     <ItemGrid
       v-if="itemsOfTheOpenCategory.length > 0"
       :items="itemsOfTheOpenCategory"
       :language="session.language"
       :positions-for="positionsFor"
+      :ready-in-minutes-for="readyInMinutesFor"
       class="my-2"
       @add="addItem"
       @add-with-a-note="addItemWithANote"

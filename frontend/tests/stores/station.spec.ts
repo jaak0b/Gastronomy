@@ -1,95 +1,62 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStationStore } from '../../src/stores/station'
-import { useConnectionStore } from '../../src/stores/connection'
+import { useSessionStore } from '../../src/stores/session'
 
-describe('the ten second delay before a slip is taken', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.useFakeTimers()
-    localStorage.clear()
-  })
+const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-  })
+const WAITING_SLICE = {
+  stationOrderId: 'slice-1',
+  globalOrderNumber: 137,
+  stationOrderNumber: 12,
+  tableName: 'Tisch 3',
+  note: null,
+  deliveryMode: 'together',
+  createdAtUtc: '2026-09-05T18:00:00Z',
+  items: [
+    { orderItemId: 'a', itemName: 'Bratwurst', note: null, productionStatus: 'waiting' },
+  ],
+}
 
-  function seedStation() {
-    const fetchCalls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        fetchCalls.push(url)
-        return new Response(JSON.stringify({ stationOrders: [] }), { status: 200 })
-      }),
-    )
-    const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
-    station.stationOrders = [
-      {
-        stationOrderId: 'ticket-1',
-        orderId: 'order-1',
-        globalOrderNumber: 137,
-        stationOrderNumber: 42,
-        tableName: 'Tisch 12',
-        orderCreatedAtUtc: '2026-08-27T19:00:00Z',
-        status: 'Failed',
-        canHandleOnPaper: true,
-        copyNumber: 0,
-        orderNote: null,
-        items: [],
-      },
-    ]
-    return { station, fetchCalls }
-  }
+const STARTED_SLICE = {
+  ...WAITING_SLICE,
+  items: [
+    { orderItemId: 'a', itemName: 'Bratwurst', note: null, productionStatus: 'inProduction' },
+  ],
+}
 
-  it('sends nothing at the moment the row is tapped', () => {
-    const { station, fetchCalls } = seedStation()
+function enrolledStationTablet() {
+  const session = useSessionStore()
+  session.deviceToken = 'token-here'
+  session.deviceKind = 'station'
+}
 
-    station.beginTake('ticket-1')
+function stubTheLaptop(action: () => Response) {
+  const bodies: unknown[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === '/api/station/items/status') {
+        bodies.push(JSON.parse(String(options?.body ?? 'null')))
+        return action()
+      }
+      return new Response(
+        JSON.stringify({ station: KITCHEN, slices: [WAITING_SLICE] }),
+        { status: 200 },
+      )
+    }),
+  )
+  return bodies
+}
 
-    expect(fetchCalls).toEqual([])
-  })
+function accepted(): Response {
+  return new Response(
+    JSON.stringify({ tableName: 'Tisch 3', slices: [STARTED_SLICE] }),
+    { status: 200 },
+  )
+}
 
-  it('marks the row as pending while the countdown runs', () => {
-    const { station } = seedStation()
-
-    station.beginTake('ticket-1')
-
-    expect(station.isPending('ticket-1')).toBe(true)
-  })
-
-  it('sends the acknowledgement once the countdown has run out', async () => {
-    const { station, fetchCalls } = seedStation()
-
-    station.beginTake('ticket-1')
-    await vi.advanceTimersByTimeAsync(10000)
-
-    expect(fetchCalls).toContain('/api/stations/station-kueche/station-orders/ticket-1/hand-on-paper')
-  })
-
-  it('never reaches the acknowledge endpoint when the cook taps undo', async () => {
-    const { station, fetchCalls } = seedStation()
-
-    station.beginTake('ticket-1')
-    station.undoTake('ticket-1')
-    await vi.advanceTimersByTimeAsync(60000)
-
-    expect(fetchCalls).toEqual([])
-  })
-
-  it('returns the row to what it was after an undo', () => {
-    const { station } = seedStation()
-
-    station.beginTake('ticket-1')
-    station.undoTake('ticket-1')
-
-    expect(station.isPending('ticket-1')).toBe(false)
-  })
-})
-
-describe('a load that does not reach the laptop', () => {
+describe('the orders a station tablet is showing', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -99,193 +66,231 @@ describe('a load that does not reach the laptop', () => {
     vi.unstubAllGlobals()
   })
 
-  function stubLaptop(reachablePaths: string[]) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) =>
-        reachablePaths.some((path) => url.includes(path))
-          ? new Response(
-              JSON.stringify({
-                stationOrders: [],
-                stations: [{ stationId: 'station-kueche', name: 'Küche', canPrint: true }],
-              }),
-              { status: 200 },
-            )
-          : new Response('{}', { status: 500 }),
-      ),
-    )
-  }
-
-  it('is admitted when the slip list could not be fetched', async () => {
-    stubLaptop(['/status'])
+  it('names the station the laptop says this tablet belongs to', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
     const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
 
-    await station.loadTickets()
+    await station.load()
 
-    expect(station.loadFailed).toBe(true)
+    expect(station.station).toEqual(KITCHEN)
   })
 
-  it('is admitted when the printer status could not be fetched', async () => {
-    stubLaptop(['/station-orders'])
+  it('sorts the slices into the ones that go out together and the single items', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
     const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
 
-    await station.loadPrinter()
+    await station.load()
 
-    expect(station.loadFailed).toBe(true)
+    expect(station.board.together.map((slice) => slice.stationOrderNumber)).toEqual([12])
+    expect(station.board.single).toEqual([])
   })
 
-  it('is taken back once the slip list arrives again', async () => {
-    stubLaptop([])
-    const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
-    await station.loadTickets()
-
-    stubLaptop(['/station-orders'])
-    await station.loadTickets()
-
-    expect(station.loadFailed).toBe(false)
-  })
-
-  it('asks for the station list again once the screen catches up', async () => {
-    stubLaptop([])
-    const station = useStationStore()
-    await station.open()
-
-    stubLaptop(['/api/stations', '/station-orders', '/status'])
-    await station.refresh()
-
-    expect(station.stations).toHaveLength(1)
-    expect(station.loadFailed).toBe(false)
-  })
-})
-
-describe('the station a cook switches to', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('is asked after with its own printer, because the banner belongs to that station', async () => {
-    const urls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        urls.push(url)
-        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
-      }),
-    )
-    const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
-    urls.length = 0
-
-    await station.selectStation('station-theke')
-
-    expect(urls).toContain('/api/stations/station-theke/status')
-  })
-})
-
-describe('a station screen that lost the hub and got it back', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('fetches its slips again when everyone is asked to catch up', async () => {
-    const urls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        urls.push(url)
-        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
-      }),
-    )
-    const station = useStationStore()
-    const connection = useConnectionStore()
-    station.selectedStationId = 'station-kueche'
-    station.listen()
-    urls.length = 0
-
-    await connection.refetchAll()
-
-    expect(urls.some((url) => url.includes('/station-orders'))).toBe(true)
-  })
-
-  it('asks after its printer again too, because a stale banner is a lie', async () => {
-    const urls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        urls.push(url)
-        return new Response(JSON.stringify({ stationOrders: [], stations: [] }), { status: 200 })
-      }),
-    )
-    const station = useStationStore()
-    const connection = useConnectionStore()
-    station.selectedStationId = 'station-kueche'
-    station.listen()
-    urls.length = 0
-
-    await connection.refetchAll()
-
-    expect(urls.some((url) => url.includes('/status'))).toBe(true)
-  })
-})
-
-describe('a Take that never reached the laptop', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.useFakeTimers()
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-  })
-
-  function seedUnreachableLaptop() {
+  it('says the list may be out of date when the laptop could not be reached', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
         throw new TypeError('Failed to fetch')
       }),
     )
+    enrolledStationTablet()
     const station = useStationStore()
-    station.selectedStationId = 'station-kueche'
-    station.stationOrders = [
-      {
-        stationOrderId: 'ticket-1',
-        orderId: 'order-1',
-        globalOrderNumber: 137,
-        stationOrderNumber: 42,
-        tableName: 'Tisch 12',
-        orderCreatedAtUtc: '2026-08-27T19:00:00Z',
-        status: 'Failed',
-        canHandleOnPaper: true,
-        copyNumber: 0,
-        orderNote: null,
-        items: [],
-      },
-    ]
-    return station
-  }
 
-  it('tells the station that the slip was not taken', async () => {
-    const station = seedUnreachableLaptop()
+    await station.load()
 
-    station.beginTake('ticket-1')
-    await vi.advanceTimersByTimeAsync(10000)
+    expect(station.loadFailed).toBe(true)
+  })
+})
 
-    expect(station.noticeKeyByTicketId['ticket-1']).toBe('station.takeNotReached')
+describe('moving an item on', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('tells the laptop which items move and where to', async () => {
+    const bodies = stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.advance(['a'], 'inProduction')
+
+    expect(bodies).toEqual([{ orderItemIds: ['a'], status: 'inProduction' }])
+  })
+
+  it('takes the fresh list out of the answer, so the screen matches the laptop', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.load()
+
+    await station.advance(['a'], 'inProduction')
+
+    expect(station.board.together[0].items[0].productionStatus).toBe('inProduction')
+  })
+
+  it('keeps the other orders on screen when only one of them moved on', async () => {
+    const otherSlice = {
+      ...WAITING_SLICE,
+      stationOrderId: 'slice-2',
+      globalOrderNumber: 138,
+      stationOrderNumber: 13,
+      tableName: 'Tisch 9',
+      items: [{ orderItemId: 'b', itemName: 'Pommes', note: null, productionStatus: 'waiting' }],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/station/items/status') {
+          return new Response(
+            JSON.stringify({ tableName: 'Tisch 3', slices: [STARTED_SLICE] }),
+            { status: 200 },
+          )
+        }
+        return new Response(
+          JSON.stringify({ station: KITCHEN, slices: [WAITING_SLICE, otherSlice] }),
+          { status: 200 },
+        )
+      }),
+    )
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.load()
+
+    await station.advance(['a'], 'inProduction')
+
+    expect(station.board.together.map((slice) => slice.stationOrderNumber)).toEqual([12, 13])
+  })
+
+  it('takes an order off the board once every one of its items is ready', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/station/items/status') {
+          return new Response(
+            JSON.stringify({
+              tableName: 'Tisch 3',
+              slices: [
+                {
+                  ...WAITING_SLICE,
+                  items: [
+                    { orderItemId: 'a', itemName: 'Bratwurst', note: null, productionStatus: 'finished' },
+                  ],
+                },
+              ],
+            }),
+            { status: 200 },
+          )
+        }
+        return new Response(
+          JSON.stringify({ station: KITCHEN, slices: [WAITING_SLICE] }),
+          { status: 200 },
+        )
+      }),
+    )
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.load()
+
+    await station.advance(['a'], 'finished')
+
+    expect(station.board.together).toEqual([])
+    expect(station.readyTableName).toBe('Tisch 3')
+  })
+
+  it('names the table on screen once something is ready, so it can be written on the tray', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.advance(['a'], 'finished')
+
+    expect(station.readyTableName).toBe('Tisch 3')
+  })
+
+  it('names no table when preparation only started', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+
+    await station.advance(['a'], 'inProduction')
+
+    expect(station.readyTableName).toBeNull()
+  })
+
+  it('drops the notice again when the person taps it away', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.advance(['a'], 'finished')
+
+    station.dismissReadyNotice()
+
+    expect(station.readyTableName).toBeNull()
+  })
+
+  it('drops the notice again as soon as the next thing happens', async () => {
+    stubTheLaptop(accepted)
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.advance(['a'], 'finished')
+
+    await station.advance(['a'], 'inProduction')
+
+    expect(station.readyTableName).toBeNull()
+  })
+})
+
+describe('a change the laptop did not take', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the reason the laptop gave and leaves the list as it was', async () => {
+    stubTheLaptop(
+      () =>
+        new Response(
+          JSON.stringify({
+            code: 'Conflict',
+            messageKey: 'station.statusAlreadyPassed',
+            parameters: {},
+            details: null,
+          }),
+          { status: 409 },
+        ),
+    )
+    enrolledStationTablet()
+    const station = useStationStore()
+    await station.load()
+
+    await station.advance(['a'], 'finished')
+
+    expect(station.failureKey).toBe('station.statusAlreadyPassed')
+    expect(station.board.together[0].items[0].productionStatus).toBe('waiting')
+  })
+
+  it('asks the person to tap again when the laptop could not be reached', async () => {
+    enrolledStationTablet()
+    const station = useStationStore()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+
+    await station.advance(['a'], 'finished')
+
+    expect(station.failureKey).toBe('station.actionNotReached')
   })
 })

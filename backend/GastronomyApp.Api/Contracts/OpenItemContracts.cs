@@ -1,3 +1,5 @@
+using GastronomyApp.Core.Enums;
+
 namespace GastronomyApp.Api.Contracts;
 
 public sealed record OpenOrderItemView(
@@ -7,7 +9,10 @@ public sealed record OpenOrderItemView(
   string ItemName,
   string? Note,
   int UnitPriceCents,
-  DateTime OrderedAtUtc);
+  DateTime OrderedAtUtc,
+  string StationName,
+  DeliveryMode DeliveryMode,
+  ProductionStatus ProductionStatus);
 
 public sealed record GivenAwayOrderItemView(
   Guid OrderItemId,

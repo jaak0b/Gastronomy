@@ -42,6 +42,7 @@ public sealed class OrderAcceptanceServiceTest
                    _numberAllocator,
                    new(),
                    new(),
+                   new(),
                    _clock);
   }
 
@@ -110,7 +111,8 @@ public sealed class OrderAcceptanceServiceTest
 
   private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items,
                                              string tableName = "Tisch 12",
-                                             bool settleOnSend = false)
+                                             bool settleOnSend = false,
+                                             IReadOnlyList<StationDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
            {
@@ -119,7 +121,8 @@ public sealed class OrderAcceptanceServiceTest
              TableName = tableName,
              Note = null,
              SettleOnSend = settleOnSend,
-             Items = items
+             Items = items,
+             DeliveryModes = deliveryModes ?? []
            };
   }
 
@@ -493,12 +496,13 @@ public sealed class OrderAcceptanceServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(order.CreatedAtUtc, Is.EqualTo(_now));
-                      Assert.That(order.StationOrders.Select(stationOrder => stationOrder.PrintJobs[0].CreatedAtUtc), Is.All.EqualTo(_now));
+                      Assert.That(ItemsOf(order).SelectMany(item => item.StatusChanges).Select(change => change.ChangedAtUtc),
+                                  Is.All.EqualTo(_now));
                     });
   }
 
   [Test]
-  public async Task AcceptAsync_ValidRequest_StartsEveryTicketQueuedWithNoReprints()
+  public async Task AcceptAsync_ValidRequest_StartsEveryItemWaitingWithOneLogRow()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
                                                                                               CancellationToken.None);
@@ -507,8 +511,39 @@ public sealed class OrderAcceptanceServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(order.StationOrders.Select(stationOrder => stationOrder.PrintJobs[0].Status), Is.All.EqualTo(PrintJobStatus.Queued));
-                      Assert.That(order.StationOrders.Select(stationOrder => stationOrder.PrintJobs[0].CopyNumber), Is.All.EqualTo(0));
+                      Assert.That(ItemsOf(order).Select(item => item.ProductionStatus), Is.All.EqualTo(ProductionStatus.Waiting));
+                      Assert.That(ItemsOf(order).Select(item => item.StatusChanges.Count), Is.All.EqualTo(1));
+                      Assert.That(ItemsOf(order).SelectMany(item => item.StatusChanges).Select(change => change.Status),
+                                  Is.All.EqualTo(ProductionStatus.Waiting));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_NoDeliveryModeNamed_SendsEverySliceTogether()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+                                                                                              CancellationToken.None);
+
+    Assert.That(result.Value.Order.StationOrders.Select(stationOrder => stationOrder.DeliveryMode),
+                Is.All.EqualTo(DeliveryMode.Together));
+  }
+
+  [Test]
+  public async Task AcceptAsync_DeliveryModeNamedForOneStation_AppliesItToThatSliceOnly()
+  {
+    var request = RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)],
+                              deliveryModes: [new() { StationId = _barIndoorId, DeliveryMode = DeliveryMode.AsItComes }]);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(request, CancellationToken.None);
+
+    var order = result.Value.Order;
+    var kitchenSlice = order.StationOrders.Single(stationOrder => stationOrder.StationId == _kitchenId);
+    var barSlice = order.StationOrders.Single(stationOrder => stationOrder.StationId == _barIndoorId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(kitchenSlice.DeliveryMode, Is.EqualTo(DeliveryMode.Together));
+                      Assert.That(barSlice.DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
                     });
   }
 

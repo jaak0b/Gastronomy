@@ -45,14 +45,16 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     var verification =
       await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, Context.RequestAborted);
 
-    if (!verification.IsValid || verification.Device is null)
+    if (!verification.IsValid || verification.Device is null || verification.Owner is null)
     {
       return AuthenticateResult.Fail("The device token was not accepted.");
     }
 
     var device = verification.Device;
+    var owner = verification.Owner;
     ClaimsIdentity identity = new([
-                                    new(ClaimTypes.NameIdentifier, device.StaffMemberId.ToString()),
+                                    new(ClaimTypes.NameIdentifier, owner.Id.ToString()),
+                                    new(_claimTypes.OwnerKind, owner.Kind.ToString()),
                                     new(_claimTypes.DeviceId, device.Id.ToString()),
                                     new(_claimTypes.Language, device.Language)
                                   ],

@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
@@ -21,6 +22,7 @@ public static class CatalogEndpoints
                     return Results.Ok(await catalogReader.ReadAsync(dbContext, cancellationToken));
                   })
           .RequireAuthorization()
+          .RequireStaffDevice()
           .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
     return routes;
@@ -64,6 +66,7 @@ public sealed class CatalogReader
                                                   item.PriceCents,
                                                   item.SortOrder,
                                                   item.IsAvailable,
+                                                  item.ProductionMinutes,
                                                   [
                                                     .. assignments
                                                       .Where(assignment =>

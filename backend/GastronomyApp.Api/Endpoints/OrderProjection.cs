@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
@@ -11,17 +11,23 @@ public sealed record LoadedOrder(
   Order Order,
   IReadOnlyList<StationOrder> StationOrders,
   IReadOnlyList<OrderItem> Items,
-  IReadOnlyDictionary<Guid, string> StationNames,
-  IReadOnlyDictionary<Guid, PrintJob> LatestPrintJobByStationOrderId);
+  IReadOnlyDictionary<Guid, string> StationNames);
 
 public sealed class OrderReader
 {
-  private readonly OrderStatusCalculator _statusCalculator = new();
+  private readonly OrderStatusCalculator _statusCalculator;
+
+  public OrderReader(OrderStatusCalculator statusCalculator)
+  {
+    _statusCalculator = statusCalculator;
+  }
 
   public async Task<LoadedOrder?> LoadAsync(GastronomyAppDbContext context,
                                             Guid orderId,
                                             CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(context);
+
     var order = await context.Orders
                              .AsNoTracking()
                              .FirstOrDefaultAsync(candidate => candidate.Id == orderId, cancellationToken);
@@ -29,51 +35,73 @@ public sealed class OrderReader
     return order is null ? null : await LoadForAsync(context, order, cancellationToken);
   }
 
-  public async Task<LoadedOrder?> LoadByClientOrderIdAsync(GastronomyAppDbContext context,
-                                                           Guid clientOrderId,
-                                                           CancellationToken cancellationToken)
-  {
-    var order = await context.Orders
-                             .AsNoTracking()
-                             .FirstOrDefaultAsync(candidate => candidate.ClientOrderId == clientOrderId, cancellationToken);
-
-    return order is null ? null : await LoadForAsync(context, order, cancellationToken);
-  }
-
   public OrderStatus StatusOf(LoadedOrder loaded)
   {
+    ArgumentNullException.ThrowIfNull(loaded);
+
+    return _statusCalculator.Calculate([.. loaded.Items.Select(item => item.ProductionStatus)]);
+  }
+
+  public OrderStatus StatusOfStationOrder(LoadedOrder loaded, Guid stationOrderId)
+  {
+    ArgumentNullException.ThrowIfNull(loaded);
+
     return _statusCalculator.Calculate([
-                                        .. loaded.StationOrders.Select(stationOrder =>
-                                                                         loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrder.Id, out var job)
-                                                                           ? job.Status
-                                                                           : PrintJobStatus.Queued)
+                                        .. loaded.Items
+                                                 .Where(item => item.StationOrderId == stationOrderId)
+                                                 .Select(item => item.ProductionStatus)
                                       ]);
   }
 
   public int TotalCentsOf(LoadedOrder loaded)
   {
+    ArgumentNullException.ThrowIfNull(loaded);
+
     return loaded.Items.Sum(item => item.UnitPriceCents);
   }
 
   public PlacedOrderView Describe(LoadedOrder loaded)
   {
+    ArgumentNullException.ThrowIfNull(loaded);
+
     return new(loaded.Order.Id,
                loaded.Order.GlobalOrderNumber,
-               StatusOf(loaded).ToString(),
+               StatusOf(loaded),
                TotalCentsOf(loaded),
                loaded.Order.CreatedAtUtc,
                DescribeStationOrders(loaded));
   }
 
+  public OrderListEntryView DescribeListEntry(LoadedOrder loaded)
+  {
+    ArgumentNullException.ThrowIfNull(loaded);
+
+    return new(loaded.Order.Id,
+               loaded.Order.GlobalOrderNumber,
+               loaded.Order.TableName,
+               TotalCentsOf(loaded),
+               StatusOf(loaded),
+               loaded.Order.CreatedAtUtc,
+               [
+                 .. loaded.StationOrders.Select(stationOrder => new OrderListStationOrderView(stationOrder.Id,
+                                                                                               NameOf(loaded, stationOrder.StationId),
+                                                                                               stationOrder.StationOrderNumber,
+                                                                                               stationOrder.DeliveryMode,
+                                                                                               StatusOfStationOrder(loaded, stationOrder.Id)))
+               ]);
+  }
+
   public IReadOnlyList<StationOrderView> DescribeStationOrders(LoadedOrder loaded)
   {
+    ArgumentNullException.ThrowIfNull(loaded);
+
     return
     [
       .. loaded.StationOrders.Select(stationOrder => new StationOrderView(stationOrder.Id,
                                                                           stationOrder.StationId,
-                                                                          loaded.StationNames.TryGetValue(stationOrder.StationId, out var name) ? name : string.Empty,
+                                                                          NameOf(loaded, stationOrder.StationId),
                                                                           stationOrder.StationOrderNumber,
-                                                                          StatusOfStationOrder(loaded, stationOrder.Id).ToString(),
+                                                                          stationOrder.DeliveryMode,
                                                                           [
                                                                             .. loaded.Items
                                                                                      .Where(item => item.StationOrderId == stationOrder.Id)
@@ -82,11 +110,9 @@ public sealed class OrderReader
     ];
   }
 
-  public PrintJobStatus StatusOfStationOrder(LoadedOrder loaded, Guid stationOrderId)
+  private string NameOf(LoadedOrder loaded, Guid stationId)
   {
-    return loaded.LatestPrintJobByStationOrderId.TryGetValue(stationOrderId, out var job)
-             ? job.Status
-             : PrintJobStatus.Queued;
+    return loaded.StationNames.TryGetValue(stationId, out var name) ? name : string.Empty;
   }
 
   private async Task<LoadedOrder> LoadForAsync(GastronomyAppDbContext context,
@@ -108,16 +134,6 @@ public sealed class OrderReader
                                          .OrderBy(item => item.Id)
                                          .ToListAsync(cancellationToken);
 
-    List<PrintJob> printJobs = await context.PrintJobs
-                                            .AsNoTracking()
-                                            .Where(job => stationOrderIds.Contains(job.StationOrderId))
-                                            .ToListAsync(cancellationToken);
-
-    Dictionary<Guid, PrintJob> latestByStationOrderId = printJobs
-                                                       .GroupBy(job => job.StationOrderId)
-                                                       .ToDictionary(group => group.Key,
-                                                                     group => group.OrderByDescending(job => job.CopyNumber).First());
-
     HashSet<Guid> stationIds = [.. stationOrders.Select(stationOrder => stationOrder.StationId)];
 
     Dictionary<Guid, string> stationNames = await context.Stations
@@ -125,6 +141,6 @@ public sealed class OrderReader
                                                          .Where(station => stationIds.Contains(station.Id))
                                                          .ToDictionaryAsync(station => station.Id, station => station.Name, cancellationToken);
 
-    return new(order, stationOrders, items, stationNames, latestByStationOrderId);
+    return new(order, stationOrders, items, stationNames);
   }
 }

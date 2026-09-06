@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -11,9 +11,9 @@ public sealed class NeverTest
   {
     Never never = new();
 
-    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<string>(PrintJobStatus.HandledOnPaper));
+    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<string>(ProductionStatus.Finished));
 
-    Assert.That(thrown!.Message, Does.Contain(PrintJobStatus.HandledOnPaper.ToString()));
+    Assert.That(thrown!.Message, Does.Contain(ProductionStatus.Finished.ToString()));
   }
 
   [Test]

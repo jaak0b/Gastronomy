@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,8 +18,6 @@ public sealed class OrderRepository : IOrderRepository
     return await _dbContext.Orders
                            .Include(order => order.StationOrders)
                            .ThenInclude(stationOrder => stationOrder.Items)
-                           .Include(order => order.StationOrders)
-                           .ThenInclude(stationOrder => stationOrder.PrintJobs)
                            .FirstOrDefaultAsync(order => order.ClientOrderId == clientOrderId, cancellationToken);
   }
 

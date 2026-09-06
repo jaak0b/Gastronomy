@@ -1,5 +1,6 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Security;
@@ -17,21 +18,24 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly IDeviceTokenStore _deviceTokenStore;
+  private readonly DeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public EnrolmentInvitationStore(GastronomyAppDbContext dbContext,
+                                  DeviceOwnerStore ownerStore,
                                   Pbkdf2SecretHasher secretHasher,
                                   IDeviceTokenStore deviceTokenStore,
                                   IClock clock)
   {
     _dbContext = dbContext;
+    _ownerStore = ownerStore;
     _secretHasher = secretHasher;
     _deviceTokenStore = deviceTokenStore;
     _clock = clock;
   }
 
-  public Task<EnrolmentInvitationCreated> CreateAsync(Guid? staffMemberId, CancellationToken cancellationToken)
+  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken)
   {
     return _transactionRunner.RunAsync(_dbContext,
                                        async transactionCancellationToken =>
@@ -48,7 +52,6 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                          EnrolmentInvitation invitation = new()
                                                                           {
                                                                             Id = Guid.NewGuid(),
-                                                                            StaffMemberId = staffMemberId,
                                                                             QrCodeHash = hashedQrCode.Hash,
                                                                             QrCodeSalt = hashedQrCode.Salt,
                                                                             QrCodeIterations = hashedQrCode.Iterations,
@@ -61,6 +64,12 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
                                          _dbContext.EnrolmentInvitations.Add(invitation);
                                          await _dbContext.SaveChangesAsync(transactionCancellationToken);
+
+                                         if (owner is not null)
+                                         {
+                                           await _ownerStore.PointInvitationAsync(owner, invitation.Id, transactionCancellationToken);
+                                           await _dbContext.SaveChangesAsync(transactionCancellationToken);
+                                         }
 
                                          return new TransactionOutcome<EnrolmentInvitationCreated>
                                                 {
@@ -106,22 +115,38 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       return Rejected(EnrolmentRedemptionOutcome.CodeInvalid, invitation.Id);
     }
 
-    if (invitation.StaffMemberId is not null)
-    {
-      var staffMemberIsOnTheList = await _dbContext.StaffMembers.AnyAsync(staffMember => staffMember.Id == invitation.StaffMemberId && staffMember.IsActive,
-                                                                          cancellationToken);
+    var owner = await _ownerStore.FindByInvitationAsync(invitation.Id, cancellationToken);
 
-      if (!staffMemberIsOnTheList)
+    if (owner is null)
+    {
+      if (string.IsNullOrWhiteSpace(request.Name))
       {
-        return Rejected(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList, invitation.Id);
+        return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
+      }
+
+      owner = await CreateStaffMemberAsync(request.Name, now, cancellationToken);
+    }
+    else
+    {
+      var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
+
+      if (ownerRecord is null || !ownerRecord.IsActive)
+      {
+        return Rejected(OffTheListOutcomeFor(owner.Kind), invitation.Id);
       }
     }
-    else if (string.IsNullOrWhiteSpace(request.Name))
-    {
-      return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
-    }
 
-    return await CompleteRedemptionAsync(invitation, request, now, cancellationToken);
+    return await CompleteRedemptionAsync(invitation, owner, request, now, cancellationToken);
+  }
+
+  private EnrolmentRedemptionOutcome OffTheListOutcomeFor(DeviceOwnerKind kind)
+  {
+    return kind switch
+           {
+             DeviceOwnerKind.StaffMember => EnrolmentRedemptionOutcome.StaffMemberIsOffTheList,
+             DeviceOwnerKind.Station => EnrolmentRedemptionOutcome.StationIsOffTheList,
+             _ => new Core.Services.Never().OfType<EnrolmentRedemptionOutcome>(kind)
+           };
   }
 
   private async Task<EnrolmentInvitation?> LoadUnconsumedInvitationAsync(CancellationToken cancellationToken)
@@ -145,34 +170,41 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   {
     return new()
            {
-             Value = new(outcome, null, null, null, invitationId),
+             Value = new(outcome, null, null, null, null, null, invitationId),
              ShouldCommit = false
            };
   }
 
   private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation,
+                                                                                            DeviceOwner owner,
                                                                                             EnrolmentRedemptionRequest request,
                                                                                             DateTime now,
                                                                                             CancellationToken cancellationToken)
   {
-    var staffMember = await ResolveStaffMemberAsync(invitation, request.Name, now, cancellationToken);
-
-    await RevokeEarlierDevicesAsync(staffMember.Id, cancellationToken);
-
-    var issued = await _deviceTokenStore.IssueAsync(staffMember.Id,
+    var issued = await _deviceTokenStore.IssueAsync(owner,
                                                     ResolveLanguage(request.AcceptLanguageHeader),
                                                     request.UserAgent,
                                                     cancellationToken);
 
     invitation.ConsumedAtUtc = now;
     invitation.ConsumedByDeviceId = issued.Device.Id;
+    await _ownerStore.PointInvitationAsync(owner, null, cancellationToken);
     await _dbContext.SaveChangesAsync(cancellationToken);
+
+    var staffMember = owner.Kind == DeviceOwnerKind.StaffMember
+                        ? await _dbContext.StaffMembers.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken)
+                        : null;
+    var station = owner.Kind == DeviceOwnerKind.Station
+                    ? await _dbContext.Stations.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken)
+                    : null;
 
     return new()
            {
              Value = new(EnrolmentRedemptionOutcome.Redeemed,
+                         owner.Kind,
                          issued.Device,
                          staffMember,
+                         station,
                          issued.PlaintextToken,
                          invitation.Id),
              ShouldCommit = true
@@ -193,44 +225,26 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     if (unconsumedPredecessors.Count > 0)
     {
+      await _ownerStore.ForgetInvitationsAsync([.. unconsumedPredecessors.Select(predecessor => predecessor.Id)],
+                                               cancellationToken);
       await _dbContext.SaveChangesAsync(cancellationToken);
     }
   }
 
-  private async Task RevokeEarlierDevicesAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<DeviceOwner> CreateStaffMemberAsync(string name, DateTime now, CancellationToken cancellationToken)
   {
-    List<Device> earlierDevices = await _dbContext.Devices
-                                                  .Where(device => device.StaffMemberId == staffMemberId)
-                                                  .ToListAsync(cancellationToken);
-
-    foreach (var device in earlierDevices)
-    {
-      await _deviceTokenStore.RevokeAsync(device.Id, cancellationToken);
-    }
-  }
-
-  private async Task<StaffMember> ResolveStaffMemberAsync(EnrolmentInvitation invitation,
-                                                          string? name,
-                                                          DateTime now,
-                                                          CancellationToken cancellationToken)
-  {
-    if (invitation.StaffMemberId is not null)
-    {
-      return await _dbContext.StaffMembers
-                             .SingleAsync(staffMember => staffMember.Id == invitation.StaffMemberId, cancellationToken);
-    }
-
     StaffMember newStaffMember = new()
                                  {
                                    Id = Guid.NewGuid(),
-                                   Name = name!,
+                                   Name = name.Trim(),
                                    IsActive = true,
                                    CreatedAtUtc = now
                                  };
 
     _dbContext.StaffMembers.Add(newStaffMember);
+    await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return newStaffMember;
+    return new(DeviceOwnerKind.StaffMember, newStaffMember.Id);
   }
 
   private string ResolveLanguage(string acceptLanguageHeader)

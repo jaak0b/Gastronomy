@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Enums;
+
+namespace GastronomyApp.Core.Entities;
 
 public sealed class StationOrder
 {
@@ -10,7 +12,7 @@ public sealed class StationOrder
 
   public required int StationOrderNumber { get; set; }
 
-  public List<OrderItem> Items { get; set; } = [];
+  public required DeliveryMode DeliveryMode { get; set; }
 
-  public List<PrintJob> PrintJobs { get; set; } = [];
+  public List<OrderItem> Items { get; set; } = [];
 }

@@ -15,7 +15,7 @@ public sealed class EnrolmentEndpointsTest
   {
     _factory = await new ApiTestFactory.Builder().StartAsync();
     await using var context = _factory.CreateContext();
-    await new ApiSeeder().SeedAsync(context, CancellationToken.None);
+    _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
@@ -25,6 +25,7 @@ public sealed class EnrolmentEndpointsTest
   }
 
   private ApiTestFactory _factory = null!;
+  private SeededWorld _world = null!;
 
   [Test]
   public async Task PostRedeem_QrCodeForm_ReturnsTheDeviceTokenOnce()
@@ -83,7 +84,7 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDevice()
   {
-    var firstInvitation = await CreateInvitationOverHttpAsync(null);
+    var firstInvitation = await CreateInvitationOverHttpAsync(_world.StaffMemberId);
 
     string firstToken;
     Guid staffMemberId;
@@ -153,7 +154,7 @@ public sealed class EnrolmentEndpointsTest
                       .CreateAsync(null, CancellationToken.None);
   }
 
-  private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid? staffMemberId)
+  private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid staffMemberId)
   {
     using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                               new { staffMemberId });

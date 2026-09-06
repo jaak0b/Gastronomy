@@ -13,6 +13,7 @@ public static class OpenItemEndpoints
   {
     var group = routes.MapGroup("/api/open-items")
                       .RequireAuthorization()
+                      .RequireStaffDevice()
                       .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
     group.MapGet(string.Empty,
@@ -34,7 +35,7 @@ public static class OpenItemEndpoints
                          OrderItemSettlementHandler handler,
                          CancellationToken cancellationToken) =>
                   {
-                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
+                    var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
                     return await handler.SettleAtTheDisplayedPriceAsync(request, caller, cancellationToken);
                   });
 
@@ -45,7 +46,7 @@ public static class OpenItemEndpoints
                          OrderItemSettlementHandler handler,
                          CancellationToken cancellationToken) =>
                   {
-                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
+                    var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
                     return await handler.SettleFreeOfChargeAsync(request, caller, cancellationToken);
                   });
 

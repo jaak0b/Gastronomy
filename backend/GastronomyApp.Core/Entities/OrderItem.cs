@@ -1,3 +1,5 @@
+using GastronomyApp.Core.Enums;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class OrderItem
@@ -14,6 +16,8 @@ public sealed class OrderItem
 
   public string? Note { get; set; }
 
+  public ProductionStatus ProductionStatus { get; set; }
+
   public DateTime? SettledAtUtc { get; set; }
 
   public int? ChargedPriceCents { get; set; }
@@ -21,4 +25,6 @@ public sealed class OrderItem
   public Guid? SettledByStaffMemberId { get; set; }
 
   public string? PaymentNotice { get; set; }
+
+  public List<OrderItemStatusChange> StatusChanges { get; set; } = [];
 }

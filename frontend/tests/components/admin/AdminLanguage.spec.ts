@@ -12,7 +12,7 @@ function stubFetchWithLanguage(language: string) {
     vi.fn(async (url: string) => {
       const payload = url.startsWith('/api/language')
         ? { language }
-        : { stations: [], items: [], printers: [] }
+        : { stations: [], items: [] }
       return new Response(JSON.stringify(payload), { status: 200 })
     }),
   )

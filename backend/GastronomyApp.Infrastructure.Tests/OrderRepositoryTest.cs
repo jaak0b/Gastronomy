@@ -1,14 +1,15 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Tests;
 
 public sealed class OrderRepositoryTest
 {
   [Test]
-  public async Task AddAsync_NewOrder_PersistsTheOrderItsStationOrdersAndItsItems()
+  public async Task AddAsync_NewOrder_PersistsTheOrderItsStationOrdersItsItemsAndTheirStatusLog()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -18,16 +19,18 @@ public sealed class OrderRepositoryTest
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
     var reloaded = await repository.FindByClientOrderIdAsync(order.ClientOrderId, TestContext.CurrentContext.CancellationToken);
+    var logRows = await fixture.DbContext.OrderItemStatusChanges.CountAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(reloaded, Is.Not.Null);
                       Assert.That(reloaded!.StationOrders, Has.Count.EqualTo(1));
+                      Assert.That(reloaded.StationOrders[0].DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
                       Assert.That(reloaded.StationOrders[0].Items, Has.Count.EqualTo(1));
                       Assert.That(reloaded.StationOrders[0].Items[0].ItemName, Is.EqualTo("Bratwurst"));
                       Assert.That(reloaded.StationOrders[0].Items[0].UnitPriceCents, Is.EqualTo(350));
-                      Assert.That(reloaded.StationOrders[0].PrintJobs, Has.Count.EqualTo(1));
-                      Assert.That(reloaded.StationOrders[0].PrintJobs[0].CopyNumber, Is.EqualTo(0));
+                      Assert.That(reloaded.StationOrders[0].Items[0].ProductionStatus, Is.EqualTo(ProductionStatus.Waiting));
+                      Assert.That(logRows, Is.EqualTo(1));
                     });
   }
 
@@ -42,12 +45,12 @@ public sealed class OrderRepositoryTest
     Assert.That(found, Is.Null);
   }
 
-
   private Order BuildOrder(SeededDomain seeded, Guid clientOrderId)
   {
     DateTime createdAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc);
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
+    var itemId = Guid.NewGuid();
 
     Order order = new()
                   {
@@ -65,28 +68,30 @@ public sealed class OrderRepositoryTest
                                   Id = stationOrderId,
                                   OrderId = orderId,
                                   StationId = seeded.KitchenStationId,
-                                  StationOrderNumber = 1
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.AsItComes
                                 };
 
-    stationOrder.PrintJobs.Add(new()
-                               {
-                                 Id = Guid.NewGuid(),
-                                 StationOrderId = stationOrderId,
-                                 CopyNumber = 0,
-                                 Status = PrintJobStatus.Queued,
-                                 CreatedAtUtc = createdAtUtc
-                               });
+    OrderItem item = new()
+                     {
+                       Id = itemId,
+                       StationOrderId = stationOrderId,
+                       CatalogItemId = seeded.SausageItemId,
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350,
+                       Note = null,
+                       ProductionStatus = ProductionStatus.Waiting
+                     };
 
-    stationOrder.Items.Add(new()
+    item.StatusChanges.Add(new()
                            {
                              Id = Guid.NewGuid(),
-                             StationOrderId = stationOrderId,
-                             CatalogItemId = seeded.SausageItemId,
-                             ItemName = "Bratwurst",
-                             UnitPriceCents = 350,
-                             Note = null
+                             OrderItemId = itemId,
+                             Status = ProductionStatus.Waiting,
+                             ChangedAtUtc = createdAtUtc
                            });
 
+    stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
 
     return order;

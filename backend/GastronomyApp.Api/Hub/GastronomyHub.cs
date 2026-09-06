@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth;
+using GastronomyApp.Core.Enums;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
@@ -13,21 +14,22 @@ public sealed record HubGroupNames
   {
     return $"device:{deviceId}";
   }
+
+  public string Station(Guid stationId)
+  {
+    return $"station:{stationId}";
+  }
 }
 
 public sealed record HubEventNames
 {
   public string OrderAccepted { get; } = "OrderAccepted";
 
-  public string PrintJobStatusChanged { get; } = "PrintJobStatusChanged";
-
   public string OrderStatusChanged { get; } = "OrderStatusChanged";
 
   public string OrderItemsSettled { get; } = "OrderItemsSettled";
 
-  public string StationBacklogChanged { get; } = "StationBacklogChanged";
-
-  public string PrinterStatusChanged { get; } = "PrinterStatusChanged";
+  public string StationOrdersChanged { get; } = "StationOrdersChanged";
 
   public string CatalogChanged { get; } = "CatalogChanged";
 
@@ -62,7 +64,10 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
     if (caller is not null)
     {
       joinedGroups.Add(_groupNames.Device(caller.DeviceId));
-      joinedGroups.Add(_groupNames.Devices);
+
+      joinedGroups.Add(caller.OwnerKind == DeviceOwnerKind.Station
+                         ? _groupNames.Station(caller.OwnerId)
+                         : _groupNames.Devices);
     }
 
     if (caller is null

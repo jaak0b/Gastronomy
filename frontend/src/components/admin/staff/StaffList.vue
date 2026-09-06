@@ -1,20 +1,60 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStaffStore } from '../../../stores/admin/staff'
+import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
-import InvitationPanel from './InvitationPanel.vue'
+import InvitationPanel from '../enrolment/InvitationPanel.vue'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
+const enrolment = useAdminEnrolmentStore()
 const renamingId = ref<string | null>(null)
 const newName = ref('')
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
+const isAddingPerson = ref(false)
+const newPersonName = ref('')
+let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   staff.staffMembers.filter((staffMember) => showsDeactivated.value || staffMember.isActive),
 )
+
+const refusal = computed(() => enrolment.errorMessage ?? staff.errorMessage)
+
+const refusalText = computed(() => {
+  const message = refusal.value
+  if (message === null || message === undefined) {
+    return null
+  }
+  return message.count === null
+    ? t(message.key, message.parameters)
+    : t(message.key, message.parameters, message.count)
+})
+
+function inviteStaffMember(staffMemberId: string): void {
+  void enrolment.createInvitation({ kind: 'staffMember', staffMemberId })
+}
+
+function startAddingPerson(): void {
+  isAddingPerson.value = true
+  newPersonName.value = ''
+}
+
+function stopAddingPerson(): void {
+  isAddingPerson.value = false
+  newPersonName.value = ''
+}
+
+async function addPerson(): Promise<void> {
+  const staffMemberId = await staff.create(newPersonName.value.trim())
+  if (staffMemberId === null) {
+    return
+  }
+  stopAddingPerson()
+  inviteStaffMember(staffMemberId)
+}
 
 async function deactivate(): Promise<void> {
   const staffMemberId = askingAboutId.value
@@ -34,8 +74,13 @@ async function rename(id: string): Promise<void> {
 }
 
 onMounted(async () => {
-  staff.listen()
+  stopListening = staff.listen()
   await staff.load()
+})
+
+onUnmounted(() => {
+  stopListening?.()
+  stopListening = null
 })
 </script>
 
@@ -44,15 +89,16 @@ onMounted(async () => {
     <h1 class="text-h5 mb-2">{{ t('admin.staff.title') }}</h1>
     <p class="help text-medium-emphasis mb-4">{{ t('admin.staff.help') }}</p>
 
-    <v-alert v-if="staff.enrolledName !== null" class="enrolled mb-4" type="success" variant="tonal">
-      {{ t('admin.enrol.done', { name: staff.enrolledName }) }}
+    <v-alert
+      v-if="enrolment.enrolledStaffMemberName !== null"
+      class="enrolled mb-4"
+      type="success"
+      variant="tonal"
+    >
+      {{ t('admin.enrol.done', { name: enrolment.enrolledStaffMemberName }) }}
     </v-alert>
-    <v-alert v-if="staff.errorMessage !== null" class="refusal mb-4" type="warning" variant="tonal">
-      {{
-        staff.errorMessage.count === null
-          ? t(staff.errorMessage.key, staff.errorMessage.parameters)
-          : t(staff.errorMessage.key, staff.errorMessage.parameters, staff.errorMessage.count)
-      }}
+    <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
+      {{ refusalText }}
     </v-alert>
     <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
@@ -80,11 +126,7 @@ onMounted(async () => {
         <v-chip v-if="!staffMember.hasDevice" class="no-phone me-2" size="small" color="warning">
           {{ t('admin.staff.noPhone') }}
         </v-chip>
-        <v-btn
-          class="new-code"
-          variant="text"
-          @click="staff.createInvitation(staffMember.staffMemberId)"
-        >
+        <v-btn class="new-code" variant="text" @click="inviteStaffMember(staffMember.staffMemberId)">
           {{ t('admin.staff.newCode') }}
         </v-btn>
         <v-btn
@@ -120,16 +162,38 @@ onMounted(async () => {
       </v-card-actions>
       <v-expand-transition>
         <InvitationPanel
-          v-if="staff.invitation?.staffMember?.id === staffMember.staffMemberId"
-          :invitation="staff.invitation"
-          :qr="staff.invitationQr"
-          @close="staff.closeInvitation"
-          @renew="staff.createInvitation(staffMember.staffMemberId)"
+          v-if="enrolment.invitation?.staffMember?.id === staffMember.staffMemberId"
+          :invitation="enrolment.invitation"
+          :qr="enrolment.invitationQr"
+          @close="enrolment.closeInvitation"
+          @renew="inviteStaffMember(staffMember.staffMemberId)"
         />
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-staff-member" color="primary" @click="staff.createInvitation()">
+    <v-card v-if="isAddingPerson" class="new-person mb-3">
+      <v-card-text>
+        <v-text-field
+          v-model="newPersonName"
+          class="new-person-name"
+          :label="t('admin.staff.newName')"
+        />
+        <p class="help text-medium-emphasis mb-4">{{ t('admin.staff.newHelp') }}</p>
+        <v-btn
+          class="save-new-person me-2"
+          color="primary"
+          :disabled="newPersonName.trim().length === 0"
+          @click="addPerson"
+        >
+          {{ t('admin.save') }}
+        </v-btn>
+        <v-btn class="cancel-new-person" variant="text" @click="stopAddingPerson">
+          {{ t('admin.cancel') }}
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
+    <v-btn v-else class="new-staff-member" color="primary" @click="startAddingPerson">
       {{ t('admin.staff.new') }}
     </v-btn>
 
@@ -140,13 +204,6 @@ onMounted(async () => {
       :confirm-label="t('admin.staff.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
-    />
-    <InvitationPanel
-      v-if="staff.invitation !== null && staff.invitation.staffMember === null"
-      :invitation="staff.invitation"
-      :qr="staff.invitationQr"
-      @close="staff.closeInvitation"
-      @renew="staff.createInvitation()"
     />
   </v-container>
 </template>

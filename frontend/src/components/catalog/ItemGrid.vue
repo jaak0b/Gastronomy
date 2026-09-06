@@ -7,6 +7,7 @@ defineProps<{
   items: CatalogItem[]
   language: AppLanguage
   positionsFor: (itemId: string) => ItemPosition[]
+  readyInMinutesFor: (itemId: string) => number | null
 }>()
 defineEmits<{
   add: [item: CatalogItem]
@@ -25,6 +26,7 @@ defineEmits<{
       :item="item"
       :language="language"
       :positions="positionsFor(item.id)"
+      :ready-in-minutes="readyInMinutesFor(item.id)"
       @add="$emit('add', item)"
       @add-with-a-note="(note) => $emit('addWithANote', item, note)"
       @remove-one="(index) => $emit('removeOne', index)"

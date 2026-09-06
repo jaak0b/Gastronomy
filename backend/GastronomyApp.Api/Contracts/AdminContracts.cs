@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Contracts;
 
@@ -7,12 +7,9 @@ public sealed record AdminStationView(
   string Name,
   int SortOrder,
   bool IsActive,
-  Guid? PrinterId,
-  string? PrinterName,
-  bool IsOnline,
-  bool IsPaperEnd,
-  bool IsCoverOpen,
-  bool IsFaulty);
+  bool HasDevice,
+  DateTime? LastSeenAtUtc,
+  bool HasOutstandingInvitation);
 
 public sealed record AdminStationListView(IReadOnlyList<AdminStationView> Stations);
 
@@ -21,8 +18,6 @@ public sealed record SaveStationRequest
   public required string? Name { get; init; }
 
   public required int SortOrder { get; init; }
-
-  public Guid? PrinterId { get; init; }
 }
 
 public sealed record SavedStationView(Guid StationId);
@@ -35,6 +30,7 @@ public sealed record AdminItemView(
   int SortOrder,
   bool IsActive,
   bool IsAvailable,
+  int? ProductionMinutes,
   IReadOnlyList<Guid> StationIds);
 
 public sealed record AdminItemListView(IReadOnlyList<AdminItemView> Items);
@@ -50,6 +46,8 @@ public sealed record SaveItemRequest
   public required int SortOrder { get; init; }
 
   public required IReadOnlyList<Guid>? StationIds { get; init; }
+
+  public int? ProductionMinutes { get; init; }
 }
 
 public sealed record SetAvailabilityRequest
@@ -72,86 +70,38 @@ public sealed record RenameStaffMemberRequest
   public required string? Name { get; init; }
 }
 
+public sealed record CreateStaffMemberRequest
+{
+  public required string? Name { get; init; }
+}
+
 public sealed record CreateInvitationRequest
 {
   public Guid? StaffMemberId { get; init; }
+
+  public Guid? StationId { get; init; }
 }
 
 public sealed record InvitationView(
   Guid InvitationId,
   string QrUrl,
   DateTime ExpiresAtUtc,
+  DeviceOwnerKind OwnerKind,
   StaffMemberView? StaffMember,
+  StationSummaryView? Station,
   IReadOnlyList<string> AvailableAddresses);
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "printerType")]
-[JsonDerivedType(typeof(TestPrinterView), "TestPrinter")]
-[JsonDerivedType(typeof(EpsonTmT20ivNetworkPrinterView), "EpsonTmT20ivNetworkPrinter")]
-public abstract record AdminPrinterView
-{
-  public required Guid PrinterId { get; init; }
+public sealed record AdminDeviceView(
+  Guid DeviceId,
+  DeviceOwnerKind DeviceKind,
+  Guid OwnerId,
+  string OwnerName,
+  string Language,
+  DateTime CreatedAtUtc,
+  DateTime LastSeenAtUtc);
 
-  public required string Name { get; init; }
+public sealed record AdminDeviceListView(IReadOnlyList<AdminDeviceView> Devices);
 
-  public required bool IsOnline { get; init; }
-
-  public required bool IsPaperEnd { get; init; }
-
-  public required bool IsPaperNearEnd { get; init; }
-
-  public required bool IsCoverOpen { get; init; }
-
-  public required bool IsFaulty { get; init; }
-
-  public required int WaitingTicketCount { get; init; }
-
-  public required DateTime? LastChangedAtUtc { get; init; }
-
-  public required string? StatusDetail { get; init; }
-
-  public required IReadOnlyList<string> StationNames { get; init; }
-}
-
-public sealed record TestPrinterView : AdminPrinterView
-{
-  public required string SimulatedFault { get; init; }
-
-  public required string SimulatedFaultMode { get; init; }
-}
-
-public sealed record EpsonTmT20ivNetworkPrinterView : AdminPrinterView
-{
-  public required string Host { get; init; }
-
-  public required int Port { get; init; }
-}
-
-public sealed record AdminPrinterListView(IReadOnlyList<AdminPrinterView> Printers);
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "printerType")]
-[JsonDerivedType(typeof(SaveTestPrinterRequest), "TestPrinter")]
-[JsonDerivedType(typeof(SaveEpsonTmT20ivNetworkPrinterRequest), "EpsonTmT20ivNetworkPrinter")]
-public abstract record SavePrinterRequest
-{
-  public required string? Name { get; init; }
-}
-
-public sealed record SaveTestPrinterRequest : SavePrinterRequest
-{
-  public string? SimulatedFault { get; init; }
-
-  public string? SimulatedFaultMode { get; init; }
-}
-
-public sealed record SaveEpsonTmT20ivNetworkPrinterRequest : SavePrinterRequest
-{
-  public required string? Host { get; init; }
-
-  public required int Port { get; init; }
-}
-
-public sealed record SavedPrinterView(Guid PrinterId, IReadOnlyList<string> StationNames);
-
-public sealed record ReconnectedView(Guid PrinterId, IReadOnlyList<Guid> ClearedStationIds);
+public sealed record RevokedDeviceView(Guid DeviceId);
 
 public sealed record ResetNumbersView(int StationCountersCleared);

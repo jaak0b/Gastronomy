@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using GastronomyApp.Api.ErrorHandling;
 
 namespace GastronomyApp.Api.Tests.ErrorHandling;
@@ -11,8 +11,8 @@ public sealed class ApiErrorTest
   {
     ApiError error = new()
                      {
-                       Code = "PrinterOutOfPaper",
-                       MessageKey = "ticket.paperEnd",
+                       Code = "StationHasUnfinishedItems",
+                       MessageKey = "admin.stationHasUnfinishedItems",
                        Parameters = new Dictionary<string, string> { ["station"] = "Küche" },
                        Details = null
                      };
@@ -24,6 +24,6 @@ public sealed class ApiErrorTest
                                         });
 
     Assert.That(json,
-                Is.EqualTo("{\"code\":\"PrinterOutOfPaper\",\"messageKey\":\"ticket.paperEnd\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
+                Is.EqualTo("{\"code\":\"StationHasUnfinishedItems\",\"messageKey\":\"admin.stationHasUnfinishedItems\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
   }
 }

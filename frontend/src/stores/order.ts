@@ -1,12 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { request } from '../api/client'
-import type { DraftLine, DraftOrder, OrderSubmitResponse } from '../core/apiTypes'
+import type {
+  DeliveryMode,
+  DraftLine,
+  DraftOrder,
+  OrderSubmitResponse,
+} from '../core/apiTypes'
 import {
   addLine,
   clearDraft,
   removeLine,
   restoreDraft,
+  setDeliveryMode,
   setLineNote,
   setLineStation,
   setOrderNote,
@@ -14,6 +20,7 @@ import {
 } from '../core/draftCart'
 import { assertNever } from '../core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
+import { chosenDeliveryMode, deliveryModesOf, orderSlices } from '../core/orderSlices'
 import {
   buildBasketView,
   basketItemCount,
@@ -64,6 +71,7 @@ export const useOrderStore = defineStore('order', () => {
   )
 
   const basketLines = computed(() => buildBasketView(draft.value, catalogStore.catalog))
+  const slices = computed(() => orderSlices(basketLines.value))
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
   const hasLinesNoLongerOnTheMenu = computed(() =>
@@ -103,6 +111,14 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = setOrderNote(draft.value, note)
   }
 
+  function deliveryModeAt(stationId: string): DeliveryMode {
+    return chosenDeliveryMode(draft.value.deliveryModes, stationId)
+  }
+
+  function chooseDeliveryMode(stationId: string, deliveryMode: DeliveryMode): void {
+    draft.value = setDeliveryMode(draft.value, stationId, deliveryMode)
+  }
+
   function dismissConfirmation(): void {
     if (arrivalNoticeTimer !== null) {
       clearTimeout(arrivalNoticeTimer)
@@ -124,7 +140,11 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = ensureClientOrderId(draft.value)
     const result = await request<OrderSubmitResponse>('/api/orders', {
       method: 'POST',
-      body: buildSubmitRequest(draft.value, settleOnSend),
+      body: buildSubmitRequest(
+        draft.value,
+        settleOnSend,
+        deliveryModesOf(slices.value, draft.value.deliveryModes),
+      ),
       token: session.deviceToken,
     })
     switch (result.kind) {
@@ -158,6 +178,7 @@ export const useOrderStore = defineStore('order', () => {
     acceptedOrderNumber,
     settledOnSend,
     basketLines,
+    slices,
     itemCount,
     totalCents,
     hasLinesNoLongerOnTheMenu,
@@ -168,6 +189,8 @@ export const useOrderStore = defineStore('order', () => {
     chooseStation,
     setTable,
     setNote,
+    deliveryModeAt,
+    chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
     send,

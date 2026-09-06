@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
@@ -11,6 +11,8 @@ public sealed class ApiPipeline
 {
   public void Configure(WebApplication app)
   {
+    ArgumentNullException.ThrowIfNull(app);
+
     app.UseMiddleware<InfrastructureExceptionMiddleware>();
     app.UseDefaultFiles();
     app.UseStaticFiles();
@@ -24,14 +26,13 @@ public sealed class ApiPipeline
     app.MapCatalogEndpoints();
     app.MapOrderEndpoints();
     app.MapOpenItemEndpoints();
-    app.MapPrinterStatusEndpoints();
     app.MapStationEndpoints();
     app.MapHealthEndpoints();
     app.MapLanguageEndpoints();
     app.MapAdminStationEndpoints();
     app.MapAdminItemEndpoints();
     app.MapAdminStaffMembersEndpoints();
-    app.MapAdminPrinterEndpoints();
+    app.MapAdminEnrolmentEndpoints();
     app.MapAdminOrderEndpoints();
     app.MapAdminInvitationQrEndpoints();
     app.MapAdminNumbersEndpoints();

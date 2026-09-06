@@ -1,9 +1,25 @@
-import type { DraftLine, DraftOrder } from './apiTypes'
+import type { DeliveryMode, DraftLine, DraftOrder } from './apiTypes'
 
 export const DRAFT_STORAGE_KEY = 'draftOrder'
 
+const DELIVERY_MODES: DeliveryMode[] = ['together', 'asItComes']
+
 export function emptyDraft(): DraftOrder {
-  return { tableName: '', note: null, lines: [], clientOrderId: null }
+  return { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} }
+}
+
+function toDeliveryModes(value: unknown): Record<string, DeliveryMode> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {}
+  }
+  const readable: Record<string, DeliveryMode> = {}
+  for (const [stationId, mode] of Object.entries(value as Record<string, unknown>)) {
+    const known = DELIVERY_MODES.find((candidate) => candidate === mode)
+    if (known !== undefined) {
+      readable[stationId] = known
+    }
+  }
+  return readable
 }
 
 function toDraftLine(value: unknown): DraftLine | null {
@@ -45,6 +61,7 @@ function toDraftOrder(value: unknown): DraftOrder | null {
     note: typeof candidate.note === 'string' ? candidate.note : null,
     lines,
     clientOrderId: typeof candidate.clientOrderId === 'string' ? candidate.clientOrderId : null,
+    deliveryModes: toDeliveryModes(candidate.deliveryModes),
   }
 }
 
@@ -88,6 +105,7 @@ export function saveDraft(draft: DraftOrder): void {
         unitPriceCents: line.unitPriceCents,
       })),
       clientOrderId: draft.clientOrderId,
+      deliveryModes: { ...draft.deliveryModes },
     }),
   )
 }
@@ -142,4 +160,15 @@ export function setTableName(draft: DraftOrder, tableName: string): DraftOrder {
 
 export function setOrderNote(draft: DraftOrder, note: string | null): DraftOrder {
   return persisted({ ...draft, note })
+}
+
+export function setDeliveryMode(
+  draft: DraftOrder,
+  stationId: string,
+  deliveryMode: DeliveryMode,
+): DraftOrder {
+  return persisted({
+    ...draft,
+    deliveryModes: { ...draft.deliveryModes, [stationId]: deliveryMode },
+  })
 }

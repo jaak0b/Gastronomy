@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -13,6 +13,7 @@ public sealed class OrderAcceptanceComposition
                                                    new CatalogItemRepository(dbContext),
                                                    new StationRepository(dbContext),
                                                    new SequenceNumberAllocator(dbContext),
+                                                   new(),
                                                    new(),
                                                    new(),
                                                    new SystemClock());

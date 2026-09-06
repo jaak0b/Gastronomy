@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,5 +16,6 @@ public sealed class CatalogItemConfiguration : IEntityTypeConfiguration<CatalogI
     builder.Property(item => item.SortOrder).IsRequired();
     builder.Property(item => item.IsActive).IsRequired();
     builder.Property(item => item.IsAvailable).IsRequired();
+    builder.Property(item => item.ProductionMinutes).IsRequired(false);
   }
 }

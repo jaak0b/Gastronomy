@@ -25,7 +25,7 @@ describe('resolveRoute', () => {
     expect(resolveRoute('/admin/items')).toEqual({ name: 'admin', section: 'items' })
   })
 
-  it('reads the stations path as the station backlog', () => {
+  it('reads the stations path as the station screen', () => {
     expect(resolveRoute('/stations')).toEqual({ name: 'stations' })
   })
 
@@ -42,7 +42,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ stations: [], items: [], printers: [], staffMembers: [] }), {
+          new Response(JSON.stringify({ stations: [], items: [], staffMembers: [], devices: [] }), {
             status: 200,
           }),
       ),
@@ -71,7 +71,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
   })
 })
 
-describe('the station backlog, which every enrolled phone may open', () => {
+describe('the screen a device lands on', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -79,24 +79,45 @@ describe('the station backlog, which every enrolled phone may open', () => {
       'fetch',
       vi.fn(async (url: string) => {
         const payload = url.startsWith('/api/session')
-          ? { deviceId: 'device-1', staffMember: { id: 'staff-member-1', name: 'Anna' }, language: 'de' }
-          : { stations: [], stationOrders: [], orders: [], items: [] }
+          ? {
+              deviceId: 'device-1',
+              deviceKind: 'staffMember',
+              staffMember: { id: 'staff-member-1', name: 'Anna' },
+              station: null,
+              language: 'de',
+            }
+          : { stations: [], slices: [], orders: [], items: [], station: { id: 's-1', name: 'Küche' } }
         return new Response(JSON.stringify(payload), { status: 200 })
       }),
     )
     currentRoute.value = { name: 'stations' }
   })
 
-  it('opens for a phone that is enrolled', async () => {
+  it('keeps a station tablet on the station screen', async () => {
     const { useSessionStore } = await import('../../src/stores/session')
-    useSessionStore().deviceToken = 'a-token'
+    const session = useSessionStore()
+    session.deviceToken = 'a-token'
+    session.deviceKind = 'station'
 
     const app = mountApp()
 
     await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
   })
 
-  it('sends a phone that is not enrolled to the welcome screen instead', async () => {
+  it('sends a waiter phone that opens the station address back to the item list', async () => {
+    const { useSessionStore } = await import('../../src/stores/session')
+    const session = useSessionStore()
+    session.deviceToken = 'a-token'
+    session.deviceKind = 'staffMember'
+
+    const app = mountApp()
+
+    await vi.waitFor(() => expect(app.find('.catalog').exists()).toBe(true))
+
+    expect(app.find('.station-page').exists()).toBe(false)
+  })
+
+  it('sends a device that is not set up to the welcome screen instead', async () => {
     const { useSessionStore } = await import('../../src/stores/session')
     useSessionStore().deviceToken = null
 

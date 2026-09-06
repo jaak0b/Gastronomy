@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -6,7 +6,6 @@ namespace GastronomyApp.Core.Tests.Services;
 [TestFixture]
 public sealed class OrderStatusCalculatorTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -16,122 +15,81 @@ public sealed class OrderStatusCalculatorTest
   private OrderStatusCalculator _calculator = new();
 
   [Test]
-  public void Calculate_AnyTicketUnknown_IsNeedsAttention()
+  public void Calculate_EveryItemWaiting_IsWaiting()
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Printed, PrintJobStatus.Unknown]),
-                Is.EqualTo(OrderStatus.NeedsAttention));
+    Assert.That(_calculator.Calculate([ProductionStatus.Waiting, ProductionStatus.Waiting]),
+                Is.EqualTo(OrderStatus.Waiting));
   }
 
   [Test]
-  public void Calculate_AnyTicketFailed_IsNeedsAttention()
+  public void Calculate_OneItemInProductionAndTheRestWaiting_IsInProduction()
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Sending, PrintJobStatus.Failed, PrintJobStatus.Queued]),
-                Is.EqualTo(OrderStatus.NeedsAttention));
+    Assert.That(_calculator.Calculate([ProductionStatus.Waiting, ProductionStatus.InProduction]),
+                Is.EqualTo(OrderStatus.InProduction));
   }
 
   [Test]
-  public void Calculate_AnyTicketBlocked_IsNeedsAttention()
+  public void Calculate_OneItemFinishedAndTheRestWaiting_IsInProduction()
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Queued, PrintJobStatus.Blocked]),
-                Is.EqualTo(OrderStatus.NeedsAttention));
+    Assert.That(_calculator.Calculate([ProductionStatus.Finished, ProductionStatus.Waiting]),
+                Is.EqualTo(OrderStatus.InProduction));
   }
 
   [Test]
-  public void Calculate_EveryTicketPrintedOrHandledOnPaper_IsPrinted()
+  public void Calculate_EveryItemFinished_IsFinished()
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Printed, PrintJobStatus.HandledOnPaper]),
-                Is.EqualTo(OrderStatus.Printed));
+    Assert.That(_calculator.Calculate([ProductionStatus.Finished, ProductionStatus.Finished]),
+                Is.EqualTo(OrderStatus.Finished));
   }
 
   [Test]
-  public void Calculate_AnyTicketPrintingWithNoAttentionRow_IsPrinting()
+  public void Calculate_NoItemsAtAll_IsWaiting()
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Queued, PrintJobStatus.Sending, PrintJobStatus.Printed]),
-                Is.EqualTo(OrderStatus.Printing));
+    Assert.That(_calculator.Calculate([]), Is.EqualTo(OrderStatus.Waiting));
   }
 
-  [Test]
-  public void Calculate_AtLeastOneQueuedAndNothingElseMatching_IsAccepted()
+  private OrderStatus ExpectedByTable(IReadOnlyCollection<ProductionStatus> statuses)
   {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Queued, PrintJobStatus.Printed]),
-                Is.EqualTo(OrderStatus.Accepted));
-  }
-
-  [Test]
-  public void Calculate_SingleQueuedTicket_IsAccepted()
-  {
-    Assert.That(_calculator.Calculate([PrintJobStatus.Queued]),
-                Is.EqualTo(OrderStatus.Accepted));
-  }
-
-  private OrderStatus ExpectedByTable(IReadOnlyCollection<PrintJobStatus> statuses)
-  {
-    foreach (var status in statuses)
+    if (statuses.Count == 0)
     {
-      if (status == PrintJobStatus.Unknown
-          || status == PrintJobStatus.Failed
-          || status == PrintJobStatus.Blocked)
-      {
-        return OrderStatus.NeedsAttention;
-      }
+      return OrderStatus.Waiting;
     }
 
-    var everyTicketIsDone = true;
-    foreach (var status in statuses)
-    {
-      if (status != PrintJobStatus.Printed
-          && status != PrintJobStatus.HandledOnPaper)
-      {
-        everyTicketIsDone = false;
-      }
-    }
-
-    if (everyTicketIsDone)
-    {
-      return OrderStatus.Printed;
-    }
+    var everyItemIsFinished = true;
+    var everyItemIsWaiting = true;
 
     foreach (var status in statuses)
     {
-      if (status == PrintJobStatus.Sending)
+      if (status != ProductionStatus.Finished)
       {
-        return OrderStatus.Printing;
+        everyItemIsFinished = false;
+      }
+
+      if (status != ProductionStatus.Waiting)
+      {
+        everyItemIsWaiting = false;
       }
     }
 
-    return OrderStatus.Accepted;
-  }
-
-  [Test]
-  public void Calculate_EverySingleTicketCombination_MatchesTheFirstMatchingRow()
-  {
-    PrintJobStatus[] allStatuses = Enum.GetValues<PrintJobStatus>();
-    var checkedCombinations = 0;
-
-    foreach (var status in allStatuses)
+    if (everyItemIsFinished)
     {
-      List<PrintJobStatus> statuses = [status];
-
-      Assert.That(_calculator.Calculate(statuses),
-                  Is.EqualTo(ExpectedByTable(statuses)),
-                  $"status {status}");
-      checkedCombinations++;
+      return OrderStatus.Finished;
     }
 
-    Assert.That(checkedCombinations, Is.EqualTo(7));
+    return everyItemIsWaiting ? OrderStatus.Waiting : OrderStatus.InProduction;
   }
 
   [Test]
-  public void Calculate_EveryTwoTicketCombination_MatchesTheFirstMatchingRow()
+  public void Calculate_EveryTwoItemCombination_MatchesTheTable()
   {
-    PrintJobStatus[] allStatuses = Enum.GetValues<PrintJobStatus>();
+    ProductionStatus[] allStatuses = Enum.GetValues<ProductionStatus>();
     var checkedCombinations = 0;
 
     foreach (var first in allStatuses)
     {
       foreach (var second in allStatuses)
       {
-        List<PrintJobStatus> statuses = [first, second];
+        List<ProductionStatus> statuses = [first, second];
 
         Assert.That(_calculator.Calculate(statuses),
                     Is.EqualTo(ExpectedByTable(statuses)),
@@ -140,6 +98,6 @@ public sealed class OrderStatusCalculatorTest
       }
     }
 
-    Assert.That(checkedCombinations, Is.EqualTo(49));
+    Assert.That(checkedCombinations, Is.EqualTo(9));
   }
 }

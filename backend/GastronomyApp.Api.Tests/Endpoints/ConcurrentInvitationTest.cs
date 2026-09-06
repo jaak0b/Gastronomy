@@ -12,7 +12,7 @@ public sealed class ConcurrentInvitationTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -74,6 +74,8 @@ public sealed class ConcurrentInvitationTest
   private Task<HttpResponseMessage> CreateInvitationAsync()
   {
     return _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                          new { staffMemberId = (Guid?)null });
+                                          new { staffMemberId = _context.World.StaffMemberId });
   }
 }
+
+

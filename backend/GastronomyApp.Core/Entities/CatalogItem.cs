@@ -1,4 +1,4 @@
-﻿namespace GastronomyApp.Core.Entities;
+namespace GastronomyApp.Core.Entities;
 
 public sealed class CatalogItem
 {
@@ -15,4 +15,6 @@ public sealed class CatalogItem
   public required bool IsActive { get; set; }
 
   public required bool IsAvailable { get; set; }
+
+  public int? ProductionMinutes { get; set; }
 }

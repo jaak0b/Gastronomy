@@ -1,8 +1,9 @@
-﻿using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.AspNetCore.Builder;
@@ -55,6 +56,9 @@ public sealed class EnrolmentRedemptionHandler
                                          HttpContext httpContext,
                                          CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(httpContext);
+
     if (string.IsNullOrWhiteSpace(request.Code))
     {
       _log.LogWarning("A phone asked to be set up without sending a code at all.");
@@ -94,6 +98,11 @@ public sealed class EnrolmentRedemptionHandler
                                                                            StatusCodes.Status410Gone,
                                                                            "StaffMemberIsOffTheList",
                                                                            "enrolment.staffMemberIsOffTheList"),
+             EnrolmentRedemptionOutcome.StationIsOffTheList => Refused(redemption,
+                                                                       "the station the invitation names is switched off",
+                                                                       StatusCodes.Status410Gone,
+                                                                       "StationIsOffTheList",
+                                                                       "enrolment.stationIsOffTheList"),
              EnrolmentRedemptionOutcome.NameRequired => Refused(redemption,
                                                                 "the invitation names nobody and the phone sent no name",
                                                                 StatusCodes.Status400BadRequest,
@@ -122,20 +131,33 @@ public sealed class EnrolmentRedemptionHandler
     _invitationCache.Forget();
 
     var device = redemption.Device!;
-    var staffMember = redemption.StaffMember!;
+    var deviceKind = redemption.OwnerKind!.Value;
+    var ownerId = deviceKind == DeviceOwnerKind.StaffMember
+                    ? redemption.StaffMember!.Id
+                    : redemption.Station!.Id;
+    var ownerName = deviceKind == DeviceOwnerKind.StaffMember
+                      ? redemption.StaffMember!.Name
+                      : redemption.Station!.Name;
 
     _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to "
-                        + "staff member {StaffMemberId}.",
+                        + "the {DeviceKind} {OwnerId}.",
                         redemption.InvitationId,
                         device.Id,
-                        staffMember.Id);
+                        deviceKind,
+                        ownerId);
 
-    await _dispatcher.PushEnrolmentCompletedAsync(new(staffMember.Id, staffMember.Name, device.Id),
+    await _dispatcher.PushEnrolmentCompletedAsync(new(deviceKind, ownerId, ownerName, device.Id),
                                                  cancellationToken);
 
     return Results.Ok(new RedeemedEnrolmentView(device.Id,
                                                 redemption.PlaintextToken!,
-                                                new(staffMember.Id, staffMember.Name),
+                                                deviceKind,
+                                                redemption.StaffMember is null
+                                                  ? null
+                                                  : new StaffMemberView(redemption.StaffMember.Id, redemption.StaffMember.Name),
+                                                redemption.Station is null
+                                                  ? null
+                                                  : new StationSummaryView(redemption.Station.Id, redemption.Station.Name),
                                                 device.Language));
   }
 }

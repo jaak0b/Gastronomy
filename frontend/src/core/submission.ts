@@ -1,4 +1,4 @@
-import type { DraftOrder, OrderSubmitRequest } from './apiTypes'
+import type { DraftOrder, OrderSubmitRequest, StationDeliveryMode } from './apiTypes'
 import { saveDraft } from './draftCart'
 
 const VERSION_FOUR_MASK = 0x0f
@@ -33,6 +33,7 @@ export function ensureClientOrderId(draft: DraftOrder): DraftOrder {
 export function buildSubmitRequest(
   draft: DraftOrder,
   settleOnSend: boolean,
+  deliveryModes: readonly StationDeliveryMode[],
 ): OrderSubmitRequest {
   const clientOrderId = draft.clientOrderId
   if (clientOrderId === null) {
@@ -49,5 +50,6 @@ export function buildSubmitRequest(
       note: line.note,
       stationId: line.stationId,
     })),
+    deliveryModes: [...deliveryModes],
   }
 }

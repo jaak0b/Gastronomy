@@ -15,7 +15,7 @@ sees a console, never edits a configuration file, and can never end the evening 
 **The admin interface is the web page. This window is a launcher and nothing else.** It shows the
 language picker, whatever has gone wrong, and buttons to open the admin page, open settings, and quit.
 While the server is healthy it carries no text at all. It must never grow a second admin UI: no item
-editing, no printer management, no order views, no address, no QR code, no counts and no status
+editing, no station management, no order views, no address, no QR code, no counts and no status
 readouts. The web admin has to exist for the phones regardless, and two admin surfaces would have to be
 kept true.
 

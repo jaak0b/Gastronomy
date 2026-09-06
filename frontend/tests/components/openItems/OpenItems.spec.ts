@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/views/OpenItems.vue'
@@ -22,6 +22,9 @@ const OPEN_LIST = {
           note: 'ohne Zwiebeln',
           unitPriceCents: 350,
           orderedAtUtc: '2026-09-05T18:00:00Z',
+          stationName: 'Küche',
+          deliveryMode: 'together',
+          productionStatus: 'inProduction',
         },
         {
           orderItemId: 'item-2',
@@ -31,6 +34,9 @@ const OPEN_LIST = {
           note: null,
           unitPriceCents: 350,
           orderedAtUtc: '2026-09-05T18:00:00Z',
+          stationName: 'Theke',
+          deliveryMode: 'asItComes',
+          productionStatus: 'waiting',
         },
       ],
     },
@@ -355,5 +361,48 @@ describe('giving food and drink away', () => {
       (dialog?.querySelector('.reason-field input') as HTMLInputElement).value,
     ).toBe('Essen fuer die Kapelle')
     expect(dialog?.textContent).toContain('Das Abrechnen hat nicht geklappt.')
+  })
+})
+
+describe('what an open item says about where it stands', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    stubTheLaptop()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function openedTable() {
+    const screen = await mountScreen()
+    await screen.get('.open-table .v-expansion-panel-title').trigger('click')
+    await flushPromises()
+    return screen
+  }
+
+  it('names the station and says the item is being prepared there', async () => {
+    const screen = await openedTable()
+
+    expect(screen.findAll('.open-line .line-production')[0].text()).toBe(
+      'In Zubereitung bei Küche.',
+    )
+  })
+
+  it('says an item nobody has started yet is still waiting', async () => {
+    const screen = await openedTable()
+
+    expect(screen.findAll('.open-line .line-production')[1].text()).toBe('Wartet bei Theke.')
+  })
+
+  it('says whether the item comes with the rest of the order or on its own', async () => {
+    const screen = await openedTable()
+
+    expect(screen.findAll('.open-line .line-delivery').map((line) => line.text())).toEqual([
+      'Kommt zusammen mit dem Rest der Bestellung.',
+      'Kommt, sobald es fertig ist.',
+    ])
   })
 })

@@ -2,22 +2,22 @@ import { describe, expect, it } from 'vitest'
 import { adminBlockingConditions, adminErrorMessage } from '../../src/core/adminErrorMessage'
 
 describe('adminErrorMessage, the key the laptop actually sent', () => {
-  it('renders an open-slips refusal as an open-slips message', () => {
+  it('renders a refusal about unfinished orders as that message', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stations.openTickets',
+      messageKey: 'admin.stationHasUnfinishedItems',
       parameters: { count: 3 },
       details: null,
     })
 
     expect(message).toEqual({
-      key: 'admin.stations.openTickets',
+      key: 'admin.stationHasUnfinishedItems',
       parameters: { count: 3 },
       count: 3,
     })
   })
 
-  it('renders an orphaned-items refusal as its own message, never as open slips', () => {
+  it('renders an orphaned-items refusal as its own message, never as unfinished orders', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
       messageKey: 'admin.itemsWouldHaveNoStation',
@@ -26,17 +26,6 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
     })
 
     expect(message.key).toBe('admin.itemsWouldHaveNoStation')
-  })
-
-  it('renders the missing printer connection as its own message', () => {
-    const message = adminErrorMessage({
-      code: 'Conflict',
-      messageKey: 'admin.stationHasNoPrinterWorker',
-      parameters: {},
-      details: null,
-    })
-
-    expect(message.key).toBe('admin.stationHasNoPrinterWorker')
   })
 
   it('carries the count so the sentence can take its singular form', () => {
@@ -53,7 +42,7 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('carries no count for a message that has no number in it', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stationHasNoPrinterWorker',
+      messageKey: 'admin.stationHasUnfinishedItems',
       parameters: {},
       details: null,
     })
@@ -62,27 +51,73 @@ describe('adminErrorMessage, the key the laptop actually sent', () => {
   })
 })
 
-describe('adminErrorMessage, a refusal the laptop worded itself', () => {
-  it('renders a station that still has open slips', () => {
+describe('adminErrorMessage, a count the laptop wrote as text', () => {
+  it('reads it as a number, because the laptop sends every parameter as text', () => {
     const message = adminErrorMessage({
       code: 'Conflict',
-      messageKey: 'admin.stationHasOpenTickets',
-      parameters: {},
+      messageKey: 'admin.itemsWouldHaveNoStation',
+      parameters: { count: '2' },
       details: null,
     })
 
-    expect(message.key).toBe('admin.stationHasOpenTickets')
+    expect(message.count).toBe(2)
   })
 
-  it('renders a refused printer setting', () => {
+  it('carries no count when the text is not a number at all', () => {
     const message = adminErrorMessage({
-      code: 'ValidationFailed',
-      messageKey: 'admin.printerTypeCannotChange',
+      code: 'Conflict',
+      messageKey: 'admin.itemsWouldHaveNoStation',
+      parameters: { count: 'einige' },
+      details: null,
+    })
+
+    expect(message.count).toBeNull()
+  })
+
+  it('carries no count for a fraction, because half an item cannot be counted', () => {
+    const message = adminErrorMessage({
+      code: 'Conflict',
+      messageKey: 'admin.itemsWouldHaveNoStation',
+      parameters: { count: '2.5' },
+      details: null,
+    })
+
+    expect(message.count).toBeNull()
+  })
+
+  it('carries no count when the text is empty', () => {
+    const message = adminErrorMessage({
+      code: 'Conflict',
+      messageKey: 'admin.itemsWouldHaveNoStation',
+      parameters: { count: '' },
+      details: null,
+    })
+
+    expect(message.count).toBeNull()
+  })
+})
+
+describe('adminErrorMessage, a refusal the laptop worded itself', () => {
+  it('renders a station that still has unfinished orders', () => {
+    const message = adminErrorMessage({
+      code: 'Conflict',
+      messageKey: 'admin.stationHasUnfinishedItems',
       parameters: {},
       details: null,
     })
 
-    expect(message.key).toBe('admin.printerTypeCannotChange')
+    expect(message.key).toBe('admin.stationHasUnfinishedItems')
+  })
+
+  it('renders a refused enrolment invitation', () => {
+    const message = adminErrorMessage({
+      code: 'ValidationFailed',
+      messageKey: 'enrolment.exactlyOneOwnerRequired',
+      parameters: {},
+      details: null,
+    })
+
+    expect(message.key).toBe('enrolment.exactlyOneOwnerRequired')
   })
 })
 

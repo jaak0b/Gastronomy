@@ -2,14 +2,15 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import { useConnectionStore } from '../connection'
+import { useAdminEnrolmentStore } from './enrolment'
 
 export interface AdminStation {
   stationId: string
   name: string
   sortOrder: number
   isActive: boolean
-  printerId: string | null
-  printerName: string | null
+  hasDevice: boolean
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
@@ -33,7 +34,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   async function save(
-    station: Pick<AdminStation, 'name' | 'sortOrder' | 'printerId'> & { stationId?: string },
+    station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
   ): Promise<void> {
     const path =
       station.stationId === undefined
@@ -44,7 +45,6 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       body: {
         name: station.name,
         sortOrder: station.sortOrder,
-        printerId: station.printerId,
       },
     })
     await load()
@@ -61,5 +61,20 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     await load()
   }
 
-  return { stations, loadFailed, errorMessage, load, save, setActive }
+  function listen(): () => void {
+    const connection = useConnectionStore()
+    const releases = [
+      connection.registerRefetch(load),
+      useAdminEnrolmentStore().listen(() => {
+        void load()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
+  }
+
+  return { stations, loadFailed, errorMessage, load, save, setActive, listen }
 })

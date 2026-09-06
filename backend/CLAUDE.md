@@ -12,9 +12,9 @@ only executable. One process serves the REST API, the SignalR hub, and the built
 reverse proxy.
 
 - **SQLite via EF Core.** One file. A backup is a file copy, which is what a volunteer can actually do.
-- **SignalR** for every server-to-client push: print confirmed, print failed, printer out of paper,
-  station online or offline, catalog changed. Clients never poll for state that the server already
-  knows has changed.
+- **SignalR** for every server-to-client push: an order accepted, the queue of a station changed, an
+  order's status changed, items settled, a device enrolled or revoked, the catalog changed. Clients
+  never poll for state that the server already knows has changed.
 - **REST** for commands and queries.
 
 ## Hard rules
@@ -23,12 +23,11 @@ reverse proxy.
 
 2. **Localization is resx-only.** Every translatable string lives in `Strings.en.resx` /
    `Strings.de.resx` or a domain-specific resx pair, resolved through the localization service. Both
-   language files must contain every key. This includes the text printed on receipt slips: a slip is
-   user-facing output, not a debug artifact.
+   language files must contain every key.
 
 3. **No empty catch blocks.** Log the error, and surface it to the user for anything they initiated.
-   A printing failure must reach the phone of the server who placed the order, in their language, with
-   a stated cause and a stated next step.
+   A failure that a server or a station can act on must reach their screen, in their language, with a
+   stated cause and a stated next step.
 
 4. **No test touches the developer's database or filesystem.** In-memory SQLite
    (`Data Source=:memory:`) and `Path.GetTempPath()` temp directories, disposed in teardown.
@@ -43,73 +42,51 @@ reverse proxy.
    short-lived: the first scan consumes the code, so a photographed QR cannot enrol a second device.
    Revoking a device invalidates its token immediately.
 
-7. **Shipped migrations are frozen.** Once a migration has run on a real fire department's laptop, it
-   is history. Editing, renaming, reordering, squashing, or deleting an existing migration or its
-   designer file is forbidden: it desynchronizes the migrations history from the schema and bricks the
-   app on startup. Migrations are append-only and forward-only. A wrong migration is corrected by a
-   new corrective migration, never by touching the old one. The auto-managed model snapshot is the
-   single file EF may regenerate.
+7. **Shipped migrations are frozen from `20260906070525_InitialCreate` onward.** The owner approved
+   recreating the initial migration for the change that put a tablet at every station; that recreated
+   migration is the new baseline and history starts there. Once a migration has run on a real fire
+   department's laptop, it is history. Editing, renaming, reordering, squashing, or deleting an
+   existing migration or its designer file is forbidden: it desynchronizes the migrations history from
+   the schema and bricks the app on startup. Migrations are append-only and forward-only. A wrong
+   migration is corrected by a new corrective migration, never by touching the old one. The
+   auto-managed model snapshot is the single file EF may regenerate.
 
 8. **No positional tuple access.** Never read a tuple by element position (`.Item1`) and never
    destructure one positionally. Every multi-value return is a named `record` or `record struct` read
    by name, so reordering or renaming a member is a compile error rather than a silent value swap.
 
-9. **Supported printers go behind `IPrinterDriver`.** A `Printer` row says which device the volunteer
-   configured; the driver is the code that knows how to talk to that model. Implementations:
-   `TestPrinterDriver` (writes slips into a folder) and `EpsonTmT20ivNetworkPrinterDriver` (raw TCP
-   9100 to an Ethernet printer). A Pi-attached variant comes later as its own driver, holding the same
-   rendering rather than inheriting from the network one, because the model and the connection are
-   independent axes.
-
-   Nothing above the interface may know which driver it is talking to. `PrinterDriverRegistry` maps a
-   printer's type to its driver and is the only place that mapping exists; everywhere else holds
-   `IPrinterDriver` and `IPrinterSession`. No `is TestPrinter` and no switch on a printer's type
-   outside the registry, the driver itself, and the frontend's form component map. Adding a printer is
-   a new entity, a new driver, one registration, and its two locale strings: never a branch inside an
-   existing driver.
-
-   The driver owns the model's facts: characters per line, code page, the timeouts, and whether the
-   `GS ( H` process id echo can be trusted. Those are not columns a volunteer types.
-
-10. **`TestPrinterDriver` writes slips to a folder, and stays that simple.** One file per slip,
-    holding exactly the content that would have been printed. No rendered station screen, no pile
-    visualisation, no styling: a folder of files is enough to show that the right lines reached the
-    right station. It must still be able to produce, on demand, every failure mode the real transports
-    can: paper out, cover open, connection timeout, dropped socket mid-job, and a job whose outcome is
-    genuinely unknown. Keep that to the smallest control a test or a demonstrator can trigger. This is
-    how the whole system is developed and demonstrated without hardware, and it stays the test double
-    afterwards.
-
-11. **Print jobs are serialized per printer, and a job's outcome is never assumed.** The hardware
-    constraints in the root `CLAUDE.md` are load-bearing: one connection at a time, 90 second timeout,
-    re-query before re-sending. An order's print state is explicit and persisted, never inferred from
-    "we sent it and got no error".
-
 ## The order model
 
-One order, split per station, printed per copy.
+One order, split per station, worked off item by item on that station's tablet.
 
 - **Order**: what the waiter sent. Global order number, table name, note, who took it, when. It has no
   status and no total: both are derived, never stored.
-- **StationOrder**: the slice of that order belonging to one station, carrying the number the paper
-  shows for that station. Unique on `(OrderId, StationId)`, so a station can never receive two slices
-  of one order.
+- **StationOrder**: the slice of that order belonging to one station, carrying the number that station
+  shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two slices of one
+  order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the station
+  hands the whole slice over at once, `AsItComes` means each item leaves as soon as it is ready.
 - **OrderItem**: one entry of that slice. The item name comes from the catalog; the price is the one
   the phone displayed to the guest and the laptop stores it untouched, including when the item is given
-  away. It also carries whether it has been settled: `SettledAtUtc` is the paid flag (null means still
-  open, so a flag and a timestamp can never disagree), `ChargedPriceCents` is what was actually
-  collected, and `PaymentNotice` is the reason typed when less than the displayed price was collected.
-  A settled item is never settled again, so a double tap cannot double count. What a table still owes
-  and what was given away are derived from these on every read, never stored.
-- **PrintJob**: one printing of a station order. `CopyNumber` 0 is the original, anything above prints
-  "NACHDRUCK Nr. x". Unique on `(StationOrderId, CopyNumber)`. This is the only object with a status.
-- **Device**: one phone, 1:1 with a staff member. Setting a phone up again deletes the row, which is
-  what revoking is.
+  away. `ProductionStatus` is how far the station has got with it: `Waiting`, `InProduction`,
+  `Finished`, and it only ever moves forward. It also carries whether it has been settled:
+  `SettledAtUtc` is the paid flag (null means still open, so a flag and a timestamp can never
+  disagree), `ChargedPriceCents` is what was actually collected, and `PaymentNotice` is the reason
+  typed when less than the displayed price was collected. A settled item is never settled again, so a
+  double tap cannot double count. What a table still owes and what was given away are derived from
+  these on every read, never stored.
+- **OrderItemStatusChange**: an append-only log of every production status an item has been in, with
+  the moment it moved there. It exists so the evening can be reconstructed and so waiting times can be
+  measured afterwards. **It is never read to work out an item's current state**: that is
+  `OrderItem.ProductionStatus`, and nothing else.
+- **Device**: one phone or one tablet. It is owned 1:1 by exactly one `StaffMember` or one `Station`,
+  and the owner points at it (`StaffMember.DeviceId`, `Station.DeviceId`), so an owner holds at most
+  one device and at most one outstanding enrolment invitation. Setting a device up again deletes the
+  old row, which is what revoking is.
 
-The status of an order is calculated from the newest print job of each of its station orders, so the
-two can never disagree. Enums persist as numbers with pinned values, so a member may be renamed freely
-but never reordered. Counters live where they belong: `Station.NextStationOrderNumber` per station, and
-one single row for the next order number and the next printer job id.
+The status of an order is calculated from the production status of its items, so the two can never
+disagree. Enums persist as numbers with pinned values, so a member may be renamed freely but never
+reordered. Counters live where they belong: `Station.NextStationOrderNumber` per station, and one
+single row for the next global order number.
 
 ## Intended project structure
 
@@ -118,7 +95,7 @@ Planned, not yet built. Update this table as it lands.
 | Project | Role |
 |---|---|
 | `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
-| `GastronomyApp.Infrastructure` | EF Core SQLite, printer transports, device token store. |
+| `GastronomyApp.Infrastructure` | EF Core SQLite, device token store, enrolment invitations. |
 | `GastronomyApp.Api` | Class library: REST endpoints, SignalR hub, static frontend, composition root. Hosted by `GastronomyApp.Desktop`. |
 | `*.Tests` | Unit tests against Core, integration tests against Infrastructure and the API. |
 
@@ -131,12 +108,7 @@ second faking library alongside them.
 **Conventions:** fixture is `<ClassUnderTest>Test`, method is `MethodName_State_Expected`. One fixture
 per production class, one file per fixture. Never a catch-all fixture name.
 
-**Core tests** use fakes for port interfaces. **Infrastructure and API tests** use in-memory SQLite and
-the mock printer transport.
-
-Every printing test must cover the failure paths, not only the happy one: paper out before sending,
-paper out mid-job, socket dropped with unknown outcome, station offline, and a re-send that must not
-duplicate.
+**Core tests** use fakes for port interfaces. **Infrastructure and API tests** use in-memory SQLite.
 
 ## Build and run
 

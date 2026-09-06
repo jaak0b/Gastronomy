@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,6 +11,5 @@ public sealed class SequenceCountersConfiguration : IEntityTypeConfiguration<Seq
     builder.HasKey(counters => counters.Id);
     builder.Property(counters => counters.Id).ValueGeneratedNever();
     builder.Property(counters => counters.NextOrderNumber).IsRequired();
-    builder.Property(counters => counters.NextPrinterJobId).IsRequired();
   }
 }

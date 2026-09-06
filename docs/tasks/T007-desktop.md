@@ -1,5 +1,9 @@
 # T007: Desktop host
 
+This is the original implementation brief, written before any of the code existed. Printing has
+since been removed from the product entirely, and every printer instruction has been taken out of
+this file. For a current description of the product, read `docs/spec.md`.
+
 ## 1. Objective
 
 Build `GastronomyApp.Desktop` into the Avalonia window described in spec sections 10.1 to 10.3 and
@@ -349,10 +353,7 @@ calls `IFirewallSetup.EnsureRuleConfigured()` and `IDataFolderSetup.CreateWithUs
   the `@microsoft/signalr` package T006 adds. `IQrCodeGenerator` stays exactly as declared in section 4;
   `QrCodeGenerator` adapts QRCoder's `QRCodeData.ModuleMatrix` into `IReadOnlyList<bool[]>`, so it
   returns a boolean matrix rather than a rendered image and both the Avalonia `Canvas` renderer here and
-  a future raster-to-ESC/POS renderer consume the same shape. Open question 11 still governs only how
-  the symbol later reaches a printed slip (firmware `GS ( k` vs. a raster of this encoder's output), not
-  whether the encoder exists; if 11 ever forces the raster fallback, the same QRCoder package serves
-  that path too, and T004 needs no package and no matrix for `GS ( k` regardless.
+  the future station-card renderer consume the same shape.
 - `appsettings.json` beside the executable is read-only shipped defaults (scheme, port, bind address,
   log level per spec 10.7); `ISettingsStore`/`SettingsStore` layers `settings.json` from the data
   folder over it and never writes back to `appsettings.json`.
@@ -412,8 +413,8 @@ and verified manually"):**
   `IElevatedSetupLauncher` beyond the `NoOpPowerManager` no-op stub and equivalent guards that skip
   Windows-only steps on other platforms.
 - mDNS or any address-discovery mechanism beyond the QR code and manual entry.
-- The station-card QR rendering (`GET /api/admin/locations/{id}/station-card`, spec 5.5) and open
-  question 11's printer-side decision: this task only builds the shared encoder behind
+- The station-card QR rendering (`GET /api/admin/locations/{id}/station-card`, spec 5.5): this task
+  only builds the shared encoder behind
   `IQrCodeGenerator` that the future card renderer will also depend on.
 - Admin page content of any kind: the window opens a browser to the admin URL and nothing more.
 

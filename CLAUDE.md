@@ -8,32 +8,42 @@ A self-hosted ordering system for volunteer fire department festivals. It replac
 
 Today a server walks table to table writing orders on paper, carries the paper to the kitchen or bar,
 and later carries the finished food and drinks back. This tool removes the walk to the kitchen and
-nothing else: the slip still lands on a pile at the production location, staff still work that pile
-off, and a server with a free hand still delivers the tray.
+nothing else: the order still lands in a list at the production location, shown on a tablet there,
+staff still work that list off, and a server with a free hand still delivers the tray.
 
 Flow:
 
 1. A server opens a web page on their own phone, picks items and quantities, enters a table name, sees
    the running total (a calculation aid only, cash is handled by hand), and places the order. They
    either send it settled, when the guest pays on the spot, or send it open, when the table runs a tab.
-2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor) and prints
-   each location's slice on that location's thermal receipt printer.
-3. Staff produce the items, put them on a tray with the printed slip, and a server delivers it.
+   Before sending, they choose per production location whether that slice is to be produced
+   together or handed out item by item as each is ready. That choice is fixed once sent.
+2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
+   location has one tablet, enrolled like a phone, whose station page lists that location's slices in
+   two columns: slices to be produced together, and single items to be handed out as ready.
+3. Staff mark each item as waiting, being prepared, or ready. When something is ready the tablet shows
+   the table name so it can be written on the tray, and whichever server passes by delivers it. Ready
+   is the final state; nobody touches a phone at the table.
+   Each catalog item may carry a production time in minutes. The phone shows the server an estimate
+   per item and per slice, computed from the station's current queue plus the item's own time.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
    table's items later, or settle them at zero with a typed reason when something is given away.
 
 **No money changes hands in the app.** It displays prices to help the server add up, and it records
 whether items have been settled so the people running the stand can see what a table still owes. It
-takes no payment, handles no cash, and never prints or issues a receipt.
+takes no payment, handles no cash, and never issues a receipt.
+
+**There are no printers.** The fire department decided on tablets before any printer was bought, and
+printing was removed from the product completely. Never reintroduce slips, print state, or printer
+wording.
 
 ## Structure
 
 | Folder | Role |
 |---|---|
-| `backend/` | .NET 9 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, printing service, static frontend) and is hosted by the desktop app. |
+| `backend/` | .NET 9 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
 | `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
-| `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
-| `pi-agent/` | Python agent for USB-attached printers. **Deferred**, not yet started. Until it exists, `TestPrinterDriver` stands in. |
+| `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app, station tablet page and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
 
 Three source trees ship as one executable: the frontend build output is embedded, the Api library is
 hosted in-process, and the operator double-clicks the desktop app. Closing its window never stops the
@@ -59,23 +69,25 @@ This shapes almost every design decision, so it is stated once here and assumed 
 - The laptop's IP address is not stable and cannot be made stable without admin rights. **The QR code
   carries the full URL including the current IP**, which is why it solves both enrolment and
   addressing. Never introduce a flow that depends on a phone remembering an address.
-- Phones authenticate by scanning a **single-use, short-lived QR code** shown on the laptop, which they
-  exchange for a long-lived device token held in `localStorage`. There are no usernames and no
-  passwords anywhere in the product. Every device is revocable from the admin UI.
+- Phones and station tablets authenticate by scanning a **single-use, short-lived QR code** shown on
+  the laptop, which they exchange for a long-lived device token held in `localStorage`. There are no
+  usernames and no passwords anywhere in the product. Every device is revocable from the admin UI.
+- **One device per owner.** A staff member owns at most one phone and a station owns at most one
+  tablet; the owner row points at its device. Setting up a device again replaces the previous one.
 
 ## Hard rules
 
 Numbered for unambiguous reference; do not cite rule numbers in shipped source or UI text.
 
 1. **Lost orders are the defect this product exists to prevent.** Any change that touches ordering,
-   routing, printing, or printer status must state what happens when the step fails. A silently
-   dropped order is the worst outcome in the system, and a silently duplicated one is the second
-   worst. Every slip carries a global order number and a per-location sequence number so a gap is
-   visible on the pile without anyone touching software.
+   routing, the station page, or production status must state what happens when the step fails. A
+   silently dropped order is the worst outcome in the system, and a silently duplicated one is the
+   second worst. Every slice carries a global order number and a per-location sequence number so a
+   gap is visible in the station's list without anyone touching software.
 
 2. **No silently swallowed errors.** A `catch` must surface the error, rethrow, or return a value the
-   caller can act on. Empty catch blocks are forbidden. Problems a user can fix (printer out of paper,
-   WiFi dropped, unknown table) are returned as user-worded messages in their language, never dropped
+   caller can act on. Empty catch blocks are forbidden. Problems a user can fix (WiFi dropped, unknown
+   table, an item already marked ready) are returned as user-worded messages in their language, never dropped
    and never surfaced as a raw exception or stack trace.
 
 3. **TDD is mandatory and test-first, no exceptions.** For every behaviour change including bug fixes:
@@ -89,10 +101,10 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    was already made, fails for unrelated reasons later, and describes nothing a user does. This binds
    the removal itself: the red run for a deletion is the existing test failing, not a new one.
    Assertions that some element is absent *under a condition the code still decides* are a different
-   thing and remain welcome, for example that a repair hint is hidden while a printer is healthy.
+   thing and remain welcome, for example that the table name notice is hidden until an item is marked ready.
 
 4. **Two test layers per change: unit and integration.** End-to-end coverage is required for the order
-   placement flow and the printing pipeline, and optional elsewhere. "It is only a small change" is not
+   placement flow and the station production flow, and optional elsewhere. "It is only a small change" is not
    an exemption. Untestable-by-design code is the only exception and you must say so explicitly.
    Mutation testing and a coverage gate are deliberately not adopted yet.
 
@@ -103,7 +115,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 6. **Extend the concept's existing home; never bolt a duplicate beside a symptom.** Before adding or
    fixing logic, find the module that already owns the concept (search for the concept, not just the
    symptom site) and extend it. Never compute a value the codebase already derives elsewhere: if a
-   figure (a price total, a routing decision, a sequence number, a printer's status) is produced in two
+   figure (a price total, a routing decision, a sequence number, an item's production status) is produced in two
    places, unify on the single source. A concern shared across flows lives in a shared module wired
    into all consumers, never patched into one flow. **Interim solutions are forbidden in all cases:**
    deferred fixes are forgotten and the interim state becomes permanent, so the correct structure is
@@ -118,7 +130,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 8. **German and English are both first-class from day one.** Every user-visible string is localized in
    both languages in the same change. A string that exists in one language only is an incomplete
-   change. This binds the backend, the frontend, and the text printed on slips.
+   change. This binds the backend, the frontend, and the desktop shell.
 
 9. **UI text is plain, complete prose aimed at a non-technical volunteer.** Complete grammatical
    sentences, neutral register, no clipped fragments, no jargon, no invented abbreviations. One term
@@ -135,10 +147,8 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
     modifiers). This binds source, documentation, commit messages, and UI text.
 
-11. **No trademarked words in file names or identifiers, with one exception: the brand and model of a
-    hardware device the app supports.** A supported printer may be named in a class name, a file name
-    and a persisted discriminator, because that is what the device is called and a neutral substitute
-    would only be a riddle for the next reader. Everything else keeps to neutral names.
+11. **No trademarked words in file names or identifiers.** The app supports no specific hardware, so
+    everything keeps to neutral names.
 
 12. **Git: commit at will on `master`.** The owner granted standing approval to commit directly to
     `master`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
@@ -176,39 +186,18 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     prose, not terse machine-speak. The setup checklist that the fire department follows is part of the
     product, not an afterthought.
 
-## Current phase: the mock is the demo
+## The production model
 
-No printer hardware has been bought. The fire department will first try the system with
-`TestPrinterDriver` standing in for every station, and only if they agree it is a tool they want
-will the printers be purchased.
-
-**Keep the mock simple.** It writes the slip content it would have printed to a file in a folder, one
-file per slip, and nothing more. No rendered station screen, no pile visualisation, no styling. A
-folder of files is enough to show that the right lines reached the right station. Failure simulation
-(paper out, cover open, dropped connection, unknown outcome) exists because the tests need it, so
-keep it to the smallest control that lets a test or a demonstrator trigger each case.
-
-**Build the vertical slice first, complete:** a server places an order on a phone, it is split by
-production location, a file appears in each station's folder, and the print state comes back to the
-phone. Admin configuration polish, device revocation, the break-glass page and the failure edge cases
-come after that slice works end to end.
-
-The `GS ( H` process id echo that print confirmation depends on stays unverified against real
-TM-T20IV firmware until hardware is bought. It is contained behind `IPrinterDriver`, and the spec
-specifies a fallback, but treat it as an assumption rather than a fact.
-
-## Hardware constraints that bind the code
-
-These come from the Epson TM-T20IV Technical Reference Guide and are not negotiable by preference.
-
-- **One printing connection per printer at a time**, held until released, with a 90 second timeout.
-  Print jobs must be serialized per printer. A crashed job blocks that station for 90 seconds.
-- **A dropped socket means the job's status is unknown.** Re-query before re-sending, or the station
-  prints the order twice. Duplicate orders are a real failure mode, not a harmless retry.
-- **Paper-out detection uses `GS a` ASB as the primary push channel** (the printer tells us), with
-  `DLE EOT n=4` polled as a heartbeat. Do not rely on polling alone.
-- Status is read over the same connection: port 9100 is documented bidirectional for network printers,
-  and USB printer class exposes a bulk IN endpoint for the Pi-attached case.
+- **Delivery mode** is chosen per station slice on the review screen before sending: together (the
+  default) or as it is ready. It is fixed once the order is sent and no screen may change it later.
+- **Production status** lives on the order item: waiting, being prepared, ready. Ready is final.
+  Transitions only move forward. Every change appends a row to the status change log, which exists to
+  measure how long each step took and is never read to decide the current state.
+- **Estimates** are computed, never stored. The backend reports per station the minutes still queued
+  (unfinished items' production minutes, missing values count as zero); the phone adds the item's own
+  minutes. A together slice is ready when its slowest item is ready.
+- **Nobody is notified** when an item is ready. The tablet shows the table name, and whichever server
+  passes the station takes the tray. That is deliberate.
 
 ## Verification bar
 

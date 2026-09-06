@@ -3,14 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminItemsStore } from '../../../stores/admin/items'
-import { useAdminPrintersStore } from '../../../stores/admin/printers'
 import { request } from '../../../api/client'
 
 const { t } = useI18n()
 const phoneAddress = window.location.origin
 const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
-const printers = useAdminPrintersStore()
 
 interface ReadinessRow {
   key: string
@@ -35,19 +33,10 @@ const rows = computed<ReadinessRow[]>(() => {
     })
   }
   for (const station of stations.stations) {
-    if (station.isActive && station.printerId === null) {
+    if (station.isActive && !station.hasDevice) {
       readiness.push({
-        key: 'admin.overview.stationWithoutPrinter',
+        key: 'admin.overview.stationWithoutTablet',
         parameters: { name: station.name },
-        count: null,
-      })
-    }
-  }
-  for (const printer of printers.printers) {
-    if (printer.isPaperNearEnd) {
-      readiness.push({
-        key: 'admin.overview.paperNearEnd',
-        parameters: { name: printer.name },
         count: null,
       })
     }
@@ -85,7 +74,6 @@ async function confirmReset(): Promise<void> {
 onMounted(async () => {
   await stations.load()
   await items.load()
-  await printers.load()
 })
 </script>
 

@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
@@ -21,21 +21,6 @@ public static class AdminOrderEndpoints
                         AdminOrderHandler handler,
                         CancellationToken cancellationToken) => await handler.ListAsync(status, stationId, cancellationToken));
 
-    group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/resolve",
-                  async (Guid orderId,
-                         Guid stationOrderId,
-                         ResolveUnknownPrintRequest request,
-                         StationOrderActionHandler handler,
-                         CancellationToken cancellationToken) =>
-                    await handler.ResolveUnknownAsync(orderId, stationOrderId, request, null, cancellationToken));
-
-    group.MapPost("/{orderId:guid}/station-orders/{stationOrderId:guid}/print-another-copy",
-                  async (Guid orderId,
-                         Guid stationOrderId,
-                         StationOrderActionHandler handler,
-                         CancellationToken cancellationToken) =>
-                    await handler.PrintAnotherCopyAsync(orderId, stationOrderId, null, cancellationToken));
-
     return routes;
   }
 }
@@ -45,16 +30,12 @@ public sealed class AdminOrderHandler
   private const int DefaultLimit = 200;
 
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly OrderQueryHandler _orderQueryHandler;
   private readonly OrderReader _orderReader;
 
-  public AdminOrderHandler(GastronomyAppDbContext dbContext,
-                           OrderReader orderReader,
-                           OrderQueryHandler orderQueryHandler)
+  public AdminOrderHandler(GastronomyAppDbContext dbContext, OrderReader orderReader)
   {
     _dbContext = dbContext;
     _orderReader = orderReader;
-    _orderQueryHandler = orderQueryHandler;
   }
 
   public async Task<IResult> ListAsync(string? status,
@@ -66,16 +47,16 @@ public sealed class AdminOrderHandler
     if (stationId is not null)
     {
       List<Guid> orderIdsAtStation = await _dbContext.StationOrders
-                                                    .AsNoTracking()
-                                                    .Where(stationOrder => stationOrder.StationId == stationId)
-                                                    .Select(stationOrder => stationOrder.OrderId)
-                                                    .Distinct()
-                                                    .ToListAsync(cancellationToken);
+                                                     .AsNoTracking()
+                                                     .Where(stationOrder => stationOrder.StationId == stationId)
+                                                     .Select(stationOrder => stationOrder.OrderId)
+                                                     .Distinct()
+                                                     .ToListAsync(cancellationToken);
 
       query = query.Where(order => orderIdsAtStation.Contains(order.Id));
     }
 
-    var filtersByStatus = Enum.TryParse(status, out OrderStatus parsedStatus);
+    var filtersByStatus = Enum.TryParse(status, true, out OrderStatus parsedStatus);
 
     List<Order> orders = await query
                               .OrderByDescending(order => order.CreatedAtUtc)
@@ -93,7 +74,7 @@ public sealed class AdminOrderHandler
         continue;
       }
 
-      entries.Add(await _orderQueryHandler.DescribeListEntryAsync(loaded, cancellationToken));
+      entries.Add(_orderReader.DescribeListEntry(loaded));
     }
 
     return Results.Ok(new OrderListView(entries));

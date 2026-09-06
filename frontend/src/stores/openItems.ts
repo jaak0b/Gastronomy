@@ -72,7 +72,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       connection.onEvent('OrderItemsSettled', () => {
         void load()
       }),
-      connection.onEvent('StationBacklogChanged', () => {
+      connection.onEvent('OrderStatusChanged', () => {
         void load()
       }),
     ]

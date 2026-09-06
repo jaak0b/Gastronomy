@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
@@ -14,7 +14,7 @@ public sealed class StationDeactivationTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -26,18 +26,9 @@ public sealed class StationDeactivationTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task Deactivate_FreshStationThatOnlyEverTestPrinted_ReportsNoOpenSlipsAndSwitchesOff()
+  public async Task Deactivate_FreshStationThatNeverTookAnOrder_SwitchesOff()
   {
-    var printerId = await CreatePrinterAsync();
-    var stationId = await CreateStationAsync(printerId);
-
-    using (var testPrint = await _context.Client.PostAsync($"/api/admin/printers/{printerId}/test-print",
-                                                          null))
-    {
-      Assert.That(testPrint.StatusCode,
-                  Is.EqualTo(HttpStatusCode.Accepted),
-                  "A test print on a fresh station must be accepted.");
-    }
+    var stationId = await CreateStationAsync();
 
     using var response = await _context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate",
                                                         null);
@@ -55,7 +46,7 @@ public sealed class StationDeactivationTest
   }
 
   [Test]
-  public async Task Deactivate_StationWithAGenuinelyOpenTicket_IsStillRefused()
+  public async Task Deactivate_StationWithAnItemStillToBeMade_IsRefusedAndCountsThem()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -71,8 +62,8 @@ public sealed class StationDeactivationTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.stationHasOpenTickets"));
-                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(), Is.EqualTo("1"));
+                                  Is.EqualTo("admin.stationHasUnfinishedItems"));
+                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(), Is.EqualTo("2"));
                     });
   }
 
@@ -89,12 +80,12 @@ public sealed class StationDeactivationTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
                                   Is.EqualTo("admin.itemsWouldHaveNoStation"),
-                                  "A station losing its items is a different refusal from one holding open slips.");
+                                  "A station losing its items is a different refusal from one still owing food.");
                     });
   }
 
   [Test]
-  public async Task Deactivate_StationWhoseTicketsAreAllSettled_SwitchesOff()
+  public async Task Deactivate_StationWhoseItemsAreAllFinished_SwitchesOff()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -103,11 +94,11 @@ public sealed class StationDeactivationTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      List<PrintJob> jobs = await database.PrintJobs.ToListAsync();
+      List<OrderItem> items = await database.OrderItems.ToListAsync();
 
-      foreach (var job in jobs)
+      foreach (var item in items)
       {
-        job.Status = PrintJobStatus.HandledOnPaper;
+        item.ProductionStatus = ProductionStatus.Finished;
       }
 
       await database.SaveChangesAsync();
@@ -131,7 +122,7 @@ public sealed class StationDeactivationTest
 
     Assert.That(response.StatusCode,
                 Is.EqualTo(HttpStatusCode.OK),
-                $"Settled slips must not block a station. Body: {await response.Content.ReadAsStringAsync()}");
+                $"Finished items must not block a station. Body: {await response.Content.ReadAsStringAsync()}");
   }
 
   [Test]
@@ -160,22 +151,10 @@ public sealed class StationDeactivationTest
     Assert.That(station.IsActive, Is.True);
   }
 
-  private async Task<Guid> CreatePrinterAsync()
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/printers",
-                                                              new { printerType = "TestPrinter", name = "Drucker Zelt" });
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    return body.RootElement.GetProperty("printerId").GetGuid();
-  }
-
-  private async Task<Guid> CreateStationAsync(Guid? printerId = null)
+  private async Task<Guid> CreateStationAsync()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/stations",
-                                                              new { name = "Zelt", sortOrder = 3, printerId });
+                                                              new { name = "Zelt", sortOrder = 3 });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import InvitationPanel from '../../../src/components/admin/staff/InvitationPanel.vue'
+import InvitationPanel from '../../../src/components/admin/enrolment/InvitationPanel.vue'
 import type { InvitationQr } from '../../../src/core/invitationQr'
-import type { Invitation } from '../../../src/stores/admin/staff'
+import type { Invitation } from '../../../src/core/apiTypes'
 import { testPlugins } from '../../support/plugins'
 
 const INVITATION: Invitation = {
@@ -10,6 +10,7 @@ const INVITATION: Invitation = {
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
   expiresAtUtc: '2026-08-27T18:05:00Z',
   staffMember: null,
+  station: null,
 }
 
 const QR_IMAGE_URL = 'data:image/svg+xml;charset=utf-8,%3Csvg%3E'
@@ -62,19 +63,53 @@ describe('the invitation panel', () => {
   })
 })
 
+describe('the same panel used for the tablet of a station', () => {
+  const STATION_INVITATION: Invitation = {
+    ...INVITATION,
+    station: { id: 'station-kueche', name: 'Küche' },
+  }
+
+  it('names the station whose tablet is to scan the code', () => {
+    const panel = mountPanel(READY, STATION_INVITATION)
+
+    expect(panel.get('.instruction').text()).toBe(
+      'Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle Küche.',
+    )
+  })
+
+  it('says it is setting up a tablet rather than a phone', () => {
+    const panel = mountPanel(READY, STATION_INVITATION)
+
+    expect(panel.get('.v-card-title').text()).toBe('Tablet einrichten')
+  })
+
+  it('shows the same QR code and the same address as for a phone', () => {
+    const panel = mountPanel(READY, STATION_INVITATION)
+
+    expect(panel.get('img.qr-image').attributes('src')).toBe(QR_IMAGE_URL)
+    expect(panel.get('code.qr-url').text()).toBe('http://192.168.1.20:5000/j/abc123')
+  })
+
+  it('says it is setting up a phone when no station is named', () => {
+    const panel = mountPanel()
+
+    expect(panel.get('.v-card-title').text()).toBe('Telefon einrichten')
+  })
+})
+
 describe('an invitation the laptop will not render a QR code for', () => {
-  it('says in plain German that a phone has already used it', () => {
+  it('says in plain German that a device has already used it', () => {
     const panel = mountPanel({
       kind: 'gone',
       message: { key: 'admin.enrol.qrAlreadyUsed', parameters: {}, count: null },
     })
 
     expect(panel.get('.qr-gone').text()).toBe(
-      'Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Telefon benutzt.',
+      'Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.',
     )
   })
 
-  it('says in plain English that a phone has already used it', () => {
+  it('says in plain English that a device has already used it', () => {
     const panel = mount(InvitationPanel, {
       props: {
         invitation: INVITATION,
@@ -87,7 +122,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     })
 
     expect(panel.get('.qr-gone').text()).toBe(
-      'Create a new QR code. This one has already been used by a phone.',
+      'Create a new QR code. This one has already been used by a device.',
     )
   })
 

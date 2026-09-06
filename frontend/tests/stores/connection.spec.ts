@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 const startResult = { shouldFail: false }
@@ -71,22 +71,22 @@ describe('a handler that is no longer wanted', () => {
     const connection = useConnectionStore()
     await connection.connect({ deviceToken: 'a-token' })
 
-    const stopListening = connection.onEvent('PrintJobStatusChanged', () => undefined)
+    const stopListening = connection.onEvent('StationOrdersChanged', () => undefined)
     stopListening()
 
-    expect(registeredHandlers.filter((entry) => entry.eventName === 'PrintJobStatusChanged')).toEqual(
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'StationOrdersChanged')).toEqual(
       [],
     )
   })
 
   it('is not registered a second time when the same screen is opened again', async () => {
     const connection = useConnectionStore()
-    const stopListening = connection.onEvent('PrintJobStatusChanged', () => undefined)
+    const stopListening = connection.onEvent('StationOrdersChanged', () => undefined)
     stopListening()
 
     await connection.connect({ deviceToken: 'a-token' })
 
-    expect(registeredHandlers.filter((entry) => entry.eventName === 'PrintJobStatusChanged')).toEqual(
+    expect(registeredHandlers.filter((entry) => entry.eventName === 'StationOrdersChanged')).toEqual(
       [],
     )
   })

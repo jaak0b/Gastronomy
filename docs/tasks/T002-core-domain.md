@@ -1,20 +1,27 @@
 # T002: Core domain (vertical slice)
 
+This is the original implementation brief, written before any of the code existed. Printing has since
+been removed from the product entirely, and the printer work has been taken out of this file. What is
+left of it is the order lifecycle it was written around, whose states are still named after printing
+and after a ticket that was never built. That lifecycle is gone too: an order item now moves from
+waiting to being prepared to ready on a station's tablet. For a current description of the product,
+read `docs/spec.md`.
+
 ## 1. Objective
 
 Build the pure domain of `GastronomyApp.Core` for the vertical slice: a server places an order on a
-phone, it is split into per-location tickets, slips are dispatched, print state comes back. This task
+phone, and it is split into per-location tickets that each production location works off. This task
 produces entities, enums, ports (interfaces later implemented by `GastronomyApp.Infrastructure` and
 `GastronomyApp.Api`), and the domain services / use cases that make that slice reasoning possible,
 test-first throughout.
 
-This is a domain-only task. No EF Core, no SQLite, no HTTP, no SignalR, no ESC/POS bytes, no printer
-transports, no worker loop, no localization resource content, nothing frontend or desktop. Every type
+This is a domain-only task. No EF Core, no SQLite, no HTTP, no SignalR, no worker loop, no
+localization resource content, nothing frontend or desktop. Every type
 in this task lives under `backend/GastronomyApp.Core`, has no framework dependency, and is proven by
 `backend/GastronomyApp.Core.Tests`.
 
 Every public signature in this document is exact and binding. Other tasks (routing consumers,
-Infrastructure repository implementations, the API layer, the printing worker) build against these
+Infrastructure repository implementations, the API layer) build against these
 signatures. Do not rename, reshape, or add optional parameters without updating this document; there is
 none of that judgment room in this task, the signatures below are the contract.
 
@@ -41,61 +48,37 @@ backend/
       Order.cs
       OrderLine.cs
       LocationTicket.cs
-      PrintJob.cs
-      PrintAttempt.cs
       NumberCounter.cs
-      PrinterConfiguration.cs
-      PrinterStatus.cs
     Enums/
       OrderStatus.cs
       LocationTicketStatus.cs
-      PrintJobStatus.cs
-      PrintJobKind.cs
-      PrintFailureReason.cs
-      PrintAttemptOutcome.cs
-      PrintAttemptPhase.cs
-      TransportKind.cs
       NumberCounterKind.cs
     Results/
       OrderAcceptanceResult.cs
       OrderValidationFailure.cs
       RoutingDecision.cs
-      GiveUpWindowEvaluation.cs
-      PrintOutcomeMapping.cs
-      TicketAcknowledgeDecision.cs
     Ports/
       IClock.cs
       ICatalogItemRepository.cs
       IProductionLocationRepository.cs
       IOrderRepository.cs
       INumberAllocator.cs
-      IPrinterStatusReader.cs
     Services/
       OrderRoutingResolver.cs
       OrderStatusCalculator.cs
       OrderTotalCalculator.cs
       OrderAcceptanceService.cs
       TicketStateMachine.cs
-      PrintJobStateMachine.cs
-      RetryPolicy.cs
-      GiveUpWindowCalculator.cs
-      TicketAcknowledgePolicy.cs
-      PrinterEndpointKeyBuilder.cs
       Never.cs
   GastronomyApp.Core.Tests/
     GastronomyApp.Core.Tests.csproj            (unchanged from T001)
-    ScaffoldingSmokeTest.cs                    (deleted in step 4 below)
+    ScaffoldingSmokeTest.cs                    (deleted in step 3 below)
     Services/
       OrderRoutingResolverTest.cs
       OrderStatusCalculatorTest.cs
       OrderTotalCalculatorTest.cs
       OrderAcceptanceServiceTest.cs
       TicketStateMachineTest.cs
-      PrintJobStateMachineTest.cs
-      RetryPolicyTest.cs
-      GiveUpWindowCalculatorTest.cs
-      TicketAcknowledgePolicyTest.cs
-      PrinterEndpointKeyBuilderTest.cs
 ```
 
 Every fixture is named `<ClassUnderTest>Test`, one fixture per production class, one file per fixture,
@@ -173,76 +156,12 @@ public enum LocationTicketStatus
     HandledOnPaper,
 }
 
-public enum PrintJobStatus
-{
-    Queued,
-    PreflightCheck,
-    Blocked,
-    Sending,
-    AwaitingEcho,
-    Confirmed,
-    Unknown,
-    Failed,
-    ResolvedPrinted,
-    ResolvedMissing,
-}
-
-public enum PrintJobKind
-{
-    Initial,
-    Reprint,
-    Test,
-}
-
-public enum PrintFailureReason
-{
-    PaperEnd,
-    CoverOpen,
-    Unreachable,
-    Timeout,
-    SocketDropped,
-    PrinterError,
-    StationDisabled,
-    StationFaulty,
-    TicketResolvedByHuman,
-}
-
-public enum PrintAttemptOutcome
-{
-    Confirmed,
-    Blocked,
-    Unreachable,
-    SocketDropped,
-    Timeout,
-    PrinterError,
-}
-
-public enum PrintAttemptPhase
-{
-    Connecting,
-    PreflightCheck,
-    Sending,
-    AwaitingEcho,
-}
-
-public enum TransportKind
-{
-    Network,
-    Agent,
-    Mock,
-}
-
 public enum NumberCounterKind
 {
     GlobalOrder,
     LocationSequence,
-    PrinterProcessId,
 }
 ```
-
-`PrintFailureReason.TicketResolvedByHuman` has no client-facing message key per spec 2.11; that is a
-localization-layer fact and this task only needs the enum member to exist so `PrintJobStateMachine` can
-produce it.
 
 ### 4.2 Entities
 
@@ -382,38 +301,9 @@ public sealed class LocationTicket
     public required Guid ProductionLocationId { get; set; }
     public required int LocationSequenceNumber { get; set; }
     public required LocationTicketStatus Status { get; set; }
-    public required int ReprintCount { get; set; }
     public required DateTime CreatedAtUtc { get; set; }
     public DateTime? ResolvedAtUtc { get; set; }
     public string? ResolutionNote { get; set; }
-}
-
-public sealed class PrintJob
-{
-    public required Guid Id { get; set; }
-    public Guid? LocationTicketId { get; set; }
-    public required Guid ProductionLocationId { get; set; }
-    public required PrintJobKind Kind { get; set; }
-    public required PrintJobStatus Status { get; set; }
-    public int? ProcessId { get; set; }
-    public PrintFailureReason? FailureReason { get; set; }
-    public Guid? RequestedByDeviceId { get; set; }
-    public required DateTime CreatedAtUtc { get; set; }
-    public DateTime? CompletedAtUtc { get; set; }
-}
-
-public sealed class PrintAttempt
-{
-    public required Guid Id { get; set; }
-    public required Guid PrintJobId { get; set; }
-    public required int AttemptNumber { get; set; }
-    public required PrintAttemptOutcome Outcome { get; set; }
-    public required PrintAttemptPhase Phase { get; set; }
-    public required int BytesWritten { get; set; }
-    public required string TransportDetail { get; set; }
-    public required string PrinterStatusSnapshotJson { get; set; }
-    public required DateTime StartedAtUtc { get; set; }
-    public required DateTime EndedAtUtc { get; set; }
 }
 
 public sealed class NumberCounter
@@ -421,49 +311,9 @@ public sealed class NumberCounter
     public required NumberCounterKind CounterKind { get; set; }
     public Guid? EventSessionId { get; set; }
     public Guid? ProductionLocationId { get; set; }
-    public string? PrinterEndpointKey { get; set; }
     public required int NextValue { get; set; }
 }
-
-public sealed class PrinterConfiguration
-{
-    public required Guid ProductionLocationId { get; set; }
-    public required TransportKind TransportKind { get; set; }
-    public string? Host { get; set; }
-    public required int Port { get; set; }
-    public string? AgentIdentifier { get; set; }
-    public required int CharactersPerLine { get; set; }
-    public required string CodePageName { get; set; }
-    public required int ConnectTimeoutSeconds { get; set; }
-    public required int JobTimeoutSeconds { get; set; }
-    public required int HeartbeatSeconds { get; set; }
-    public required bool IsEnabled { get; set; }
-}
-
-public sealed class PrinterStatus
-{
-    public required Guid ProductionLocationId { get; set; }
-    public required bool IsOnline { get; set; }
-    public required bool IsPaperEnd { get; set; }
-    public required bool IsPaperNearEnd { get; set; }
-    public required bool IsCoverOpen { get; set; }
-    public required bool IsInErrorState { get; set; }
-    public required bool IsFaulty { get; set; }
-    public required string LastDetail { get; set; }
-    public required DateTime LastChangedAtUtc { get; set; }
-    public required DateTime LastHeardFromAtUtc { get; set; }
-}
 ```
-
-`PrinterConfiguration.TransportKind` is typed as the `TransportKind` enum from section 4.1 rather than
-as a plain string, per ruling 6: T002's enums are the one source of truth for every closed set in this
-domain, and spec 2.12's `Network` / `Agent` / `Mock` values are exactly that enum's three members.
-`PrinterConfiguration` and `PrinterStatus` carry no id of their own; `ProductionLocationId` is both the
-foreign key and, per spec 2.12, the primary key (a one-to-one relationship with `ProductionLocation`),
-which is why neither type declares a separate `Id`. Neither entity gets a dedicated service in this task
-(no `PrinterConfigurationTest.cs`, no behaviour to drive): they exist here purely as the shape
-Infrastructure maps and `IPrinterStatusReader` reads from, per the "entities live in Core" rule that
-makes Core, not a sibling task, the only place that can declare them.
 
 ## 5. Ordered steps
 
@@ -522,47 +372,13 @@ public sealed class OrderTotalCalculator
 (`OrderLine` from `GastronomyApp.Core.Entities`, via `using`.) Re-run the filtered test, quote the green
 output.
 
-### Step 3: `PrinterEndpointKeyBuilder`
-
-Placed here, ahead of routing and acceptance, because T003's numbering allocator step and T004's fleet
-grouping both need it and both start work early. It computes spec 2.13's canonical printer endpoint key,
-`TransportKind|Host|Port|AgentIdentifier`, with the empty string standing in for a part a transport does
-not use; the key is never parsed back apart, only built and compared.
-
-Write `backend/GastronomyApp.Core.Tests/Services/PrinterEndpointKeyBuilderTest.cs` first, covering: a
-`Network` transport with a host and port produces `Network|192.168.1.23|9100|`; an `Agent` transport with
-no host or port and an `AgentIdentifier` produces `Agent|||agent-1`; a `Mock` transport with none of
-host, port, or agent identifier set produces `Mock|||` (an empty segment for a `null` port, since `Port` is
-declared as `int?` in the signature below to let a transport that has no port at all, such as `Agent`,
-omit it honestly rather than being forced to invent one); two builds with identical inputs produce equal
-strings; and two builds that differ only in `Host` produce different strings. Run `dotnet test --filter
-FullyQualifiedName~PrinterEndpointKeyBuilderTest`, quote the compiler-error red run.
-
-Then write `backend/GastronomyApp.Core/Services/PrinterEndpointKeyBuilder.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Services;
-
-public sealed class PrinterEndpointKeyBuilder
-{
-    public string Build(TransportKind transportKind, string host, int? port, string agentIdentifier)
-    {
-    }
-}
-```
-
-`host`, `port`, and `agentIdentifier` are taken as given (an empty string or a null port both render as
-the empty segment); this method does no validation of which fields a given `transportKind` should or
-should not carry, since that validation belongs to whichever task owns `PrinterConfiguration` editing,
-not to this pure string-building step. Re-run the filtered test, quote the green output.
-
-### Step 4: Delete the scaffolding smoke test
+### Step 3: Delete the scaffolding smoke test
 
 Delete `backend/GastronomyApp.Core.Tests/ScaffoldingSmokeTest.cs` now that a real fixture exists, per
 T001's own instruction. Run `dotnet test GastronomyApp.slnx --filter
 FullyQualifiedName~GastronomyApp.Core` and quote the output showing only real fixtures remain.
 
-### Step 5: `OrderRoutingResolver`
+### Step 4: `OrderRoutingResolver`
 
 Write `backend/GastronomyApp.Core.Tests/Services/OrderRoutingResolverTest.cs` first. Cover, per spec
 2.6 and the 11.1 table: one active candidate routes with no chosen location and no station control
@@ -571,7 +387,7 @@ failure result, does not throw); more than one candidate with a `chosenProductio
 location not assigned to the item is rejected; more than one candidate with a valid, still-active chosen
 location routes there and echoes it; a chosen location that is no longer active falls back to the lowest
 `SortOrder` active candidate, and the result still records the original `ChosenProductionLocationId` the
-server picked (per spec 2.6, the slip has to show the intended station); the candidate set is never
+server picked (per spec 2.6, the ticket has to show the intended station); the candidate set is never
 empty for an orderable item, asserted by constructing every test case from a fixture with at least one
 active assignment (this resolver is never asked to handle a genuinely empty candidate set, because that
 shape cannot occur by the invariants in spec 2.4/2.5; do not write a defensive "no candidates" branch
@@ -662,7 +478,7 @@ green.
 
 Re-run the filtered test for `OrderRoutingResolverTest`, quote the green output.
 
-### Step 6: `OrderStatusCalculator`
+### Step 5: `OrderStatusCalculator`
 
 Write `backend/GastronomyApp.Core.Tests/Services/OrderStatusCalculatorTest.cs` first. This is the
 exhaustive test 11.1 names: cover the five-row priority table in spec 3.1 for every combination of
@@ -704,14 +520,14 @@ materialize full entities just to call this. Re-run, quote green.
 
 **Projection ownership, stated once here because this task owns `OrderStatusCalculator`.** Whoever
 changes a ticket writes the order status projection in the same transaction through this calculator:
-the printing worker (a sibling task) on the print path, the Api layer (a sibling task) on the HTTP paths
-(acceptance, resolve, acknowledge). The calculator itself never writes; `Calculate` is a pure function
+the Api layer (a sibling task) does this on every HTTP path that touches a ticket (acceptance, resolve,
+acknowledge). The calculator itself never writes; `Calculate` is a pure function
 from ticket statuses to an `OrderStatus` value, and persisting the result onto `Order.Status` is always
 the caller's job, inside whatever transaction is already writing the ticket change that triggered the
 recomputation. Every sibling task that writes a `LocationTicket.Status` change quotes this sentence
 verbatim rather than restating the rule in its own words, so the rule cannot drift between documents.
 
-### Step 7: `OrderAcceptanceService` and its ports
+### Step 6: `OrderAcceptanceService` and its ports
 
 This is the use case for spec 5.4 / 9.3 / 4.1: validate, resolve idempotency, allocate numbers, route,
 create tickets. Because numbering allocation "happens inside the acceptance transaction" per the brief,
@@ -776,8 +592,6 @@ public interface INumberAllocator
     Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken);
 
     Task<int> AllocateLocationSequenceNumberAsync(Guid eventSessionId, Guid productionLocationId, CancellationToken cancellationToken);
-
-    Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
 }
 ```
 
@@ -789,17 +603,6 @@ this service triggers commits or rolls back atomically with the order insert. Th
 implement that; it only has to shape the port so it is possible, which passing `CancellationToken`
 through and keeping allocation as separate awaited calls (rather than a single "allocate everything"
 call that would hide the per-ticket loop from the transaction) achieves.
-
-`AllocatePrinterProcessIdAsync` is the third counter kind from spec 2.13, `NumberCounterKind.PrinterProcessId`,
-keyed by `PrinterEndpointKey` (built by `PrinterEndpointKeyBuilder`, section 5 step 3) rather than by
-`EventSessionId` or `ProductionLocationId`, matching the `NumberCounter` entity's own composite key
-exactly. `OrderAcceptanceService` never calls this member; it exists on `INumberAllocator` because all
-three `NumberCounterKind` values share one allocation concern and one storage-layer counter table, and
-splitting it into a second port would be a second producer of "how a counter row is read and
-incremented" for the same underlying mechanism. The printing-worker task (a sibling to this one) is this
-member's only caller, allocating a process id at spec 7.4 step 6; no test in this task's own suite
-exercises it beyond `A.Fake<INumberAllocator>()` compiling against the full interface, since this task
-has no printing-dispatch logic to drive it with.
 
 `backend/GastronomyApp.Core/Ports/IOrderRepository.cs`:
 
@@ -967,23 +770,23 @@ bullet:
   `LocationSequenceNumber`, and the order's `TotalCents` sums across both.
 * A line whose chosen location fell back per `OrderRoutingResolver` (stale choice) still creates its
   ticket at the fallback location, and the resulting `OrderLine.ChosenProductionLocationId` still holds
-  the server's original choice, not the fallback (spec 2.6: the slip shows the intended station).
+  the server's original choice, not the fallback (spec 2.6: the ticket shows the intended station).
 * `Order.Id`, every `OrderLine.Id`, and every `LocationTicket.Id` are non-empty `Guid`s and distinct from
   each other across the whole created graph (this service is the one place in this task allowed to call
   `Guid.NewGuid()`, per section 4.2).
 * `Order.CreatedAtUtc` and every `LocationTicket.CreatedAtUtc` equal the fake `IClock.UtcNow` value set
   up for that test.
-* Every `LocationTicket.Status` starts `Queued` and every `LocationTicket.ReprintCount` starts 0.
+* Every `LocationTicket.Status` starts `Queued`.
 * `ItemNameSnapshot` and `UnitPriceCentsSnapshot` on each created line equal the `CatalogItem.Name` and
   `PriceCents` the fake repository returned for that line at the moment of acceptance, proving the
   snapshot is taken from the current catalog row rather than copied from the request.
 
 Quote the red run (most of these will be compiler errors on the first pass since none of the production
-types exist), then implement `Result<TValue, TFailure>` dependencies already exist from step 5, so write
+types exist), then implement `Result<TValue, TFailure>` dependencies already exist from step 4, so write
 `OrderAcceptanceService.cs` and its request/result records as specified above. Re-run filtered to
 `OrderAcceptanceServiceTest`, quote green.
 
-### Step 8: `TicketStateMachine`
+### Step 7: `TicketStateMachine`
 
 Write `backend/GastronomyApp.Core.Tests/Services/TicketStateMachineTest.cs` first. Enumerate every
 transition drawn in spec 3.2's diagram as an allowed case (one test method per arrow, or a
@@ -992,10 +795,8 @@ assertable case) and, separately, an exhaustive test proving every `(from, to)` 
 `LocationTicketStatus` combinations that is *not* one of the drawn arrows is refused (returns `false` /
 a rejection, does not throw), per 11.1's "every transition not listed is refused". Represent a
 transition as a value the state machine can check without side effects, since the actual cause data
-(give-up window expiry, human answer, etc.) is decided by other services (`GiveUpWindowCalculator`,
-`RetryPolicy`) that this task also builds; this class's job is purely "is `from -> to` a legal edge in
-the diagram", which the acceptance/print services above and the printing worker in a later task consult
-before writing a new status.
+(a human answer, a station reporting progress) is decided elsewhere; this class's job is purely "is
+`from -> to` a legal edge in the diagram", which every caller consults before writing a new status.
 
 Quote red, then write:
 
@@ -1020,100 +821,9 @@ a final `_ => false` arm (this one case is the deliberate exception to "no swall
 method's whole contract is "true for a listed edge, false otherwise", so `false` is not a swallowed
 value but the specified answer; do not use `Never` here). Re-run, quote green.
 
-### Step 9: `PrintJobStateMachine`
+### Step 8: `Never`
 
-Write `backend/GastronomyApp.Core.Tests/Services/PrintJobStateMachineTest.cs` first, same shape as step
-8 but over spec 3.3's diagram and `PrintJobStatus`. Additionally and specifically (11.1's callout): a
-parameterized test proving that for every `PrintAttemptOutcome` with `BytesWritten > 0`, the resulting
-job status per the mapping in step 10 (`RetryPolicy`) is never one this state machine calls
-`CanTransition` back into `Queued` or `PreflightCheck` for, i.e. bytes-written outcomes never reach a
-state this machine allows to transition back to a retryable state directly; write this as a test that
-composes `PrintJobStateMachine.CanTransition` with the outcome-to-status mapping table from step 10 (you
-may need to write step 10's `RetryPolicy` type shape first to compile this test, in which case do so, but
-still keep `RetryPolicyTest.cs` as its own red-then-green step 10 before relying on its behaviour here;
-this cross-check test belongs in `PrintJobStateMachineTest.cs` because it is a property of the state
-machine, not of the policy).
-
-Quote red, then write:
-
-`backend/GastronomyApp.Core/Services/PrintJobStateMachine.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Services;
-
-public sealed class PrintJobStateMachine
-{
-    public bool CanTransition(PrintJobStatus from, PrintJobStatus to)
-    {
-    }
-}
-```
-
-Same `switch` expression shape as `TicketStateMachine`, edges taken from spec 3.3's diagram (fourteen
-edges including the two separately-drawn `SocketDropped` arrows from `Sending`, which are the same
-`(Sending, Queued)` and `(Sending, Unknown)` pairs as any other cause reaching those states, since this
-machine is state-to-state and `PrintAttempt.Phase` is what distinguishes the wire event, not this
-switch). Re-run, quote green.
-
-### Step 10: `RetryPolicy`
-
-Write `backend/GastronomyApp.Core.Tests/Services/RetryPolicyTest.cs` first. One test method per row of
-spec 7.6's table (nine rows, both `Confirmed` rows, both `SocketDropped` rows, both `Timeout` rows, as
-11.1 requires), each asserting the full `PrintOutcomeMapping` returned: `JobStatus`, `TicketStatus`,
-`ShouldRetryAutomatically`, and `FailureReason`, and (only for the two `Confirmed` rows) that
-`TransportKind.Mock` maps `TicketStatus` to `PrintedOnTestPrinter` while `TransportKind.Network` and
-`TransportKind.Agent` both map it to `Printed`. Also test that every one of the nine rows maps
-`FailureReason` to `null`: spec 7.6's table assigns no failure reason at the per-attempt level for any
-of its rows, including the ones that reach `Blocked` (`Blocked` outcome maps to job/ticket `Blocked`
-with no failure reason yet). `PrintFailureReason` is assigned later, once, by whichever mechanism
-actually ends the ticket: the give-up window or the outer bound (`GiveUpWindowCalculator`, section 5
-step 12) naming why a `Queued` or `Blocked` ticket gave up, or the station circuit breaker (a sibling
-task's territory, see section 8) naming `StationFaulty`. `RetryPolicy` and `PrintOutcomeMapping` are not
-where that assignment happens; the property exists on the record purely so every later terminal writer
-(the printing worker in a later task) has one place to put the reason once it is known, and this task's
-own tests prove `RetryPolicy.Map` itself never populates it.
-
-Quote red, then write:
-
-`backend/GastronomyApp.Core/Results/PrintOutcomeMapping.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Results;
-
-public sealed record PrintOutcomeMapping
-{
-    public required PrintJobStatus JobStatus { get; init; }
-    public required LocationTicketStatus TicketStatus { get; init; }
-    public required bool ShouldRetryAutomatically { get; init; }
-    public PrintFailureReason? FailureReason { get; init; }
-}
-```
-
-`backend/GastronomyApp.Core/Services/RetryPolicy.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Services;
-
-public sealed class RetryPolicy
-{
-    public PrintOutcomeMapping Map(PrintAttemptOutcome outcome, TransportKind transportKind, int bytesWritten)
-    {
-    }
-}
-```
-
-Implement `Map` as a `switch` expression over `(outcome, bytesWritten > 0, transportKind)` (or an
-equivalent total decomposition), covering every row of the 7.6 table exactly, with no `default` arm
-possible to write since every `(PrintAttemptOutcome, bool, TransportKind)` combination that the table
-does not explicitly give (for example `Confirmed` with zero bytes, which cannot occur under the
-hardware's own contract) still needs a decision: use `Never.OfType<PrintOutcomeMapping>(outcome)` for
-combinations the table declares impossible, and cover that with a test asserting it throws for
-`(Confirmed, bytesWritten: 0, any transport)`, since the spec never describes a confirmed job with zero
-bytes and inventing a silent answer for it would be worse than a loud one. Re-run, quote green.
-
-### Step 11: `Never`
-
-`RetryPolicy` above already needs this; write it now if not written already, with its own tiny
+Section 3's exhaustiveness rule needs this; write it now if not written already, with its own tiny
 red-first test (`NeverTest.cs`) asserting it throws `InvalidOperationException` naming the unhandled
 value's `ToString()` in the message.
 
@@ -1137,174 +847,7 @@ service in this task that needs an unreachable-default arm in a `switch` stateme
 purpose; since `Never` has no fields, callers may construct a fresh one at the call site
 (`new Never().OfType<...>(...)`) rather than needing it injected.
 
-### Step 12: `GiveUpWindowCalculator`
-
-Write `backend/GastronomyApp.Core.Tests/Services/GiveUpWindowCalculatorTest.cs` first. Cover, per 11.1's
-`GiveUpWindow` row and spec 3.2's worked example exactly (reuse its numbers: paper out at minute 0,
-roll in at minute 18, unreachable from then, outer bound at minute 20 with the give-up stopwatch at 3
-unsuspended minutes accumulated, never reaching 5):
-
-* A ticket with no suspension periods and no attempts reaches `Failed` (give-up) exactly at
-  `CreatedAtUtc + 5 minutes`, and is not yet `Failed` a moment before that.
-* A ticket whose entire life so far was inside one suspension period (paper out from minute 0, still
-  out at "now") has zero accumulated unsuspended time and is not given-up regardless of wall-clock
-  elapsed time, but the outer bound (20 minutes, unsuspended by anything, per 3.2) still fires at minute
-  20 even while still inside that suspension.
-* The exact worked example: suspended minutes 0-18, unsuspended (unreachable, not a suspending cause)
-  minutes 18 onward; at minute 20 the outer bound has fired (the ticket is `Failed`) with only 2 minutes
-  of unsuspended time accumulated, and the give-up window (which would have needed 5 unsuspended
-  minutes, reached at minute 23 of wall clock) never gets the chance to fire on its own.
-* Suspension resumes without resetting: two separate suspension periods (for example paper out minutes
-  0-2, and again minutes 10-12) with unsuspended time in between and after are summed, not reset to zero
-  by the second suspension starting.
-* Each of the four suspending conditions from spec 3.2's table (`IsPaperEnd`, `IsCoverOpen`,
-  `PrinterConfiguration.IsEnabled == false`, and the mock's `IsInErrorState`) independently suspends the
-  clock; test each as its own case using the input shape below.
-* A `Blocked` ticket whose cause is `PrinterError` (not one of the four suspending conditions, per
-  3.2's explicit callout that a mechanical error is not suspending) is not suspended and reaches
-  give-up at 5 unsuspended minutes exactly like an ordinary unreachable ticket.
-* The outer bound (20 minutes) fires under every one of the above causes, including a ticket that was
-  suspended for its whole life.
-* The outer bound never fires while the ticket's current status is `Printing` (per 3.2's explicit
-  exception): a ticket 25 minutes old but currently `Printing` is not given up by this calculator; the
-  caller (the printing worker, a later task) is what bounds `Printing` via `JobTimeoutSeconds`, not this
-  calculator.
-
-Quote red, then design the input/output shape and implement. Because "accumulated unsuspended time" is
-inherently a history (a ticket's status and its suspending-condition state both change over its life,
-possibly several times), this calculator does not take a single snapshot; it takes an ordered list of
-the periods during which the ticket's clock was suspended, which the caller (a later printing-worker
-task, reading `PrinterStatus` history and `PrinterConfiguration.IsEnabled` history) is responsible for
-reconstructing. This task defines the shape:
-
-`backend/GastronomyApp.Core/Results/GiveUpWindowEvaluation.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Results;
-
-public sealed record SuspensionPeriod
-{
-    public required DateTime StartedAtUtc { get; init; }
-    public DateTime? EndedAtUtc { get; init; }
-}
-
-public sealed record GiveUpWindowEvaluation
-{
-    public required bool HasReachedGiveUpWindow { get; init; }
-    public required bool HasReachedOuterBound { get; init; }
-    public required TimeSpan AccumulatedUnsuspendedTime { get; init; }
-}
-```
-
-`SuspensionPeriod.EndedAtUtc` is null for a suspension still in force at the moment being evaluated.
-
-`backend/GastronomyApp.Core/Services/GiveUpWindowCalculator.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Services;
-
-public sealed class GiveUpWindowCalculator
-{
-    public static readonly TimeSpan GiveUpWindow = TimeSpan.FromMinutes(5);
-
-    public static readonly TimeSpan OuterBound = TimeSpan.FromMinutes(20);
-
-    public GiveUpWindowEvaluation Evaluate(
-        DateTime ticketCreatedAtUtc,
-        DateTime evaluatedAtUtc,
-        LocationTicketStatus currentStatus,
-        IReadOnlyCollection<SuspensionPeriod> suspensionPeriods)
-    {
-    }
-}
-```
-
-`public static readonly` fields are data, not methods or properties, so they do not fall under the
-no-statics rule (which names methods and properties); they are the two named constants from spec 3.2
-and belong on the class that owns the calculation rather than as magic numbers duplicated at every call
-site. If a stricter reading is wanted instead, ask before implementing; this document's default
-position is that the no-statics rule targets behaviour, not named constants, and a `public static
-readonly TimeSpan` is the idiomatic C# constant shape here since `const` cannot hold a `TimeSpan`.
-
-`Evaluate` computes accumulated unsuspended time as `(evaluatedAtUtc - ticketCreatedAtUtc)` minus the
-sum of every suspension period's duration (clamping each period's effective end to `evaluatedAtUtc` when
-`EndedAtUtc` is null or later than `evaluatedAtUtc`, and clamping each period's effective start to no
-earlier than `ticketCreatedAtUtc`), sets `HasReachedGiveUpWindow` when that accumulated time is at least
-`GiveUpWindow`, sets `HasReachedOuterBound` when `currentStatus != LocationTicketStatus.Printing` and
-`evaluatedAtUtc - ticketCreatedAtUtc >= OuterBound`. Re-run, quote green.
-
-### Step 13: `TicketAcknowledgePolicy`
-
-Write `backend/GastronomyApp.Core.Tests/Services/TicketAcknowledgePolicyTest.cs` first. Cover the exact
-boolean expression from spec 5.6, one case per clause per 11.1: each `LocationTicketStatus` in
-`{Failed, Unknown, Blocked}` always allows it regardless of station condition; each of the six printer
-conditions (`IsFaulty`, `!IsOnline`, `IsPaperEnd`, `IsCoverOpen`, `IsInErrorState`,
-`!PrinterConfiguration.IsEnabled` represented here as a single `IsEnabled` flag on the input, see below)
-independently allows it for a ticket in `Queued`; a `Queued` ticket at a fully healthy station is
-refused; a `Printing` ticket is refused under every one of the six conditions in turn, and refused when
-healthy too (11.1: "a `Printing` ticket refused under every one of the six printer conditions in turn").
-
-Quote red, then write:
-
-`backend/GastronomyApp.Core/Results/TicketAcknowledgeDecision.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Results;
-
-public sealed record StationPrintability
-{
-    public required bool IsFaulty { get; init; }
-    public required bool IsOnline { get; init; }
-    public required bool IsPaperEnd { get; init; }
-    public required bool IsCoverOpen { get; init; }
-    public required bool IsInErrorState { get; init; }
-    public required bool IsEnabled { get; init; }
-}
-```
-
-`backend/GastronomyApp.Core/Services/TicketAcknowledgePolicy.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Services;
-
-public sealed class TicketAcknowledgePolicy
-{
-    public bool CanAcknowledge(LocationTicketStatus ticketStatus, StationPrintability station)
-    {
-    }
-}
-```
-
-Implement exactly the expression from spec 5.6: `ticketStatus is Failed or Unknown or Blocked`, or
-(`stationCannotPrintRightNow && ticketStatus is not Printing`), where
-`stationCannotPrintRightNow = station.IsFaulty || !station.IsOnline || station.IsPaperEnd ||
-station.IsCoverOpen || station.IsInErrorState || !station.IsEnabled`. Re-run, quote green.
-
-### Step 14: `IPrinterStatusReader`
-
-This is the printer-status/dispatch port surface Core needs, kept to exactly what
-`TicketAcknowledgePolicy`'s callers and a later printing-worker task need to reason about outcomes, per
-the brief's explicit boundary ("ONLY as far as Core needs to reason about outcomes; the transports live
-elsewhere"). No test fixture for this file, same reasoning as `IClock`: it is a read port with no logic
-of its own to prove here.
-
-`backend/GastronomyApp.Core/Ports/IPrinterStatusReader.cs`:
-
-```csharp
-namespace GastronomyApp.Core.Ports;
-
-public interface IPrinterStatusReader
-{
-    Task<StationPrintability?> GetCurrentAsync(Guid productionLocationId, CancellationToken cancellationToken);
-}
-```
-
-Returns null when no status has ever been recorded for that location (a station never yet connected).
-`StationPrintability` is the same record from step 13, reused rather than duplicated, because it is
-already exactly the shape a caller needs to feed `TicketAcknowledgePolicy.CanAcknowledge`; this is the
-single-source-of-truth rule from `CLAUDE.md` rule 6 applied to this port's return type.
-
-### Step 15: Full suite, zero warnings
+### Step 9: Full suite, zero warnings
 
 Run `dotnet build GastronomyApp.slnx` and quote `0 Warning(s)`, `0 Error(s)`. Run `dotnet test
 GastronomyApp.slnx --filter FullyQualifiedName~GastronomyApp.Core` and quote every fixture passing with
@@ -1318,44 +861,26 @@ concrete public service/entity/result types other tasks will construct or consum
 namespaces and have these exact names.
 
 Ports (`GastronomyApp.Core.Ports`): `IClock`, `ICatalogItemRepository`, `IProductionLocationRepository`,
-`IOrderRepository`, `INumberAllocator`, `IPrinterStatusReader`.
+`IOrderRepository`, `INumberAllocator`.
 
 Services (`GastronomyApp.Core.Services`, all `sealed class`, all constructor-injected, none static):
 `OrderRoutingResolver`, `OrderStatusCalculator`, `OrderTotalCalculator`, `OrderAcceptanceService`,
-`TicketStateMachine`, `PrintJobStateMachine`, `RetryPolicy`, `GiveUpWindowCalculator`,
-`TicketAcknowledgePolicy`, `PrinterEndpointKeyBuilder`, `Never`.
+`TicketStateMachine`, `Never`.
 
 Entities (`GastronomyApp.Core.Entities`, all `sealed class`): `EventSession`, `ProductionLocation`,
 `CatalogItem`, `ItemLocationAssignment`, `TableSuggestion`, `ServerPerson`, `Device`,
-`EnrolmentInvitation`, `Order`, `OrderLine`, `LocationTicket`, `PrintJob`, `PrintAttempt`,
-`NumberCounter`, `PrinterConfiguration`, `PrinterStatus`.
+`EnrolmentInvitation`, `Order`, `OrderLine`, `LocationTicket`, `NumberCounter`.
 
-Enums (`GastronomyApp.Core.Enums`): `OrderStatus`, `LocationTicketStatus`, `PrintJobStatus`,
-`PrintJobKind`, `PrintFailureReason`, `PrintAttemptOutcome`, `PrintAttemptPhase`, `TransportKind`,
-`NumberCounterKind`.
+Enums (`GastronomyApp.Core.Enums`): `OrderStatus`, `LocationTicketStatus`, `NumberCounterKind`.
 
 Results (`GastronomyApp.Core.Results`, all `sealed record`): `Result<TValue, TFailure>`,
 `RoutingDecision`, `RoutingFailure` (+ `RoutingFailureReason`), `OrderAcceptanceResult`,
 `OrderValidationFailure` (+ `OrderValidationFailureReason`), `OrderAcceptanceLineRequest`,
-`OrderAcceptanceRequest`, `PrintOutcomeMapping` (carrying `FailureReason`, see section 5 step 10),
-`SuspensionPeriod`, `GiveUpWindowEvaluation`, `StationPrintability`.
+`OrderAcceptanceRequest`.
 
 Any task that needs to construct an `OrderAcceptanceRequest`, call `OrderAcceptanceService.AcceptAsync`,
-implement one of the five repository/allocator/status ports, or consult
-`TicketAcknowledgePolicy.CanAcknowledge` should use these exact names and shapes; do not introduce a
-parallel or renamed version of any of them.
-
-**Not defined by this task, and not to be duplicated by it.** T004 (the printing service task) owns and
-introduces `GastronomyApp.Core.Localization.ISlipTextProvider` and its companion `SlipStrings` type,
-also inside `GastronomyApp.Core`, because the slip renderer's need for localized text is T004's concern
-and T002 has no slip-rendering logic to drive it. T002's coder must not create a rival localization
-port (an `ILocalizer`, a second `ISlipTextProvider`, or similar): if a step in this document seems to
-need rendered text, it does not, since every failure reason and status this task produces stays a typed
-enum value all the way out (see section 8), and resolving it into a sentence is later work. T004 also
-introduces `GastronomyApp.Core.Printing` (`IPrinterTransport`, `IPrinterSession`, `PrinterEndpoint`,
-`PrintPayload`, `PrinterStatusSnapshot`, `PrintDispatchResult`) as its own step 0, reusing this task's
-`TransportKind` and `PrintAttemptOutcome` rather than declaring parallel enums; T002's coder does not
-need to and must not pre-build any part of that namespace.
+or implement one of the four repository/allocator ports should use these exact names and shapes; do not
+introduce a parallel or renamed version of any of them.
 
 ## 7. Verification
 
@@ -1374,26 +899,17 @@ without having run them.
 Explicitly not part of this task:
 
 * EF Core, SQLite, any `DbContext`, any migration. `IOrderRepository`, `ICatalogItemRepository`,
-  `IProductionLocationRepository`, `INumberAllocator`, and `IPrinterStatusReader` are interfaces only;
+  `IProductionLocationRepository`, and `INumberAllocator` are interfaces only;
   no implementation is written here.
 * HTTP, REST endpoints, request/response DTOs distinct from the `OrderAcceptanceRequest` /
   `OrderAcceptanceResult` shapes defined above, status code mapping, or the message-key rendering of
-  `OrderValidationFailureReason` and `PrintFailureReason` into localized text. Core returns reasons and
+  `OrderValidationFailureReason` into localized text. Core returns reasons and
   keys as enum values; resolving them into `Strings.de.resx` / `Strings.en.resx` text is a later task.
 * SignalR, any hub, any event payload.
-* ESC/POS byte rendering (`EscPosSlipRenderer` and the station card renderer from 11.1) and anything
-  about the slip's physical layout.
-* `IPrinterTransport` and any of its implementations (`NetworkPrinterTransport`, `AgentPrinterTransport`,
-  `MockPrinterTransport`). This task's `IPrinterStatusReader` is a read-only status port only; dispatch
-  (sending a job, claiming it, running the retry loop) is the printing-worker task's port surface, built
-  on top of `PrintJobStateMachine` and `RetryPolicy` from this task but not itself part of it.
-* `StationCircuitBreaker`, `ProcessIdAllocator`, `EnrolmentInvitationVerifier`, `DeviceTokenHasher`, and
+* `EnrolmentInvitationVerifier`, `DeviceTokenHasher`, and
   every service that belongs to enrolment, device tokens, or the admin/station HTTP surface. These are
   real, spec'd, and listed in 11.1, but they are outside the vertical slice this task builds (order
-  placement, routing, ticket creation, print outcome/retry decisions) and belong to sibling tasks. This
-  task does still declare the `PrinterConfiguration` and `PrinterStatus` entities themselves (section
-  4.2), because entities live in Core and nobody else can own them; only the services that edit or poll
-  them are out of scope here.
+  placement, routing, ticket creation) and belong to sibling tasks.
 * Frontend (`frontend/src/core/*`) and desktop. This task is `backend/GastronomyApp.Core` only.
 * Localization resx content of any kind.
 * Git commands. The owner commits separately.

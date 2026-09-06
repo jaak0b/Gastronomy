@@ -41,6 +41,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int>("PriceCents")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ProductionMinutes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
@@ -65,9 +68,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("LastSeenAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("StaffMemberId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("TokenAlgorithm")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -90,9 +90,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("BLOB");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("StaffMemberId")
-                        .IsUnique();
 
                     b.HasIndex("TokenLookupId")
                         .IsUnique();
@@ -137,9 +134,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<byte[]>("QrCodeSalt")
                         .IsRequired()
                         .HasColumnType("BLOB");
-
-                    b.Property<Guid?>("StaffMemberId")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -226,6 +220,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ProductionStatus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("SettledAtUtc")
                         .HasColumnType("TEXT");
 
@@ -240,6 +237,8 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProductionStatus");
+
                     b.HasIndex("SettledAtUtc");
 
                     b.HasIndex("StationOrderId");
@@ -247,27 +246,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.PrintJob", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatusChange", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("CompletedAtUtc")
+                    b.Property<DateTime>("ChangedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CopyNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("FailureReason")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("PrinterJobId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("StationOrderId")
+                    b.Property<Guid>("OrderItemId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -275,73 +262,9 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StationOrderId", "CopyNumber")
-                        .IsUnique();
+                    b.HasIndex("OrderItemId");
 
-                    b.ToTable("PrintJobs");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.Printer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PrinterType")
-                        .IsRequired()
-                        .HasMaxLength(34)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Printers", (string)null);
-
-                    b.HasDiscriminator<string>("PrinterType").HasValue("Printer");
-
-                    b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.PrinterStatus", b =>
-                {
-                    b.Property<Guid>("PrinterId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsCoverOpen")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsFaulty")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsInErrorState")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsOnline")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPaperEnd")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPaperNearEnd")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("LastChangedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastDetail")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastHeardFromAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("PrinterId");
-
-                    b.ToTable("PrinterStatuses");
+                    b.ToTable("OrderItemStatusChanges");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.SequenceCounters", b =>
@@ -350,9 +273,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("NextOrderNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("NextPrinterJobId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -368,6 +288,12 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("EnrolmentInvitationId")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
@@ -378,12 +304,24 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeviceId")
+                        .IsUnique();
+
+                    b.HasIndex("EnrolmentInvitationId")
+                        .IsUnique();
+
                     b.ToTable("StaffMembers");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.Station", b =>
                 {
                     b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("EnrolmentInvitationId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
@@ -397,15 +335,16 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int>("NextStationOrderNumber")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("PrinterId")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PrinterId");
+                    b.HasIndex("DeviceId")
+                        .IsUnique();
+
+                    b.HasIndex("EnrolmentInvitationId")
+                        .IsUnique();
 
                     b.ToTable("Stations");
                 });
@@ -414,6 +353,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("DeliveryMode")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("TEXT");
@@ -434,28 +376,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("StationOrders");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.EpsonTmT20ivNetworkPrinter", b =>
-                {
-                    b.HasBaseType("GastronomyApp.Core.Entities.Printer");
-
-                    b.Property<string>("Host")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Port")
-                        .HasColumnType("INTEGER");
-
-                    b.HasDiscriminator().HasValue("EpsonTmT20ivNetworkPrinter");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.TestPrinter", b =>
-                {
-                    b.HasBaseType("GastronomyApp.Core.Entities.Printer");
-
-                    b.HasDiscriminator().HasValue("TestPrinter");
-                });
-
             modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.StationOrder", null)
@@ -465,21 +385,39 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.PrintJob", b =>
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatusChange", b =>
                 {
-                    b.HasOne("GastronomyApp.Core.Entities.StationOrder", null)
-                        .WithMany("PrintJobs")
-                        .HasForeignKey("StationOrderId")
+                    b.HasOne("GastronomyApp.Core.Entities.OrderItem", null)
+                        .WithMany("StatusChanges")
+                        .HasForeignKey("OrderItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Device", null)
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.StaffMember", "DeviceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GastronomyApp.Core.Entities.EnrolmentInvitation", null)
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.StaffMember", "EnrolmentInvitationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.Station", b =>
                 {
-                    b.HasOne("GastronomyApp.Core.Entities.Printer", null)
-                        .WithMany()
-                        .HasForeignKey("PrinterId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                    b.HasOne("GastronomyApp.Core.Entities.Device", null)
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.Station", "DeviceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GastronomyApp.Core.Entities.EnrolmentInvitation", null)
+                        .WithOne()
+                        .HasForeignKey("GastronomyApp.Core.Entities.Station", "EnrolmentInvitationId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
@@ -502,11 +440,14 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Navigation("StationOrders");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
+                {
+                    b.Navigation("StatusChanges");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
                 {
                     b.Navigation("Items");
-
-                    b.Navigation("PrintJobs");
                 });
 #pragma warning restore 612, 618
         }

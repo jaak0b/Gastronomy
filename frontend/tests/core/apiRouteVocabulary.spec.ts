@@ -48,13 +48,15 @@ function routesTheLaptopServes(): Route[] {
   const routes: Route[] = []
   for (const file of backendSourceFiles(BACKEND_ROOT)) {
     const source = readFileSync(file, 'utf8')
-    const group = source.match(/var group = [\w.]+\.MapGroup\("([^"]*)"\)/)
-    const prefix = group === null ? '' : group[1]
+    const prefixes = new Map<string, string>()
+    for (const group of source.matchAll(/var (\w+) = [\w.]+\.MapGroup\("([^"]*)"\)/g)) {
+      prefixes.set(group[1], group[2])
+    }
     for (const match of source.matchAll(
       /(\w+)\.Map(Get|Post|Put|Delete)\(\s*(?:string\.Empty|"([^"]*)")/g,
     )) {
       const relative = match[3] ?? ''
-      const full = match[1] === 'group' ? `${prefix}${relative}` : relative
+      const full = `${prefixes.get(match[1]) ?? ''}${relative}`
       routes.push({ method: match[2].toUpperCase(), segments: segmentsOf(full) })
     }
   }

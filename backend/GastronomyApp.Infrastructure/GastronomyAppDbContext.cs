@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure;
@@ -9,7 +9,6 @@ public sealed class GastronomyAppDbContext : DbContext
     : base(options)
   {
   }
-
 
   public DbSet<Station> Stations => Set<Station>();
 
@@ -29,11 +28,7 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
-  public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
-
-  public DbSet<Printer> Printers => Set<Printer>();
-
-  public DbSet<PrinterStatus> PrinterStatuses => Set<PrinterStatus>();
+  public DbSet<OrderItemStatusChange> OrderItemStatusChanges => Set<OrderItemStatusChange>();
 
   public DbSet<SequenceCounters> SequenceCounters => Set<SequenceCounters>();
 

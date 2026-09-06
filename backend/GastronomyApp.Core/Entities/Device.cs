@@ -1,10 +1,8 @@
-﻿namespace GastronomyApp.Core.Entities;
+namespace GastronomyApp.Core.Entities;
 
 public sealed class Device
 {
   public required Guid Id { get; set; }
-
-  public required Guid StaffMemberId { get; set; }
 
   public required string Language { get; set; }
 

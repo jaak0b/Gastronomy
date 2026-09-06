@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
@@ -10,7 +10,7 @@ namespace GastronomyApp.Infrastructure.Tests;
 public sealed class EnrolmentInvitationStoreTest
 {
   [Test]
-  public async Task CreateAsync_ThenRedeemAsync_WithReturnedQrCode_Redeems()
+  public async Task CreateAsync_ThenRedeemAsync_WithReturnedQrCode_RedeemsForANewStaffMember()
   {
     using SqliteInMemoryFixture fixture = new();
     var store = CreateStore(fixture, new());
@@ -22,10 +22,80 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
+                      Assert.That(redemption.OwnerKind, Is.EqualTo(DeviceOwnerKind.StaffMember));
                       Assert.That(redemption.Device, Is.Not.Null);
                       Assert.That(redemption.StaffMember!.Name, Is.EqualTo("Anna"));
-                      Assert.That(redemption.Device!.Language, Is.EqualTo("de"));
+                      Assert.That(redemption.StaffMember.DeviceId, Is.EqualTo(redemption.Device!.Id));
+                      Assert.That(redemption.Station, Is.Null);
+                      Assert.That(redemption.Device.Language, Is.EqualTo("de"));
                     });
+  }
+
+  [Test]
+  public async Task RedeemAsync_InvitationForAStation_IssuesAStationDeviceAndClearsTheInvitationPointer()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var store = CreateStore(fixture, new());
+
+    var created = await store.CreateAsync(new(DeviceOwnerKind.Station, seeded.KitchenStationId), TestContext.CurrentContext.CancellationToken);
+    var kitchenBeforeRedemption = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    var pointedAtTheInvitation = kitchenBeforeRedemption.EnrolmentInvitationId;
+
+    var redemption = await store.RedeemAsync(new(created.QrCodeValue, null, "Tablet", "de"),
+                                             TestContext.CurrentContext.CancellationToken);
+    var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(pointedAtTheInvitation, Is.EqualTo(created.InvitationId));
+                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
+                      Assert.That(redemption.OwnerKind, Is.EqualTo(DeviceOwnerKind.Station));
+                      Assert.That(redemption.Station!.Id, Is.EqualTo(seeded.KitchenStationId));
+                      Assert.That(redemption.StaffMember, Is.Null);
+                      Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Device!.Id));
+                      Assert.That(kitchen.EnrolmentInvitationId, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task RedeemAsync_InvitationForAStationThatWasSwitchedOff_IsRejectedAsOffTheList()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var store = CreateStore(fixture, new());
+
+    var created = await store.CreateAsync(new(DeviceOwnerKind.Station, seeded.KitchenStationId), TestContext.CurrentContext.CancellationToken);
+    var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+    kitchen.IsActive = false;
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    var redemption = await store.RedeemAsync(new(created.QrCodeValue, null, "Tablet", "de"),
+                                             TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.StationIsOffTheList));
+                      Assert.That(redemption.PlaintextToken, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task RedeemAsync_InvitationForAStaffMemberWhoWasTakenOffTheList_IsRejected()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var store = CreateStore(fixture, new());
+
+    var created = await store.CreateAsync(new(DeviceOwnerKind.StaffMember, seeded.StaffMemberId), TestContext.CurrentContext.CancellationToken);
+    var anna = await fixture.DbContext.StaffMembers.SingleAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    anna.IsActive = false;
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    var redemption = await store.RedeemAsync(new(created.QrCodeValue, null, "Phone", "de"),
+                                             TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList));
   }
 
   [Test]
@@ -46,6 +116,27 @@ public sealed class EnrolmentInvitationStoreTest
                     {
                       Assert.That(firstRow.ConsumedAtUtc, Is.Not.Null);
                       Assert.That(secondRow.ConsumedAtUtc, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task CreateAsync_ANewInvitationForAnotherOwner_TakesTheReplacedInvitationAwayFromTheFirstOwner()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var store = CreateStore(fixture, new());
+
+    var forAnna = await store.CreateAsync(new(DeviceOwnerKind.StaffMember, seeded.StaffMemberId), TestContext.CurrentContext.CancellationToken);
+    var forTheKitchen = await store.CreateAsync(new(DeviceOwnerKind.Station, seeded.KitchenStationId), TestContext.CurrentContext.CancellationToken);
+
+    var anna = await fixture.DbContext.StaffMembers.SingleAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(forAnna.InvitationId, Is.Not.EqualTo(forTheKitchen.InvitationId));
+                      Assert.That(anna.EnrolmentInvitationId, Is.Null);
+                      Assert.That(kitchen.EnrolmentInvitationId, Is.EqualTo(forTheKitchen.InvitationId));
                     });
   }
 
@@ -79,20 +170,21 @@ public sealed class EnrolmentInvitationStoreTest
     var staffMemberId = firstRedemption.StaffMember!.Id;
     var oldDeviceId = firstRedemption.Device!.Id;
 
-    var secondInvitation = await store.CreateAsync(staffMemberId, TestContext.CurrentContext.CancellationToken);
+    var secondInvitation = await store.CreateAsync(new(DeviceOwnerKind.StaffMember, staffMemberId), TestContext.CurrentContext.CancellationToken);
     var secondRedemption = await store.RedeemAsync(new(secondInvitation.QrCodeValue, "Anna", "New phone", "de"),
                                                    TestContext.CurrentContext.CancellationToken);
 
-    List<Device> devices = await fixture.DbContext.Devices
-                                        .Where(device => device.StaffMemberId == staffMemberId)
-                                        .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    var staffMember = await fixture.DbContext.StaffMembers
+                                   .SingleAsync(candidate => candidate.Id == staffMemberId, TestContext.CurrentContext.CancellationToken);
+    var deviceCount = await fixture.DbContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(secondRedemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
                       Assert.That(secondRedemption.StaffMember!.Id, Is.EqualTo(staffMemberId));
-                      Assert.That(devices, Has.Count.EqualTo(1));
-                      Assert.That(devices[0].Id, Is.Not.EqualTo(oldDeviceId));
+                      Assert.That(deviceCount, Is.EqualTo(1));
+                      Assert.That(staffMember.DeviceId, Is.Not.EqualTo(oldDeviceId));
+                      Assert.That(staffMember.DeviceId, Is.EqualTo(secondRedemption.Device!.Id));
                     });
   }
 
@@ -151,8 +243,9 @@ public sealed class EnrolmentInvitationStoreTest
     using SqliteInMemoryFixture fixture = new();
     AdjustableClock clock = new();
     Pbkdf2SecretHasher secretHasher = new();
-    DeviceTokenStore deviceTokenStore = new(fixture.DbContext, secretHasher, clock);
-    EnrolmentInvitationStore store = new(fixture.DbContext, secretHasher, deviceTokenStore, clock);
+    DeviceOwnerStore ownerStore = new(fixture.DbContext);
+    DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
+    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, clock);
 
     var created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(new(created.QrCodeValue, "Anna", "Test agent", "de"),
@@ -249,10 +342,12 @@ public sealed class EnrolmentInvitationStoreTest
   private EnrolmentInvitationStore CreateStore(GastronomyAppDbContext dbContext, AdjustableClock clock)
   {
     Pbkdf2SecretHasher secretHasher = new();
+    DeviceOwnerStore ownerStore = new(dbContext);
 
     return new(dbContext,
+               ownerStore,
                secretHasher,
-               new DeviceTokenStore(dbContext, secretHasher, clock),
+               new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock),
                clock);
   }
 }

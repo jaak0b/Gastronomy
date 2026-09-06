@@ -1,17 +1,21 @@
 # T005: GastronomyApp.Api composition, auth, REST and SignalR for the vertical slice
 
+This is the original implementation brief, written before any of the code existed. Printing has
+since been removed from the product entirely, and every printer instruction has been taken out of
+this file. For a current description of the product, read `docs/spec.md`.
+
 ## 1. Objective
 
 Build `GastronomyApp.Api` into a class library that composes a working `WebApplication`: device
 bearer authentication, the loopback-only admin gate, the REST endpoints and the SignalR hub that
-the vertical slice needs (enrolment, catalog, order placement, order status back to the phone,
-station break-glass, and the admin endpoints the slice cannot work without), the error envelope,
-rate limiting, and the wiring from T004's printer fleet into SignalR pushes and into the order and
-ticket projection writes that this task owns on its own HTTP paths. Definition of done: `dotnet
+the vertical slice needs (enrolment, catalog, order placement, order status back to the phone, the
+station screens, and the admin endpoints the slice cannot work without), the error envelope,
+rate limiting, and the order and ticket projection writes that this task owns on its own HTTP paths.
+Definition of done: `dotnet
 test backend/GastronomyApp.Api.Tests` is green with the integration tests listed in section 6,
 `dotnet build GastronomyApp.slnx` is zero warnings, and a test can enrol a device, fetch the
-catalog, place an order twice with the same `clientOrderId` and get back two byte-identical bodies,
-and see the mock transport's slip files appear on disk.
+catalog, and place an order twice with the same `clientOrderId` and get back two byte-identical
+bodies.
 
 This task does not invent business rules. Every status code, payload shape, group name, event name
 and rule quoted below is copied from `docs/spec.md` sections 5, 6, 2.8, 2.9, 9, 8.5, 11.2 and 11.3.
@@ -26,18 +30,18 @@ every signature is the one the review settled on, not a guess this task made ind
 
 ## 2. Assumed from earlier tasks
 
-T005 is one of six tasks authored in parallel against the same spec, alongside T002 (Core: domain
-model, ports, services), T003 (Infrastructure: EF Core store, device token hashing, printer
-transports), T004 (the printer worker and `PrinterFleet`), T006 (frontend) and T007 (desktop host).
-As of this rewrite none of T002, T003, T004, T006 or T007 has been coded; the signatures below are
+T005 is one of several tasks authored in parallel against the same spec, alongside T002 (Core: domain
+model, ports, services), T003 (Infrastructure: EF Core store, device token hashing), T006 (frontend)
+and T007 (desktop host).
+As of this rewrite none of T002, T003, T006 or T007 has been coded; the signatures below are
 the ones the consistency review's reconciliation tables record as the contracts each of those
 documents commits to. Every assumption cites the finding or table row it comes from, so a reviewer
-correcting a real divergence between this document and the coded T002/T003/T004 can find the exact
+correcting a real divergence between this document and the coded T002/T003 can find the exact
 seam.
 
 ### Assumed from T002 (`GastronomyApp.Core`)
 
-Per the review's section 3 "T005 assumptions (against T002, T003, T004)" table, resolving findings
+Per the review's section 3 "T005 assumptions (against T002, T003)" table, resolving findings
 T005-1 and T005-3:
 
 - **No exception-based domain error channel.** T002's services return `Result<TValue, TFailure>`,
@@ -54,31 +58,23 @@ T005-1 and T005-3:
   allocates a number itself.
 - `GastronomyApp.Core.Services.OrderStatusCalculator.Calculate(IReadOnlyCollection<LocationTicketStatus>
   ticketStatuses, bool isPracticeSession)` returning the order's `OrderStatus`. Per the sentence T002
-  itself is required to state (review finding T002-6, quoted verbatim so T002, T004 and this task
+  itself is required to state (review finding T002-6, quoted verbatim so T002 and this task
   say the identical thing): **"Whoever changes a ticket writes the order status projection in the
-  same transaction through this calculator: T004's worker on the print path, T005 on the HTTP paths
-  (acceptance, resolve, acknowledge). The calculator itself never writes."** This task is the writer
-  on exactly the three HTTP paths that sentence names; see steps 8, 9 and 10 below for where each
+  same transaction through this calculator: the Api layer does this on every HTTP path that touches
+  a ticket (acceptance, resolve, acknowledge). The calculator itself never writes."** This task is
+  the writer on every one of those HTTP paths; see steps 8 and 10 below for where each
   write happens. `OrderStatusCalculator` computes; it never opens a transaction and never persists
   anything, so this task's own repository call around it is what commits the write.
-- `GastronomyApp.Core.Services.TicketAcknowledgePolicy.CanAcknowledge(LocationTicketStatus
-  ticketStatus, StationPrintability printability)` returning `bool`, implementing section 5.6's
-  `canAcknowledge` expression verbatim, including the `Printing` exclusion under every station
-  condition. This task never re-evaluates that expression itself; it calls this policy once per
-  ticket row it serializes, exactly as the original document already required, only the call target
-  changed from an assumed use case to this named policy. `StationPrintability` is read by this task
-  through the `PrinterStatus` and `PrinterConfiguration.IsEnabled` rows via T003's `DbContext`, not
-  invented here.
 - `GastronomyApp.Core.Services.TicketStateMachine.CanTransition(LocationTicketStatus from,
-  LocationTicketStatus to)` returning `bool`, called by this task's resolve, reprint and acknowledge
-  handlers before writing a new ticket status, so an illegal transition is refused before the
+  LocationTicketStatus to)` returning `bool`, called by this task's resolve handler
+  before writing a new ticket status, so an illegal transition is refused before the
   projection write in the same call.
 - `GastronomyApp.Core.Ports.IClock` with `DateTime UtcNow`, and no `IGuidGenerator` port: T002's
   `OrderAcceptanceService` calls `Guid.NewGuid()` itself, so this task never generates a domain id on
   T002's behalf (the review's table drops the `IGuidGenerator` assumption outright rather than
   resolving it, because nothing needs it).
 - Every remaining endpoint this task serves that carries no business rule of its own (catalog read,
-  orders read, admin CRUD for locations/items/server-people/printers, enrolment invitation
+  orders read, admin CRUD for locations/items/server-people, enrolment invitation
   creation, event session start's own guard) is **not** behind a T002 use case at all: T002 defines
   no such classes, and the review resolves this by having T005 own those handlers directly, reading
   and writing through T003's repositories and `GastronomyAppDbContext` (review finding T005-3, last
@@ -90,10 +86,6 @@ T005-1 and T005-3:
   wider `AcceptAsync`-shaped repository method; T003 implements only these two, and the transaction
   and number allocation live inside `OrderAcceptanceService` and the transaction wrapper T003 owns
   around it (review finding T003-4).
-- `GastronomyApp.Core.PrintFailureReason`, a closed enum with the nine members spec 7.6 and 3.2
-  imply, is what T004's callback carries instead of a free string (review finding T004-6). This
-  task's SignalR payload renders it to the wire as its enum member name string; it never invents its
-  own string set for `failureReason`.
 
 ### Assumed from T003 (`GastronomyApp.Infrastructure`)
 
@@ -127,70 +119,8 @@ Per the review's T003 findings and its "T005 assumptions" table:
   (or through whatever narrow repository T003 exposes for that entity), never constructing
   `DbContextOptions` themselves.
 
-### Assumed from T004 (printer worker, `PrinterFleet`)
-
-Per the review's findings T004-8, T004-9, T004-10 and T005-10/T005-11, which is the seam the
-coordinator's message calls out by name as "worst-seam 3":
-
-- `GastronomyApp.Core.Printing.IPrinterFleet` (declared and implemented by T004, in
-  `GastronomyApp.Core.Printing`, not assumed by this task and not redeclared here):
-
-  ```csharp
-  public interface IPrinterFleet
-  {
-      Task EnqueueAsync(Guid locationTicketId, PrintJobKind kind, CancellationToken cancellationToken);
-      Task<IReadOnlyList<Guid>> ReconnectAsync(Guid productionLocationId, CancellationToken cancellationToken);
-      Task TestPrintAsync(Guid productionLocationId, CancellationToken cancellationToken);
-  }
-  ```
-
-  implemented by `PrinterFleet : IHostedService`. This task registers `PrinterFleet` as the hosted
-  service inside its own composition root (step 13), because T004's own document hands composition-
-  root wiring to whoever owns `Build`, which the review assigns to this task (finding T005-10). This
-  task never implements `IPrinterFleet` itself and never opens a printer socket.
-- **Notification direction is outbound from the fleet through a callback interface T004 owns, not
-  inbound events or an `IObservable` on `IPrinterFleet`** (review finding T005-10, correcting this
-  task's earlier, wrong assumption of an `IObservable`/event-based `IPrinterFleet`).
-  `GastronomyApp.Core.Printing.IPrintCallbacks`, declared by T004, with at least:
-  - `Task OnTicketStatusChangedAsync(Guid orderId, Guid ticketId, LocationTicketStatus status,
-    PrintFailureReason? failureReason, CancellationToken cancellationToken)`.
-  - `Task OnPrinterStatusChangedAsync(Guid locationId, PrinterStatusSnapshot snapshot, bool isFaulty,
-    int waitingTicketCount, CancellationToken cancellationToken)`.
-
-  **This task implements `IPrintCallbacks`** (its `HubNotificationDispatcher`, step 12) and registers
-  that implementation in DI as the concrete `IPrintCallbacks` T004's `PrinterFleet` resolves and
-  calls into. The callback payloads are narrower than section 6.2's `TicketStatusChanged` and
-  `PrinterStatusChanged` wire payloads (no `globalOrderNumber`, `locationName`, `sequenceNumber`,
-  `printerHasPaper`, `messageKey`, `parameters` on the ticket callback). This task's dispatcher reads
-  the remaining fields back out of the projection it has just had T004 tell it changed (a single
-  query by `ticketId`/`orderId` through T003's `DbContext`) before building the SignalR payload, per
-  the review's explicit instruction at this seam. This task never asks T004 to widen the callback
-  signature; narrowing the wire payload down to what the callback carries would be losing
-  information section 6.2 requires, so the dispatcher is the one place that reassembles it.
-- `GastronomyApp.Infrastructure.Printing.IMockFaultRegistry.Arm(Guid productionLocationId, MockFault
-  fault, MockFaultMode mode)` (review finding T004-9, correcting this task's earlier, wrong
-  assumption of a `MockPrinterTransport.ArmFault` static-shaped call). This task's mock-fault admin
-  endpoint (step 10) resolves `IMockFaultRegistry` from DI and forwards the call, returning 422 when
-  the location's configured transport kind is not `Mock`; it does not reach into
-  `MockPrinterTransport` directly.
-- `MockFault` (seven values plus `None`) and `MockFaultMode` (`Once`, `Sticky`) are T004's enums;
-  this task's endpoint deserializes the request body's `fault` and `mode` fields directly into them
-  and does not maintain a parallel string-based set.
-- **Composition-root wiring T004 hands off, this task performs.** Per review finding T005-10, this
-  task's `GastronomyAppApiApplication.Build` (step 1) is also where `PrinterFleet`,
-  `EfCorePrinterWorkerDataAccess`, `ResxSlipTextProvider`, the printer transports and the transport
-  factory (all T003/T004-owned types) get registered into the service collection, because the
-  composition root is this task's alone. This task registers them by type without altering their
-  implementation.
-- **Print job enqueueing after order acceptance is this task's job, not T002's** (review finding
-  T005-11, correcting this task's earlier, wrong assumption that `OrderAcceptanceService` calls the
-  fleet itself). `OrderAcceptanceService` takes no fleet dependency, by design (Core has no framework
-  or printing dependency). This task's order endpoint calls `IPrinterFleet.EnqueueAsync` once per
-  ticket in the accepted order, and only after a genuine 201; a 200 that found an already-accepted
-  order enqueues nothing, because nothing new happened.
-
 Every one of the assumptions above is restated at its call site in section 4 with a named review
-finding, so a reviewer reconciling a coded T002/T003/T004 against this document can find every seam
+finding, so a reviewer reconciling a coded T002/T003 against this document can find every seam
 by searching this file for "review finding".
 
 ## 3. Layout after completion
@@ -221,13 +151,10 @@ backend/GastronomyApp.Api/
     SessionEndpoints.cs
     CatalogEndpoints.cs
     OrderEndpoints.cs
-    PrinterStatusEndpoints.cs
     AdminLocationEndpoints.cs
     AdminItemEndpoints.cs
     AdminServerPeopleEndpoints.cs
     AdminEnrolmentEndpoints.cs
-    AdminPrinterEndpoints.cs
-    AdminMockFaultEndpoints.cs
     AdminEventSessionEndpoints.cs
     StationEndpoints.cs
     HealthEndpoints.cs
@@ -248,9 +175,8 @@ GastronomyApp.Api.Tests/
   HubGroupMembershipTest.cs
 ```
 
-`ScaffoldingSmokeTest.cs` from T001 is deleted by whichever of T004 or this task lands first (review
-finding T004-11); this task's own verification step confirms it is absent before treating the suite
-as green, rather than deleting a file another task may already have removed.
+`ScaffoldingSmokeTest.cs` from T001 is deleted by this task; its own verification step confirms the
+file is absent before treating the suite as green.
 
 ## 4. Ordered steps
 
@@ -265,7 +191,7 @@ Confirm T001's scaffold builds (`dotnet build GastronomyApp.slnx`). Confirm `Gas
 and `GastronomyApp.Infrastructure` contain the members section 2 assumes; if a referenced type or
 method does not exist yet, or exists under a different name than the review's reconciliation table
 records, do not stub it inside `GastronomyApp.Api`. Stop and report the exact mismatch against
-section 2, because a stub here duplicates a concept T002/T003/T004 already own (root rule 6) and
+section 2, because a stub here duplicates a concept T002/T003 already own (root rule 6) and
 becomes the interim solution root rule 6 forbids.
 
 Add the NuGet package this task needs beyond T001's list, to `Directory.Packages.props` and the test
@@ -355,7 +281,7 @@ Red: `ErrorHandling/ApiErrorTest.cs` (unit test, no host needed) asserting `ApiE
 exactly the shape in section 5.1:
 
 ```json
-{ "code": "PrinterOutOfPaper", "messageKey": "ticket.paperEnd", "parameters": { "station": "Küche" }, "details": null }
+{ "code": "DatabaseUnavailable", "messageKey": "review.sendFailedDatabase", "parameters": {}, "details": null }
 ```
 
 Green: `ErrorHandling/ApiError.cs`:
@@ -571,77 +497,59 @@ and `IDeviceTokenStore` (both T003) already enforce for redemption; the catalog 
 plain queries through T003's `DbContext`, per section 2's statement that this task owns
 use-case-free endpoints directly rather than stubbing a non-existent Core class for them.
 
-### Step 8: Order endpoints, idempotency, projection writes and printer status
+### Step 8: Order endpoints, idempotency and projection writes
 
 Red first, one test per row:
 
 | Endpoint | Test asserts |
 |---|---|
-| `POST /api/orders`, first submission | 201, body shape from section 5.4, tickets array with `sequenceNumber` per location; a `PrintJob` is enqueued once per ticket through `IPrinterFleet.EnqueueAsync`; the order's projected status is written by this endpoint through `OrderStatusCalculator` in the same transaction as the accepting write |
-| `POST /api/orders`, same `clientOrderId` resubmitted | 200, **response body byte-for-byte identical to the original 201 body except the status code**, no second row in `Order` or `LocationTicket`, `IPrinterFleet.EnqueueAsync` is not called again |
+| `POST /api/orders`, first submission | 201, body shape from section 5.4, tickets array with `sequenceNumber` per location; the order's projected status is written by this endpoint through `OrderStatusCalculator` in the same transaction as the accepting write |
+| `POST /api/orders`, same `clientOrderId` resubmitted | 200, **response body byte-for-byte identical to the original 201 body except the status code**, no second row in `Order` or `LocationTicket` |
 | `POST /api/orders`, same `clientOrderId`, different body | 409 |
 | `POST /api/orders`, unknown item id | 422, via `ResultEnvelope.ToProblem` on `OrderValidationFailureReason.UnknownCatalogItemId` |
 | `POST /api/orders`, sold-out or deactivated item id present in lines | 201 (accepted, not rejected, per section 5.4) |
 | `POST /api/orders`, `expectedTotalCents` absent/zero/wrong | 201, stored total is the backend-computed one, response echoes both totals |
-| `GET /api/printers/status` | Shape from section 5.4 |
 
 The byte-for-byte assertion for the 200-versus-201 case is written as a literal string/JSON-document
 equality on the two response bodies with the status code and any `Date`-style transport header
 excluded from the comparison, not as a looser "same fields" assertion, because section 5.4 states
 the rule as "byte for byte the body of the 201 it repeats."
 
-Green: `Endpoints/OrderEndpoints.cs` and `Endpoints/PrinterStatusEndpoints.cs`. The order-creation
-handler:
+Green: `Endpoints/OrderEndpoints.cs`. The order-creation handler:
 
 1. Calls `OrderAcceptanceService.AcceptAsync`, branching only on `Result.IsSuccess` (mapping a
    failure through `ResultEnvelope.ToProblem`) and, on success, on
    `OrderAcceptanceResult.WasAlreadyAccepted` to pick 200 versus 201.
 2. **Only on a genuine 201** (`WasAlreadyAccepted == false`): writes the order's projected status
    through `OrderStatusCalculator.Calculate`, in the same repository call that persisted the
-   acceptance, per the sentence quoted in section 2 against review finding T002-6; then calls
-   `IPrinterFleet.EnqueueAsync` once per ticket in `OrderAcceptanceResult.Order.Tickets` (review
-   finding T005-11). A 200 does neither, because nothing new happened.
+   acceptance, per the sentence quoted in section 2 against review finding T002-6. A 200 does not,
+   because nothing new happened.
 
 This handler performs no idempotency check of its own beyond reading `WasAlreadyAccepted`, because
 section 5.4 assigns that check to the unique index inside `OrderAcceptanceService`'s own transaction
 and duplicating it here would be the second producer of a figure root rule 6 forbids.
 
-The acknowledge handler in step 9 and the resolve handler in step 10 follow the same two-part shape:
-call the Core policy or state machine that decides whether the write is legal, then, only if it is,
+The resolve handler in step 10 follows the same two-part shape: call the Core state machine that
+decides whether the write is legal, then, only if it is,
 write the new ticket status and recompute-and-write the order's projected status through
 `OrderStatusCalculator` in one transaction, before pushing anything over SignalR.
 
-### Step 9: Station break-glass endpoints
+### Step 9: Station endpoints
 
-Red first: `StationEndpointsTest.cs` covering the table in section 5.6 and the `canAcknowledge`
-truth table quoted in that section verbatim:
+Red first: `StationEndpointsTest.cs` covering the table in section 5.6:
 
 - `GET /station/{accessKey}` returns the SPA shell in station mode (this task returns the same
   `index.html` T006's build produces; asserting only that the response is 200 with `text/html`, not
   asserting frontend content, which is out of this task's scope).
-- `GET /api/station/{accessKey}/locations` lists active locations with a per-location can-print flag.
-- `GET /api/station/{accessKey}/tickets` lists every ticket whose status is one of `Queued, Blocked,
-  Printing, Unknown, Failed` (not `Printed, PrintedOnTestPrinter, HandledOnPaper`), oldest sequence
-  number first, each row carrying `canAcknowledge` (from `TicketAcknowledgePolicy.CanAcknowledge`,
-  never recomputed by this task) and the reason key, `ReprintCount`, and every field section 5.6
-  lists ("the slip number, the order number, the table label, every line with its quantity and any
+- `GET /api/station/{accessKey}/locations` lists active locations.
+- `GET /api/station/{accessKey}/tickets` lists the station's open tickets, oldest sequence
+  number first, each row carrying every field section 5.6
+  lists ("the ticket number, the order number, the table label, every line with its quantity and any
   line note, the order note, the time the order was taken").
 - `?locationId=` filters; omitted defaults to the key's own location.
-- `POST .../tickets/{ticketId}/acknowledge`: reads the ticket's current `LocationTicketStatus` and
-  the location's `StationPrintability`, calls `TicketAcknowledgePolicy.CanAcknowledge`; when true,
-  writes the ticket to `HandledOnPaper` (after `TicketStateMachine.CanTransition` confirms the
-  transition is legal) and, in the same transaction, writes the order's projected status through
-  `OrderStatusCalculator`, returning 200; when false, returns 409 `station.takeRefused` at a healthy
-  station, and 409 for a `Printing` ticket under every one of the six station-cannot-print conditions
-  (the test enumerates all six from section 5.6's boxed rule: `IsFaulty`, `IsOnline` false,
-  `IsPaperEnd`, `IsCoverOpen`, `IsInErrorState`, `IsEnabled` false); 409 `station.alreadyTaken` on a
-  second acknowledgement.
 - Unknown or regenerated key: 404 on every one of the above.
 
-Green: `Endpoints/StationEndpoints.cs`. **This endpoint's handler never evaluates the acknowledge
-predicate itself**; it reads `TicketAcknowledgePolicy.CanAcknowledge`'s boolean and only serializes
-or acts on it, per section 5.6's own words ("Each ticket carries the decision rather than the page
-recomputing it") and per the assumption in section 2.
+Green: `Endpoints/StationEndpoints.cs`.
 
 ### Step 10: Admin endpoints in scope for the slice
 
@@ -657,32 +565,24 @@ calls through the test factory's client with `RemoteIpAddress` set to loopback):
   assignment endpoint per section 5.5's table.
 - Server people and enrolment: `GET /api/admin/server-people`, `PUT .../{id}`, `POST
   .../revoke-device`, `POST .../deactivate`, `POST /api/admin/enrolment/invitations`.
-- Printers: `GET /api/admin/printers`, `PUT /api/admin/printers/{locationId}`, `POST
-  .../test-print` (forwards to `IPrinterFleet.TestPrintAsync`), `POST .../reconnect` (forwards to
-  `IPrinterFleet.ReconnectAsync`, whose `IReadOnlyList<Guid>` result becomes the "names those
-  locations" response section 5.5 requires). (`POST /api/admin/printers/discover` is out of scope,
-  see section 7.)
-- Mock fault: `POST /api/admin/mock/{locationId}/fault`, forwarding to
-  `IMockFaultRegistry.Arm(locationId, fault, mode)`, all seven fault values, both modes, 422 when the
-  location's transport is not `Mock`.
 - Event session: `GET /api/admin/event-session`, `POST /api/admin/event-session` with every refusal
   guard from section 2.3 that T002's own event-session start service is assumed to enforce (this
   task tests only that the guard's 409 and its blocking-conditions body reach the caller, not that
   the guard logic is correct, which is T002's own test).
-- `GET /api/admin/orders`, `POST .../tickets/{ticketId}/resolve`, `POST .../tickets/{ticketId}/reprint`.
-  Resolve moves the ticket per body via `TicketStateMachine.CanTransition` and then writes the order's
+- `GET /api/admin/orders`, `POST .../tickets/{ticketId}/resolve`. Resolve moves the ticket per body
+  via `TicketStateMachine.CanTransition` and then writes the order's
   projected status through `OrderStatusCalculator` in the same transaction, exactly as the order
-  endpoints in step 8 do; reprint answers 202, or 409 when a job is already running for that ticket.
+  endpoints in step 8 do.
 
 Green: one `Endpoints/Admin*Endpoints.cs` file per group as laid out in section 3. None of these
 re-implements a guard T002 or T003 already owns; the endpoints that touch no business rule (plain
 CRUD for locations, items, server people) are, per section 2, this task's own handlers directly over
 T003's repositories, stated so a coder does not look for a non-existent Core use case for them.
 
-`GET /api/admin/orders/{id}/print-history`, `GET /api/admin/export/orders.csv`, `POST
+`GET /api/admin/export/orders.csv`, `POST
 /api/admin/backup`, `GET /api/admin/diagnostics`, `GET /api/admin/log`, `PUT/GET
-/api/admin/table-suggestions`, `POST .../from-last-session`, `POST /api/admin/catalog/import`, and
-`POST /api/admin/printers/discover` are **not** written in this task. Section 7 restates this.
+/api/admin/table-suggestions`, `POST .../from-last-session`, and `POST /api/admin/catalog/import`
+are **not** written in this task. Section 7 restates this.
 
 ### Step 11: Health
 
@@ -706,42 +606,22 @@ Green: `Hub/GastronomyHub.cs` (`Hub` subclass, `OnConnectedAsync` adds the calle
 `person:{serverPersonId}`, `device:{deviceId}`, `devices`, `admin` or `stations` depending on which
 authentication scheme resolved the connection).
 
-`Hub/HubNotificationDispatcher.cs` **implements T004's `IPrintCallbacks`** (review finding T005-10,
-correcting this task's earlier, wrong assumption of subscribing to events on an inbound
-`IPrinterFleet`). It is a plain class (not a static method) holding an `IHubContext<GastronomyHub>`
-and, for `OnTicketStatusChangedAsync`/`OnPrinterStatusChangedAsync`, reassembling the fields section
-6.2 requires beyond what T004's narrower callback carries (see section 2), then pushing
-`TicketStatusChanged` and `PrinterStatusChanged` to the exact groups section 6.2's table lists. It
-also exposes one push method per remaining event row in section 6.2 (`OrderAccepted`,
+`Hub/HubNotificationDispatcher.cs` is a plain class (not a static method) holding an
+`IHubContext<GastronomyHub>` and exposing one push method per event row in section 6.2
+(`TicketStatusChanged`, `OrderAccepted`,
 `EnrolmentCompleted`, `DeviceRevoked`, `CatalogChanged`, `EventSessionStarted`), each called directly
-from the endpoint handler that produces that event (order acceptance, enrolment redemption, device
+from the endpoint handler that produces that event (ticket resolution, order acceptance, enrolment
+redemption, device
 revocation, item availability/deactivation, event session start), building the exact payload shape
-that row lists.
+that row lists and pushing it to the exact groups section 6.2's table names.
 
 The one station group is site-wide (`stations`), not per location, per section 6.1's explicit
 statement that keying it by location would be wrong; do not add a per-location group even though
 every other group in the table is scoped narrower.
 
-### Step 13: Composition root wiring for the fleet, and `ISessionStateQuery`
+### Step 13: `ISessionStateQuery`
 
-Red: an integration test (folds into `OrderEndpointsTest.cs` or a new
-`PrinterCallbackWiringTest.cs`) that places an order against the real `IPrinterFleet` wired to the
-mock transport, asserts a slip file appears in the mock's folder for each ticket's location, and
-asserts a connected SignalR client in `person:{placingPerson}` receives `TicketStatusChanged` with
-`status: "PrintedOnTestPrinter"` (matching section 7.6's transport-split row) without polling, inside
-a reasonable timeout.
-
-Green: in `GastronomyAppApiApplication.Build`, after `AddGastronomyAppInfrastructure`, register (per
-review finding T005-10, the composition-root wiring T004 hands to whoever owns `Build`):
-
-- `PrinterFleet` as the hosted service implementing `IPrinterFleet`, and `IHostedService`.
-- `HubNotificationDispatcher` as the registered implementation of `IPrintCallbacks`, so
-  `PrinterFleet` resolves it and calls into it directly; **this task never subscribes to an event or
-  an `IObservable`**, per the corrected assumption in section 2.
-- T004's `EfCorePrinterWorkerDataAccess`, T004's `ResxSlipTextProvider`, and the printer transports
-  and transport factory, by type, unmodified.
-
-Also write, red first (`Hosting/EventSessionStateQueryTest.cs`), then green,
+Write, red first (`Hosting/EventSessionStateQueryTest.cs`), then green,
 `Hosting/ISessionStateQuery.cs` and `Hosting/EventSessionStateQuery.cs`:
 
 ```csharp
@@ -758,7 +638,7 @@ T005-12, this interface is owned by this task (namespace `GastronomyApp.Api.Host
 `GastronomyApp.Core.Sessions` as an earlier draft of this document and of T007 both assumed),
 because T007 resolves it from `app.Services` on the returned `WebApplication` and never needs to see
 `GastronomyApp.Core` for it, and because it needs no domain service, only a read. Register it in
-`Build` alongside the fleet wiring above.
+`Build` alongside every other service this task composes.
 
 ## 5. Constraints restated
 
@@ -773,24 +653,23 @@ because T007 resolves it from `app.Services` on the returned `WebApplication` an
 - TDD red-first, every step, with the failing output quoted before production code is written (root
   rule 3). No red proof, no green code.
 - No test touches a real database file or a real filesystem path outside `Path.GetTempPath()`
-  (backend rule 4). `ApiTestFactory` wires `Data Source=:memory:` and a temp mock-slip folder.
+  (backend rule 4). `ApiTestFactory` wires `Data Source=:memory:`.
 - No positional tuple access anywhere this task writes (backend rule 8).
 - No code comments in any file this task writes, including test files and endpoint files (root rule
   7); the "Assumed from T0..." markers and "review finding" citations required by the brief live in
   this Markdown document, not in source comments.
 - Every user-visible string this task's C# code produces (a `messageKey`, never rendered prose) is a
   key, never English or German text baked into a C# string literal that is shown to a client;
-  rendering into a language happens on the client per section 5.1, except the slip text, which is
-  T004's and T003's concern, not this task's.
+  rendering into a language happens on the client per section 5.1.
 - Never the em-dash character, and never a hyphen substituted for it, anywhere in this document or
   in any string, identifier, or commit this task produces.
-- `ClientOrderId` idempotency, the loopback 404 (not 403), the `DatabaseUnavailable` 503, the
-  `canAcknowledge` truth table, and the exact SignalR group and event tables are copied from the
+- `ClientOrderId` idempotency, the loopback 404 (not 403), the `DatabaseUnavailable` 503, and the
+  exact SignalR group and event tables are copied from the
   spec verbatim; nothing in this task second-guesses a number or a status code the spec states.
 - The order status projection is written in exactly one place per changing path: this task's own
-  code on acceptance, resolve and acknowledge, and T004's worker on the print path, both through the
-  one `OrderStatusCalculator`, per review finding T002-6 quoted in section 2. This task never writes
-  a projection on a path T004 already owns, and never leaves one of its own three paths unwritten.
+  code on acceptance and resolve, through the
+  one `OrderStatusCalculator`, per review finding T002-6 quoted in section 2. This task never leaves
+  one of its own paths unwritten.
 
 ## 6. Verification
 
@@ -809,9 +688,8 @@ Run from the repository root, quote real output:
    code form and by six-digit form, both success and every failure status in section 5.2's table);
    auth rejection (missing, malformed, unknown, revoked token); idempotent resubmission over HTTP
    returning a byte-identical body to the original 201; order placement writing the order's
-   projected status through `OrderStatusCalculator` on the accepting path, producing mock slip files
-   and a SignalR push reaching the placing person's group; break-glass acknowledge returning 409 on
-   a healthy station's queued ticket and on every `Printing` ticket regardless of station condition;
+   projected status through `OrderStatusCalculator` on the accepting path and a SignalR push
+   reaching the placing person's group;
    the loopback admin gate returning 404 for a non-laptop address and succeeding for loopback and
    for the laptop's own bound address; the throwaway `/api/admin/health-check` probe endpoint from
    step 5 is confirmed absent (deleted in step 10, per review finding T005-13).
@@ -819,10 +697,9 @@ Run from the repository root, quote real output:
 3. ```powershell
    dotnet test GastronomyApp.slnx
    ```
-   Full solution still green, confirming this task did not regress T001's or T002's/T003's/T004's
+   Full solution still green, confirming this task did not regress T001's or T002's or T003's
    own test projects (to the extent they exist at review time), and that
-   `backend/GastronomyApp.Api.Tests/ScaffoldingSmokeTest.cs` is absent, whichever of T004 or this
-   task removed it first.
+   `backend/GastronomyApp.Api.Tests/ScaffoldingSmokeTest.cs` is absent.
 
 ## 7. Out of scope
 
@@ -834,24 +711,19 @@ Explicit, not attempted in this task even where an adjacent endpoint makes it lo
   component, no admin screen, no phone screen.
 - `POST /api/admin/catalog/import` (CSV import), `GET /api/admin/export/orders.csv` (CSV export),
   `GET/PUT /api/admin/table-suggestions` and `POST .../from-last-session` (table suggestion
-  seeding), `GET /api/admin/log` (log endpoint), `POST /api/admin/backup` (backup), `GET
-  /api/admin/diagnostics`, `GET /api/admin/orders/{id}/print-history`, and `POST
-  /api/admin/printers/discover` (printer discovery). Listed here as the later wave the brief
+  seeding), `GET /api/admin/log` (log endpoint), `POST /api/admin/backup` (backup), and `GET
+  /api/admin/diagnostics`. Listed here as the later wave the brief
   reserves them for; each is a thin endpoint over a T002/T003 capability once one exists, but none
   is needed for the vertical slice and none is stubbed as a placeholder, per root rule 6's ban on
   interim solutions. The consistency review confirms T006 resolves its own dependency on the
-  table-suggestions and printer-discovery screens by dropping them from its slice rather than by
-  this task adding the endpoints (review findings T006-4, T006-5); this task's scope is unchanged by
+  table-suggestions screen by dropping it from its slice rather than by
+  this task adding the endpoint (review finding T006-5); this task's scope is unchanged by
   that resolution.
-- The Pi agent and `AgentPrinterTransport`; this task only wires the `Mock` transport in its own
-  tests and exercises `IPrinterFleet`, never a concrete transport beyond the mock.
-- Implementing `IPrinterTransport`, `IPrinterSession`, or any type under
-  `GastronomyApp.Core.Printing` beyond the `IPrinterFleet`/`IPrintCallbacks` contracts this task
-  consumes; those, and every entity, port and service named in section 2, belong to T002, T003 or
-  T004. Where this task finds a gap against section 2's assumptions, it stops and reports the gap
+- Every entity, port and service named in section 2 belongs to T002 or
+  T003. Where this task finds a gap against section 2's assumptions, it stops and reports the gap
   rather than adding the missing member itself, per root rule 15's project boundary and root rule
   6's "extend the existing home."
-- Real PBKDF2 verification, migrations, or the printer worker's own state machine: all consumed
+- Real PBKDF2 verification and migrations: both consumed
   through the ports assumed in section 2, never reimplemented here.
 
 ## 8. Ambiguities and chosen readings
@@ -860,18 +732,11 @@ Explicit, not attempted in this task even where an adjacent endpoint makes it lo
   ratified by the consistency review's ruling 3, including dropping the `args` parameter this
   document originally carried. T007 adopts this signature without modification; there is no longer
   an open question at this seam.
-- **Whether `LocationTicket`/`PrintJob` projection writes happen inside T004's transaction or must
-  be triggered from this task's own code** is resolved by ruling 4 and stated identically in T002,
-  T004 and this document (section 2's quoted sentence): T004 writes on the print path, this task
-  writes on its own three HTTP paths (acceptance, resolve, acknowledge), both through the one
-  `OrderStatusCalculator`. There is no longer a seam here to reconcile; steps 8, 9 and 10 name where
-  each of this task's three writes happens.
-- **The direction of the fleet/callback contract** (whether `IPrinterFleet` pushes notifications
-  outward or this task's dispatcher implements a callback interface T004 calls into) is resolved by
-  the review's worst-seam analysis at T004-8/T005-10: `IPrinterFleet` is inbound-only
-  (`EnqueueAsync`, `ReconnectAsync`, `TestPrintAsync`), and this task's `HubNotificationDispatcher`
-  implements T004's outbound `IPrintCallbacks`. This document no longer carries the "IObservable or
-  an event" language its original draft used.
+- **Where the `LocationTicket` projection writes happen** is resolved by ruling 4 and stated
+  identically in T002 and this document (section 2's quoted sentence): this task
+  writes on its own HTTP paths, through the one
+  `OrderStatusCalculator`. There is no longer a seam here to reconcile; steps 8 and 10 name where
+  each of this task's writes happens.
 - **The station SPA shell response** (`GET /station/{accessKey}`) is treated as "serve `index.html`
   with 200" rather than anything station-mode-specific on the backend, because section 5.6 calls it
   "The single page app shell, in station mode" and station mode is a frontend routing concern (T006)

@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
-import { fetchInvitationQr } from '../../api/invitationQr'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { InvitationQr } from '../../core/invitationQr'
+import type { StaffMember } from '../../core/apiTypes'
 import { useConnectionStore } from '../connection'
+import { useAdminEnrolmentStore } from './enrolment'
+
+type Committed<T> = { accepted: true; data: T } | { accepted: false }
 
 export interface AdminStaffMember {
   staffMemberId: string
@@ -16,20 +18,10 @@ export interface AdminStaffMember {
   hasOutstandingInvitation: boolean
 }
 
-export interface Invitation {
-  invitationId: string
-  qrUrl: string
-  expiresAtUtc: string
-  staffMember: { id: string; name: string } | null
-}
-
 export const useAdminStaffStore = defineStore('adminStaff', () => {
   const staffMembers = ref<AdminStaffMember[]>([])
   const loadFailed = ref(false)
-  const invitation = ref<Invitation | null>(null)
-  const invitationQr = ref<InvitationQr>({ kind: 'loading' })
   const errorMessage = ref<AdminErrorMessage | null>(null)
-  const enrolledName = ref<string | null>(null)
 
   async function load(): Promise<void> {
     loadFailed.value = false
@@ -46,69 +38,58 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     staffMembers.value = rows
   }
 
+  async function create(name: string): Promise<string | null> {
+    const written = await commit<StaffMember>('/api/admin/staff-members', 'POST', { name })
+    return written.accepted ? written.data.id : null
+  }
+
   async function rename(id: string, name: string): Promise<boolean> {
-    return await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })
+    return (await commit(`/api/admin/staff-members/${id}`, 'PUT', { name })).accepted
   }
 
   async function setActive(id: string, isActive: boolean): Promise<boolean> {
     const action = isActive ? 'activate' : 'deactivate'
-    return await commit(`/api/admin/staff-members/${id}/${action}`, 'POST', undefined)
+    return (await commit(`/api/admin/staff-members/${id}/${action}`, 'POST', undefined)).accepted
   }
 
-  async function commit(path: string, method: 'POST' | 'PUT', body: unknown): Promise<boolean> {
+  async function commit<T>(
+    path: string,
+    method: 'POST' | 'PUT',
+    body: unknown,
+  ): Promise<Committed<T>> {
     errorMessage.value = null
-    const result = await request(path, { method, body })
+    const result = await request<T>(path, { method, body })
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return false
+      return { accepted: false }
     }
     await load()
-    return true
+    return { accepted: true, data: result.data }
   }
 
-  async function createInvitation(staffMemberId?: string): Promise<void> {
-    enrolledName.value = null
-    errorMessage.value = null
-    invitationQr.value = { kind: 'loading' }
-    const result = await request<Invitation>('/api/admin/enrolment/invitations', {
-      method: 'POST',
-      body: staffMemberId === undefined ? {} : { staffMemberId },
-    })
-    if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return
-    }
-    invitation.value = result.data
-    invitationQr.value = await fetchInvitationQr(result.data.invitationId)
-  }
-
-  function closeInvitation(): void {
-    invitation.value = null
-    invitationQr.value = { kind: 'loading' }
-  }
-
-  function listen(): void {
+  function listen(): () => void {
     const connection = useConnectionStore()
-    connection.registerRefetch(load)
-    connection.onEvent<{ staffMemberName: string }>('EnrolmentCompleted', (payload) => {
-      enrolledName.value = payload.staffMemberName
-      closeInvitation()
-      void load()
-    })
+    const releases = [
+      connection.registerRefetch(load),
+      useAdminEnrolmentStore().listen(() => {
+        void load()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
   }
 
   return {
     staffMembers,
     loadFailed,
     errorMessage,
-    invitation,
-    invitationQr,
-    enrolledName,
     load,
+    create,
     rename,
     setActive,
-    createInvitation,
-    closeInvitation,
     listen,
   }
 })

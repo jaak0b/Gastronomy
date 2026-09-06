@@ -9,6 +9,7 @@ export interface BasketLineView {
   note: string | null
   stationId: string | null
   candidateStationIds: string[]
+  productionMinutes: number | null
   isSoldOut: boolean
   isNoLongerOnTheMenu: boolean
 }
@@ -28,6 +29,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         note: line.note,
         stationId: line.stationId,
         candidateStationIds: [],
+        productionMinutes: null,
         isSoldOut: false,
         isNoLongerOnTheMenu: true,
       }
@@ -39,6 +41,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       note: line.note,
       stationId: line.stationId,
       candidateStationIds: candidateStations(item),
+      productionMinutes: item.productionMinutes,
       isSoldOut: !item.isAvailable,
       isNoLongerOnTheMenu: false,
     }

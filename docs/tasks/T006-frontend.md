@@ -1,11 +1,18 @@
 # T006: Frontend, the server-phone slice and its supporting admin pages
 
+This is the original implementation brief, written before any of the code existed. Printing has since
+been removed from the product entirely, and the printer work has been taken out of this file. What is
+left of it is the order lifecycle it was written around, whose states are still named after printing
+and after a ticket that was never built. That lifecycle is gone too: an order item now moves from
+waiting to being prepared to ready on a station's tablet. For a current description of the product,
+read `docs/spec.md`.
+
 ## 1. Objective
 
 Build the Vue frontend for the one slice the product exists to deliver: a server enrols a phone,
 builds an order, sends it, and can see whether it reached the kitchen. Build the admin pages that
-slice needs to exist at all (items, locations, assignments, printers including the mock fault
-control, invitations and the people list, starting an event session), plus the break-glass station
+slice needs to exist at all (items, locations, assignments, invitations and the people list,
+starting an event session), plus the station
 page and the always-visible header. Everything is test-first: `src/core/` modules get Vitest unit
 tests before their implementation exists, and the one required order-placement flow gets a
 Playwright spec.
@@ -35,8 +42,7 @@ and is read straight from the spec at implementation time rather than restated.
 | PUT | `/api/session/language` | `{language: "de"\|"en"}` | 204 |
 | GET | `/api/catalog` | (device auth) | 200 `{version, categories:[{name,sortOrder}], items:[{id,name,categoryName,priceCents,sortOrder,isAvailable,locationIds[]}], locations:[{id,name,sortOrder}], tableSuggestions:[{label,sortOrder}]}` |
 | POST | `/api/orders` | `{clientOrderId, tableLabel, note, expectedTotalCents, lines:[{catalogItemId,quantity,note,productionLocationId}]}` | 201 or 200 `{orderId, globalOrderNumber, status, totalCents, expectedTotalCents, createdAtUtc, tickets:[{ticketId,locationId,locationName,sequenceNumber,status,lineIds[]}]}`; 400/401/409/422/503 |
-| GET | `/api/printers/status` | | 200 `{locations:[{locationId,name,isOnline,isPaperEnd,isPaperNearEnd,isCoverOpen,isFaulty,lastChangedAtUtc}]}` |
-| GET | `/api/health` | anonymous | 200 `{status, eventSession, printersOnline, printersTotal}` |
+| GET | `/api/health` | anonymous | 200 `{status, eventSession}` |
 
 Order status values: `Accepted`, `NeedsAttention` (exact enum members confirmed against the
 consistency review). Ticket status values: `Queued`, `Blocked`, `Printing`, `Unknown`, `Failed`, `Printed`,
@@ -53,10 +59,10 @@ address; a phone gets 404). This task consumes:
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET/POST/PUT | `/api/admin/locations`, `/api/admin/locations/{id}` | `{name,sortOrder,slipLanguage}` | list / 201 / 200 |
+| GET/POST/PUT | `/api/admin/locations`, `/api/admin/locations/{id}` | `{name,sortOrder,language}` | list / 201 / 200 |
 | POST | `/api/admin/locations/{id}/deactivate` | | 200 or 409 naming open tickets or orphaned items |
-| POST | `/api/admin/locations/{id}/regenerate-access-key` | | 200 with the new break-glass URL |
-| GET | `/api/admin/locations/{id}/station-card` | | 200, printable card |
+| POST | `/api/admin/locations/{id}/regenerate-access-key` | | 200 with the new station URL |
+| GET | `/api/admin/locations/{id}/station-card` | | 200, the card that carries that station's URL |
 | GET/POST/PUT | `/api/admin/items`, `/api/admin/items/{id}` | `{name,categoryName,priceCents,sortOrder,locationIds[]}` | list / 201 / 200; 422 when `locationIds` empty |
 | POST | `/api/admin/items/{id}/availability` | `{isAvailable}` | 200, the sold-out toggle, never refused |
 | POST | `/api/admin/items/{id}/deactivate` | | 200 or 409 during a live session |
@@ -65,31 +71,24 @@ address; a phone gets 404). This task consumes:
 | POST | `/api/admin/server-people/{id}/revoke-device` | | 200 or 409 (no phone set up) |
 | POST | `/api/admin/server-people/{id}/deactivate` | | 200 |
 | POST | `/api/admin/enrolment/invitations` | `{}` or `{serverPersonId}` | 201 `{invitationId, qrUrl, sixDigitCode, expiresAtUtc, serverPerson}` |
-| GET/PUT | `/api/admin/printers`, `/api/admin/printers/{locationId}` | full printer configuration | 200 |
-| POST | `/api/admin/printers/{locationId}/test-print` | | 202 |
-| POST | `/api/admin/printers/{locationId}/reconnect` | | 202, names locations sharing that endpoint |
-| POST | `/api/admin/mock/{locationId}/fault` | `{fault, mode}` | 200; `fault` one of `None, PaperEnd, CoverOpen, ConnectTimeout, DropSocketEarly, DropSocketMidJob, UnknownOutcome`; `mode` one of `Once, Sticky`; 422 when transport is not `Mock` |
 | GET | `/api/admin/event-session` | | 200 current session plus what blocks starting a new one |
 | POST | `/api/admin/event-session` | `{name, isPractice, confirmedName}` | 201; 409 with blocking conditions |
 
-Out of scope for this task's screens, read but not built here: `/api/admin/orders`, the print-history
-endpoint, CSV export/import, backup, diagnostics, log, `POST /api/admin/printers/discover` and its
-`PrinterDiscovered` event, and `GET/PUT /api/admin/table-suggestions` plus
-`.../from-last-session`. The consistency review found none of these five has a backend in this vertical
-slice (T005 excludes discovery and table-suggestions management from its scope); the printer discovery
-button and the table-suggestions admin screen are dropped from this task accordingly (see section 6 and
+Out of scope for this task's screens, read but not built here: `/api/admin/orders`,
+CSV export/import, backup, diagnostics, log, and `GET/PUT /api/admin/table-suggestions` plus
+`.../from-last-session`. The consistency review found none of these has a backend in this vertical
+slice (T005 excludes table-suggestions management from its scope); the table-suggestions admin screen
+is dropped from this task accordingly (see section 6 and
 section 7). The table suggestion chips on the review screen survive unaffected, because they read
 `tableSuggestions[]` off `GET /api/catalog`, which is in scope regardless.
 
-### 2.3 Station break-glass endpoints
+### 2.3 Station endpoints
 
 | Method | Path | Response |
 |---|---|---|
 | GET | `/station/{accessKey}` | the SPA shell in station mode |
-| GET | `/api/station/{accessKey}/locations` | 200, active production locations plus each one's print-capability, the filter's contents |
-| GET | `/api/station/{accessKey}/tickets?locationId=` | 200, open tickets oldest first, each carrying `canAcknowledge`, `reprintCount`, and, when `canAcknowledge` is false, the reason key |
-| POST | `/api/station/{accessKey}/tickets/{ticketId}/acknowledge` | 200 moves to `HandledOnPaper`; 409 with `station.takeRefused` or `station.alreadyTaken` |
-| GET | `/api/station/{accessKey}/status` | 200, the selected location's printer status |
+| GET | `/api/station/{accessKey}/locations` | 200, active production locations, the filter's contents |
+| GET | `/api/station/{accessKey}/tickets?locationId=` | 200, open tickets oldest first |
 
 An unknown or regenerated key answers 404 on every one of these.
 
@@ -101,25 +100,19 @@ its access key. Events this frontend consumes:
 | Event | Payload | Frontend reaction |
 |---|---|---|
 | `OrderAccepted` | `{orderId, globalOrderNumber, tableLabel, totalCents, tickets[]}` | station page: refetch tickets |
-| `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, failureReason, printerHasPaper, messageKey, parameters}` | station page: refetch tickets |
-| `PrinterStatusChanged` | `{locationId, locationName, isOnline, isPaperEnd, isPaperNearEnd, isCoverOpen, isFaulty, waitingTicketCount, lastDetail}` | phone: header banner; station page: re-evaluate `canAcknowledge`-gated rows; admin printer screen: update indicator |
+| `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, messageKey, parameters}` | station page: refetch tickets |
 | `CatalogChanged` | `{version}` | phone refetches `/api/catalog` |
 | `EnrolmentCompleted` | `{serverPersonId, serverPersonName, deviceId}` | admin people list gains a row / QR panel closes |
 | `DeviceRevoked` | `{deviceId}` | that phone clears its token, keeps its draft, shows enrolment |
 | `EventSessionStarted` | `{eventSessionId, name, isPractice}` | phones show the one line notice, draft untouched |
 
 The station page never renders a payload's ticket fields directly; every one of the two events it
-receives triggers a refetch of `GET /api/station/{accessKey}/tickets`, because neither event carries
-`canAcknowledge` and only the server computes it (spec 6.2, 5.6).
-
-`PrinterDiscovered` and `POST /api/admin/printers/discover` are dropped from this task's scope, for the
-same reason as section 2.2's note: nothing in this vertical slice implements printer discovery on the
-backend. `PrintersList.vue` in section 3.1 offers manual address entry only; the discovery button and
-its result list are not built here.
+receives triggers a refetch of `GET /api/station/{accessKey}/tickets`, so the list on screen is
+always the list the server holds (spec 6.2, 5.6).
 
 Reconnect behaviour assumed from spec 6.3: automatic reconnect intervals `0, 2, 5, 10, 30`, then every
 30 seconds; on every reconnect the client refetches rather than assuming it missed nothing; if the hub
-never connects, the phone polls `GET /api/printers/status` every 15 seconds instead, written once in
+never connects, the client refetches on a 15 second timer instead, written once in
 the store.
 
 ### 2.5 Draft cart and submission identity rules assumed from spec section 9
@@ -149,7 +142,7 @@ not be able to miss it:
 Per `frontend/CLAUDE.md` rule 1: `src/core/` is plain TypeScript, no Vue import, no DOM. Pinia stores
 own SignalR consumption, the reconnect-refetch rule, and the 15 second polling fallback, written once.
 Components stay thin: they read a store and call a store action, and hold no business rule of their
-own. Every discriminated-union switch (order status, ticket status, print outcome kind, catalog item
+own. Every discriminated-union switch (order status, ticket status, catalog item
 state) ends in `assertNever`, per `frontend/CLAUDE.md` rule 2.
 
 ### 3.1 File layout
@@ -171,12 +164,10 @@ frontend/
       session.ts
       catalog.ts
       order.ts
-      printerStatus.ts
       connection.ts
       admin/
         locations.ts
         items.ts
-        printers.ts
         people.ts
         eventSession.ts
       station.ts
@@ -211,9 +202,6 @@ frontend/
         items/ItemsList.vue
         items/ItemForm.vue
         items/AssignmentEditor.vue
-        printers/PrintersList.vue
-        printers/PrinterForm.vue
-        printers/MockFaultPanel.vue
         people/PeopleList.vue
         people/InvitationPanel.vue
         event/EventSessionPanel.vue
@@ -294,9 +282,6 @@ export type OrderStatus = 'Accepted' | 'Printing' | 'Printed' | 'NeedsAttention'
 export type TicketStatus =
   | 'Queued' | 'Blocked' | 'Printing' | 'Unknown' | 'Failed'
   | 'Printed' | 'PrintedOnTestPrinter' | 'HandledOnPaper'
-export type PrintFailureReason =
-  | 'PaperEnd' | 'CoverOpen' | 'Unreachable' | 'Timeout' | 'SocketDropped'
-  | 'PrinterError' | 'StationDisabled' | 'StationFaulty' | 'TicketResolvedByHuman'
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableLabel: string
@@ -444,9 +429,9 @@ export const useConnectionStore = defineStore('connection', () => {
 (`DeviceRevoked` clears the token, keeps the draft). `catalog.ts` owns the cached `Catalog`,
 refetching on `CatalogChanged` and on reconnect. `order.ts` owns the draft cart wrapper actions,
 delegating every rule to `src/core/draftCart.ts` and `submission.ts`.
-`printerStatus.ts` owns the header/basket banners from `PrinterStatusChanged`. `station.ts` owns the
-break-glass page's filter, ticket list (refetch-only, never payload-rendered, per section 2.4), and
-the ten-second undo timer described in spec 8.9. The `admin/*` stores are thin wrappers around their
+`station.ts` owns the
+station page's filter and its ticket list (refetch-only, never payload-rendered, per section 2.4).
+The `admin/*` stores are thin wrappers around their
 REST calls with no draft-cart-like state of their own.
 
 ## 4. Ordered steps
@@ -473,8 +458,8 @@ REST calls with no draft-cart-like state of their own.
    render `enrol.orderHeld` when a draft already exists in `localStorage` at the moment enrolment
    completes (this is the direct product of a device revocation while a draft was open, per spec 9.4;
    its component test seeds a draft first and asserts the sentence renders).
-5. **Header.** `AppHeader.vue` and `SettingsSheet.vue`, backed by `connection.ts` and
-   `printerStatus.ts`. Component test drives every banner combination listed in spec 8.5, including
+5. **Header.** `AppHeader.vue` and `SettingsSheet.vue`, backed by `connection.ts`. Component test
+   drives every banner combination listed in spec 8.5, including
    `header.stationWaiting` appended to an existing banner rather than shown on its own.
 6. **Catalog and basket.** `Catalog.vue` and its children, backed by `catalog.ts` and `order.ts`.
    Component tests: a sold-out item renders greyed with `catalog.soldOut` and is not tappable; a
@@ -485,13 +470,11 @@ REST calls with no draft-cart-like state of their own.
    quantity, station, and the total exactly as they were with `review.sendFailed` and the retry
    button; a second consecutive failure adds `review.sendFailedAgain`; `review.totalChanged` renders
    when the response's `totalCents` differs from the request's `expectedTotalCents`.
-8. **Break-glass station page.** `StationPage.vue`, backed by `station.ts`. Component test for
-   `StationTicketRow.vue` covers `canAcknowledge` true/false rendering, the `station.reprint` chip,
-   and the ten-second undo delay (`station.takenPending`, the undo button, and that undo cancels
-   the pending send without ever calling the acknowledge endpoint; use a fake timer, not a real
-   ten-second wait).
-9. **Admin pages.** Items with the sold-out toggle, locations, assignments, printers including the
-   mock fault panel, invitations and the people list with its three row actions
+8. **Station page.** `StationPage.vue`, backed by `station.ts`. Component test for
+   `StationTicketRow.vue` covers a ticket row's rendering of its number, its table label, and every
+   line with its quantity and note.
+9. **Admin pages.** Items with the sold-out toggle, locations, assignments,
+   invitations and the people list with its three row actions
    (`admin.people.newCode`, `admin.people.rename`, `admin.people.revoke`), event session start.
    `NotOnLaptop.vue` renders `admin.notOnLaptop` when the admin route is opened from a non-loopback
    origin (the frontend cannot itself detect this; it renders whatever the backend's 404-vs-page
@@ -516,8 +499,8 @@ REST calls with no draft-cart-like state of their own.
 - `src/core/` never imports `vue`, `pinia`, or touches `window`/`document`, except `draftCart.ts`'s
   documented, deliberate use of `localStorage` (section 3.2). Every other module in `src/core/` is
   pure functions over plain data.
-- Every discriminated-union switch (`TicketStatus`, `OrderStatus`, `CatalogItemState`, the mock fault
-  kind, the printer transport kind on the admin side) ends in `assertNever`, per
+- Every discriminated-union switch (`TicketStatus`, `OrderStatus`, `CatalogItemState`) ends in
+  `assertNever`, per
   `frontend/CLAUDE.md` rule 2. No `else`, no trailing catch-all `if`.
 - No offline retry queue, ever, in any form. `draftCart.ts` holds one order with no list, no timer,
   no state field, per root rule and `frontend/CLAUDE.md` rule 4; section 2.5 above restates the exact
@@ -537,7 +520,7 @@ REST calls with no draft-cart-like state of their own.
   (rendered text, disabled state, emitted events), never internal store calls.
 - The one Playwright spec follows `writing-webtests`' two-phase discipline adapted to this project:
   a flow spec (`order-placement.flow.md`) is written first, listing the exact user journey step by
-  step and the exact literal values expected at each step (order number pattern, slip counts, total
+  step and the exact literal values expected at each step (order number pattern, ticket counts, total
   formatting), before any test code exists; the spec is then transcribed mechanically into
   `order-placement.spec.ts`. It drives the real UI end to end (redeem, build a basket, review, send)
   against the real backend, never importing a store or seeding state directly, matching that skill's
@@ -574,14 +557,12 @@ before the skip is lifted.
 ## 7. Out of scope
 
 - CSV admin surfaces (`/api/admin/export/orders.csv`, `/api/admin/catalog/import`), the admin log
-  viewer, the backup button, the diagnostics screen, printer discovery UI beyond what step 9 needs
-  for the mock fault panel (the discovery button and result list for a real network printer are
-  in scope for `PrintersList.vue`; the diagnostics/log/backup screens are not, per the task brief).
+  viewer, the backup button, and the diagnostics screen, none of which this task builds.
 - Anything the slice does not touch: table suggestions management screen is in scope (spec 8.8 names
   it as part of catalog setup this slice needs); the admin orders list/detail beyond what section 2.2
   already excludes is not.
 - The desktop window and anything under `desktop/`.
-- The backend itself: REST endpoints, SignalR hub, EF Core entities, printer transports. This task
+- The backend itself: REST endpoints, SignalR hub, EF Core entities. This task
   only consumes the shapes in section 2.
 - Camera-based QR scanning inside the web app; the spec is explicit this cannot exist over plain
   HTTP (spec 8.3).

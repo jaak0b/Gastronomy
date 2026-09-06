@@ -1,12 +1,21 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
-import type { AppLanguage, RedeemResponse, StaffMember, SessionInfo } from '../core/apiTypes'
+import type {
+  AppLanguage,
+  DeviceKind,
+  RedeemResponse,
+  StaffMember,
+  SessionInfo,
+  StationIdentity,
+} from '../core/apiTypes'
 import { restoreDraft } from '../core/draftCart'
+import { parseDeviceKind } from '../core/landing'
 import { useConnectionStore } from './connection'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
+export const DEVICE_KIND_STORAGE_KEY = 'deviceKind'
 export { LANGUAGE_STORAGE_KEY }
 
 export interface RedeemInput {
@@ -17,23 +26,34 @@ export interface RedeemInput {
 export const useSessionStore = defineStore('session', () => {
   const deviceToken = ref<string | null>(localStorage.getItem(TOKEN_STORAGE_KEY))
   const staffMember = ref<StaffMember | null>(null)
+  const station = ref<StationIdentity | null>(null)
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
+  const deviceKind = ref<DeviceKind | null>(
+    deviceToken.value === null
+      ? null
+      : parseDeviceKind(localStorage.getItem(DEVICE_KIND_STORAGE_KEY)),
+  )
 
   function heldDraftExists(): boolean {
     return restoreDraft().draft.lines.length > 0
   }
 
-  function storeToken(token: string): void {
+  function storeToken(token: string, kind: DeviceKind): void {
     deviceToken.value = token
+    deviceKind.value = kind
     localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    localStorage.setItem(DEVICE_KIND_STORAGE_KEY, kind)
   }
 
   function clearToken(): void {
     deviceToken.value = null
+    deviceKind.value = null
     staffMember.value = null
+    station.value = null
     localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(DEVICE_KIND_STORAGE_KEY)
   }
 
   function setLanguage(next: AppLanguage): void {
@@ -75,8 +95,9 @@ export const useSessionStore = defineStore('session', () => {
     })
     switch (result.kind) {
       case 'ok':
-        storeToken(result.data.deviceToken)
+        storeToken(result.data.deviceToken, parseDeviceKind(result.data.deviceKind ?? null))
         staffMember.value = result.data.staffMember
+        station.value = result.data.station ?? null
         language.value = result.data.language
         storeLanguage(result.data.language)
         return true
@@ -97,6 +118,9 @@ export const useSessionStore = defineStore('session', () => {
     switch (result.kind) {
       case 'ok':
         staffMember.value = result.data.staffMember
+        station.value = result.data.station ?? null
+        deviceKind.value = parseDeviceKind(result.data.deviceKind ?? null)
+        localStorage.setItem(DEVICE_KIND_STORAGE_KEY, deviceKind.value)
         language.value = result.data.language
         return
       case 'error':
@@ -118,7 +142,9 @@ export const useSessionStore = defineStore('session', () => {
 
   return {
     deviceToken,
+    deviceKind,
     staffMember,
+    station,
     language,
     redeemErrorKey,
     isEnrolled,

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using GastronomyApp.Infrastructure;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ public sealed class ConcurrentOrderTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
 
     using var scope = _context.Factory.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
@@ -30,7 +31,7 @@ public sealed class ConcurrentOrderTest
     await database.SaveChangesAsync();
 
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(secondStaffMemberId, "de", "NUnit second phone", CancellationToken.None);
+                            .IssueAsync(new(DeviceOwnerKind.StaffMember, secondStaffMemberId), "de", "NUnit second phone", CancellationToken.None);
     _secondDeviceToken = issued.PlaintextToken;
   }
 
@@ -81,3 +82,5 @@ public sealed class ConcurrentOrderTest
     return _context.Client.SendAsync(request);
   }
 }
+
+

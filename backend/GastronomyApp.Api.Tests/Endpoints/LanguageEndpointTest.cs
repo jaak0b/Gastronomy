@@ -10,7 +10,7 @@ public sealed class LanguageEndpointTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -45,3 +45,4 @@ public sealed class LanguageEndpointTest
     Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("en"));
   }
 }
+

@@ -16,6 +16,13 @@ public sealed record OrderAcceptanceItemRequest
   public Guid? StationId { get; init; }
 }
 
+public sealed record StationDeliveryModeRequest
+{
+  public required Guid StationId { get; init; }
+
+  public required DeliveryMode DeliveryMode { get; init; }
+}
+
 public sealed record OrderAcceptanceRequest
 {
   public required Guid ClientOrderId { get; init; }
@@ -29,6 +36,8 @@ public sealed record OrderAcceptanceRequest
   public required bool SettleOnSend { get; init; }
 
   public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
+
+  public IReadOnlyList<StationDeliveryModeRequest> DeliveryModes { get; init; } = [];
 }
 
 public sealed class OrderAcceptanceService
@@ -40,6 +49,7 @@ public sealed class OrderAcceptanceService
   private readonly INumberAllocator _numberAllocator;
 
   private readonly IOrderRepository _orderRepository;
+  private readonly OrderItemProductionService _productionService;
   private readonly OrderRoutingResolver _routingResolver;
   private readonly OrderItemSettlementService _settlementService;
   private readonly IStationRepository _stationRepository;
@@ -50,6 +60,7 @@ public sealed class OrderAcceptanceService
                                 INumberAllocator numberAllocator,
                                 OrderRoutingResolver routingResolver,
                                 OrderItemSettlementService settlementService,
+                                OrderItemProductionService productionService,
                                 IClock clock)
   {
     _orderRepository = orderRepository;
@@ -58,6 +69,7 @@ public sealed class OrderAcceptanceService
     _numberAllocator = numberAllocator;
     _routingResolver = routingResolver;
     _settlementService = settlementService;
+    _productionService = productionService;
     _clock = clock;
   }
 
@@ -201,6 +213,9 @@ public sealed class OrderAcceptanceService
                   };
 
     Dictionary<Guid, StationOrder> stationOrdersByStationId = [];
+    Dictionary<Guid, DeliveryMode> deliveryModesByStationId = request.DeliveryModes
+                                                                    .GroupBy(mode => mode.StationId)
+                                                                    .ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 
     foreach (var resolvedItem in resolvedItems)
     {
@@ -216,17 +231,11 @@ public sealed class OrderAcceptanceService
                          Id = Guid.NewGuid(),
                          OrderId = order.Id,
                          StationId = resolvedStationId,
-                         StationOrderNumber = stationOrderNumber
+                         StationOrderNumber = stationOrderNumber,
+                         DeliveryMode = deliveryModesByStationId.TryGetValue(resolvedStationId, out var chosenMode)
+                                          ? chosenMode
+                                          : DeliveryMode.Together
                        };
-
-        stationOrder.PrintJobs.Add(new()
-                                   {
-                                     Id = Guid.NewGuid(),
-                                     StationOrderId = stationOrder.Id,
-                                     CopyNumber = 0,
-                                     Status = PrintJobStatus.Queued,
-                                     CreatedAtUtc = createdAtUtc
-                                   });
 
         stationOrdersByStationId.Add(resolvedStationId, stationOrder);
         order.StationOrders.Add(stationOrder);
@@ -241,6 +250,8 @@ public sealed class OrderAcceptanceService
                               UnitPriceCents = resolvedItem.Request.UnitPriceCents,
                               Note = resolvedItem.Request.Note
                             };
+
+      _productionService.RecordPlacement(orderItem, createdAtUtc);
 
       if (request.SettleOnSend)
       {

@@ -11,6 +11,7 @@ const props = defineProps<{
   item: CatalogItem
   positions: ItemPosition[]
   language: AppLanguage
+  readyInMinutes: number | null
 }>()
 const emit = defineEmits<{
   add: []
@@ -39,6 +40,14 @@ const isSoldOut = computed(() => {
 })
 
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
+
+const readyText = computed(() => {
+  const minutes = props.readyInMinutes
+  if (minutes === null) {
+    return null
+  }
+  return minutes === 0 ? t('catalog.readyNow') : t('catalog.readyIn', { count: minutes }, minutes)
+})
 
 const groups = computed(() => groupPositions(props.positions))
 
@@ -107,6 +116,7 @@ function mostRecentOf(group: PositionGroup): number {
       >
         <span class="name text-body-1">{{ item.name }}</span>
         <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
+        <span v-else-if="readyText !== null" class="ready-in text-caption">{{ readyText }}</span>
         <span class="price text-body-1">{{ price }}</span>
       </v-btn>
       <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">

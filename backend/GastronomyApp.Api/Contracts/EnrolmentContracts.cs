@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Api.Contracts;
+using GastronomyApp.Core.Enums;
+
+namespace GastronomyApp.Api.Contracts;
 
 public sealed record RedeemEnrolmentRequest
 {
@@ -12,5 +14,7 @@ public sealed record RedeemEnrolmentRequest
 public sealed record RedeemedEnrolmentView(
   Guid DeviceId,
   string DeviceToken,
-  StaffMemberView StaffMember,
+  DeviceOwnerKind DeviceKind,
+  StaffMemberView? StaffMember,
+  StationSummaryView? Station,
   string Language);

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -13,7 +13,7 @@ public sealed class InvitationQrEndpointTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -90,7 +90,7 @@ public sealed class InvitationQrEndpointTest
                     {
                       Assert.That(second.InvitationId,
                                   Is.Not.EqualTo(first.InvitationId),
-                                  "Each invitation must be addressable on its own, so the picture and the printed URL cannot drift apart.");
+                                  "Each invitation must be addressable on its own, so the picture and the address it carries cannot drift apart.");
                       Assert.That(secondSvg,
                                   Is.Not.EqualTo(firstSvg),
                                   "The rendered QR must encode the invitation it was asked for.");
@@ -178,7 +178,7 @@ public sealed class InvitationQrEndpointTest
   private async Task<CreatedInvitation> CreateInvitationAsync()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = (Guid?)null });
+                                                              new { staffMemberId = _context.World.StaffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -202,3 +202,5 @@ public sealed class InvitationQrEndpointTest
     return payloadCharacters <= 32 ? 21 : 25;
   }
 }
+
+

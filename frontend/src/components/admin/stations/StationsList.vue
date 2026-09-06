@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
+import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
+import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import StationForm from './StationForm.vue'
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
+const enrolment = useAdminEnrolmentStore()
 const editingId = ref<string | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
+let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
 
 const refusal = computed(() => {
-  const message = stations.errorMessage
+  const message = enrolment.errorMessage ?? stations.errorMessage
   if (message === null) {
     return null
   }
@@ -25,6 +29,10 @@ const refusal = computed(() => {
     ? t(message.key, message.parameters)
     : t(message.key, message.parameters, message.count)
 })
+
+function inviteStation(stationId: string): void {
+  void enrolment.createInvitation({ kind: 'station', stationId })
+}
 
 async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
   await stations.save(value)
@@ -40,7 +48,15 @@ async function deactivate(): Promise<void> {
   }
 }
 
-onMounted(stations.load)
+onMounted(async () => {
+  stopListening = stations.listen()
+  await stations.load()
+})
+
+onUnmounted(() => {
+  stopListening?.()
+  stopListening = null
+})
 </script>
 
 <template>
@@ -48,6 +64,14 @@ onMounted(stations.load)
     <h1 class="text-h5 mb-2">{{ t('admin.stations.title') }}</h1>
     <p class="help text-medium-emphasis mb-4">{{ t('admin.stations.help') }}</p>
 
+    <v-alert
+      v-if="enrolment.enrolledStationName !== null"
+      class="enrolled mb-4"
+      type="success"
+      variant="tonal"
+    >
+      {{ t('admin.enrol.doneStation', { name: enrolment.enrolledStationName }) }}
+    </v-alert>
     <v-alert v-if="refusal !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{ refusal }}
     </v-alert>
@@ -67,7 +91,13 @@ onMounted(stations.load)
         <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
           {{ t('admin.deactivated') }}
         </v-chip>
+        <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
+          {{ t('admin.stations.noTablet') }}
+        </v-chip>
         <v-spacer />
+        <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
+          {{ t('admin.stations.setUpDevice') }}
+        </v-btn>
         <v-btn
           class="edit"
           variant="text"
@@ -98,6 +128,15 @@ onMounted(stations.load)
           v-if="editingId === station.stationId"
           :station="station"
           @save="save"
+        />
+      </v-expand-transition>
+      <v-expand-transition>
+        <InvitationPanel
+          v-if="enrolment.invitation?.station?.id === station.stationId"
+          :invitation="enrolment.invitation"
+          :qr="enrolment.invitationQr"
+          @close="enrolment.closeInvitation"
+          @renew="inviteStation(station.stationId)"
         />
       </v-expand-transition>
     </v-card>

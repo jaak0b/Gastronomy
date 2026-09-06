@@ -97,7 +97,9 @@ describe('buildSubmitRequest', () => {
     })
     const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready, false)
+    const request = buildSubmitRequest(ready, false, [
+      { stationId: 'station-2', deliveryMode: 'together' },
+    ])
 
     expect(request).toEqual({
       clientOrderId: ready.clientOrderId,
@@ -112,7 +114,27 @@ describe('buildSubmitRequest', () => {
           stationId: 'station-2',
         },
       ],
+      deliveryModes: [{ stationId: 'station-2', deliveryMode: 'together' }],
     })
+  })
+
+  it('sends the delivery choice the server made for each station', () => {
+    const withLine = addLine(emptyDraft(), {
+      catalogItemId: 'item-1',
+      note: null,
+      stationId: 'station-2',
+      name: 'Bratwurst',
+      unitPriceCents: 350,
+    })
+    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+
+    const request = buildSubmitRequest(ready, false, [
+      { stationId: 'station-2', deliveryMode: 'asItComes' },
+    ])
+
+    expect(request.deliveryModes).toEqual([
+      { stationId: 'station-2', deliveryMode: 'asItComes' },
+    ])
   })
 
   it('sends no item name, because the laptop keeps the name from its own catalog', () => {
@@ -125,7 +147,7 @@ describe('buildSubmitRequest', () => {
     })
     const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready, false)
+    const request = buildSubmitRequest(ready, false, [])
 
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
@@ -145,12 +167,12 @@ describe('buildSubmitRequest', () => {
     })
     const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
 
-    const request = buildSubmitRequest(ready, true)
+    const request = buildSubmitRequest(ready, true, [])
 
     expect(request.settleOnSend).toBe(true)
   })
 
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft(), false)).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft(), false, [])).toThrow()
   })
 })

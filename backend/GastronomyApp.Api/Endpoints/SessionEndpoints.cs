@@ -1,8 +1,10 @@
-﻿using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.RateLimiting;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -19,21 +21,25 @@ public static class SessionEndpoints
     group.MapGet(string.Empty,
                  async (HttpContext httpContext,
                         CallerIdentity callerIdentity,
-                        GastronomyAppDbContext dbContext,
+                        DeviceOwnerStore ownerStore,
                         CancellationToken cancellationToken) =>
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
+                   var owner = await ownerStore.FindAsync(new(caller.OwnerKind, caller.OwnerId), cancellationToken);
 
-                   var staffMember = await dbContext.StaffMembers
-                                                    .FirstOrDefaultAsync(candidate => candidate.Id == caller.StaffMemberId, cancellationToken);
-
-                   if (staffMember is null)
+                   if (owner is null)
                    {
                      return Results.Unauthorized();
                    }
 
                    return Results.Ok(new SessionView(caller.DeviceId,
-                                                     new(staffMember.Id, staffMember.Name),
+                                                     caller.OwnerKind,
+                                                     caller.OwnerKind == DeviceOwnerKind.StaffMember
+                                                       ? new StaffMemberView(caller.OwnerId, owner.Name)
+                                                       : null,
+                                                     caller.OwnerKind == DeviceOwnerKind.Station
+                                                       ? new StationSummaryView(caller.OwnerId, owner.Name)
+                                                       : null,
                                                      caller.Language));
                  });
 

@@ -1,3 +1,3 @@
-﻿namespace GastronomyApp.Api.Contracts;
+namespace GastronomyApp.Api.Contracts;
 
-public sealed record HealthView(string Status, int PrintersOnline, int PrintersTotal);
+public sealed record HealthView(string Status, int ActiveStationCount, int StationsWithADeviceCount);

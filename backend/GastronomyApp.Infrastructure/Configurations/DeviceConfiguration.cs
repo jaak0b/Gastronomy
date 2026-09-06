@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +10,6 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
   {
     builder.HasKey(device => device.Id);
     builder.Property(device => device.Id).ValueGeneratedNever();
-    builder.Property(device => device.StaffMemberId).IsRequired();
     builder.Property(device => device.Language).IsRequired().HasMaxLength(2);
     builder.Property(device => device.TokenHash).IsRequired();
     builder.Property(device => device.TokenSalt).IsRequired();
@@ -20,6 +19,5 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
     builder.Property(device => device.CreatedAtUtc).IsRequired();
     builder.Property(device => device.LastSeenAtUtc).IsRequired();
     builder.HasIndex(device => device.TokenLookupId).IsUnique();
-    builder.HasIndex(device => device.StaffMemberId).IsUnique();
   }
 }

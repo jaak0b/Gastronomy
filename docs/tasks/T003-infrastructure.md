@@ -1,5 +1,9 @@
 # T003: Infrastructure persistence (vertical slice)
 
+This is the original implementation brief, written before any of the code existed. Printing has
+since been removed from the product entirely, and every printer instruction has been taken out of
+this file. For a current description of the product, read `docs/spec.md`.
+
 ## 1. Objective
 
 Build the persistence layer of `GastronomyApp.Infrastructure` that the vertical slice needs: the EF
@@ -13,8 +17,8 @@ test GastronomyApp.slnx --filter "FullyQualifiedName~GastronomyApp.Infrastructur
 build GastronomyApp.slnx` zero warnings, every scenario in spec section 11.2 that is listed as
 Infrastructure-scope in section 7 below is covered.
 
-Out of scope, explicit, restated at the end: transports, ESC/POS rendering, the printer worker, HTTP,
-SignalR, any migration beyond the initial one, seeding data.
+Out of scope, explicit, restated at the end: HTTP, SignalR, any migration beyond the initial one,
+seeding data.
 
 ## 2. Assumed from T002
 
@@ -31,26 +35,20 @@ beyond ordinary collections), one file per type under the `GastronomyApp.Core.En
 `byte[]` for hash/salt columns). Types, matching the entity list in spec 2.2, with the field types in
 the tables there: `EventSession`, `ProductionLocation`, `CatalogItem`, `ItemLocationAssignment`,
 `TableSuggestion`, `ServerPerson`, `Device`, `EnrolmentInvitation`, `Order`, `OrderLine`,
-`LocationTicket`, `PrintJob`, `PrintAttempt`, `PrinterConfiguration`, `PrinterStatus`, `NumberCounter`.
+`LocationTicket`, `NumberCounter`.
 
 Status representation: T002 defines a C# `enum` per state machine (`OrderStatus`,
-`LocationTicketStatus`, `PrintJobStatus`) rather than storing the spec's naming strings directly as
+`LocationTicketStatus`) rather than storing the spec's naming strings directly as
 free text. `Order.Status` is typed `OrderStatus`, `LocationTicket.Status` is typed
-`LocationTicketStatus`, `PrintJob.Status` is typed `PrintJobStatus`, and each enum's member names are
-exactly the state names spec sections 3.1/3.2/3.3 use (`Accepted`, `Printing`, `Printed`,
-`NeedsAttention` for `OrderStatus`; `Queued`, `Blocked`, `Printing`, `Printed`, `PrintedOnTestPrinter`,
-`Unknown`, `Failed`, `HandledOnPaper` for `LocationTicketStatus`; the `PrintJob` machine's states for
-`PrintJobStatus`), confirmed row by row against T002. This task maps each enum to a SQLite `TEXT`
+`LocationTicketStatus`, and each enum's member names are
+exactly the state names spec sections 3.1 and 3.2 use, confirmed row by row against T002. This task
+maps each enum to a SQLite `TEXT`
 column via `.HasConversion<string>()`, never to an `int`, so a manual look at the database during a
 live event shows a readable value.
 
-Assumed value types for two composite-ish fields that are not full entities:
-- `PrinterEndpointKey`: assumed to be a plain `string`, built as `TransportKind|Host|Port|AgentIdentifier`
-  per spec 2.13, computed by a Core service (assumed name `PrinterEndpointKeyBuilder`) that this task's
-  repositories call rather than reimplementing the join themselves.
-- `CounterKind`: assumed to be a C# `enum` with members `GlobalOrder`, `LocationSequence`,
-  `PrinterProcessId`, mapped the same `HasConversion<string>()` way, matching spec 2.13's three values
-  exactly.
+One assumed value type that is not a full entity:
+- `CounterKind`: assumed to be a C# `enum` with members `GlobalOrder` and `LocationSequence`, mapped
+  the same `HasConversion<string>()` way, matching spec 2.13 exactly.
 
 ### 2.2 Ports (interfaces) this task implements
 
@@ -71,7 +69,6 @@ public interface INumberAllocator
 {
     Task<int> AllocateGlobalOrderNumberAsync(Guid eventSessionId, CancellationToken cancellationToken);
     Task<int> AllocateLocationSequenceNumberAsync(Guid eventSessionId, Guid productionLocationId, CancellationToken cancellationToken);
-    Task<int> AllocatePrinterProcessIdAsync(string printerEndpointKey, CancellationToken cancellationToken);
 }
 ```
 
@@ -208,10 +205,6 @@ backend/
       OrderConfiguration.cs
       OrderLineConfiguration.cs
       LocationTicketConfiguration.cs
-      PrintJobConfiguration.cs
-      PrintAttemptConfiguration.cs
-      PrinterConfigurationConfiguration.cs
-      PrinterStatusConfiguration.cs
       NumberCounterConfiguration.cs
     Migrations/
       <timestamp>_InitialCreate.cs
@@ -269,7 +262,7 @@ Red test first, `GastronomyAppDbContextTest.cs`:
 public async Task Migrate_OnEmptyDatabase_CreatesEveryTable()
 ```
 
-Asserts that after `Database.Migrate()` on a fresh `:memory:` connection, each of the sixteen tables
+Asserts that after `Database.Migrate()` on a fresh `:memory:` connection, each of the twelve tables
 from spec 2.2 exists (query `sqlite_master` for `type = 'table'` and assert the name set, excluding
 EF's own `__EFMigrationsHistory`). This test is red until Step 2 (the migration) exists, so Steps 1
 and 2 are written together: the `DbContext` and its configurations are meaningless without a migration
@@ -298,10 +291,6 @@ public sealed class GastronomyAppDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderLine> OrderLines => Set<OrderLine>();
     public DbSet<LocationTicket> LocationTickets => Set<LocationTicket>();
-    public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
-    public DbSet<PrintAttempt> PrintAttempts => Set<PrintAttempt>();
-    public DbSet<PrinterConfiguration> PrinterConfigurations => Set<PrinterConfiguration>();
-    public DbSet<PrinterStatus> PrinterStatuses => Set<PrinterStatus>();
     public DbSet<NumberCounter> NumberCounters => Set<NumberCounter>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -318,14 +307,14 @@ Each `Configurations/*Configuration.cs` implements `IEntityTypeConfiguration<T>`
 - `OrderConfiguration`: `builder.HasIndex(o => o.ClientOrderId).IsUnique();` per spec 2.9 ("`ClientOrderId`
   carries a unique index and is the whole duplicate protection for a resubmission").
 - `NumberCounterConfiguration`: `builder.HasKey(c => new { c.CounterKind, c.EventSessionId,
-  c.ProductionLocationId, c.PrinterEndpointKey });` matching spec 2.13's composite primary key exactly,
-  with `CounterKind` mapped `HasConversion<string>().HasMaxLength(20)`, `PrinterEndpointKey` mapped
-  `HasMaxLength(96)`. EF Core allows nullable columns inside a composite primary key on the SQLite
+  c.ProductionLocationId });` matching spec 2.13's composite primary key exactly,
+  with `CounterKind` mapped `HasConversion<string>().HasMaxLength(20)`. EF Core allows nullable columns
+  inside a composite primary key on the SQLite
   provider (they are stored, and SQLite treats a primary key containing a nullable column as not
   enforcing true uniqueness across NULLs the way a `UNIQUE` constraint would); this task accepts that
   and does not add a workaround unique index, because the counter allocator in Step 3 is the only
-  writer and always supplies the same three keys' worth of null/non-null pattern per `CounterKind`, so
-  no two logical counters can collide on all four columns having equal values including matching nulls.
+  writer and always supplies the same null/non-null pattern per `CounterKind`, so
+  no two logical counters can collide on all three columns having equal values including matching nulls.
 - `OrderLineConfiguration`: `ItemNameSnapshot` and `UnitPriceCentsSnapshot` are plain persisted columns
   (spec 2.9's "snapshot fields on order lines"), not computed or shadow properties, so an item rename
   or price change never changes an existing line, per spec 2.5's invariant.
@@ -443,29 +432,12 @@ Implementation, `NumberCounterAllocator.cs`, implementing `INumberAllocator`. Ea
 method:
 
 1. `SELECT NextValue FROM NumberCounter WHERE CounterKind = @kind AND EventSessionId = @sessionOrNull
-   AND ProductionLocationId = @locationOrNull AND PrinterEndpointKey = @endpointOrNull` inside the
+   AND ProductionLocationId = @locationOrNull` inside the
    ambient transaction (never opens its own; the caller, `OrderAcceptanceTransaction` per Step 4, owns
    the transaction).
 2. If no row exists, insert one with `NextValue = 1` and return `1`.
 3. If a row exists, `UPDATE ... SET NextValue = NextValue + 1 WHERE <same composite key>` and return the
    pre-increment value.
-
-Uses `PrinterEndpointKeyBuilder` (T002 `GastronomyApp.Core.Services` service, per T002's own fix
-adding it ahead of this task) to compute the `PrinterEndpointKey` string for
-`AllocatePrinterProcessIdAsync`, never builds the pipe-joined string itself, so the join format lives
-in exactly one place (root rule 6).
-
-**The 9999 wrap for `AllocatePrinterProcessIdAsync` is this task's own arithmetic, not a Core
-class's.** T002 explicitly excludes a `ProcessIdAllocator` from Core, and no other document defines
-one, so the cycling lives directly inside `NumberCounterAllocator`: `NextValue` wraps to `1` once it
-would exceed `9999`, per spec 2.11's `ProcessId` field ("1 to 9999 from that printer's persisted
-counter"). `NumberCounterAllocatorTest` includes the integration test proving this, over the real
-table:
-
-```csharp
-[Test]
-public async Task AllocatePrinterProcessIdAsync_At9999_WrapsTo1AndPersists()
-```
 
 ### Step 4: `IOrderRepository`, and the acceptance transaction shell around `OrderAcceptanceService`
 
@@ -842,8 +814,7 @@ Per the spec's own list, this task is the home for: Numbering (all six scenarios
 three scenarios), the persistence half of Order acceptance (split across locations, snapshot of names
 and prices, proven as integration tests over `OrderAcceptanceTransaction` composed with T002's real
 `OrderAcceptanceService`; the routing-resolution decision itself is `OrderAcceptanceService`'s and
-`OrderRoutingResolver`'s, T002's, and the printer-reachability half of that row belongs to the printer
-worker task, both out of this task's scope), Enrolment
+`OrderRoutingResolver`'s, T002's, and out of this task's scope), Enrolment
 (the concurrency, consumption, expiry, and identity-preservation scenarios; the rate-limiting half
 belongs to the API task), and the token-verification and wrong-secret-rejection halves of
 Authentication (the address-based admin/station routing half of that row belongs to the API task).

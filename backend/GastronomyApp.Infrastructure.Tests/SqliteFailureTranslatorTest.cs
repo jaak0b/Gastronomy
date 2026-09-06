@@ -48,7 +48,6 @@ public sealed class SqliteFailureTranslatorTest
     return new()
            {
              Id = Guid.NewGuid(),
-             StaffMemberId = null,
              QrCodeHash = [1],
              QrCodeSalt = [2],
              QrCodeIterations = 1,

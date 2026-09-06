@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import StaffList from '../../../src/components/admin/staff/StaffList.vue'
+import { useConnectionStore } from '../../../src/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'
+const NEW_STAFF_MEMBER_ID = '77777777-7777-7777-7777-777777777777'
 
 const ONE_STAFF_MEMBER = {
   staffMembers: [
@@ -174,7 +176,7 @@ describe('the QR code for setting up a phone', () => {
               sixDigitCode: '158026',
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember,
-              availableAddresses: [],
+              station: null,
             }
           : ONE_STAFF_MEMBER
         return new Response(JSON.stringify(payload), { status: 200 })
@@ -194,15 +196,187 @@ describe('the QR code for setting up a phone', () => {
     )
   })
 
-  it('sits on its own when it belongs to nobody yet', async () => {
-    stubInvitationFor(null)
+})
+
+describe('adding somebody new to the waiter list', () => {
+  interface RecordedCall {
+    url: string
+    method: string
+    body: unknown
+  }
+
+  function stubTheLaptop(): RecordedCall[] {
+    const calls: RecordedCall[] = []
+    let wasAdded = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({
+          url,
+          method: init?.method ?? 'GET',
+          body: init?.body === undefined ? null : JSON.parse(String(init.body)),
+        })
+        if (url.includes('/qr.svg')) {
+          return new Response('<svg></svg>', {
+            status: 200,
+            headers: { 'Content-Type': 'image/svg+xml' },
+          })
+        }
+        if (url === '/api/admin/staff-members' && init?.method === 'POST') {
+          wasAdded = true
+          return new Response(
+            JSON.stringify({ id: NEW_STAFF_MEMBER_ID, name: 'Bernd' }),
+            { status: 201 },
+          )
+        }
+        if (url.endsWith('/invitations')) {
+          return new Response(
+            JSON.stringify({
+              invitationId: 'invitation-1',
+              qrUrl: 'http://192.168.0.22:5000/j/CODE',
+              expiresAtUtc: '2026-08-27T20:00:00Z',
+              staffMember: { id: NEW_STAFF_MEMBER_ID, name: 'Bernd' },
+              station: null,
+            }),
+            { status: 201 },
+          )
+        }
+        const listed = wasAdded
+          ? [
+              ...ONE_STAFF_MEMBER.staffMembers,
+              {
+                staffMemberId: NEW_STAFF_MEMBER_ID,
+                name: 'Bernd',
+                isActive: true,
+                hasDevice: false,
+                lastSeenAtUtc: null,
+                userAgent: null,
+                hasOutstandingInvitation: false,
+              },
+            ]
+          : ONE_STAFF_MEMBER.staffMembers
+        return new Response(JSON.stringify({ staffMembers: listed }), { status: 200 })
+      }),
+    )
+    return calls
+  }
+
+  async function typeTheName(list: ReturnType<typeof mountList>): Promise<void> {
+    await firstStaffMember(list)
+    await list.get('.new-staff-member').trigger('click')
+    await list.get('.new-person-name input').setValue('Bernd')
+    await list.get('.save-new-person').trigger('click')
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks for the name of the new person rather than creating a nameless one', async () => {
+    const calls = stubTheLaptop()
 
     const list = mountList()
     await firstStaffMember(list)
     await list.get('.new-staff-member').trigger('click')
 
-    await vi.waitFor(() => expect(list.find('.invitation-panel').exists()).toBe(true))
-    expect(list.get('.staff-row').find('.invitation-panel').exists()).toBe(false)
+    expect(list.find('.new-person-name').exists()).toBe(true)
+    expect(calls.filter((call) => call.method === 'POST')).toEqual([])
+  })
+
+  it('adds the person under the name that was typed', async () => {
+    const calls = stubTheLaptop()
+
+    const list = mountList()
+    await typeTheName(list)
+
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual({
+        url: '/api/admin/staff-members',
+        method: 'POST',
+        body: { name: 'Bernd' },
+      }),
+    )
+  })
+
+  it('asks for a QR code that belongs to the person it has just added', async () => {
+    const calls = stubTheLaptop()
+
+    const list = mountList()
+    await typeTheName(list)
+
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual({
+        url: '/api/admin/enrolment/invitations',
+        method: 'POST',
+        body: { staffMemberId: NEW_STAFF_MEMBER_ID },
+      }),
+    )
+  })
+
+  it('shows that QR code inside the row of the new person', async () => {
+    stubTheLaptop()
+
+    const list = mountList()
+    await typeTheName(list)
+
+    await vi.waitFor(() => expect(list.findAll('.staff-row')).toHaveLength(2))
+    await vi.waitFor(() =>
+      expect(list.findAll('.staff-row')[1].find('.invitation-panel').exists()).toBe(true),
+    )
+  })
+
+  it('says why the laptop would not add the person', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === '/api/admin/staff-members' && init?.method === 'POST') {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'admin.personNameMissing',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        return new Response(JSON.stringify(ONE_STAFF_MEMBER), { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await typeTheName(list)
+
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+    expect(list.get('.refusal').text()).toBe('Geben Sie der Person einen Namen, bevor Sie speichern.')
+  })
+})
+
+describe('the waiter screen the admin has left', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('no longer reloads the list when the laptop reports a change', async () => {
+    const urls = stubFetchWith(ONE_STAFF_MEMBER)
+    const list = mountList()
+    await firstStaffMember(list)
+
+    list.unmount()
+    urls.length = 0
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
   })
 })
 

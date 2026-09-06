@@ -11,24 +11,24 @@ function mountWelcome(locale: 'de' | 'en' = 'de') {
   return mount(Welcome, { global: { plugins: [i18n] } })
 }
 
-describe('the screen a phone lands on with no code', () => {
+describe('the screen a device lands on with no code', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
-  it('says the phone is not set up rather than demanding a code', () => {
+  it('says the device is not set up rather than demanding a code', () => {
     const welcome = mountWelcome()
 
-    expect(welcome.get('h1').text()).toBe('Dieses Telefon ist noch nicht eingerichtet.')
+    expect(welcome.get('h1').text()).toBe('Dieses Gerät ist noch nicht eingerichtet.')
   })
 
-  it('sends the reader to the person at the laptop and names what they tap there', () => {
+  it('sends the reader to the person at the laptop, whether it is a phone or a tablet', () => {
     const welcome = mountWelcome()
 
     expect(welcome.get('.welcome-body').text()).toBe(
-      'Bitten Sie die Person am Laptop, Sie als Kellner anzulegen. Sie tippt dort auf "Neuer Kellner" und zeigt Ihnen den QR-Code, den Sie mit der Kamera scannen.',
+      'Bitten Sie die Person am Laptop, Sie als Kellner anzulegen oder das Tablet einer Ausgabestelle einzurichten. Sie zeigt Ihnen einen QR-Code, den Sie mit der Kamera scannen.',
     )
   })
 
@@ -41,7 +41,7 @@ describe('the screen a phone lands on with no code', () => {
   it('says the same thing in English', () => {
     const welcome = mountWelcome('en')
 
-    expect(welcome.get('h1').text()).toBe('This phone is not set up yet.')
+    expect(welcome.get('h1').text()).toBe('This device is not set up yet.')
   })
 })
 
@@ -58,7 +58,7 @@ describe('the language switch before a phone is set up', () => {
     expect(welcome.get('.language-switch').exists()).toBe(true)
   })
 
-  it('remembers the choice on the device the same way the station page does', async () => {
+  it('remembers the choice on the device itself', async () => {
     const welcome = mountWelcome()
 
     await welcome.get('.option-en').trigger('click')

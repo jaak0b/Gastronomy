@@ -21,7 +21,8 @@ const BRATWURST: AdminItem = {
   sortOrder: 1,
   isAvailable: true,
   stationIds: ['station-kueche'],
-}
+  productionMinutes: 15,
+} as unknown as AdminItem
 
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
@@ -93,6 +94,63 @@ describe('the price field', () => {
     await form.get('.price-field input').setValue('drei Euro')
     await form.get('form').trigger('submit')
 
+    expect(form.emitted('save')).toBeUndefined()
+  })
+})
+
+describe('the preparation time field', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('asks for whole minutes', () => {
+    const form = mountForm()
+
+    expect(form.get('.production-minutes-field label').text()).toBe('Zubereitungszeit in Minuten')
+  })
+
+  it('shows the minutes of an item that already has them', () => {
+    const form = mountForm(BRATWURST)
+
+    expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe(
+      '15',
+    )
+  })
+
+  it('stays empty for an item that is handed over right away', () => {
+    const form = mountForm({ ...BRATWURST, productionMinutes: null } as unknown as AdminItem)
+
+    expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('sends the minutes that were typed', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.production-minutes-field input').setValue('20')
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 20 })
+  })
+
+  it('sends no preparation time when the field is left empty', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.production-minutes-field input').setValue('')
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: null })
+  })
+
+  it('says what it accepts rather than saving a time it could not read', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.production-minutes-field input').setValue('601')
+    await form.get('form').trigger('submit')
+
+    expect(form.get('.production-minutes-field .v-messages').text()).toBe(
+      'Tragen Sie ganze Minuten von 0 bis 600 ein.',
+    )
     expect(form.emitted('save')).toBeUndefined()
   })
 })

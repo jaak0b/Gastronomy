@@ -10,7 +10,7 @@ public sealed class OrderIdempotencyTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -44,14 +44,14 @@ public sealed class OrderIdempotencyTest
 
     await using var database = _context.Factory.CreateContext();
     var orderCount = await database.Orders.CountAsync();
-    var ticketCount = await database.StationOrders.CountAsync();
-    var printJobCount = await database.PrintJobs.CountAsync(job => job.CopyNumber == 0);
+    var stationOrderCount = await database.StationOrders.CountAsync();
+    var itemCount = await database.OrderItems.CountAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(orderCount, Is.EqualTo(1));
-                      Assert.That(ticketCount, Is.EqualTo(1));
-                      Assert.That(printJobCount, Is.EqualTo(1));
+                      Assert.That(stationOrderCount, Is.EqualTo(1));
+                      Assert.That(itemCount, Is.EqualTo(2));
                     });
   }
 
@@ -75,3 +75,4 @@ public sealed class OrderIdempotencyTest
     Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
   }
 }
+

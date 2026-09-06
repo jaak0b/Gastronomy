@@ -1,4 +1,4 @@
-﻿namespace GastronomyApp.Core.Entities;
+namespace GastronomyApp.Core.Entities;
 
 public sealed class Station
 {
@@ -10,7 +10,9 @@ public sealed class Station
 
   public required bool IsActive { get; set; }
 
-  public Guid? PrinterId { get; set; }
+  public Guid? DeviceId { get; set; }
+
+  public Guid? EnrolmentInvitationId { get; set; }
 
   public required int NextStationOrderNumber { get; set; }
 }

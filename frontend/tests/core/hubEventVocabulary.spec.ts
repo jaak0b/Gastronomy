@@ -41,6 +41,6 @@ describe('every event the phone waits for', () => {
     expect(waited.has('CatalogChanged')).toBe(true)
     expect(pushed).toContain('CatalogChanged')
     expect(waited.size).toBeGreaterThan(5)
-    expect(pushed.length).toBeGreaterThan(7)
+    expect(pushed.length).toBeGreaterThan(5)
   })
 })

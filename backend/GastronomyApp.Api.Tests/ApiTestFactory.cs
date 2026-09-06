@@ -1,6 +1,4 @@
-﻿using GastronomyApp.Api.Options;
-using GastronomyApp.Api.Printing;
-using GastronomyApp.Core.Entities;
+using GastronomyApp.Api.Options;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -37,8 +35,6 @@ public sealed class ApiTestFactory : IAsyncDisposable
 
   public IServiceProvider Services => _application.Services;
 
-  public string MockSlipFolder => Path.Combine(DataDirectory, "mock-slips");
-
   public async ValueTask DisposeAsync()
   {
     Client.Dispose();
@@ -60,11 +56,6 @@ public sealed class ApiTestFactory : IAsyncDisposable
     }
   }
 
-  public Task ReconcilePrintersAsync()
-  {
-    return Services.GetRequiredService<PrinterFleet>().ReconcileAsync(CancellationToken.None);
-  }
-
   public GastronomyAppDbContext CreateContext()
   {
     return Services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext();
@@ -78,27 +69,26 @@ public sealed class ApiTestFactory : IAsyncDisposable
       Directory.CreateDirectory(dataDirectory);
 
       AppLanguage language = new();
-      var _application = new GastronomyAppApiApplication().Build(new()
-                                                                {
-                                                                  DataDirectory = dataDirectory,
-                                                                  Port = 0,
-                                                                  BindAddress = "127.0.0.1",
-                                                                  Language = language
-                                                                });
+      var application = new GastronomyAppApiApplication().Build(new()
+                                                               {
+                                                                 DataDirectory = dataDirectory,
+                                                                 Port = 0,
+                                                                 BindAddress = "127.0.0.1",
+                                                                 Language = language
+                                                               });
 
-      await _application.StartAsync();
+      await application.StartAsync();
 
       var addresses =
-        _application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+        application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
       Uri baseAddress = new(addresses.Addresses.First());
 
-      return new(_application, dataDirectory, baseAddress, language);
+      return new(application, dataDirectory, baseAddress, language);
     }
   }
 }
 
 public sealed record SeededWorld(
-  Guid EventSessionId,
   Guid StaffMemberId,
   Guid KitchenStationId,
   Guid BarStationId,
@@ -111,13 +101,13 @@ public sealed class ApiSeeder
 
   public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(context);
+
     SeededWorld world = new(Guid.NewGuid(),
                             Guid.NewGuid(),
                             Guid.NewGuid(),
                             Guid.NewGuid(),
-                            Guid.NewGuid(),
                             Guid.NewGuid());
-
 
     context.StaffMembers.Add(new()
                              {
@@ -139,36 +129,14 @@ public sealed class ApiSeeder
 
   private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
   {
-    var printerId = Guid.NewGuid();
-    context.Printers.Add(new TestPrinter
-                         {
-                           Id = printerId,
-                           Name = "Drucker " + name
-                         });
-
     context.Stations.Add(new()
                          {
                            Id = stationId,
                            Name = name,
                            SortOrder = sortOrder,
                            IsActive = true,
-                           NextStationOrderNumber = 1,
-                           PrinterId = printerId
+                           NextStationOrderNumber = 1
                          });
-
-    context.PrinterStatuses.Add(new()
-                                {
-                                  PrinterId = printerId,
-                                  IsOnline = true,
-                                  IsPaperEnd = false,
-                                  IsPaperNearEnd = false,
-                                  IsCoverOpen = false,
-                                  IsInErrorState = false,
-                                  IsFaulty = false,
-                                  LastDetail = "seeded",
-                                  LastChangedAtUtc = _baseline,
-                                  LastHeardFromAtUtc = _baseline
-                                });
   }
 
   private void AddItem(GastronomyAppDbContext context,

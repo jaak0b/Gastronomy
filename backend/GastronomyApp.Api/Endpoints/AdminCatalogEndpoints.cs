@@ -54,6 +54,9 @@ public static class AdminItemEndpoints
 
 public sealed class AdminItemHandler
 {
+  private const int ShortestProductionMinutes = 0;
+  private const int LongestProductionMinutes = 600;
+
   private readonly CatalogReader _catalogReader;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly HubNotificationDispatcher _dispatcher;
@@ -90,6 +93,7 @@ public sealed class AdminItemHandler
                                                 item.SortOrder,
                                                 item.IsActive,
                                                 item.IsAvailable,
+                                                item.ProductionMinutes,
                                                 [
                                                   .. assignments
                                                     .Where(assignment => assignment.CatalogItemId == item.Id)
@@ -124,7 +128,8 @@ public sealed class AdminItemHandler
                                  PriceCents = request.PriceCents,
                                  SortOrder = request.SortOrder,
                                  IsActive = true,
-                                 IsAvailable = true
+                                 IsAvailable = true,
+                                 ProductionMinutes = request.ProductionMinutes
                                });
 
     foreach (var stationId in request.StationIds!)
@@ -171,6 +176,7 @@ public sealed class AdminItemHandler
     item.CategoryName = request.CategoryName!;
     item.PriceCents = request.PriceCents;
     item.SortOrder = request.SortOrder;
+    item.ProductionMinutes = request.ProductionMinutes;
 
     List<ItemStationAssignment> existing = await _dbContext.ItemStationAssignments
                                                           .Where(assignment => assignment.CatalogItemId == itemId)
@@ -295,6 +301,13 @@ public sealed class AdminItemHandler
       return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                     "UnprocessableEntity",
                                     "admin.itemNeedsAStation");
+    }
+
+    if (request.ProductionMinutes is < ShortestProductionMinutes or > LongestProductionMinutes)
+    {
+      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+                                    "ValidationFailed",
+                                    "catalog.productionMinutesOutOfRange");
     }
 
     return null;

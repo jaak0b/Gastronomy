@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Infrastructure.Tests.TestSupport;
+using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.Data.Sqlite;
 
 namespace GastronomyApp.Infrastructure.Tests;
@@ -16,9 +16,7 @@ public sealed class GastronomyAppDbContextTest
     "Orders",
     "StationOrders",
     "OrderItems",
-    "PrintJobs",
-    "Printers",
-    "PrinterStatuses",
+    "OrderItemStatusChanges",
     "SequenceCounters"
   ];
 

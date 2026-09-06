@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.Endpoints;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,7 +25,7 @@ public sealed class RateLimitTest
 
     using var scope = _factory.Services.CreateScope();
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+                            .IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId), "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }
 
@@ -112,3 +113,4 @@ public sealed class RateLimitTest
     return await _factory.Client.SendAsync(request);
   }
 }
+

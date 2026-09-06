@@ -1,3 +1,5 @@
+export const hubEventsRegistered: string[] = []
+
 export function signalrModuleFake() {
   class HubConnectionBuilder {
     withUrl() {
@@ -9,8 +11,15 @@ export function signalrModuleFake() {
     build() {
       return {
         state: 'Disconnected',
-        on: () => undefined,
-        off: () => undefined,
+        on: (eventName: string) => {
+          hubEventsRegistered.push(eventName)
+        },
+        off: (eventName: string) => {
+          const index = hubEventsRegistered.indexOf(eventName)
+          if (index !== -1) {
+            hubEventsRegistered.splice(index, 1)
+          }
+        },
         onreconnecting: () => undefined,
         onreconnected: () => undefined,
         onclose: () => undefined,

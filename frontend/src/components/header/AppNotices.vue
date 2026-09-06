@@ -4,11 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { assertNever } from '../../core/assertNever'
 import { useConnectionStore } from '../../stores/connection'
 import { useOrderStore } from '../../stores/order'
-import { usePrinterStatusStore } from '../../stores/printerStatus'
 
 const { t } = useI18n()
 const connection = useConnectionStore()
-const printerStatus = usePrinterStatusStore()
 const order = useOrderStore()
 
 const hasArrived = computed(
@@ -27,16 +25,6 @@ const connectionKey = computed<string | null>(() => {
       return assertNever(state)
   }
 })
-
-const banners = computed(() =>
-  printerStatus.banners.map((banner) => ({
-    stationId: banner.stationId,
-    text:
-      banner.waitingCount === null
-        ? t(banner.key, { name: banner.name })
-        : `${t(banner.key, { name: banner.name })} ${t('header.stationWaiting', { count: banner.waitingCount }, banner.waitingCount)}`,
-  })),
-)
 </script>
 
 <template>
@@ -72,16 +60,5 @@ const banners = computed(() =>
     density="compact"
   >
     {{ t(connectionKey) }}
-  </v-alert>
-  <v-alert
-    v-for="banner in banners"
-    :key="banner.stationId"
-    class="station-banner"
-    type="warning"
-    variant="tonal"
-    rounded="0"
-    density="compact"
-  >
-    {{ banner.text }}
   </v-alert>
 </template>

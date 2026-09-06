@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.Endpoints;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -12,7 +13,7 @@ public sealed class HubConnectionSecurityTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -51,14 +52,14 @@ public sealed class HubConnectionSecurityTest
   [Test]
   public async Task Deactivate_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
   {
-    TaskCompletionSource<Guid> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    TaskCompletionSource<string> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
-    connection.On<JsonElement>("StationBacklogChanged",
-                               payload => heardBeforeRevocation.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    connection.On<JsonElement>("CatalogChanged",
+                               payload => heardBeforeRevocation.TrySetResult(payload.GetProperty("version").GetString()!));
 
     await connection.StartAsync();
-    await PlaceAnOrderAsync();
+    await ChangeTheCatalogAsync();
 
     var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(_patience));
 
@@ -79,6 +80,14 @@ public sealed class HubConnectionSecurityTest
     using var afterRevocation = await _context.SendAsync(HttpMethod.Get, "/api/session");
 
     Assert.That(afterRevocation.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+  }
+
+  private async Task ChangeTheCatalogAsync()
+  {
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/availability",
+                                                               new { isAvailable = false });
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
 
   private async Task<Guid> PlaceAnOrderAsync()
@@ -116,3 +125,4 @@ public sealed class HubConnectionSecurityTest
           .Build();
   }
 }
+

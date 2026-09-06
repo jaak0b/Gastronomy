@@ -2,10 +2,9 @@ import { expect, test } from '@playwright/test'
 
 const BASE_URL = process.env.GASTRONOMY_E2E_BASE_URL
 const ENROL_CODE = process.env.GASTRONOMY_E2E_ENROL_CODE ?? ''
-const SKIP_REASON =
-  'requires the backend from T002-T005 and a practice event session, per spec 11.3'
+const SKIP_REASON = 'requires a running backend serving the built frontend, per spec 11.3'
 
-test('a server enrols a phone, builds an order, and sends it', async ({
+test('a server enrols a phone, builds an order, chooses how it is handed out, and sends it', async ({
   page,
 }) => {
   test.skip(BASE_URL === undefined, SKIP_REASON)
@@ -34,9 +33,24 @@ test('a server enrols a phone, builds an order, and sends it', async ({
   await page.getByRole('button', { name: 'Weiter zur Übersicht' }).click()
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bestellung prüfen')
-  await expect(page.locator('.line-list .station-slip .station-name')).toHaveText('Geht an Küche')
+  await expect(page.locator('.line-list .station-part .station-name')).toHaveText('Geht an Küche')
   await expect(page.locator('.line-list .line .line-name')).toHaveText('2 x Bratwurst')
   await expect(page.locator('.table-name')).toHaveText('Tisch: Tisch 12')
+
+  await expect(page.locator('.delivery-question')).toHaveText(
+    'Wie soll Küche die Positionen ausgeben?',
+  )
+  await expect(page.locator('.delivery-together')).toHaveClass(/v-btn--active/)
+  await expect(page.locator('.delivery-help')).toHaveText(
+    'Die Ausgabestelle hält alles zurück, bis die letzte Position fertig ist.',
+  )
+
+  await page.locator('.delivery-as-it-comes').click()
+  await expect(page.locator('.delivery-as-it-comes')).toHaveClass(/v-btn--active/)
+  await expect(page.locator('.delivery-help')).toHaveText(
+    'Jede Position wird für sich ausgegeben, sobald sie fertig ist.',
+  )
+
   await expect(page.locator('.total-display .amount')).toHaveText('7,00 €')
 
   await page.locator('button.send').click()

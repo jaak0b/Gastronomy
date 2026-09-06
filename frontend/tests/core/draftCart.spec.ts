@@ -7,6 +7,7 @@ import {
   removeLine,
   restoreDraft,
   saveDraft,
+  setDeliveryMode,
   setLineNote,
   setLineStation,
   setOrderNote,
@@ -25,10 +26,16 @@ function bratwurstLine(): DraftLine {
 }
 
 describe('emptyDraft', () => {
-  it('starts with no table, no note, no lines and no submission id', () => {
+  it('starts with no table, no note, no lines, no submission id and no delivery choice', () => {
     const draft = emptyDraft()
 
-    expect(draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
+    expect(draft).toEqual({
+      tableName: '',
+      note: null,
+      lines: [],
+      clientOrderId: null,
+      deliveryModes: {},
+    })
   })
 })
 
@@ -42,7 +49,7 @@ describe('restoreDraft', () => {
 
     expect(restoration).toEqual({
       outcome: 'nothingStored',
-      draft: { tableName: '', note: null, lines: [], clientOrderId: null },
+      draft: { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} },
     })
   })
 
@@ -52,6 +59,7 @@ describe('restoreDraft', () => {
       note: null,
       lines: [bratwurstLine()],
       clientOrderId: null,
+      deliveryModes: {},
     })
 
     const restoration = restoreDraft()
@@ -67,7 +75,7 @@ describe('restoreDraft', () => {
 
     expect(restoration).toEqual({
       outcome: 'unreadableDraftDiscarded',
-      draft: { tableName: '', note: null, lines: [], clientOrderId: null },
+      draft: { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} },
     })
   })
 
@@ -128,12 +136,24 @@ describe('the stored draft shape', () => {
     expect(Array.isArray(stored)).toBe(false)
   })
 
-  it('stores no field beyond the table, the note, the lines and the submission id', () => {
-    saveDraft({ tableName: 'Tisch 3', note: null, lines: [], clientOrderId: null })
+  it('stores no field beyond the table, the note, the lines, the submission id and the delivery choice', () => {
+    saveDraft({
+      tableName: 'Tisch 3',
+      note: null,
+      lines: [],
+      clientOrderId: null,
+      deliveryModes: {},
+    })
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as object
 
-    expect(Object.keys(stored).sort()).toEqual(['clientOrderId', 'lines', 'note', 'tableName'])
+    expect(Object.keys(stored).sort()).toEqual([
+      'clientOrderId',
+      'deliveryModes',
+      'lines',
+      'note',
+      'tableName',
+    ])
   })
 
   it('stores the item, the note, the station and the name and price it was added at', () => {
@@ -244,6 +264,53 @@ describe('draft mutators', () => {
 
     expect(restoreDraft().draft.note).toBe('Hinweis fuer die Kueche')
   })
+
+  it('persists how a station should hand its part of the order out', () => {
+    setDeliveryMode(emptyDraft(), 'station-kueche', 'asItComes')
+
+    expect(restoreDraft().draft.deliveryModes).toEqual({ 'station-kueche': 'asItComes' })
+  })
+
+  it('keeps the choice made for one station when another station is chosen for', () => {
+    const kitchen = setDeliveryMode(emptyDraft(), 'station-kueche', 'asItComes')
+
+    setDeliveryMode(kitchen, 'station-theke', 'together')
+
+    expect(restoreDraft().draft.deliveryModes).toEqual({
+      'station-kueche': 'asItComes',
+      'station-theke': 'together',
+    })
+  })
+})
+
+describe('a stored draft whose delivery choice cannot be read', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('comes back with no delivery choice rather than being thrown away', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[],"deliveryModes":{"station-kueche":"whenever"}}',
+    )
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('restored')
+    expect(restoration.draft.deliveryModes).toEqual({})
+  })
+
+  it('reads a draft written before the delivery choice existed', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[]}',
+    )
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('restored')
+    expect(restoration.draft.deliveryModes).toEqual({})
+  })
 })
 
 describe('clearDraft', () => {
@@ -257,6 +324,7 @@ describe('clearDraft', () => {
       note: null,
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
+      deliveryModes: {},
     })
 
     clearDraft()
@@ -270,11 +338,18 @@ describe('clearDraft', () => {
       note: null,
       lines: [bratwurstLine()],
       clientOrderId: 'a2f0c0de-0000-4000-8000-000000000001',
+      deliveryModes: { 'station-kueche': 'asItComes' },
     })
 
     clearDraft()
 
-    expect(restoreDraft().draft).toEqual({ tableName: '', note: null, lines: [], clientOrderId: null })
+    expect(restoreDraft().draft).toEqual({
+      tableName: '',
+      note: null,
+      lines: [],
+      clientOrderId: null,
+      deliveryModes: {},
+    })
   })
 })
 

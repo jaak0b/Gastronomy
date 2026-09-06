@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +13,7 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
     builder.Property(stationOrder => stationOrder.OrderId).IsRequired();
     builder.Property(stationOrder => stationOrder.StationId).IsRequired();
     builder.Property(stationOrder => stationOrder.StationOrderNumber).IsRequired();
+    builder.Property(stationOrder => stationOrder.DeliveryMode).IsRequired();
     builder.HasIndex(stationOrder => new { stationOrder.OrderId, stationOrder.StationId }).IsUnique();
     builder.HasOne<Station>()
            .WithMany()
@@ -21,8 +22,5 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
     builder.HasMany(stationOrder => stationOrder.Items)
            .WithOne()
            .HasForeignKey(item => item.StationOrderId);
-    builder.HasMany(stationOrder => stationOrder.PrintJobs)
-           .WithOne()
-           .HasForeignKey(job => job.StationOrderId);
   }
 }

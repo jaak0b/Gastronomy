@@ -1,5 +1,12 @@
 # Revision log for `docs/spec.md`
 
+This log belongs to an earlier version of the specification, one built around thermal printers and
+printed slips. The fire department has since chosen tablets, printing has been removed from the
+product entirely, and `docs/spec.md` has been rewritten around the station tablet. Read this file as
+a record of how those earlier findings were dispositioned. Every entry about printers, print jobs,
+slips or paper describes a mechanism that no longer exists, and the section numbers it cites are
+those of the old document rather than the current one.
+
 What this file is: a disposition for every one of the 39 findings in `docs/spec-review.md`, followed by
 a record of the three structural changes the owner asked for during this pass.
 

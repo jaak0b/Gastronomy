@@ -1,8 +1,12 @@
 # Manual verification on a real Windows machine
 
-The desktop application's Windows integrations sit behind tested port interfaces, but the operating
-system half of each one can only be proven by hand. Work through this list once on a real machine
-before the first demonstration. Every item names what success looks like.
+Two things can only be proven by hand. The desktop application's Windows integrations sit behind
+tested port interfaces, but the operating system half of each one needs a real machine. And the
+evening the product exists for is a walk from a phone to a station and back, which no test suite
+watches the way a person does.
+
+Work through this list once on a real machine before the first demonstration, with at least one phone
+and one tablet on the same WiFi as the laptop. Every item names what success looks like.
 
 ## First run and setup
 
@@ -27,8 +31,8 @@ before the first demonstration. Every item names what success looks like.
    signal the first.
 7. **Close button.** Clicking the X minimises. A phone on the same WiFi keeps getting answers while
    the window is minimised.
-8. **Tray icon.** Right-click shows exactly two items, open admin and quit, and both work.
-   Left-clicking the icon restores the window.
+8. **Tray icon.** Right-clicking shows exactly two items, open the admin pages and quit, and both
+   work. Left-clicking the icon restores the window.
 9. **Quit.** The quit button shows the confirmation. Keeping it running changes nothing. Confirming
    stops the server (a phone request now fails) and exits the process. Afterwards `powercfg /requests`
    shows no remaining SYSTEM request for the executable.
@@ -38,34 +42,92 @@ before the first demonstration. Every item names what success looks like.
 10. **Sleep suppression.** With the server running, `powercfg /requests` lists a SYSTEM request for
     the executable. After quitting, the request is gone and the laptop sleeps normally.
 11. **No network.** Disable every network adapter and start. The window shows the no-network error.
-12. **Several networks.** Connect to two networks. The network selector appears in the settings and
-    choosing an entry changes the address and the QR code on the window; with one network the
-    selector stays hidden.
-13. **QR code.** Scan the code on the window with a phone on the same WiFi. The site opens at the
-    address shown in large type.
+12. **The address the QR code carries.** Open the admin pages and put one waiter on the list, because
+    every QR code is created for a named waiter or a named station and there is no code without one.
+    Create that person's code and scan it with a phone on the same WiFi. The site opens. On a laptop
+    that also has virtual adapters, do this twice with a restart in between: the address in the code
+    is the same both times and is the one the phone can actually reach, not a `169.254.x.x` address.
 
 ## Failure states
 
-14. **Port in use.** Occupy the configured port with another program, then start. The window names
+13. **Port in use.** Occupy the configured port with another program, then start. The window names
     the port in the error and does not crash.
-15. **Unwritable data folder.** Revoke your own Modify rights on the data folder. The window shows the
-    repair text; the repair action in the settings restores write access after one UAC prompt.
+14. **Unwritable data folder.** Revoke your own Modify rights on the data folder. The window shows the
+    repair text, and the repair button on the window restores write access after one UAC prompt.
     Declining that prompt shows the declined text and opens the Windows firewall settings page.
-16. **Wrong folder named.** Point the data folder setting at a path the current user cannot write to
+15. **Wrong folder named.** Point the data folder setting at a path the current user cannot write to
     and restart. The repair text names that path, not `%ProgramData%\GastronomyApp`.
-17. **Generic start failure.** Make the server fail to start for a reason that is neither the port
+16. **Generic start failure.** Make the server fail to start for a reason that is neither the port
     nor folder permissions (a corrupt `gastronomy.db` is the easiest to stage). The window shows the
     could-not-be-started text, names no folder path, and the process stays alive with no crash
     dialog.
 
-## Settings locks
+## An evening, end to end
 
-18. **Locked during a session.** With an active event session, the data folder, port and bind address
-    fields are disabled, each with its explaining text. With no session active they are editable
-    again. Changing the data folder shows the restart note and moves no files.
+This is the walk the product exists for. Do it with a real phone in one hand and a real tablet
+standing where a station would stand, because reading it off two browser tabs on the laptop hides
+exactly the problems this section is looking for.
 
-## Hardware, once printers exist
+17. **Set the menu up.** In the admin pages create two stations, for example Küche and Theke. Create
+    one item that takes a while, with a preparation time in minutes, assigned to the kitchen only.
+    Create one drink with the preparation time left empty, assigned to the bar only. The overview now
+    asks for one thing only, and it asks it once per station: set that station's tablet up.
+18. **Enrol a station tablet.** On the stations page, tap "Tablet einrichten" on the kitchen and scan
+    the QR code with the tablet's own camera. The tablet lands straight on the kitchen's own page,
+    with the kitchen's name on it and no other station's work. It asks for no name. On the laptop, the
+    station's row now shows that a tablet is set up, and the kitchen's line has gone from the overview.
+19. **Enrol a second tablet, and a phone.** Do the same for the bar with a second tablet. Then open the
+    waiter list, tap "Neuer Kellner", type a name, and tap "Telefon neu einrichten" on that person's
+    row so a phone can scan the code. The phone is ready without anybody typing a name on it, and the
+    overview now says that everything is set up. The devices list on the laptop holds three rows, two
+    of them named as tablets at their stations and one as that person's phone.
+20. **Replace a tablet.** Tap "Tablet einrichten" on the kitchen again and scan the new code with a
+    different device. The new device shows the kitchen's page. The old tablet stops working: reload it
+    and it says it is no longer set up. Nothing was lost, because the orders were never on the device.
+21. **Place an order that splits, with two different answers.** On the phone, add two of the kitchen
+    item and two of the bar drink, type a table name, and go to the summary. There are two cards, one
+    per station. Leave the kitchen on "Zusammen" and switch the bar to "Sobald fertig". The kitchen
+    card shows a waiting time built from its preparation minutes, and the bar card does not, because
+    its items go out one at a time. Send the order and read the confirmation with its order number.
+22. **Watch it arrive.** Without touching either tablet, the kitchen's page gains one card in the left
+    hand column, "Bestellungen, die zusammen rausgehen", carrying the order number and the kitchen's
+    own number for it. The bar's page gains two separate items in the right hand column, "Positionen,
+    die rausgehen, sobald sie fertig sind". Neither tablet was reloaded and neither shows the other
+    station's work.
+23. **Advance one item.** On the kitchen tablet, start one of the two items. It reads "in Zubereitung"
+    and the other still reads "wartet". Mark that one ready. It reads "fertig" and stays on the card,
+    because the card goes out together and the person reading it needs to see what is done.
+24. **See the table name.** Marking something ready shows the table on the tablet, with the sentence
+    telling somebody to write it on the tray. Nothing happens on the phone: no sound, no banner, no
+    notification anywhere. That is the intended behaviour and this step exists to prove it.
+25. **Advance a whole card.** On the bar tablet, mark one of the two drinks ready. It leaves the
+    screen immediately, because it goes out as soon as it is ready, and the other one stays. On the
+    kitchen tablet, use the card's own button to move everything left on the card in one tap. When the
+    last item is ready the card leaves the screen.
+26. **Ready is final.** Look for any way to move a ready item back on either tablet. There is none.
+27. **The open tables overview.** On the phone, open the open items screen. The table is there with
+    what it still owes. Each item says where it is in production and names its station, and says
+    whether it comes with the rest of the order or on its own. Advance an item on a tablet and watch
+    the phone's line change without a reload.
+28. **Settle.** Select part of the table and settle it at its displayed price. Those lines disappear
+    and the open amount drops. Select the rest and settle it free of charge with a typed reason. The
+    table's given-away section names the reason and the amount.
+29. **The gap check.** Place three more orders to the kitchen and read the kitchen tablet's numbers.
+    They run consecutively. That run is the whole loss detection mechanism and it is worth seeing once
+    with your own eyes.
+30. **Reset the numbers.** In the admin overview, reset the numbering and confirm. The next order the
+    phone sends carries number 1 again, and the orders already taken keep the numbers they had.
 
-These stay open until a real TM-T20IV is on a desk, per the spec's open questions: the `GS ( H`
-process id echo on real firmware, the `GS ( k` QR command support, and whether five minutes is the
-right give-up window against a real evening.
+## After the walk
+
+The backup button and the diagnostics page described in the specification are not built yet, so these
+last two steps use what the program window actually offers today.
+
+31. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+    whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
+    well, then open both copies on another machine: the whole folder holds the evening's orders, and
+    the single file may be missing the last of them. That difference is the reason the backup belongs
+    behind a button, and seeing it once is what makes the point stick.
+32. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+    startup and the port are all in it, and no device token and no enrolment code appears anywhere in
+    it.

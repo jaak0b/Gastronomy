@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,6 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
   {
     builder.HasKey(invitation => invitation.Id);
     builder.Property(invitation => invitation.Id).ValueGeneratedNever();
-    builder.Property(invitation => invitation.StaffMemberId).IsRequired(false);
     builder.Property(invitation => invitation.QrCodeHash).IsRequired();
     builder.Property(invitation => invitation.QrCodeSalt).IsRequired();
     builder.Property(invitation => invitation.QrCodeIterations).IsRequired();

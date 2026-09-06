@@ -16,6 +16,7 @@ export interface AdminItem {
   isActive: boolean
   isAvailable: boolean
   stationIds: string[]
+  productionMinutes: number | null
 }
 
 export type AdminItemDraft = Omit<AdminItem, 'itemId' | 'isActive' | 'isAvailable'> & {
@@ -63,6 +64,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
         priceCents: item.priceCents,
         sortOrder: item.sortOrder,
         stationIds: item.stationIds,
+        productionMinutes: item.productionMinutes,
       },
     })
     if (result.kind !== 'ok') {

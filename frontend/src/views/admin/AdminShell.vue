@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { currentRoute, navigate, type AdminSection } from '../../router'
+import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../router'
 import { assertNever } from '../../core/assertNever'
 import { request } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
-import PrintersList from '../../components/admin/printers/PrintersList.vue'
+import DevicesList from '../../components/admin/devices/DevicesList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
 import { bindLocaleToLaptop } from '../../appLanguageBinding'
@@ -22,13 +22,7 @@ const section = computed<AdminSection>(() => {
   return route.name === 'admin' ? route.section : 'overview'
 })
 
-const sections: AdminSection[] = [
-  'overview',
-  'stations',
-  'items',
-  'printers',
-  'staff',
-]
+const sections: AdminSection[] = ADMIN_SECTIONS
 
 function titleFor(value: AdminSection): string {
   switch (value) {
@@ -38,10 +32,10 @@ function titleFor(value: AdminSection): string {
       return t('admin.stations.title')
     case 'items':
       return t('admin.items.title')
-    case 'printers':
-      return t('admin.printers.title')
     case 'staff':
       return t('admin.staff.title')
+    case 'devices':
+      return t('admin.devices.title')
     default:
       return assertNever(value)
   }
@@ -71,7 +65,7 @@ void request('/api/admin/stations').then((result) => {
     <AdminOverview v-if="section === 'overview'" />
     <StationsList v-else-if="section === 'stations'" />
     <ItemsList v-else-if="section === 'items'" />
-    <PrintersList v-else-if="section === 'printers'" />
-    <StaffList v-else />
+    <StaffList v-else-if="section === 'staff'" />
+    <DevicesList v-else />
   </div>
 </template>

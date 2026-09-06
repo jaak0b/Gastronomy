@@ -6,6 +6,7 @@ export interface CatalogItem {
   sortOrder: number
   isAvailable: boolean
   stationIds: string[]
+  productionMinutes: number | null
 }
 
 export interface CatalogCategory {
@@ -26,6 +27,12 @@ export interface Catalog {
   stations: CatalogStation[]
 }
 
+export type DeliveryMode = 'together' | 'asItComes'
+
+export type ProductionStatus = 'waiting' | 'inProduction' | 'finished'
+
+export type DeviceKind = 'staffMember' | 'station'
+
 export interface DraftLine {
   catalogItemId: string
   note: string | null
@@ -39,18 +46,8 @@ export interface DraftOrder {
   note: string | null
   lines: DraftLine[]
   clientOrderId: string | null
+  deliveryModes: Record<string, DeliveryMode>
 }
-
-export type OrderStatus = 'Accepted' | 'Printing' | 'Printed' | 'NeedsAttention'
-
-export type PrintJobStatus =
-  | 'Queued'
-  | 'Sending'
-  | 'Printed'
-  | 'Blocked'
-  | 'Failed'
-  | 'Unknown'
-  | 'HandledOnPaper'
 
 export interface OrderSubmitItem {
   catalogItemId: string
@@ -59,12 +56,18 @@ export interface OrderSubmitItem {
   stationId: string | null
 }
 
+export interface StationDeliveryMode {
+  stationId: string
+  deliveryMode: DeliveryMode
+}
+
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableName: string
   note: string | null
   settleOnSend: boolean
   items: OrderSubmitItem[]
+  deliveryModes: StationDeliveryMode[]
 }
 
 export interface OpenOrderItem {
@@ -75,6 +78,9 @@ export interface OpenOrderItem {
   note: string | null
   unitPriceCents: number
   orderedAtUtc: string
+  stationName: string
+  deliveryMode: DeliveryMode
+  productionStatus: ProductionStatus
 }
 
 export interface GivenAwayOrderItem {
@@ -113,7 +119,6 @@ export interface SettlementResponse {
 export interface OrderSubmitResponse {
   orderId: string
   globalOrderNumber: number
-  status: OrderStatus
   totalCents: number
   createdAtUtc: string
   stationOrders: {
@@ -121,7 +126,6 @@ export interface OrderSubmitResponse {
     stationId: string
     stationName: string
     stationOrderNumber: number
-    status: PrintJobStatus
     itemIds: string[]
   }[]
 }
@@ -131,42 +135,81 @@ export interface StaffMember {
   name: string
 }
 
+export interface StationIdentity {
+  id: string
+  name: string
+}
+
 export type AppLanguage = 'de' | 'en'
 
 export interface SessionInfo {
   deviceId: string
-  staffMember: StaffMember
+  deviceKind?: DeviceKind
+  staffMember: StaffMember | null
+  station?: StationIdentity | null
   language: AppLanguage
 }
 
 export interface RedeemResponse {
   deviceId: string
   deviceToken: string
-  staffMember: StaffMember
+  deviceKind: DeviceKind
+  staffMember: StaffMember | null
+  station: StationIdentity | null
   language: AppLanguage
 }
 
-export interface PrinterStatusRow {
-  stationId: string
-  name: string
-  isOnline: boolean
-  isPaperEnd: boolean
-  isPaperNearEnd: boolean
-  isCoverOpen: boolean
-  isFaulty: boolean
-  lastChangedAtUtc: string
+export interface Invitation {
+  invitationId: string
+  qrUrl: string
+  expiresAtUtc: string
+  staffMember: StaffMember | null
+  station: StationIdentity | null
 }
 
-export interface StationScreenOrderRow {
+export interface StationEstimate {
+  stationId: string
+  queuedMinutes: number
+}
+
+export interface EstimatesResponse {
+  stations: StationEstimate[]
+}
+
+export interface StationSliceItem {
+  orderItemId: string
+  itemName: string
+  note: string | null
+  productionStatus: ProductionStatus
+}
+
+export interface StationSlice {
   stationOrderId: string
-  orderId: string
   globalOrderNumber: number
   stationOrderNumber: number
   tableName: string
-  orderCreatedAtUtc: string
-  status: PrintJobStatus
-  canHandleOnPaper: boolean
-  copyNumber: number
-  orderNote: string | null
-  items: { quantity: number; itemName: string; itemNote: string | null }[]
+  note: string | null
+  deliveryMode: DeliveryMode
+  createdAtUtc: string
+  items: StationSliceItem[]
+}
+
+export interface StationOrdersResponse {
+  station: StationIdentity
+  slices: StationSlice[]
+}
+
+export interface StationItemStatusResponse {
+  tableName: string | null
+  slices: StationSlice[]
+}
+
+export interface AdminDevice {
+  deviceId: string
+  deviceKind: DeviceKind
+  ownerId: string
+  ownerName: string
+  language: AppLanguage
+  createdAtUtc: string
+  lastSeenAtUtc: string
 }

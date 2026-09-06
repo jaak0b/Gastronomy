@@ -118,7 +118,6 @@ public sealed class ImmediateTransactionRunnerTest
     return new()
            {
              Id = Guid.NewGuid(),
-             StaffMemberId = null,
              QrCodeHash = [1],
              QrCodeSalt = [2],
              QrCodeIterations = 1,

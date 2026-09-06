@@ -28,9 +28,19 @@ function knownKeys(tree: MessageTree, prefix = ''): Set<string> {
 
 const RENDERABLE_KEYS = knownKeys(de as MessageTree)
 
+function wholeNumberOrNull(value: number): number | null {
+  return Number.isInteger(value) ? value : null
+}
+
 function countFrom(parameters: Record<string, string | number>): number | null {
   const count = parameters.count
-  return typeof count === 'number' ? count : null
+  if (typeof count === 'number') {
+    return wholeNumberOrNull(count)
+  }
+  if (typeof count !== 'string' || count.trim() === '') {
+    return null
+  }
+  return wholeNumberOrNull(Number(count))
 }
 
 export function adminErrorMessage(body: ApiErrorBody | null): AdminErrorMessage {

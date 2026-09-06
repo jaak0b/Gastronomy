@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import StationsList from '../../../src/components/admin/stations/StationsList.vue'
+import { useConnectionStore } from '../../../src/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STATION_ID = '11111111-1111-1111-1111-111111111111'
@@ -13,16 +14,7 @@ const ONE_STATION = JSON.stringify({
       name: 'Küche',
       sortOrder: 1,
       isActive: true,
-      accessKey: 'key-kueche',
-      breakGlassUrl: 'http://192.168.1.20:5000/s/key-kueche',
-      transportKind: 'Mock',
-      host: null,
-      port: 9100,
-      isEnabled: true,
-      isOnline: true,
-      isPaperEnd: false,
-      isCoverOpen: false,
-      isFaulty: false,
+      hasDevice: true,
     },
   ],
 })
@@ -226,6 +218,104 @@ describe('the buttons beside a station', () => {
 
 })
 
+describe('setting up the tablet of a station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  function stubInvitation() {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/qr.svg')) {
+          return new Response('<svg></svg>', {
+            status: 200,
+            headers: { 'Content-Type': 'image/svg+xml' },
+          })
+        }
+        if (url.endsWith('/invitations')) {
+          bodies.push(JSON.parse(String(init?.body ?? 'null')))
+          return new Response(
+            JSON.stringify({
+              invitationId: 'invitation-1',
+              qrUrl: 'http://192.168.0.22:5000/j/CODE',
+              expiresAtUtc: '2026-08-27T20:00:00Z',
+              staffMember: null,
+              station: { id: STATION_ID, name: 'Küche' },
+            }),
+            { status: 201 },
+          )
+        }
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+    return bodies
+  }
+
+  it('asks the laptop for a code that belongs to that station', async () => {
+    const bodies = stubInvitation()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.set-up-device').trigger('click')
+
+    await vi.waitFor(() => expect(bodies).toEqual([{ stationId: STATION_ID }]))
+  })
+
+  it('shows the same invitation panel the waiter list uses, inside the station row', async () => {
+    stubInvitation()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.set-up-device').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(list.get('.station-row').find('.invitation-panel').exists()).toBe(true),
+    )
+  })
+
+  it('tells the admin to scan the code with the tablet of that station', async () => {
+    stubInvitation()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.set-up-device').trigger('click')
+
+    await vi.waitFor(() => expect(list.find('.instruction').exists()).toBe(true))
+    expect(list.get('.instruction').text()).toBe(
+      'Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle Küche.',
+    )
+  })
+})
+
+describe('the station screen the admin has left', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('no longer reloads the list when the laptop reports a change', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    list.unmount()
+    urls.length = 0
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
+  })
+})
+
 describe('a station the laptop refuses to switch off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -243,13 +333,13 @@ describe('a station the laptop refuses to switch off', () => {
     )
   })
 
-  it('never blames open slips for an orphaned-items refusal', async () => {
+  it('never blames unfinished orders for an orphaned-items refusal', async () => {
     refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: 2 })
 
     const list = mountList()
     await deactivateFirstStation(list)
 
-    expect(list.get('.refusal').text()).not.toContain('offene Bons')
+    expect(list.get('.refusal').text()).not.toContain('unfertige Bestellungen')
   })
 
   it('takes the singular form when a single item would be left behind', async () => {
@@ -263,14 +353,47 @@ describe('a station the laptop refuses to switch off', () => {
     )
   })
 
-  it('says open slips when open slips really are the reason', async () => {
-    refuseDeactivationWith('admin.stations.openTickets', { count: 3 })
+  it('takes the plural form when the laptop wrote the number as text', async () => {
+    refuseDeactivationWith('admin.itemsWouldHaveNoStation', { count: '2' })
 
     const list = mountList()
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Diese Ausgabestelle hat noch 3 offene Bons und kann jetzt nicht abgeschaltet werden.',
+      'Ordnen Sie 2 Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.',
+    )
+  })
+
+  it('speaks of a single unfinished order when the laptop counted one', async () => {
+    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: '1' })
+
+    const list = mountList()
+    await deactivateFirstStation(list)
+
+    expect(list.get('.refusal').text()).toBe(
+      'Diese Ausgabestelle hat noch eine unfertige Bestellung und kann jetzt nicht abgeschaltet werden. Arbeiten Sie sie ab und versuchen Sie es danach erneut.',
+    )
+  })
+
+  it('speaks of several unfinished orders when the laptop counted more than one', async () => {
+    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: '2' })
+
+    const list = mountList()
+    await deactivateFirstStation(list)
+
+    expect(list.get('.refusal').text()).toBe(
+      'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
+    )
+  })
+
+  it('says unfinished orders when unfinished orders really are the reason', async () => {
+    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 3 })
+
+    const list = mountList()
+    await deactivateFirstStation(list)
+
+    expect(list.get('.refusal').text()).toBe(
+      'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
     )
   })
 

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ public sealed class CatalogEndpointsTest
 
     using var scope = _factory.Services.CreateScope();
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(_world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+                            .IssueAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }
 
@@ -98,3 +99,4 @@ public sealed class CatalogEndpointsTest
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
   }
 }
+

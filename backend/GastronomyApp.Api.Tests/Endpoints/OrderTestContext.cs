@@ -1,12 +1,11 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
 public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
-
-public sealed record SlipOnThePileBody(bool SlipIsOnThePile);
 
 public sealed record OrderBody(
   Guid ClientOrderId,
@@ -57,10 +56,18 @@ public sealed class OrderTestContext : IAsyncDisposable
     return SendAsync(HttpMethod.Post, "/api/orders", body);
   }
 
-  public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body = null)
+  public Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, object? body = null)
+  {
+    return SendAsAsync(DeviceToken, method, path, body);
+  }
+
+  public async Task<HttpResponseMessage> SendAsAsync(string deviceToken,
+                                                     HttpMethod method,
+                                                     string path,
+                                                     object? body = null)
   {
     using HttpRequestMessage request = new(method, path);
-    request.Headers.Authorization = new("Bearer", DeviceToken);
+    request.Headers.Authorization = new("Bearer", deviceToken);
     if (body is not null)
     {
       request.Content = JsonContent.Create(body, body.GetType());
@@ -69,9 +76,21 @@ public sealed class OrderTestContext : IAsyncDisposable
     return await Client.SendAsync(request);
   }
 
+  public async Task<string> IssueStationTokenAsync(Guid stationId)
+  {
+    using var scope = Factory.Services.CreateScope();
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
+                            .IssueAsync(new(DeviceOwnerKind.Station, stationId),
+                                        "de",
+                                        "NUnit tablet",
+                                        CancellationToken.None);
+
+    return issued.PlaintextToken;
+  }
+
   public sealed class Builder
   {
-    public async Task<OrderTestContext> StartAsync(bool withRunningPrinters = true)
+    public async Task<OrderTestContext> StartAsync()
     {
       var factory = await new ApiTestFactory.Builder().StartAsync();
       SeededWorld world;
@@ -81,14 +100,12 @@ public sealed class OrderTestContext : IAsyncDisposable
         world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
       }
 
-      if (withRunningPrinters)
-      {
-        await factory.ReconcilePrintersAsync();
-      }
-
       using var scope = factory.Services.CreateScope();
       var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                              .IssueAsync(world.StaffMemberId, "de", "NUnit", CancellationToken.None);
+                              .IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId),
+                                          "de",
+                                          "NUnit",
+                                          CancellationToken.None);
 
       return new(factory, world, issued.PlaintextToken, issued.Device.Id);
     }

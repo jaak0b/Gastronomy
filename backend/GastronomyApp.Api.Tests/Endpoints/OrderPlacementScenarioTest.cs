@@ -1,7 +1,8 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -14,12 +15,8 @@ public sealed class OrderPlacementScenarioTest
   {
     _factory = await new ApiTestFactory.Builder().StartAsync();
 
-    await using (var context = _factory.CreateContext())
-    {
-      _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
-    }
-
-    await _factory.ReconcilePrintersAsync();
+    await using var context = _factory.CreateContext();
+    _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
 
   [TearDown]
@@ -28,13 +25,11 @@ public sealed class OrderPlacementScenarioTest
     await _factory.DisposeAsync();
   }
 
-  private readonly TimeSpan _patience = TimeSpan.FromSeconds(20);
-
   private ApiTestFactory _factory = null!;
   private SeededWorld _world = null!;
 
   [Test]
-  public async Task OrderPlacementFlow_EnrolStartPracticeFetchCatalogAndSend_PrintsASlipPerStation()
+  public async Task OrderPlacementFlow_EnrolFetchTheCatalogAndSend_SplitsTheOrderPerStation()
   {
     var deviceToken = await EnrolAPhoneAsync();
 
@@ -45,34 +40,129 @@ public sealed class OrderPlacementScenarioTest
     Assert.Multiple(() =>
                     {
                       Assert.That(placed.GlobalOrderNumber, Is.EqualTo(1), "A fresh session numbers from one.");
-                      Assert.That(placed.TicketCount, Is.EqualTo(2), "The order spans the kitchen and the bar.");
+                      Assert.That(placed.StationOrderCount, Is.EqualTo(2), "The order spans the kitchen and the bar.");
                       Assert.That(placed.SequenceNumbers,
                                   Is.EqualTo(new[] { 1, 1 }),
                                   "Each station keeps its own independent run of sequence numbers.");
                       Assert.That(placed.TotalCents, Is.EqualTo(1000));
                     });
 
-    var bothSlipsWritten = await WaitUntilAsync(() =>
-                                                  Directory.Exists(_factory.MockSlipFolder)
-                                                  && Directory.GetFiles(_factory.MockSlipFolder, "*", SearchOption.AllDirectories).Length >= 2);
+    await using var database = _factory.CreateContext();
+    List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges.ToListAsync();
 
-    Assert.That(bothSlipsWritten, Is.True, "One slip file per station must appear in the mock folder.");
+    Assert.That(changes,
+                Has.Count.EqualTo(3),
+                "Every placed item is logged as waiting from the moment the order lands.");
+  }
 
-    var bothSlipsRead = await WaitUntilAsync(async () =>
-                                            {
-                                              IReadOnlyList<string> statuses = await ReadTicketStatusesAsync();
+  [Test]
+  public async Task OrderPlacementFlow_TwoStationsWithMixedDeliveryModes_ReachesTheTabletsAndTheOpenItemsList()
+  {
+    var deviceToken = await EnrolAPhoneAsync();
+    var kitchenToken = await EnrolAStationTabletAsync(_world.KitchenStationId);
 
-                                              return statuses.Count == 2
-                                                     && statuses.All(status => status == PrintJobStatus.Printed.ToString());
-                                            });
+    OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
+                                           "Tisch 3",
+                                           "Ohne Senf",
+                                           [
+                                             new(_world.BratwurstItemId, 350, null, null),
+                                             new(_world.BratwurstItemId, 350, null, null),
+                                             new(_world.BeerItemId, 300, null, null)
+                                           ],
+                                           [new(_world.BarStationId, "asItComes")]);
 
-    Assert.That(bothSlipsRead, Is.True, "The print state of every slip must be readable once the printers have run.");
+    using (var placed = await SendAsync(HttpMethod.Post, "/api/orders", deviceToken, order))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
 
-    var orderStatus = await ReadOrderStatusAsync();
+    IReadOnlyList<Guid> kitchenItemIds;
 
-    Assert.That(orderStatus,
-                Is.EqualTo(OrderStatus.Printed.ToString()),
-                "Inside a practice session the test printer is the expected transport, so the order reads as printed.");
+    using (var queue = await SendAsync(HttpMethod.Get, "/api/station/orders", kitchenToken))
+    {
+      Assert.That(queue.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+      var body = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
+      var slice = body.RootElement.GetProperty("slices")[0];
+
+      kitchenItemIds =
+      [
+        .. slice.GetProperty("items")
+                .EnumerateArray()
+                .Select(item => item.GetProperty("orderItemId").GetGuid())
+      ];
+
+      Assert.Multiple(() =>
+                      {
+                        Assert.That(body.RootElement.GetProperty("slices").GetArrayLength(), Is.EqualTo(1));
+                        Assert.That(slice.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                        Assert.That(slice.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
+                        Assert.That(kitchenItemIds, Has.Count.EqualTo(2));
+                      });
+    }
+
+    using (var advanced = await SendAsync(HttpMethod.Post,
+                                          "/api/station/items/status",
+                                          kitchenToken,
+                                          new StationItemStatusBody(kitchenItemIds, "finished")))
+    {
+      Assert.That(advanced.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    await using (var database = _factory.CreateContext())
+    {
+      List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges
+                                                          .Where(change => kitchenItemIds.Contains(change.OrderItemId))
+                                                          .ToListAsync();
+
+      Assert.That(changes,
+                  Has.Count.EqualTo(4),
+                  "Every kitchen item is logged once when it is placed and once when it is finished.");
+    }
+
+    using var openItems = await SendAsync(HttpMethod.Get, "/api/open-items", deviceToken);
+    var openBody = JsonDocument.Parse(await openItems.Content.ReadAsStringAsync());
+    var table = openBody.RootElement.GetProperty("tables")[0];
+
+    var beer = table.GetProperty("items")
+                    .EnumerateArray()
+                    .Single(item => item.GetProperty("itemName").GetString() == "Bier");
+    var bratwurst = table.GetProperty("items")
+                         .EnumerateArray()
+                         .First(item => item.GetProperty("itemName").GetString() == "Bratwurst mit Brot");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(table.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                      Assert.That(table.GetProperty("openAmountCents").GetInt32(), Is.EqualTo(1000));
+                      Assert.That(beer.GetProperty("stationName").GetString(), Is.EqualTo("Bar"));
+                      Assert.That(beer.GetProperty("deliveryMode").GetString(), Is.EqualTo("asItComes"));
+                      Assert.That(beer.GetProperty("productionStatus").GetString(), Is.EqualTo("waiting"));
+                      Assert.That(bratwurst.GetProperty("productionStatus").GetString(), Is.EqualTo("finished"));
+                    });
+  }
+
+  private async Task<string> EnrolAStationTabletAsync(Guid stationId)
+  {
+    string qrCodeValue;
+
+    using (var invitation = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+                                                                 new { stationId }))
+    {
+      Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+      var body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());
+      var qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
+      qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
+    }
+
+    using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+                                                              new RedeemBody(qrCodeValue, null, "NUnit tablet"));
+
+    Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+    var redemption = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
+
+    return redemption.RootElement.GetProperty("deviceToken").GetString()!;
   }
 
   private async Task<string> EnrolAPhoneAsync()
@@ -80,7 +170,7 @@ public sealed class OrderPlacementScenarioTest
     string qrCodeValue;
 
     using (var invitation = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                                 new { staffMemberId = (Guid?)null }))
+                                                                 new { staffMemberId = _world.StaffMemberId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
       var body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());
@@ -130,7 +220,8 @@ public sealed class OrderPlacementScenarioTest
                          "Tisch 12",
                          null,
                          [
-                           new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null), new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
+                           new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
+                           new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
                            new(selection.BeerItemId, selection.BeerPriceCents, null, null)
                          ]);
 
@@ -139,41 +230,13 @@ public sealed class OrderPlacementScenarioTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var tickets = placed.RootElement.GetProperty("stationOrders");
+    var stationOrders = placed.RootElement.GetProperty("stationOrders");
 
     return new(placed.RootElement.GetProperty("orderId").GetGuid(),
                placed.RootElement.GetProperty("globalOrderNumber").GetInt32(),
                placed.RootElement.GetProperty("totalCents").GetInt32(),
-               tickets.GetArrayLength(),
-               [.. tickets.EnumerateArray().Select(ticket => ticket.GetProperty("stationOrderNumber").GetInt32())]);
-  }
-
-  private async Task<IReadOnlyList<string>> ReadTicketStatusesAsync()
-  {
-    using var response = await _factory.Client.GetAsync("/api/admin/orders");
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var orders = body.RootElement.GetProperty("orders");
-
-    if (orders.GetArrayLength() == 0)
-    {
-      return [];
-    }
-
-    return
-    [
-      .. orders[0]
-        .GetProperty("stationOrders")
-        .EnumerateArray()
-        .Select(ticket => ticket.GetProperty("status").GetString() ?? string.Empty)
-    ];
-  }
-
-  private async Task<string> ReadOrderStatusAsync()
-  {
-    using var response = await _factory.Client.GetAsync("/api/admin/orders");
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    return body.RootElement.GetProperty("orders")[0].GetProperty("status").GetString() ?? string.Empty;
+               stationOrders.GetArrayLength(),
+               [.. stationOrders.EnumerateArray().Select(slice => slice.GetProperty("stationOrderNumber").GetInt32())]);
   }
 
   private async Task<HttpResponseMessage> SendAsync(HttpMethod method,
@@ -191,28 +254,6 @@ public sealed class OrderPlacementScenarioTest
 
     return await _factory.Client.SendAsync(request);
   }
-
-  private async Task<bool> WaitUntilAsync(Func<bool> condition)
-  {
-    return await WaitUntilAsync(() => Task.FromResult(condition()));
-  }
-
-  private async Task<bool> WaitUntilAsync(Func<Task<bool>> condition)
-  {
-    var deadline = DateTime.UtcNow.Add(_patience);
-
-    while (DateTime.UtcNow < deadline)
-    {
-      if (await condition())
-      {
-        return true;
-      }
-
-      await Task.Delay(100);
-    }
-
-    return false;
-  }
 }
 
 public sealed record CatalogSelection(
@@ -225,5 +266,5 @@ public sealed record PlacedOrder(
   Guid OrderId,
   int GlobalOrderNumber,
   int TotalCents,
-  int TicketCount,
+  int StationOrderCount,
   IReadOnlyList<int> SequenceNumbers);

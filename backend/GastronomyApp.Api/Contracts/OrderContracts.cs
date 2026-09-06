@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Api.Contracts;
+using GastronomyApp.Core.Enums;
+
+namespace GastronomyApp.Api.Contracts;
 
 public sealed record OrderItemRequest
 {
@@ -9,6 +11,13 @@ public sealed record OrderItemRequest
   public string? Note { get; init; }
 
   public Guid? StationId { get; init; }
+}
+
+public sealed record OrderDeliveryModeRequest
+{
+  public required Guid StationId { get; init; }
+
+  public required DeliveryMode DeliveryMode { get; init; }
 }
 
 public sealed record PlaceOrderRequest
@@ -22,6 +31,8 @@ public sealed record PlaceOrderRequest
   public bool SettleOnSend { get; init; }
 
   public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
+
+  public IReadOnlyList<OrderDeliveryModeRequest>? DeliveryModes { get; init; }
 }
 
 public sealed record StationOrderView(
@@ -29,13 +40,13 @@ public sealed record StationOrderView(
   Guid StationId,
   string StationName,
   int StationOrderNumber,
-  string Status,
+  DeliveryMode DeliveryMode,
   IReadOnlyList<Guid> ItemIds);
 
 public sealed record PlacedOrderView(
   Guid OrderId,
   int GlobalOrderNumber,
-  string Status,
+  OrderStatus Status,
   int TotalCents,
   DateTime CreatedAtUtc,
   IReadOnlyList<StationOrderView> StationOrders);
@@ -44,34 +55,16 @@ public sealed record OrderListStationOrderView(
   Guid StationOrderId,
   string StationName,
   int StationOrderNumber,
-  string Status,
-  string? FailureReason,
-  bool PrinterHasPaper);
+  DeliveryMode DeliveryMode,
+  OrderStatus Status);
 
 public sealed record OrderListEntryView(
   Guid OrderId,
   int GlobalOrderNumber,
   string TableName,
   int TotalCents,
-  string Status,
+  OrderStatus Status,
   DateTime CreatedAtUtc,
   IReadOnlyList<OrderListStationOrderView> StationOrders);
 
 public sealed record OrderListView(IReadOnlyList<OrderListEntryView> Orders);
-
-public sealed record ResolveUnknownPrintRequest
-{
-  public required bool SlipIsOnThePile { get; init; }
-}
-
-public sealed record PrinterStatusView(
-  Guid StationId,
-  string Name,
-  bool IsOnline,
-  bool IsPaperEnd,
-  bool IsPaperNearEnd,
-  bool IsCoverOpen,
-  bool IsFaulty,
-  DateTime LastChangedAtUtc);
-
-public sealed record PrinterStatusListView(IReadOnlyList<PrinterStatusView> Stations);

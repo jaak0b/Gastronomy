@@ -2,10 +2,9 @@
 import { computed, onMounted, watch } from 'vue'
 import { currentRoute } from './router'
 import { bindLocaleToSession } from './localeBinding'
-import { assertNever } from './core/assertNever'
+import { screenFor, type ScreenName } from './core/landing'
 import { useSessionStore } from './stores/session'
 import { useCatalogStore } from './stores/catalog'
-import { usePrinterStatusStore } from './stores/printerStatus'
 import { useConnectionStore } from './stores/connection'
 import AppHeader from './components/header/AppHeader.vue'
 import AppNotices from './components/header/AppNotices.vue'
@@ -19,42 +18,16 @@ import AdminShell from './views/admin/AdminShell.vue'
 
 const session = useSessionStore()
 const catalog = useCatalogStore()
-const printerStatus = usePrinterStatusStore()
 const connection = useConnectionStore()
 
 bindLocaleToSession()
 
-type ScreenName =
-  | 'enrolQr'
-  | 'welcome'
-  | 'catalog'
-  | 'review'
-  | 'openItems'
-  | 'stations'
-  | 'admin'
+const screen = computed<ScreenName>(() =>
+  screenFor(session.isEnrolled ? session.deviceKind : null, currentRoute.value),
+)
 
-const screen = computed<ScreenName>(() => {
-  const route = currentRoute.value
-  switch (route.name) {
-    case 'enrolQr':
-      return 'enrolQr'
-    case 'home':
-      return session.isEnrolled ? 'catalog' : 'welcome'
-    case 'review':
-      return session.isEnrolled ? 'review' : 'welcome'
-    case 'openItems':
-      return session.isEnrolled ? 'openItems' : 'welcome'
-    case 'stations':
-      return session.isEnrolled ? 'stations' : 'welcome'
-    case 'admin':
-      return 'admin'
-    default:
-      return assertNever(route)
-  }
-})
-
-const showsHeader = computed(
-  () => screen.value !== 'admin' && session.isEnrolled,
+const isAWaiterScreen = computed(
+  () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
 )
 
 watch(
@@ -73,28 +46,29 @@ onMounted(async () => {
     return
   }
   session.listenForRevocation()
-  catalog.listen()
-  printerStatus.listen()
   await session.loadSession()
-  if (session.deviceToken !== null) {
-    await connection.connect({ deviceToken: session.deviceToken })
+  if (session.deviceToken === null) {
+    return
+  }
+  await connection.connect({ deviceToken: session.deviceToken })
+  if (isAWaiterScreen.value) {
+    catalog.listen()
     await catalog.load()
-    await printerStatus.load()
   }
 })
 </script>
 
 <template>
   <v-app>
-    <AppHeader v-if="showsHeader" />
+    <AppHeader v-if="isAWaiterScreen" />
     <v-main>
-    <AppNotices v-if="showsHeader" />
+    <AppNotices v-if="isAWaiterScreen" />
     <EnrolQr v-if="screen === 'enrolQr'" />
     <Welcome v-else-if="screen === 'welcome'" />
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
     <OpenItems v-else-if="screen === 'openItems'" />
-    <StationPage v-else-if="screen === 'stations'" />
+    <StationPage v-else-if="screen === 'station'" />
     <AdminShell v-else />
     </v-main>
   </v-app>

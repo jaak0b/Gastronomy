@@ -1,10 +1,8 @@
-﻿namespace GastronomyApp.Core.Entities;
+namespace GastronomyApp.Core.Entities;
 
 public sealed class EnrolmentInvitation
 {
   public required Guid Id { get; set; }
-
-  public Guid? StaffMemberId { get; set; }
 
   public required byte[] QrCodeHash { get; set; }
 

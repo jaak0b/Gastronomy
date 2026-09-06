@@ -24,15 +24,6 @@ const settingsAreOpen = ref(false)
         <v-icon icon="mdi-cash-register" />
         <span class="label">{{ t('header.openItems') }}</span>
       </v-btn>
-      <v-btn
-        class="stations-link flex-grow-1"
-        variant="text"
-        stacked
-        @click="navigate('/stations')"
-      >
-        <v-icon icon="mdi-store-outline" />
-        <span class="label">{{ t('header.stations') }}</span>
-      </v-btn>
     </div>
     <v-btn
       class="settings"

@@ -1,14 +1,17 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Infrastructure.Ports;
 
+public sealed record DeviceOwner(DeviceOwnerKind Kind, Guid Id);
+
 public sealed record IssuedDeviceToken(Device Device, string PlaintextToken);
 
-public sealed record DeviceVerificationResult(bool IsValid, Device? Device);
+public sealed record DeviceVerificationResult(bool IsValid, Device? Device, DeviceOwner? Owner);
 
 public interface IDeviceTokenStore
 {
-  public Task<IssuedDeviceToken> IssueAsync(Guid staffMemberId,
+  public Task<IssuedDeviceToken> IssueAsync(DeviceOwner owner,
                                             string language,
                                             string userAgentSnapshot,
                                             CancellationToken cancellationToken);

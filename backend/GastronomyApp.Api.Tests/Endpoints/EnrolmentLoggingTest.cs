@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.Logging;
@@ -14,7 +14,7 @@ public sealed class EnrolmentLoggingTest
   public async Task SetUp()
   {
     _log = new();
-    _context = await new OrderTestContext.Builder().StartAsync(false);
+    _context = await new OrderTestContext.Builder().StartAsync();
   }
 
   [TearDown]
@@ -32,7 +32,7 @@ public sealed class EnrolmentLoggingTest
   private async Task<CreatedInvitation> CreateInvitationAsync()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = (Guid?)null });
+                                                              new { staffMemberId = _context.World.StaffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -151,3 +151,5 @@ public sealed class EnrolmentLoggingTest
                     });
   }
 }
+
+

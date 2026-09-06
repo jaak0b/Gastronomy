@@ -1,5 +1,12 @@
 # Adversarial review of `docs/spec.md`
 
+This review was written against an earlier version of the specification, one built around thermal
+printers and printed slips. The fire department has since chosen tablets, printing has been removed
+from the product entirely, and `docs/spec.md` has been rewritten around the station tablet. Read this
+file as a record of what was reviewed and decided at the time. Every finding about printers, print
+jobs, slips or paper describes a mechanism that no longer exists, and nothing here should be treated
+as a description of the product today.
+
 Reviewer: an agent that did not write the spec. Scope: correctness, completeness, compliance with the
 root, backend and frontend `CLAUDE.md` files and the `writing-ui-guidance` skill, plus a challenge to
 each design decision the author made on their own authority.

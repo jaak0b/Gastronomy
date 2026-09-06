@@ -61,13 +61,13 @@ describe('the row of destinations', () => {
     const header = mountHeader()
 
     expect(header.get('.catalog-link .label').text()).toBe('Bestellung aufnehmen')
-    expect(header.get('.stations-link .label').text()).toBe('Ausgabestellen')
+    expect(header.get('.open-items-link .label').text()).toBe('Offene Posten')
   })
 
   it('carries an icon on every destination, so the row fits without hiding a word', () => {
     const header = mountHeader()
 
     expect(header.get('.catalog-link .v-icon').exists()).toBe(true)
-    expect(header.get('.stations-link .v-icon').exists()).toBe(true)
+    expect(header.get('.open-items-link .v-icon').exists()).toBe(true)
   })
 })

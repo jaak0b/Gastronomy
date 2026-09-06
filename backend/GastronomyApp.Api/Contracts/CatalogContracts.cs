@@ -1,4 +1,4 @@
-﻿namespace GastronomyApp.Api.Contracts;
+namespace GastronomyApp.Api.Contracts;
 
 public sealed record CatalogCategoryView(string Name, int SortOrder);
 
@@ -9,6 +9,7 @@ public sealed record CatalogItemView(
   int PriceCents,
   int SortOrder,
   bool IsAvailable,
+  int? ProductionMinutes,
   IReadOnlyList<Guid> StationIds);
 
 public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);

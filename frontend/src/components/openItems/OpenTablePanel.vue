@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, OpenTable } from '../../core/apiTypes'
+import type { AppLanguage, OpenOrderItem, OpenTable } from '../../core/apiTypes'
 import { isTheWholeTableSelected } from '../../core/openItems'
+import { openItemDeliveryKey, openItemProductionKey } from '../../core/productionWording'
 import { formatPrice } from '../../core/totals'
 
 const props = defineProps<{
@@ -28,6 +29,14 @@ function priceOf(cents: number): string {
 function isSelected(orderItemId: string): boolean {
   return props.selectedItemIds.includes(orderItemId)
 }
+
+function productionTextOf(item: OpenOrderItem): string {
+  return t(openItemProductionKey(item.productionStatus), { station: item.stationName })
+}
+
+function deliveryTextOf(item: OpenOrderItem): string {
+  return t(openItemDeliveryKey(item.deliveryMode))
+}
 </script>
 
 <template>
@@ -49,7 +58,7 @@ function isSelected(orderItemId: string): boolean {
           :model-value="wholeTableIsSelected"
           @update:model-value="emit('set-whole-table', !wholeTableIsSelected)"
         />
-        <v-list class="open-lines" lines="two">
+        <v-list class="open-lines" lines="three">
           <v-list-item
             v-for="item in table.items"
             :key="item.orderItemId"
@@ -69,6 +78,12 @@ function isSelected(orderItemId: string): boolean {
             </v-list-item-subtitle>
             <v-list-item-subtitle v-if="item.note !== null" class="line-note">
               {{ t('openItems.itemNote', { note: item.note }) }}
+            </v-list-item-subtitle>
+            <v-list-item-subtitle class="line-production">
+              {{ productionTextOf(item) }}
+            </v-list-item-subtitle>
+            <v-list-item-subtitle class="line-delivery">
+              {{ deliveryTextOf(item) }}
             </v-list-item-subtitle>
             <template #append>
               <span class="line-price text-body-1">{{ priceOf(item.unitPriceCents) }}</span>

@@ -1,178 +1,112 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
+import type {
+  StationIdentity,
+  StationItemStatusResponse,
+  StationOrdersResponse,
+  StationSlice,
+} from '../core/apiTypes'
+import { assertNever } from '../core/assertNever'
+import {
+  mergeSlices,
+  splitSlices,
+  stationFailureKey,
+  type ProductionAdvance,
+} from '../core/stationBoard'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
-import { assertNever } from '../core/assertNever'
-import type { PrinterStatusRow, StationScreenOrderRow } from '../core/apiTypes'
-
-export const TAKE_DELAY_SECONDS = 10
-
-export interface Station {
-  stationId: string
-  name: string
-  canPrint: boolean
-}
 
 export const useStationStore = defineStore('station', () => {
-  const stations = ref<Station[]>([])
-  const selectedStationId = ref<string | null>(null)
-  const stationOrders = ref<StationScreenOrderRow[]>([])
-  const printer = ref<PrinterStatusRow | null>(null)
-  const stationListLoadFailed = ref(false)
-  const stationOrderLoadFailed = ref(false)
-  const printerLoadFailed = ref(false)
-  const loadFailed = computed(
-    () => stationListLoadFailed.value || stationOrderLoadFailed.value || printerLoadFailed.value,
+  const station = ref<StationIdentity | null>(null)
+  const slices = ref<StationSlice[]>([])
+  const loadFailed = ref(false)
+  const failureKey = ref<string | null>(null)
+  const readyTableName = ref<string | null>(null)
+  const isWorking = ref(false)
+
+  const board = computed(() => splitSlices(slices.value))
+  const hasNothingToPrepare = computed(
+    () => board.value.together.length === 0 && board.value.single.length === 0,
   )
-  const pendingTicketIds = ref<string[]>([])
-  const noticeKeyByTicketId = ref<Record<string, string>>({})
-  const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   function deviceToken(): string | null {
     return useSessionStore().deviceToken
   }
 
-  async function loadStations(): Promise<void> {
-    const result = await request<{ stations: Station[] }>('/api/stations', {
+  async function load(): Promise<void> {
+    if (deviceToken() === null) {
+      return
+    }
+    const result = await request<StationOrdersResponse>('/api/station/orders', {
       token: deviceToken(),
     })
-    stationListLoadFailed.value = result.kind !== 'ok'
     if (result.kind !== 'ok') {
+      loadFailed.value = true
       return
     }
-    stations.value = result.data.stations
-    if (selectedStationId.value === null && result.data.stations.length > 0) {
-      selectedStationId.value = result.data.stations[0].stationId
-    }
+    loadFailed.value = false
+    station.value = result.data.station
+    slices.value = result.data.slices
   }
 
-  async function loadTickets(): Promise<void> {
-    if (selectedStationId.value === null) {
+  function dismissReadyNotice(): void {
+    readyTableName.value = null
+  }
+
+  async function advance(orderItemIds: string[], status: ProductionAdvance): Promise<void> {
+    failureKey.value = null
+    readyTableName.value = null
+    isWorking.value = true
+    const result = await request<StationItemStatusResponse>('/api/station/items/status', {
+      method: 'POST',
+      body: { orderItemIds, status },
+      token: deviceToken(),
+    })
+    isWorking.value = false
+    if (result.kind !== 'ok') {
+      failureKey.value = stationFailureKey(result)
       return
     }
-    const result = await request<{ stationOrders: StationScreenOrderRow[] }>(
-      `/api/stations/${selectedStationId.value}/station-orders`,
-      { token: deviceToken() },
-    )
-    stationOrderLoadFailed.value = result.kind !== 'ok'
-    if (result.kind === 'ok') {
-      stationOrders.value = result.data.stationOrders
-    }
-  }
-
-  async function loadPrinter(): Promise<void> {
-    if (selectedStationId.value === null) {
-      return
-    }
-    const result = await request<PrinterStatusRow>(
-      `/api/stations/${selectedStationId.value}/status`,
-      { token: deviceToken() },
-    )
-    printerLoadFailed.value = result.kind !== 'ok'
-    if (result.kind === 'ok') {
-      printer.value = result.data
-    }
-  }
-
-  function noteAgainstTicket(stationOrderId: string, noticeKey: string): void {
-    noticeKeyByTicketId.value = {
-      ...noticeKeyByTicketId.value,
-      [stationOrderId]: noticeKey,
-    }
-  }
-
-  function isPending(stationOrderId: string): boolean {
-    return pendingTicketIds.value.includes(stationOrderId)
-  }
-
-  async function sendAcknowledge(stationOrderId: string): Promise<void> {
-    const stationOrder = stationOrders.value.find((row) => row.stationOrderId === stationOrderId)
-    if (stationOrder === undefined) {
-      return
-    }
-    const result = await request(
-      `/api/stations/${selectedStationId.value}/station-orders/${stationOrder.stationOrderId}/hand-on-paper`,
-      { method: 'POST', token: deviceToken() },
-    )
-    switch (result.kind) {
-      case 'ok':
-        break
-      case 'error':
-        noteAgainstTicket(stationOrderId, result.body?.messageKey ?? 'station.takeRefused')
-        break
-      case 'unreachable':
-        noteAgainstTicket(stationOrderId, 'station.takeNotReached')
-        break
+    slices.value = mergeSlices(slices.value, result.data.slices)
+    switch (status) {
+      case 'finished':
+        readyTableName.value = result.data.tableName ?? null
+        return
+      case 'inProduction':
+        return
       default:
-        assertNever(result)
+        assertNever(status)
     }
-    await loadTickets()
-  }
-
-  function beginTake(stationOrderId: string): void {
-    if (isPending(stationOrderId)) {
-      return
-    }
-    pendingTicketIds.value = [...pendingTicketIds.value, stationOrderId]
-    pendingTimers.set(
-      stationOrderId,
-      setTimeout(() => {
-        pendingTimers.delete(stationOrderId)
-        pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== stationOrderId)
-        void sendAcknowledge(stationOrderId)
-      }, TAKE_DELAY_SECONDS * 1000),
-    )
-  }
-
-  function undoTake(stationOrderId: string): void {
-    const timer = pendingTimers.get(stationOrderId)
-    if (timer !== undefined) {
-      clearTimeout(timer)
-      pendingTimers.delete(stationOrderId)
-    }
-    pendingTicketIds.value = pendingTicketIds.value.filter((id) => id !== stationOrderId)
-  }
-
-  async function refresh(): Promise<void> {
-    if (stationListLoadFailed.value || stations.value.length === 0) {
-      await loadStations()
-    }
-    await loadTickets()
-    await loadPrinter()
   }
 
   function listen(): () => void {
-    return useConnectionStore().registerRefetch(refresh)
-  }
-
-  async function open(): Promise<void> {
-    await loadStations()
-    await loadTickets()
-    await loadPrinter()
-  }
-
-  async function selectStation(stationId: string): Promise<void> {
-    selectedStationId.value = stationId
-    await refresh()
+    const connection = useConnectionStore()
+    const releases = [
+      connection.registerRefetch(load),
+      connection.onEvent<{ stationId: string }>('StationOrdersChanged', () => {
+        void load()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
   }
 
   return {
-    stations,
-    selectedStationId,
-    stationOrders,
-    printer,
+    station,
+    slices,
+    board,
+    hasNothingToPrepare,
     loadFailed,
-    pendingTicketIds,
-    noticeKeyByTicketId,
+    failureKey,
+    readyTableName,
+    isWorking,
+    load,
+    advance,
+    dismissReadyNotice,
     listen,
-    refresh,
-    open,
-    selectStation,
-    loadTickets,
-    loadPrinter,
-    isPending,
-    beginTake,
-    undoTake,
   }
 })

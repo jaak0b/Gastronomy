@@ -1,10 +1,10 @@
-﻿using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Options;
-using GastronomyApp.Api.Printing;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -96,62 +96,56 @@ public sealed class EnrolmentUrlBuilder
 
 public sealed class AdminStationHandler
 {
-
+  private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly PrinterFleet _printerFleet;
+  private readonly DeviceRevoker _deviceRevoker;
+  private readonly OutstandingInvitationLookup _invitationLookup;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly StationPrinterStatusLookup _statusLookup;
 
   public AdminStationHandler(GastronomyAppDbContext dbContext,
-                             PrinterFleet printerFleet,
-                             StationPrinterStatusLookup statusLookup,
-                             ResultEnvelope resultEnvelope)
+                             OutstandingInvitationLookup invitationLookup,
+                             DeviceRevoker deviceRevoker,
+                             ResultEnvelope resultEnvelope,
+                             IClock clock)
   {
     _dbContext = dbContext;
-    _printerFleet = printerFleet;
-    _statusLookup = statusLookup;
+    _invitationLookup = invitationLookup;
+    _deviceRevoker = deviceRevoker;
     _resultEnvelope = resultEnvelope;
+    _clock = clock;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
     List<Station> stations = await _dbContext.Stations
-                                            .AsNoTracking()
-                                            .OrderBy(station => station.SortOrder)
-                                            .ToListAsync(cancellationToken);
+                                             .AsNoTracking()
+                                             .OrderBy(station => station.SortOrder)
+                                             .ToListAsync(cancellationToken);
 
-    List<Printer> printers = await _dbContext.Printers
-                                            .AsNoTracking()
-                                            .ToListAsync(cancellationToken);
+    HashSet<Guid> outstandingInvitationIds =
+      await _invitationLookup.InvitationIdsStillOutstandingAsync(cancellationToken);
+    Dictionary<Guid, DateTime> lastSeenByDeviceId =
+      await _invitationLookup.LastSeenByDeviceIdAsync(cancellationToken);
 
-    Dictionary<Guid, PrinterStatus> statuses = await _statusLookup.ByStationAsync(_dbContext,
-                                                                                 [.. stations.Select(station => station.Id)],
-                                                                                 cancellationToken);
-
-    List<AdminStationView> views = [];
-
-    foreach (var station in stations)
-    {
-      var printer = printers.FirstOrDefault(candidate => candidate.Id == station.PrinterId);
-      statuses.TryGetValue(station.Id, out var status);
-
-      views.Add(new(station.Id,
-                    station.Name,
-                    station.SortOrder,
-                    station.IsActive,
-                    station.PrinterId,
-                    printer?.Name,
-                    status?.IsOnline ?? false,
-                    status?.IsPaperEnd ?? false,
-                    status?.IsCoverOpen ?? false,
-                    status?.IsFaulty ?? false));
-    }
+    List<AdminStationView> views =
+    [
+      .. stations.Select(station => new AdminStationView(station.Id,
+                                                          station.Name,
+                                                          station.SortOrder,
+                                                          station.IsActive,
+                                                          station.DeviceId is not null,
+                                                          LastSeenOf(lastSeenByDeviceId, station.DeviceId),
+                                                          station.EnrolmentInvitationId is not null
+                                                          && outstandingInvitationIds.Contains(station.EnrolmentInvitationId.Value)))
+    ];
 
     return Results.Ok(new AdminStationListView(views));
   }
 
   public async Task<IResult> CreateAsync(SaveStationRequest request, CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(request);
+
     if (string.IsNullOrWhiteSpace(request.Name))
     {
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
@@ -167,21 +161,20 @@ public sealed class AdminStationHandler
                              Name = request.Name,
                              SortOrder = request.SortOrder,
                              IsActive = true,
-                             NextStationOrderNumber = 1,
-                             PrinterId = request.PrinterId
+                             NextStationOrderNumber = 1
                            });
 
     await _dbContext.SaveChangesAsync(cancellationToken);
-    await _printerFleet.ReconcileAsync(cancellationToken);
 
-    return Results.Json(new SavedStationView(stationId),
-                        statusCode: StatusCodes.Status201Created);
+    return Results.Json(new SavedStationView(stationId), statusCode: StatusCodes.Status201Created);
   }
 
   public async Task<IResult> UpdateAsync(Guid stationId,
                                          SaveStationRequest request,
                                          CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(request);
+
     if (string.IsNullOrWhiteSpace(request.Name))
     {
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
@@ -190,7 +183,7 @@ public sealed class AdminStationHandler
     }
 
     var station = await _dbContext.Stations
-                                 .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
+                                  .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
     if (station is null)
     {
@@ -199,9 +192,7 @@ public sealed class AdminStationHandler
 
     station.Name = request.Name;
     station.SortOrder = request.SortOrder;
-    station.PrinterId = request.PrinterId;
     await _dbContext.SaveChangesAsync(cancellationToken);
-    await _printerFleet.ReconcileAsync(cancellationToken);
 
     return Results.Ok(new SavedStationView(station.Id));
   }
@@ -209,7 +200,7 @@ public sealed class AdminStationHandler
   public async Task<IResult> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
     var station = await _dbContext.Stations
-                                 .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
+                                  .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
     if (station is null)
     {
@@ -218,7 +209,6 @@ public sealed class AdminStationHandler
 
     station.IsActive = true;
     await _dbContext.SaveChangesAsync(cancellationToken);
-    await _printerFleet.ReconcileAsync(cancellationToken);
 
     return Results.Ok(new SavedStationView(station.Id));
   }
@@ -226,32 +216,21 @@ public sealed class AdminStationHandler
   public async Task<IResult> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
     var station = await _dbContext.Stations
-                                 .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
+                                  .FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
 
     if (station is null)
     {
       return Results.NotFound();
     }
 
-    List<Guid> stationOrderIds = await _dbContext.StationOrders
-                                                .AsNoTracking()
-                                                .Where(stationOrder => stationOrder.StationId == stationId)
-                                                .Select(stationOrder => stationOrder.Id)
-                                                .ToListAsync(cancellationToken);
+    var unfinishedItemCount = await UnfinishedItemCountAsync(stationId, cancellationToken);
 
-    Dictionary<Guid, LatestPrintJob> latestJobs = await StationScreenDescriber.LoadLatestPrintJobsAsync(_dbContext,
-                                                                                                        stationOrderIds,
-                                                                                                        cancellationToken);
-
-    var openTickets = latestJobs.Values.Count(job =>
-                                                job.Status != PrintJobStatus.Printed && job.Status != PrintJobStatus.HandledOnPaper);
-
-    if (openTickets > 0)
+    if (unfinishedItemCount > 0)
     {
       return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                    "StationHasOpenTickets",
-                                    "admin.stationHasOpenTickets",
-                                    new Dictionary<string, string> { ["count"] = openTickets.ToString() });
+                                    "StationHasUnfinishedItems",
+                                    "admin.stationHasUnfinishedItems",
+                                    new Dictionary<string, string> { ["count"] = unfinishedItemCount.ToString() });
     }
 
     List<Guid> strandedItemIds = await StrandedItemIdsAsync(stationId, cancellationToken);
@@ -264,40 +243,87 @@ public sealed class AdminStationHandler
                                     new Dictionary<string, string> { ["count"] = strandedItemIds.Count.ToString() });
     }
 
+    var deviceId = station.DeviceId;
     station.IsActive = false;
+    await ConsumeOutstandingInvitationOfAsync(station, cancellationToken);
     await _dbContext.SaveChangesAsync(cancellationToken);
-    await _printerFleet.ReconcileAsync(cancellationToken);
+
+    if (deviceId is not null)
+    {
+      await _deviceRevoker.RevokeAsync(deviceId.Value, cancellationToken);
+    }
 
     return Results.Ok(new SavedStationView(station.Id));
+  }
+
+  private DateTime? LastSeenOf(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
+  {
+    return deviceId is not null && lastSeenByDeviceId.TryGetValue(deviceId.Value, out var lastSeen)
+             ? lastSeen
+             : null;
+  }
+
+  private async Task ConsumeOutstandingInvitationOfAsync(Station station, CancellationToken cancellationToken)
+  {
+    if (station.EnrolmentInvitationId is null)
+    {
+      return;
+    }
+
+    var invitation = await _dbContext.EnrolmentInvitations
+                                     .FirstOrDefaultAsync(candidate => candidate.Id == station.EnrolmentInvitationId.Value,
+                                                          cancellationToken);
+
+    if (invitation is not null && invitation.ConsumedAtUtc is null)
+    {
+      invitation.ConsumedAtUtc = _clock.UtcNow;
+    }
+
+    station.EnrolmentInvitationId = null;
+  }
+
+  private async Task<int> UnfinishedItemCountAsync(Guid stationId, CancellationToken cancellationToken)
+  {
+    List<Guid> stationOrderIds = await _dbContext.StationOrders
+                                                 .AsNoTracking()
+                                                 .Where(stationOrder => stationOrder.StationId == stationId)
+                                                 .Select(stationOrder => stationOrder.Id)
+                                                 .ToListAsync(cancellationToken);
+
+    return await _dbContext.OrderItems
+                           .AsNoTracking()
+                           .CountAsync(item => stationOrderIds.Contains(item.StationOrderId)
+                                               && item.ProductionStatus != ProductionStatus.Finished,
+                                       cancellationToken);
   }
 
   private async Task<List<Guid>> StrandedItemIdsAsync(Guid stationId, CancellationToken cancellationToken)
   {
     List<Guid> activeOtherStationIds = await _dbContext.Stations
-                                                      .AsNoTracking()
-                                                      .Where(station => station.IsActive && station.Id != stationId)
-                                                      .Select(station => station.Id)
-                                                      .ToListAsync(cancellationToken);
+                                                       .AsNoTracking()
+                                                       .Where(station => station.IsActive && station.Id != stationId)
+                                                       .Select(station => station.Id)
+                                                       .ToListAsync(cancellationToken);
 
     List<Guid> assignedItemIds = await _dbContext.ItemStationAssignments
-                                                .AsNoTracking()
-                                                .Where(assignment => assignment.StationId == stationId)
-                                                .Select(assignment => assignment.CatalogItemId)
-                                                .ToListAsync(cancellationToken);
+                                                 .AsNoTracking()
+                                                 .Where(assignment => assignment.StationId == stationId)
+                                                 .Select(assignment => assignment.CatalogItemId)
+                                                 .ToListAsync(cancellationToken);
 
     List<Guid> itemIdsWithAnotherStation = await _dbContext.ItemStationAssignments
-                                                          .AsNoTracking()
-                                                          .Where(assignment => assignedItemIds.Contains(assignment.CatalogItemId)
-                                                                               && activeOtherStationIds.Contains(assignment.StationId))
-                                                          .Select(assignment => assignment.CatalogItemId)
-                                                          .Distinct()
-                                                          .ToListAsync(cancellationToken);
+                                                           .AsNoTracking()
+                                                           .Where(assignment => assignedItemIds.Contains(assignment.CatalogItemId)
+                                                                                && activeOtherStationIds.Contains(assignment.StationId))
+                                                           .Select(assignment => assignment.CatalogItemId)
+                                                           .Distinct()
+                                                           .ToListAsync(cancellationToken);
 
     List<Guid> activeItemIds = await _dbContext.CatalogItems
-                                              .AsNoTracking()
-                                              .Where(item => item.IsActive && assignedItemIds.Contains(item.Id))
-                                              .Select(item => item.Id)
-                                              .ToListAsync(cancellationToken);
+                                               .AsNoTracking()
+                                               .Where(item => item.IsActive && assignedItemIds.Contains(item.Id))
+                                               .Select(item => item.Id)
+                                               .ToListAsync(cancellationToken);
 
     return [.. activeItemIds.Where(itemId => !itemIdsWithAnotherStation.Contains(itemId))];
   }

@@ -1,5 +1,9 @@
 # T001: Repository scaffolding
 
+This is the original implementation brief, written before any of the code existed. Printing has
+since been removed from the product entirely, and every printer instruction has been taken out of
+this file. For a current description of the product, read `docs/spec.md`.
+
 ## 1. Objective
 
 Scaffold the entire GastronomyApp repository so that every later task lands in an existing,
@@ -638,7 +642,7 @@ write in this task exactly as they bind later ones.
   behaviour yet to drive with a failing test; the placeholder tests exist only to prove each test
   runner executes and reports correctly. Do not invent a fake red phase, a fake failing assertion,
   or any other simulation of TDD process for this task.
-- No domain code, no REST endpoints, no SignalR hub, no EF Core `DbContext`, no printer transport,
+- No domain code, no REST endpoints, no SignalR hub, no EF Core `DbContext`,
   no authentication, no admin UI screens, no order screens. If a step's instructions seem to imply
   writing any of that, stop and re-read the step; none of them require it.
 - No trademarked words in file names or identifiers you introduce.
@@ -701,7 +705,7 @@ next step:
   project references Api only so the reference compiles; no `WebApplication` is built, configured,
   or started anywhere in this task.
 - Any domain model, use case, port interface, EF Core entity, migration, REST endpoint, SignalR
-  hub, printer transport implementation, or authentication/device-token logic.
+  hub, or authentication/device-token logic.
 - Any UI beyond the Avalonia template's default blank window (retitled) and the Vite template's
   default starter page. No admin screens, no order screens, no localization wiring beyond the two
   placeholder locale files existing on disk.

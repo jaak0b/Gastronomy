@@ -1,172 +1,264 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import StationPage from '../../../src/views/StationPage.vue'
+import { useSessionStore } from '../../../src/stores/session'
 import { testPlugins } from '../../support/plugins'
-import type { StationScreenOrderRow } from '../../../src/core/apiTypes'
 
-const registeredHandlers: { eventName: string; handler: (payload: unknown) => void }[] = []
+const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 
-vi.mock('@microsoft/signalr', () => {
-  class HubConnectionBuilder {
-    withUrl() {
-      return this
-    }
-    withAutomaticReconnect() {
-      return this
-    }
-    build() {
-      return {
-        state: 'Disconnected',
-        on: (eventName: string, handler: (payload: unknown) => void) => {
-          registeredHandlers.push({ eventName, handler })
-        },
-        off: () => undefined,
-        onreconnecting: () => undefined,
-        onreconnected: () => undefined,
-        onclose: () => undefined,
-        start: async () => undefined,
-        stop: async () => undefined,
-      }
-    }
-  }
-  return { HubConnectionBuilder, HubConnectionState: { Disconnected: 'Disconnected' } }
-})
-
-const StationPage = (await import('../../../src/views/StationPage.vue')).default
-const { useStationStore } = await import('../../../src/stores/station')
-const { useConnectionStore } = await import('../../../src/stores/connection')
-
-const SLIP: StationScreenOrderRow = {
-  stationOrderId: 'ticket-1',
-  orderId: 'order-1',
+const TOGETHER_SLICE = {
+  stationOrderId: 'slice-1',
   globalOrderNumber: 137,
-  stationOrderNumber: 42,
-  tableName: 'Tisch 12',
-  orderCreatedAtUtc: '2026-08-27T19:00:00Z',
-  status: 'Queued',
-  canHandleOnPaper: false,
-  copyNumber: 0,
-  orderNote: null,
-  items: [{ quantity: 2, itemName: 'Bratwurst', itemNote: null }],
+  stationOrderNumber: 12,
+  tableName: 'Tisch 3',
+  note: 'Bitte zusammen bringen',
+  deliveryMode: 'together',
+  createdAtUtc: '2026-09-05T18:00:00Z',
+  items: [
+    { orderItemId: 'a', itemName: 'Bratwurst', note: 'ohne Senf', productionStatus: 'waiting' },
+    { orderItemId: 'b', itemName: 'Pommes', note: null, productionStatus: 'inProduction' },
+  ],
 }
 
-const laptop = {
-  slipsAreReachable: true,
-  printerIsReachable: true,
-  slips: [] as StationScreenOrderRow[],
+const AS_IT_COMES_SLICE = {
+  stationOrderId: 'slice-2',
+  globalOrderNumber: 138,
+  stationOrderNumber: 14,
+  tableName: 'Tisch 7',
+  note: null,
+  deliveryMode: 'asItComes',
+  createdAtUtc: '2026-09-05T18:05:00Z',
+  items: [
+    { orderItemId: 'c', itemName: 'Bier', note: null, productionStatus: 'waiting' },
+  ],
 }
-const requestedUrls: string[] = []
 
-function stubLaptop(): void {
+function stubTheLaptop(action?: () => Response) {
+  const bodies: unknown[] = []
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
-      requestedUrls.push(url)
-      if (url === '/api/stations') {
-        return new Response(
-          JSON.stringify({
-            stations: [{ stationId: 'station-kueche', name: 'Küche', canPrint: true }],
-          }),
-          { status: 200 },
+    vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === '/api/station/items/status') {
+        bodies.push(JSON.parse(String(options?.body ?? 'null')))
+        return (
+          action?.()
+          ?? new Response(
+            JSON.stringify({ tableName: 'Tisch 3', slices: [TOGETHER_SLICE, AS_IT_COMES_SLICE] }),
+            { status: 200 },
+          )
         )
       }
-      if (url.includes('/station-orders')) {
-        return laptop.slipsAreReachable
-          ? new Response(JSON.stringify({ stationOrders: laptop.slips }), { status: 200 })
-          : new Response('{}', { status: 500 })
-      }
-      return laptop.printerIsReachable
-        ? new Response(JSON.stringify({ stationId: 'station-kueche', name: 'Küche' }), {
-            status: 200,
-          })
-        : new Response('{}', { status: 500 })
+      return new Response(
+        JSON.stringify({ station: KITCHEN, slices: [TOGETHER_SLICE, AS_IT_COMES_SLICE] }),
+        { status: 200 },
+      )
     }),
   )
+  return bodies
 }
 
 async function mountPage() {
-  const view = mount(StationPage, { global: { plugins: testPlugins() } })
+  const session = useSessionStore()
+  session.deviceToken = 'token-here'
+  session.deviceKind = 'station'
+  const page = mount(StationPage, {
+    global: { plugins: testPlugins() },
+    attachTo: document.body,
+  })
   await flushPromises()
-  return view
+  return page
 }
 
-function freshScreen(): void {
-  setActivePinia(createPinia())
-  localStorage.clear()
-  registeredHandlers.length = 0
-  requestedUrls.length = 0
-  laptop.slipsAreReachable = true
-  laptop.printerIsReachable = true
-  laptop.slips = []
-  stubLaptop()
-}
-
-describe('the station screen and the laptop pushing news', () => {
-  beforeEach(freshScreen)
+describe('the screen at a station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    stubTheLaptop()
+  })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('fetches its slips again when a slip has finished printing', async () => {
-    await mountPage()
-    const connection = useConnectionStore()
-    await connection.connect({ deviceToken: 'a-token' })
-    requestedUrls.length = 0
+  it('names the station in its heading, so nobody works the wrong pile', async () => {
+    const page = await mountPage()
 
-    for (const entry of registeredHandlers.filter(
-      (candidate) => candidate.eventName === 'PrintJobStatusChanged',
-    )) {
-      entry.handler({})
-    }
-    await flushPromises()
-
-    expect(requestedUrls.some((url) => url.includes('/station-orders'))).toBe(true)
-  })
-})
-
-describe('a station screen that could not reach the laptop', () => {
-  beforeEach(freshScreen)
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
+    expect(page.get('.station-name').text()).toBe('Küche')
   })
 
-  it('says the slips on screen may be out of date', async () => {
-    laptop.slipsAreReachable = false
+  it('puts the orders that go out together in the left column', async () => {
+    const page = await mountPage()
 
-    const view = await mountPage()
+    expect(page.get('.together-column').findAll('.station-slice')).toHaveLength(1)
+  })
 
-    expect(view.get('.station-load-failed').text()).toBe(
-      'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+  it('puts each single item of an order that goes out as it is ready in the right column', async () => {
+    const page = await mountPage()
+
+    expect(page.get('.single-column').findAll('.station-single')).toHaveLength(1)
+  })
+
+  it('shows the order number and the number of this station on a card', async () => {
+    const page = await mountPage()
+
+    expect(page.get('.station-slice .slice-heading').text()).toBe(
+      'Bestellung 137, hier Nummer 12',
     )
   })
 
-  it('keeps the slips it already has on screen, because staff are working them off', async () => {
-    laptop.slips = [SLIP]
-    const view = await mountPage()
-    const station = useStationStore()
+  it('shows the table on a card, because that is what goes on the tray', async () => {
+    const page = await mountPage()
 
-    laptop.slipsAreReachable = false
-    await station.refresh()
+    expect(page.get('.station-slice .table-name').text()).toBe('Tisch 3')
+  })
+
+  it('shows the note that belongs to the whole order', async () => {
+    const page = await mountPage()
+
+    expect(page.get('.station-slice .slice-note').text()).toBe(
+      'Hinweis zur Bestellung: Bitte zusammen bringen',
+    )
+  })
+
+  it('shows every item of the order with the note and the state it is in', async () => {
+    const page = await mountPage()
+
+    const items = page.get('.station-slice').findAll('.station-item')
+
+    expect(items).toHaveLength(2)
+    expect(items[0].get('.item-name').text()).toBe('Bratwurst')
+    expect(items[0].get('.item-note').text()).toBe('Hinweis: ohne Senf')
+    expect(items[0].get('.item-status').text()).toBe('wartet')
+    expect(items[1].get('.item-status').text()).toBe('in Zubereitung')
+  })
+
+  it('keeps the number of this station visible on a single item too, so a gap is noticeable', async () => {
+    const page = await mountPage()
+
+    expect(page.get('.station-single .slice-heading').text()).toBe(
+      'Bestellung 138, hier Nummer 14',
+    )
+  })
+})
+
+describe('moving work on from the station screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('starts one item on its own from inside an order that goes out together', async () => {
+    const bodies = stubTheLaptop()
+    const page = await mountPage()
+
+    await page.get('.station-slice .station-item .advance-item').trigger('click')
+
+    expect(bodies).toEqual([{ orderItemIds: ['a'], status: 'inProduction' }])
+  })
+
+  it('starts everything that is still waiting with the control on the whole order', async () => {
+    const bodies = stubTheLaptop()
+    const page = await mountPage()
+
+    await page.get('.station-slice .advance-slice').trigger('click')
+
+    expect(bodies).toEqual([{ orderItemIds: ['a'], status: 'inProduction' }])
+  })
+
+  it('names the control on the whole order for what it will do next', async () => {
+    stubTheLaptop()
+    const page = await mountPage()
+
+    expect(page.get('.station-slice .advance-slice').text()).toBe('Ganze Bestellung beginnen')
+  })
+
+  it('names the control on a single item for what it will do next', async () => {
+    stubTheLaptop()
+    const page = await mountPage()
+
+    expect(page.get('.station-single .advance-item').text()).toBe('Zubereitung beginnen')
+  })
+
+  it('names the table in a notice once something is ready', async () => {
+    stubTheLaptop(
+      () =>
+        new Response(
+          JSON.stringify({
+            tableName: 'Tisch 3',
+            slices: [
+              {
+                ...TOGETHER_SLICE,
+                items: [
+                  { orderItemId: 'a', itemName: 'Bratwurst', note: null, productionStatus: 'inProduction' },
+                  { orderItemId: 'b', itemName: 'Pommes', note: null, productionStatus: 'inProduction' },
+                ],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    )
+    const page = await mountPage()
+    await page.get('.station-slice .advance-slice').trigger('click')
+    await flushPromises()
+    await page.get('.station-slice .advance-slice').trigger('click')
     await flushPromises()
 
-    expect(view.findAll('.station-stationOrder-row')).toHaveLength(1)
+    expect(page.get('.ready-notice').text()).toContain('Tisch 3')
   })
 
-  it('does not claim the pile is empty while the list could not be fetched', async () => {
-    laptop.slipsAreReachable = false
+  it('keeps the list as it was and states the reason when the laptop refused', async () => {
+    stubTheLaptop(
+      () =>
+        new Response(
+          JSON.stringify({
+            code: 'Conflict',
+            messageKey: 'station.statusAlreadyPassed',
+            parameters: {},
+            details: null,
+          }),
+          { status: 409 },
+        ),
+    )
+    const page = await mountPage()
 
-    const view = await mountPage()
+    await page.get('.station-slice .advance-slice').trigger('click')
+    await flushPromises()
 
-    expect(view.find('.empty').exists()).toBe(false)
+    expect(page.get('.action-failed').text()).toBe(
+      'Laden Sie die Seite neu. Diese Position ist schon weiter, als hier steht.',
+    )
+    expect(page.get('.station-slice').findAll('.station-item')).toHaveLength(2)
+  })
+})
+
+describe('a station with nothing to prepare', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () => new Response(JSON.stringify({ station: KITCHEN, slices: [] }), { status: 200 }),
+      ),
+    )
   })
 
-  it('does not claim the station has no printer while the printer status could not be fetched', async () => {
-    laptop.printerIsReachable = false
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
 
-    const view = await mountPage()
+  it('says so rather than showing two empty columns without a word', async () => {
+    const page = await mountPage()
 
-    expect(view.find('.no-printer').exists()).toBe(false)
+    expect(page.get('.empty').text()).toBe('Im Moment ist nichts zuzubereiten.')
   })
 })

@@ -360,6 +360,22 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
+  public async Task GetOpenItems_AnOpenTable_NamesTheStationTheDeliveryModeAndHowFarEachItemHasGot()
+  {
+    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+
+    var body = await ReadOpenItemsAsync();
+    var item = body.RootElement.GetProperty("tables")[0].GetProperty("items")[0];
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(item.GetProperty("stationName").GetString(), Is.EqualTo("Kueche"));
+                      Assert.That(item.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
+                      Assert.That(item.GetProperty("productionStatus").GetString(), Is.EqualTo("waiting"));
+                    });
+  }
+
+  [Test]
   public async Task GetOpenItems_WithoutADeviceToken_IsRefused()
   {
     using HttpRequestMessage request = new(HttpMethod.Get, "/api/open-items");

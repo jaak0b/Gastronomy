@@ -1,6 +1,5 @@
 ﻿using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Tests;
 
@@ -76,32 +75,6 @@ public sealed class SequenceNumberAllocatorTest
     var secondStationFirstNumber = await allocator.AllocateStationOrderNumberAsync(secondStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(secondStationFirstNumber, Is.EqualTo(1));
-  }
-
-  [Test]
-  public async Task AllocatePrinterJobIdAsync_At9999_WrapsTo1AndPersists()
-  {
-    using SqliteTempFileFixture fixture = new();
-
-    var context = fixture.CreateContext();
-    await new SequenceNumberAllocator(context).AllocatePrinterJobIdAsync(TestContext.CurrentContext.CancellationToken);
-
-    var counters = await context.SequenceCounters
-                                .SingleAsync(TestContext.CurrentContext.CancellationToken);
-    counters.NextPrinterJobId = 9999;
-    await context.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    var lastBeforeWrap = await new SequenceNumberAllocator(context).AllocatePrinterJobIdAsync(TestContext.CurrentContext.CancellationToken);
-    context.Dispose();
-
-    var afterRestart = fixture.CreateContext();
-    var afterWrap = await new SequenceNumberAllocator(afterRestart).AllocatePrinterJobIdAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(lastBeforeWrap, Is.EqualTo(9999));
-                      Assert.That(afterWrap, Is.EqualTo(1));
-                    });
   }
 
   private async static Task<Guid> AddStationAsync(GastronomyAppDbContext dbContext, string name)

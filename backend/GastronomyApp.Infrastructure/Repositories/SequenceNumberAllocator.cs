@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +8,6 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 {
   private const int SingleRowId = 1;
   private const int FirstNumber = 1;
-  private const int PrinterJobIdMaximumValue = 9999;
 
   private readonly GastronomyAppDbContext _dbContext;
 
@@ -22,17 +21,6 @@ public sealed class SequenceNumberAllocator : INumberAllocator
     var counters = await LoadCountersAsync(cancellationToken);
     var allocatedValue = counters.NextOrderNumber;
     counters.NextOrderNumber = allocatedValue + 1;
-    await _dbContext.SaveChangesAsync(cancellationToken);
-
-    return allocatedValue;
-  }
-
-  public async Task<int> AllocatePrinterJobIdAsync(CancellationToken cancellationToken)
-  {
-    var counters = await LoadCountersAsync(cancellationToken);
-    var allocatedValue = counters.NextPrinterJobId;
-    counters.NextPrinterJobId =
-      allocatedValue >= PrinterJobIdMaximumValue ? FirstNumber : allocatedValue + 1;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     return allocatedValue;
@@ -77,8 +65,7 @@ public sealed class SequenceNumberAllocator : INumberAllocator
     SequenceCounters created = new()
                                {
                                  Id = SingleRowId,
-                                 NextOrderNumber = FirstNumber,
-                                 NextPrinterJobId = FirstNumber
+                                 NextOrderNumber = FirstNumber
                                };
 
     _dbContext.SequenceCounters.Add(created);

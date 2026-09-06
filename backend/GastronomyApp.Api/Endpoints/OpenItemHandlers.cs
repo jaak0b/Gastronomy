@@ -3,6 +3,7 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
@@ -13,7 +14,13 @@ using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public sealed record OpenItemOwner(Guid OrderId, string TableName, int GlobalOrderNumber, DateTime OrderedAtUtc);
+public sealed record OpenItemOwner(
+  Guid OrderId,
+  string TableName,
+  int GlobalOrderNumber,
+  DateTime OrderedAtUtc,
+  string StationName,
+  DeliveryMode DeliveryMode);
 
 public sealed record OpenItemOwnerLookup(
   IReadOnlyDictionary<Guid, OpenItemOwner> Owners,
@@ -151,7 +158,10 @@ public sealed class OpenItemsReader
                                               item.ItemName,
                                               item.Note,
                                               item.UnitPriceCents,
-                                              lookup.Owners[item.Id].OrderedAtUtc))
+                                              lookup.Owners[item.Id].OrderedAtUtc,
+                                              lookup.Owners[item.Id].StationName,
+                                              lookup.Owners[item.Id].DeliveryMode,
+                                              item.ProductionStatus))
         .OrderBy(view => view.GlobalOrderNumber)
         .ThenBy(view => view.ItemName, StringComparer.Ordinal)
     ];
@@ -193,22 +203,38 @@ public sealed class OpenItemsReader
                                                     .Where(order => orderIds.Contains(order.Id))
                                                     .ToDictionaryAsync(order => order.Id, cancellationToken);
 
-    Dictionary<Guid, Guid> orderIdByStationOrderId =
-      stationOrders.ToDictionary(stationOrder => stationOrder.Id, stationOrder => stationOrder.OrderId);
+    Dictionary<Guid, StationOrder> stationOrderById =
+      stationOrders.ToDictionary(stationOrder => stationOrder.Id);
+
+    List<Guid> stationIds = [.. stationOrders.Select(stationOrder => stationOrder.StationId).Distinct()];
+
+    Dictionary<Guid, string> stationNames = await dbContext.Stations
+                                                           .AsNoTracking()
+                                                           .Where(station => stationIds.Contains(station.Id))
+                                                           .ToDictionaryAsync(station => station.Id,
+                                                                              station => station.Name,
+                                                                              cancellationToken);
 
     Dictionary<Guid, OpenItemOwner> owners = [];
     List<Guid> withoutAnOrder = [];
 
     foreach (var item in items)
     {
-      if (!orderIdByStationOrderId.TryGetValue(item.StationOrderId, out var orderId)
-          || !orders.TryGetValue(orderId, out var order))
+      if (!stationOrderById.TryGetValue(item.StationOrderId, out var stationOrder)
+          || !orders.TryGetValue(stationOrder.OrderId, out var order))
       {
         withoutAnOrder.Add(item.Id);
         continue;
       }
 
-      owners[item.Id] = new(order.Id, order.TableName, order.GlobalOrderNumber, order.CreatedAtUtc);
+      owners[item.Id] = new(order.Id,
+                            order.TableName,
+                            order.GlobalOrderNumber,
+                            order.CreatedAtUtc,
+                            stationNames.TryGetValue(stationOrder.StationId, out var stationName)
+                              ? stationName
+                              : string.Empty,
+                            stationOrder.DeliveryMode);
     }
 
     if (withoutAnOrder.Count > 0)
@@ -276,7 +302,7 @@ public sealed class OrderItemSettlementHandler
   }
 
   public Task<IResult> SettleAtTheDisplayedPriceAsync(SettleItemsRequest request,
-                                                      DeviceCaller caller,
+                                                      StaffDeviceCaller caller,
                                                       CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
@@ -292,7 +318,7 @@ public sealed class OrderItemSettlementHandler
   }
 
   public Task<IResult> SettleFreeOfChargeAsync(SettleItemsFreeOfChargeRequest request,
-                                               DeviceCaller caller,
+                                               StaffDeviceCaller caller,
                                                CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);

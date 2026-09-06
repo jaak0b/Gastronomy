@@ -1,56 +1,25 @@
-﻿using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderStatusCalculator
 {
-  public OrderStatus Calculate(IReadOnlyCollection<PrintJobStatus> printJobStatuses)
+  public OrderStatus Calculate(IReadOnlyCollection<ProductionStatus> itemStatuses)
   {
-    if (printJobStatuses.Any(NeedsHumanAttention))
+    ArgumentNullException.ThrowIfNull(itemStatuses);
+
+    if (itemStatuses.Count == 0)
     {
-      return OrderStatus.NeedsAttention;
+      return OrderStatus.Waiting;
     }
 
-    if (printJobStatuses.All(IsOnPaper))
+    if (itemStatuses.All(status => status == ProductionStatus.Finished))
     {
-      return OrderStatus.Printed;
+      return OrderStatus.Finished;
     }
 
-    if (printJobStatuses.Any(status => status == PrintJobStatus.Sending))
-    {
-      return OrderStatus.Printing;
-    }
-
-    return OrderStatus.Accepted;
-  }
-
-  private bool NeedsHumanAttention(PrintJobStatus status)
-  {
-    return status switch
-           {
-             PrintJobStatus.Unknown => true,
-             PrintJobStatus.Failed => true,
-             PrintJobStatus.Blocked => true,
-             PrintJobStatus.Queued => false,
-             PrintJobStatus.Sending => false,
-             PrintJobStatus.Printed => false,
-             PrintJobStatus.HandledOnPaper => false,
-             _ => new Never().OfType<bool>(status)
-           };
-  }
-
-  private bool IsOnPaper(PrintJobStatus status)
-  {
-    return status switch
-           {
-             PrintJobStatus.Printed => true,
-             PrintJobStatus.HandledOnPaper => true,
-             PrintJobStatus.Queued => false,
-             PrintJobStatus.Blocked => false,
-             PrintJobStatus.Sending => false,
-             PrintJobStatus.Unknown => false,
-             PrintJobStatus.Failed => false,
-             _ => new Never().OfType<bool>(status)
-           };
+    return itemStatuses.All(status => status == ProductionStatus.Waiting)
+             ? OrderStatus.Waiting
+             : OrderStatus.InProduction;
   }
 }
