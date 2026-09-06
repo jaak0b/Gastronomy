@@ -61,7 +61,7 @@ function stubLaptopThatRefuses(): void {
         return new Response(
           JSON.stringify({
             code: 'ValidationFailed',
-            messageKey: 'admin.personNameMissing',
+            messageKey: 'admin.staff.nameMissing',
             parameters: {},
             details: null,
           }),
@@ -119,7 +119,7 @@ describe('adding a person to the waiter list', () => {
     await staff.create('')
 
     expect(staff.errorMessage).toEqual({
-      key: 'admin.personNameMissing',
+      key: 'admin.staff.nameMissing',
       parameters: {},
       count: null,
     })

@@ -102,7 +102,7 @@ public sealed class AdminStaffMembersHandler
     {
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
-                                    "admin.personNameMissing");
+                                    "admin.staff.nameMissing");
     }
 
     StaffMember staffMember = new()
@@ -130,7 +130,7 @@ public sealed class AdminStaffMembersHandler
     {
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
-                                    "admin.personNameMissing");
+                                    "admin.staff.nameMissing");
     }
 
     var staffMember = await _dbContext.StaffMembers

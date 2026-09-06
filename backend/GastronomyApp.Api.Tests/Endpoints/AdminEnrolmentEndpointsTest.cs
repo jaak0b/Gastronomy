@@ -159,7 +159,7 @@ public sealed class AdminEnrolmentEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.personNameMissing"));
+                                  Is.EqualTo("admin.staff.nameMissing"));
                     });
   }
 

@@ -336,7 +336,7 @@ describe('adding somebody new to the waiter list', () => {
           return new Response(
             JSON.stringify({
               code: 'ValidationFailed',
-              messageKey: 'admin.personNameMissing',
+              messageKey: 'admin.staff.nameMissing',
               parameters: {},
               details: null,
             }),
@@ -351,7 +351,7 @@ describe('adding somebody new to the waiter list', () => {
     await typeTheName(list)
 
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
-    expect(list.get('.refusal').text()).toBe('Geben Sie der Person einen Namen, bevor Sie speichern.')
+    expect(list.get('.refusal').text()).toBe('Geben Sie dem Kellner einen Namen, bevor Sie speichern.')
   })
 })
 

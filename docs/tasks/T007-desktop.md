@@ -2,7 +2,10 @@
 
 This is the original implementation brief, written before any of the code existed. Printing has
 since been removed from the product entirely, and every printer instruction has been taken out of
-this file. For a current description of the product, read `docs/spec.md`.
+this file. For a current description of the product, read `docs/spec.md`. Where this brief cites a
+section number of the specification, it means the older and much longer version of that document. The
+specification has since been cut back to purpose, decisions, reasons and the setup checklist, and the
+source code is now the authority on every contract.
 
 ## 1. Objective
 

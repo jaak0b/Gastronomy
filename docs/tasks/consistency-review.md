@@ -5,7 +5,10 @@ existed. Printing has since been removed from the product entirely, and the prin
 taken out of this file. What is left of it is the order lifecycle those briefs were written around,
 whose states are still named after printing and after a ticket that was never built. That lifecycle is
 gone too: an order item now moves from waiting to being prepared to ready on a station's tablet. For a
-current description of the product, read `docs/spec.md`.
+current description of the product, read `docs/spec.md`. Where this review cites a section number of
+the specification, it means the older and much longer version of that document. The specification has
+since been cut back to purpose, decisions, reasons and the setup checklist, and the source code is now
+the authority on every contract.
 
 Scope: the seams only. Every place one task document assumes what another defines. The spec itself is
 not re-reviewed; it is quoted only where a seam turns on it. Architect rulings 1 to 10 are applied as
