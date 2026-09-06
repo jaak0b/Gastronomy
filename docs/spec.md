@@ -365,9 +365,12 @@ the evening on a borrowed handset keeps the orders they took.
 **A tablet never says which station it is.** Its token already does, so there is no way to ask for
 another station's work and no id to mistype.
 
-**Names are typed at the laptop, not on the phone.** The admin puts a waiter on the list and then
-creates that person's code, which is what lets the phone finish setting itself up without asking
-anybody anything at a loud festival. What it costs is that the admin does the typing.
+**A station is named at the laptop, a new waiter names themselves on the phone.** The admin creates
+an Ausgabestelle and names it while setting the event up, long before its tablet is needed, so that
+code names the station and the tablet asks nothing. A waiter may be added minutes before service
+starts, so the code for somebody new names nobody, and the waiter types their own name once they
+have scanned it. That typing is what puts them on the list. A code for a waiter who is already on
+the list, which is what setting their phone up again issues, names them and asks nothing either.
 
 **The admin can rename a person at any time, and that is a safety valve rather than a convenience.**
 The name on an order is whatever was typed into the waiter list, so sooner or later somebody is put
@@ -992,9 +995,11 @@ Print this page and take it with you.
     station, and scan the QR code with the camera of the tablet that will stand there. The tablet then
     shows that station's orders and nothing else. Carry it to the station, plug it in, and leave it
     switched on: the screen has to stay awake all evening.
-14. Set the phones up one at a time. Open the waiter list, tap "New waiter" and type that person's
-    name, then tap "Set the phone up again" on their row and let them scan the QR code with their
-    camera. Their phone is ready without them typing anything, and you move on to the next person.
+14. Set the phones up one at a time. Open the waiter list and tap "New waiter", which shows a QR
+    code. Let that waiter scan it with the camera of their own phone and type their name there. The
+    name they type is what puts them on the list, and then you move on to the next person. If
+    somebody already on the list needs a different phone, tap "Set the phone up again" on their row
+    instead and let them scan that code, which asks them nothing.
 15. Place one order from a phone and watch it appear on the right station's tablet. That is the whole
     system proven in ten seconds, and it is worth doing before the first guest sits down.
 
@@ -1071,11 +1076,12 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
     des Tablets, das dort stehen soll. Danach zeigt das Tablet die Bestellungen genau dieser
     Ausgabestelle und sonst nichts. Tragen Sie es an die Ausgabestelle, schließen Sie es ans Stromnetz
     an und lassen Sie es eingeschaltet: der Bildschirm muss den ganzen Abend wach bleiben.
-14. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Kellner, tippen Sie auf "Neuer
-    Kellner" und geben Sie den Namen dieser Person ein. Tippen Sie danach in ihrer Zeile auf "Telefon
-    neu einrichten" und lassen Sie sie den QR-Code mit der Kamera scannen. Das Telefon ist fertig
-    eingerichtet, ohne dass die Person etwas eingeben muss, und Sie machen mit der nächsten Person
-    weiter.
+14. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Kellner und tippen Sie auf
+    "Neuer Kellner", worauf ein QR-Code erscheint. Lassen Sie den Kellner ihn mit der Kamera seines
+    eigenen Telefons scannen und dort seinen Namen eingeben. Dieser eingegebene Name ist es, der ihn
+    in die Liste aufnimmt, und danach machen Sie mit der nächsten Person weiter. Braucht jemand, der
+    schon in der Liste steht, ein anderes Telefon, tippen Sie stattdessen in seiner Zeile auf
+    "Telefon neu einrichten" und lassen Sie ihn diesen Code scannen, der nichts abfragt.
 15. Geben Sie eine Bestellung von einem Telefon auf und sehen Sie zu, wie sie auf dem Tablet der
     richtigen Ausgabestelle erscheint. Damit ist das ganze System in zehn Sekunden geprüft, und das
     lohnt sich, bevor der erste Gast sitzt.

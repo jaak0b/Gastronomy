@@ -76,11 +76,13 @@ exactly the problems this section is looking for.
     the QR code with the tablet's own camera. The tablet lands straight on the kitchen's own page,
     with the kitchen's name on it and no other station's work. It asks for no name. On the laptop, the
     station's row now shows that a tablet is set up, and the kitchen's line has gone from the overview.
-19. **Enrol a second tablet, and a phone.** Do the same for the bar with a second tablet. Then open the
-    waiter list, tap "Neuer Kellner", type a name, and tap "Telefon neu einrichten" on that person's
-    row so a phone can scan the code. The phone is ready without anybody typing a name on it, and the
-    overview now says that everything is set up. The devices list on the laptop holds three rows, two
-    of them named as tablets at their stations and one as that person's phone.
+19. **Enrol a second tablet, and a phone.** Do the same for the bar with a second tablet. Then open
+    the waiter list and tap "Neuer Kellner", which shows a code that belongs to nobody yet. Scan it
+    with a phone, and the phone asks for a name. Type one and send it. The waiter now appears in the
+    list under that name, the phone is ready, and the overview says that everything is set up. The
+    devices list on the laptop holds three rows, two of them named as tablets at their stations and
+    one as that waiter's phone. Tapping "Telefon neu einrichten" on their row afterwards produces a
+    code that names them, and a phone scanning that one is never asked for a name.
 20. **Replace a tablet.** Tap "Tablet einrichten" on the kitchen again and scan the new code with a
     different device. The new device shows the kitchen's page. The old tablet stops working: reload it
     and it says it is no longer set up. Nothing was lost, because the orders were never on the device.
