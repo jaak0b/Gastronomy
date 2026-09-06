@@ -35,7 +35,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     _clock = clock;
   }
 
-  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken)
+  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner owner, CancellationToken cancellationToken)
   {
     return _transactionRunner.RunAsync(_dbContext,
                                        async transactionCancellationToken =>
@@ -65,11 +65,8 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                          _dbContext.EnrolmentInvitations.Add(invitation);
                                          await _dbContext.SaveChangesAsync(transactionCancellationToken);
 
-                                         if (owner is not null)
-                                         {
-                                           await _ownerStore.PointInvitationAsync(owner, invitation.Id, transactionCancellationToken);
-                                           await _dbContext.SaveChangesAsync(transactionCancellationToken);
-                                         }
+                                         await _ownerStore.PointInvitationAsync(owner, invitation.Id, transactionCancellationToken);
+                                         await _dbContext.SaveChangesAsync(transactionCancellationToken);
 
                                          return new TransactionOutcome<EnrolmentInvitationCreated>
                                                 {
@@ -119,21 +116,14 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     if (owner is null)
     {
-      if (string.IsNullOrWhiteSpace(request.Name))
-      {
-        return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
-      }
-
-      owner = await CreateStaffMemberAsync(request.Name, now, cancellationToken);
+      return Rejected(EnrolmentRedemptionOutcome.NoInvitationOutstanding, invitation.Id);
     }
-    else
-    {
-      var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
 
-      if (ownerRecord is null || !ownerRecord.IsActive)
-      {
-        return Rejected(OffTheListOutcomeFor(owner.Kind), invitation.Id);
-      }
+    var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
+
+    if (ownerRecord is null || !ownerRecord.IsActive)
+    {
+      return Rejected(OffTheListOutcomeFor(owner.Kind), invitation.Id);
     }
 
     return await CompleteRedemptionAsync(invitation, owner, request, now, cancellationToken);
@@ -229,22 +219,6 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                                cancellationToken);
       await _dbContext.SaveChangesAsync(cancellationToken);
     }
-  }
-
-  private async Task<DeviceOwner> CreateStaffMemberAsync(string name, DateTime now, CancellationToken cancellationToken)
-  {
-    StaffMember newStaffMember = new()
-                                 {
-                                   Id = Guid.NewGuid(),
-                                   Name = name.Trim(),
-                                   IsActive = true,
-                                   CreatedAtUtc = now
-                                 };
-
-    _dbContext.StaffMembers.Add(newStaffMember);
-    await _dbContext.SaveChangesAsync(cancellationToken);
-
-    return new(DeviceOwnerKind.StaffMember, newStaffMember.Id);
   }
 
   private string ResolveLanguage(string acceptLanguageHeader)

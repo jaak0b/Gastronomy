@@ -13,7 +13,6 @@ test('a server enrols a phone, builds an order, chooses how it is handed out, an
   await expect(page.getByRole('heading')).toHaveText('Einrichten mit dem sechsstelligen Code')
 
   await page.locator('.code-field input').fill(ENROL_CODE)
-  await page.locator('.name-field input').fill('Anna')
   await page.getByRole('button', { name: 'Weiter' }).click()
 
   await expect(page.locator('.basket-bar .summary')).toHaveText('Noch nichts ausgewählt')

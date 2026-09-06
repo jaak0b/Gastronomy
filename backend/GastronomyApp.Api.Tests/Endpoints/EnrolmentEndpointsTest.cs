@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,7 +33,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using var response = await RedeemAsync(invitation.QrCodeValue, "Anna");
+    using var response = await RedeemAsync(invitation.QrCodeValue);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -51,17 +52,7 @@ public sealed class EnrolmentEndpointsTest
   {
     await CreateInvitationAsync();
 
-    using var response = await RedeemAsync(null, "Anna");
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-  }
-
-  [Test]
-  public async Task PostRedeem_EmptyName_IsRefused()
-  {
-    var invitation = await CreateInvitationAsync();
-
-    using var response = await RedeemAsync(invitation.QrCodeValue, "   ");
+    using var response = await RedeemAsync(null);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
   }
@@ -71,12 +62,12 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using (var first = await RedeemAsync(invitation.QrCodeValue, "Anna"))
+    using (var first = await RedeemAsync(invitation.QrCodeValue))
     {
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var second = await RedeemAsync(invitation.QrCodeValue, "Anna");
+    using var second = await RedeemAsync(invitation.QrCodeValue);
 
     Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
   }
@@ -89,7 +80,7 @@ public sealed class EnrolmentEndpointsTest
     string firstToken;
     Guid staffMemberId;
 
-    using (var redeemed = await RedeemAsync(firstInvitation.QrCodeValue, "Anna"))
+    using (var redeemed = await RedeemAsync(firstInvitation.QrCodeValue))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
@@ -102,7 +93,7 @@ public sealed class EnrolmentEndpointsTest
       Assert.That(authenticated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using (var replayed = await RedeemAsync(firstInvitation.QrCodeValue, "Anna"))
+    using (var replayed = await RedeemAsync(firstInvitation.QrCodeValue))
     {
       Assert.That(replayed.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
     }
@@ -116,7 +107,7 @@ public sealed class EnrolmentEndpointsTest
                   "Issuing a new invitation must revoke the phone it replaces.");
     }
 
-    using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue, "Anna");
+    using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue);
     var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -132,10 +123,10 @@ public sealed class EnrolmentEndpointsTest
                     });
   }
 
-  private Task<HttpResponseMessage> RedeemAsync(string? code, string? name)
+  private Task<HttpResponseMessage> RedeemAsync(string? code)
   {
     return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                          new RedeemBody(code, name, "NUnit"));
+                                          new RedeemBody(code, "NUnit"));
   }
 
   private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)
@@ -151,7 +142,7 @@ public sealed class EnrolmentEndpointsTest
     using var scope = _factory.Services.CreateScope();
 
     return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>()
-                      .CreateAsync(null, CancellationToken.None);
+                      .CreateAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), CancellationToken.None);
   }
 
   private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid staffMemberId)
@@ -170,4 +161,4 @@ public sealed class EnrolmentEndpointsTest
   }
 }
 
-public sealed record RedeemBody(string? Code, string? Name, string UserAgent);
+public sealed record RedeemBody(string? Code, string UserAgent);

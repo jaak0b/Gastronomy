@@ -16,7 +16,6 @@ const ONE_STAFF_MEMBER = {
       isActive: true,
       hasDevice: true,
       lastSeenAtUtc: '2026-08-27T19:00:00Z',
-      userAgent: 'Android',
       hasOutstandingInvitation: false,
     },
   ],
@@ -250,7 +249,6 @@ describe('adding somebody new to the waiter list', () => {
                 isActive: true,
                 hasDevice: false,
                 lastSeenAtUtc: null,
-                userAgent: null,
                 hasOutstandingInvitation: false,
               },
             ]

@@ -20,7 +20,6 @@ export { LANGUAGE_STORAGE_KEY }
 
 export interface RedeemInput {
   code?: string
-  name?: string
 }
 
 export const useSessionStore = defineStore('session', () => {
@@ -89,7 +88,6 @@ export const useSessionStore = defineStore('session', () => {
       method: 'POST',
       body: {
         code: input.code ?? null,
-        name: input.name ?? null,
         userAgent: navigator.userAgent,
       },
     })

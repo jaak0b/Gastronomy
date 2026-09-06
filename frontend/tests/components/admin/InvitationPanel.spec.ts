@@ -9,7 +9,7 @@ const INVITATION: Invitation = {
   invitationId: 'invitation-1',
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
   expiresAtUtc: '2026-08-27T18:05:00Z',
-  staffMember: null,
+  staffMember: { id: 'staff-1', name: 'Anna' },
   station: null,
 }
 
@@ -47,17 +47,6 @@ describe('the invitation panel', () => {
     const panel = mountPanel()
 
     expect(panel.get('.instruction').text()).toBe(
-      'Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.',
-    )
-  })
-
-  it('drops the name step when the code belongs to somebody already', () => {
-    const panel = mountPanel(READY, {
-      ...INVITATION,
-      staffMember: { id: 'staff-1', name: 'Anna' },
-    })
-
-    expect(panel.get('.instruction').text()).toBe(
       'Scannen Sie diesen QR-Code mit der Kamera des Telefons.',
     )
   })
@@ -66,6 +55,7 @@ describe('the invitation panel', () => {
 describe('the same panel used for the tablet of a station', () => {
   const STATION_INVITATION: Invitation = {
     ...INVITATION,
+    staffMember: null,
     station: { id: 'station-kueche', name: 'Küche' },
   }
 

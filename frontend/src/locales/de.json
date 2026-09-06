@@ -1,17 +1,11 @@
 {
   "enrol": {
-    "title": "Dieses Telefon einrichten",
-    "intro": "Geben Sie Ihren Namen ein, damit die Küche sieht, wer die Bestellung aufgenommen hat.",
-    "nameLabel": "Ihr Name",
-    "continue": "Weiter",
     "error": {
       "codeUsed": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
       "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht."
     },
     "orderHeld": "Ihre angefangene Bestellung ist noch da. Sie steht wieder auf dem Bildschirm, sobald das Telefon eingerichtet ist.",
-    "codeSpent": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser wurde schon benutzt.",
-    "codeSpentWithSession": "Dieser QR-Code wurde schon benutzt. Sie können mit diesem Telefon weiterarbeiten.",
-    "carryOn": "Weiter"
+    "carryOn": "Mit diesem Telefon weiterarbeiten"
   },
   "enrolCode": {
     "title": "Einrichten mit dem sechsstelligen Code",
@@ -165,7 +159,6 @@
     "stations": {
       "title": "Ausgabestellen",
       "help": "Eine Ausgabestelle ist eine Küche oder eine Theke. Jede Ausgabestelle bekommt ein Tablet, auf dem die Bestellungen stehen, die sie zubereiten soll.",
-      "lastForItems": "Ordnen Sie {names} zuerst eine andere Ausgabestelle zu. Diese Ausgabestelle ist für diese Artikel die einzige.",
       "new": "Neue Ausgabestelle",
       "noTablet": "Kein Tablet eingerichtet",
       "setUpDevice": "Tablet einrichten",
@@ -237,7 +230,6 @@
       "codeRetired": "Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen.",
       "copyUrl": "Adresse kopieren",
       "copied": "Adresse kopiert",
-      "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
       "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
       "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
       "qrAlt": "QR-Code zum Einrichten des Geräts",
@@ -323,7 +315,6 @@
     "english": "English"
   },
   "enrolment": {
-    "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
     "codeUnknown": "Diesen Code kennt der Laptop nicht. Lassen Sie sich am Laptop einen neuen Code zeigen.",
     "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Laptop einen neuen Code zeigen.",
     "codeMissing": "Scannen Sie den QR-Code am Laptop noch einmal. Diese Seite wurde ohne Code geöffnet.",

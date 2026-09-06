@@ -13,14 +13,11 @@ function answerWith(status: number, body: object) {
   )
 }
 
-function answerInTurn(...answers: { status: number; body: object }[]) {
-  let next = 0
+function refuseEveryConnection() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => {
-      const answer = answers[Math.min(next, answers.length - 1)]
-      next += 1
-      return new Response(JSON.stringify(answer.body), { status: answer.status })
+      throw new TypeError('Failed to fetch')
     }),
   )
 }
@@ -31,6 +28,11 @@ function mountLanding() {
     global: { plugins: testPlugins() },
     attachTo: document.body,
   })
+}
+
+async function failureNoticeOf(landing: ReturnType<typeof mountLanding>): Promise<string> {
+  await vi.waitFor(() => expect(landing.find('.failure-notice').exists()).toBe(true))
+  return landing.get('.failure-notice').text()
 }
 
 describe('landing on a QR code link', () => {
@@ -72,66 +74,36 @@ describe('landing on a QR code link', () => {
     expect(window.location.pathname).toBe('/')
   })
 
-  it('opens the order screen once the name has been entered', async () => {
-    answerInTurn(
-      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
-      {
-        status: 200,
-        body: {
-          deviceToken: 'token-2',
-          staffMember: { id: 'staff-2', name: 'Bernd' },
-          language: 'de',
-        },
-      },
-    )
-
-    const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
-
-    await landing.get('.name-field input').setValue('Bernd')
-    await landing.get('.continue').trigger('click')
-
-    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
-  })
-
-  it('tells the volunteer to wait when the laptop has too many requests at once', async () => {
-    answerInTurn(
-      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
-      {
-        status: 429,
-        body: { code: 'TooManyRequests', messageKey: 'session.tooManyRequests', parameters: {} },
-      },
-    )
-
-    const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
-
-    await landing.get('.name-field input').setValue('Bernd')
-    await landing.get('.continue').trigger('click')
-
-    await vi.waitFor(() => expect(landing.find('.error').exists()).toBe(true))
-    expect(landing.get('.error').text()).toBe(
-      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal.',
-    )
-  })
-
-  it('asks for a name only when the laptop says the name is missing', async () => {
-    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
-
-    const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
-
-    expect(landing.find('.code-spent').exists()).toBe(false)
-  })
-
-  it('says a used code is used instead of asking for a name', async () => {
+  it('says the code is no longer valid when the laptop refuses it', async () => {
     answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid' })
 
-    const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.code-spent').exists()).toBe(true))
+    const notice = await failureNoticeOf(mountLanding())
 
-    expect(landing.find('.enrolment').exists()).toBe(false)
-    expect(landing.get('.code-spent').text()).toContain('Lassen Sie sich am Laptop')
+    expect(notice).toContain('Dieser Code gilt nicht mehr.')
+  })
+
+  it('names the WiFi when the phone cannot reach the laptop', async () => {
+    refuseEveryConnection()
+
+    const notice = await failureNoticeOf(mountLanding())
+
+    expect(notice).toContain('Prüfen Sie, ob Sie im WLAN des Festes sind.')
+  })
+
+  it('names the waiter being off the list when the laptop says so', async () => {
+    answerWith(410, { code: 'StaffMemberIsOffTheList', messageKey: 'enrolment.staffMemberIsOffTheList' })
+
+    const notice = await failureNoticeOf(mountLanding())
+
+    expect(notice).toContain('Dieser Kellner steht nicht mehr in der Liste.')
+  })
+
+  it('reads the six digit code as wrong when the laptop knows no such code', async () => {
+    answerWith(404, {})
+
+    const notice = await failureNoticeOf(mountLanding())
+
+    expect(notice).toContain('Dieser Code stimmt nicht.')
   })
 
   it('offers to carry on when the phone is already set up', async () => {
@@ -139,9 +111,9 @@ describe('landing on a QR code link', () => {
     answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid' })
 
     const landing = mountLanding()
-    await vi.waitFor(() => expect(landing.find('.code-spent').exists()).toBe(true))
+    const notice = await failureNoticeOf(landing)
 
-    expect(landing.get('.code-spent').text()).toContain('Sie können mit diesem Telefon weiterarbeiten')
-    expect(landing.find('.carry-on').exists()).toBe(true)
+    expect(notice).toContain('Dieser Code gilt nicht mehr.')
+    expect(landing.get('.carry-on').text()).toContain('Mit diesem Telefon weiterarbeiten')
   })
 })

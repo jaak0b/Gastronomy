@@ -1,17 +1,11 @@
 {
   "enrol": {
-    "title": "Set up this phone",
-    "intro": "Enter your name so the kitchen can see who took the order.",
-    "nameLabel": "Your name",
-    "continue": "Continue",
     "error": {
       "codeUsed": "Ask at the laptop for a new QR code. This code is no longer valid.",
       "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the laptop."
     },
     "orderHeld": "The order you had started is still here. It comes back on the screen as soon as the phone is set up.",
-    "codeSpent": "Ask for a new QR code at the laptop. This one has already been used.",
-    "codeSpentWithSession": "This QR code has already been used. You can carry on with this phone.",
-    "carryOn": "Carry on"
+    "carryOn": "Carry on with this phone"
   },
   "enrolCode": {
     "title": "Set up with the six digit code",
@@ -165,7 +159,6 @@
     "stations": {
       "title": "Stations",
       "help": "A station is a kitchen or a bar. Each station gets a tablet that shows the orders it has to prepare.",
-      "lastForItems": "Give {names} a different station first. This station is the only one for those items.",
       "new": "New station",
       "noTablet": "No tablet set up",
       "setUpDevice": "Set up the tablet",
@@ -237,7 +230,6 @@
       "codeRetired": "Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more.",
       "copyUrl": "Copy the address",
       "copied": "Address copied",
-      "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
       "forStation": "Scan this QR code with the camera of the tablet at {name}.",
       "qrAlt": "QR code for setting the device up",
@@ -323,7 +315,6 @@
     "english": "English"
   },
   "enrolment": {
-    "nameMissing": "Enter your name so the kitchen knows who took the order.",
     "codeUnknown": "The laptop does not know this code. Ask for a new code at the laptop.",
     "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the laptop.",
     "codeMissing": "Scan the QR code on the laptop again. This page was opened without a code.",

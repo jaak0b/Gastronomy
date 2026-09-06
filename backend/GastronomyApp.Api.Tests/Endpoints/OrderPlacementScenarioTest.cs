@@ -156,7 +156,7 @@ public sealed class OrderPlacementScenarioTest
     }
 
     using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                              new RedeemBody(qrCodeValue, null, "NUnit tablet"));
+                                                              new RedeemBody(qrCodeValue, "NUnit tablet"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -179,7 +179,7 @@ public sealed class OrderPlacementScenarioTest
     }
 
     using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                              new RedeemBody(qrCodeValue, "Anna", "NUnit"));
+                                                              new RedeemBody(qrCodeValue, "NUnit"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 

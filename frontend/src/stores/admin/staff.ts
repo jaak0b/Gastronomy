@@ -14,7 +14,6 @@ export interface AdminStaffMember {
   isActive: boolean
   hasDevice: boolean
   lastSeenAtUtc: string | null
-  userAgent: string | null
   hasOutstandingInvitation: boolean
 }
 
