@@ -208,6 +208,15 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     place to find it. When a contract genuinely has to change mid-flight, it changes in the written
     contract first and every affected agent is told, never in one side's code alone.
 
+    The rule binds the main agent and every subagent, in different ways. The main agent writes the
+    contract, owns it, and is the only one allowed to change it. A subagent obeys it literally.
+    **A subagent that finds the contract cannot work stops at once.** It makes no further edits, it
+    invents no workaround, it does not pick the nearest name that compiles, and it does not carry on
+    with the parts that would still work. It reports what it was asked to build, the exact point that
+    cannot hold and why, and what it suggests instead, then waits. Stopping early with a clear reason
+    is the wanted behaviour and is never treated as a failure; improvising past a broken contract is
+    the failure, because it produces two halves that each look finished and do not meet.
+
 ## The production model
 
 - **Delivery mode** is chosen per station slice on the review screen before sending: together (the
