@@ -210,7 +210,7 @@ describe('how long the order will take', () => {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
     })
 
-    expect(list.get('.line-ready').text()).toBe('Fertig in etwa 20 Minuten')
+    expect(list.get('.line-ready').text()).toBe('ca. 20 Minuten')
   })
 
   it('says the item is ready right away when nothing stands in front of it', () => {
@@ -240,7 +240,7 @@ describe('how long the order will take', () => {
     })
 
     expect(list.find('.slice-ready').exists()).toBe(false)
-    expect(list.get('.line-ready').text()).toBe('Fertig in etwa 20 Minuten')
+    expect(list.get('.line-ready').text()).toBe('ca. 20 Minuten')
   })
 })
 

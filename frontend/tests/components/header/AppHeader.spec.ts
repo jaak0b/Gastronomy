@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../src/components/header/AppHeader.vue'
-import { currentRoute, navigate } from '../../../src/router'
+import { currentRoute, navigate, openAStepInsideTheScreen } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
 
 const AppBarStub = {
@@ -69,5 +69,27 @@ describe('the row of destinations', () => {
 
     expect(header.get('.catalog-link .v-icon').exists()).toBe(true)
     expect(header.get('.open-items-link .v-icon').exists()).toBe(true)
+  })
+})
+
+describe('the way to the ordering screen while a category is open on it', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    navigate('/')
+  })
+
+  it('closes the open category, so the tap is answered instead of doing nothing', async () => {
+    let timesClosed = 0
+    openAStepInsideTheScreen(() => {
+      timesClosed += 1
+    })
+    const header = mountHeader()
+
+    await header.get('.catalog-link').trigger('click')
+
+    expect(timesClosed).toBe(1)
+    expect(currentRoute.value).toEqual({ name: 'home' })
   })
 })

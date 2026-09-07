@@ -5,11 +5,9 @@ description: Use when adding or changing a Vitest unit test under tests/**, when
 
 # Writing unit tests
 
-The project has exactly two test tiers. Unit tests (Vitest, `tests/**`) are the internal
-correctness net for whoever touches the code: they keep the engine math honest against synthetic
-ground truth. Webtests (Playwright, `e2e/**`) are the owner-facing assurance that approved
-feature output does not drift; they are governed by the sibling skill `writing-webtests` and
-nothing here overrides it. This skill governs the unit tier only.
+The project has one test tier. Unit tests (Vitest, `tests/**`) are the internal correctness net
+for whoever touches the code: they keep the engine math honest against synthetic ground truth.
+This skill governs them.
 
 ## The two questions every test must pass
 

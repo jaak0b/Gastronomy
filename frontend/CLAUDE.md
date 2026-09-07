@@ -54,7 +54,9 @@ Three audiences in one build:
 ## Design constraints from the deployment
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.
-- **The order total is prominent**, because its only job is helping a human add up cash correctly.
+- **The order total is prominent where it is shown**, because its only job is helping a human add
+  up cash correctly. The screen listing one category's items leaves it out so the items own the
+  screen; the categories screen and the summary both carry it.
 - **There are no zones.** An item that has exactly one candidate production location routes
   automatically, and no location control renders for it. That is the normal case and it must be
   completely invisible. Only an item with more than one candidate location asks the server to choose,
@@ -74,13 +76,11 @@ Three audiences in one build:
 
 ## Testing
 
-Two tiers, governed by their own skills in `.claude/skills/`:
+Governed by its own skill in `.claude/skills/`:
 
 - **Unit tests (Vitest, `tests/`)** are the internal correctness net. Core logic first: totals, routing,
   draft cart persistence, submission identity across retries, state transitions. See
   `writing-unittests`.
-- **Web tests (Playwright, `e2e/`)** are owner-facing assurance that approved behaviour does not drift.
-  Required for the order placement flow. See `writing-webtests`.
 
 ## Commands
 
@@ -89,5 +89,4 @@ npm install
 npm run dev        # Vite dev server, proxying the API to the backend
 npm run build      # vue-tsc typecheck plus production build
 npm test           # Vitest
-npm run test:e2e   # Playwright
 ```

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../core/apiTypes'
 import { formatPrice } from '../../core/totals'
+import DockedStrip from '../DockedStrip.vue'
 
 const props = defineProps<{ itemCount: number; totalCents: number; language: AppLanguage }>()
 defineEmits<{ review: [] }>()
@@ -21,20 +22,13 @@ const summary = computed(() =>
 </script>
 
 <template>
-  <v-sheet class="basket-bar d-flex align-center py-3" color="background">
-    <span class="summary text-body-1">{{ summary }}</span>
-    <v-spacer />
-    <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
-      {{ t('catalog.toReview') }}
-    </v-btn>
-  </v-sheet>
+  <DockedStrip class="basket-bar">
+    <div class="d-flex align-center py-3">
+      <span class="summary text-body-1">{{ summary }}</span>
+      <v-spacer />
+      <v-btn class="to-review" color="primary" :disabled="itemCount === 0" @click="$emit('review')">
+        {{ t('catalog.toReview') }}
+      </v-btn>
+    </div>
+  </DockedStrip>
 </template>
-
-<style scoped>
-.basket-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-</style>

@@ -95,7 +95,7 @@ describe('a phone that has just been set up from a QR code', () => {
 
     const app = await enrolFromAQrCode()
 
-    expect(app.text()).toContain('Bratwurst')
+    expect(app.get('.category-button').text()).toBe('Essen')
   })
 
   it('asks the laptop for the menu as soon as the phone belongs to a waiter', async () => {

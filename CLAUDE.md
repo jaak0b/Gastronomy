@@ -120,8 +120,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    every subagent, whose prompt must carry it along with the exact narrow command to use. Name in the
    report which tests were run and why that scope covers the change.
 
-4. **Two test layers per change: unit and integration.** End-to-end coverage is required for the order
-   placement flow and the station production flow, and optional elsewhere. "It is only a small change" is not
+4. **Two test layers per change: unit and integration.** "It is only a small change" is not
    an exemption. Untestable-by-design code is the only exception and you must say so explicitly.
    Mutation testing and a coverage gate are deliberately not adopted yet.
 

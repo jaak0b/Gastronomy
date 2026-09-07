@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage, DeliveryMode, StationEstimate } from '../../core/apiTypes'
 import { assertNever } from '../../core/assertNever'
-import type { BasketLineView } from '../../core/basket'
+import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { collapseLines, type CollapsedLine } from '../../core/collapse'
 import { countedName } from '../../core/countedName'
 import { queuedMinutesAt, readyInMinutes, sliceEstimateMinutes } from '../../core/estimates'
@@ -128,7 +128,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
         v-for="(entry, position) in part.entries"
         :key="position"
         class="line px-4 py-3"
-        :class="{ 'is-unavailable': entry.line.isSoldOut || entry.line.isNoLongerOnTheMenu }"
+        :class="{ 'is-unavailable': lineCannotBeOrdered(entry.line) }"
       >
         <div class="d-flex align-start">
           <span class="line-name text-body-1 flex-grow-1">{{ countedNameOf(entry) }}</span>

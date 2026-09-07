@@ -24,8 +24,9 @@ import { chosenDeliveryMode, deliveryModesOf, orderSlices } from '../core/orderS
 import {
   buildBasketView,
   basketItemCount,
+  lineCannotBeOrdered,
   refreshLineSnapshots,
-  withoutLinesNoLongerOnTheMenu,
+  withoutLinesThatCannotBeOrdered,
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
 import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
@@ -74,8 +75,8 @@ export const useOrderStore = defineStore('order', () => {
   const slices = computed(() => orderSlices(basketLines.value))
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
-  const hasLinesNoLongerOnTheMenu = computed(() =>
-    basketLines.value.some((line) => line.isNoLongerOnTheMenu),
+  const hasLinesThatCannotBeOrdered = computed(() =>
+    basketLines.value.some(lineCannotBeOrdered),
   )
 
   function dismissDraftLoss(): void {
@@ -91,8 +92,8 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = removeLine(draft.value, index)
   }
 
-  function dropLinesNoLongerOnTheMenu(): void {
-    draft.value = withoutLinesNoLongerOnTheMenu(draft.value, catalogStore.catalog)
+  function dropLinesThatCannotBeOrdered(): void {
+    draft.value = withoutLinesThatCannotBeOrdered(draft.value, catalogStore.catalog)
   }
 
   function noteLine(index: number, note: string | null): void {
@@ -181,10 +182,10 @@ export const useOrderStore = defineStore('order', () => {
     slices,
     itemCount,
     totalCents,
-    hasLinesNoLongerOnTheMenu,
+    hasLinesThatCannotBeOrdered,
     addItem,
     dropLine,
-    dropLinesNoLongerOnTheMenu,
+    dropLinesThatCannotBeOrdered,
     noteLine,
     chooseStation,
     setTable,

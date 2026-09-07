@@ -92,11 +92,16 @@ exactly the problems this section is looking for.
 20. **Replace a tablet.** Tap "Tablet einrichten" on the kitchen again and scan the new code with a
     different device. The new device shows the kitchen's page. The old tablet stops working: reload it
     and it says it is no longer set up. Nothing was lost, because the orders were never on the device.
-21. **Place an order that splits, with two different answers.** On the phone, add two of the kitchen
-    item and two of the bar drink, type a table name, and go to the summary. There are two cards, one
+21. **Place an order that splits, with two different answers.** The phone opens on the two categories,
+    each one a wide button in the colour you picked for it. Tap Speisen, add two of the kitchen item,
+    and tap the button back to the categories. The Speisen button now reads "2 x Speisen". Tap
+    Getränke, add two of the bar drink, and go back the same way. Then type a table name, and go to
+    the summary. There are two cards, one
     per station. Leave the kitchen on "Zusammen" and switch the bar to "Sobald fertig". The kitchen
     card shows a waiting time built from its preparation minutes, and the bar card does not, because
-    its items go out one at a time. Send the order and read the confirmation with its order number.
+    its items go out one at a time. Scroll the summary up and down and watch the total and both send
+    buttons stay along the bottom the whole time. Send the order and read the confirmation with its
+    order number.
 22. **Watch it arrive.** Without touching either tablet, the kitchen's page gains one card in the left
     hand column, "Bestellungen, die zusammen rausgehen", carrying the order number and the kitchen's
     own number for it. The bar's page gains two separate items in the right hand column, "Positionen,
@@ -128,21 +133,35 @@ exactly the problems this section is looking for.
 
 31. **Something disappears while a waiter is holding it.** With items already in a waiter's basket,
     go to the laptop and mark one of those items sold out, switch a second one off, and switch off
-    the whole category a third one came from. Then look at the phone without reloading it, and at
-    the summary, and try to send. Write down what actually happens to those lines and to the total.
-    This step exists because the answer is not designed yet, and a festival is the wrong place to
-    find it out.
+    the whole category a third one came from. Leave the phone standing inside that category while you
+    do it: without a reload it goes back to the list of categories on its own, and everything already
+    on the order stays on it. Then look at the phone without reloading it, and at the summary. Those
+    lines are marked there, they still count toward the total, and both send buttons are now dead,
+    with a line under them telling you to take the items off first. Tap "Nicht bestellbare Artikel
+    entfernen": the marked lines go, the total drops to what is left, and sending works again. Write
+    down what you saw, because a festival is the wrong place to find this out.
+
+32. **A tap that arrives while the list is still moving.** Inside a category with more items than fit
+    on the screen, flick the list hard and put your finger straight back down on the button at the
+    bottom to stop it. Nothing happens, which is what should happen. Wait half a second and tap it
+    again, and it answers at once. Do the same on the summary against the send buttons, where an
+    accidental tap would have sent the order.
+
+    While you are there, take the second order of the evening as far as a category and use the
+    phone's own back gesture. One press closes the category and shows the categories again, and a
+    second press on the categories leaves you where you are rather than taking you out of the app or
+    back to the summary you already sent.
 
 ## After the walk
 
 The backup button and the diagnostics page described in the specification are not built yet, so these
 last two steps use what the program window actually offers today.
 
-32. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+33. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
     whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
     well, then open both copies on another machine: the whole folder holds the evening's orders, and
     the single file may be missing the last of them. That difference is the reason the backup belongs
     behind a button, and seeing it once is what makes the point stick.
-33. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+34. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
     startup and the port are all in it, and no device token and no enrolment code appears anywhere in
     it.

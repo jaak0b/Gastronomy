@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   basketItemCount,
   buildBasketView,
+  lineCannotBeOrdered,
   refreshLineSnapshots,
-  withoutLinesNoLongerOnTheMenu,
+  withoutLinesThatCannotBeOrdered,
 } from '../../src/core/basket'
 import { orderTotalCents } from '../../src/core/totals'
 import { DRAFT_STORAGE_KEY } from '../../src/core/draftCart'
@@ -234,7 +235,7 @@ describe('refreshLineSnapshots', () => {
   })
 })
 
-describe('withoutLinesNoLongerOnTheMenu', () => {
+describe('withoutLinesThatCannotBeOrdered', () => {
   beforeEach(() => {
     localStorage.clear()
   })
@@ -259,13 +260,20 @@ describe('withoutLinesNoLongerOnTheMenu', () => {
   }
 
   it('takes out the line the laptop no longer knows, so the order can be sent', () => {
-    const remaining = withoutLinesNoLongerOnTheMenu(draftWithOneVanishedItem(), catalog())
+    const remaining = withoutLinesThatCannotBeOrdered(draftWithOneVanishedItem(), catalog())
 
     expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bratwurst'])
   })
 
-  it('leaves a line whose item only sold out, because that item still exists', () => {
+  it('takes out a line whose item has sold out, because that one blocks the send too', () => {
     const draft = draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        unitPriceCents: 350,
+      },
       {
         catalogItemId: 'item-bier',
         note: null,
@@ -275,22 +283,22 @@ describe('withoutLinesNoLongerOnTheMenu', () => {
       },
     ])
 
-    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+    const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
-    expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bier'])
+    expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bratwurst'])
   })
 
   it('keeps the table and the note the server has already typed', () => {
     const draft = { ...draftWithOneVanishedItem(), tableName: 'Tisch 12', note: 'schnell bitte' }
 
-    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+    const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
     expect(remaining.tableName).toBe('Tisch 12')
     expect(remaining.note).toBe('schnell bitte')
   })
 
   it('writes the shortened order to storage, so a reload does not bring the line back', () => {
-    withoutLinesNoLongerOnTheMenu(draftWithOneVanishedItem(), catalog())
+    withoutLinesThatCannotBeOrdered(draftWithOneVanishedItem(), catalog())
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) ?? 'null')
 
@@ -305,7 +313,7 @@ describe('withoutLinesNoLongerOnTheMenu', () => {
     ])
   })
 
-  it('changes nothing when every item on the order is still on the menu', () => {
+  it('changes nothing when every item on the order can still be ordered', () => {
     const draft = draftWith([
       {
         catalogItemId: 'item-bratwurst',
@@ -316,9 +324,30 @@ describe('withoutLinesNoLongerOnTheMenu', () => {
       },
     ])
 
-    const remaining = withoutLinesNoLongerOnTheMenu(draft, catalog())
+    const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
     expect(remaining.lines).toHaveLength(1)
+  })
+})
+
+describe('lineCannotBeOrdered', () => {
+  function shownLineOf(catalogItemId: string, name: string, unitPriceCents: number) {
+    return buildBasketView(
+      draftWith([{ catalogItemId, note: null, stationId: null, name, unitPriceCents }]),
+      catalog(),
+    )[0]
+  }
+
+  it('lets a line through while its item is on the menu and in stock', () => {
+    expect(lineCannotBeOrdered(shownLineOf('item-bratwurst', 'Bratwurst', 350))).toBe(false)
+  })
+
+  it('holds a line back once its item has sold out', () => {
+    expect(lineCannotBeOrdered(shownLineOf('item-bier', 'Bier', 420))).toBe(true)
+  })
+
+  it('holds a line back once the laptop no longer has its item at all', () => {
+    expect(lineCannotBeOrdered(shownLineOf('item-gone', 'Currywurst', 400))).toBe(true)
   })
 })
 

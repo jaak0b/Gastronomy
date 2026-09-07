@@ -63,10 +63,15 @@ export function refreshLineSnapshots(draft: DraftOrder, catalog: Catalog): Draft
   return refreshed
 }
 
-export function withoutLinesNoLongerOnTheMenu(draft: DraftOrder, catalog: Catalog): DraftOrder {
+export function lineCannotBeOrdered(line: BasketLineView): boolean {
+  return line.isSoldOut || line.isNoLongerOnTheMenu
+}
+
+export function withoutLinesThatCannotBeOrdered(draft: DraftOrder, catalog: Catalog): DraftOrder {
+  const shown = buildBasketView(draft, catalog)
   const kept: DraftOrder = {
     ...draft,
-    lines: draft.lines.filter((line) => findCatalogItem(catalog, line.catalogItemId) !== null),
+    lines: draft.lines.filter((_, position) => !lineCannotBeOrdered(shown[position])),
   }
   saveDraft(kept)
   return kept

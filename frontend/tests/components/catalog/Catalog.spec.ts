@@ -48,7 +48,21 @@ function mountCatalog() {
   })
 }
 
-describe('the ordering screen', () => {
+type MountedCatalog = ReturnType<typeof mountCatalog>
+
+function categoryButtons(view: MountedCatalog): string[] {
+  return view.findAll('.category-button').map((element) => element.text())
+}
+
+async function openCategory(view: MountedCatalog, index: number): Promise<void> {
+  await view.findAll('.category-button')[index].trigger('click')
+}
+
+async function goBackToTheCategories(view: MountedCatalog): Promise<void> {
+  await view.get('.back-to-categories').trigger('click')
+}
+
+describe('the categories on the ordering screen', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -57,106 +71,22 @@ describe('the ordering screen', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
-  it('offers every category as a tab', () => {
+  it('offers every category as a button of its own', () => {
     const view = mountCatalog()
 
-    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
-
-    expect(tabs).toEqual(['Essen', 'Getränke'])
+    expect(categoryButtons(view)).toEqual(['Essen', 'Getränke'])
   })
 
-  it('shows the items of the first category when the screen opens', () => {
+  it('shows no item at all until the waiter has picked a category', () => {
     const view = mountCatalog()
 
-    const names = view.findAll('.item-row .name').map((element) => element.text())
-
-    expect(names).toEqual(['Bratwurst'])
-  })
-
-  it('shows the items of another category once its tab is tapped', async () => {
-    const view = mountCatalog()
-
-    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
-
-    const names = view.findAll('.item-row .name').map((element) => element.text())
-
-    expect(names).toEqual(['Wasser'])
-  })
-
-  it('keeps the portions already ordered while the server looks at another category', async () => {
-    const view = mountCatalog()
-    const order = useOrderStore()
-
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
-    await view.findAll('.category-tabs .category-tab')[0].trigger('click')
-
-    expect(order.draft.lines).toHaveLength(1)
-    expect(view.findAll('.item-row .count')[0].text()).toBe('1')
-  })
-
-  it('writes in front of the category name how many portions of it are on the order', async () => {
-    const view = mountCatalog()
-
-    await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
-
-    expect(tabs).toEqual(['2 x Essen', 'Getränke'])
-  })
-
-  it('marks the tab of a category that already has portions on the order', async () => {
-    const view = mountCatalog()
-
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    const marked = view
-      .findAll('.category-tabs .category-tab')
-      .map((element) => element.classes()).map((classes) => classes.includes('holds-portions'))
-
-    expect(marked).toEqual([true, false])
-  })
-
-  it('takes the mark off the tab once the last portion of that category is removed', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    await view.findAll('.item-row .remove-one')[0].trigger('click')
-
-    expect(view.findAll('.category-tabs .category-tab')[0].classes()).not.toContain('holds-portions')
-  })
-
-  it('writes the category name on its own again once its portions are taken off', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    await view.findAll('.item-row .remove-one')[0].trigger('click')
-
-    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
-
-    expect(tabs).toEqual(['Essen', 'Getränke'])
-  })
-
-  it('keeps counting the portions of the category the server is not looking at', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    await view.findAll('.category-tabs .category-tab')[1].trigger('click')
-    await view.findAll('.item-row .add')[0].trigger('click')
-
-    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
-
-    expect(tabs).toEqual(['1 x Essen', '1 x Getränke'])
-  })
-
-  it('shows no items and no tab when the catalog is still empty', () => {
-    const catalog = useCatalogStore()
-    catalog.catalog = { ...CATALOG, categories: [], items: [] }
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    expect(view.findAll('.category-tabs .category-tab')).toHaveLength(0)
     expect(view.findAll('.item-row')).toHaveLength(0)
+  })
+
+  it('docks the basket bar at the bottom, so a long list of categories never hides it', () => {
+    const view = mountCatalog()
+
+    expect(view.get('.to-review').element.closest('.docked-strip')).not.toBeNull()
   })
 
   it('keeps the order the laptop gives the categories in', () => {
@@ -164,14 +94,183 @@ describe('the ordering screen', () => {
     catalog.catalog = { ...CATALOG, categories: [...CATALOG.categories].reverse() }
     const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+    expect(categoryButtons(view)).toEqual(['Getränke', 'Essen'])
+  })
 
-    expect(tabs).toEqual(['Getränke', 'Essen'])
+  it('paints every button in the colour the admin chose for that category', () => {
+    const view = mountCatalog()
+
+    const painted = view
+      .findAll('.category-button')
+      .map((element) => (element.element as HTMLElement).style.backgroundColor)
+
+    expect(painted).toEqual(['rgb(255, 235, 59)', 'rgb(198, 40, 40)'])
+  })
+
+  it('writes on each button in the lettering colour that stays readable on it', () => {
+    const view = mountCatalog()
+
+    const lettering = view
+      .findAll('.category-button')
+      .map((element) => (element.element as HTMLElement).style.color)
+
+    expect(lettering).toEqual(['rgb(0, 0, 0)', 'rgb(255, 255, 255)'])
+  })
+
+  it('shows no category and no item while the laptop still holds no menu', () => {
+    const catalog = useCatalogStore()
+    catalog.catalog = { ...CATALOG, categories: [], items: [] }
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect(view.findAll('.category-button')).toHaveLength(0)
+    expect(view.findAll('.item-row')).toHaveLength(0)
+  })
+})
+
+describe('the items of one category on the ordering screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('shows that category and its items once its button is tapped', async () => {
+    const view = mountCatalog()
+
+    await openCategory(view, 1)
+
+    expect(view.get('.open-category-name').text()).toBe('Getränke')
+    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual(['Wasser'])
+    expect(view.find('.back-to-categories').exists()).toBe(true)
+  })
+
+  it('puts the basket bar away while the waiter is inside a category', async () => {
+    const view = mountCatalog()
+
+    await openCategory(view, 0)
+
+    expect(view.find('.basket-bar').exists()).toBe(false)
+  })
+
+  it('docks the way back at the bottom, so a long list of items never hides it', async () => {
+    const view = mountCatalog()
+
+    await openCategory(view, 0)
+
+    expect(view.get('.back-to-categories').element.closest('.docked-strip')).not.toBeNull()
+  })
+
+  it('returns to the categories, with the order intact, when the way back is tapped', async () => {
+    const view = mountCatalog()
+    const order = useOrderStore()
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    await goBackToTheCategories(view)
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(categoryButtons(view)).toEqual(['1 x Essen', 'Getränke'])
+    expect(view.findAll('.item-row')).toHaveLength(0)
+  })
+
+  it('keeps the portions already ordered while the waiter looks at another category', async () => {
+    const view = mountCatalog()
+    const order = useOrderStore()
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await goBackToTheCategories(view)
+
+    await openCategory(view, 1)
+    await goBackToTheCategories(view)
+    await openCategory(view, 0)
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(view.findAll('.item-row .count')[0].text()).toBe('1')
+  })
+
+  it('sends the waiter back to the categories when the open one leaves the menu', async () => {
+    const view = mountCatalog()
+    const catalog = useCatalogStore()
+    await openCategory(view, 0)
+
+    catalog.catalog = {
+      ...CATALOG,
+      categories: [CATALOG.categories[1]],
+      items: [CATALOG.items[1]],
+    }
+    await view.vm.$nextTick()
+
+    expect(view.findAll('.item-row')).toHaveLength(0)
+    expect(categoryButtons(view)).toEqual(['Getränke'])
+  })
+})
+
+describe('the portions written on a category button', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('writes how many portions of that category are on the order', async () => {
+    const view = mountCatalog()
+    await openCategory(view, 0)
+
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await goBackToTheCategories(view)
+
+    expect(categoryButtons(view)).toEqual(['2 x Essen', 'Getränke'])
+  })
+
+  it('writes the category name on its own while nothing from it is on the order', () => {
+    const view = mountCatalog()
+
+    expect(categoryButtons(view)).toEqual(['Essen', 'Getränke'])
+  })
+
+  it('writes the name on its own again once the last portion is taken off', async () => {
+    const view = mountCatalog()
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[0].trigger('click')
+
+    await view.findAll('.item-row .remove-one')[0].trigger('click')
+    await goBackToTheCategories(view)
+
+    expect(categoryButtons(view)).toEqual(['Essen', 'Getränke'])
+  })
+
+  it('keeps counting the portions of the category the waiter is not looking at', async () => {
+    const view = mountCatalog()
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await goBackToTheCategories(view)
+
+    await openCategory(view, 1)
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await goBackToTheCategories(view)
+
+    expect(categoryButtons(view)).toEqual(['1 x Essen', '1 x Getränke'])
+  })
+})
+
+describe('building the order on the ordering screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
   it('puts one portion on the order when an item is tapped', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
+    await openCategory(view, 0)
 
     await view.findAll('.item-row .add')[0].trigger('click')
     await view.findAll('.item-row .add')[0].trigger('click')
@@ -183,6 +282,7 @@ describe('the ordering screen', () => {
   it('puts a portion carrying the typed note on a line of its own', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
+    await openCategory(view, 0)
 
     await view.findAll('.item-row .add')[0].trigger('click')
     await view.findAll('.item-row .add-note')[0].trigger('click')
@@ -201,6 +301,7 @@ describe('the ordering screen', () => {
   it('takes the most recently added portion off again', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
+    await openCategory(view, 0)
 
     await view.findAll('.item-row .add')[0].trigger('click')
     await view.findAll('.item-row .add')[0].trigger('click')
@@ -208,18 +309,33 @@ describe('the ordering screen', () => {
 
     expect(order.draft.lines).toHaveLength(1)
   })
+})
+
+describe('the way from the ordering screen to the summary', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  async function catalogWithOnePortion() {
+    const view = mountCatalog()
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[0].trigger('click')
+    await goBackToTheCategories(view)
+    return view
+  }
 
   it('keeps the way to the summary open while the table is empty, so tapping it can say so', async () => {
-    const view = mountCatalog()
-
-    await view.findAll('.item-row .add')[0].trigger('click')
+    const view = await catalogWithOnePortion()
 
     expect(view.get('.to-review').attributes('disabled')).toBeUndefined()
   })
 
   it('marks the table field instead of moving on when no table was entered', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
+    const view = await catalogWithOnePortion()
 
     await view.get('.to-review').trigger('click')
 
@@ -228,8 +344,7 @@ describe('the ordering screen', () => {
   })
 
   it('puts the cursor in the table field so the keyboard opens on the thing that is missing', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
+    const view = await catalogWithOnePortion()
 
     await view.get('.to-review').trigger('click')
 
@@ -237,8 +352,7 @@ describe('the ordering screen', () => {
   })
 
   it('takes the mark off again as soon as a table is typed', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
+    const view = await catalogWithOnePortion()
     await view.get('.to-review').trigger('click')
 
     await view.get('.table-field input').setValue('Tisch 12')
@@ -247,8 +361,7 @@ describe('the ordering screen', () => {
   })
 
   it('moves on to the summary once a table is there', async () => {
-    const view = mountCatalog()
-    await view.findAll('.item-row .add')[0].trigger('click')
+    const view = await catalogWithOnePortion()
     await view.get('.table-field input').setValue('Tisch 12')
 
     await view.get('.to-review').trigger('click')
@@ -276,5 +389,57 @@ describe('the length of what a waiter types on the ordering screen', () => {
     const view = mountCatalog()
 
     expect(view.get('.table-input input').attributes('maxlength')).toBe('40')
+  })
+})
+
+const CATALOG_WITH_A_STATION_CHOICE: CatalogData = {
+  ...CATALOG,
+  items: [
+    ...CATALOG.items,
+    {
+      id: 'item-kaffee',
+      name: 'Kaffee',
+      categoryId: 'category-essen',
+      priceCents: 250,
+      sortOrder: 3,
+      isAvailable: true,
+      stationIds: ['station-kueche', 'station-bar'],
+    },
+  ],
+}
+
+describe('the question about which station is to make an item', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  function mountCatalogWithAStationChoice() {
+    const catalog = useCatalogStore()
+    catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
+    return mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  async function askWhereTheCoffeeIsMade(view: MountedCatalog): Promise<void> {
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[1].trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+  }
+
+  it('forgets the unanswered question when the waiter leaves the category', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    await askWhereTheCoffeeIsMade(view)
+
+    await goBackToTheCategories(view)
+    await openCategory(view, 1)
+    await view.vm.$nextTick()
+    await view.vm.$nextTick()
+
+    expect(document.querySelector('.line-station-sheet')).toBeNull()
+    expect(order.draft.lines).toHaveLength(0)
   })
 })

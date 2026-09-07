@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { CatalogItem } from '../core/apiTypes'
+import type { CatalogCategory, CatalogItem } from '../core/apiTypes'
 import { portionsOfCategory } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import { pickerEstimateMinutes } from '../core/estimates'
+import { letteringColourOn } from '../core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
@@ -12,8 +13,8 @@ import { useEstimatesStore } from '../stores/estimates'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
-import { navigate } from '../router'
-import CategoryTabs from '../components/catalog/CategoryTabs.vue'
+import { closeTheStepInsideTheScreen, navigate, openAStepInsideTheScreen } from '../router'
+import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
 import BasketBar from '../components/catalog/BasketBar.vue'
@@ -38,25 +39,40 @@ onMounted(async () => {
   await estimates.load()
 })
 
-const openCategory = computed<string | null>({
-  get: () => {
-    const tapped = tappedCategory.value
-    if (
-      tapped !== null &&
-      catalog.catalog.categories.some((category) => category.categoryId === tapped)
-    ) {
-      return tapped
-    }
-    return catalog.catalog.categories[0]?.categoryId ?? null
-  },
-  set: (value: string | null) => {
-    tappedCategory.value = value
-  },
+onUnmounted(() => {
+  closeTheStepInsideTheScreen()
 })
+
+const openCategory = computed<CatalogCategory | null>(
+  () =>
+    catalog.catalog.categories.find(
+      (category) => category.categoryId === tappedCategory.value,
+    ) ?? null,
+)
+
+watch(openCategory, (category) => {
+  if (category === null) {
+    closeTheStepInsideTheScreen()
+  }
+})
+
+function closeTheOpenCategory(): void {
+  tappedCategory.value = null
+  itemAwaitingStation.value = null
+  noteAwaitingStation.value = null
+  linesAwaitingStation.value = []
+}
+
+function openTheCategory(category: CatalogCategory): void {
+  tappedCategory.value = category.categoryId
+  openAStepInsideTheScreen(closeTheOpenCategory)
+}
 
 const itemsOfTheOpenCategory = computed(
   () =>
-    catalog.groups.find((group) => group.category.categoryId === openCategory.value)?.items ?? [],
+    catalog.groups.find(
+      (group) => group.category.categoryId === openCategory.value?.categoryId,
+    )?.items ?? [],
 )
 
 const tableName = computed({
@@ -88,6 +104,18 @@ const itemBehindTheStationChoice = computed(() => {
 
 function portionsIn(categoryId: string): number {
   return portionsOfCategory(order.draft, catalog.catalog.items, categoryId)
+}
+
+function labelFor(category: CatalogCategory): string {
+  const portions = portionsIn(category.categoryId)
+  if (portions < 1) {
+    return category.name
+  }
+  return t('catalog.categoryWithCount', { count: portions, name: category.name })
+}
+
+function paintedIn(colourHex: string): Record<string, string> {
+  return { backgroundColor: colourHex, color: letteringColourOn(colourHex) }
 }
 
 function positionsFor(itemId: string): ItemPosition[] {
@@ -145,64 +173,86 @@ function chooseStation(stationId: string): void {
 
 <template>
   <v-container class="catalog">
-    <CategoryTabs
-      v-model="openCategory"
-      :categories="catalog.catalog.categories"
-      :portions-for="portionsIn"
-    />
-    <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
-      {{ t('estimates.loadFailed') }}
-    </v-alert>
-    <ItemGrid
-      v-if="itemsOfTheOpenCategory.length > 0"
-      :items="itemsOfTheOpenCategory"
-      :language="session.language"
-      :positions-for="positionsFor"
-      :ready-in-minutes-for="readyInMinutesFor"
-      class="my-2"
-      @add="addItem"
-      @add-with-a-note="addItemWithANote"
-      @remove-one="order.dropLine"
-      @rename-note="renameNote"
-      @change-station="(indexes) => (linesAwaitingStation = indexes)"
-    />
-    <LineStationSheet
-      v-if="itemBehindTheStationChoice !== null"
-      :item="itemBehindTheStationChoice"
-      :station-name-for="catalog.stationName"
-      @choose="chooseStation"
-    />
-    <TableField
-      ref="tableField"
-      v-model="tableName"
-      :is-missing="isTableMissing"
-      :known-table-names="openItems.knownTableNames"
-    />
-    <v-textarea
-      class="order-note"
-      maxlength="200"
-      :label="t('catalog.orderNote')"
-      :model-value="order.draft.note ?? ''"
-      @update:model-value="order.setNote($event || null)"
-    />
-    <BasketBar
-      :item-count="order.itemCount"
-      :total-cents="order.totalCents"
-      :language="session.language"
-      @review="goToTheSummary"
-    />
+    <template v-if="openCategory === null">
+      <v-btn
+        v-for="category in catalog.catalog.categories"
+        :key="category.categoryId"
+        class="category-button my-2"
+        block
+        size="x-large"
+        variant="flat"
+        :style="paintedIn(category.colourHex)"
+        @click="openTheCategory(category)"
+      >
+        {{ labelFor(category) }}
+      </v-btn>
+      <TableField
+        ref="tableField"
+        v-model="tableName"
+        :is-missing="isTableMissing"
+        :known-table-names="openItems.knownTableNames"
+      />
+      <v-textarea
+        class="order-note"
+        maxlength="200"
+        :label="t('catalog.orderNote')"
+        :model-value="order.draft.note ?? ''"
+        @update:model-value="order.setNote($event || null)"
+      />
+      <BasketBar
+        :item-count="order.itemCount"
+        :total-cents="order.totalCents"
+        :language="session.language"
+        @review="goToTheSummary"
+      />
+    </template>
+    <template v-else>
+      <h2
+        class="open-category-name text-h6 px-3 py-2 rounded"
+        :style="paintedIn(openCategory.colourHex)"
+      >
+        {{ openCategory.name }}
+      </h2>
+      <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
+        {{ t('estimates.loadFailed') }}
+      </v-alert>
+      <ItemGrid
+        :items="itemsOfTheOpenCategory"
+        :language="session.language"
+        :positions-for="positionsFor"
+        :ready-in-minutes-for="readyInMinutesFor"
+        class="my-2"
+        @add="addItem"
+        @add-with-a-note="addItemWithANote"
+        @remove-one="order.dropLine"
+        @rename-note="renameNote"
+        @change-station="(indexes) => (linesAwaitingStation = indexes)"
+      />
+      <LineStationSheet
+        v-if="itemBehindTheStationChoice !== null"
+        :item="itemBehindTheStationChoice"
+        :station-name-for="catalog.stationName"
+        @choose="chooseStation"
+      />
+      <DockedStrip class="back-strip">
+        <div class="py-3">
+          <v-btn
+            class="back-to-categories"
+            block
+            size="x-large"
+            variant="outlined"
+            @click="closeTheStepInsideTheScreen()"
+          >
+            {{ t('catalog.backToCategories') }}
+          </v-btn>
+        </div>
+      </DockedStrip>
+    </template>
   </v-container>
 </template>
 
 <style scoped>
 .catalog {
   padding-bottom: 96px;
-}
-
-.catalog :deep(.category-tabs) {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: rgb(var(--v-theme-background));
 }
 </style>

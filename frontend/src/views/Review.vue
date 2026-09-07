@@ -7,6 +7,7 @@ import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
 import { navigate } from '../router'
+import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import TotalDisplay from '../components/review/TotalDisplay.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
@@ -25,7 +26,8 @@ const canSend = computed(
   () =>
     isTableNameValid(order.draft.tableName) &&
     order.basketLines.length > 0 &&
-    order.sendState !== 'sending',
+    order.sendState !== 'sending' &&
+    !order.hasLinesThatCannotBeOrdered,
 )
 
 async function send(settleOnSend: boolean): Promise<void> {
@@ -67,15 +69,15 @@ function backToItems(): void {
       @choose-delivery-mode="order.chooseDeliveryMode"
     />
     <v-btn
-      v-if="order.hasLinesNoLongerOnTheMenu"
-      class="drop-lines-no-longer-on-the-menu mt-2"
+      v-if="order.hasLinesThatCannotBeOrdered"
+      class="drop-lines-that-cannot-be-ordered mt-2"
       color="warning"
       variant="outlined"
       block
       size="large"
-      @click="order.dropLinesNoLongerOnTheMenu"
+      @click="order.dropLinesThatCannotBeOrdered"
     >
-      {{ t('review.removeLinesNoLongerOnTheMenu') }}
+      {{ t('review.removeLinesThatCannotBeOrdered') }}
     </v-btn>
     <SendFailurePanel
       v-if="order.sendState === 'failed' && order.failure !== null"
@@ -85,40 +87,36 @@ function backToItems(): void {
     <v-btn class="back mt-2 mb-4" variant="text" block @click="backToItems">
       {{ t('review.back') }}
     </v-btn>
-    <v-sheet class="review-footer pt-3 pb-4" color="background">
-      <TotalDisplay :total-cents="order.totalCents" :language="session.language" />
-      <template v-if="order.sendState !== 'failed'">
-        <v-btn
-          class="send-and-settle mt-2"
-          color="primary"
-          block
-          size="x-large"
-          :disabled="!canSend"
-          @click="send(true)"
-        >
-          {{ order.sendState === 'sending' ? t('review.sending') : t('review.sendAndSettle') }}
-        </v-btn>
-        <v-btn
-          class="send mt-2"
-          color="primary"
-          variant="outlined"
-          block
-          size="x-large"
-          :disabled="!canSend"
-          @click="send(false)"
-        >
-          {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
-        </v-btn>
-      </template>
-    </v-sheet>
+    <DockedStrip class="review-footer">
+      <div class="pt-3 pb-4">
+        <TotalDisplay :total-cents="order.totalCents" :language="session.language" />
+        <template v-if="order.sendState !== 'failed'">
+          <v-btn
+            class="send-and-settle mt-2"
+            color="primary"
+            block
+            size="x-large"
+            :disabled="!canSend"
+            @click="send(true)"
+          >
+            {{ order.sendState === 'sending' ? t('review.sending') : t('review.sendAndSettle') }}
+          </v-btn>
+          <v-btn
+            class="send mt-2"
+            color="primary"
+            variant="outlined"
+            block
+            size="x-large"
+            :disabled="!canSend"
+            @click="send(false)"
+          >
+            {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
+          </v-btn>
+          <p v-if="order.hasLinesThatCannotBeOrdered" class="remove-before-sending text-body-2 mt-2">
+            {{ t('review.removeBeforeSending') }}
+          </p>
+        </template>
+      </div>
+    </DockedStrip>
   </v-container>
 </template>
-
-<style scoped>
-.review-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-</style>

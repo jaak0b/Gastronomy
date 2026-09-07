@@ -247,3 +247,45 @@ describe('the length of a note on one line', () => {
     expect(dialogField().getAttribute('maxlength')).toBe('200')
   })
 })
+
+function mountRowReadyIn(minutes: number | null, locale: 'de' | 'en' = 'de') {
+  const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
+  return mount(ItemRow, {
+    props: { item: item(true), positions: [], language: locale, readyInMinutes: minutes },
+    global: { plugins: [createVuetify(), i18n] },
+    attachTo: document.body,
+  })
+}
+
+describe('the waiting time written on an item row', () => {
+  it('stays short enough in German to sit beside the name and the price', () => {
+    const row = mountRowReadyIn(6)
+
+    expect(row.get('.ready-in').text()).toBe('ca. 6 Minuten')
+  })
+
+  it('stays just as short in English', () => {
+    const row = mountRowReadyIn(6, 'en')
+
+    expect(row.get('.ready-in').text()).toBe('about 6 minutes')
+  })
+
+  it('writes a single minute in the singular', () => {
+    const row = mountRowReadyIn(1)
+
+    expect(row.get('.ready-in').text()).toBe('ca. 1 Minute')
+  })
+
+  it('keeps a place of its own in the row, so the name stays easy to pick out', () => {
+    const row = mountRowReadyIn(6)
+
+    expect(row.get('.name').text()).toBe('Wasser')
+    expect(row.get('.ready-in').text()).not.toContain('Wasser')
+  })
+
+  it('says right away when there is nothing to wait for', () => {
+    const row = mountRowReadyIn(0)
+
+    expect(row.get('.ready-in').text()).toBe('Sofort fertig')
+  })
+})

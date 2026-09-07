@@ -37,6 +37,18 @@ function isTheFirstServerScreen(route: AppRoute): boolean {
   }
 }
 
+let closeTheOpenStep: (() => void) | null = null
+
+export function openAStepInsideTheScreen(close: () => void): void {
+  closeTheOpenStep = close
+}
+
+export function closeTheStepInsideTheScreen(): void {
+  const close = closeTheOpenStep
+  closeTheOpenStep = null
+  close?.()
+}
+
 function repeatCurrentHistoryEntry(): void {
   const address = window.location.pathname + window.location.search + window.location.hash
   window.history.pushState({}, '', address)
@@ -48,9 +60,17 @@ function keepAWayBackInsideTheApp(route: AppRoute): void {
   }
 }
 
+function keepAWayBackOnTheFirstServerScreen(route: AppRoute): void {
+  if (isTheFirstServerScreen(route)) {
+    repeatCurrentHistoryEntry()
+  }
+}
+
 export function navigate(path: string): void {
+  closeTheStepInsideTheScreen()
   window.history.pushState({}, '', path)
   currentRoute.value = resolveRoute(path)
+  keepAWayBackOnTheFirstServerScreen(currentRoute.value)
 }
 
 export function replace(path: string): void {
@@ -74,8 +94,7 @@ export function startRouter(): void {
   keepAWayBackAsSoonAsTheScreenIsTouched()
   window.addEventListener('popstate', () => {
     currentRoute.value = resolveRoute(window.location.pathname)
-    if (isTheFirstServerScreen(currentRoute.value)) {
-      repeatCurrentHistoryEntry()
-    }
+    closeTheStepInsideTheScreen()
+    keepAWayBackOnTheFirstServerScreen(currentRoute.value)
   })
 }

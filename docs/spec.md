@@ -338,11 +338,19 @@ question at the moment it is asked, which is the moment the guest asks for it.
 **An item that sold out, or was taken off the menu, after the phone last read the catalog is still
 accepted when the order arrives.** The guest ordered it, the waiter read the total aloud, and the
 cash may already be in their apron. Only an item the laptop has never heard of is refused, and that
-is a broken client rather than a guest. The waiter usually learns before they send rather than after,
-because the live update reaches the open basket and flags the item while they are still standing at
-the table. When they send it anyway, which is the right thing to do, the accepted consequence is that
-a station may be asked for something it has run out of, and it sends word back with the tray. That is
-what happens with a paper order pad today.
+is a broken client rather than a guest.
+
+**The phone, on the other hand, will not send such an order until the waiter has taken those items
+off it.** The live update reaches the open basket and flags the item while the waiter is still
+standing at the table, so they learn before they send rather than after. Both ways of sending are
+held back while an order carries a sold-out item or one that has left the menu, a line under the
+buttons says what has to go, and one button takes all of those lines off at once. The waiter then
+offers the guest something else, which is the conversation the flag exists to start.
+
+**The laptop is deliberately not part of that check.** An order refused by the laptop would arrive
+after the waiter has taken the cash, and handing money back in front of a guest is worse than a
+station being asked for something it has run out of. The block lives on the phone, before the money
+changes hands, and the laptop goes on accepting whatever reaches it.
 
 ### 3.4 One device per owner
 
@@ -566,6 +574,10 @@ never have one filled in, and an estimate that refuses to appear because somebod
 is worse than an estimate that is a little optimistic. The admin form says so: leave the field empty
 for items that are handed over right away.
 
+On an item row the estimate is written as short as it can be read, "ca. 6 Minuten" in German and
+"about 6 minutes" in English, because the row also has to carry the item's name and its price on a
+phone held in one hand.
+
 **If the estimates cannot be loaded the order can still be sent.** The phone says so once and every
 other control on the screen carries on working. An estimate is decoration on the ordering path and is
 never allowed to stand in front of an order.
@@ -678,7 +690,7 @@ rather than silently discarded.
 the item is still on the menu, a catalog change refreshes both, so an open basket tracks a changed
 name or price. If the item has since gone, the line renders greyed from its last snapshot and says
 so, but it is not dropped: it still counts toward the total, and the summary screen offers one button
-that removes exactly those lines. **The app never removes such a line by itself**, because the guest
+that removes every line the guest can no longer be given, whether the item sold out or left the menu. **The app never removes such a line by itself**, because the guest
 ordered something and the waiter needs to see what falls away in order to offer them something else.
 
 **This is a draft cart and not a queue, and the distinction is load-bearing.** A draft cart holds one
@@ -743,14 +755,29 @@ an administrative problem.
 attached to it, because the code the admin issued names them. The orders they already placed are
 unaffected.
 
-**An item sold out, or a price changed, while the basket was open.** The line stays and is flagged,
-the phone shows the new price, and the order is still accepted when sent (section 3.3).
+**An item sold out, or a price changed, while the basket was open.** The line stays and is flagged
+and the phone shows the new price. A changed price sends as it is. A sold-out line holds the send
+back until the waiter takes it off with the one button that clears such lines, and the laptop would
+still have accepted it (section 3.3).
 
 **Two phones send the same order.** Not prevented, and not preventable: two waiters can genuinely
 take the same table. The station sees two orders with two different numbers, which is the same
 situation as two paper slips, and is resolved the same way. The submission id protects against one
 order being sent twice, not against two people taking the same order, which is a problem software
 cannot see.
+
+### 6.5 The controls that end something stay where the thumb expects them
+
+The way on and the way back sit in a strip along the bottom of the screen that stays put while the
+list above it scrolls. On the categories that strip carries the running total and the way to the
+summary, inside a category it carries the one button back to the categories, and on the summary it
+carries the total and both ways of sending. A waiter never scrolls to find the way out or the way on.
+
+**A strip like that ignores a tap that arrives on the heels of a scroll**, meaning within a few
+tenths of a second of the list coming to rest, and it ignores any tap whose finger moved before it
+lifted. Sending cannot be undone, because the part of the order is at the station the moment it
+lands, and a finger coming down to stop a flying list must never send an order by accident. A waiter
+who scrolls, stops, looks and then presses notices nothing.
 
 ---
 
@@ -967,9 +994,10 @@ Print this page and take it with you.
 2. In the program window, click "Open the admin pages".
 3. Create the stations, for example Kitchen and Bar.
 4. Create the categories the items are sorted under, for example Food and Drinks, and pick a colour for
-   each one. On the phone a category is a large coloured button, and every item belongs to exactly one
-   category, so this step comes before the items. The "New category" button is at the bottom of
-   the items page, beside "New item".
+   each one. On the phone a category is a large coloured button, and tapping it opens the items of
+   that category with one button back to the list. Every item belongs to exactly one category, so
+   this step comes before the items. The "New category" button is at the bottom of the items page,
+   beside "New item".
 5. Enter the items with their prices. Where an item takes a while to make, fill in the preparation
    time in minutes as well, so the waiters can tell a guest roughly how long they will wait. Leave the
    field empty for drinks and anything else that is handed over right away.
@@ -1049,8 +1077,9 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 3. Legen Sie die Ausgabestellen an, zum Beispiel Küche und Theke.
 4. Legen Sie die Kategorien an, unter denen die Artikel einsortiert werden, zum Beispiel Speisen und
    Getränke, und wählen Sie für jede eine Farbe. Auf dem Telefon ist eine Kategorie ein großer farbiger
-   Knopf, und jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den
-   Artikeln. Der Knopf "Neue Kategorie" steht unten auf der Artikel-Seite, neben "Neuer Artikel".
+   Knopf, und ein Tippen darauf öffnet die Artikel dieser Kategorie, mit einem Knopf zurück zur Liste.
+   Jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den Artikeln. Der
+   Knopf "Neue Kategorie" steht unten auf der Artikel-Seite, neben "Neuer Artikel".
 5. Tragen Sie die Artikel mit ihren Preisen ein. Wo ein Artikel eine Weile braucht, tragen Sie auch die
    Zubereitungszeit in Minuten ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er
    wartet. Bei Getränken und allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.

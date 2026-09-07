@@ -62,14 +62,14 @@ describe('an order holding an item the laptop no longer has', () => {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    expect(review.find('.drop-lines-no-longer-on-the-menu').exists()).toBe(false)
+    expect(review.find('.drop-lines-that-cannot-be-ordered').exists()).toBe(false)
   })
 
   it('takes the vanished line off the order, so the order can be sent at all', async () => {
     const order = orderWithAVanishedItem()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.drop-lines-no-longer-on-the-menu').trigger('click')
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
 
     expect(order.basketLines.map((line) => line.catalogItemId)).toEqual(['item-wasser'])
   })
@@ -78,7 +78,7 @@ describe('an order holding an item the laptop no longer has', () => {
     const order = orderWithAVanishedItem()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.drop-lines-no-longer-on-the-menu').trigger('click')
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
 
     expect(order.draft.tableName).toBe('Tisch 3')
     expect(order.totalCents).toBe(200)
@@ -88,9 +88,9 @@ describe('an order holding an item the laptop no longer has', () => {
     orderWithAVanishedItem()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.drop-lines-no-longer-on-the-menu').trigger('click')
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
 
-    expect(review.find('.drop-lines-no-longer-on-the-menu').exists()).toBe(false)
+    expect(review.find('.drop-lines-that-cannot-be-ordered').exists()).toBe(false)
   })
 })
 
@@ -234,7 +234,104 @@ describe('sending the order from the review screen', () => {
 
     const footer = review.get('.review-footer')
 
+    expect(footer.classes()).toContain('docked-strip')
     expect(footer.find('.total-display').exists()).toBe(true)
     expect(footer.find('.send').exists()).toBe(true)
+    expect(footer.find('.send-and-settle').exists()).toBe(true)
+  })
+})
+
+describe('an order holding something that cannot be ordered', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  function soldOutOrder() {
+    const order = prepareOrder()
+    const catalog = useCatalogStore()
+    catalog.catalog = { ...catalog.catalog, items: [{ ...WASSER, isAvailable: false }] }
+    return order
+  }
+
+  function orderWithAVanishedItem() {
+    const order = prepareOrder()
+    order.addItem({
+      catalogItemId: 'item-gone',
+      note: null,
+      stationId: null,
+      name: 'Currywurst',
+      unitPriceCents: 400,
+    })
+    return order
+  }
+
+  function mountReview() {
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('holds both ways of sending back while an item has sold out', () => {
+    soldOutOrder()
+    const review = mountReview()
+
+    expect(review.get('.send').attributes('disabled')).toBeDefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+  })
+
+  it('holds both ways of sending back while an item has left the menu', () => {
+    orderWithAVanishedItem()
+    const review = mountReview()
+
+    expect(review.get('.send').attributes('disabled')).toBeDefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+  })
+
+  it('says under the buttons what has to be taken off the order first', () => {
+    soldOutOrder()
+    const review = mountReview()
+
+    expect(review.get('.remove-before-sending').text()).toBe(
+      'Entfernen Sie zuerst die Artikel, die nicht bestellbar sind.',
+    )
+  })
+
+  it('says nothing of the sort while the whole order can be ordered', () => {
+    prepareOrder()
+    const review = mountReview()
+
+    expect(review.find('.remove-before-sending').exists()).toBe(false)
+    expect(review.get('.send').attributes('disabled')).toBeUndefined()
+  })
+
+  it('offers one button that takes the sold-out item off as well', async () => {
+    const order = soldOutOrder()
+    const review = mountReview()
+
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
+
+    expect(order.basketLines).toHaveLength(0)
+  })
+
+  it('names that button for both kinds, because one button clears both', () => {
+    soldOutOrder()
+    const review = mountReview()
+
+    expect(review.get('.drop-lines-that-cannot-be-ordered').text()).toBe(
+      'Nicht bestellbare Artikel entfernen',
+    )
+  })
+
+  it('lets the order be sent again once the blocking item is off it', async () => {
+    orderWithAVanishedItem()
+    const review = mountReview()
+
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
+
+    expect(review.get('.send').attributes('disabled')).toBeUndefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
+    expect(review.find('.remove-before-sending').exists()).toBe(false)
   })
 })
