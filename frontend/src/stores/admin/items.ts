@@ -94,6 +94,10 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     await load()
   }
 
+  function forgetError(): void {
+    errorMessage.value = null
+  }
+
   return {
     items,
     loadFailed,
@@ -101,6 +105,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     categoryNames,
     load,
     save,
+    forgetError,
     setAvailability,
     setActive,
   }

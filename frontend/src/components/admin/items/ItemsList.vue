@@ -42,6 +42,11 @@ async function save(item: AdminItemDraft): Promise<void> {
   }
 }
 
+function stopCreating(): void {
+  isCreating.value = false
+  items.forgetError()
+}
+
 async function deactivate(): Promise<void> {
   const itemId = askingAboutId.value
   askingAboutId.value = null
@@ -141,7 +146,7 @@ onMounted(async () => {
       :category-names="items.categoryNames"
       :error-text="refusal"
       @save="save"
-      @cancel="isCreating = false"
+      @cancel="stopCreating"
     />
     <ConfirmDialog
       v-if="askingAboutId !== null"

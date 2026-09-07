@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
+import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
+import { useAdminItemsStore } from '../../../src/stores/admin/items'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const ITEM_ID = '22222222-2222-2222-2222-222222222222'
@@ -290,6 +292,30 @@ describe('adding an item', () => {
     await list.get('.new-item').trigger('click')
 
     await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
+  })
+
+  it('drops the complaint about a missing station once the dialog is cancelled', async () => {
+    stubFetch()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.new-item').exists()).toBe(true))
+    await list.get('.new-item').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
+
+    await list.findComponent(NewItemDialog).vm.$emit('save', {
+      itemId: null,
+      name: 'Pommes',
+      categoryName: 'Speisen',
+      priceCents: 300,
+      productionMinutes: null,
+      stationIds: [],
+    })
+    await vi.waitFor(() => expect(useAdminItemsStore().errorMessage).not.toBeNull())
+
+    await list.findComponent(NewItemDialog).vm.$emit('cancel')
+    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
+
+    expect(list.find('.admin-items .error').exists()).toBe(false)
   })
 
 })
