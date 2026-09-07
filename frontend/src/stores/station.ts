@@ -93,6 +93,9 @@ export const useStationStore = defineStore('station', () => {
       connection.onEvent<{ stationId: string }>('StationOrdersChanged', () => {
         void load()
       }),
+      connection.onEvent<unknown>('StationsChanged', () => {
+        void load()
+      }),
     ]
     return () => {
       for (const release of releases) {

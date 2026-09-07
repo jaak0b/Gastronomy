@@ -36,18 +36,19 @@ public sealed class HubNotificationDispatcher
                       ct);
   }
 
-  public async Task PushOrderAcceptedAsync(OrderAcceptedEvent payload, CancellationToken ct)
-  {
-    ArgumentNullException.ThrowIfNull(payload);
-
-    await SendToAsync(_eventNames.OrderAccepted, payload, [_groupNames.Admin], ct);
-  }
-
   public async Task PushStationOrdersChangedAsync(Guid stationId, CancellationToken ct)
   {
     await SendToAsync(_eventNames.StationOrdersChanged,
                       new StationOrdersChangedEvent(stationId),
                       [_groupNames.Station(stationId), _groupNames.Admin],
+                      ct);
+  }
+
+  public async Task PushStationsChangedAsync(Guid stationId, CancellationToken ct)
+  {
+    await SendToAsync(_eventNames.StationsChanged,
+                      new StationsChangedEvent(),
+                      [_groupNames.Devices, _groupNames.Admin, _groupNames.Station(stationId)],
                       ct);
   }
 

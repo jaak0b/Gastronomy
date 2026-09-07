@@ -1,4 +1,4 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Infrastructure;
@@ -21,7 +21,7 @@ public sealed class CatalogWriteTransactionTest
     _scope = _context.Factory.Services.CreateScope();
     _dbContext = _scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     _proxy = A.Fake<IClientProxy>();
-    _logger = A.Fake<ILogger<CatalogWriteTransaction>>();
+    _logger = A.Fake<ILogger<SavedChangeAnnouncement>>();
     _programIsQuitting = new();
   }
 
@@ -36,7 +36,7 @@ public sealed class CatalogWriteTransactionTest
   private readonly IResult _savedChange = Results.Ok(new { saved = true });
   private OrderTestContext _context = null!;
   private GastronomyAppDbContext _dbContext = null!;
-  private ILogger<CatalogWriteTransaction> _logger = null!;
+  private ILogger<SavedChangeAnnouncement> _logger = null!;
   private CancellationTokenSource _programIsQuitting = null!;
   private IClientProxy _proxy = null!;
   private IServiceScope _scope = null!;
@@ -166,6 +166,6 @@ public sealed class CatalogWriteTransactionTest
     var lifetime = A.Fake<IHostApplicationLifetime>();
     A.CallTo(() => lifetime.ApplicationStopping).Returns(_programIsQuitting.Token);
 
-    return new(announcer, lifetime, _logger);
+    return new(announcer, new(lifetime, _logger));
   }
 }

@@ -1,6 +1,7 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
+using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
@@ -50,6 +51,25 @@ public static class AdminStationEndpoints
   }
 }
 
+public sealed class StationChangeAnnouncer
+{
+  private readonly SavedChangeAnnouncement _announcement;
+  private readonly HubNotificationDispatcher _dispatcher;
+
+  public StationChangeAnnouncer(HubNotificationDispatcher dispatcher, SavedChangeAnnouncement announcement)
+  {
+    _dispatcher = dispatcher;
+    _announcement = announcement;
+  }
+
+  public Task AnnounceAsync(Guid stationId)
+  {
+    return _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken =>
+                                                                          _dispatcher.PushStationsChangedAsync(stationId,
+                                                                                                               cancellationToken));
+  }
+}
+
 public sealed class EnrolmentUrlBuilder
 {
   private readonly ApiHostOptions _hostOptions;
@@ -96,6 +116,7 @@ public sealed class EnrolmentUrlBuilder
 
 public sealed class AdminStationHandler
 {
+  private readonly StationChangeAnnouncer _announcer;
   private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly DeviceRevoker _deviceRevoker;
@@ -105,12 +126,14 @@ public sealed class AdminStationHandler
   public AdminStationHandler(GastronomyAppDbContext dbContext,
                              OutstandingInvitationLookup invitationLookup,
                              DeviceRevoker deviceRevoker,
+                             StationChangeAnnouncer announcer,
                              ResultEnvelope resultEnvelope,
                              IClock clock)
   {
     _dbContext = dbContext;
     _invitationLookup = invitationLookup;
     _deviceRevoker = deviceRevoker;
+    _announcer = announcer;
     _resultEnvelope = resultEnvelope;
     _clock = clock;
   }
@@ -164,7 +187,7 @@ public sealed class AdminStationHandler
                              NextStationOrderNumber = 1
                            });
 
-    await _dbContext.SaveChangesAsync(cancellationToken);
+    await TellTheDevicesAsync(await SaveAsync(cancellationToken), stationId);
 
     return Results.Json(new SavedStationView(stationId), statusCode: StatusCodes.Status201Created);
   }
@@ -192,7 +215,7 @@ public sealed class AdminStationHandler
 
     station.Name = request.Name;
     station.SortOrder = request.SortOrder;
-    await _dbContext.SaveChangesAsync(cancellationToken);
+    await TellTheDevicesAsync(await SaveAsync(cancellationToken), station.Id);
 
     return Results.Ok(new SavedStationView(station.Id));
   }
@@ -208,7 +231,7 @@ public sealed class AdminStationHandler
     }
 
     station.IsActive = true;
-    await _dbContext.SaveChangesAsync(cancellationToken);
+    await TellTheDevicesAsync(await SaveAsync(cancellationToken), station.Id);
 
     return Results.Ok(new SavedStationView(station.Id));
   }
@@ -246,14 +269,29 @@ public sealed class AdminStationHandler
     var deviceId = station.DeviceId;
     station.IsActive = false;
     await ConsumeOutstandingInvitationOfAsync(station, cancellationToken);
-    await _dbContext.SaveChangesAsync(cancellationToken);
+    var somethingChanged = await SaveAsync(cancellationToken);
 
     if (deviceId is not null)
     {
       await _deviceRevoker.RevokeAsync(deviceId.Value, cancellationToken);
     }
 
+    await TellTheDevicesAsync(somethingChanged, station.Id);
+
     return Results.Ok(new SavedStationView(station.Id));
+  }
+
+  private async Task<bool> SaveAsync(CancellationToken cancellationToken)
+  {
+    return await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+  }
+
+  private async Task TellTheDevicesAsync(bool somethingChanged, Guid stationId)
+  {
+    if (somethingChanged)
+    {
+      await _announcer.AnnounceAsync(stationId);
+    }
   }
 
   private DateTime? LastSeenOf(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)

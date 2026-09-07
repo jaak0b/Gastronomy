@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.Endpoints;
@@ -32,12 +32,12 @@ public sealed class HubConnectionSecurityTest
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect("hub");
-    connection.On<JsonElement>("OrderAccepted",
-                               payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
+    connection.On<JsonElement>("StationOrdersChanged",
+                               payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await connection.StartAsync();
 
-    var orderId = await PlaceAnOrderAsync();
+    await PlaceAnOrderAsync();
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
     Assert.Multiple(() =>
@@ -46,7 +46,7 @@ public sealed class HubConnectionSecurityTest
                       Assert.That(connection.State, Is.EqualTo(HubConnectionState.Connected));
                     });
 
-    Assert.That(await heard.Task, Is.EqualTo(orderId));
+    Assert.That(await heard.Task, Is.EqualTo(_context.World.KitchenStationId));
   }
 
   [Test]
@@ -89,15 +89,11 @@ public sealed class HubConnectionSecurityTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
 
-  private async Task<Guid> PlaceAnOrderAsync()
+  private async Task PlaceAnOrderAsync()
   {
     using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    return body.RootElement.GetProperty("orderId").GetGuid();
   }
 
   private async Task<bool> WaitUntilAsync(Func<bool> condition)

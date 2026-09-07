@@ -123,12 +123,6 @@ public sealed class OrderPlacementHandler
     var placed = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
     var view = _orderReader.Describe(placed);
 
-    await _dispatcher.PushOrderAcceptedAsync(new(view.OrderId,
-                                                view.GlobalOrderNumber,
-                                                placed.Order.TableName,
-                                                view.TotalCents,
-                                                view.StationOrders),
-                                            cancellationToken);
     await TellEveryStationThatGotASliceAsync(view, cancellationToken);
 
     return Results.Json(view, statusCode: StatusCodes.Status201Created);

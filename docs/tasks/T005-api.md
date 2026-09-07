@@ -611,9 +611,9 @@ authentication scheme resolved the connection).
 
 `Hub/HubNotificationDispatcher.cs` is a plain class (not a static method) holding an
 `IHubContext<GastronomyHub>` and exposing one push method per event row in section 6.2
-(`TicketStatusChanged`, `OrderAccepted`,
+(`TicketStatusChanged`,
 `EnrolmentCompleted`, `DeviceRevoked`, `CatalogChanged`, `EventSessionStarted`), each called directly
-from the endpoint handler that produces that event (ticket resolution, order acceptance, enrolment
+from the endpoint handler that produces that event (ticket resolution, enrolment
 redemption, device
 revocation, item availability/deactivation, event session start), building the exact payload shape
 that row lists and pushing it to the exact groups section 6.2's table names.

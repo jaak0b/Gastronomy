@@ -65,6 +65,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
     services.AddSingleton<CatalogReader>();
+    services.AddSingleton<SavedChangeAnnouncement>();
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddSingleton<CatalogWriteTransaction>();
     services.AddSingleton<CatalogCategoryColour>();
@@ -89,6 +90,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<EnrolmentUrlBuilder>();
     services.AddScoped<DeviceRevoker>();
     services.AddScoped<OutstandingInvitationLookup>();
+    services.AddSingleton<StationChangeAnnouncer>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();

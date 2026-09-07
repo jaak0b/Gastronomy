@@ -62,7 +62,9 @@ public sealed class AdminItemAvailabilityAnnouncementTest
       new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
 
     return new(services.GetRequiredService<GastronomyAppDbContext>(),
-               new(announcer, services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<CatalogWriteTransaction>>()),
+               new(announcer,
+                   new(services.GetRequiredService<IHostApplicationLifetime>(),
+                       A.Fake<ILogger<SavedChangeAnnouncement>>())),
                services.GetRequiredService<ResultEnvelope>());
   }
 }

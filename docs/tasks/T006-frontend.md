@@ -102,7 +102,6 @@ its access key. Events this frontend consumes:
 
 | Event | Payload | Frontend reaction |
 |---|---|---|
-| `OrderAccepted` | `{orderId, globalOrderNumber, tableLabel, totalCents, tickets[]}` | station page: refetch tickets |
 | `TicketStatusChanged` | `{orderId, globalOrderNumber, ticketId, locationId, locationName, sequenceNumber, status, messageKey, parameters}` | station page: refetch tickets |
 | `CatalogChanged` | `{version}` | phone refetches `/api/catalog` |
 | `EnrolmentCompleted` | `{serverPersonId, serverPersonName, deviceId}` | admin people list gains a row / QR panel closes |

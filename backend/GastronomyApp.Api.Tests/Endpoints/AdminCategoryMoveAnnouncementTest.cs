@@ -1,4 +1,4 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
@@ -67,7 +67,9 @@ public sealed class AdminCategoryMoveAnnouncementTest
                services.GetRequiredService<CatalogCategoryColour>(),
                services.GetRequiredService<CatalogCategoryOrdering>(),
                services.GetRequiredService<CatalogCategoryNaming>(),
-               new(announcer, services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<CatalogWriteTransaction>>()),
+               new(announcer,
+                   new(services.GetRequiredService<IHostApplicationLifetime>(),
+                       A.Fake<ILogger<SavedChangeAnnouncement>>())),
                services.GetRequiredService<ResultEnvelope>());
   }
 }

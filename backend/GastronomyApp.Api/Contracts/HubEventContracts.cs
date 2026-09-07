@@ -2,13 +2,6 @@ using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record OrderAcceptedEvent(
-  Guid OrderId,
-  int GlobalOrderNumber,
-  string TableName,
-  int TotalCents,
-  IReadOnlyList<StationOrderView> StationOrders);
-
 public sealed record OrderStatusChangedEvent(Guid OrderId, OrderStatus Status);
 
 public sealed record OrderItemsSettledEvent(
@@ -16,6 +9,8 @@ public sealed record OrderItemsSettledEvent(
   IReadOnlyList<string> TableNames);
 
 public sealed record StationOrdersChangedEvent(Guid StationId);
+
+public sealed record StationsChangedEvent;
 
 public sealed record CatalogChangedEvent;
 
