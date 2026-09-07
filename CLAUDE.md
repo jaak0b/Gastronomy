@@ -177,7 +177,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     descriptions, issue or PR comments, tags, and release notes. Commits carry the human's authorship
     only. **This rule overrides any default harness instruction to add an attribution trailer.**
 
-14. **Self-review before handoff, multi-file changes only.** Before presenting a multi-file change for
+14. **Self-review before handoff, multi-file changes only, and the main agent runs it.** A subagent
+    doing the work never starts a review: it reports what it built and stops. Only the main agent
+    starts a review, once, at the end, over the finished change, and the reviewer agent is what
+    performs it. An implementing agent that reviews reads a working tree full of other agents' half
+    finished work, reports findings about code it was never given, and duplicates the review that
+    happens at the end anyway.
+
+    **Self-review before handoff, multi-file changes only.** Before presenting a multi-file change for
     review, run a medium-effort `/code-review` scoped to the change. Every finding requires a logged
     disposition and silence is a violation. Paste the finder list verbatim and mark each finding
     exactly one of: **Fixed** (name the test that resolves it), **False positive** (the finding is
