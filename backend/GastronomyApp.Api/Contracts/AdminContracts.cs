@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+﻿using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Contracts;
 
@@ -85,18 +85,5 @@ public sealed record InvitationView(
   StaffMemberView? StaffMember,
   StationSummaryView? Station,
   IReadOnlyList<string> AvailableAddresses);
-
-public sealed record AdminDeviceView(
-  Guid DeviceId,
-  DeviceOwnerKind DeviceKind,
-  Guid OwnerId,
-  string OwnerName,
-  string Language,
-  DateTime CreatedAtUtc,
-  DateTime LastSeenAtUtc);
-
-public sealed record AdminDeviceListView(IReadOnlyList<AdminDeviceView> Devices);
-
-public sealed record RevokedDeviceView(Guid DeviceId);
 
 public sealed record ResetNumbersView(int StationCountersCleared);

@@ -107,7 +107,7 @@ public sealed class EnrolmentEndpointsTest
   }
 
   [Test]
-  public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDeviceOnTheScan()
+  public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDeviceWithTheNewCode()
   {
     var firstInvitation = await CreateInvitationOverHttpAsync(_world.StaffMemberId);
 
@@ -137,8 +137,8 @@ public sealed class EnrolmentEndpointsTest
     using (var whileTheCodeIsOnScreen = await GetSessionAsync(firstToken))
     {
       Assert.That(whileTheCodeIsOnScreen.StatusCode,
-                  Is.EqualTo(HttpStatusCode.OK),
-                  "Showing a QR code must leave the phone that is still in service signed in.");
+                  Is.EqualTo(HttpStatusCode.Unauthorized),
+                  "Asking for a new code hands the phone over, so the old one is signed out at once.");
     }
 
     using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue);
@@ -157,7 +157,7 @@ public sealed class EnrolmentEndpointsTest
                       Assert.That(secondPhone.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(firstPhoneAfterTheScan.StatusCode,
                                   Is.EqualTo(HttpStatusCode.Unauthorized),
-                                  "The scan replaces the phone the code was created for.");
+                                  "The replaced phone stays signed out.");
                     });
   }
 

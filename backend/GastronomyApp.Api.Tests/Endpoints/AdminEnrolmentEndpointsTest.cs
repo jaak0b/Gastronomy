@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -119,18 +119,26 @@ public sealed class AdminEnrolmentEndpointsTest
   }
 
   [Test]
-  public async Task PostInvitation_ForAStationThatAlreadyHasATablet_LeavesThatTabletWorking()
+  public async Task PostInvitation_ForAStationThatAlreadyHasATablet_RevokesTheOldTabletImmediately()
   {
-    var tokenInUse = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
+    var idOfTheOldTablet = await DeviceIdOfTheKitchenAsync();
 
     using (var invitation = await CreateInvitationAsync(new { stationId = _context.World.KitchenStationId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    using var response = await _context.SendAsAsync(tokenInUse, HttpMethod.Get, "/api/session");
+    using var response = await _context.SendAsAsync(tokenOfTheOldTablet, HttpMethod.Get, "/api/session");
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await using var database = _context.Factory.CreateContext();
+    var oldTabletIsGone = !await database.Devices.AnyAsync(device => device.Id == idOfTheOldTablet);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+                      Assert.That(oldTabletIsGone, Is.True);
+                    });
   }
 
   [Test]
