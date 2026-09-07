@@ -42,9 +42,10 @@ reverse proxy.
    short-lived: the first scan consumes the code, so a photographed QR cannot enrol a second device.
    Revoking a device invalidates its token immediately.
 
-7. **Shipped migrations are frozen from `20260906070525_InitialCreate` onward.** The owner approved
-   recreating the initial migration for the change that put a tablet at every station; that recreated
-   migration is the new baseline and history starts there. Once a migration has run on a real fire
+7. **Shipped migrations are frozen from `20260907192954_InitialCreate` onward.** The owner approved
+   recreating the initial migration twice while the product was still local only: once for the change
+   that put a tablet at every station, and once for the change that made a category a thing the admin
+   creates. That second recreation is the current baseline and history starts there. Once a migration has run on a real fire
    department's laptop, it is history. Editing, renaming, reordering, squashing, or deleting an
    existing migration or its designer file is forbidden: it desynchronizes the migrations history from
    the schema and bricks the app on startup. Migrations are append-only and forward-only. A wrong
