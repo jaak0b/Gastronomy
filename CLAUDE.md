@@ -71,7 +71,8 @@ This shapes almost every design decision, so it is stated once here and assumed 
   addressing. Never introduce a flow that depends on a phone remembering an address.
 - Phones and station tablets authenticate by scanning a **single-use, short-lived QR code** shown on
   the laptop, which they exchange for a long-lived device token held in `localStorage`. There are no
-  usernames and no passwords anywhere in the product. Every device is revocable from the admin UI.
+  usernames and no passwords anywhere in the product. Setting an owner up again signs their old
+  device out at that moment, and taking a waiter or a station off the list signs it out too.
 - **One device per owner.** A staff member owns at most one phone and a station owns at most one
   tablet; the owner row points at its device. Setting up a device again replaces the previous one.
 
@@ -185,6 +186,17 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 16. **Every user-facing feature is documented in the same change.** Written in human, conversational
     prose, not terse machine-speak. The setup checklist that the fire department follows is part of the
     product, not an afterthought.
+
+17. **Deleting means removing, everywhere, in the same change. This rule is always binding, with no
+    exception for a hurry, a small change, or a deletion somebody calls obvious.** When a feature, a
+    control, a string or an endpoint is dropped, every trace of it goes: the component and its route,
+    the endpoint, its contract and its handler, the store, the type, the localized strings in both
+    languages, the tests that covered it, and every sentence of documentation that describes it.
+    Hiding a control behind a condition, leaving an unreachable endpoint, leaving a dead key in a
+    resource file, or leaving the paragraph in the spec is not a deletion, it is a rename to
+    invisible. Before reporting a deletion as done, search the repository for the concept's name and
+    for the strings it used, and quote what the search returned. An empty result is the evidence;
+    without it the deletion is not finished.
 
 ## The production model
 
