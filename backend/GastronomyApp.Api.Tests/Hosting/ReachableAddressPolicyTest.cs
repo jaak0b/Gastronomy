@@ -42,7 +42,7 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_TheLaptopAtTheDemoEnumeratedTheOtherWayRound_YieldsTheSameAddress()
   {
-    CandidateNetworkAddress[] reversed = [.. TheLaptopAtTheDemo().Reverse()];
+    CandidateNetworkAddress[] reversed = [.. Enumerable.Reverse(TheLaptopAtTheDemo())];
 
     Assert.That(AddressesFrom(reversed), Is.EqualTo(AddressesFrom(TheLaptopAtTheDemo())));
   }
