@@ -91,10 +91,18 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    table, an item already marked ready) are returned as user-worded messages in their language, never dropped
    and never surfaced as a raw exception or stack trace.
 
-3. **TDD is mandatory and test-first, no exceptions.** For every behaviour change including bug fixes:
-   (a) write the test, (b) run it and paste the failing output, (c) only then touch production code,
-   (d) re-run to green. A red run you can quote is the gate. No red proof means the fix does not start.
-   If you catch yourself having edited production code first, revert it and restart from (a).
+3. **A bug fix is test-first, always. A new feature is tested, not necessarily first.**
+
+   For a **bug fix**, including anything a review calls a defect: (a) write the test, (b) run it and
+   paste the failing output, (c) only then touch production code, (d) re-run to green. A red run you
+   can quote is the gate. No red proof means the fix does not start, because a test written after the
+   fix proves only that the code does what it now does. If you catch yourself having edited
+   production code first, revert it and restart from (a).
+
+   For a **new feature**, the tests rule 4 requires still ship in the same change, and they may be
+   written after the code. Write them first anyway when the behaviour is intricate or the design is
+   unclear, since that is where test-first earns its cost. Never hand back a feature whose tests were
+   skipped "for now".
 
    **Never write a test whose purpose is to prove that deleted behaviour stayed deleted.** When a
    feature, a string or a control is removed, delete its tests with it and write nothing in their
@@ -182,7 +190,19 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 15. **Subagent discipline.** Give every subagent a correct, specific title, and dispatch every one of
     them in the background so the owner is never blocked waiting. The main agent edits repository files
-    itself only for tiny changes (a single line); anything larger goes to a subagent. The main agent
+    itself when the change is small and self-contained, meaning a handful of lines across one or two
+    files that need no exploration to make. Dispatching a five line edit costs minutes of startup, a
+    fresh reading of these rules and a second exploration of the codebase, so it is slower and more
+    expensive than doing it. Anything larger, or anything needing exploration first, goes to a
+    subagent.
+
+    **A subagent owns the change it was given, and finishes it before it answers.** It may start
+    read-only helpers to explore, search or map the codebase, and those pay for themselves. It may
+    never hand its edits to another agent: the agent that was dispatched writes the code it was asked
+    to write, so one change has one author. It may not report while anything it started is still
+    running, and its report says what it verified in the tree itself, never what it delegated.
+    Reporting a change as finished while a child is still writing it leaves a half-changed tree that
+    looks complete, which costs more than the delegation ever saved. The main agent
     also delegates context-heavy work and consumes only conclusions: codebase exploration, broad
     searches, reading large files or external references, and reviews or audits. The main agent keeps
     what needs conversation context or judgment: talking to the owner, design decisions, writing the
