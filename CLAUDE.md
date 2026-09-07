@@ -198,6 +198,16 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     for the strings it used, and quote what the search returned. An empty result is the evidence;
     without it the deletion is not finished.
 
+18. **Parallel work shares one written contract.** When a change is split across agents, or across
+    the backend and the frontend, the boundary between them is written down before any of them
+    starts: every route with its request and response shape, every field name and its type, every
+    error message key, every localization key with its German and English text, and every event name.
+    That text is copied into each agent's prompt verbatim, and none of them may invent, rename or
+    "improve" anything in it. A disagreement about a name is not a small problem: it compiles on both
+    sides, passes both test suites, and fails only in the running app, which is the most expensive
+    place to find it. When a contract genuinely has to change mid-flight, it changes in the written
+    contract first and every affected agent is told, never in one side's code alone.
+
 ## The production model
 
 - **Delivery mode** is chosen per station slice on the review screen before sending: together (the
