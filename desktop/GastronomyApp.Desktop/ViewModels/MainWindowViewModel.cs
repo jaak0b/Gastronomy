@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
@@ -43,6 +43,7 @@ public sealed class MainWindowViewModel : ViewModelBase
   private int _adminPort;
   private string? _errorMessageKey;
   private TextPlaceholder[] _errorPlaceholders = [];
+  private string? _failureDetail;
   private StatusNotice? _notice;
   private LanguageOption? _selectedLanguage;
 
@@ -79,6 +80,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     OpenDataFolderCommand = new RelayCommand(() => DataFolderRequested?.Invoke());
     RepairSetupCommand = new RelayCommand(() => RepairRequested?.Invoke());
     RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
+    ShowFailureDetailCommand = new RelayCommand(ShowFailureDetail);
   }
 
   public IRelayCommand OpenAdminPagesCommand { get; }
@@ -88,6 +90,8 @@ public sealed class MainWindowViewModel : ViewModelBase
   public IRelayCommand RepairSetupCommand { get; }
 
   public IRelayCommand RequestQuitCommand { get; }
+
+  public IRelayCommand ShowFailureDetailCommand { get; }
 
   public string WindowTitle => _text.Get("desktop.windowTitle");
 
@@ -143,6 +147,16 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public bool HasError => _errorMessageKey is not null;
 
+  public string? FailureDetail => _failureDetail;
+
+  public bool CanShowFailureDetail => _failureDetail is not null;
+
+  public string FailureDetailButtonLabel => _text.Get("desktop.error.showFailureDetail");
+
+  public string FailureDetailTitle => _text.Get("desktop.error.failureDetailTitle");
+
+  public string FailureDetailCloseLabel => _text.Get("desktop.error.failureDetailClose");
+
   public string? NoticeText => _notice is null ? null : _text.Get(_notice.Key);
 
   public bool HasNotice => _notice is not null;
@@ -176,6 +190,8 @@ public sealed class MainWindowViewModel : ViewModelBase
   public event Action? RepairRequested;
 
   public event Action? QuitRequested;
+
+  public event Action? FailureDetailRequested;
 
   private void OnLanguageChanged()
   {
@@ -252,8 +268,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         break;
 
-      case HostLaunchResult.StartFailed:
+      case HostLaunchResult.StartFailed failedToStart:
         ShowError("desktop.error.startFailed");
+        KeepFailureDetail(failedToStart.Failure);
 
         break;
 
@@ -352,7 +369,36 @@ public sealed class MainWindowViewModel : ViewModelBase
   {
     _errorMessageKey = null;
     _errorPlaceholders = [];
+    ForgetFailureDetail();
     RaiseErrorChanged();
+  }
+
+  private void KeepFailureDetail(Exception failure)
+  {
+    _failureDetail = failure.ToString();
+    RaiseFailureDetailChanged();
+  }
+
+  private void ForgetFailureDetail()
+  {
+    _failureDetail = null;
+    RaiseFailureDetailChanged();
+  }
+
+  private void ShowFailureDetail()
+  {
+    if (_failureDetail is null)
+    {
+      return;
+    }
+
+    FailureDetailRequested?.Invoke();
+  }
+
+  private void RaiseFailureDetailChanged()
+  {
+    OnPropertyChanged(nameof(FailureDetail));
+    OnPropertyChanged(nameof(CanShowFailureDetail));
   }
 
   private void RaiseErrorChanged()

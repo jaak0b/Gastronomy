@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
+        x:Class="GastronomyApp.Desktop.Views.FailureDetailDialog"
+        x:DataType="vm:MainWindowViewModel"
+        TextOptions.TextRenderingMode="Antialias"
+        Width="760"
+        Height="480"
+        MinWidth="480"
+        MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        Title="{Binding FailureDetailTitle}">
+
+    <DockPanel Margin="24">
+        <Button DockPanel.Dock="Bottom"
+                Name="CloseButton"
+                Content="{Binding FailureDetailCloseLabel}"
+                IsDefault="True"
+                HorizontalAlignment="Right"
+                Margin="0,16,0,0" />
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Text="{Binding FailureDetail, FallbackValue=''}"
+                                 FontFamily="Consolas, Menlo, monospace"
+                                 FontSize="12" />
+        </ScrollViewer>
+    </DockPanel>
+
+</Window>

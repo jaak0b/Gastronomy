@@ -64,6 +64,7 @@ public class App : Application
     _mainWindowViewModel.DataFolderRequested += OpenDataFolder;
     _mainWindowViewModel.RepairRequested += RepairSetup;
     _mainWindowViewModel.QuitRequested += AskWhetherToQuit;
+    _mainWindowViewModel.FailureDetailRequested += ShowFailureDetail;
 
     _mainWindow = new() { DataContext = _mainWindowViewModel };
 
@@ -208,6 +209,17 @@ public class App : Application
                     FileName = _composition.DataDirectoryPath,
                     UseShellExecute = true
                   });
+  }
+
+  private void ShowFailureDetail()
+  {
+    if (_mainWindowViewModel is null || _mainWindow is null)
+    {
+      return;
+    }
+
+    FailureDetailDialog dialog = new() { DataContext = _mainWindowViewModel };
+    dialog.ShowDialog(_mainWindow);
   }
 
   private async void AskWhetherToQuit()

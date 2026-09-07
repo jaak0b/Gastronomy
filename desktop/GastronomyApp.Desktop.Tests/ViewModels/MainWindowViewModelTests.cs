@@ -113,6 +113,77 @@ public sealed class MainWindowViewModelTests
   }
 
   [Test]
+  public async Task StartAsync_WhenStartingFails_KeepsTheExceptionTextAndOffersToShowIt()
+  {
+    var failure = new InvalidOperationException("broken");
+    LauncherReturns(new HostLaunchResult.StartFailed(failure));
+    var viewModel = CreateViewModel();
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.FailureDetail, Is.EqualTo(failure.ToString()));
+                      Assert.That(viewModel.CanShowFailureDetail, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task ShowFailureDetail_AfterAFailedStart_AsksForTheExceptionTextToBeShown()
+  {
+    LauncherReturns(new HostLaunchResult.StartFailed(new InvalidOperationException("broken")));
+    var viewModel = CreateViewModel();
+    await viewModel.StartAsync();
+    var requests = 0;
+    viewModel.FailureDetailRequested += () => requests++;
+
+    viewModel.ShowFailureDetailCommand.Execute(null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(requests, Is.EqualTo(1));
+                      Assert.That(viewModel.FailureDetail, Does.Contain("InvalidOperationException"));
+                      Assert.That(viewModel.FailureDetail, Does.Contain("broken"));
+                    });
+  }
+
+  [Test]
+  public async Task ShowFailureDetail_WhenThereIsNoExceptionText_AsksForNothing()
+  {
+    LauncherReturns(new HostLaunchResult.NoNetworkAvailable());
+    var viewModel = CreateViewModel();
+    await viewModel.StartAsync();
+    var requests = 0;
+    viewModel.FailureDetailRequested += () => requests++;
+
+    viewModel.ShowFailureDetailCommand.Execute(null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(requests, Is.Zero);
+                      Assert.That(viewModel.FailureDetail, Is.Null);
+                      Assert.That(viewModel.CanShowFailureDetail, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task StartAsync_WhenTheServerStartsAfterAFailedAttempt_ForgetsTheExceptionText()
+  {
+    LauncherReturns(new HostLaunchResult.StartFailed(new InvalidOperationException("broken")));
+    var viewModel = CreateViewModel();
+    await viewModel.StartAsync();
+    LauncherReturns(new HostLaunchResult.Started(null!));
+
+    await viewModel.StartAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(viewModel.FailureDetail, Is.Null);
+                      Assert.That(viewModel.CanShowFailureDetail, Is.False);
+                    });
+  }
+
+  [Test]
   public async Task StopAsync_WhenRunning_TurnsStoppedAndReleasesTheAwakeRequest()
   {
     LauncherReturns(new HostLaunchResult.Started(null!));

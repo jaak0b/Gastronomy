@@ -82,11 +82,18 @@
                 Classes.warning="{Binding CurrentStatus, Converter={StaticResource StatusLevelIs}, ConverterParameter=Warning, FallbackValue=False}"
                 Classes.down="{Binding CurrentStatus, Converter={StaticResource StatusLevelIs}, ConverterParameter=Down, FallbackValue=False}"
                 Classes.withText="{Binding HasStatusText, FallbackValue=False}">
-            <TextBlock Name="StatusMessage"
-                       Text="{Binding StatusText, FallbackValue=''}"
-                       IsVisible="{Binding HasStatusText, FallbackValue=False}"
-                       Foreground="{DynamicResource StatusForegroundBrush}"
-                       TextWrapping="Wrap" />
+            <StackPanel Spacing="10">
+                <TextBlock Name="StatusMessage"
+                           Text="{Binding StatusText, FallbackValue=''}"
+                           IsVisible="{Binding HasStatusText, FallbackValue=False}"
+                           Foreground="{DynamicResource StatusForegroundBrush}"
+                           TextWrapping="Wrap" />
+                <Button Name="ShowFailureDetail"
+                        Content="{Binding FailureDetailButtonLabel}"
+                        Command="{Binding ShowFailureDetailCommand}"
+                        IsVisible="{Binding CanShowFailureDetail, FallbackValue=False}"
+                        HorizontalAlignment="Left" />
+            </StackPanel>
         </Border>
 
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">

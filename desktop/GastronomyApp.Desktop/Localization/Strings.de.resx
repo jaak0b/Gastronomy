@@ -105,6 +105,15 @@
     <data name="desktop.error.startFailed" xml:space="preserve">
     <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
+    <data name="desktop.error.showFailureDetail" xml:space="preserve">
+    <value>Technische Fehlermeldung anzeigen</value>
+  </data>
+    <data name="desktop.error.failureDetailTitle" xml:space="preserve">
+    <value>Technische Fehlermeldung</value>
+  </data>
+    <data name="desktop.error.failureDetailClose" xml:space="preserve">
+    <value>Meldung schließen</value>
+  </data>
     <data name="desktop.settings.openDataFolder" xml:space="preserve">
     <value>Datenordner öffnen</value>
   </data>
