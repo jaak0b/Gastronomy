@@ -515,3 +515,31 @@ describe('a station the laptop refuses to switch off', () => {
   })
 })
 
+describe('a refusal the admin has moved on from', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('is dropped once the admin opens a station to edit it', async () => {
+    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 1 })
+
+    const list = mountList()
+    await deactivateFirstStation(list)
+
+    await list.get('.edit').trigger('click')
+
+    expect(list.find('.refusal').exists()).toBe(false)
+  })
+
+  it('is dropped once the admin starts a new station', async () => {
+    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 1 })
+
+    const list = mountList()
+    await deactivateFirstStation(list)
+
+    await list.get('.new-station').trigger('click')
+
+    expect(list.find('.refusal').exists()).toBe(false)
+  })
+})

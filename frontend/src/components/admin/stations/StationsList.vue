@@ -27,6 +27,16 @@ function inviteStation(stationId: string): void {
   void enrolment.createInvitation({ kind: 'station', stationId })
 }
 
+function toggleEditing(stationId: string): void {
+  editingId.value = editingId.value === stationId ? null : stationId
+  stations.forgetError()
+}
+
+function startCreating(): void {
+  isCreating.value = true
+  stations.forgetError()
+}
+
 async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
   const wasSaved = await stations.save(value)
   if (!wasSaved) {
@@ -97,7 +107,7 @@ onUnmounted(() => {
         <v-btn
           class="edit"
           variant="text"
-          @click="editingId = editingId === station.stationId ? null : station.stationId"
+          @click="toggleEditing(station.stationId)"
         >
           {{ t('admin.edit') }}
         </v-btn>
@@ -137,7 +147,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-station" color="primary" @click="isCreating = true">
+    <v-btn class="new-station" color="primary" @click="startCreating">
       {{ t('admin.stations.new') }}
     </v-btn>
 

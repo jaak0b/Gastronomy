@@ -82,5 +82,9 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     }
   }
 
-  return { stations, loadFailed, errorMessage, load, save, setActive, listen }
+  function forgetError(): void {
+    errorMessage.value = null
+  }
+
+  return { stations, loadFailed, errorMessage, load, save, setActive, forgetError, listen }
 })

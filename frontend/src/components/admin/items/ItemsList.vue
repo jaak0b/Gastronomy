@@ -42,6 +42,16 @@ async function save(item: AdminItemDraft): Promise<void> {
   }
 }
 
+function toggleEditing(itemId: string): void {
+  editingId.value = editingId.value === itemId ? null : itemId
+  items.forgetError()
+}
+
+function startCreating(): void {
+  isCreating.value = true
+  items.forgetError()
+}
+
 function stopCreating(): void {
   isCreating.value = false
   items.forgetError()
@@ -101,7 +111,7 @@ onMounted(async () => {
           <v-btn
             class="edit"
             variant="text"
-            @click="editingId = editingId === item.itemId ? null : item.itemId"
+            @click="toggleEditing(item.itemId)"
           >
             {{ t('admin.edit') }}
           </v-btn>
@@ -136,7 +146,7 @@ onMounted(async () => {
       </v-card>
     </section>
 
-    <v-btn class="new-item" color="primary" @click="isCreating = true">
+    <v-btn class="new-item" color="primary" @click="startCreating">
       {{ t('admin.items.new') }}
     </v-btn>
 

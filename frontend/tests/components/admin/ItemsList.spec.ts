@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
 import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
+import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
 import { useAdminItemsStore } from '../../../src/stores/admin/items'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
@@ -292,6 +293,28 @@ describe('adding an item', () => {
     await list.get('.new-item').trigger('click')
 
     await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
+  })
+
+  it('drops the complaint about a missing station once the edit form is closed again', async () => {
+    stubFetch()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.edit').exists()).toBe(true))
+    await list.get('.edit').trigger('click')
+
+    await list.findComponent(ItemForm).vm.$emit('save', {
+      itemId: ITEM_ID,
+      name: 'Bratwurst',
+      categoryName: 'Speisen',
+      priceCents: 350,
+      productionMinutes: null,
+      stationIds: [],
+    })
+    await vi.waitFor(() => expect(useAdminItemsStore().errorMessage).not.toBeNull())
+
+    await list.get('.edit').trigger('click')
+
+    expect(list.find('.admin-items .error').exists()).toBe(false)
   })
 
   it('drops the complaint about a missing station once the dialog is cancelled', async () => {
