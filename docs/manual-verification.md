@@ -126,16 +126,23 @@ exactly the problems this section is looking for.
 30. **Reset the numbers.** In the admin overview, reset the numbering and confirm. The next order the
     phone sends carries number 1 again, and the orders already taken keep the numbers they had.
 
+31. **Something disappears while a waiter is holding it.** With items already in a waiter's basket,
+    go to the laptop and mark one of those items sold out, switch a second one off, and switch off
+    the whole category a third one came from. Then look at the phone without reloading it, and at
+    the summary, and try to send. Write down what actually happens to those lines and to the total.
+    This step exists because the answer is not designed yet, and a festival is the wrong place to
+    find it out.
+
 ## After the walk
 
 The backup button and the diagnostics page described in the specification are not built yet, so these
 last two steps use what the program window actually offers today.
 
-31. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+32. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
     whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
     well, then open both copies on another machine: the whole folder holds the evening's orders, and
     the single file may be missing the last of them. That difference is the reason the backup belongs
     behind a button, and seeing it once is what makes the point stick.
-32. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+33. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
     startup and the port are all in it, and no device token and no enrolment code appears anywhere in
     it.
