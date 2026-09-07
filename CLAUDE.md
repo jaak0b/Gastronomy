@@ -104,6 +104,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    Assertions that some element is absent *under a condition the code still decides* are a different
    thing and remain welcome, for example that the table name notice is hidden until an item is marked ready.
 
+   **Run as few tests as possible, every time.** The owner's machine is slow, so a run is never
+   widened for comfort. Run only the tests that cover the code being changed: the single test file,
+   or a name filter over the one class, and nothing else. Never the whole solution, never a whole
+   test project when a file will do, never a full frontend suite, never "just to be safe" before
+   handing back. This binds the red run, the green run and the verification in rule 5, and it binds
+   every subagent, whose prompt must carry it along with the exact narrow command to use. Name in the
+   report which tests were run and why that scope covers the change.
+
 4. **Two test layers per change: unit and integration.** End-to-end coverage is required for the order
    placement flow and the station production flow, and optional elsewhere. "It is only a small change" is not
    an exemption. Untestable-by-design code is the only exception and you must say so explicitly.
