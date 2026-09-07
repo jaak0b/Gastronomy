@@ -12,7 +12,7 @@ function item(isAvailable: boolean): CatalogItem {
   return {
     id: 'item-wasser',
     name: 'Wasser',
-    categoryName: 'Getränke',
+    categoryId: 'category-getraenke',
     priceCents: 200,
     sortOrder: 1,
     isAvailable,
@@ -235,5 +235,15 @@ describe('the portions that carry a note', () => {
     const row = mountRow(true, [noted(0, 'ohne Eis')])
 
     expect(row.find('.change-station').exists()).toBe(false)
+  })
+})
+
+describe('the length of a note on one line', () => {
+  it('stops where the laptop stops storing it', async () => {
+    const row = mountRow(true, [])
+
+    await row.get('.add-note').trigger('click')
+
+    expect(dialogField().getAttribute('maxlength')).toBe('200')
   })
 })

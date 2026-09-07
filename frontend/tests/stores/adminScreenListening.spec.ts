@@ -6,6 +6,7 @@ vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnectio
 
 const { useConnectionStore } = await import('../../src/stores/connection')
 const { useAdminEnrolmentStore } = await import('../../src/stores/admin/enrolment')
+const { useAdminCategoriesStore } = await import('../../src/stores/admin/categories')
 const { useAdminStaffStore } = await import('../../src/stores/admin/staff')
 const { useAdminStationsStore } = await import('../../src/stores/admin/stations')
 
@@ -75,6 +76,36 @@ describe('the station list of the admin', () => {
   it('is left alone once the admin has moved to another screen', async () => {
     const urls = stubTheLaptop()
     const stopListening = useAdminStationsStore().listen()
+
+    stopListening()
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
+  })
+})
+
+describe('the category list of the admin', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    hubEventsRegistered.length = 0
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is reloaded while the screen that asked for it is open', async () => {
+    const urls = stubTheLaptop()
+    useAdminCategoriesStore().listen()
+
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual(['/api/admin/categories'])
+  })
+
+  it('is left alone once the admin has moved to another screen', async () => {
+    const urls = stubTheLaptop()
+    const stopListening = useAdminCategoriesStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()

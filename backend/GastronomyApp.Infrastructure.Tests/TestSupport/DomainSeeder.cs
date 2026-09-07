@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Infrastructure.Tests.TestSupport;
+﻿using GastronomyApp.Core.Services;
+
+namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed record SeededDomain
 {
@@ -10,6 +12,10 @@ public sealed record SeededDomain
 
   public required Guid BarStationId { get; init; }
 
+  public required Guid FoodCategoryId { get; init; }
+
+  public required Guid DrinkCategoryId { get; init; }
+
   public required Guid SausageItemId { get; init; }
 
   public required Guid LemonadeItemId { get; init; }
@@ -17,6 +23,8 @@ public sealed record SeededDomain
 
 public sealed class DomainSeeder
 {
+  private readonly CatalogCategoryNaming _naming = new();
+
   public async Task<SeededDomain> SeedAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
   {
     SeededDomain seeded = new()
@@ -25,6 +33,8 @@ public sealed class DomainSeeder
                             DeviceId = Guid.NewGuid(),
                             KitchenStationId = Guid.NewGuid(),
                             BarStationId = Guid.NewGuid(),
+                            FoodCategoryId = Guid.NewGuid(),
+                            DrinkCategoryId = Guid.NewGuid(),
                             SausageItemId = Guid.NewGuid(),
                             LemonadeItemId = Guid.NewGuid()
                           };
@@ -57,11 +67,31 @@ public sealed class DomainSeeder
                              NextStationOrderNumber = 1
                            });
 
+    dbContext.CatalogCategories.Add(new()
+                                    {
+                                      Id = seeded.FoodCategoryId,
+                                      Name = "Speisen",
+                                      NormalizedName = _naming.Normalized("Speisen"),
+                                      ColourHex = "#C62828",
+                                      SortOrder = 1,
+                                      IsActive = true
+                                    });
+
+    dbContext.CatalogCategories.Add(new()
+                                    {
+                                      Id = seeded.DrinkCategoryId,
+                                      Name = "Getraenke",
+                                      NormalizedName = _naming.Normalized("Getraenke"),
+                                      ColourHex = "#1565C0",
+                                      SortOrder = 2,
+                                      IsActive = true
+                                    });
+
     dbContext.CatalogItems.Add(new()
                                {
                                  Id = seeded.SausageItemId,
                                  Name = "Bratwurst",
-                                 CategoryName = "Speisen",
+                                 CategoryId = seeded.FoodCategoryId,
                                  PriceCents = 350,
                                  SortOrder = 1,
                                  IsActive = true,
@@ -72,7 +102,7 @@ public sealed class DomainSeeder
                                {
                                  Id = seeded.LemonadeItemId,
                                  Name = "Limonade",
-                                 CategoryName = "Getraenke",
+                                 CategoryId = seeded.DrinkCategoryId,
                                  PriceCents = 250,
                                  SortOrder = 2,
                                  IsActive = true,

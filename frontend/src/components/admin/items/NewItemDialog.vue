@@ -4,7 +4,7 @@ import type { AdminItemDraft } from '../../../stores/admin/items'
 import type { AdminStation } from '../../../stores/admin/stations'
 import ItemForm from './ItemForm.vue'
 
-defineProps<{ stations: AdminStation[]; categoryNames: string[]; errorText: string | null }>()
+defineProps<{ stations: AdminStation[]; errorText: string | null }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
 const { t } = useI18n()
@@ -17,7 +17,6 @@ const { t } = useI18n()
       <ItemForm
         :item="null"
         :stations="stations"
-        :category-names="categoryNames"
         :error-text="errorText"
         is-cancellable
         @save="(item: AdminItemDraft) => emit('save', item)"

@@ -19,8 +19,6 @@ public sealed class ResultEnvelope
                Validation("order.tooManyItems"),
              OrderValidationFailureReason.TableNameMissing =>
                Validation("order.tableNameMissing"),
-             OrderValidationFailureReason.TableNameTooLong =>
-               Validation("order.tableNameTooLong"),
              OrderValidationFailureReason.UnknownCatalogItemId =>
                Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationRequired =>
@@ -45,8 +43,6 @@ public sealed class ResultEnvelope
                Validation("order.settlementTooManyItemsSelected"),
              SettlementFailureReason.PaymentNoticeMissing =>
                Validation("order.settlementNoticeMissing"),
-             SettlementFailureReason.PaymentNoticeTooLong =>
-               Validation("order.settlementNoticeTooLong"),
              SettlementFailureReason.UnknownOrderItemId =>
                Unprocessable("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)

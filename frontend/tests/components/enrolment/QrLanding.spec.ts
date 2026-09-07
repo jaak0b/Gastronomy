@@ -181,3 +181,21 @@ describe('landing on a QR code link', () => {
     expect(landing.get('.carry-on').text()).toContain('Mit diesem Telefon weiterarbeiten')
   })
 })
+
+describe('the length of the name a waiter types while enrolling', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/j/abc123')
+  })
+
+  it('stops where the laptop stops storing it', async () => {
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+
+    const landing = mountLanding()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    expect(landing.get('.name-field input').attributes('maxlength')).toBe('40')
+  })
+})

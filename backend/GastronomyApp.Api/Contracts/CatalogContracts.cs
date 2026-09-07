@@ -1,11 +1,11 @@
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record CatalogCategoryView(string Name, int SortOrder);
+public sealed record CatalogCategoryView(Guid CategoryId, string Name, string ColourHex, int SortOrder);
 
 public sealed record CatalogItemView(
   Guid Id,
+  Guid CategoryId,
   string Name,
-  string CategoryName,
   int PriceCents,
   int SortOrder,
   bool IsAvailable,
@@ -15,7 +15,6 @@ public sealed record CatalogItemView(
 public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);
 
 public sealed record CatalogView(
-  string Version,
   IReadOnlyList<CatalogCategoryView> Categories,
   IReadOnlyList<CatalogItemView> Items,
   IReadOnlyList<CatalogStationView> Stations);

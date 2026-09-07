@@ -11,7 +11,6 @@ public sealed class ResultEnvelopeTest
   [TestCase(OrderValidationFailureReason.NoItems, 400, "ValidationFailed")]
   [TestCase(OrderValidationFailureReason.TooManyItems, 400, "ValidationFailed")]
   [TestCase(OrderValidationFailureReason.TableNameMissing, 400, "ValidationFailed")]
-  [TestCase(OrderValidationFailureReason.TableNameTooLong, 400, "ValidationFailed")]
   [TestCase(OrderValidationFailureReason.UnknownCatalogItemId, 422, "UnprocessableEntity")]
   [TestCase(OrderValidationFailureReason.StationRequired, 422, "UnprocessableEntity")]
   [TestCase(OrderValidationFailureReason.StationNotAssignedToItem, 422, "UnprocessableEntity")]

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +30,7 @@ public sealed class CatalogProductionMinutesTest
                                                               new
                                                               {
                                                                 name = "Pommes",
-                                                                categoryName = "Essen",
+                                                                categoryId = _context.World.FoodCategoryId,
                                                                 priceCents = 250,
                                                                 sortOrder = 3,
                                                                 stationIds = new[] { _context.World.KitchenStationId },
@@ -55,7 +55,7 @@ public sealed class CatalogProductionMinutesTest
                                                               new
                                                               {
                                                                 name = "Pommes",
-                                                                categoryName = "Essen",
+                                                                categoryId = _context.World.FoodCategoryId,
                                                                 priceCents = 250,
                                                                 sortOrder = 3,
                                                                 stationIds = new[] { _context.World.KitchenStationId },
@@ -82,7 +82,7 @@ public sealed class CatalogProductionMinutesTest
                                                             new
                                                             {
                                                               name = "Bratwurst mit Brot",
-                                                              categoryName = "Essen",
+                                                              categoryId = _context.World.FoodCategoryId,
                                                               priceCents = 350,
                                                               sortOrder = 1,
                                                               stationIds = new[] { _context.World.KitchenStationId },

@@ -945,11 +945,14 @@ The order matters, because each step needs the one before it. The overview scree
 naming the next missing thing rather than letting the admin wander.
 
 1. **Stations.** One per kitchen or bar. At a normal site this is two rows.
-2. **Items and prices**, with a preparation time for anything that takes a while.
-3. **Assignment.** Tick which stations can produce each item. An item must have at least one.
-4. **Reset the numbers**, if this is a new festival rather than a second evening of the same one.
-5. **Set up the station tablets.** One per station, from the stations page.
-6. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One waiter at
+2. **Categories.** The headings the items are sorted under, each with a colour, because on the phone
+   a category is a large coloured button.
+3. **Items and prices**, with a preparation time for anything that takes a while. Every item belongs
+   to exactly one category, which is why the categories come first.
+4. **Assignment.** Tick which stations can produce each item. An item must have at least one.
+5. **Reset the numbers**, if this is a new festival rather than a second evening of the same one.
+6. **Set up the station tablets.** One per station, from the stations page.
+7. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One waiter at
    a time: put the person on the list, create their QR code, and they scan it.
 
 ### 7.5 Setup checklist, English
@@ -963,67 +966,71 @@ Print this page and take it with you.
    network and to create its data folder, and it never asks again.
 2. In the program window, click "Open the admin pages".
 3. Create the stations, for example Kitchen and Bar.
-4. Enter the items with their prices. Where an item takes a while to make, fill in the preparation
+4. Create the categories the items are sorted under, for example Food and Drinks, and pick a colour for
+   each one. On the phone a category is a large coloured button, and every item belongs to exactly one
+   category, so this step comes before the items. The "New category" button is at the bottom of
+   the items page, beside "New item".
+5. Enter the items with their prices. Where an item takes a while to make, fill in the preparation
    time in minutes as well, so the waiters can tell a guest roughly how long they will wait. Leave the
    field empty for drinks and anything else that is handed over right away.
-5. Tick, for each item, which stations can prepare it. Food usually gets only the kitchen. Beer at a
+6. Tick, for each item, which stations can prepare it. Food usually gets only the kitchen. Beer at a
    site with two bars gets both, and the waiter then picks one while taking the order.
-6. Take one phone, set it up, and place a couple of practice orders so you have seen the screens once
-   before the evening. Delete nothing afterwards: reset the numbers in step 12 and the practice orders
+7. Take one phone, set it up, and place a couple of practice orders so you have seen the screens once
+   before the evening. Delete nothing afterwards: reset the numbers in step 13 and the practice orders
    simply stay in the history.
 
 **On site, before the guests arrive**
 
-7. Switch on the WiFi router and connect the laptop to the same network the phones and the tablets
+8. Switch on the WiFi router and connect the laptop to the same network the phones and the tablets
    will use.
-8. **Switch off client isolation in the WiFi router.** It is sometimes called AP isolation or guest
+9. **Switch off client isolation in the WiFi router.** It is sometimes called AP isolation or guest
    mode. With it switched on the phones cannot reach the laptop, and nothing else in this list will
    help.
-9. **Give the laptop a fixed address.** Either reserve one for it in the router, which is usually
-   called a DHCP reservation, or set a static address on the laptop's WiFi adapter. If the address
-   changes during the evening, every phone and every tablet loses the laptop at once and every one of
-   them has to be set up again, one at a time.
-10. Plug the laptop into power and leave the lid open. The program keeps the laptop awake by itself,
+10. **Give the laptop a fixed address.** Either reserve one for it in the router, which is usually
+    called a DHCP reservation, or set a static address on the laptop's WiFi adapter. If the address
+    changes during the evening, every phone and every tablet loses the laptop at once and every one of
+    them has to be set up again, one at a time.
+11. Plug the laptop into power and leave the lid open. The program keeps the laptop awake by itself,
     so there is nothing to change in the power settings. A closed lid still sends it to sleep.
-11. Take one phone and scan the QR code shown on the admin pages. Seeing any page from the program at
-    all is the proof that the devices reach the laptop. If nothing opens, go back to step 8, and then
+12. Take one phone and scan the QR code shown on the admin pages. Seeing any page from the program at
+    all is the proof that the devices reach the laptop. If nothing opens, go back to step 9, and then
     use "Repair the setup" in the program window.
-12. Reset the order numbers, so the evening starts at 1. Orders you took while practising keep the
+13. Reset the order numbers, so the evening starts at 1. Orders you took while practising keep the
     numbers they already have.
-13. **Set up one tablet per station.** Open the stations page, tap "Set up the tablet" on the first
+14. **Set up one tablet per station.** Open the stations page, tap "Set up the tablet" on the first
     station, and scan the QR code with the camera of the tablet that will stand there. The tablet then
     shows that station's orders and nothing else. Carry it to the station, plug it in, and leave it
     switched on: the screen has to stay awake all evening.
-14. Set the phones up one at a time. Open the waiter list and tap "New waiter", which shows a QR
+15. Set the phones up one at a time. Open the waiter list and tap "New waiter", which shows a QR
     code. Let that waiter scan it with the camera of their own phone and type their name there. The
     name they type is what puts them on the list, and then you move on to the next person. If
     somebody already on the list needs a different phone, tap "Set the phone up again" on their row
     instead and let them scan that code, which asks them nothing.
-15. Place one order from a phone and watch it appear on the right station's tablet. That is the whole
+16. Place one order from a phone and watch it appear on the right station's tablet. That is the whole
     system proven in ten seconds, and it is worth doing before the first guest sits down.
 
 **During the festival**
 
-16. Leave the program running. Clicking the cross in the corner only puts the window away: the program
+17. Leave the program running. Clicking the cross in the corner only puts the window away: the program
     carries on taking orders, and only "Quit the program" stops it.
-17. Show whoever is working a station the three things their tablet does: start preparing, mark as
+18. Show whoever is working a station the three things their tablet does: start preparing, mark as
     ready, and the same two for a whole order at once. When something is marked ready the tablet shows
     the table, and that is what gets written on the tray.
-18. **Nobody is called when food is ready.** The tray stands at the hatch with the table written on
+19. **Nobody is called when food is ready.** The tray stands at the hatch with the table written on
     it, and whichever waiter passes next takes it. Tell the waiters that once at the start of the
     evening, because it is the one thing about the system that is not obvious from a screen.
-19. When a station tells you something has run out, walk to the laptop and tap that item to "Sold out"
+20. When a station tells you something has run out, walk to the laptop and tap that item to "Sold out"
     in the item list. The laptop is the only place that switch exists, and one tap puts the item back
     when another crate turns up.
-20. **If a tablet dies, set up a replacement.** Open the stations page, tap "Set up the tablet" on that
+21. **If a tablet dies, set up a replacement.** Open the stations page, tap "Set up the tablet" on that
     station, and scan the code with another tablet or with any spare phone. The station's orders are
     all still there: nothing was stored on the device.
 
 **Afterwards**
 
-21. Look at the station tablets one last time and make sure every list is empty. That is the one check
+22. Look at the station tablets one last time and make sure every list is empty. That is the one check
     that catches an order nobody produced, and it takes five seconds.
-22. Click "Open the data folder" in the program window and copy the whole folder onto a USB stick,
+23. Click "Open the data folder" in the program window and copy the whole folder onto a USB stick,
     with the program still running. It holds the evening's orders. The backup button described in
     section 7.8 is not built yet, which is why the whole folder is copied rather than one file: the
     most recent orders can still be sitting beside the database rather than in it.
@@ -1040,75 +1047,79 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
    nie wieder.
 2. Klicken Sie im Programmfenster auf "Verwaltung öffnen".
 3. Legen Sie die Ausgabestellen an, zum Beispiel Küche und Theke.
-4. Tragen Sie die Artikel mit ihren Preisen ein. Wo ein Artikel eine Weile braucht, tragen Sie auch die
+4. Legen Sie die Kategorien an, unter denen die Artikel einsortiert werden, zum Beispiel Speisen und
+   Getränke, und wählen Sie für jede eine Farbe. Auf dem Telefon ist eine Kategorie ein großer farbiger
+   Knopf, und jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den
+   Artikeln. Der Knopf "Neue Kategorie" steht unten auf der Artikel-Seite, neben "Neuer Artikel".
+5. Tragen Sie die Artikel mit ihren Preisen ein. Wo ein Artikel eine Weile braucht, tragen Sie auch die
    Zubereitungszeit in Minuten ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er
    wartet. Bei Getränken und allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.
-5. Kreuzen Sie bei jedem Artikel an, welche Ausgabestellen ihn zubereiten können. Essen bekommt meist
+6. Kreuzen Sie bei jedem Artikel an, welche Ausgabestellen ihn zubereiten können. Essen bekommt meist
    nur die Küche. Bier bekommt an einem Platz mit zwei Theken beide, und der Kellner wählt dann beim
    Aufnehmen aus.
-6. Richten Sie ein Telefon ein und geben Sie ein paar Übungsbestellungen auf, damit Sie die Bildschirme
-   einmal gesehen haben. Löschen Sie danach nichts: Sie setzen in Schritt 12 die Nummern zurück, und
+7. Richten Sie ein Telefon ein und geben Sie ein paar Übungsbestellungen auf, damit Sie die Bildschirme
+   einmal gesehen haben. Löschen Sie danach nichts: Sie setzen in Schritt 13 die Nummern zurück, und
    die Übungsbestellungen bleiben einfach im Verlauf stehen.
 
 **Am Festplatz, bevor die Gäste kommen**
 
-7. Schalten Sie den WLAN-Router ein und verbinden Sie den Laptop mit demselben Netz, das die Telefone
+8. Schalten Sie den WLAN-Router ein und verbinden Sie den Laptop mit demselben Netz, das die Telefone
    und die Tablets nutzen.
-8. **Schalten Sie im WLAN-Router die Client-Isolierung aus.** Sie heißt manchmal AP-Isolation oder
+9. **Schalten Sie im WLAN-Router die Client-Isolierung aus.** Sie heißt manchmal AP-Isolation oder
    Gastmodus. Solange sie eingeschaltet ist, erreichen die Telefone den Laptop nicht, und nichts
    anderes aus dieser Liste hilft dagegen.
-9. **Geben Sie dem Laptop eine feste Adresse.** Reservieren Sie ihm eine im Router, das heißt dort
-   meist DHCP-Reservierung, oder stellen Sie am WLAN-Adapter des Laptops eine feste Adresse ein. Wenn
-   sich die Adresse während des Abends ändert, verlieren alle Telefone und alle Tablets auf einen
-   Schlag die Verbindung, und jedes einzelne muss neu eingerichtet werden.
-10. Schließen Sie den Laptop ans Stromnetz an und lassen Sie ihn aufgeklappt. Das Programm hält den
+10. **Geben Sie dem Laptop eine feste Adresse.** Reservieren Sie ihm eine im Router, das heißt dort
+    meist DHCP-Reservierung, oder stellen Sie am WLAN-Adapter des Laptops eine feste Adresse ein. Wenn
+    sich die Adresse während des Abends ändert, verlieren alle Telefone und alle Tablets auf einen
+    Schlag die Verbindung, und jedes einzelne muss neu eingerichtet werden.
+11. Schließen Sie den Laptop ans Stromnetz an und lassen Sie ihn aufgeklappt. Das Programm hält den
     Laptop von selbst wach, an den Energieeinstellungen müssen Sie nichts ändern. Zugeklappt geht er
     trotzdem in den Ruhezustand.
-11. Nehmen Sie ein Telefon und scannen Sie den QR-Code, der in der Verwaltung steht. Schon dass
+12. Nehmen Sie ein Telefon und scannen Sie den QR-Code, der in der Verwaltung steht. Schon dass
     überhaupt eine Seite des Programms erscheint, ist der Beweis, dass die Geräte den Laptop
-    erreichen. Wenn sich nichts öffnet, gehen Sie zurück zu Schritt 8 und nehmen Sie danach im
+    erreichen. Wenn sich nichts öffnet, gehen Sie zurück zu Schritt 9 und nehmen Sie danach im
     Programmfenster "Einrichtung reparieren".
-12. Setzen Sie die Bestellnummern zurück, damit der Abend bei 1 anfängt. Die Bestellungen aus der
+13. Setzen Sie die Bestellnummern zurück, damit der Abend bei 1 anfängt. Die Bestellungen aus der
     Übung behalten die Nummern, die sie schon haben.
-13. **Richten Sie an jeder Ausgabestelle ein Tablet ein.** Öffnen Sie die Seite Ausgabestellen, tippen
+14. **Richten Sie an jeder Ausgabestelle ein Tablet ein.** Öffnen Sie die Seite Ausgabestellen, tippen
     Sie bei der ersten Ausgabestelle auf "Tablet einrichten" und scannen Sie den QR-Code mit der Kamera
     des Tablets, das dort stehen soll. Danach zeigt das Tablet die Bestellungen genau dieser
     Ausgabestelle und sonst nichts. Tragen Sie es an die Ausgabestelle, schließen Sie es ans Stromnetz
     an und lassen Sie es eingeschaltet: der Bildschirm muss den ganzen Abend wach bleiben.
-14. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Kellner und tippen Sie auf
+15. Richten Sie die Telefone nacheinander ein. Öffnen Sie die Liste der Kellner und tippen Sie auf
     "Neuer Kellner", worauf ein QR-Code erscheint. Lassen Sie den Kellner ihn mit der Kamera seines
     eigenen Telefons scannen und dort seinen Namen eingeben. Dieser eingegebene Name ist es, der ihn
     in die Liste aufnimmt, und danach machen Sie mit der nächsten Person weiter. Braucht jemand, der
     schon in der Liste steht, ein anderes Telefon, tippen Sie stattdessen in seiner Zeile auf
     "Telefon neu einrichten" und lassen Sie ihn diesen Code scannen, der nichts abfragt.
-15. Geben Sie eine Bestellung von einem Telefon auf und sehen Sie zu, wie sie auf dem Tablet der
+16. Geben Sie eine Bestellung von einem Telefon auf und sehen Sie zu, wie sie auf dem Tablet der
     richtigen Ausgabestelle erscheint. Damit ist das ganze System in zehn Sekunden geprüft, und das
     lohnt sich, bevor der erste Gast sitzt.
 
 **Während des Festes**
 
-16. Lassen Sie das Programm laufen. Ein Klick auf das Kreuz in der Ecke legt nur das Fenster weg: das
+17. Lassen Sie das Programm laufen. Ein Klick auf das Kreuz in der Ecke legt nur das Fenster weg: das
     Programm nimmt weiter Bestellungen an, und nur "Programm beenden" hält es an.
-17. Zeigen Sie den Leuten an einer Ausgabestelle die drei Dinge, die ihr Tablet kann: Zubereitung
+18. Zeigen Sie den Leuten an einer Ausgabestelle die drei Dinge, die ihr Tablet kann: Zubereitung
     beginnen, fertig melden, und dasselbe für eine ganze Bestellung auf einmal. Wenn etwas fertig
     gemeldet wird, zeigt das Tablet den Tisch, und genau der wird auf das Tablett geschrieben.
-18. **Es wird niemand gerufen, wenn etwas fertig ist.** Das Tablett steht mit dem Tisch darauf an der
+19. **Es wird niemand gerufen, wenn etwas fertig ist.** Das Tablett steht mit dem Tisch darauf an der
     Ausgabe, und der nächste Kellner, der vorbeikommt, nimmt es mit. Sagen Sie das den Kellnern einmal
     am Anfang des Abends, denn es ist das Einzige am System, das man einem Bildschirm nicht ansieht.
-19. Wenn eine Ausgabestelle meldet, dass etwas alle ist, gehen Sie zum Laptop und tippen Sie den
+20. Wenn eine Ausgabestelle meldet, dass etwas alle ist, gehen Sie zum Laptop und tippen Sie den
     Artikel in der Artikelliste auf "Ausverkauft". Nur am Laptop gibt es diesen Schalter, und ein
     Tippen stellt den Artikel wieder zurück, wenn noch eine Kiste auftaucht.
-20. **Wenn ein Tablet ausfällt, richten Sie ein Ersatzgerät ein.** Öffnen Sie die Seite
+21. **Wenn ein Tablet ausfällt, richten Sie ein Ersatzgerät ein.** Öffnen Sie die Seite
     Ausgabestellen, tippen Sie bei dieser Ausgabestelle auf "Tablet einrichten" und scannen Sie den
     Code mit einem anderen Tablet oder mit irgendeinem freien Telefon. Die Bestellungen der
     Ausgabestelle sind alle noch da: auf dem Gerät war nichts gespeichert.
 
 **Danach**
 
-21. Sehen Sie zum Schluss noch einmal auf die Tablets und prüfen Sie, dass jede Liste leer ist. Das ist
+22. Sehen Sie zum Schluss noch einmal auf die Tablets und prüfen Sie, dass jede Liste leer ist. Das ist
     die eine Kontrolle, die eine Bestellung findet, die niemand zubereitet hat, und sie dauert fünf
     Sekunden.
-22. Klicken Sie im Programmfenster auf "Datenordner öffnen" und kopieren Sie den ganzen Ordner auf
+23. Klicken Sie im Programmfenster auf "Datenordner öffnen" und kopieren Sie den ganzen Ordner auf
     einen USB-Stick, während das Programm noch läuft. Darin stehen die Bestellungen des Abends. Die
     Schaltfläche für die Sicherungsdatei aus Abschnitt 7.8 ist noch nicht gebaut. Deshalb wird der
     ganze Ordner kopiert und nicht eine einzelne Datei: die letzten Bestellungen können noch neben der

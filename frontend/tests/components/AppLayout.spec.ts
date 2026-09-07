@@ -18,7 +18,6 @@ function stubTheLaptop(): void {
         new Response(
           JSON.stringify({
             language: 'de',
-            version: '',
             categories: [],
             items: [],
             stations: [],

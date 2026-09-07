@@ -10,7 +10,7 @@ import { testPlugins } from '../../support/plugins'
 const WASSER = {
   id: 'item-wasser',
   name: 'Wasser',
-  categoryName: 'Getränke',
+  categoryId: 'category-getraenke',
   priceCents: 200,
   sortOrder: 1,
   isAvailable: true,
@@ -20,8 +20,9 @@ const WASSER = {
 function prepareOrder() {
   const catalog = useCatalogStore()
   catalog.catalog = {
-    version: '1',
-    categories: [{ name: 'Getränke', sortOrder: 1 }],
+    categories: [
+      { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
+    ],
     items: [WASSER],
     stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
   }

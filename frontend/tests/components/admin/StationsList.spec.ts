@@ -543,3 +543,20 @@ describe('a refusal the admin has moved on from', () => {
     expect(list.find('.refusal').exists()).toBe(false)
   })
 })
+
+describe('the length of a station name', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('stops where the laptop stops storing it', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.edit').trigger('click')
+
+    expect(list.get('.station-name-field input').attributes('maxlength')).toBe('40')
+  })
+})

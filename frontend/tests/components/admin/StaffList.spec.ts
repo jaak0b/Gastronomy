@@ -401,3 +401,24 @@ describe('a staff member who already has a phone', () => {
     expect(row.find('.deactivate').exists()).toBe(true)
   })
 })
+
+describe('the length of a waiter name the admin types', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stops where the laptop stops storing it', async () => {
+    stubFetchWith(ONE_STAFF_MEMBER)
+
+    const list = mountList()
+    await firstStaffMember(list)
+    await list.get('.rename').trigger('click')
+
+    expect(list.get('.rename-field input').attributes('maxlength')).toBe('40')
+  })
+})

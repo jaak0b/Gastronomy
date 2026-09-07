@@ -2,22 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminItemsStore } from '../../src/stores/admin/items'
 
-function itemNamed(name: string, categoryName: string) {
-  return {
-    itemId: `item-${name}`,
-    name,
-    categoryName,
-    priceCents: 250,
-    sortOrder: 1,
-    isActive: true,
-    isAvailable: true,
-    stationIds: [],
-  }
-}
-
 const AN_ITEM = {
   name: 'Bratwurst',
-  categoryName: 'Speisen',
+  categoryId: 'category-speisen',
   priceCents: 350,
   sortOrder: 1,
   stationIds: ['11111111-1111-1111-1111-111111111111'],
@@ -136,39 +123,5 @@ describe('an item the laptop would not switch on or off the menu', () => {
     await items.setActive('item-1', true)
 
     expect(items.errorMessage?.key).toBe('admin.itemHasNoActiveStation')
-  })
-})
-
-describe('the categories already in use', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('offers each one once, in alphabetical order', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              items: [
-                itemNamed('Wasser', 'Getränke'),
-                itemNamed('Bratwurst', 'Essen'),
-                itemNamed('Bier', 'Getränke'),
-              ],
-            }),
-            { status: 200 },
-          ),
-      ),
-    )
-    const items = useAdminItemsStore()
-
-    await items.load()
-
-    expect(items.categoryNames).toEqual(['Essen', 'Getränke'])
   })
 })

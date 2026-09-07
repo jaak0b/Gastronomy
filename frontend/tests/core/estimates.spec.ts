@@ -16,7 +16,7 @@ function item(stationIds: string[], productionMinutes: number | null): CatalogIt
   return {
     id: 'item-1',
     name: 'Bratwurst',
-    categoryName: 'Essen',
+    categoryId: 'category-essen',
     priceCents: 350,
     sortOrder: 1,
     isAvailable: true,

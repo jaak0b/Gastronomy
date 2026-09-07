@@ -1,42 +1,77 @@
 import { describe, expect, it } from 'vitest'
 import { groupByCategory } from '../../src/core/grouping'
 
-interface Row {
+interface Category {
+  categoryId: string
   name: string
-  categoryName: string
 }
 
-function group(rows: Row[]) {
+interface Row {
+  name: string
+  categoryId: string
+}
+
+const DRINKS: Category = { categoryId: 'category-drinks', name: 'Getränke' }
+const FOOD: Category = { categoryId: 'category-food', name: 'Speisen' }
+
+function group(categories: Category[], rows: Row[]) {
   return groupByCategory(
+    categories,
     rows,
-    (row) => row.categoryName,
+    (category) => category.categoryId,
+    (row) => row.categoryId,
     (row) => row.name,
   )
 }
 
 describe('groupByCategory', () => {
-  it('puts every item under the heading of its category', () => {
-    const grouped = group([
-      { name: 'Wasser', categoryName: 'Getränke' },
-      { name: 'Schnitzel', categoryName: 'Speisen' },
-      { name: 'Bier', categoryName: 'Getränke' },
-    ])
+  it('puts every item under the category it belongs to', () => {
+    const grouped = group(
+      [DRINKS, FOOD],
+      [
+        { name: 'Wasser', categoryId: 'category-drinks' },
+        { name: 'Schnitzel', categoryId: 'category-food' },
+        { name: 'Bier', categoryId: 'category-drinks' },
+      ],
+    )
 
-    expect(grouped.map((entry) => entry.name)).toEqual(['Getränke', 'Speisen'])
+    expect(grouped.map((entry) => entry.category)).toEqual([DRINKS, FOOD])
     expect(grouped[0].items.map((row) => row.name)).toEqual(['Bier', 'Wasser'])
     expect(grouped[1].items.map((row) => row.name)).toEqual(['Schnitzel'])
   })
 
-  it('sorts the categories by name rather than by the order they arrived in', () => {
-    const grouped = group([
-      { name: 'Schnitzel', categoryName: 'Speisen' },
-      { name: 'Bier', categoryName: 'Getränke' },
-    ])
+  it('keeps the order the categories were handed over in', () => {
+    const grouped = group(
+      [FOOD, DRINKS],
+      [
+        { name: 'Bier', categoryId: 'category-drinks' },
+        { name: 'Schnitzel', categoryId: 'category-food' },
+      ],
+    )
 
-    expect(grouped.map((entry) => entry.name)).toEqual(['Getränke', 'Speisen'])
+    expect(grouped.map((entry) => entry.category.name)).toEqual(['Speisen', 'Getränke'])
   })
 
-  it('returns nothing for no items', () => {
-    expect(group([])).toEqual([])
+  it('keeps a category that holds no items, so it can still be worked on', () => {
+    const grouped = group([DRINKS, FOOD], [{ name: 'Bier', categoryId: 'category-drinks' }])
+
+    expect(grouped.map((entry) => entry.category.name)).toEqual(['Getränke', 'Speisen'])
+    expect(grouped[1].items).toEqual([])
+  })
+
+  it('leaves out an item whose category is not on the list', () => {
+    const grouped = group(
+      [DRINKS],
+      [
+        { name: 'Bier', categoryId: 'category-drinks' },
+        { name: 'Schnitzel', categoryId: 'category-food' },
+      ],
+    )
+
+    expect(grouped[0].items.map((row) => row.name)).toEqual(['Bier'])
+  })
+
+  it('returns nothing when there are no categories', () => {
+    expect(group([], [{ name: 'Bier', categoryId: 'category-drinks' }])).toEqual([])
   })
 })

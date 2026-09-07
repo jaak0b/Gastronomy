@@ -6,7 +6,7 @@ public sealed class CatalogItem
 
   public required string Name { get; set; }
 
-  public required string CategoryName { get; set; }
+  public required Guid CategoryId { get; set; }
 
   public required int PriceCents { get; set; }
 

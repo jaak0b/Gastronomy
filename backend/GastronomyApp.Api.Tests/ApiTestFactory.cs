@@ -1,4 +1,5 @@
 using GastronomyApp.Api.Options;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -92,18 +93,23 @@ public sealed record SeededWorld(
   Guid StaffMemberId,
   Guid KitchenStationId,
   Guid BarStationId,
+  Guid FoodCategoryId,
+  Guid DrinkCategoryId,
   Guid BratwurstItemId,
   Guid BeerItemId);
 
 public sealed class ApiSeeder
 {
   private readonly DateTime _baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
+  private readonly CatalogCategoryNaming _naming = new();
 
   public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(context);
 
     SeededWorld world = new(Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
                             Guid.NewGuid(),
                             Guid.NewGuid(),
                             Guid.NewGuid(),
@@ -120,8 +126,11 @@ public sealed class ApiSeeder
     AddStation(context, world.KitchenStationId, "Kueche", 1);
     AddStation(context, world.BarStationId, "Bar", 2);
 
-    AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", "Essen", 350, 1, world.KitchenStationId);
-    AddItem(context, world.BeerItemId, "Bier", "Getraenke", 300, 2, world.BarStationId);
+    AddCategory(context, world.FoodCategoryId, "Essen", "#C62828", 1);
+    AddCategory(context, world.DrinkCategoryId, "Getraenke", "#1565C0", 2);
+
+    AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", world.FoodCategoryId, 350, 1, world.KitchenStationId);
+    AddItem(context, world.BeerItemId, "Bier", world.DrinkCategoryId, 300, 2, world.BarStationId);
 
     await context.SaveChangesAsync(cancellationToken);
     return world;
@@ -139,10 +148,27 @@ public sealed class ApiSeeder
                          });
   }
 
+  private void AddCategory(GastronomyAppDbContext context,
+                           Guid categoryId,
+                           string name,
+                           string colourHex,
+                           int sortOrder)
+  {
+    context.CatalogCategories.Add(new()
+                                  {
+                                    Id = categoryId,
+                                    Name = name,
+                                    NormalizedName = _naming.Normalized(name),
+                                    ColourHex = colourHex,
+                                    SortOrder = sortOrder,
+                                    IsActive = true
+                                  });
+  }
+
   private void AddItem(GastronomyAppDbContext context,
                        Guid itemId,
                        string name,
-                       string categoryName,
+                       Guid categoryId,
                        int priceCents,
                        int sortOrder,
                        Guid stationId)
@@ -151,7 +177,7 @@ public sealed class ApiSeeder
                              {
                                Id = itemId,
                                Name = name,
-                               CategoryName = categoryName,
+                               CategoryId = categoryId,
                                PriceCents = priceCents,
                                IsActive = true,
                                SortOrder = sortOrder,

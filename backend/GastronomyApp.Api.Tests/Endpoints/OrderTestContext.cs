@@ -1,4 +1,6 @@
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
@@ -74,6 +76,23 @@ public sealed class OrderTestContext : IAsyncDisposable
     }
 
     return await Client.SendAsync(request);
+  }
+
+  public async Task<Guid> CategoryIdOfAsync(string name)
+  {
+    using var response = await Client.GetAsync("/api/admin/categories");
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    foreach (var category in body.RootElement.GetProperty("categories").EnumerateArray())
+    {
+      if (category.GetProperty("name").GetString() == name)
+      {
+        return category.GetProperty("categoryId").GetGuid();
+      }
+    }
+
+    throw new AssertionException($"The seeded catalog has no category named {name}.");
   }
 
   public async Task<string> IssueStationTokenAsync(Guid stationId)

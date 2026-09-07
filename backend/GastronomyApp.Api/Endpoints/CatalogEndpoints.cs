@@ -1,5 +1,6 @@
 ﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
@@ -29,17 +30,27 @@ public static class CatalogEndpoints
   }
 }
 
-public sealed class CatalogReader
+public sealed class CatalogChangeAnnouncer
 {
-  private readonly TimeProvider _timeProvider;
+  private readonly HubNotificationDispatcher _dispatcher;
 
-  public CatalogReader(TimeProvider timeProvider)
+  public CatalogChangeAnnouncer(HubNotificationDispatcher dispatcher)
   {
-    _timeProvider = timeProvider;
+    _dispatcher = dispatcher;
   }
 
+  public async Task AnnounceAsync(CancellationToken cancellationToken)
+  {
+    await _dispatcher.PushCatalogChangedAsync(cancellationToken);
+  }
+}
+
+public sealed class CatalogReader
+{
   public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
     List<Station> stations = await dbContext.Stations
                                             .Where(station => station.IsActive)
                                             .OrderBy(station => station.SortOrder)
@@ -47,8 +58,15 @@ public sealed class CatalogReader
 
     HashSet<Guid> activeStationIds = [.. stations.Select(station => station.Id)];
 
+    List<CatalogCategory> categories = await dbContext.CatalogCategories
+                                                      .Where(category => category.IsActive)
+                                                      .OrderBy(category => category.SortOrder)
+                                                      .ToListAsync(cancellationToken);
+
+    List<Guid> activeCategoryIds = [.. categories.Select(category => category.Id)];
+
     List<CatalogItem> items = await dbContext.CatalogItems
-                                             .Where(item => item.IsActive)
+                                             .Where(item => item.IsActive && activeCategoryIds.Contains(item.CategoryId))
                                              .OrderBy(item => item.SortOrder)
                                              .ToListAsync(cancellationToken);
 
@@ -61,8 +79,8 @@ public sealed class CatalogReader
     List<CatalogItemView> itemViews =
     [
       .. items.Select(item => new CatalogItemView(item.Id,
+                                                  item.CategoryId,
                                                   item.Name,
-                                                  item.CategoryName,
                                                   item.PriceCents,
                                                   item.SortOrder,
                                                   item.IsAvailable,
@@ -76,16 +94,18 @@ public sealed class CatalogReader
                                                   ]))
     ];
 
-    List<CatalogCategoryView> categories =
+    HashSet<Guid> categoryIdsWithItems = [.. items.Select(item => item.CategoryId)];
+
+    List<CatalogCategoryView> categoryViews =
     [
-      .. items
-        .GroupBy(item => item.CategoryName)
-        .Select(group => new CatalogCategoryView(group.Key, group.Min(item => item.SortOrder)))
-        .OrderBy(category => category.SortOrder)
+      .. categories.Where(category => categoryIdsWithItems.Contains(category.Id))
+                   .Select(category => new CatalogCategoryView(category.Id,
+                                                               category.Name,
+                                                               category.ColourHex,
+                                                               category.SortOrder))
     ];
 
-    return new(_timeProvider.GetUtcNow().ToString("O"),
-               categories,
+    return new(categoryViews,
                itemViews,
                [.. stations.Select(station => new CatalogStationView(station.Id, station.Name, station.SortOrder))]);
   }

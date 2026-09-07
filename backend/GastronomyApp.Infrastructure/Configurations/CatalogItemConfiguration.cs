@@ -8,14 +8,21 @@ public sealed class CatalogItemConfiguration : IEntityTypeConfiguration<CatalogI
 {
   public void Configure(EntityTypeBuilder<CatalogItem> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(item => item.Id);
     builder.Property(item => item.Id).ValueGeneratedNever();
-    builder.Property(item => item.Name).IsRequired().HasMaxLength(60);
-    builder.Property(item => item.CategoryName).IsRequired().HasMaxLength(40);
+    builder.Property(item => item.Name).IsRequired();
+    builder.Property(item => item.CategoryId).IsRequired();
     builder.Property(item => item.PriceCents).IsRequired();
     builder.Property(item => item.SortOrder).IsRequired();
     builder.Property(item => item.IsActive).IsRequired();
     builder.Property(item => item.IsAvailable).IsRequired();
     builder.Property(item => item.ProductionMinutes).IsRequired(false);
+    builder.HasIndex(item => item.CategoryId);
+    builder.HasOne<CatalogCategory>()
+           .WithMany()
+           .HasForeignKey(item => item.CategoryId)
+           .OnDelete(DeleteBehavior.Restrict);
   }
 }

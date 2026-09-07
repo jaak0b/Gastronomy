@@ -168,6 +168,7 @@ function mostRecentOf(group: PositionGroup): number {
           <v-text-field
             v-model="typedNote"
             class="note-input"
+            maxlength="200"
             autofocus
             :label="t('catalog.itemNote')"
             :placeholder="t('catalog.lineNotePlaceholder')"

@@ -1,41 +1,83 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { VCombobox } from 'vuetify/components'
+import { VSelect } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
+import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
+import type { AdminCategory } from '../../../src/core/apiTypes'
+import { useAdminCategoriesStore } from '../../../src/stores/admin/categories'
 import type { AdminItem } from '../../../src/stores/admin/items'
 import type { AdminStation } from '../../../src/stores/admin/stations'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
+const FOOD_ID = '33333333-3333-3333-3333-333333333333'
+const DRINKS_ID = '44444444-4444-4444-4444-444444444444'
+const DESSERT_ID = '55555555-5555-5555-5555-555555555555'
+
 const STATIONS: AdminStation[] = [
-  { id: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true },
+  { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: true },
 ]
 
+const CATEGORIES: AdminCategory[] = [
+  { categoryId: FOOD_ID, name: 'Speisen', colourHex: '#FFEB3B', sortOrder: 1, isActive: true },
+  { categoryId: DRINKS_ID, name: 'Getränke', colourHex: '#C62828', sortOrder: 2, isActive: true },
+]
+
+const CREATED_CATEGORY: AdminCategory = {
+  categoryId: DESSERT_ID,
+  name: 'Nachtisch',
+  colourHex: '#6D4C41',
+  sortOrder: 3,
+  isActive: true,
+}
+
 const BRATWURST: AdminItem = {
-  id: 'item-1',
+  itemId: 'item-1',
   name: 'Bratwurst',
-  categoryName: 'Essen',
+  categoryId: FOOD_ID,
   priceCents: 350,
   sortOrder: 1,
+  isActive: true,
   isAvailable: true,
   stationIds: ['station-kueche'],
   productionMinutes: 15,
-} as unknown as AdminItem
+}
 
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemForm, {
-    props: { item, stations: STATIONS, errorText: null, categoryNames: ['Essen', 'Getränke'] },
+    props: { item, stations: STATIONS, errorText: null },
     global: { plugins: [i18n] },
+    attachTo: document.body,
   })
+}
+
+function knownCategories() {
+  useAdminCategoriesStore().categories = [...CATEGORIES]
+}
+
+function stubTheLaptop() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      if (method === 'POST' && url === '/api/admin/categories') {
+        return new Response(JSON.stringify(CREATED_CATEGORY), { status: 201 })
+      }
+      return new Response(JSON.stringify({ categories: [...CATEGORIES, CREATED_CATEGORY] }), {
+        status: 200,
+      })
+    }),
+  )
 }
 
 describe('the price field', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    stubTheLaptop()
+    knownCategories()
   })
 
   it('asks for euros rather than cents', () => {
@@ -101,7 +143,8 @@ describe('the price field', () => {
 describe('the preparation time field', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    stubTheLaptop()
+    knownCategories()
   })
 
   it('asks for whole minutes', () => {
@@ -119,7 +162,7 @@ describe('the preparation time field', () => {
   })
 
   it('stays empty for an item that is handed over right away', () => {
-    const form = mountForm({ ...BRATWURST, productionMinutes: null } as unknown as AdminItem)
+    const form = mountForm({ ...BRATWURST, productionMinutes: null })
 
     expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe('')
   })
@@ -158,21 +201,123 @@ describe('the preparation time field', () => {
 describe('the category field', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    document.body.innerHTML = ''
+    stubTheLaptop()
+    knownCategories()
   })
 
-  it('offers the categories that are already in use', () => {
+  it('offers the categories of the laptop in the order they were given', () => {
     const form = mountForm()
 
-    expect(form.getComponent(VCombobox).props('items')).toEqual(['Essen', 'Getränke'])
+    expect(
+      form.getComponent(VSelect).props('items').map((category: AdminCategory) => category.name),
+    ).toEqual(['Speisen', 'Getränke'])
   })
 
-  it('still takes a category that is typed out in full', async () => {
+  it('starts on the category the item already belongs to', () => {
     const form = mountForm(BRATWURST)
 
-    await form.get('.category-field input').setValue('Nachtisch')
+    expect(form.getComponent(VSelect).props('modelValue')).toBe(FOOD_ID)
+  })
+
+  it('sends the category that was picked', async () => {
+    const form = mountForm(BRATWURST)
+
+    form.getComponent(VSelect).vm.$emit('update:modelValue', DRINKS_ID)
+    await form.vm.$nextTick()
     await form.get('form').trigger('submit')
 
-    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ categoryName: 'Nachtisch' })
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ categoryId: DRINKS_ID })
+  })
+
+  it('names the way out when the laptop holds no category at all', async () => {
+    useAdminCategoriesStore().categories = []
+    const form = mountForm()
+
+    await form.get('.category-field .v-field').trigger('mousedown')
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        'Klicken Sie auf "Neue Kategorie". Es gibt noch keine Kategorie, die Sie auswählen können.',
+      ),
+    )
+  })
+
+  it('asks for a category rather than saving an item without one', async () => {
+    const form = mountForm()
+
+    await form.get('form').trigger('submit')
+
+    expect(form.get('.category-field .v-messages').text()).toBe(
+      'Wählen Sie eine Kategorie aus, bevor Sie speichern.',
+    )
+    expect(form.emitted('save')).toBeUndefined()
+  })
+
+  it('drops the question as soon as the admin picks a category', async () => {
+    const form = mountForm()
+    await form.get('form').trigger('submit')
+
+    form.getComponent(VSelect).vm.$emit('update:modelValue', DRINKS_ID)
+    await form.vm.$nextTick()
+
+    expect(form.get('.category-field .v-messages').text()).toBe('')
+  })
+})
+
+describe('creating a category while an item is being written', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    stubTheLaptop()
+    knownCategories()
+  })
+
+  it('opens the same dialog the item list uses', async () => {
+    const form = mountForm(BRATWURST)
+
+    expect(form.findComponent(CategoryDialog).exists()).toBe(false)
+
+    await form.get('.new-category').trigger('click')
+
+    expect(form.findComponent(CategoryDialog).exists()).toBe(true)
+  })
+
+  it('picks the category the laptop created, so the item lands in it', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.new-category').trigger('click')
+    form
+      .findComponent(CategoryDialog)
+      .vm.$emit('save', { name: 'Nachtisch', colourHex: '#6D4C41' })
+
+    await vi.waitFor(() =>
+      expect(form.getComponent(VSelect).props('modelValue')).toBe(DESSERT_ID),
+    )
+  })
+
+  it('closes the dialog once the category is created', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.new-category').trigger('click')
+    form
+      .findComponent(CategoryDialog)
+      .vm.$emit('save', { name: 'Nachtisch', colourHex: '#6D4C41' })
+
+    await vi.waitFor(() => expect(form.findComponent(CategoryDialog).exists()).toBe(false))
+  })
+})
+
+describe('the length of an article name', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    stubTheLaptop()
+    knownCategories()
+  })
+
+  it('stops where the laptop stops storing it', () => {
+    const form = mountForm()
+
+    expect(form.get('.item-name-field input').attributes('maxlength')).toBe('200')
   })
 })

@@ -12,6 +12,8 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<Station> Stations => Set<Station>();
 
+  public DbSet<CatalogCategory> CatalogCategories => Set<CatalogCategory>();
+
   public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
 
   public DbSet<ItemStationAssignment> ItemStationAssignments => Set<ItemStationAssignment>();

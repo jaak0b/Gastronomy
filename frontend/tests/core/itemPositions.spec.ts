@@ -7,7 +7,7 @@ function item(stationIds: string[]): CatalogItem {
   return {
     id: 'item-1',
     name: 'Bier',
-    categoryName: 'Getraenke',
+    categoryId: 'category-getraenke',
     priceCents: 400,
     sortOrder: 0,
     isAvailable: true,

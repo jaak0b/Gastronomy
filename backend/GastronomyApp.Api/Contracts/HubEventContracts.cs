@@ -17,7 +17,7 @@ public sealed record OrderItemsSettledEvent(
 
 public sealed record StationOrdersChangedEvent(Guid StationId);
 
-public sealed record CatalogChangedEvent(string Version);
+public sealed record CatalogChangedEvent;
 
 public sealed record EnrolmentCompletedEvent(
   DeviceOwnerKind DeviceKind,

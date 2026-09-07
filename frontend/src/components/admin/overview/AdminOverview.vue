@@ -3,12 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminItemsStore } from '../../../stores/admin/items'
+import { useAdminCategoriesStore } from '../../../stores/admin/categories'
 import { request } from '../../../api/client'
 
 const { t } = useI18n()
 const phoneAddress = window.location.origin
 const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
+const categories = useAdminCategoriesStore()
 
 interface ReadinessRow {
   key: string
@@ -20,6 +22,9 @@ const rows = computed<ReadinessRow[]>(() => {
   const readiness: ReadinessRow[] = []
   if (stations.stations.length === 0) {
     readiness.push({ key: 'admin.overview.missingStation', parameters: {}, count: null })
+  }
+  if (categories.categories.length === 0) {
+    readiness.push({ key: 'admin.overview.missingCategory', parameters: {}, count: null })
   }
   if (items.items.length === 0) {
     readiness.push({ key: 'admin.overview.missingItems', parameters: {}, count: null })
@@ -73,6 +78,7 @@ async function confirmReset(): Promise<void> {
 
 onMounted(async () => {
   await stations.load()
+  await categories.load()
   await items.load()
 })
 </script>

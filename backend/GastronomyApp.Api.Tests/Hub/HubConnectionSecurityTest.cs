@@ -52,11 +52,10 @@ public sealed class HubConnectionSecurityTest
   [Test]
   public async Task Deactivate_ConnectedPhone_IsRemovedFromEveryGroupAndClosed()
   {
-    TaskCompletionSource<string> heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    TaskCompletionSource heardBeforeRevocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect($"hub?access_token={_context.DeviceToken}");
-    connection.On<JsonElement>("CatalogChanged",
-                               payload => heardBeforeRevocation.TrySetResult(payload.GetProperty("version").GetString()!));
+    connection.On<JsonElement>("CatalogChanged", _ => heardBeforeRevocation.TrySetResult());
 
     await connection.StartAsync();
     await ChangeTheCatalogAsync();

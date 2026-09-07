@@ -93,3 +93,46 @@ describe('what the overview says is still missing', () => {
     )
   })
 })
+
+describe('the category the admin needs before any item', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    window.history.replaceState({}, '', '/admin')
+  })
+
+  function stubCategories(categories: unknown[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/api/admin/categories')) {
+          return new Response(JSON.stringify({ categories }), { status: 200 })
+        }
+        return new Response(JSON.stringify({ stations: [], items: [] }), { status: 200 })
+      }),
+    )
+  }
+
+  it('asks for a category while the laptop holds none', async () => {
+    stubCategories([])
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
+      'Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.',
+    )
+  })
+
+  it('says nothing about categories once one exists', async () => {
+    stubCategories([
+      { categoryId: 'category-drinks', name: 'Getränke', colourHex: '#C62828', sortOrder: 1, isActive: true },
+    ])
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
+      'Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.',
+    )
+  })
+})

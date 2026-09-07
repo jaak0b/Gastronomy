@@ -9,13 +9,14 @@ const App = (await import('../../src/App.vue')).default
 const { testPlugins } = await import('../support/plugins')
 
 const CATALOG = {
-  version: '1',
-  categories: [{ name: 'Essen', sortOrder: 1 }],
+  categories: [
+    { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+  ],
   items: [
     {
       id: 'item-bratwurst',
       name: 'Bratwurst',
-      categoryName: 'Essen',
+      categoryId: 'category-essen',
       priceCents: 350,
       sortOrder: 1,
       isAvailable: true,

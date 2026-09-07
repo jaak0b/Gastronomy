@@ -12,21 +12,19 @@ namespace GastronomyApp.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "CatalogItems",
+                name: "CatalogCategories",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
-                    CategoryName = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
-                    PriceCents = table.Column<int>(type: "INTEGER", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    NormalizedName = table.Column<string>(type: "TEXT", nullable: false),
+                    ColourHex = table.Column<string>(type: "TEXT", maxLength: 7, nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsAvailable = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ProductionMinutes = table.Column<int>(type: "INTEGER", nullable: true)
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CatalogItems", x => x.Id);
+                    table.PrimaryKey("PK_CatalogCategories", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -89,8 +87,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                     ClientOrderId = table.Column<Guid>(type: "TEXT", nullable: false),
                     GlobalOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     StaffMemberId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    TableName = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
-                    Note = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    TableName = table.Column<string>(type: "TEXT", nullable: false),
+                    Note = table.Column<string>(type: "TEXT", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -111,11 +109,35 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CatalogItems",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PriceCents = table.Column<int>(type: "INTEGER", nullable: false),
+                    SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsAvailable = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ProductionMinutes = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CatalogItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CatalogItems_CatalogCategories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "CatalogCategories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StaffMembers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     DeviceId = table.Column<Guid>(type: "TEXT", nullable: true),
                     EnrolmentInvitationId = table.Column<Guid>(type: "TEXT", nullable: true),
@@ -143,7 +165,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     DeviceId = table.Column<Guid>(type: "TEXT", nullable: true),
@@ -201,14 +223,14 @@ namespace GastronomyApp.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationOrderId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ItemName = table.Column<string>(type: "TEXT", maxLength: 60, nullable: false),
+                    ItemName = table.Column<string>(type: "TEXT", nullable: false),
                     UnitPriceCents = table.Column<int>(type: "INTEGER", nullable: false),
-                    Note = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Note = table.Column<string>(type: "TEXT", nullable: true),
                     ProductionStatus = table.Column<int>(type: "INTEGER", nullable: false),
                     SettledAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ChargedPriceCents = table.Column<int>(type: "INTEGER", nullable: true),
                     SettledByStaffMemberId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    PaymentNotice = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
+                    PaymentNotice = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -240,6 +262,17 @@ namespace GastronomyApp.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CatalogCategories_NormalizedName",
+                table: "CatalogCategories",
+                column: "NormalizedName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CatalogItems_CategoryId",
+                table: "CatalogItems",
+                column: "CategoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Devices_TokenLookupId",
@@ -338,6 +371,9 @@ namespace GastronomyApp.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "StaffMembers");
+
+            migrationBuilder.DropTable(
+                name: "CatalogCategories");
 
             migrationBuilder.DropTable(
                 name: "OrderItems");

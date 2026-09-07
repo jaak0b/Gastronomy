@@ -22,10 +22,31 @@ public sealed record SaveStationRequest
 
 public sealed record SavedStationView(Guid StationId);
 
+public sealed record AdminCategoryView(
+  Guid CategoryId,
+  string Name,
+  string ColourHex,
+  int SortOrder,
+  bool IsActive);
+
+public sealed record AdminCategoryListView(IReadOnlyList<AdminCategoryView> Categories);
+
+public sealed record SaveCategoryRequest
+{
+  public required string? Name { get; init; }
+
+  public required string? ColourHex { get; init; }
+}
+
+public sealed record MoveCategoryRequest
+{
+  public required CategoryMoveDirection Direction { get; init; }
+}
+
 public sealed record AdminItemView(
   Guid ItemId,
   string Name,
-  string CategoryName,
+  Guid CategoryId,
   int PriceCents,
   int SortOrder,
   bool IsActive,
@@ -39,7 +60,7 @@ public sealed record SaveItemRequest
 {
   public required string? Name { get; init; }
 
-  public required string? CategoryName { get; init; }
+  public required Guid? CategoryId { get; init; }
 
   public required int PriceCents { get; init; }
 

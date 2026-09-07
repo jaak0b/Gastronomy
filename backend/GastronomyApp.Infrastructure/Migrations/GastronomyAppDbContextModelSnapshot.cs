@@ -17,14 +17,44 @@ namespace GastronomyApp.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.19");
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ColourHex")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("CatalogCategories");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasMaxLength(40)
+                    b.Property<Guid>("CategoryId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
@@ -35,7 +65,6 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(60)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PriceCents")
@@ -48,6 +77,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("CatalogItems");
                 });
@@ -177,7 +208,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Note")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("StaffMemberId")
@@ -185,7 +215,6 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("TableName")
                         .IsRequired()
-                        .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -209,15 +238,12 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("ItemName")
                         .IsRequired()
-                        .HasMaxLength(60)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Note")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PaymentNotice")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ProductionStatus")
@@ -299,7 +325,6 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -329,7 +354,6 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("NextStationOrderNumber")
@@ -374,6 +398,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("StationOrders");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.CatalogItem", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.CatalogCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>

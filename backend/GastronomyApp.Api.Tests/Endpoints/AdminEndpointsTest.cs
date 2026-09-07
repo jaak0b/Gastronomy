@@ -79,7 +79,7 @@ public sealed class AdminEndpointsTest
                                                               new
                                                               {
                                                                 name = "Pommes",
-                                                                categoryName = "Essen",
+                                                                categoryId = _context.World.FoodCategoryId,
                                                                 priceCents = 250,
                                                                 sortOrder = 3,
                                                                 stationIds = Array.Empty<Guid>()
@@ -89,36 +89,13 @@ public sealed class AdminEndpointsTest
   }
 
   [Test]
-  public async Task PostItem_BlankCategory_NamesTheCategoryAsTheMissingPart()
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryName = "  ",
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId }
-                                                              });
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemCategoryMissing"));
-                    });
-  }
-
-  [Test]
   public async Task PostItem_WithStations_CreatesItAndItsAssignments()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
                                                               new
                                                               {
                                                                 name = "Pommes",
-                                                                categoryName = "Essen",
+                                                                categoryId = _context.World.FoodCategoryId,
                                                                 priceCents = 250,
                                                                 sortOrder = 3,
                                                                 stationIds = new[] { _context.World.KitchenStationId }
@@ -316,7 +293,7 @@ public sealed class AdminEndpointsTest
                                                              new
                                                              {
                                                                name = "Bratwurst",
-                                                               categoryName = "Essen",
+                                                               categoryId = _context.World.FoodCategoryId,
                                                                priceCents = 350,
                                                                sortOrder = 1,
                                                                stationIds = new[] { _context.World.BarStationId }

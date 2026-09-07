@@ -285,6 +285,19 @@ describe('giving food and drink away', () => {
     expect(document.querySelector('.free-of-charge-dialog .reason-field')).not.toBeNull()
   })
 
+  it('stops the reason where the laptop stops storing it', async () => {
+    const screen = await mountScreen()
+    const openItems = useOpenItemsStore()
+    openItems.toggleItem('item-1')
+    await screen.vm.$nextTick()
+
+    await screen.get('.settle-free-of-charge').trigger('click')
+    await flushPromises()
+
+    const field = document.querySelector('.free-of-charge-dialog .reason-field input')
+    expect((field as HTMLInputElement).getAttribute('maxlength')).toBe('200')
+  })
+
   it('refuses to settle at zero while the reason is empty, and says so at the field', async () => {
     const { bodies } = stubTheLaptop()
     const screen = await mountScreen()

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
@@ -108,7 +108,7 @@ public sealed class StationDeactivationTest
                                                               new
                                                               {
                                                                 name = "Bratwurst mit Brot",
-                                                                categoryName = "Essen",
+                                                                categoryId = _context.World.FoodCategoryId,
                                                                 priceCents = 350,
                                                                 sortOrder = 1,
                                                                 stationIds = new[] { _context.World.BarStationId }

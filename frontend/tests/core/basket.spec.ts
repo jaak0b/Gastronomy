@@ -11,13 +11,14 @@ import type { Catalog, DraftOrder } from '../../src/core/apiTypes'
 
 function catalog(): Catalog {
   return {
-    version: '7',
-    categories: [{ name: 'Essen', sortOrder: 1 }],
+    categories: [
+      { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+    ],
     items: [
       {
         id: 'item-bratwurst',
         name: 'Bratwurst',
-        categoryName: 'Essen',
+        categoryId: 'category-essen',
         priceCents: 350,
         sortOrder: 1,
         isAvailable: true,
@@ -26,7 +27,7 @@ function catalog(): Catalog {
       {
         id: 'item-bier',
         name: 'Bier',
-        categoryName: 'Getraenke',
+        categoryId: 'category-getraenke',
         priceCents: 420,
         sortOrder: 2,
         isAvailable: false,

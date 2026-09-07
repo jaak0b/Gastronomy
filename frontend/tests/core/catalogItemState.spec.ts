@@ -7,7 +7,7 @@ function item(id: string, isAvailable: boolean): CatalogItem {
   return {
     id,
     name: 'Bratwurst',
-    categoryName: 'Essen',
+    categoryId: 'category-essen',
     priceCents: 350,
     sortOrder: 1,
     isAvailable,
@@ -17,8 +17,9 @@ function item(id: string, isAvailable: boolean): CatalogItem {
 
 function catalogWith(items: CatalogItem[]): Catalog {
   return {
-    version: '7',
-    categories: [{ name: 'Essen', sortOrder: 1 }],
+    categories: [
+      { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+    ],
     items,
     stations: [{ id: 'station-kueche', name: 'Kueche', sortOrder: 1 }],
   }

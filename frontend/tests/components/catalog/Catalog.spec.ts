@@ -9,16 +9,15 @@ import { currentRoute, navigate } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
 
 const CATALOG: CatalogData = {
-  version: '1',
   categories: [
-    { name: 'Essen', sortOrder: 1 },
-    { name: 'Getränke', sortOrder: 2 },
+    { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+    { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 2 },
   ],
   items: [
     {
       id: 'item-bratwurst',
       name: 'Bratwurst',
-      categoryName: 'Essen',
+      categoryId: 'category-essen',
       priceCents: 350,
       sortOrder: 1,
       isAvailable: true,
@@ -27,7 +26,7 @@ const CATALOG: CatalogData = {
     {
       id: 'item-wasser',
       name: 'Wasser',
-      categoryName: 'Getränke',
+      categoryId: 'category-getraenke',
       priceCents: 200,
       sortOrder: 2,
       isAvailable: true,
@@ -58,7 +57,7 @@ describe('the ordering screen', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
-  it('offers every category as a tab, sorted by name', () => {
+  it('offers every category as a tab', () => {
     const view = mountCatalog()
 
     const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
@@ -160,6 +159,16 @@ describe('the ordering screen', () => {
     expect(view.findAll('.item-row')).toHaveLength(0)
   })
 
+  it('keeps the order the laptop gives the categories in', () => {
+    const catalog = useCatalogStore()
+    catalog.catalog = { ...CATALOG, categories: [...CATALOG.categories].reverse() }
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    const tabs = view.findAll('.category-tabs .category-tab').map((element) => element.text())
+
+    expect(tabs).toEqual(['Getränke', 'Essen'])
+  })
+
   it('puts one portion on the order when an item is tapped', async () => {
     const view = mountCatalog()
     const order = useOrderStore()
@@ -245,5 +254,27 @@ describe('the ordering screen', () => {
     await view.get('.to-review').trigger('click')
 
     expect(currentRoute.value).toEqual({ name: 'review' })
+  })
+})
+
+describe('the length of what a waiter types on the ordering screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('stops the note for the whole order after two hundred characters', () => {
+    const view = mountCatalog()
+
+    expect(view.get('.order-note textarea').attributes('maxlength')).toBe('200')
+  })
+
+  it('stops the table name after forty characters', () => {
+    const view = mountCatalog()
+
+    expect(view.get('.table-input input').attributes('maxlength')).toBe('40')
   })
 })

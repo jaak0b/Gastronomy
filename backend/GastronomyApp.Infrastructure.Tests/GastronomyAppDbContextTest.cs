@@ -8,6 +8,7 @@ public sealed class GastronomyAppDbContextTest
   private readonly static string[] ExpectedTableNames =
   [
     "Stations",
+    "CatalogCategories",
     "CatalogItems",
     "ItemStationAssignments",
     "StaffMembers",

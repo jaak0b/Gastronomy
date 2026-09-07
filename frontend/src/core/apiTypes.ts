@@ -1,7 +1,7 @@
 export interface CatalogItem {
   id: string
   name: string
-  categoryName: string
+  categoryId: string
   priceCents: number
   sortOrder: number
   isAvailable: boolean
@@ -10,8 +10,14 @@ export interface CatalogItem {
 }
 
 export interface CatalogCategory {
+  categoryId: string
   name: string
+  colourHex: string
   sortOrder: number
+}
+
+export interface AdminCategory extends CatalogCategory {
+  isActive: boolean
 }
 
 export interface CatalogStation {
@@ -21,7 +27,6 @@ export interface CatalogStation {
 }
 
 export interface Catalog {
-  version: string
   categories: CatalogCategory[]
   items: CatalogItem[]
   stations: CatalogStation[]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../../core/apiTypes'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
@@ -7,22 +7,30 @@ import {
   formatProductionMinutes,
   parseProductionMinutes,
 } from '../../../core/productionMinutes'
+import {
+  useAdminCategoriesStore,
+  type AdminCategoryDraft,
+} from '../../../stores/admin/categories'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
 import type { AdminStation } from '../../../stores/admin/stations'
+import CategoryDialog from '../categories/CategoryDialog.vue'
+import { useRefusalText } from '../refusalText'
 import AssignmentEditor from './AssignmentEditor.vue'
 
 const props = defineProps<{
   item: AdminItem | null
   stations: AdminStation[]
-  categoryNames: string[]
   errorText: string | null
   isCancellable?: boolean
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
 const { t, locale } = useI18n()
+const categories = useAdminCategoriesStore()
 const name = ref(props.item?.name ?? '')
-const categoryName = ref(props.item?.categoryName ?? '')
+const categoryId = ref<string | null>(props.item?.categoryId ?? null)
+const categoryIsMissing = ref(false)
+const isCreatingCategory = ref(false)
 const priceText = ref(
   formatEuroInput(props.item?.priceCents ?? null, locale.value as AppLanguage),
 )
@@ -32,10 +40,41 @@ const productionMinutesAreUnreadable = ref(false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
 const stationIds = ref<string[]>([...(props.item?.stationIds ?? [])])
 
+watch(categoryId, () => {
+  categoryIsMissing.value = false
+})
+
+const offeredCategories = computed(() =>
+  categories.categories.filter(
+    (category) => category.isActive || category.categoryId === props.item?.categoryId,
+  ),
+)
+
+const categoryRefusal = useRefusalText([() => categories.errorMessage])
+
 function toggle(stationId: string): void {
   stationIds.value = stationIds.value.includes(stationId)
     ? stationIds.value.filter((id) => id !== stationId)
     : [...stationIds.value, stationId]
+}
+
+function startCreatingCategory(): void {
+  categories.forgetError()
+  isCreatingCategory.value = true
+}
+
+function stopCreatingCategory(): void {
+  categories.forgetError()
+  isCreatingCategory.value = false
+}
+
+async function createCategory(draft: AdminCategoryDraft): Promise<void> {
+  const created = await categories.create(draft)
+  if (created === null) {
+    return
+  }
+  categoryId.value = created.categoryId
+  isCreatingCategory.value = false
 }
 
 function save(): void {
@@ -43,13 +82,15 @@ function save(): void {
   priceIsUnreadable.value = priceCents === null
   const minutes = parseProductionMinutes(productionMinutesText.value)
   productionMinutesAreUnreadable.value = minutes.kind === 'invalid'
-  if (priceCents === null || minutes.kind === 'invalid') {
+  const chosenCategoryId = categoryId.value
+  categoryIsMissing.value = chosenCategoryId === null
+  if (priceCents === null || minutes.kind === 'invalid' || chosenCategoryId === null) {
     return
   }
   emit('save', {
     itemId: props.item?.itemId,
     name: name.value,
-    categoryName: categoryName.value,
+    categoryId: chosenCategoryId,
     priceCents,
     sortOrder: sortOrder.value,
     stationIds: stationIds.value,
@@ -62,13 +103,28 @@ function save(): void {
   <v-card class="item-form mt-4">
     <v-form @submit.prevent="save">
       <v-card-text>
-        <v-text-field v-model="name" class="mb-4" :label="t('admin.items.title')" />
-        <v-combobox
-          v-model="categoryName"
-          class="category-field mb-4"
-          :label="t('admin.items.category')"
-          :items="categoryNames"
+        <v-text-field
+          v-model="name"
+          class="item-name-field mb-4"
+          maxlength="200"
+          :label="t('admin.items.title')"
         />
+        <div class="category-line d-flex align-center ga-2 mb-4">
+          <v-select
+            v-model="categoryId"
+            class="category-field flex-grow-1"
+            :label="t('admin.items.category')"
+            :items="offeredCategories"
+            item-title="name"
+            item-value="categoryId"
+            :no-data-text="t('admin.categories.noneYet')"
+            :error="categoryIsMissing"
+            :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
+          />
+          <v-btn class="new-category" variant="text" @click="startCreatingCategory">
+            {{ t('admin.categories.new') }}
+          </v-btn>
+        </div>
         <v-text-field
           v-model="priceText"
           class="price-field mb-2"
@@ -98,7 +154,12 @@ function save(): void {
         </v-alert>
       </v-card-text>
       <v-card-actions>
-        <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
+        <v-btn
+          class="save-item"
+          type="submit"
+          color="primary"
+          :disabled="name.trim().length === 0"
+        >
           {{ t('admin.save') }}
         </v-btn>
         <v-btn v-if="props.isCancellable" class="cancel" variant="text" @click="emit('cancel')">
@@ -106,5 +167,12 @@ function save(): void {
         </v-btn>
       </v-card-actions>
     </v-form>
+    <CategoryDialog
+      v-if="isCreatingCategory"
+      :category="null"
+      :error-text="categoryRefusal"
+      @save="createCategory"
+      @cancel="stopCreatingCategory"
+    />
   </v-card>
 </template>

@@ -59,10 +59,10 @@ public sealed class HubNotificationDispatcher
                       ct);
   }
 
-  public async Task PushCatalogChangedAsync(string version, CancellationToken ct)
+  public async Task PushCatalogChangedAsync(CancellationToken ct)
   {
     await SendToAsync(_eventNames.CatalogChanged,
-                      new CatalogChangedEvent(version),
+                      new CatalogChangedEvent(),
                       [_groupNames.Devices, _groupNames.Admin],
                       ct);
   }
@@ -85,6 +85,8 @@ public sealed class HubNotificationDispatcher
                                  IReadOnlyList<string> groups,
                                  CancellationToken ct)
   {
+    ct.ThrowIfCancellationRequested();
+
     foreach (var group in groups)
     {
       await _hubContext.Clients.Group(group).SendAsync(eventName, payload, ct);

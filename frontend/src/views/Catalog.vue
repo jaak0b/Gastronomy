@@ -38,15 +38,16 @@ onMounted(async () => {
   await estimates.load()
 })
 
-const categoryNames = computed(() => catalog.groups.map((group) => group.name))
-
 const openCategory = computed<string | null>({
   get: () => {
     const tapped = tappedCategory.value
-    if (tapped !== null && categoryNames.value.includes(tapped)) {
+    if (
+      tapped !== null &&
+      catalog.catalog.categories.some((category) => category.categoryId === tapped)
+    ) {
       return tapped
     }
-    return categoryNames.value[0] ?? null
+    return catalog.catalog.categories[0]?.categoryId ?? null
   },
   set: (value: string | null) => {
     tappedCategory.value = value
@@ -54,7 +55,8 @@ const openCategory = computed<string | null>({
 })
 
 const itemsOfTheOpenCategory = computed(
-  () => catalog.groups.find((group) => group.name === openCategory.value)?.items ?? [],
+  () =>
+    catalog.groups.find((group) => group.category.categoryId === openCategory.value)?.items ?? [],
 )
 
 const tableName = computed({
@@ -84,8 +86,8 @@ const itemBehindTheStationChoice = computed(() => {
   return catalog.catalog.items.find((item) => item.id === line?.catalogItemId) ?? null
 })
 
-function portionsIn(category: string): number {
-  return portionsOfCategory(order.draft, catalog.catalog.items, category)
+function portionsIn(categoryId: string): number {
+  return portionsOfCategory(order.draft, catalog.catalog.items, categoryId)
 }
 
 function positionsFor(itemId: string): ItemPosition[] {
@@ -143,7 +145,11 @@ function chooseStation(stationId: string): void {
 
 <template>
   <v-container class="catalog">
-    <CategoryTabs v-model="openCategory" :categories="categoryNames" :portions-for="portionsIn" />
+    <CategoryTabs
+      v-model="openCategory"
+      :categories="catalog.catalog.categories"
+      :portions-for="portionsIn"
+    />
     <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
       {{ t('estimates.loadFailed') }}
     </v-alert>
@@ -174,6 +180,7 @@ function chooseStation(stationId: string): void {
     />
     <v-textarea
       class="order-note"
+      maxlength="200"
       :label="t('catalog.orderNote')"
       :model-value="order.draft.note ?? ''"
       @update:model-value="order.setNote($event || null)"

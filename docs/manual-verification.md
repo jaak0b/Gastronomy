@@ -68,10 +68,17 @@ This is the walk the product exists for. Do it with a real phone in one hand and
 standing where a station would stand, because reading it off two browser tabs on the laptop hides
 exactly the problems this section is looking for.
 
-17. **Set the menu up.** In the admin pages create two stations, for example Küche and Theke. Create
-    one item that takes a while, with a preparation time in minutes, assigned to the kitchen only.
-    Create one drink with the preparation time left empty, assigned to the bar only. The overview now
-    asks for one thing only, and it asks it once per station: set that station's tablet up.
+17. **Set the menu up.** In the admin pages create two stations, for example Küche and Theke. The
+    overview then asks for a category, because an item cannot be created without one. On the
+    Artikel page tap "Neue Kategorie" twice, for example Speisen and Getränke, and pick a colour for
+    each one. The heading of each category is written on that colour, and the lettering stays readable
+    on a light colour as well as on a dark one. Move Getränke above Speisen with the arrows beside its
+    heading, and the two headings swap places. Neither category is on the phones yet, because a
+    category with no items in it, or with all of its items switched off, does not appear on a phone
+    at all. Create one item in Speisen that takes a while, with a preparation time in minutes,
+    assigned to the kitchen only. Create one drink in Getränke with the preparation time left
+    empty, assigned to the bar only. The overview now asks for one thing only, and it asks it once
+    per station: set that station's tablet up.
 18. **Enrol a station tablet.** On the stations page, tap "Tablet einrichten" on the kitchen and scan
     the QR code with the tablet's own camera. The tablet lands straight on the kitchen's own page,
     with the kitchen's name on it and no other station's work. It asks for no name. On the laptop, the
@@ -79,10 +86,9 @@ exactly the problems this section is looking for.
 19. **Enrol a second tablet, and a phone.** Do the same for the bar with a second tablet. Then open
     the waiter list and tap "Neuer Kellner", which shows a code that belongs to nobody yet. Scan it
     with a phone, and the phone asks for a name. Type one and send it. The waiter now appears in the
-    list under that name, the phone is ready, and the overview says that everything is set up. The
-    devices list on the laptop holds three rows, two of them named as tablets at their stations and
-    one as that waiter's phone. Tapping "Telefon neu einrichten" on their row afterwards produces a
-    code that names them, and a phone scanning that one is never asked for a name.
+    list under that name, the phone is ready, and the overview says that everything is set up.
+    Tapping "Telefon neu einrichten" on their row afterwards produces a code that names them, and
+    a phone scanning that one is never asked for a name.
 20. **Replace a tablet.** Tap "Tablet einrichten" on the kitchen again and scan the new code with a
     different device. The new device shows the kitchen's page. The old tablet stops working: reload it
     and it says it is no longer set up. Nothing was lost, because the orders were never on the device.
