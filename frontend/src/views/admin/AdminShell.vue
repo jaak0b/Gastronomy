@@ -7,7 +7,6 @@ import { request } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
-import DevicesList from '../../components/admin/devices/DevicesList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
 import { bindLocaleToLaptop } from '../../appLanguageBinding'
@@ -34,8 +33,6 @@ function titleFor(value: AdminSection): string {
       return t('admin.items.title')
     case 'staff':
       return t('admin.staff.title')
-    case 'devices':
-      return t('admin.devices.title')
     default:
       return assertNever(value)
   }
@@ -65,7 +62,6 @@ void request('/api/admin/stations').then((result) => {
     <AdminOverview v-if="section === 'overview'" />
     <StationsList v-else-if="section === 'stations'" />
     <ItemsList v-else-if="section === 'items'" />
-    <StaffList v-else-if="section === 'staff'" />
-    <DevicesList v-else />
+    <StaffList v-else />
   </div>
 </template>

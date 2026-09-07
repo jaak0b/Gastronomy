@@ -1,7 +1,6 @@
 {
   "enrol": {
     "title": "Set up this phone",
-    "intro": "Enter your name so the kitchen can see who took the order.",
     "nameLabel": "Your name",
     "continue": "Continue",
     "error": {
@@ -199,7 +198,6 @@
     },
     "staff": {
       "title": "Waiters",
-      "help": "Set the phones up one after another. A waiter has exactly one phone.",
       "new": "New waiter",
       "nameMissing": "Give the waiter a name before you save.",
       "noPhone": "No phone set up",
@@ -210,18 +208,6 @@
       "deactivateTitle": "Take this waiter off the list?",
       "deactivateBody": "The name disappears from the list and the enrolled phone is signed out. The orders placed so far stay saved. You can put the waiter back on the list later.",
       "deactivateConfirm": "Take the waiter off"
-    },
-    "devices": {
-      "title": "Devices",
-      "help": "Every phone and every tablet that was set up is listed here. Sign a device out when it was lost or handed to somebody else.",
-      "empty": "No device has been set up yet.",
-      "ownerStaffMember": "Phone of {name}",
-      "ownerStation": "Tablet at {name}",
-      "lastSeen": "Last seen at {time}",
-      "revoke": "Sign this device out",
-      "revokeTitle": "Sign this device out?",
-      "revokeBody": "The device loses its access at once and has to be set up again with a new QR code. The orders placed so far stay saved.",
-      "revokeConfirm": "Sign the device out"
     },
     "enrol": {
       "title": "Set up a phone",

@@ -14,11 +14,11 @@ describe('the route the app boots into, read from the address bar', () => {
   })
 
   it('boots the admin section when the laptop opens a deep admin address', async () => {
-    window.history.replaceState({}, '', '/admin/devices')
+    window.history.replaceState({}, '', '/admin/staff')
 
     const { currentRoute } = await import('../../src/router')
 
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'devices' })
+    expect(currentRoute.value).toEqual({ name: 'admin', section: 'staff' })
   })
 
   it('boots the station address when it is opened', async () => {

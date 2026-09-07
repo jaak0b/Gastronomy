@@ -1,4 +1,4 @@
-export type AdminSection = 'overview' | 'stations' | 'items' | 'staff' | 'devices'
+export type AdminSection = 'overview' | 'stations' | 'items' | 'staff'
 
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
@@ -8,7 +8,7 @@ export type AppRoute =
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection }
 
-const ADMIN_SECTIONS: AdminSection[] = ['overview', 'stations', 'items', 'staff', 'devices']
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'stations', 'items', 'staff']
 
 function adminSectionFrom(segment: string | undefined): AdminSection {
   const wanted = (segment ?? '').toLowerCase()

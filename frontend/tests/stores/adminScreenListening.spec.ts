@@ -5,12 +5,11 @@ import { hubEventsRegistered } from '../support/hubConnection'
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const { useConnectionStore } = await import('../../src/stores/connection')
-const { useAdminDevicesStore } = await import('../../src/stores/admin/devices')
 const { useAdminEnrolmentStore } = await import('../../src/stores/admin/enrolment')
 const { useAdminStaffStore } = await import('../../src/stores/admin/staff')
 const { useAdminStationsStore } = await import('../../src/stores/admin/stations')
 
-const EMPTY_LISTS = { staffMembers: [], stations: [], devices: [] }
+const EMPTY_LISTS = { staffMembers: [], stations: [] }
 
 function stubTheLaptop(): string[] {
   const urls: string[] = []
@@ -76,36 +75,6 @@ describe('the station list of the admin', () => {
   it('is left alone once the admin has moved to another screen', async () => {
     const urls = stubTheLaptop()
     const stopListening = useAdminStationsStore().listen()
-
-    stopListening()
-    await useConnectionStore().refetchAll()
-
-    expect(urls).toEqual([])
-  })
-})
-
-describe('the device list of the admin', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    hubEventsRegistered.length = 0
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('is reloaded while the screen that asked for it is open', async () => {
-    const urls = stubTheLaptop()
-    useAdminDevicesStore().listen()
-
-    await useConnectionStore().refetchAll()
-
-    expect(urls).toEqual(['/api/admin/devices'])
-  })
-
-  it('is left alone once the admin has moved to another screen', async () => {
-    const urls = stubTheLaptop()
-    const stopListening = useAdminDevicesStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()

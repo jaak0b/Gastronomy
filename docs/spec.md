@@ -734,8 +734,7 @@ not reachable, and it is what the crew were doing last year.
 **Reconnect.** The connection comes back, the app fetches whatever the current screen needs, and
 replaces what it holds. The phone never has to work out what it missed.
 
-**The device was signed out while it was offline**, either from the devices list or because the admin
-set its owner up again. The next call is refused. The app clears the token, **keeps the draft
+**The device was signed out while it was offline**, because the admin set its owner up again. The next call is refused. The app clears the token, **keeps the draft
 order**, and shows the setup screen saying the started order is still there. Throwing away a
 half-built order because an admin tapped the wrong row would be destroying a guest's order to solve
 an administrative problem.

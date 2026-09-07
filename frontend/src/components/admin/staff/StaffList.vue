@@ -61,7 +61,6 @@ onUnmounted(() => {
 <template>
   <v-container class="admin-staff">
     <h1 class="text-h5 mb-2">{{ t('admin.staff.title') }}</h1>
-    <p class="help text-medium-emphasis mb-4">{{ t('admin.staff.help') }}</p>
 
     <v-alert
       v-if="enrolment.enrolledStaffMemberName !== null"

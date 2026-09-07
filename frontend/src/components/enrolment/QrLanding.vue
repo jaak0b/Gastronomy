@@ -49,12 +49,11 @@ onMounted(async () => {
       @select="session.setLanguage"
     />
     <h1 class="text-h4 mt-4">{{ t('enrol.title') }}</h1>
-    <p class="mt-2">{{ t('enrol.intro') }}</p>
     <v-alert v-if="draftIsHeld" class="order-held mt-2" type="info" variant="tonal">
       {{ t('enrol.orderHeld') }}
     </v-alert>
     <NameField v-model="name" class="mt-4" />
-    <v-btn class="continue" color="primary" block :disabled="!canContinue" @click="submit">
+    <v-btn class="continue mt-4" color="primary" block :disabled="!canContinue" @click="submit">
       {{ t('enrol.continue') }}
     </v-btn>
     <v-alert v-if="session.redeemErrorKey !== null" class="error mt-4" type="error" variant="tonal">

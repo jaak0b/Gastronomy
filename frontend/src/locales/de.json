@@ -1,7 +1,6 @@
 {
   "enrol": {
     "title": "Dieses Telefon einrichten",
-    "intro": "Geben Sie Ihren Namen ein, damit die Küche sieht, wer die Bestellung aufgenommen hat.",
     "nameLabel": "Ihr Name",
     "continue": "Weiter",
     "error": {
@@ -199,7 +198,6 @@
     },
     "staff": {
       "title": "Kellner",
-      "help": "Richten Sie die Telefone nacheinander ein. Ein Kellner hat genau ein Telefon.",
       "new": "Neuer Kellner",
       "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern.",
       "noPhone": "Kein Telefon eingerichtet",
@@ -210,18 +208,6 @@
       "deactivateTitle": "Kellner aus der Liste nehmen?",
       "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können den Kellner später wieder aufnehmen.",
       "deactivateConfirm": "Kellner herausnehmen"
-    },
-    "devices": {
-      "title": "Geräte",
-      "help": "Hier stehen alle Telefone und Tablets, die eingerichtet wurden. Melden Sie ein Gerät ab, wenn es verloren ging oder an jemand anderen weitergegeben wurde.",
-      "empty": "Es wurde noch kein Gerät eingerichtet.",
-      "ownerStaffMember": "Telefon von {name}",
-      "ownerStation": "Tablet an der Ausgabestelle {name}",
-      "lastSeen": "Zuletzt gesehen um {time}",
-      "revoke": "Dieses Gerät abmelden",
-      "revokeTitle": "Dieses Gerät abmelden?",
-      "revokeBody": "Das Gerät verliert sofort seinen Zugang und muss mit einem neuen QR-Code wieder eingerichtet werden. Die bisherigen Bestellungen bleiben gespeichert.",
-      "revokeConfirm": "Gerät abmelden"
     },
     "enrol": {
       "title": "Telefon einrichten",

@@ -42,7 +42,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ stations: [], items: [], staffMembers: [], devices: [] }), {
+          new Response(JSON.stringify({ stations: [], items: [], staffMembers: [] }), {
             status: 200,
           }),
       ),

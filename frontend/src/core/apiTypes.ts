@@ -203,13 +203,3 @@ export interface StationItemStatusResponse {
   tableName: string | null
   slices: StationSlice[]
 }
-
-export interface AdminDevice {
-  deviceId: string
-  deviceKind: DeviceKind
-  ownerId: string
-  ownerName: string
-  language: AppLanguage
-  createdAtUtc: string
-  lastSeenAtUtc: string
-}
