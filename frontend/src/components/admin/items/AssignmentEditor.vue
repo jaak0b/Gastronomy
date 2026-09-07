@@ -16,7 +16,6 @@ const { t } = useI18n()
 <template>
   <v-sheet class="assignment-editor pa-4 mb-4" border rounded>
     <div class="text-subtitle-1">{{ t('admin.assignment.title') }}</div>
-    <p class="help text-medium-emphasis">{{ t('admin.assignment.help') }}</p>
     <v-checkbox
       v-for="station in stations"
       :key="station.stationId"

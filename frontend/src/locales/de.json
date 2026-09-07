@@ -180,7 +180,6 @@
       "price": "Preis in Euro",
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
       "productionMinutes": "Zubereitungszeit in Minuten",
-      "productionMinutesHelp": "Lassen Sie das Feld leer bei Artikeln, die sofort ausgegeben werden, zum Beispiel Getränke.",
       "productionMinutesInvalid": "Tragen Sie ganze Minuten von 0 bis 600 ein.",
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",
@@ -188,8 +187,7 @@
       "deactivateConfirm": "Artikel deaktivieren"
     },
     "assignment": {
-      "title": "Zuordnung",
-      "help": "Kreuzen Sie die Ausgabestellen an, an denen ein Artikel zubereitet werden kann."
+      "title": "Zubereitet an diesen Ausgabestellen"
     },
     "tables": {
       "title": "Tische",

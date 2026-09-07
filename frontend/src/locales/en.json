@@ -180,7 +180,6 @@
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
       "productionMinutes": "Preparation time in minutes",
-      "productionMinutesHelp": "Leave the field empty for items that are handed over right away, for example drinks.",
       "productionMinutesInvalid": "Enter whole minutes from 0 to 600.",
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",
@@ -188,8 +187,7 @@
       "deactivateConfirm": "Deactivate the item"
     },
     "assignment": {
-      "title": "Assignment",
-      "help": "Tick the stations where an item can be prepared."
+      "title": "Prepared at these stations"
     },
     "tables": {
       "title": "Tables",

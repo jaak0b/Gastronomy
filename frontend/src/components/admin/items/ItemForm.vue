@@ -81,8 +81,6 @@ function save(): void {
           v-model="productionMinutesText"
           class="production-minutes-field mb-2"
           :label="t('admin.items.productionMinutes')"
-          :hint="t('admin.items.productionMinutesHelp')"
-          persistent-hint
           inputmode="numeric"
           :error="productionMinutesAreUnreadable"
           :error-messages="
