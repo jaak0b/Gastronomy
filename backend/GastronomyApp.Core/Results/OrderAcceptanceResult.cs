@@ -21,7 +21,6 @@ public enum OrderValidationFailureReason
   NoItems,
   TooManyItems,
   TableNameMissing,
-  TableNameTooLong,
   UnknownCatalogItemId,
   StationRequired,
   StationNotAssignedToItem,

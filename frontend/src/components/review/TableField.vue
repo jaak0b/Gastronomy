@@ -23,6 +23,7 @@ defineExpose({ focus })
   <div ref="input" class="table-field my-4" :class="{ 'is-missing': isMissing }">
     <v-combobox
       class="table-input"
+      maxlength="40"
       :label="t('catalog.tableName')"
       :placeholder="t('catalog.tablePlaceholder')"
       persistent-placeholder

@@ -85,7 +85,12 @@ onUnmounted(() => {
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
       <v-card-text v-if="renamingId === staffMember.staffMemberId">
-        <v-text-field v-model="newName" class="rename-field" :label="t('admin.staff.rename')" />
+        <v-text-field
+          v-model="newName"
+          class="rename-field"
+          maxlength="40"
+          :label="t('admin.staff.rename')"
+        />
         <p class="help text-medium-emphasis">{{ t('admin.staff.renameHelp') }}</p>
         <v-btn class="save-name" color="primary" @click="rename(staffMember.staffMemberId)">
           {{ t('admin.save') }}

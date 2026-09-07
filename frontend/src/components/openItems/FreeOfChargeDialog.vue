@@ -35,6 +35,7 @@ function type(typed: string): void {
         <p class="help mb-4">{{ t('openItems.freeOfChargeHelp') }}</p>
         <v-text-field
           class="reason-field"
+          maxlength="200"
           autofocus
           :label="t('openItems.reason')"
           :placeholder="t('openItems.reasonPlaceholder')"

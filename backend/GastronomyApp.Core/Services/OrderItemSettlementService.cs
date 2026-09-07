@@ -18,7 +18,6 @@ public sealed record SettlementRequest
 public sealed class OrderItemSettlementService
 {
   private const int MaximumItemsInOneSettlement = 500;
-  private const int MaximumPaymentNoticeLength = 200;
 
   public Result<SettlementResult, SettlementFailure> Settle(SettlementRequest request,
                                                             IReadOnlyCollection<OrderItem> knownItems,
@@ -189,8 +188,6 @@ public sealed class OrderItemSettlementService
       return new() { Reason = SettlementFailureReason.PaymentNoticeMissing };
     }
 
-    return written.Length > MaximumPaymentNoticeLength
-             ? new() { Reason = SettlementFailureReason.PaymentNoticeTooLong }
-             : null;
+    return null;
   }
 }

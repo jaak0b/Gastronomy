@@ -82,7 +82,7 @@ public sealed class OrderAcceptanceServiceTest
                        {
                          Id = id,
                          Name = name,
-                         CategoryName = "Speisen",
+                         CategoryId = Guid.NewGuid(),
                          PriceCents = priceCents,
                          SortOrder = 1,
                          IsActive = true,
@@ -203,7 +203,7 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_EmptyTableLabel_FailsWithTableLabelMissing()
+  public async Task AcceptAsync_EmptyTableName_FailsWithTableNameMissing()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], string.Empty),
                                                                                               CancellationToken.None);
@@ -217,35 +217,12 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_WhitespaceTableLabel_FailsWithTableLabelMissing()
+  public async Task AcceptAsync_WhitespaceTableName_FailsWithTableNameMissing()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], "   "),
                                                                                               CancellationToken.None);
 
     Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameMissing));
-  }
-
-  [Test]
-  public async Task AcceptAsync_TableLabelOfFortyOneCharacters_FailsWithTableLabelTooLong()
-  {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], new('T', 41)),
-                                                                                              CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameTooLong));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_TableLabelOfFortyCharacters_PassesTheTableLabelCheck()
-  {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], new('T', 40)),
-                                                                                              CancellationToken.None);
-
-    Assert.That(result.IsSuccess, Is.True);
   }
 
   [Test]
@@ -315,7 +292,7 @@ public sealed class OrderAcceptanceServiceTest
                                             {
                                               Id = _bratwurstId,
                                               Name = "Bratwurst",
-                                              CategoryName = "Speisen",
+                                              CategoryId = Guid.NewGuid(),
                                               PriceCents = 350,
                                               SortOrder = 1,
                                               IsActive = true,
@@ -336,7 +313,7 @@ public sealed class OrderAcceptanceServiceTest
                                             {
                                               Id = _bratwurstId,
                                               Name = "Bratwurst",
-                                              CategoryName = "Speisen",
+                                              CategoryId = Guid.NewGuid(),
                                               PriceCents = 350,
                                               SortOrder = 1,
                                               IsActive = false,
@@ -582,8 +559,6 @@ public sealed class OrderAcceptanceServiceTest
                       RequestWith([ItemFor(_bratwurstId, unitPriceCents: -1)]),
                     OrderValidationFailureReason.TableNameMissing =>
                       RequestWith([ItemFor(_bratwurstId)], string.Empty),
-                    OrderValidationFailureReason.TableNameTooLong =>
-                      RequestWith([ItemFor(_bratwurstId)], new('T', 41)),
                     OrderValidationFailureReason.UnknownCatalogItemId => RequestWith([ItemFor(UnknownItemId())]),
                     OrderValidationFailureReason.StationRequired => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
                     OrderValidationFailureReason.StationNotAssignedToItem =>

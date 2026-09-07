@@ -10,6 +10,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
 <template>
   <v-text-field
     class="name-field"
+    maxlength="40"
     :label="t('enrol.nameLabel')"
     autocomplete="name"
     :model-value="modelValue"

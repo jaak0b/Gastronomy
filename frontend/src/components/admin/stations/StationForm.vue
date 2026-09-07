@@ -23,7 +23,12 @@ function save(): void {
 
 <template>
   <v-form class="station-form pa-4" @submit.prevent="save">
-    <v-text-field v-model="name" class="mb-4" :label="t('admin.stations.title')" />
+    <v-text-field
+      v-model="name"
+      class="station-name-field mb-4"
+      maxlength="40"
+      :label="t('admin.stations.title')"
+    />
     <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
       {{ t('admin.save') }}
     </v-btn>

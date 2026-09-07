@@ -43,7 +43,6 @@ public sealed record OrderAcceptanceRequest
 public sealed class OrderAcceptanceService
 {
   private const int MaximumItems = 200;
-  private const int MaximumTableNameLength = 40;
   private readonly ICatalogItemRepository _catalogItemRepository;
   private readonly IClock _clock;
   private readonly INumberAllocator _numberAllocator;
@@ -160,11 +159,6 @@ public sealed class OrderAcceptanceService
     if (string.IsNullOrWhiteSpace(request.TableName))
     {
       return new() { Reason = OrderValidationFailureReason.TableNameMissing };
-    }
-
-    if (request.TableName.Length > MaximumTableNameLength)
-    {
-      return new() { Reason = OrderValidationFailureReason.TableNameTooLong };
     }
 
     foreach (var item in request.Items)
