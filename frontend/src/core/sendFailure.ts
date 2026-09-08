@@ -10,7 +10,7 @@ export interface SendFailureMessage {
   paperFallbackKey: string | null
 }
 
-const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
+export const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 
 function keyForStatus(status: number): string {
   switch (status) {
@@ -30,12 +30,22 @@ function keyForRejection(status: number, body: ApiErrorBody | null): string {
   return statedReason.length > 0 ? statedReason : keyForStatus(status)
 }
 
+function paperFallbackKeyAfter(failedAttempts: number): string | null {
+  return failedAttempts >= PAPER_FALLBACK_AFTER_ATTEMPTS ? 'review.sendFailedAgain' : null
+}
+
+export function messageForAnInterruptedSend(failedAttempts: number): SendFailureMessage {
+  return {
+    key: 'review.sendInterrupted',
+    paperFallbackKey: paperFallbackKeyAfter(failedAttempts),
+  }
+}
+
 export function messageForSendFailure(
   failure: SendFailure,
   failedAttempts: number,
 ): SendFailureMessage {
-  const paperFallbackKey =
-    failedAttempts >= PAPER_FALLBACK_AFTER_ATTEMPTS ? 'review.sendFailedAgain' : null
+  const paperFallbackKey = paperFallbackKeyAfter(failedAttempts)
   switch (failure.kind) {
     case 'unreachable':
       return { key: 'review.sendFailed', paperFallbackKey }

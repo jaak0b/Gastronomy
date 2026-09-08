@@ -33,6 +33,7 @@ interface ListOptions {
   orderNote?: string | null
   estimates?: StationEstimate[]
   deliveryModes?: Record<string, DeliveryMode>
+  changesAreRefused?: boolean
 }
 
 function mountList(lines: BasketLineView[], options: ListOptions = {}) {
@@ -46,6 +47,7 @@ function mountList(lines: BasketLineView[], options: ListOptions = {}) {
       stationNameFor: (stationId: string) => STATION_NAMES[stationId] ?? '',
       estimates: options.estimates ?? [],
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
+      changesAreRefused: options.changesAreRefused ?? false,
     },
     global: { plugins: [createVuetify(), i18n] },
   })
@@ -155,6 +157,19 @@ describe('choosing how a station hands its part of the order out', () => {
       'Wie soll Küche die Positionen ausgeben?',
       'Wie soll Theke innen die Positionen ausgeben?',
     ])
+  })
+
+  it('holds the choice shut once the order has been sent and the send failed', () => {
+    const list = mountList([line()], { changesAreRefused: true })
+
+    expect(list.get('.delivery-together').attributes('disabled')).toBeDefined()
+    expect(list.get('.delivery-as-it-comes').attributes('disabled')).toBeDefined()
+  })
+
+  it('leaves the choice open while the order has not been sent', () => {
+    const list = mountList([line()])
+
+    expect(list.get('.delivery-together').attributes('disabled')).toBeUndefined()
   })
 
   it('starts on handing everything out together', () => {

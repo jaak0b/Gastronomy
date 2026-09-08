@@ -456,3 +456,55 @@ describe('the question about which station is to make an item', () => {
     expect(view.findAll('.item-row').length).toBeGreaterThan(0)
   })
 })
+
+describe('the items screen while an order is frozen on the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('the laptop cannot be reached')
+      }),
+    )
+  })
+
+  async function anOrderThatCouldNotBeSent() {
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+      unitPriceCents: 200,
+    })
+    order.setTable('Tisch 5')
+    await order.send(false)
+    return order
+  }
+
+  it('sends the waiter to the summary, where the failure and both ways out are', async () => {
+    await anOrderThatCouldNotBeSent()
+
+    mountCatalog()
+
+    expect(currentRoute.value).toEqual({ name: 'review' })
+  })
+
+  it('leaves the frozen order untouched on the way there', async () => {
+    const order = await anOrderThatCouldNotBeSent()
+
+    mountCatalog()
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(order.draft.tableName).toBe('Tisch 5')
+  })
+
+  it('stays on the items while the order still belongs to the waiter', () => {
+    mountCatalog()
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+})

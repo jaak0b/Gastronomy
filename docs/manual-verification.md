@@ -152,7 +152,44 @@ exactly the problems this section is looking for.
     second press on the categories leaves you where you are rather than taking you out of the app or
     back to the summary you already sent.
 
-33. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
+33. **An order that never reaches the laptop.** Build a full order on a phone and go to the
+    summary. Switch the phone's WiFi off and tap "Bestellung senden". The button reads "Wird
+    gesendet" and the phone gives up after about ten seconds: a red panel says the laptop was not
+    reached, and the strip at the bottom now carries "Erneut senden" where the two send buttons
+    stood. Time that pause once with a watch, because it is the whole point of the limit. Without
+    it the phone would stand there for a minute waiting for the operating system to lose patience,
+    and a waiter holding a phone that says "Wird gesendet" for a minute assumes the order went out.
+
+    Now try to change that order, on both screens. On the summary the way back to the items, the
+    delivery choice at every station, and the button that removes items which cannot be ordered are
+    all dead, while the lines and the total are still there to read and to copy. Then tap
+    "Bestellung aufnehmen" in the header, which is what a waiter reaches for when the next table
+    waves: the phone puts you back on the summary instead of opening the items, because a frozen
+    order is unfinished business and the summary is where its two ways out are. That freeze is the
+    point of the step: the laptop may already hold the order exactly as it was sent, so a changed
+    order sent again would come back as the old one and the change would vanish without anybody
+    being told.
+
+    Now reload the page with the WiFi still off, the way a waiter does when a screen looks stuck.
+    The order comes back in full and still frozen, and the panel now says the page was reloaded
+    while the order was on its way and the phone does not know whether it arrived. A reload is not a
+    way out of the freeze, and it must not be, because the laptop may hold the order either way.
+
+    Switch the phone's WiFi back on for a moment, mark one of the ordered items sold out on the
+    laptop, wait for the phone to flag it, and switch the WiFi off again. The line is flagged on the
+    summary and "Erneut senden" is still tappable, because a retry asks what became of an order that
+    may already exist.
+
+    Tap "Erneut senden" with the WiFi still off. A dialog covers the screen and cannot be tapped
+    away: no cross, and a tap beside it does nothing. It tells you to write the order on a slip of
+    paper and to look at the tablet at the station, throwing the slip away if the order is already
+    there and handing it over if it is not. Switch the WiFi on and tap "Noch einmal versuchen": the
+    order goes through and the phone is back at the items with an empty order. Stage the two
+    failures once more, leave the WiFi off, and tap "Bestellung ist aufgeschrieben": the order is
+    cleared, a fresh one is started, and the tablet at the station is what tells you whether your
+    slip is needed.
+
+34. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
     stations on one drink so either can pour it. On the phone, tap that drink: the phone asks which
     of the two makes it. Tap "Abbrechen". Nothing is added to the order, you stay in the category,
     and the question does not come back when you open another category. Tap the drink again and
@@ -163,11 +200,11 @@ exactly the problems this section is looking for.
 The backup button and the diagnostics page described in the specification are not built yet, so these
 last two steps use what the program window actually offers today.
 
-34. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+35. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
     whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
     well, then open both copies on another machine: the whole folder holds the evening's orders, and
     the single file may be missing the last of them. That difference is the reason the backup belongs
     behind a button, and seeing it once is what makes the point stick.
-35. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+36. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
     startup and the port are all in it, and no device token and no enrolment code appears anywhere in
     it.

@@ -1,6 +1,9 @@
 import type { DeliveryMode, DraftLine, DraftOrder } from './apiTypes'
+import type { SendFailureMessage } from './sendFailure'
+import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 
 export const DRAFT_STORAGE_KEY = 'draftOrder'
+export const SEND_PROGRESS_STORAGE_KEY = 'draftOrderSend'
 
 const DELIVERY_MODES: DeliveryMode[] = ['together', 'asItComes']
 
@@ -112,6 +115,66 @@ export function saveDraft(draft: DraftOrder): void {
 
 export function clearDraft(): void {
   localStorage.removeItem(DRAFT_STORAGE_KEY)
+  localStorage.removeItem(SEND_PROGRESS_STORAGE_KEY)
+}
+
+function toSendFailureMessage(value: unknown): SendFailureMessage | null {
+  if (typeof value !== 'object' || value === null) {
+    return null
+  }
+  const candidate = value as Record<string, unknown>
+  if (typeof candidate.key !== 'string') {
+    return null
+  }
+  return {
+    key: candidate.key,
+    paperFallbackKey:
+      typeof candidate.paperFallbackKey === 'string' ? candidate.paperFallbackKey : null,
+  }
+}
+
+function toSendProgress(value: unknown): SendProgress | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null
+  }
+  const candidate = value as Record<string, unknown>
+  const state = SEND_STATES.find((known) => known === candidate.state)
+  if (state === undefined || typeof candidate.attempts !== 'number') {
+    return null
+  }
+  return {
+    state,
+    attempts: candidate.attempts,
+    settleOnSend: candidate.settleOnSend === true,
+    failure: toSendFailureMessage(candidate.failure),
+  }
+}
+
+export function restoreSendProgress(): SendProgress {
+  const stored = localStorage.getItem(SEND_PROGRESS_STORAGE_KEY)
+  if (stored === null) {
+    return noSendProgress()
+  }
+  try {
+    return toSendProgress(JSON.parse(stored)) ?? noSendProgress()
+  } catch {
+    return noSendProgress()
+  }
+}
+
+export function saveSendProgress(progress: SendProgress): void {
+  localStorage.setItem(
+    SEND_PROGRESS_STORAGE_KEY,
+    JSON.stringify({
+      state: progress.state,
+      attempts: progress.attempts,
+      settleOnSend: progress.settleOnSend,
+      failure:
+        progress.failure === null
+          ? null
+          : { key: progress.failure.key, paperFallbackKey: progress.failure.paperFallbackKey },
+    }),
+  )
 }
 
 function persisted(draft: DraftOrder): DraftOrder {

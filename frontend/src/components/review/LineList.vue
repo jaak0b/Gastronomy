@@ -25,6 +25,7 @@ const props = defineProps<{
   stationNameFor: (stationId: string) => string
   estimates: StationEstimate[]
   deliveryModeFor: (stationId: string) => DeliveryMode
+  changesAreRefused: boolean
 }>()
 const emit = defineEmits<{
   chooseDeliveryMode: [stationId: string, deliveryMode: DeliveryMode]
@@ -169,10 +170,20 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
             :model-value="part.deliveryMode"
             @update:model-value="(mode: DeliveryMode) => choose(part.stationId as string, mode)"
           >
-            <v-btn class="delivery-together" value="together" size="large">
+            <v-btn
+              class="delivery-together"
+              value="together"
+              size="large"
+              :disabled="changesAreRefused"
+            >
               {{ t('review.deliveryTogether') }}
             </v-btn>
-            <v-btn class="delivery-as-it-comes" value="asItComes" size="large">
+            <v-btn
+              class="delivery-as-it-comes"
+              value="asItComes"
+              size="large"
+              :disabled="changesAreRefused"
+            >
               {{ t('review.deliveryAsItComes') }}
             </v-btn>
           </v-btn-toggle>

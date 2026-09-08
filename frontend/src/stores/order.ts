@@ -12,12 +12,22 @@ import {
   clearDraft,
   removeLine,
   restoreDraft,
+  restoreSendProgress,
+  saveSendProgress,
   setDeliveryMode,
   setLineNote,
   setLineStation,
   setOrderNote,
   setTableName,
 } from '../core/draftCart'
+import {
+  changesAreRefusedIn,
+  progressAfterALoad,
+  sendHasFailedIn,
+  sendIsUnderWayIn,
+  sendWasAcceptedIn,
+  type SendState,
+} from '../core/sendProgress'
 import { assertNever } from '../core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
 import { chosenDeliveryMode, deliveryModesOf, orderSlices } from '../core/orderSlices'
@@ -29,18 +39,22 @@ import {
   withoutLinesThatCannotBeOrdered,
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
-import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
+import {
+  messageForSendFailure,
+  PAPER_FALLBACK_AFTER_ATTEMPTS,
+  type SendFailureMessage,
+} from '../core/sendFailure'
 import { useCatalogStore } from './catalog'
 import { useSessionStore } from './session'
 
-export type SendState = 'idle' | 'sending' | 'failed' | 'accepted'
-
 export const ARRIVAL_NOTICE_MS = 8000
+
+export const SEND_TIMEOUT_MS = 10000
 
 export const useOrderStore = defineStore('order', () => {
   const draftWasLost = ref(false)
 
-  function draftFromStorage(): DraftOrder {
+  function draftRestoredFromStorage(): DraftOrder {
     const restoration = restoreDraft()
     switch (restoration.outcome) {
       case 'nothingStored':
@@ -54,20 +68,39 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  function draftFromStorage(): DraftOrder {
+    return ensureClientOrderId(draftRestoredFromStorage())
+  }
+
   const draft = ref(draftFromStorage())
-  const sendState = ref<SendState>('idle')
-  const failure = ref<SendFailureMessage | null>(null)
-  const failedAttempts = ref(0)
+  const progressWhenTheAppLoaded = progressAfterALoad(restoreSendProgress())
+  const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
+  const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
+  const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
+  const settledOnSend = ref(progressWhenTheAppLoaded.settleOnSend)
   const acceptedOrderNumber = ref<number | null>(null)
-  const settledOnSend = ref(false)
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
 
+  const isSending = computed(() => sendIsUnderWayIn(sendState.value))
+  const sendHasFailed = computed(() => sendHasFailedIn(sendState.value))
+  const changesAreRefused = computed(() => changesAreRefusedIn(sendState.value))
+  const sendingFailedTwice = computed(
+    () => sendHasFailed.value && attemptsMade.value >= PAPER_FALLBACK_AFTER_ATTEMPTS,
+  )
+
+  function change(makeTheChange: (current: DraftOrder) => DraftOrder): void {
+    if (changesAreRefused.value) {
+      return
+    }
+    draft.value = makeTheChange(draft.value)
+  }
+
   watch(
     () => catalogStore.catalog,
     (pushed) => {
-      draft.value = refreshLineSnapshots(draft.value, pushed)
+      change((current) => refreshLineSnapshots(current, pushed))
     },
   )
 
@@ -84,32 +117,35 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function addItem(line: DraftLine): void {
+    if (changesAreRefused.value) {
+      return
+    }
     dismissDraftLoss()
     draft.value = addLine(draft.value, line)
   }
 
   function dropLine(index: number): void {
-    draft.value = removeLine(draft.value, index)
+    change((current) => removeLine(current, index))
   }
 
   function dropLinesThatCannotBeOrdered(): void {
-    draft.value = withoutLinesThatCannotBeOrdered(draft.value, catalogStore.catalog)
+    change((current) => withoutLinesThatCannotBeOrdered(current, catalogStore.catalog))
   }
 
   function noteLine(index: number, note: string | null): void {
-    draft.value = setLineNote(draft.value, index, note)
+    change((current) => setLineNote(current, index, note))
   }
 
   function chooseStation(index: number, stationId: string | null): void {
-    draft.value = setLineStation(draft.value, index, stationId)
+    change((current) => setLineStation(current, index, stationId))
   }
 
   function setTable(tableName: string): void {
-    draft.value = setTableName(draft.value, tableName)
+    change((current) => setTableName(current, tableName))
   }
 
   function setNote(note: string | null): void {
-    draft.value = setOrderNote(draft.value, note)
+    change((current) => setOrderNote(current, note))
   }
 
   function deliveryModeAt(stationId: string): DeliveryMode {
@@ -117,10 +153,13 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function chooseDeliveryMode(stationId: string, deliveryMode: DeliveryMode): void {
-    draft.value = setDeliveryMode(draft.value, stationId, deliveryMode)
+    change((current) => setDeliveryMode(current, stationId, deliveryMode))
   }
 
   function dismissConfirmation(): void {
+    if (!sendWasAcceptedIn(sendState.value)) {
+      return
+    }
     if (arrivalNoticeTimer !== null) {
       clearTimeout(arrivalNoticeTimer)
       arrivalNoticeTimer = null
@@ -134,11 +173,29 @@ export const useOrderStore = defineStore('order', () => {
     draft.value = draftFromStorage()
   }
 
+  function startNextOrderAfterWritingItDown(): void {
+    failure.value = null
+    attemptsMade.value = 0
+    sendState.value = 'idle'
+    startNextOrder()
+  }
+
+  function rememberWhatBecameOfTheSend(): void {
+    saveSendProgress({
+      state: sendState.value,
+      attempts: attemptsMade.value,
+      settleOnSend: settledOnSend.value,
+      failure: failure.value,
+    })
+  }
+
   async function send(settleOnSend: boolean): Promise<void> {
     const session = useSessionStore()
-    sendState.value = 'sending'
     settledOnSend.value = settleOnSend
-    draft.value = ensureClientOrderId(draft.value)
+    attemptsMade.value += 1
+    failure.value = null
+    sendState.value = 'sending'
+    rememberWhatBecameOfTheSend()
     const result = await request<OrderSubmitResponse>('/api/orders', {
       method: 'POST',
       body: buildSubmitRequest(
@@ -147,22 +204,25 @@ export const useOrderStore = defineStore('order', () => {
         deliveryModesOf(slices.value, draft.value.deliveryModes),
       ),
       token: session.deviceToken,
+      timeoutMs: SEND_TIMEOUT_MS,
     })
     switch (result.kind) {
       case 'ok':
         acceptedOrderNumber.value = result.data.globalOrderNumber
         failure.value = null
-        failedAttempts.value = 0
+        attemptsMade.value = 0
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
         startNextOrder()
         return
       case 'unreachable':
       case 'error':
-        failedAttempts.value += 1
-        failure.value = messageForSendFailure(result, failedAttempts.value)
+        failure.value = messageForSendFailure(result, attemptsMade.value)
         sendState.value = 'failed'
+        rememberWhatBecameOfTheSend()
         return
+      default:
+        return assertNever(result)
     }
   }
 
@@ -175,7 +235,7 @@ export const useOrderStore = defineStore('order', () => {
     draftWasLost,
     sendState,
     failure,
-    failedAttempts,
+    attemptsMade,
     acceptedOrderNumber,
     settledOnSend,
     basketLines,
@@ -183,6 +243,10 @@ export const useOrderStore = defineStore('order', () => {
     itemCount,
     totalCents,
     hasLinesThatCannotBeOrdered,
+    isSending,
+    sendHasFailed,
+    changesAreRefused,
+    sendingFailedTwice,
     addItem,
     dropLine,
     dropLinesThatCannotBeOrdered,
@@ -194,6 +258,7 @@ export const useOrderStore = defineStore('order', () => {
     chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
+    startNextOrderAfterWritingItDown,
     send,
     sendAgain,
   }

@@ -221,7 +221,7 @@ describe('sending the order from the review screen', () => {
     await review.get('.send-and-settle').trigger('click')
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
-    await review.get('.send-failure .retry').trigger('click')
+    await review.get('.send-again').trigger('click')
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
     const retried = JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)
@@ -333,5 +333,195 @@ describe('an order holding something that cannot be ordered', () => {
     expect(review.get('.send').attributes('disabled')).toBeUndefined()
     expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
     expect(review.find('.remove-before-sending').exists()).toBe(false)
+  })
+})
+
+describe('an order the laptop did not confirm', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('the laptop cannot be reached')
+      }),
+    )
+  })
+
+  function mountReview() {
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  async function reviewAfterAFailedSend(order: ReturnType<typeof useOrderStore>) {
+    const review = mountReview()
+    await review.get('.send').trigger('click')
+    await vi.waitFor(() => expect(order.sendState).toBe('failed'))
+    return review
+  }
+
+  function sellOutTheWater() {
+    const catalog = useCatalogStore()
+    catalog.catalog = { ...catalog.catalog, items: [{ ...WASSER, isAvailable: false }] }
+  }
+
+  it('refuses to take the sold-out line off, because the laptop may hold the order as it was', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    sellOutTheWater()
+    await review.vm.$nextTick()
+
+    expect(review.get('.drop-lines-that-cannot-be-ordered').attributes('disabled')).toBeDefined()
+  })
+
+  it('refuses the way back to the items, because everything there would change the order', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    expect(review.get('.back').attributes('disabled')).toBeDefined()
+  })
+
+  it('refuses to have the delivery choice changed', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    expect(review.get('.delivery-together').attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps the lines and the total readable, because the waiter may have to copy them onto paper', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    expect(review.get('.line-name').text()).toBe('1 x Wasser')
+    expect(review.get('.total-display').text()).toContain('2.00')
+  })
+  it('offers the retry in the docked strip, where the send buttons stood', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    expect(review.get('.review-footer .send-again').text()).toBe('Erneut senden')
+  })
+
+  it('leaves the retry alive while a line cannot be ordered, because the laptop may hold the order', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    sellOutTheWater()
+    await review.vm.$nextTick()
+
+    expect(review.get('.send-again').attributes('disabled')).toBeUndefined()
+  })
+
+  it('sends the order again when the retry is tapped, sold-out line and all', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+    sellOutTheWater()
+    await review.vm.$nextTick()
+
+    await review.get('.send-again').trigger('click')
+
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
+  })
+
+  it('leaves the waiter with the retry alone after the first failure', async () => {
+    const order = prepareOrder()
+    await reviewAfterAFailedSend(order)
+
+    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
+  })
+
+  it('takes over the screen once the second attempt has failed as well', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+    )
+  })
+
+  it('starts the next order once the waiter has written this one down', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+    )
+
+    ;(document.querySelector('.send-failed-twice-dialog .written-down') as HTMLElement).click()
+    await review.vm.$nextTick()
+
+    expect(order.basketLines).toEqual([])
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+
+  it('sends again when the waiter says the WiFi is back', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+    )
+
+    ;(document.querySelector('.send-failed-twice-dialog .try-again') as HTMLElement).click()
+
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(3))
+  })
+
+  it('comes back when that attempt fails too', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+    )
+
+    ;(document.querySelector('.send-failed-twice-dialog .try-again') as HTMLElement).click()
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(3))
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog .written-down')).not.toBeNull(),
+    )
+  })
+})
+
+describe('an order that is still on its way to the laptop', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    )
+  })
+
+  async function reviewOfAnOrderOnItsWay() {
+    prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await review.get('.send').trigger('click')
+    return review
+  }
+
+  it('refuses the way back to the items, because everything there would change the order', async () => {
+    const review = await reviewOfAnOrderOnItsWay()
+
+    expect(review.get('.back').attributes('disabled')).toBeDefined()
+  })
+
+  it('refuses to have the delivery choice changed', async () => {
+    const review = await reviewOfAnOrderOnItsWay()
+
+    expect(review.get('.delivery-together').attributes('disabled')).toBeDefined()
+  })
+
+  it('leaves one way to send on the screen and says that the order is going out', async () => {
+    const review = await reviewOfAnOrderOnItsWay()
+
+    expect(review.get('.send-again').text()).toBe('Wird gesendet')
+    expect(review.find('.send').exists()).toBe(false)
   })
 })

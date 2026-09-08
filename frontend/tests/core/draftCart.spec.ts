@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   DRAFT_STORAGE_KEY,
+  SEND_PROGRESS_STORAGE_KEY,
   addLine,
   clearDraft,
   emptyDraft,
   removeLine,
   restoreDraft,
+  restoreSendProgress,
   saveDraft,
+  saveSendProgress,
   setDeliveryMode,
   setLineNote,
   setLineStation,
@@ -378,5 +381,58 @@ describe('adding an item that is already in the basket', () => {
     const bar = addLine(kitchen, { ...bratwurstLine(), stationId: 'station-2' })
 
     expect(bar.lines).toHaveLength(2)
+  })
+})
+
+describe('the record of what became of a send', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('reports an untouched order when the waiter has never pressed send', () => {
+    expect(restoreSendProgress()).toEqual({
+      state: 'idle',
+      attempts: 0,
+      settleOnSend: false,
+      failure: null,
+    })
+  })
+
+  it('puts back what the phone knew about the send when the page was last open', () => {
+    const stored = {
+      state: 'failed',
+      attempts: 2,
+      settleOnSend: true,
+      failure: { key: 'review.sendFailedDatabase', paperFallbackKey: 'review.sendFailedAgain' },
+    } as const
+
+    saveSendProgress(stored)
+
+    expect(restoreSendProgress()).toEqual(stored)
+  })
+
+  it('remembers a send that is still on its way, so a reload cannot make it look untouched', () => {
+    saveSendProgress({ state: 'sending', attempts: 1, settleOnSend: false, failure: null })
+
+    expect(restoreSendProgress().state).toBe('sending')
+  })
+
+  it('falls back to an untouched order when the record cannot be read at all', () => {
+    localStorage.setItem(SEND_PROGRESS_STORAGE_KEY, 'not json')
+
+    expect(restoreSendProgress()).toEqual({
+      state: 'idle',
+      attempts: 0,
+      settleOnSend: false,
+      failure: null,
+    })
+  })
+
+  it('goes when the order goes, so the next order starts open for changes', () => {
+    saveSendProgress({ state: 'failed', attempts: 2, settleOnSend: false, failure: null })
+
+    clearDraft()
+
+    expect(restoreSendProgress().state).toBe('idle')
   })
 })

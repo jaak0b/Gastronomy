@@ -15,22 +15,8 @@ describe('SendFailurePanel', () => {
     const panel = mountPanel({ key: 'review.sendFailed', paperFallbackKey: null })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Tippen Sie auf "Noch einmal senden". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.',
+      'Tippen Sie auf "Erneut senden". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.',
     )
-  })
-
-  it('offers the retry button the server taps themselves', () => {
-    const panel = mountPanel({ key: 'review.sendFailed', paperFallbackKey: null })
-
-    expect(panel.get('.retry').text()).toBe('Noch einmal senden')
-  })
-
-  it('emits a retry only when the server taps it, never on its own', async () => {
-    const panel = mountPanel({ key: 'review.sendFailed', paperFallbackKey: null })
-
-    await panel.get('.retry').trigger('click')
-
-    expect(panel.emitted('retry')).toHaveLength(1)
   })
 
   it('says nothing about paper after a first failure', () => {
@@ -50,20 +36,11 @@ describe('SendFailurePanel', () => {
     )
   })
 
-  it('keeps the retry button on screen beside the paper instruction', () => {
-    const panel = mountPanel({
-      key: 'review.sendFailed',
-      paperFallbackKey: 'review.sendFailedAgain',
-    })
-
-    expect(panel.find('.retry').exists()).toBe(true)
-  })
-
   it('names the saving problem when that is what went wrong', () => {
     const panel = mountPanel({ key: 'review.sendFailedDatabase', paperFallbackKey: null })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Tippen Sie auf "Noch einmal senden". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.',
+      'Tippen Sie auf "Erneut senden". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.',
     )
   })
 })

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { messageForSendFailure } from '../../src/core/sendFailure'
+import {
+  messageForAnInterruptedSend,
+  messageForSendFailure,
+} from '../../src/core/sendFailure'
 
 describe('messageForSendFailure, what went wrong', () => {
   it('tells the server to send again when the laptop could not be reached', () => {
@@ -79,6 +82,26 @@ describe('messageForSendFailure, the fall back to paper', () => {
 
   it('keeps telling the server to write the order down after further failures', () => {
     const message = messageForSendFailure({ kind: 'unreachable' }, 5)
+
+    expect(message.paperFallbackKey).toBe('review.sendFailedAgain')
+  })
+})
+
+describe('messageForAnInterruptedSend', () => {
+  it('says the attempt was cut off instead of naming a cause nobody can know', () => {
+    const message = messageForAnInterruptedSend(1)
+
+    expect(message.key).toBe('review.sendInterrupted')
+  })
+
+  it('says nothing about paper while only one attempt has been made', () => {
+    const message = messageForAnInterruptedSend(1)
+
+    expect(message.paperFallbackKey).toBeNull()
+  })
+
+  it('tells the server to write the order down once two attempts have come to nothing', () => {
+    const message = messageForAnInterruptedSend(2)
 
     expect(message.paperFallbackKey).toBe('review.sendFailedAgain')
   })

@@ -11,6 +11,7 @@ import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import TotalDisplay from '../components/review/TotalDisplay.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
+import SendFailedTwiceDialog from '../components/review/SendFailedTwiceDialog.vue'
 
 const { t } = useI18n()
 const catalog = useCatalogStore()
@@ -26,7 +27,7 @@ const canSend = computed(
   () =>
     isTableNameValid(order.draft.tableName) &&
     order.basketLines.length > 0 &&
-    order.sendState !== 'sending' &&
+    !order.isSending &&
     !order.hasLinesThatCannotBeOrdered,
 )
 
@@ -42,6 +43,11 @@ async function sendAgain(): Promise<void> {
   if (order.sendState === 'accepted') {
     navigate('/')
   }
+}
+
+function startTheNextOrder(): void {
+  order.startNextOrderAfterWritingItDown()
+  navigate('/')
 }
 
 function backToItems(): void {
@@ -66,6 +72,7 @@ function backToItems(): void {
       :station-name-for="catalog.stationName"
       :estimates="estimates.stations"
       :delivery-mode-for="order.deliveryModeAt"
+      :changes-are-refused="order.changesAreRefused"
       @choose-delivery-mode="order.chooseDeliveryMode"
     />
     <v-btn
@@ -75,22 +82,39 @@ function backToItems(): void {
       variant="outlined"
       block
       size="large"
+      :disabled="order.changesAreRefused"
       @click="order.dropLinesThatCannotBeOrdered"
     >
       {{ t('review.removeLinesThatCannotBeOrdered') }}
     </v-btn>
     <SendFailurePanel
-      v-if="order.sendState === 'failed' && order.failure !== null"
+      v-if="order.sendHasFailed && order.failure !== null"
       :failure="order.failure"
-      @retry="sendAgain"
     />
-    <v-btn class="back mt-2 mb-4" variant="text" block @click="backToItems">
+    <v-btn
+      class="back mt-2 mb-4"
+      variant="text"
+      block
+      :disabled="order.changesAreRefused"
+      @click="backToItems"
+    >
       {{ t('review.back') }}
     </v-btn>
     <DockedStrip class="review-footer">
       <div class="pt-3 pb-4">
         <TotalDisplay :total-cents="order.totalCents" :language="session.language" />
-        <template v-if="order.sendState !== 'failed'">
+        <v-btn
+          v-if="order.changesAreRefused"
+          class="send-again mt-2"
+          color="primary"
+          block
+          size="x-large"
+          :disabled="order.isSending"
+          @click="sendAgain"
+        >
+          {{ order.isSending ? t('review.sending') : t('review.retry') }}
+        </v-btn>
+        <template v-else>
           <v-btn
             class="send-and-settle mt-2"
             color="primary"
@@ -99,7 +123,7 @@ function backToItems(): void {
             :disabled="!canSend"
             @click="send(true)"
           >
-            {{ order.sendState === 'sending' ? t('review.sending') : t('review.sendAndSettle') }}
+            {{ order.isSending ? t('review.sending') : t('review.sendAndSettle') }}
           </v-btn>
           <v-btn
             class="send mt-2"
@@ -110,7 +134,7 @@ function backToItems(): void {
             :disabled="!canSend"
             @click="send(false)"
           >
-            {{ order.sendState === 'sending' ? t('review.sending') : t('review.send') }}
+            {{ order.isSending ? t('review.sending') : t('review.send') }}
           </v-btn>
           <p v-if="order.hasLinesThatCannotBeOrdered" class="remove-before-sending text-body-2 mt-2">
             {{ t('review.removeBeforeSending') }}
@@ -118,5 +142,10 @@ function backToItems(): void {
         </template>
       </div>
     </DockedStrip>
+    <SendFailedTwiceDialog
+      v-if="order.sendingFailedTwice"
+      @written-down="startTheNextOrder"
+      @try-again="sendAgain"
+    />
   </v-container>
 </template>

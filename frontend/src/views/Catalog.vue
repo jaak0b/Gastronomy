@@ -34,6 +34,12 @@ const itemAwaitingStation = ref<CatalogItem | null>(null)
 const noteAwaitingStation = ref<string | null>(null)
 const linesAwaitingStation = ref<number[]>([])
 
+onMounted(() => {
+  if (order.changesAreRefused) {
+    navigate('/review')
+  }
+})
+
 onMounted(async () => {
   await openItems.loadTableNames()
   await estimates.load()
