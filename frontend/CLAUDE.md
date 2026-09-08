@@ -35,13 +35,30 @@ Three audiences in one build:
    laptop. Three states, always distinguishable: not yet sent, sent and accepted by the laptop (the
    answer carries the order number), failed with a stated reason.
 
-4. **There is no offline retry queue, and nothing may grow into one.** A failed submission leaves the
-   order on screen exactly as it was and offers a retry the server taps themselves. No timers, no
-   background resubmission, no give-up window, no queue data structure. `localStorage` holds the
-   in-progress order as a **draft cart** so a reload does not lose half-built work: a draft is one
-   order, with no list, no timer and no state field. Any implementation that gives it those has
-   rebuilt the queue under another name and must be rejected in review. The client-generated
-   submission id that makes retry safe against a lost response lives in `src/core/` with tests.
+4. **There is no offline retry queue, and nothing may grow into one.** What this exists to prevent:
+   a waiter building up a pile of orders on the phone that flush themselves when the WiFi returns.
+   An order that lives only on a phone is lost when the shift ends and the page is closed, and
+   nobody ever knows it existed. Sending is always a deliberate act by a person, so at most one
+   order is ever in play, no timer sends anything, and nothing is sent without a human pressing a
+   button.
+
+   `localStorage` holds that one order as a **draft cart** so a reload does not lose half-built
+   work, and beside it what the phone knows about sending it: whether it has been handed over, how
+   many attempts were made, and what the last answer was. That record exists so the phone can tell
+   the waiter the truth after a reload, never so it can act on its own. One attempt a human started
+   stops waiting after ten seconds and says so; the order stays on screen with a retry the waiter
+   presses themselves, which is the opposite of giving up on it.
+
+   **A reply is knowledge and silence is not.** An answer from the laptop, yes or no, tells the
+   phone what exists, and the waiter may act on it: a refusal with a reason means no order was
+   created, so they fix what it names and send again. Silence means the order may already be at the
+   laptop, so it is locked against every change until the waiter learns which it was. Never treat
+   the two the same.
+
+   Any implementation that gives the phone a list, a timer that sends, or a rule for sending
+   without a person pressing something has rebuilt the queue under another name and must be
+   rejected in review. The client-generated submission id that makes retry safe against a lost
+   response lives in `src/core/` with tests.
 
 5. **Localization through vue-i18n, German and English complete in the same change.** No string
    literals in templates or components. A key present in one locale only is an incomplete change.
