@@ -56,11 +56,15 @@ watch(openCategory, (category) => {
   }
 })
 
-function closeTheOpenCategory(): void {
-  tappedCategory.value = null
+function forgetTheStationQuestion(): void {
   itemAwaitingStation.value = null
   noteAwaitingStation.value = null
   linesAwaitingStation.value = []
+}
+
+function closeTheOpenCategory(): void {
+  tappedCategory.value = null
+  forgetTheStationQuestion()
 }
 
 function openTheCategory(category: CatalogCategory): void {
@@ -233,6 +237,7 @@ function chooseStation(stationId: string): void {
         :item="itemBehindTheStationChoice"
         :station-name-for="catalog.stationName"
         @choose="chooseStation"
+        @cancel="forgetTheStationQuestion"
       />
       <DockedStrip class="back-strip">
         <div class="py-3">

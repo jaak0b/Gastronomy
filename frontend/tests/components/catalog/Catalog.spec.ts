@@ -442,4 +442,17 @@ describe('the question about which station is to make an item', () => {
     expect(document.querySelector('.line-station-sheet')).toBeNull()
     expect(order.draft.lines).toHaveLength(0)
   })
+
+  it('adds nothing and stays in the category when the waiter cancels the question', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    await askWhereTheCoffeeIsMade(view)
+
+    document.querySelector<HTMLElement>('.cancel-station-choice')?.click()
+    await view.vm.$nextTick()
+
+    expect(document.querySelector('.line-station-sheet')).toBeNull()
+    expect(order.draft.lines).toHaveLength(0)
+    expect(view.findAll('.item-row').length).toBeGreaterThan(0)
+  })
 })

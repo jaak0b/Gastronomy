@@ -152,16 +152,22 @@ exactly the problems this section is looking for.
     second press on the categories leaves you where you are rather than taking you out of the app or
     back to the summary you already sent.
 
+33. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
+    stations on one drink so either can pour it. On the phone, tap that drink: the phone asks which
+    of the two makes it. Tap "Abbrechen". Nothing is added to the order, you stay in the category,
+    and the question does not come back when you open another category. Tap the drink again and
+    answer properly this time: the line names the bar you chose, and only that bar sees it.
+
 ## After the walk
 
 The backup button and the diagnostics page described in the specification are not built yet, so these
 last two steps use what the program window actually offers today.
 
-33. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+34. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
     whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
     well, then open both copies on another machine: the whole folder holds the evening's orders, and
     the single file may be missing the last of them. That difference is the reason the backup belongs
     behind a button, and seeing it once is what makes the point stick.
-34. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+35. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
     startup and the port are all in it, and no device token and no enrolment code appears anywhere in
     it.

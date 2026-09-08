@@ -7,7 +7,7 @@ const props = defineProps<{
   item: CatalogItem
   stationNameFor: (stationId: string) => string
 }>()
-defineEmits<{ choose: [stationId: string] }>()
+defineEmits<{ choose: [stationId: string]; cancel: [] }>()
 
 const { t } = useI18n()
 const choices = candidateStations(props.item)
@@ -28,6 +28,9 @@ const choices = candidateStations(props.item)
           @click="$emit('choose', stationId)"
         >
           {{ stationNameFor(stationId) }}
+        </v-btn>
+        <v-btn class="cancel-station-choice" variant="text" block @click="$emit('cancel')">
+          {{ t('line.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>
