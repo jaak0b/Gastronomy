@@ -24,7 +24,6 @@ function bratwurstLine(): DraftLine {
     note: null,
     stationId: null,
     name: 'Bratwurst',
-    unitPriceCents: 350,
   }
 }
 
@@ -98,7 +97,7 @@ describe('restoreDraft', () => {
     expect(restoration.outcome).toBe('unreadableDraftDiscarded')
   })
 
-  it('reads a draft written before lines carried a name and a price without crashing', () => {
+  it('reads a draft written before lines carried a name without crashing', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
       '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null}]}',
@@ -112,7 +111,24 @@ describe('restoreDraft', () => {
         note: null,
         stationId: null,
         name: '',
-        unitPriceCents: 0,
+      },
+    ])
+  })
+
+  it('reads a draft written while lines still carried a price, and leaves the price behind', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null,"name":"Bratwurst","unitPriceCents":350}]}',
+    )
+
+    const restoration = restoreDraft()
+
+    expect(restoration.draft.lines).toEqual([
+      {
+        catalogItemId: 'item-1',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
       },
     ])
   })
@@ -159,7 +175,7 @@ describe('the stored draft shape', () => {
     ])
   })
 
-  it('stores the item, the note, the station and the name and price it was added at', () => {
+  it('stores the item, the note, the station and the name it was added under', () => {
     addLine(emptyDraft(), bratwurstLine())
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as {
@@ -171,7 +187,6 @@ describe('the stored draft shape', () => {
       'name',
       'note',
       'stationId',
-      'unitPriceCents',
     ])
   })
 
@@ -181,11 +196,6 @@ describe('the stored draft shape', () => {
     expect(restoreDraft().draft.lines[0].name).toBe('Bratwurst')
   })
 
-  it('keeps the price the item carried when the line was added', () => {
-    addLine(emptyDraft(), bratwurstLine())
-
-    expect(restoreDraft().draft.lines[0].unitPriceCents).toBe(350)
-  })
 })
 
 describe('draft mutators', () => {
@@ -202,7 +212,6 @@ describe('draft mutators', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
     ])
   })
@@ -403,7 +412,7 @@ describe('the record of what became of a send', () => {
       state: 'failed',
       attempts: 2,
       settleOnSend: true,
-      failure: { key: 'review.sendFailedDatabase', paperFallbackKey: 'review.sendFailedAgain' },
+      failure: { key: 'review.sendFailedDatabase' },
     } as const
 
     saveSendProgress(stored)

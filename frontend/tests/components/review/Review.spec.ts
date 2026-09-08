@@ -32,7 +32,6 @@ function prepareOrder() {
     note: null,
     stationId: 'station-bar',
     name: WASSER.name,
-    unitPriceCents: WASSER.priceCents,
   })
   order.setTable('Tisch 3')
   return order
@@ -53,7 +52,6 @@ describe('an order holding an item the laptop no longer has', () => {
       note: null,
       stationId: null,
       name: 'Currywurst',
-      unitPriceCents: 400,
     })
     return order
   }
@@ -264,7 +262,6 @@ describe('an order holding something that cannot be ordered', () => {
       note: null,
       stationId: null,
       name: 'Currywurst',
-      unitPriceCents: 400,
     })
     return order
   }
@@ -523,5 +520,89 @@ describe('an order that is still on its way to the laptop', () => {
 
     expect(review.get('.send-again').text()).toBe('Wird gesendet')
     expect(review.find('.send').exists()).toBe(false)
+  })
+})
+
+describe('an order the laptop refused with a reason', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'UnknownItem',
+              messageKey: 'order.unknownItem',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          ),
+      ),
+    )
+  })
+
+  function orderWithAVanishedItem() {
+    const order = prepareOrder()
+    order.addItem({
+      catalogItemId: 'item-gone',
+      note: null,
+      stationId: null,
+      name: 'Currywurst',
+    })
+    return order
+  }
+
+  async function reviewAfterARefusal(order: ReturnType<typeof useOrderStore>) {
+    await order.send(false)
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('says what the laptop refused, in words the waiter can act on', async () => {
+    const review = await reviewAfterARefusal(prepareOrder())
+
+    expect(review.get('.send-failure .failure-message').text()).toBe(
+      'Tippen Sie auf "Nicht bestellbare Artikel entfernen" und senden Sie die Bestellung dann noch einmal. Ein Artikel auf dieser Bestellung steht nicht mehr auf der Karte.',
+    )
+  })
+
+  it('opens the way back to the items again, because no order was created', async () => {
+    const review = await reviewAfterARefusal(prepareOrder())
+
+    expect(review.get('.back').attributes('disabled')).toBeUndefined()
+  })
+
+  it('lets the delivery choice be changed again', async () => {
+    const review = await reviewAfterARefusal(prepareOrder())
+
+    expect(review.get('.delivery-together').attributes('disabled')).toBeUndefined()
+  })
+
+  it('lets the waiter take off the item the laptop named', async () => {
+    const review = await reviewAfterARefusal(orderWithAVanishedItem())
+
+    expect(
+      review.get('.drop-lines-that-cannot-be-ordered').attributes('disabled'),
+    ).toBeUndefined()
+  })
+
+  it('leaves the two ways of sending in the strip, because this is not a retry into the dark', async () => {
+    const review = await reviewAfterARefusal(prepareOrder())
+
+    expect(review.get('.review-footer .send-and-settle').exists()).toBe(true)
+    expect(review.find('.send-again').exists()).toBe(false)
+  })
+
+  it('never covers the screen with the paper dialog, however often the laptop refuses', async () => {
+    const order = prepareOrder()
+    await reviewAfterARefusal(order)
+
+    await order.sendAgain()
+
+    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
   })
 })

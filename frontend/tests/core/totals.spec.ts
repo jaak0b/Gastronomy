@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { collapsedTotalCents, formatPrice, orderTotalCents } from '../../src/core/totals'
 import type { BasketLineView } from '../../src/core/basket'
 
-function basketLine(unitPriceCents: number): BasketLineView {
+function basketLine(unitPriceCents: number | null): BasketLineView {
   return {
     catalogItemId: 'item-1',
     name: 'Bratwurst',
@@ -24,6 +24,20 @@ describe('collapsedTotalCents', () => {
 
   it('charges one of an item at its price', () => {
     const total = collapsedTotalCents({ line: basketLine(350), quantity: 1 })
+
+    expect(total).toBe(350)
+  })
+})
+
+describe('a line whose item has left the menu', () => {
+  it('has no price of its own to put beside it', () => {
+    const total = collapsedTotalCents({ line: basketLine(null), quantity: 2 })
+
+    expect(total).toBeNull()
+  })
+
+  it('adds nothing to the total, so the total is what the laptop would record', () => {
+    const total = orderTotalCents([basketLine(350), basketLine(null)])
 
     expect(total).toBe(350)
   })

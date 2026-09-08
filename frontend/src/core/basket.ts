@@ -5,7 +5,7 @@ import { saveDraft } from './draftCart'
 export interface BasketLineView {
   catalogItemId: string
   name: string
-  unitPriceCents: number
+  unitPriceCents: number | null
   note: string | null
   stationId: string | null
   candidateStationIds: string[]
@@ -25,7 +25,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       return {
         catalogItemId: line.catalogItemId,
         name: line.name,
-        unitPriceCents: line.unitPriceCents,
+        unitPriceCents: null,
         note: line.note,
         stationId: line.stationId,
         candidateStationIds: [],
@@ -46,21 +46,6 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       isNoLongerOnTheMenu: false,
     }
   })
-}
-
-export function refreshLineSnapshots(draft: DraftOrder, catalog: Catalog): DraftOrder {
-  const refreshed: DraftOrder = {
-    ...draft,
-    lines: draft.lines.map((line) => {
-      const item = findCatalogItem(catalog, line.catalogItemId)
-      if (item === null) {
-        return line
-      }
-      return { ...line, name: item.name, unitPriceCents: item.priceCents }
-    }),
-  }
-  saveDraft(refreshed)
-  return refreshed
 }
 
 export function lineCannotBeOrdered(line: BasketLineView): boolean {

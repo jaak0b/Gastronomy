@@ -478,7 +478,6 @@ describe('the items screen while an order is frozen on the laptop', () => {
       note: null,
       stationId: 'station-bar',
       name: 'Wasser',
-      unitPriceCents: 200,
     })
     order.setTable('Tisch 5')
     await order.send(false)
@@ -503,6 +502,46 @@ describe('the items screen while an order is frozen on the laptop', () => {
   })
 
   it('stays on the items while the order still belongs to the waiter', () => {
+    mountCatalog()
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+})
+
+describe('the items screen after the laptop refused an order', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'StationRequired',
+              messageKey: 'order.stationRequired',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          ),
+      ),
+    )
+  })
+
+  it('leaves the waiter on the items, because that is where the refusal is put right', async () => {
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: null,
+      name: 'Wasser',
+    })
+    order.setTable('Tisch 5')
+    await order.send(false)
+
     mountCatalog()
 
     expect(currentRoute.value).toEqual({ name: 'home' })

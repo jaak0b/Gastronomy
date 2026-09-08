@@ -144,7 +144,6 @@ function place(item: CatalogItem, note: string | null, stationId: string | null)
     note: note,
     stationId: stationId,
     name: item.name,
-    unitPriceCents: item.priceCents,
   })
 }
 

@@ -114,7 +114,6 @@ describe('an order in progress that could not be read back', () => {
       note: null,
       stationId: null,
       name: 'Bratwurst',
-      unitPriceCents: 350,
     })
 
     expect(order.draftWasLost).toBe(false)
@@ -194,7 +193,6 @@ describe('an order whose send failed', () => {
       note: null,
       stationId: 'station-bar',
       name: 'Wasser',
-      unitPriceCents: 200,
     })
     await order.send(false)
 
@@ -290,7 +288,6 @@ describe('an order the waiter has already pressed send on', () => {
       note: null,
       stationId: 'station-bar',
       name: 'Wasser',
-      unitPriceCents: 200,
     }
   }
 
@@ -466,7 +463,6 @@ describe('an order the page was still sending when it was loaded again', () => {
             note: null,
             stationId: 'station-bar',
             name: 'Wasser',
-            unitPriceCents: 200,
           },
         ],
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
@@ -497,7 +493,7 @@ describe('an order the page was still sending when it was loaded again', () => {
 
     const order = useOrderStore()
 
-    expect(order.failure).toEqual({ key: 'review.sendInterrupted', paperFallbackKey: null })
+    expect(order.failure).toEqual({ key: 'review.sendInterrupted' })
   })
 
   it('comes back with the identity of the attempt, so a retry cannot create a second order', () => {
@@ -601,7 +597,7 @@ describe('an order the laptop accepted', () => {
   })
 })
 
-describe('a catalog change that arrives while an order is frozen', () => {
+describe('what an order costs while the item list changes underneath it', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -624,6 +620,7 @@ describe('a catalog change that arrives while an order is frozen', () => {
           sortOrder: 1,
           isAvailable: true,
           stationIds: ['station-bar'],
+          productionMinutes: null,
         },
       ],
       stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
@@ -631,50 +628,182 @@ describe('a catalog change that arrives while an order is frozen', () => {
     return catalog
   }
 
-  it('leaves the price on the line as it was sent, so the retry carries the very same order', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new TypeError('the laptop cannot be reached')
-      }),
-    )
-    const catalog = waterOnTheMenu()
-    const order = useOrderStore()
-    order.addItem({
+  function waterLine() {
+    return {
       catalogItemId: 'item-wasser',
       note: null,
       stationId: 'station-bar',
       name: 'Wasser',
-      unitPriceCents: 200,
-    })
+    }
+  }
+
+  it('sends the price the laptop pushed out, because that is the only price there is', async () => {
+    const catalog = waterOnTheMenu()
+    answerWith(250)
+    const order = useOrderStore()
+    order.addItem(waterLine())
+
+    catalog.catalog = {
+      ...catalog.catalog,
+      items: [{ ...catalog.catalog.items[0], priceCents: 250 }],
+    }
+    await nextTick()
     await order.send(false)
 
-    catalog.catalog = {
-      ...catalog.catalog,
-      items: [{ ...catalog.catalog.items[0], priceCents: 250 }],
-    }
-    await nextTick()
-
-    expect(order.draft.lines[0].unitPriceCents).toBe(200)
+    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    expect(sent.items[0].unitPriceCents).toBe(250)
   })
 
-  it('still follows a price change while the order still belongs to the waiter', async () => {
-    const catalog = waterOnTheMenu()
+  it('leaves a line whose item left the menu out of the total the waiter reads out loud', () => {
+    waterOnTheMenu()
     const order = useOrderStore()
+    order.addItem(waterLine())
     order.addItem({
-      catalogItemId: 'item-wasser',
+      catalogItemId: 'item-gone',
       note: null,
-      stationId: 'station-bar',
-      name: 'Wasser',
-      unitPriceCents: 200,
+      stationId: null,
+      name: 'Currywurst',
     })
 
-    catalog.catalog = {
-      ...catalog.catalog,
-      items: [{ ...catalog.catalog.items[0], priceCents: 250 }],
-    }
-    await nextTick()
+    expect(order.totalCents).toBe(200)
+  })
+})
 
-    expect(order.draft.lines[0].unitPriceCents).toBe(250)
+describe('an order the laptop answered no to', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function refusedBecauseAnItemIsGone() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'UnknownItem',
+              messageKey: 'order.unknownItem',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          ),
+      ),
+    )
+  }
+
+  async function aRefusedOrder() {
+    refusedBecauseAnItemIsGone()
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-gone',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Currywurst',
+    })
+    order.setTable('Tisch 6')
+    await order.send(false)
+    return order
+  }
+
+  it('takes changes again, because the laptop said that no order was created', async () => {
+    const order = await aRefusedOrder()
+
+    expect(order.changesAreRefused).toBe(false)
+  })
+
+  it('keeps the reason the laptop gave, so the waiter can put it right', async () => {
+    const order = await aRefusedOrder()
+
+    expect(order.failure?.key).toBe('order.unknownItem')
+  })
+
+  it('keeps the order on the screen, because it was never taken', async () => {
+    const order = await aRefusedOrder()
+
+    expect(order.draft.lines).toHaveLength(1)
+  })
+
+  it('does not send the waiter to paper, however often the laptop names the same reason', async () => {
+    const order = await aRefusedOrder()
+
+    await order.sendAgain()
+
+    expect(order.sendingFailedTwice).toBe(false)
+  })
+
+  it('counts no unanswered attempt, because the laptop answered', async () => {
+    const order = await aRefusedOrder()
+
+    expect(order.attemptsMade).toBe(0)
+  })
+
+  it('sends the next attempt under the same identity, so a silent one cannot double the order', async () => {
+    const order = await aRefusedOrder()
+    const identity = order.draft.clientOrderId
+
+    order.dropLine(0)
+
+    expect(order.draft.clientOrderId).toBe(identity)
+  })
+
+  it('takes the reason off the screen as soon as the waiter changes the order', async () => {
+    const order = await aRefusedOrder()
+
+    order.dropLine(0)
+
+    expect(order.failure).toBeNull()
+  })
+
+  it('stays open for changes after a reload, because the reason survives but the order was not taken', async () => {
+    await aRefusedOrder()
+
+    setActivePinia(createPinia())
+    const afterTheReload = useOrderStore()
+
+    expect(afterTheReload.changesAreRefused).toBe(false)
+    expect(afterTheReload.failure?.key).toBe('order.unknownItem')
+  })
+})
+
+describe('an order the laptop answered without naming a reason', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function aLaptopThatCannotSave() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 500 })),
+    )
+  }
+
+  it('takes no further change, because nobody can tell whether the order was stored', async () => {
+    aLaptopThatCannotSave()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.changesAreRefused).toBe(true)
+  })
+
+  it('says paper is the way out once the second attempt has come to nothing as well', async () => {
+    aLaptopThatCannotSave()
+    const order = useOrderStore()
+    await order.send(false)
+
+    await order.sendAgain()
+
+    expect(order.sendingFailedTwice).toBe(true)
   })
 })

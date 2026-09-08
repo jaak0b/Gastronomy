@@ -10,8 +10,5 @@ const { t } = useI18n()
 <template>
   <v-alert class="send-failure my-4" type="error" variant="tonal">
     <p class="failure-message">{{ t(failure.key) }}</p>
-    <p v-if="failure.paperFallbackKey !== null" class="paper-fallback mt-2">
-      {{ t(failure.paperFallbackKey) }}
-    </p>
   </v-alert>
 </template>

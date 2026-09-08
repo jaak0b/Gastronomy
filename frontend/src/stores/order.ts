@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import type {
   DeliveryMode,
@@ -22,6 +22,7 @@ import {
 } from '../core/draftCart'
 import {
   changesAreRefusedIn,
+  paperIsTheOnlyWayLeft,
   progressAfterALoad,
   sendHasFailedIn,
   sendIsUnderWayIn,
@@ -35,13 +36,12 @@ import {
   buildBasketView,
   basketItemCount,
   lineCannotBeOrdered,
-  refreshLineSnapshots,
   withoutLinesThatCannotBeOrdered,
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
 import {
   messageForSendFailure,
-  PAPER_FALLBACK_AFTER_ATTEMPTS,
+  theLaptopNamedAReason,
   type SendFailureMessage,
 } from '../core/sendFailure'
 import { useCatalogStore } from './catalog'
@@ -86,23 +86,26 @@ export const useOrderStore = defineStore('order', () => {
   const isSending = computed(() => sendIsUnderWayIn(sendState.value))
   const sendHasFailed = computed(() => sendHasFailedIn(sendState.value))
   const changesAreRefused = computed(() => changesAreRefusedIn(sendState.value))
-  const sendingFailedTwice = computed(
-    () => sendHasFailed.value && attemptsMade.value >= PAPER_FALLBACK_AFTER_ATTEMPTS,
+  const sendingFailedTwice = computed(() =>
+    paperIsTheOnlyWayLeft(sendState.value, attemptsMade.value),
   )
+
+  function theRefusalNoLongerFitsTheOrder(): void {
+    if (failure.value === null) {
+      return
+    }
+    failure.value = null
+    sendState.value = 'idle'
+    rememberWhatBecameOfTheSend()
+  }
 
   function change(makeTheChange: (current: DraftOrder) => DraftOrder): void {
     if (changesAreRefused.value) {
       return
     }
     draft.value = makeTheChange(draft.value)
+    theRefusalNoLongerFitsTheOrder()
   }
-
-  watch(
-    () => catalogStore.catalog,
-    (pushed) => {
-      change((current) => refreshLineSnapshots(current, pushed))
-    },
-  )
 
   const basketLines = computed(() => buildBasketView(draft.value, catalogStore.catalog))
   const slices = computed(() => orderSlices(basketLines.value))
@@ -122,6 +125,7 @@ export const useOrderStore = defineStore('order', () => {
     }
     dismissDraftLoss()
     draft.value = addLine(draft.value, line)
+    theRefusalNoLongerFitsTheOrder()
   }
 
   function dropLine(index: number): void {
@@ -191,6 +195,7 @@ export const useOrderStore = defineStore('order', () => {
 
   async function send(settleOnSend: boolean): Promise<void> {
     const session = useSessionStore()
+    const attemptsBeforeThisOne = attemptsMade.value
     settledOnSend.value = settleOnSend
     attemptsMade.value += 1
     failure.value = null
@@ -200,6 +205,7 @@ export const useOrderStore = defineStore('order', () => {
       method: 'POST',
       body: buildSubmitRequest(
         draft.value,
+        catalogStore.catalog,
         settleOnSend,
         deliveryModesOf(slices.value, draft.value.deliveryModes),
       ),
@@ -216,9 +222,18 @@ export const useOrderStore = defineStore('order', () => {
         startNextOrder()
         return
       case 'unreachable':
-      case 'error':
-        failure.value = messageForSendFailure(result, attemptsMade.value)
+        failure.value = messageForSendFailure(result)
         sendState.value = 'failed'
+        rememberWhatBecameOfTheSend()
+        return
+      case 'error':
+        failure.value = messageForSendFailure(result)
+        if (theLaptopNamedAReason(result.body)) {
+          attemptsMade.value = attemptsBeforeThisOne
+          sendState.value = 'rejected'
+        } else {
+          sendState.value = 'failed'
+        }
         rememberWhatBecameOfTheSend()
         return
       default:

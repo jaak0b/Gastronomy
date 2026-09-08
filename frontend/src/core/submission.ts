@@ -1,4 +1,11 @@
-import type { DraftOrder, OrderSubmitRequest, StationDeliveryMode } from './apiTypes'
+import type {
+  Catalog,
+  DraftLine,
+  DraftOrder,
+  OrderSubmitRequest,
+  StationDeliveryMode,
+} from './apiTypes'
+import { findCatalogItem } from './basket'
 import { saveDraft } from './draftCart'
 
 const VERSION_FOUR_MASK = 0x0f
@@ -30,8 +37,13 @@ export function ensureClientOrderId(draft: DraftOrder): DraftOrder {
   return identified
 }
 
+function priceOnTheMenu(catalog: Catalog, line: DraftLine): number {
+  return findCatalogItem(catalog, line.catalogItemId)?.priceCents ?? 0
+}
+
 export function buildSubmitRequest(
   draft: DraftOrder,
+  catalog: Catalog,
   settleOnSend: boolean,
   deliveryModes: readonly StationDeliveryMode[],
 ): OrderSubmitRequest {
@@ -46,7 +58,7 @@ export function buildSubmitRequest(
     settleOnSend,
     items: draft.lines.map((line) => ({
       catalogItemId: line.catalogItemId,
-      unitPriceCents: line.unitPriceCents,
+      unitPriceCents: priceOnTheMenu(catalog, line),
       note: line.note,
       stationId: line.stationId,
     })),

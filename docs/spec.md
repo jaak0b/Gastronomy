@@ -690,12 +690,20 @@ being killed and a phone rebooting, which is why the device token lives there to
 puts the order back on the screen exactly as it was, and a draft that cannot be read is reported
 rather than silently discarded.
 
-**Each line carries the name and the price of the item as it stood when the line was added.** While
-the item is still on the menu, a catalog change refreshes both, so an open basket tracks a changed
-name or price. If the item has since gone, the line renders greyed from its last snapshot and says
-so, but it is not dropped: it still counts toward the total, and the summary screen offers one button
-that removes every line the guest can no longer be given, whether the item sold out or left the menu. **The app never removes such a line by itself**, because the guest
-ordered something and the waiter needs to see what falls away in order to offer them something else.
+**A line holds only what the waiter decided: the item, the note, and the station it goes to.** The
+name and the price come from the item list the laptop pushes out, and that list is the only place
+either one is ever read, on the screen and in the order that travels back to the laptop alike.
+Prices are printed on the paper the waiters carry and do not move during an evening, so a second
+copy of a price on the line would only be a second version of a number that already exists.
+
+The one thing a line keeps of its own is the name the item had when it was added, and it is read in
+exactly one situation: the item has left the menu, so nothing else can name it any more. Such a line
+renders greyed and says so, and it shows no price, because there is no longer a price to show. It
+adds nothing to the total, and it is sent as costing nothing, so the total the waiter reads out and
+the total the laptop would record are the same figure. The line is not dropped: the summary offers
+one button that removes every line the guest can no longer be given, whether the item sold out or
+left the menu. **The app never removes such a line by itself**, because the guest ordered something
+and the waiter needs to see what falls away in order to offer them something else.
 
 **This is a draft cart and not a queue, and the distinction is load-bearing.** A draft cart holds one
 order, the one on the screen, and nothing ever sends it except a person tapping the send button. It
@@ -754,16 +762,37 @@ it. The retry carries the same id, so exactly one order exists either way.
 laptop could not save it just now rather than saying it could not be reached. A message that states
 the wrong cause sends somebody off to check the WiFi.
 
+**The laptop answered, and the answer was no.** A refusal names its reason: an item the laptop has
+never heard of, a line with no station on it, an item with no station set up at all, or a station
+that does not make that item. Nothing was stored, and the answer says so, which leaves the
+waiter nothing to wonder about. The order does not freeze. The reason stands on the summary in their
+own language, every control comes back, the items screen lets them in again, and they put right what
+the reason names and send once more. That attempt carries the same submission id, because an order
+which was never stored gives the laptop nothing to recognise later, and keeping the id is what makes
+the attempt safe if it is the one that goes unanswered. The reason leaves the screen as soon as the
+waiter changes anything, since it described the order as it stood.
+
+**A refusal never counts toward the two failed attempts** that bring up the dialog below. That
+dialog is for the failure nobody can resolve, and a refusal is the one failure a waiter resolves in
+a tap. Sending them off to write on paper because of a line they could have taken off the order
+would be the wrong answer to a question that already has a right one.
+
+An answer that names no reason is not a refusal. A laptop that could not save the order, or that
+answered with something the phone cannot read, leaves open exactly the question silence leaves, and
+the order freezes as it does here.
+
 **The waiter presses send, and the order freezes.** From that press until the phone knows what became
 of it, the order takes no change of any kind, on any screen: no item added or removed, no note, no
-table name, no delivery mode, not the button that clears the lines which cannot be ordered, and not
-a name or a price the laptop pushes out in the meantime. The summary shows the freeze by greying
-those controls out. A whole screen cannot be greyed out, so a waiter who reaches the items through
-the header link or the back gesture is put straight back on the summary, which is where the failure
-and both ways out are. The freeze is written to the browser's storage with the order, so a reload
-does not lift it, and it ends in exactly two ways: the laptop accepts the order, or the waiter says
-on the dialog below that the order is written down on paper. Both of those clear the order and start
-an empty one.
+table name, no delivery mode, and not the button that clears the lines which cannot be ordered. The
+summary shows the freeze by greying those controls out. A whole screen cannot be greyed out, so a
+waiter who reaches the items through the header link or the back gesture is put straight back on the
+summary, which is where the failure and both ways out are. What the laptop pushes out in the
+meantime still arrives and is still shown, because the item list is not the waiter's order and the
+order is what freezes. The freeze is written to the browser's storage with the order, so a
+reload does not lift it, and it ends in exactly three ways: the laptop accepts the order, the laptop
+refuses it and says why, or the waiter says on the dialog below that the order is written down on
+paper. Acceptance and the dialog both clear the order and start an empty one, and a refusal leaves
+it standing to be put right.
 
 The lines and the total stay readable throughout, because the waiter may have to copy them onto
 paper. The reason for the freeze is the submission id from section 6.3. A retry carries the id the
@@ -818,10 +847,10 @@ an administrative problem.
 attached to it, because the code the admin issued names them. The orders they already placed are
 unaffected.
 
-**An item sold out, or a price changed, while the basket was open.** The line stays and is flagged
-and the phone shows the new price. A changed price sends as it is. A sold-out line holds the send
-back until the waiter takes it off with the one button that clears such lines, and the laptop would
-still have accepted it (section 3.3).
+**An item sold out, or a price changed, while the basket was open.** The line stays, it is flagged,
+and the phone shows the price the laptop now names, which is also the price that travels back with
+the order. A sold-out line holds the send back until the waiter takes it off with the one button
+that clears such lines, and the laptop would still have accepted it (section 3.3).
 
 **Two phones send the same order.** Not prevented, and not preventable: two waiters can genuinely
 take the same table. The station sees two orders with two different numbers, which is the same
@@ -834,7 +863,8 @@ cannot see.
 The way on and the way back sit in a strip along the bottom of the screen that stays put while the
 list above it scrolls. On the categories that strip carries the running total and the way to the
 summary, inside a category it carries the one button back to the categories, and on the summary it
-carries the total and both ways of sending, or the retry once a send has failed. A waiter never scrolls to find the way out or the way on.
+carries the total and both ways of sending, or the retry once a send has failed. A waiter never
+scrolls to find the way out or the way on.
 
 **A strip like that ignores a tap that arrives on the heels of a scroll**, meaning within a few
 tenths of a second of the list coming to rest, and it ignores any tap whose finger moved before it

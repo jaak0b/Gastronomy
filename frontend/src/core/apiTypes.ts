@@ -43,7 +43,6 @@ export interface DraftLine {
   note: string | null
   stationId: string | null
   name: string
-  unitPriceCents: number
 }
 
 export interface DraftOrder {

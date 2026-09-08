@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   changesAreRefusedIn,
   noSendProgress,
+  paperIsTheOnlyWayLeft,
   progressAfterALoad,
   sendHasFailedIn,
   sendIsUnderWayIn,
@@ -23,6 +24,42 @@ describe('what a send state still allows the waiter to change', () => {
 
   it('takes changes again once the laptop has accepted, because the order on screen is the next one', () => {
     expect(changesAreRefusedIn('accepted')).toBe(false)
+  })
+
+  it('takes every change again after the laptop refused the order, because no order was created', () => {
+    expect(changesAreRefusedIn('rejected')).toBe(false)
+  })
+})
+
+describe('what the phone may still offer after an unsuccessful send', () => {
+  it('keeps the reason on the screen after the laptop refused the order', () => {
+    expect(sendHasFailedIn('rejected')).toBe(true)
+  })
+
+  it('calls a refusal neither a send under way nor an accepted order', () => {
+    expect(sendIsUnderWayIn('rejected')).toBe(false)
+    expect(sendWasAcceptedIn('rejected')).toBe(false)
+  })
+
+  it('leaves the waiter with the retry alone after one attempt the laptop never answered', () => {
+    expect(paperIsTheOnlyWayLeft('failed', 1)).toBe(false)
+  })
+
+  it('offers paper once two attempts have gone unanswered', () => {
+    expect(paperIsTheOnlyWayLeft('failed', 2)).toBe(true)
+  })
+
+  it('offers no paper after a refusal, because the waiter can fix what the laptop named', () => {
+    expect(paperIsTheOnlyWayLeft('rejected', 5)).toBe(false)
+  })
+
+  it('offers no paper while nothing has been sent and while an order is on its way', () => {
+    expect(paperIsTheOnlyWayLeft('idle', 5)).toBe(false)
+    expect(paperIsTheOnlyWayLeft('sending', 5)).toBe(false)
+  })
+
+  it('offers no paper for an order the laptop took', () => {
+    expect(paperIsTheOnlyWayLeft('accepted', 5)).toBe(false)
   })
 })
 
@@ -69,7 +106,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
       failure: null,
     })
 
-    expect(loaded.failure).toEqual({ key: 'review.sendInterrupted', paperFallbackKey: null })
+    expect(loaded.failure).toEqual({ key: 'review.sendInterrupted' })
   })
 
   it('counts the cut off attempt, so a second failure is the second one and not the first', () => {
@@ -81,7 +118,6 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     })
 
     expect(loaded.attempts).toBe(2)
-    expect(loaded.failure?.paperFallbackKey).toBe('review.sendFailedAgain')
   })
 
   it('keeps the choice the waiter made about paying, so a retry cannot swap it', () => {
@@ -100,10 +136,21 @@ describe('the send progress a freshly loaded page can honestly report', () => {
       state: 'failed',
       attempts: 1,
       settleOnSend: false,
-      failure: { key: 'review.sendFailedDatabase', paperFallbackKey: null },
+      failure: { key: 'review.sendFailedDatabase' },
     } as const
 
     expect(progressAfterALoad(failed)).toEqual(failed)
+  })
+
+  it('leaves a refusal standing, so the reason the laptop gave is still on the screen', () => {
+    const refused = {
+      state: 'rejected',
+      attempts: 0,
+      settleOnSend: false,
+      failure: { key: 'order.unknownItem' },
+    } as const
+
+    expect(progressAfterALoad(refused)).toEqual(refused)
   })
 
   it('leaves an order nobody has sent yet alone', () => {

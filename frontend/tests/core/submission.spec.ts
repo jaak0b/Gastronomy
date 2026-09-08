@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildSubmitRequest, ensureClientOrderId } from '../../src/core/submission'
+import type { Catalog } from '../../src/core/apiTypes'
 import {
   addLine,
   clearDraft,
@@ -87,17 +88,41 @@ describe('buildSubmitRequest', () => {
     localStorage.clear()
   })
 
-  it('sends the table, the note and every item with the price the phone showed', () => {
+  function catalog(priceCents = 350): Catalog {
+    return {
+      categories: [
+        { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+      ],
+      items: [
+        {
+          id: 'item-1',
+          name: 'Bratwurst',
+          categoryId: 'category-essen',
+          priceCents,
+          sortOrder: 1,
+          isAvailable: true,
+          stationIds: ['station-2'],
+          productionMinutes: null,
+        },
+      ],
+      stations: [{ id: 'station-2', name: 'Kueche', sortOrder: 1 }],
+    }
+  }
+
+  function draftWithABratwurst(note: string | null = null, stationId: string | null = 'station-2') {
     const withLine = addLine(emptyDraft(), {
       catalogItemId: 'item-1',
-      note: 'ohne Zwiebeln',
-      stationId: 'station-2',
+      note,
+      stationId,
       name: 'Bratwurst',
-      unitPriceCents: 350,
     })
-    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+    return ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+  }
 
-    const request = buildSubmitRequest(ready, false, [
+  it('sends the table, the note and every item with the price the phone showed', () => {
+    const ready = draftWithABratwurst('ohne Zwiebeln')
+
+    const request = buildSubmitRequest(ready, catalog(), false, [
       { stationId: 'station-2', deliveryMode: 'together' },
     ])
 
@@ -118,17 +143,18 @@ describe('buildSubmitRequest', () => {
     })
   })
 
-  it('sends the delivery choice the server made for each station', () => {
-    const withLine = addLine(emptyDraft(), {
-      catalogItemId: 'item-1',
-      note: null,
-      stationId: 'station-2',
-      name: 'Bratwurst',
-      unitPriceCents: 350,
-    })
-    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+  it('takes the price from the item list the laptop pushed out, not from the line', () => {
+    const ready = draftWithABratwurst()
 
-    const request = buildSubmitRequest(ready, false, [
+    const request = buildSubmitRequest(ready, catalog(420), false, [])
+
+    expect(request.items[0].unitPriceCents).toBe(420)
+  })
+
+  it('sends the delivery choice the server made for each station', () => {
+    const ready = draftWithABratwurst()
+
+    const request = buildSubmitRequest(ready, catalog(), false, [
       { stationId: 'station-2', deliveryMode: 'asItComes' },
     ])
 
@@ -138,16 +164,9 @@ describe('buildSubmitRequest', () => {
   })
 
   it('sends no item name, because the laptop keeps the name from its own catalog', () => {
-    const withLine = addLine(emptyDraft(), {
-      catalogItemId: 'item-1',
-      note: null,
-      stationId: null,
-      name: 'Bratwurst',
-      unitPriceCents: 350,
-    })
-    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+    const ready = draftWithABratwurst(null, null)
 
-    const request = buildSubmitRequest(ready, false, [])
+    const request = buildSubmitRequest(ready, catalog(), false, [])
 
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
@@ -158,21 +177,14 @@ describe('buildSubmitRequest', () => {
   })
 
   it('tells the laptop that the guest paid on the spot', () => {
-    const withLine = addLine(emptyDraft(), {
-      catalogItemId: 'item-1',
-      note: null,
-      stationId: null,
-      name: 'Bratwurst',
-      unitPriceCents: 350,
-    })
-    const ready = ensureClientOrderId(setTableName(withLine, 'Tisch 12'))
+    const ready = draftWithABratwurst(null, null)
 
-    const request = buildSubmitRequest(ready, true, [])
+    const request = buildSubmitRequest(ready, catalog(), true, [])
 
     expect(request.settleOnSend).toBe(true)
   })
 
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft(), false, [])).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft(), catalog(), false, [])).toThrow()
   })
 })

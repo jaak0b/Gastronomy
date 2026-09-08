@@ -3,7 +3,6 @@ import {
   basketItemCount,
   buildBasketView,
   lineCannotBeOrdered,
-  refreshLineSnapshots,
   withoutLinesThatCannotBeOrdered,
 } from '../../src/core/basket'
 import { orderTotalCents } from '../../src/core/totals'
@@ -55,7 +54,6 @@ describe('buildBasketView', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
     ])
 
@@ -75,22 +73,6 @@ describe('buildBasketView', () => {
     ])
   })
 
-  it('shows the price the laptop carries now rather than the one the line was added at', () => {
-    const draft = draftWith([
-      {
-        catalogItemId: 'item-bratwurst',
-        note: null,
-        stationId: null,
-        name: 'Bratwurst',
-        unitPriceCents: 300,
-      },
-    ])
-
-    const view = buildBasketView(draft, catalog())
-
-    expect(view[0].unitPriceCents).toBe(350)
-  })
-
   it('flags a line whose item sold out while the basket was open', () => {
     const draft = draftWith([
       {
@@ -98,7 +80,6 @@ describe('buildBasketView', () => {
         note: null,
         stationId: null,
         name: 'Bier',
-        unitPriceCents: 420,
       },
     ])
 
@@ -116,7 +97,6 @@ describe('a line whose item was taken off the menu while the basket was open', (
         note: 'ohne Zwiebeln',
         stationId: null,
         name: 'Currywurst',
-        unitPriceCents: 400,
       },
     ])
   }
@@ -133,10 +113,10 @@ describe('a line whose item was taken off the menu while the basket was open', (
     expect(view[0].name).toBe('Currywurst')
   })
 
-  it('keeps the price it was added at', () => {
+  it('carries no price, because the laptop no longer names one for it', () => {
     const view = buildBasketView(draftWithVanishedItem(), catalog())
 
-    expect(view[0].unitPriceCents).toBe(400)
+    expect(view[0].unitPriceCents).toBeNull()
   })
 
   it('is marked as no longer on the menu', () => {
@@ -151,10 +131,10 @@ describe('a line whose item was taken off the menu while the basket was open', (
     expect(view[0].candidateStationIds).toEqual([])
   })
 
-  it('still counts towards the total the server reads out loud', () => {
+  it('counts nothing towards the total, so the total matches what the laptop would record', () => {
     const view = buildBasketView(draftWithVanishedItem(), catalog())
 
-    expect(orderTotalCents(view)).toBe(400)
+    expect(orderTotalCents(view)).toBe(0)
   })
 
   it('carries no name at all when the draft predates the stored name', () => {
@@ -164,7 +144,6 @@ describe('a line whose item was taken off the menu while the basket was open', (
         note: null,
         stationId: null,
         name: '',
-        unitPriceCents: 0,
       },
     ])
 
@@ -172,66 +151,6 @@ describe('a line whose item was taken off the menu while the basket was open', (
 
     expect(view[0].name).toBe('')
     expect(view[0].isNoLongerOnTheMenu).toBe(true)
-  })
-})
-
-describe('refreshLineSnapshots', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('follows a rename the laptop pushed while the item is still on the menu', () => {
-    const draft = draftWith([
-      {
-        catalogItemId: 'item-bratwurst',
-        note: null,
-        stationId: null,
-        name: 'Bratwurst alt',
-        unitPriceCents: 350,
-      },
-    ])
-
-    const refreshed = refreshLineSnapshots(draft, catalog())
-
-    expect(refreshed.lines[0].name).toBe('Bratwurst')
-  })
-
-  it('follows a price change the laptop pushed while the item is still on the menu', () => {
-    const draft = draftWith([
-      {
-        catalogItemId: 'item-bratwurst',
-        note: null,
-        stationId: null,
-        name: 'Bratwurst',
-        unitPriceCents: 300,
-      },
-    ])
-
-    const refreshed = refreshLineSnapshots(draft, catalog())
-
-    expect(refreshed.lines[0].unitPriceCents).toBe(350)
-  })
-
-  it('leaves the snapshot of a vanished item exactly as it was', () => {
-    const draft = draftWith([
-      {
-        catalogItemId: 'item-gone',
-        note: null,
-        stationId: null,
-        name: 'Currywurst',
-        unitPriceCents: 400,
-      },
-    ])
-
-    const refreshed = refreshLineSnapshots(draft, catalog())
-
-    expect(refreshed.lines[0]).toEqual({
-      catalogItemId: 'item-gone',
-      note: null,
-      stationId: null,
-      name: 'Currywurst',
-      unitPriceCents: 400,
-    })
   })
 })
 
@@ -247,14 +166,12 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
       {
         catalogItemId: 'item-gone',
         note: 'ohne Zwiebeln',
         stationId: null,
         name: 'Currywurst',
-        unitPriceCents: 400,
       },
     ])
   }
@@ -272,14 +189,12 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
       {
         catalogItemId: 'item-bier',
         note: null,
         stationId: null,
         name: 'Bier',
-        unitPriceCents: 420,
       },
     ])
 
@@ -308,7 +223,6 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
     ])
   })
@@ -320,7 +234,6 @@ describe('withoutLinesThatCannotBeOrdered', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
     ])
 
@@ -331,23 +244,23 @@ describe('withoutLinesThatCannotBeOrdered', () => {
 })
 
 describe('lineCannotBeOrdered', () => {
-  function shownLineOf(catalogItemId: string, name: string, unitPriceCents: number) {
+  function shownLineOf(catalogItemId: string, name: string) {
     return buildBasketView(
-      draftWith([{ catalogItemId, note: null, stationId: null, name, unitPriceCents }]),
+      draftWith([{ catalogItemId, note: null, stationId: null, name }]),
       catalog(),
     )[0]
   }
 
   it('lets a line through while its item is on the menu and in stock', () => {
-    expect(lineCannotBeOrdered(shownLineOf('item-bratwurst', 'Bratwurst', 350))).toBe(false)
+    expect(lineCannotBeOrdered(shownLineOf('item-bratwurst', 'Bratwurst'))).toBe(false)
   })
 
   it('holds a line back once its item has sold out', () => {
-    expect(lineCannotBeOrdered(shownLineOf('item-bier', 'Bier', 420))).toBe(true)
+    expect(lineCannotBeOrdered(shownLineOf('item-bier', 'Bier'))).toBe(true)
   })
 
   it('holds a line back once the laptop no longer has its item at all', () => {
-    expect(lineCannotBeOrdered(shownLineOf('item-gone', 'Currywurst', 400))).toBe(true)
+    expect(lineCannotBeOrdered(shownLineOf('item-gone', 'Currywurst'))).toBe(true)
   })
 })
 
@@ -359,21 +272,18 @@ describe('basketItemCount', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
       {
         catalogItemId: 'item-bratwurst',
         note: null,
         stationId: null,
         name: 'Bratwurst',
-        unitPriceCents: 350,
       },
       {
         catalogItemId: 'item-bier',
         note: null,
         stationId: null,
         name: 'Bier',
-        unitPriceCents: 420,
       },
     ])
 
@@ -389,7 +299,6 @@ describe('basketItemCount', () => {
         note: null,
         stationId: null,
         name: 'Currywurst',
-        unitPriceCents: 400,
       },
     ])
 

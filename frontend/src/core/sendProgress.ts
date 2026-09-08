@@ -1,9 +1,11 @@
 import { assertNever } from './assertNever'
 import { messageForAnInterruptedSend, type SendFailureMessage } from './sendFailure'
 
-export const SEND_STATES = ['idle', 'sending', 'failed', 'accepted'] as const
+export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted'] as const
 
 export type SendState = (typeof SEND_STATES)[number]
+
+const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 
 export interface SendProgress {
   state: SendState
@@ -20,6 +22,7 @@ export function sendIsUnderWayIn(state: SendState): boolean {
   switch (state) {
     case 'idle':
     case 'failed':
+    case 'rejected':
     case 'accepted':
       return false
     case 'sending':
@@ -36,6 +39,7 @@ export function sendHasFailedIn(state: SendState): boolean {
     case 'accepted':
       return false
     case 'failed':
+    case 'rejected':
       return true
     default:
       return assertNever(state)
@@ -47,6 +51,7 @@ export function sendWasAcceptedIn(state: SendState): boolean {
     case 'idle':
     case 'sending':
     case 'failed':
+    case 'rejected':
       return false
     case 'accepted':
       return true
@@ -58,6 +63,7 @@ export function sendWasAcceptedIn(state: SendState): boolean {
 export function changesAreRefusedIn(state: SendState): boolean {
   switch (state) {
     case 'idle':
+    case 'rejected':
     case 'accepted':
       return false
     case 'sending':
@@ -68,10 +74,29 @@ export function changesAreRefusedIn(state: SendState): boolean {
   }
 }
 
+function theLaptopStayedSilentIn(state: SendState): boolean {
+  switch (state) {
+    case 'idle':
+    case 'sending':
+    case 'rejected':
+    case 'accepted':
+      return false
+    case 'failed':
+      return true
+    default:
+      return assertNever(state)
+  }
+}
+
+export function paperIsTheOnlyWayLeft(state: SendState, attempts: number): boolean {
+  return theLaptopStayedSilentIn(state) && attempts >= PAPER_FALLBACK_AFTER_ATTEMPTS
+}
+
 export function progressAfterALoad(stored: SendProgress): SendProgress {
   switch (stored.state) {
     case 'idle':
     case 'failed':
+    case 'rejected':
       return stored
     case 'accepted':
       return noSendProgress()
@@ -79,7 +104,7 @@ export function progressAfterALoad(stored: SendProgress): SendProgress {
       return {
         ...stored,
         state: 'failed',
-        failure: messageForAnInterruptedSend(stored.attempts),
+        failure: messageForAnInterruptedSend(),
       }
     default:
       return assertNever(stored.state)

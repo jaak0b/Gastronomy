@@ -76,8 +76,9 @@ function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
   return countedName(entry.quantity, nameOf(entry.line), t)
 }
 
-function priceOf(entry: CollapsedLine<BasketLineView>): string {
-  return formatPrice(collapsedTotalCents(entry), props.language)
+function priceOf(entry: CollapsedLine<BasketLineView>): string | null {
+  const cents = collapsedTotalCents(entry)
+  return cents === null ? null : formatPrice(cents, props.language)
 }
 
 function readyTextFor(minutes: number | null): string | null {
@@ -133,7 +134,9 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       >
         <div class="d-flex align-start">
           <span class="line-name text-body-1 flex-grow-1">{{ countedNameOf(entry) }}</span>
-          <span class="price text-body-1">{{ priceOf(entry) }}</span>
+          <span v-if="priceOf(entry) !== null" class="price text-body-1">
+            {{ priceOf(entry) }}
+          </span>
         </div>
         <div v-if="entry.line.note !== null" class="line-note text-body-2 text-medium-emphasis ps-4">
           {{ entry.line.note }}

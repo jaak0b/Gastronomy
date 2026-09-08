@@ -100,7 +100,6 @@
     "sendFailedTwiceCheckTheTablet": "Look at the tablet at the station. If the order is already there, throw the slip away. If it is not there, hand the slip over.",
     "sendFailedTwiceWrittenDown": "The order is written down",
     "sendFailedTwiceTryAgain": "Try again",
-    "sendFailedAgain": "Write the order down on paper and carry it to the station. Sending has failed several times now.",
     "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
   "order": {

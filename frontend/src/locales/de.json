@@ -100,7 +100,6 @@
     "sendFailedTwiceCheckTheTablet": "Schauen Sie an der Ausgabestelle auf das Tablet. Steht die Bestellung dort schon, werfen Sie den Zettel weg. Steht sie nicht dort, geben Sie den Zettel ab.",
     "sendFailedTwiceWrittenDown": "Bestellung ist aufgeschrieben",
     "sendFailedTwiceTryAgain": "Noch einmal versuchen",
-    "sendFailedAgain": "Schreiben Sie die Bestellung auf Papier und bringen Sie sie zur Ausgabestelle. Das Senden hat mehrmals nicht geklappt.",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
   "order": {

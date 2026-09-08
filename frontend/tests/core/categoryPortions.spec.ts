@@ -25,7 +25,7 @@ const ITEMS: CatalogItem[] = [
 ]
 
 function line(catalogItemId: string, note: string | null = null): DraftLine {
-  return { catalogItemId, note, stationId: 'station-1', name: '', unitPriceCents: 400 }
+  return { catalogItemId, note, stationId: 'station-1', name: '' }
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {

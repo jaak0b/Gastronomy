@@ -39,7 +39,6 @@ function toDraftLine(value: unknown): DraftLine | null {
     stationId:
       typeof candidate.stationId === 'string' ? candidate.stationId : null,
     name: typeof candidate.name === 'string' ? candidate.name : '',
-    unitPriceCents: typeof candidate.unitPriceCents === 'number' ? candidate.unitPriceCents : 0,
   }
 }
 
@@ -105,7 +104,6 @@ export function saveDraft(draft: DraftOrder): void {
         note: line.note,
         stationId: line.stationId,
         name: line.name,
-        unitPriceCents: line.unitPriceCents,
       })),
       clientOrderId: draft.clientOrderId,
       deliveryModes: { ...draft.deliveryModes },
@@ -126,11 +124,7 @@ function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   if (typeof candidate.key !== 'string') {
     return null
   }
-  return {
-    key: candidate.key,
-    paperFallbackKey:
-      typeof candidate.paperFallbackKey === 'string' ? candidate.paperFallbackKey : null,
-  }
+  return { key: candidate.key }
 }
 
 function toSendProgress(value: unknown): SendProgress | null {
@@ -169,10 +163,7 @@ export function saveSendProgress(progress: SendProgress): void {
       state: progress.state,
       attempts: progress.attempts,
       settleOnSend: progress.settleOnSend,
-      failure:
-        progress.failure === null
-          ? null
-          : { key: progress.failure.key, paperFallbackKey: progress.failure.paperFallbackKey },
+      failure: progress.failure === null ? null : { key: progress.failure.key },
     }),
   )
 }

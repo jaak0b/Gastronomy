@@ -7,10 +7,15 @@ export type SendFailure =
 
 export interface SendFailureMessage {
   key: string
-  paperFallbackKey: string | null
 }
 
-export const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
+function statedReason(body: ApiErrorBody | null): string {
+  return body?.messageKey ?? ''
+}
+
+export function theLaptopNamedAReason(body: ApiErrorBody | null): boolean {
+  return statedReason(body).length > 0
+}
 
 function keyForStatus(status: number): string {
   switch (status) {
@@ -25,32 +30,19 @@ function keyForStatus(status: number): string {
 }
 
 function keyForRejection(status: number, body: ApiErrorBody | null): string {
-  const statedReason = body?.messageKey ?? ''
-
-  return statedReason.length > 0 ? statedReason : keyForStatus(status)
+  return theLaptopNamedAReason(body) ? statedReason(body) : keyForStatus(status)
 }
 
-function paperFallbackKeyAfter(failedAttempts: number): string | null {
-  return failedAttempts >= PAPER_FALLBACK_AFTER_ATTEMPTS ? 'review.sendFailedAgain' : null
+export function messageForAnInterruptedSend(): SendFailureMessage {
+  return { key: 'review.sendInterrupted' }
 }
 
-export function messageForAnInterruptedSend(failedAttempts: number): SendFailureMessage {
-  return {
-    key: 'review.sendInterrupted',
-    paperFallbackKey: paperFallbackKeyAfter(failedAttempts),
-  }
-}
-
-export function messageForSendFailure(
-  failure: SendFailure,
-  failedAttempts: number,
-): SendFailureMessage {
-  const paperFallbackKey = paperFallbackKeyAfter(failedAttempts)
+export function messageForSendFailure(failure: SendFailure): SendFailureMessage {
   switch (failure.kind) {
     case 'unreachable':
-      return { key: 'review.sendFailed', paperFallbackKey }
+      return { key: 'review.sendFailed' }
     case 'error':
-      return { key: keyForRejection(failure.status, failure.body), paperFallbackKey }
+      return { key: keyForRejection(failure.status, failure.body) }
     default:
       return assertNever(failure)
   }

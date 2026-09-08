@@ -16,7 +16,7 @@ function item(stationIds: string[]): CatalogItem {
 }
 
 function line(catalogItemId: string, note: string | null, stationId: string | null): DraftLine {
-  return { catalogItemId, note, stationId, name: 'Bier', unitPriceCents: 400 }
+  return { catalogItemId, note, stationId, name: 'Bier' }
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {

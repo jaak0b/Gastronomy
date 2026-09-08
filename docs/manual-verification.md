@@ -135,11 +135,14 @@ exactly the problems this section is looking for.
     go to the laptop and mark one of those items sold out, switch a second one off, and switch off
     the whole category a third one came from. Leave the phone standing inside that category while you
     do it: without a reload it goes back to the list of categories on its own, and everything already
-    on the order stays on it. Then look at the phone without reloading it, and at the summary. Those
-    lines are marked there, they still count toward the total, and both send buttons are now dead,
-    with a line under them telling you to take the items off first. Tap "Nicht bestellbare Artikel
-    entfernen": the marked lines go, the total drops to what is left, and sending works again. Write
-    down what you saw, because a festival is the wrong place to find this out.
+    on the order stays on it. Then look at the phone without reloading it, and at the summary. All
+    three lines are marked there. The sold-out one still shows its price and still counts toward the
+    total, because the laptop still names a price for it. The two whose items have left the menu show
+    no price at all and add nothing to the total, so the figure you would read out is the figure the
+    laptop would record. Both send buttons are now dead, with a line under them telling you to take
+    the items off first. Tap "Nicht bestellbare Artikel entfernen": the marked lines go, the total
+    drops to what is left, and sending works again. Write down what you saw, because a festival is
+    the wrong place to find this out.
 
 32. **A tap that arrives while the list is still moving.** Inside a category with more items than fit
     on the screen, flick the list hard and put your finger straight back down on the button at the
@@ -188,6 +191,21 @@ exactly the problems this section is looking for.
     failures once more, leave the WiFi off, and tap "Bestellung ist aufgeschrieben": the order is
     cleared, a fresh one is started, and the tablet at the station is what tells you whether your
     slip is needed.
+
+    Now the other kind of failure, the one where the laptop answers and the answer is no. On the
+    laptop, tick both bars on one drink. On the phone, with the WiFi on, take a fresh order with that
+    drink and choose "Theke innen" when the phone asks which bar makes it. Before you send, go back
+    to the laptop and take "Theke innen" off that drink so that only "Theke aussen" is left. Now tap
+    "Bestellung senden". The laptop answers, and its answer is no: a red panel says that this item is
+    not made at the station you chose and asks you to choose another one.
+
+    Nothing is frozen this time, and that is what the step is for. The way back to the items is
+    alive, so are the delivery choices, and "Bestellung aufnehmen" in the header opens the items
+    instead of putting you back on the summary. Take the drink off the order there and add it again:
+    it goes to "Theke aussen" without asking, the red panel disappears the moment you change
+    anything, and the order sends. Send into the same refusal twice before you fix it if you want to
+    be sure: the dialog about paper never comes up. Paper is for the failure nobody can resolve, and
+    a waiter resolves this one in a tap.
 
 34. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
     stations on one drink so either can pour it. On the phone, tap that drink: the phone asks which
