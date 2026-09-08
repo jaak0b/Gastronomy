@@ -91,6 +91,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    table, an item already marked ready) are returned as user-worded messages in their language, never dropped
    and never surfaced as a raw exception or stack trace.
 
+   **A check the interface already enforces is a guard against a broken program, not advice to a
+   user.** Keep the check on the server, because bad data must never be stored, and log the exact
+   reason so a developer can find it. But the person holding the phone gets one plain sentence saying
+   the order could not be processed and naming what to do instead, never a message that asks them to
+   fix something the screen never let them get wrong. Write a message of its own only where the user
+   really can act: a menu that changed under them while they were ordering is the usual case, and
+   there the message names the item and the tap that clears it.
+
 3. **A bug fix is test-first, always. A new feature is tested, not necessarily first.**
 
    For a **bug fix**, including anything a review calls a defect: (a) write the test, (b) run it and
@@ -158,6 +166,15 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    subagent prompt must say so. Text that reads as machine-generated fails review regardless of
    whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
    `no-ai-slop` governs the prose itself.
+
+   **Every message the user reads has one shape: what is wrong, then what to do.** One short clause
+   naming the thing on their screen in their own words, then one imperative sentence with the single
+   next action. Nothing after that: no third sentence, no reassurance, no account of what the program
+   did internally. A message may name only a control that exists on the screen where the message
+   appears, so check that before writing it. Write each language for itself; a sentence translated
+   word for word from the other one reads as machine-written even when every word is correct. Read it
+   aloud before you ship it, and if you would not say it to a colleague across a counter, write it
+   again.
 
 10. **Never use the em-dash character**, and never a hyphen as a substitute for it. Rewrite with a
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
