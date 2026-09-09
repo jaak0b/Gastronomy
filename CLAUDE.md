@@ -281,6 +281,15 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 - **Nobody is notified** when an item is ready. The tablet shows the table name, and whichever server
   passes the station takes the tray. That is deliberate.
 
+19. **The product is in development, so stale data is not a problem to solve.** Breaking the
+    database, and breaking whatever a phone has in its storage, is acceptable and wanted. Nothing is
+    installed anywhere, the only devices holding old data are the owner's own, and he clears them
+    himself. **Never propose or build a migration, a backfill, a default for a missing field, or any
+    other shim whose only purpose is to cope with data written by an earlier build.** Change the
+    shape, delete the old data, move on. This holds until the owner says the product is installed
+    somewhere real, and it binds the main agent, every subagent and every reviewer: a finding whose
+    only victim is data from a previous build is not a defect and must not be reported as one.
+
 ## Verification bar
 
 Backend and frontend tests green for what you touched, with real output quoted. See each folder's
