@@ -159,6 +159,12 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
         >
           {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
         </div>
+        <div
+          v-else-if="entry.line.isNoLongerPreparedAtItsStation"
+          class="station-no-longer-prepares-it text-body-2 text-warning ps-4"
+        >
+          {{ t('catalog.lineStationNoLongerPreparesIt') }}
+        </div>
       </div>
       <template v-if="part.stationId !== null">
         <v-divider />

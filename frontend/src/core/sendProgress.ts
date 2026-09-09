@@ -11,11 +11,18 @@ export interface SendProgress {
   state: SendState
   attempts: number
   settleOnSend: boolean
+  anAttemptWentUnanswered: boolean
   failure: SendFailureMessage | null
 }
 
 export function noSendProgress(): SendProgress {
-  return { state: 'idle', attempts: 0, settleOnSend: false, failure: null }
+  return {
+    state: 'idle',
+    attempts: 0,
+    settleOnSend: false,
+    anAttemptWentUnanswered: false,
+    failure: null,
+  }
 }
 
 export function sendIsUnderWayIn(state: SendState): boolean {
@@ -60,36 +67,34 @@ export function sendWasAcceptedIn(state: SendState): boolean {
   }
 }
 
-export function changesAreRefusedIn(state: SendState): boolean {
-  switch (state) {
-    case 'idle':
-    case 'rejected':
+export function changesAreRefusedFor(progress: SendProgress): boolean {
+  switch (progress.state) {
     case 'accepted':
       return false
+    case 'idle':
+    case 'rejected':
+      return progress.anAttemptWentUnanswered
     case 'sending':
     case 'failed':
       return true
     default:
-      return assertNever(state)
+      return assertNever(progress.state)
   }
 }
 
-function theLaptopStayedSilentIn(state: SendState): boolean {
-  switch (state) {
+export function paperIsTheOnlyWayLeft(progress: SendProgress): boolean {
+  switch (progress.state) {
     case 'idle':
     case 'sending':
-    case 'rejected':
     case 'accepted':
       return false
     case 'failed':
-      return true
+      return progress.attempts >= PAPER_FALLBACK_AFTER_ATTEMPTS
+    case 'rejected':
+      return changesAreRefusedFor(progress)
     default:
-      return assertNever(state)
+      return assertNever(progress.state)
   }
-}
-
-export function paperIsTheOnlyWayLeft(state: SendState, attempts: number): boolean {
-  return theLaptopStayedSilentIn(state) && attempts >= PAPER_FALLBACK_AFTER_ATTEMPTS
 }
 
 export function progressAfterALoad(stored: SendProgress): SendProgress {
@@ -104,6 +109,7 @@ export function progressAfterALoad(stored: SendProgress): SendProgress {
       return {
         ...stored,
         state: 'failed',
+        anAttemptWentUnanswered: true,
         failure: messageForAnInterruptedSend(),
       }
     default:

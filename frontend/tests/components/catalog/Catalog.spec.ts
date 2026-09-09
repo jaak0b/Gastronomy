@@ -520,8 +520,8 @@ describe('the items screen after the laptop refused an order', () => {
         async () =>
           new Response(
             JSON.stringify({
-              code: 'StationRequired',
-              messageKey: 'order.stationRequired',
+              code: 'ValidationFailed',
+              messageKey: 'order.cannotBeProcessed',
               parameters: {},
               details: null,
             }),

@@ -9,14 +9,6 @@ export interface SendFailureMessage {
   key: string
 }
 
-function statedReason(body: ApiErrorBody | null): string {
-  return body?.messageKey ?? ''
-}
-
-export function theLaptopNamedAReason(body: ApiErrorBody | null): boolean {
-  return statedReason(body).length > 0
-}
-
 function keyForStatus(status: number): string {
   switch (status) {
     case 429:
@@ -30,7 +22,8 @@ function keyForStatus(status: number): string {
 }
 
 function keyForRejection(status: number, body: ApiErrorBody | null): string {
-  return theLaptopNamedAReason(body) ? statedReason(body) : keyForStatus(status)
+  const statedReason = body?.messageKey ?? ''
+  return statedReason.length > 0 ? statedReason : keyForStatus(status)
 }
 
 export function messageForAnInterruptedSend(): SendFailureMessage {

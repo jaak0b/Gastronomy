@@ -140,6 +140,7 @@ function toSendProgress(value: unknown): SendProgress | null {
     state,
     attempts: candidate.attempts,
     settleOnSend: candidate.settleOnSend === true,
+    anAttemptWentUnanswered: candidate.anAttemptWentUnanswered === true,
     failure: toSendFailureMessage(candidate.failure),
   }
 }
@@ -163,6 +164,7 @@ export function saveSendProgress(progress: SendProgress): void {
       state: progress.state,
       attempts: progress.attempts,
       settleOnSend: progress.settleOnSend,
+      anAttemptWentUnanswered: progress.anAttemptWentUnanswered,
       failure: progress.failure === null ? null : { key: progress.failure.key },
     }),
   )

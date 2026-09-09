@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { candidateStations, needsStationChoice, routedStationId } from '../../src/core/routingPreview'
+import {
+  candidateStations,
+  needsStationChoice,
+  routedStationId,
+  stationStillPreparesIt,
+} from '../../src/core/routingPreview'
 import type { CatalogItem } from '../../src/core/apiTypes'
 
 function item(stationIds: string[]): CatalogItem {
@@ -57,5 +62,41 @@ describe('routedStationId, where a line goes', () => {
     expect(
       routedStationId({ stationId: null, candidateStationIds: ['station-kueche', 'station-grill'] }),
     ).toBeNull()
+  })
+})
+
+describe('stationStillPreparesIt, after the item list changed under an order', () => {
+  it('holds while the station the waiter picked still prepares the item', () => {
+    expect(
+      stationStillPreparesIt({
+        stationId: 'station-grill',
+        candidateStationIds: ['station-kueche', 'station-grill'],
+      }),
+    ).toBe(true)
+  })
+
+  it('fails once the item was taken away from the station the waiter picked', () => {
+    expect(
+      stationStillPreparesIt({
+        stationId: 'station-grill',
+        candidateStationIds: ['station-kueche'],
+      }),
+    ).toBe(false)
+  })
+
+  it('fails for a line whose item is prepared nowhere any more', () => {
+    expect(stationStillPreparesIt({ stationId: 'station-grill', candidateStationIds: [] })).toBe(
+      false,
+    )
+  })
+
+  it('holds where the waiter picked nothing, because the item routes itself', () => {
+    expect(stationStillPreparesIt({ stationId: null, candidateStationIds: ['station-kueche'] })).toBe(
+      true,
+    )
+  })
+
+  it('holds where the waiter picked nothing and the item lost its stations, because that line names no station to contradict', () => {
+    expect(stationStillPreparesIt({ stationId: null, candidateStationIds: [] })).toBe(true)
   })
 })

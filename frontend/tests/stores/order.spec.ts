@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { useCatalogStore } from '../../src/stores/catalog'
-import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../src/stores/order'
+import { useOrderStore, ARRIVAL_NOTICE_MS, SEND_TIMEOUT_MS } from '../../src/stores/order'
 import {
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,
@@ -207,7 +207,7 @@ describe('an order whose send failed', () => {
 
     await order.send(false)
 
-    expect(order.sendingFailedTwice).toBe(false)
+    expect(order.onlyPaperIsLeft).toBe(false)
   })
 
   it('says paper is the way out once the second attempt has failed too', async () => {
@@ -217,7 +217,7 @@ describe('an order whose send failed', () => {
 
     await order.sendAgain()
 
-    expect(order.sendingFailedTwice).toBe(true)
+    expect(order.onlyPaperIsLeft).toBe(true)
   })
 })
 
@@ -469,7 +469,13 @@ describe('an order the page was still sending when it was loaded again', () => {
         deliveryModes: {},
       }),
     )
-    saveSendProgress({ state: 'sending', attempts: 1, settleOnSend: true, failure: null })
+    saveSendProgress({
+      state: 'sending',
+      attempts: 1,
+      settleOnSend: true,
+      anAttemptWentUnanswered: false,
+      failure: null,
+    })
   }
 
   it('is reported as failed, because the answer to that attempt died with the page', () => {
@@ -554,7 +560,7 @@ describe('an order whose send failed, after the page is loaded again', () => {
     const afterTheReload = useOrderStore()
     await afterTheReload.sendAgain()
 
-    expect(afterTheReload.sendingFailedTwice).toBe(true)
+    expect(afterTheReload.onlyPaperIsLeft).toBe(true)
   })
 })
 
@@ -734,7 +740,7 @@ describe('an order the laptop answered no to', () => {
 
     await order.sendAgain()
 
-    expect(order.sendingFailedTwice).toBe(false)
+    expect(order.onlyPaperIsLeft).toBe(false)
   })
 
   it('counts no unanswered attempt, because the laptop answered', async () => {
@@ -771,7 +777,7 @@ describe('an order the laptop answered no to', () => {
   })
 })
 
-describe('an order the laptop answered without naming a reason', () => {
+describe('an order the laptop could not save', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
@@ -788,22 +794,141 @@ describe('an order the laptop answered without naming a reason', () => {
     )
   }
 
-  it('takes no further change, because nobody can tell whether the order was stored', async () => {
+  it('takes changes again, because an answer arrived and no order was created', async () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
 
     await order.send(false)
 
-    expect(order.changesAreRefused).toBe(true)
+    expect(order.changesAreRefused).toBe(false)
   })
 
-  it('says paper is the way out once the second attempt has come to nothing as well', async () => {
+  it('says the laptop could not save it, rather than blaming the WiFi', async () => {
+    aLaptopThatCannotSave()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.failure?.key).toBe('review.sendFailedDatabase')
+  })
+
+  it('counts no unanswered attempt, because the laptop answered', async () => {
+    aLaptopThatCannotSave()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.attemptsMade).toBe(0)
+  })
+
+  it('never sends the waiter to paper, however often the laptop answers that way', async () => {
     aLaptopThatCannotSave()
     const order = useOrderStore()
     await order.send(false)
 
     await order.sendAgain()
 
-    expect(order.sendingFailedTwice).toBe(true)
+    expect(order.onlyPaperIsLeft).toBe(false)
+  })
+
+  it('stays open for changes after a reload, because no order was created', async () => {
+    aLaptopThatCannotSave()
+    const order = useOrderStore()
+    await order.send(false)
+
+    setActivePinia(createPinia())
+    const afterTheReload = useOrderStore()
+
+    expect(afterTheReload.changesAreRefused).toBe(false)
+  })
+})
+
+describe('an order the laptop answered only after it had already stayed silent once', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  function waterLine() {
+    return {
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    }
+  }
+
+  function aLaptopThatSaysNothingAndThenCannotSave() {
+    let attemptsSeen = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_path: string, init: RequestInit) => {
+        attemptsSeen += 1
+        if (attemptsSeen === 1) {
+          return new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => {
+              reject(new DOMException('The request was aborted', 'AbortError'))
+            })
+          })
+        }
+        return Promise.resolve(new Response('{}', { status: 503 }))
+      }),
+    )
+  }
+
+  async function anOrderTheLaptopNeverAnsweredAndThenRefused() {
+    aLaptopThatSaysNothingAndThenCannotSave()
+    const order = useOrderStore()
+    order.addItem(waterLine())
+    order.setTable('Tisch 3')
+    const firstAttempt = order.send(false)
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
+    await firstAttempt
+
+    await order.sendAgain()
+    return order
+  }
+
+  it('takes no change, because the laptop may still hold the order from the attempt it never answered', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenRefused()
+
+    expect(order.changesAreRefused).toBe(true)
+  })
+
+  it('offers the paper route at once, because the refusal names nothing the waiter may change', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenRefused()
+
+    expect(order.onlyPaperIsLeft).toBe(true)
+  })
+
+  it('keeps every line of the order the silent attempt may have carried away', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenRefused()
+
+    order.dropLine(0)
+
+    expect(order.draft.lines).toHaveLength(1)
+  })
+
+  it('stays closed for changes after a reload, because the silence is written down with the order', async () => {
+    await anOrderTheLaptopNeverAnsweredAndThenRefused()
+
+    setActivePinia(createPinia())
+    const afterTheReload = useOrderStore()
+
+    expect(afterTheReload.changesAreRefused).toBe(true)
+  })
+
+  it('opens the next order for changes once the waiter has written this one down', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenRefused()
+
+    order.startNextOrderAfterWritingItDown()
+
+    expect(order.changesAreRefused).toBe(false)
   })
 })

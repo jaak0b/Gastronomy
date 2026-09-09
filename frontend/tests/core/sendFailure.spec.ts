@@ -33,17 +33,17 @@ describe('messageForSendFailure, what went wrong', () => {
     const message = messageForSendFailure(
       {
         kind: 'error',
-        status: 409,
+        status: 422,
         body: {
-          code: 'SubmissionIdReused',
-          messageKey: 'order.submissionIdReused',
+          code: 'UnprocessableEntity',
+          messageKey: 'order.unknownItem',
           parameters: {},
           details: null,
         },
       },
     )
 
-    expect(message.key).toBe('order.submissionIdReused')
+    expect(message.key).toBe('order.unknownItem')
   })
 
   it('falls back to the status when the laptop answered without naming a reason', () => {

@@ -12,6 +12,14 @@ export interface RequestOptions {
   timeoutMs?: number
 }
 
+const UNAUTHORISED = 401
+
+let reportThatTheDeviceIsNoLongerKnown: () => void = () => undefined
+
+export function onUnauthorisedAnswer(report: () => void): void {
+  reportThatTheDeviceIsNoLongerKnown = report
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const headers: Record<string, string> = {}
   if (options.body !== undefined) {
@@ -46,6 +54,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     payload = await response.json()
   } catch {
     payload = null
+  }
+  if (response.status === UNAUTHORISED) {
+    reportThatTheDeviceIsNoLongerKnown()
   }
   if (!response.ok) {
     return {

@@ -403,6 +403,7 @@ describe('the record of what became of a send', () => {
       state: 'idle',
       attempts: 0,
       settleOnSend: false,
+      anAttemptWentUnanswered: false,
       failure: null,
     })
   })
@@ -412,6 +413,7 @@ describe('the record of what became of a send', () => {
       state: 'failed',
       attempts: 2,
       settleOnSend: true,
+      anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailedDatabase' },
     } as const
 
@@ -421,7 +423,13 @@ describe('the record of what became of a send', () => {
   })
 
   it('remembers a send that is still on its way, so a reload cannot make it look untouched', () => {
-    saveSendProgress({ state: 'sending', attempts: 1, settleOnSend: false, failure: null })
+    saveSendProgress({
+      state: 'sending',
+      attempts: 1,
+      settleOnSend: false,
+      anAttemptWentUnanswered: false,
+      failure: null,
+    })
 
     expect(restoreSendProgress().state).toBe('sending')
   })
@@ -433,12 +441,19 @@ describe('the record of what became of a send', () => {
       state: 'idle',
       attempts: 0,
       settleOnSend: false,
+      anAttemptWentUnanswered: false,
       failure: null,
     })
   })
 
   it('goes when the order goes, so the next order starts open for changes', () => {
-    saveSendProgress({ state: 'failed', attempts: 2, settleOnSend: false, failure: null })
+    saveSendProgress({
+      state: 'failed',
+      attempts: 2,
+      settleOnSend: false,
+      anAttemptWentUnanswered: true,
+      failure: null,
+    })
 
     clearDraft()
 

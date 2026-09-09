@@ -21,12 +21,13 @@ import {
   setTableName,
 } from '../core/draftCart'
 import {
-  changesAreRefusedIn,
+  changesAreRefusedFor,
   paperIsTheOnlyWayLeft,
   progressAfterALoad,
   sendHasFailedIn,
   sendIsUnderWayIn,
   sendWasAcceptedIn,
+  type SendProgress,
   type SendState,
 } from '../core/sendProgress'
 import { assertNever } from '../core/assertNever'
@@ -39,11 +40,7 @@ import {
   withoutLinesThatCannotBeOrdered,
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
-import {
-  messageForSendFailure,
-  theLaptopNamedAReason,
-  type SendFailureMessage,
-} from '../core/sendFailure'
+import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
 import { useCatalogStore } from './catalog'
 import { useSessionStore } from './session'
 
@@ -78,17 +75,26 @@ export const useOrderStore = defineStore('order', () => {
   const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
   const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
   const settledOnSend = ref(progressWhenTheAppLoaded.settleOnSend)
+  const anAttemptWentUnanswered = ref(progressWhenTheAppLoaded.anAttemptWentUnanswered)
   const acceptedOrderNumber = ref<number | null>(null)
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
 
+  function whatTheSendHasComeTo(): SendProgress {
+    return {
+      state: sendState.value,
+      attempts: attemptsMade.value,
+      settleOnSend: settledOnSend.value,
+      anAttemptWentUnanswered: anAttemptWentUnanswered.value,
+      failure: failure.value,
+    }
+  }
+
   const isSending = computed(() => sendIsUnderWayIn(sendState.value))
   const sendHasFailed = computed(() => sendHasFailedIn(sendState.value))
-  const changesAreRefused = computed(() => changesAreRefusedIn(sendState.value))
-  const sendingFailedTwice = computed(() =>
-    paperIsTheOnlyWayLeft(sendState.value, attemptsMade.value),
-  )
+  const changesAreRefused = computed(() => changesAreRefusedFor(whatTheSendHasComeTo()))
+  const onlyPaperIsLeft = computed(() => paperIsTheOnlyWayLeft(whatTheSendHasComeTo()))
 
   function theRefusalNoLongerFitsTheOrder(): void {
     if (failure.value === null) {
@@ -96,6 +102,14 @@ export const useOrderStore = defineStore('order', () => {
     }
     failure.value = null
     sendState.value = 'idle'
+    rememberWhatBecameOfTheSend()
+  }
+
+  function forgetWhyTheSendFailed(): void {
+    if (failure.value === null) {
+      return
+    }
+    failure.value = null
     rememberWhatBecameOfTheSend()
   }
 
@@ -180,21 +194,18 @@ export const useOrderStore = defineStore('order', () => {
   function startNextOrderAfterWritingItDown(): void {
     failure.value = null
     attemptsMade.value = 0
+    anAttemptWentUnanswered.value = false
     sendState.value = 'idle'
     startNextOrder()
   }
 
   function rememberWhatBecameOfTheSend(): void {
-    saveSendProgress({
-      state: sendState.value,
-      attempts: attemptsMade.value,
-      settleOnSend: settledOnSend.value,
-      failure: failure.value,
-    })
+    saveSendProgress(whatTheSendHasComeTo())
   }
 
   async function send(settleOnSend: boolean): Promise<void> {
     const session = useSessionStore()
+    const tokenTheOrderWentOutWith = session.deviceToken
     const attemptsBeforeThisOne = attemptsMade.value
     settledOnSend.value = settleOnSend
     attemptsMade.value += 1
@@ -217,24 +228,25 @@ export const useOrderStore = defineStore('order', () => {
         acceptedOrderNumber.value = result.data.globalOrderNumber
         failure.value = null
         attemptsMade.value = 0
+        anAttemptWentUnanswered.value = false
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
         startNextOrder()
         return
       case 'unreachable':
         failure.value = messageForSendFailure(result)
+        anAttemptWentUnanswered.value = true
         sendState.value = 'failed'
         rememberWhatBecameOfTheSend()
         return
       case 'error':
         failure.value = messageForSendFailure(result)
-        if (theLaptopNamedAReason(result.body)) {
-          attemptsMade.value = attemptsBeforeThisOne
-          sendState.value = 'rejected'
-        } else {
-          sendState.value = 'failed'
-        }
+        attemptsMade.value = attemptsBeforeThisOne
+        sendState.value = 'rejected'
         rememberWhatBecameOfTheSend()
+        if (session.deviceToken !== tokenTheOrderWentOutWith) {
+          forgetWhyTheSendFailed()
+        }
         return
       default:
         return assertNever(result)
@@ -261,7 +273,7 @@ export const useOrderStore = defineStore('order', () => {
     isSending,
     sendHasFailed,
     changesAreRefused,
-    sendingFailedTwice,
+    onlyPaperIsLeft,
     addItem,
     dropLine,
     dropLinesThatCannotBeOrdered,
@@ -273,6 +285,7 @@ export const useOrderStore = defineStore('order', () => {
     chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
+    forgetWhyTheSendFailed,
     startNextOrderAfterWritingItDown,
     send,
     sendAgain,

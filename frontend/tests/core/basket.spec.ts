@@ -69,6 +69,7 @@ describe('buildBasketView', () => {
         candidateStationIds: ['station-kueche'],
         isSoldOut: false,
         isNoLongerOnTheMenu: false,
+        isNoLongerPreparedAtItsStation: false,
       },
     ])
   })
@@ -311,5 +312,75 @@ describe('basketItemCount', () => {
     const count = basketItemCount(draftWith([]))
 
     expect(count).toBe(0)
+  })
+})
+
+describe('a line whose station no longer prepares its item', () => {
+  function draftWithAMovedItem(): DraftOrder {
+    return draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: 'station-theke-innen',
+        name: 'Bratwurst',
+      },
+    ])
+  }
+
+  it('is flagged, because the station on the line no longer makes the item', () => {
+    const view = buildBasketView(draftWithAMovedItem(), catalog())
+
+    expect(view[0].isNoLongerPreparedAtItsStation).toBe(true)
+  })
+
+  it('holds the send back, so the laptop is never asked to refuse it', () => {
+    const view = buildBasketView(draftWithAMovedItem(), catalog())
+
+    expect(lineCannotBeOrdered(view[0])).toBe(true)
+  })
+
+  it('leaves the order with the other lines that cannot be ordered', () => {
+    const remaining = withoutLinesThatCannotBeOrdered(draftWithAMovedItem(), catalog())
+
+    expect(remaining.lines).toEqual([])
+  })
+
+  it('is not flagged while the station on the line still makes the item', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: 'station-kueche',
+        name: 'Bratwurst',
+      },
+    ])
+
+    expect(buildBasketView(draft, catalog())[0].isNoLongerPreparedAtItsStation).toBe(false)
+  })
+
+  it('is not flagged on a line that carries no station of its own', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+      },
+    ])
+
+    expect(buildBasketView(draft, catalog())[0].isNoLongerPreparedAtItsStation).toBe(false)
+  })
+
+  it('is not flagged on a line whose item left the menu, which the line already says', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-gone',
+        note: null,
+        stationId: 'station-kueche',
+        name: 'Currywurst',
+      },
+    ])
+
+    expect(buildBasketView(draft, catalog())[0].isNoLongerPreparedAtItsStation).toBe(false)
   })
 })

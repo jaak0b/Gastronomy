@@ -63,8 +63,7 @@ describe('the notice that an order in progress was lost', () => {
     await notices.vm.$nextTick()
 
     expect(notices.get('.draft-lost').text()).toBe(
-      'Geben Sie die Bestellung noch einmal ein. Ihre angefangene Bestellung konnte nicht gelesen '
-        + 'werden und ist weg.',
+      'Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein.',
     )
   })
 
@@ -75,7 +74,7 @@ describe('the notice that an order in progress was lost', () => {
     await notices.vm.$nextTick()
 
     expect(notices.get('.draft-lost').text()).toBe(
-      'Enter the order again. The order you had started could not be read and is gone.',
+      'The order you had started could not be read. Enter it again.',
     )
   })
 

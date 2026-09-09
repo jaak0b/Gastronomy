@@ -61,7 +61,7 @@ onMounted(async () => {
     await connection.connect({})
     return
   }
-  session.listenForRevocation()
+  session.watchForBeingSignedOut()
   await session.loadSession()
   if (session.deviceToken === null) {
     return

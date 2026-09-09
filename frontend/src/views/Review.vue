@@ -143,7 +143,7 @@ function backToItems(): void {
       </div>
     </DockedStrip>
     <SendFailedTwiceDialog
-      v-if="order.sendingFailedTwice"
+      v-if="order.onlyPaperIsLeft"
       @written-down="startTheNextOrder"
       @try-again="sendAgain"
     />

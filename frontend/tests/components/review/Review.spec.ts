@@ -5,6 +5,7 @@ import Review from '../../../src/views/Review.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
 import { useOrderStore } from '../../../src/stores/order'
 import { currentRoute, navigate } from '../../../src/router'
+import { saveDraft, saveSendProgress } from '../../../src/core/draftCart'
 import { testPlugins } from '../../support/plugins'
 
 const WASSER = {
@@ -291,7 +292,7 @@ describe('an order holding something that cannot be ordered', () => {
     const review = mountReview()
 
     expect(review.get('.remove-before-sending').text()).toBe(
-      'Entfernen Sie zuerst die Artikel, die nicht bestellbar sind.',
+      'Ein Artikel kann nicht bestellt werden. Entfernen Sie ihn.',
     )
   })
 
@@ -566,7 +567,7 @@ describe('an order the laptop refused with a reason', () => {
     const review = await reviewAfterARefusal(prepareOrder())
 
     expect(review.get('.send-failure .failure-message').text()).toBe(
-      'Tippen Sie auf "Nicht bestellbare Artikel entfernen" und senden Sie die Bestellung dann noch einmal. Ein Artikel auf dieser Bestellung steht nicht mehr auf der Karte.',
+      'Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung.',
     )
   })
 
@@ -604,5 +605,196 @@ describe('an order the laptop refused with a reason', () => {
     await order.sendAgain()
 
     expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
+  })
+})
+
+describe('an order the laptop answered but could not save', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 500 })),
+    )
+  })
+
+  async function reviewAfterTheAnswer() {
+    const order = prepareOrder()
+    await order.send(false)
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('says the laptop could not save it, without naming a button that is not there', async () => {
+    const review = await reviewAfterTheAnswer()
+
+    expect(review.get('.send-failure .failure-message').text()).toBe(
+      'Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
+    )
+  })
+
+  it('leaves both ways of sending in the strip, because the answer said no order was created', async () => {
+    const review = await reviewAfterTheAnswer()
+
+    expect(review.get('.review-footer .send-and-settle').exists()).toBe(true)
+    expect(review.get('.review-footer .send').exists()).toBe(true)
+    expect(review.find('.send-again').exists()).toBe(false)
+  })
+
+  it('opens the way back to the items again', async () => {
+    const review = await reviewAfterTheAnswer()
+
+    expect(review.get('.back').attributes('disabled')).toBeUndefined()
+  })
+
+  it('never covers the screen with the paper dialog, because the laptop answered', async () => {
+    const order = prepareOrder()
+    await order.send(false)
+    mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await order.sendAgain()
+
+    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
+  })
+})
+
+describe('an order holding a line the admin moved to another station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  function orderWhoseStationWasTakenOff() {
+    const order = prepareOrder()
+    const catalog = useCatalogStore()
+    catalog.catalog = {
+      ...catalog.catalog,
+      items: [{ ...WASSER, stationIds: ['station-terrasse'] }],
+      stations: [
+        { id: 'station-bar', name: 'Bar', sortOrder: 1 },
+        { id: 'station-terrasse', name: 'Terrasse', sortOrder: 2 },
+      ],
+    }
+    return order
+  }
+
+  function mountReview() {
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('holds both ways of sending back, so the laptop is never asked to refuse it', () => {
+    orderWhoseStationWasTakenOff()
+    const review = mountReview()
+
+    expect(review.get('.send').attributes('disabled')).toBeDefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+  })
+
+  it('marks the line on the card of the station that no longer prepares it', () => {
+    orderWhoseStationWasTakenOff()
+    const review = mountReview()
+
+    expect(review.get('.station-no-longer-prepares-it').text()).toBe(
+      'Diese Ausgabestelle bereitet den Artikel nicht mehr zu.',
+    )
+  })
+
+  it('says under the buttons what has to be taken off the order first', () => {
+    orderWhoseStationWasTakenOff()
+    const review = mountReview()
+
+    expect(review.get('.remove-before-sending').text()).toBe(
+      'Ein Artikel kann nicht bestellt werden. Entfernen Sie ihn.',
+    )
+  })
+
+  it('lets the one button that clears such lines take it off', async () => {
+    const order = orderWhoseStationWasTakenOff()
+    const review = mountReview()
+
+    await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
+
+    expect(order.basketLines).toEqual([])
+  })
+})
+
+
+describe('an order the laptop refused after an attempt it never answered', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 503 })),
+    )
+  })
+
+  function anOrderTheLaptopMayAlreadyHold() {
+    saveDraft({
+      tableName: 'Tisch 3',
+      note: null,
+      lines: [
+        { catalogItemId: WASSER.id, note: null, stationId: 'station-bar', name: WASSER.name },
+      ],
+      clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+      deliveryModes: {},
+    })
+    saveSendProgress({
+      state: 'failed',
+      attempts: 1,
+      settleOnSend: false,
+      anAttemptWentUnanswered: true,
+      failure: { key: 'review.sendFailed' },
+    })
+    const catalog = useCatalogStore()
+    catalog.catalog = {
+      categories: [
+        { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
+      ],
+      items: [WASSER],
+      stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
+    }
+    return useOrderStore()
+  }
+
+  async function reviewAfterTheRefusedRetry(order: ReturnType<typeof useOrderStore>) {
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() => expect(order.sendState).toBe('rejected'))
+    return review
+  }
+
+  it('offers the paper route at once, because nothing on the phone can put the refusal right', async () => {
+    const order = anOrderTheLaptopMayAlreadyHold()
+
+    await reviewAfterTheRefusedRetry(order)
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+    )
+  })
+
+  it('keeps the order closed for changes, because the laptop may hold it as it stands', async () => {
+    const order = anOrderTheLaptopMayAlreadyHold()
+
+    const review = await reviewAfterTheRefusedRetry(order)
+
+    expect(order.changesAreRefused).toBe(true)
+    expect(review.get('.back').attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps every line on the screen, so the waiter can copy the order onto paper', async () => {
+    const order = anOrderTheLaptopMayAlreadyHold()
+
+    const review = await reviewAfterTheRefusedRetry(order)
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(review.get('.line-name').text()).toBe('1 x Wasser')
   })
 })

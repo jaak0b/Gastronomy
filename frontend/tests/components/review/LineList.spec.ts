@@ -25,6 +25,7 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     productionMinutes: null,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
+    isNoLongerPreparedAtItsStation: false,
     ...overrides,
   }
 }
@@ -291,5 +292,36 @@ describe('a line whose item is no longer on the menu', () => {
     const list = mountList([line({ name: '', isNoLongerOnTheMenu: true })])
 
     expect(list.get('.line-name').text()).toContain('Nicht mehr auf der Karte.')
+  })
+})
+
+describe('a line whose station no longer prepares its item', () => {
+  function movedLine() {
+    return line({
+      name: 'Bier',
+      stationId: 'station-theke-innen',
+      candidateStationIds: ['station-theke-aussen'],
+      isNoLongerPreparedAtItsStation: true,
+    })
+  }
+
+  it('says that the station on the card no longer prepares the item', () => {
+    const list = mountList([movedLine()])
+
+    expect(list.get('.station-no-longer-prepares-it').text()).toBe(
+      'Diese Ausgabestelle bereitet den Artikel nicht mehr zu.',
+    )
+  })
+
+  it('is greyed the way every line that cannot be ordered is', () => {
+    const list = mountList([movedLine()])
+
+    expect(list.get('.line').classes()).toContain('is-unavailable')
+  })
+
+  it('says nothing of the sort while the station still prepares the item', () => {
+    const list = mountList([line({ stationId: 'station-kueche' })])
+
+    expect(list.find('.station-no-longer-prepares-it').exists()).toBe(false)
   })
 })

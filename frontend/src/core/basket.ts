@@ -1,5 +1,5 @@
 import type { Catalog, CatalogItem, DraftOrder } from './apiTypes'
-import { candidateStations } from './routingPreview'
+import { candidateStations, stationStillPreparesIt } from './routingPreview'
 import { saveDraft } from './draftCart'
 
 export interface BasketLineView {
@@ -12,6 +12,7 @@ export interface BasketLineView {
   productionMinutes: number | null
   isSoldOut: boolean
   isNoLongerOnTheMenu: boolean
+  isNoLongerPreparedAtItsStation: boolean
 }
 
 export function findCatalogItem(catalog: Catalog, catalogItemId: string): CatalogItem | null {
@@ -32,24 +33,30 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         productionMinutes: null,
         isSoldOut: false,
         isNoLongerOnTheMenu: true,
+        isNoLongerPreparedAtItsStation: false,
       }
     }
+    const candidateStationIds = candidateStations(item)
     return {
       catalogItemId: item.id,
       name: item.name,
       unitPriceCents: item.priceCents,
       note: line.note,
       stationId: line.stationId,
-      candidateStationIds: candidateStations(item),
+      candidateStationIds,
       productionMinutes: item.productionMinutes,
       isSoldOut: !item.isAvailable,
       isNoLongerOnTheMenu: false,
+      isNoLongerPreparedAtItsStation: !stationStillPreparesIt({
+        stationId: line.stationId,
+        candidateStationIds,
+      }),
     }
   })
 }
 
 export function lineCannotBeOrdered(line: BasketLineView): boolean {
-  return line.isSoldOut || line.isNoLongerOnTheMenu
+  return line.isSoldOut || line.isNoLongerOnTheMenu || line.isNoLongerPreparedAtItsStation
 }
 
 export function withoutLinesThatCannotBeOrdered(draft: DraftOrder, catalog: Catalog): DraftOrder {

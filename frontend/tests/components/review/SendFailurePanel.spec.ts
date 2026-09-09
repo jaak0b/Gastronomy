@@ -11,19 +11,19 @@ function mountPanel(failure: { key: string }) {
 }
 
 describe('SendFailurePanel', () => {
-  it('tells the server the laptop was not reached and the order is still here', () => {
+  it('tells the server the laptop was not reached and points at the retry', () => {
     const panel = mountPanel({ key: 'review.sendFailed' })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Tippen Sie auf "Erneut senden". Der Laptop war nicht erreichbar, die Bestellung steht noch vollständig hier.',
+      'Der Laptop war nicht erreichbar. Tippen Sie auf "Erneut senden".',
     )
   })
 
-  it('names the saving problem when that is what went wrong', () => {
+  it('names the saving problem without pointing at a button that is not on the screen', () => {
     const panel = mountPanel({ key: 'review.sendFailedDatabase' })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Tippen Sie auf "Erneut senden". Der Laptop konnte die Bestellung gerade nicht speichern, sie steht aber noch vollständig hier.',
+      'Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
     )
   })
 })

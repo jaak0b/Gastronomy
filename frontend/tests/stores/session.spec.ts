@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useSessionStore } from '../../src/stores/session'
-import { clearDraft, saveDraft } from '../../src/core/draftCart'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
+import {
+  clearDraft,
+  restoreDraft,
+  restoreSendProgress,
+  saveDraft,
+  saveSendProgress,
+} from '../../src/core/draftCart'
+import { useOrderStore } from '../../src/stores/order'
+import { request } from '../../src/api/client'
 
 function withBrowserLanguage(language: string): void {
   vi.stubGlobal('navigator', { language, userAgent: 'test' })
@@ -123,5 +131,116 @@ describe('setting a phone up for a waiter who is not on the list yet', () => {
     expect(bodies).toEqual([
       { code: 'abc123', name: 'Bernd', userAgent: navigator.userAgent },
     ])
+  })
+})
+
+describe('a phone the laptop does not know any more', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function aLaptopThatRefusesTheToken(): void {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })))
+  }
+
+  async function anOrderRefusedBecauseTheTokenIsUnknown() {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    saveDraft({
+      tableName: 'Tisch 12',
+      note: null,
+      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst' }],
+      clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+      deliveryModes: {},
+    })
+    const session = useSessionStore()
+    session.watchForBeingSignedOut()
+    aLaptopThatRefusesTheToken()
+
+    await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
+    return session
+  }
+
+  it('is signed out by the send itself, not only by the check the app makes when it starts', async () => {
+    const session = await anOrderRefusedBecauseTheTokenIsUnknown()
+
+    expect(session.deviceToken).toBeNull()
+  })
+
+  it('keeps the order the waiter had started, so it is still there after the phone is set up again', async () => {
+    await anOrderRefusedBecauseTheTokenIsUnknown()
+
+    expect(useSessionStore().heldDraftExists()).toBe(true)
+  })
+
+  it('keeps the identity of that order, so sending it again cannot place it twice', async () => {
+    await anOrderRefusedBecauseTheTokenIsUnknown()
+
+    expect(restoreDraft().draft.clientOrderId).toBe('c0ffee00-1111-4111-8111-111111111111')
+  })
+})
+
+describe('a phone that is signed out while a reason stands on the order screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function aPhoneSignedOutWhileTheOrderScreenNamedAReason() {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    saveDraft({
+      tableName: 'Tisch 12',
+      note: null,
+      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst' }],
+      clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+      deliveryModes: {},
+    })
+    saveSendProgress({
+      state: 'failed',
+      attempts: 1,
+      settleOnSend: false,
+      anAttemptWentUnanswered: true,
+      failure: { key: 'review.sendFailed' },
+    })
+    const order = useOrderStore()
+    const session = useSessionStore()
+    session.watchForBeingSignedOut()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })))
+
+    await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
+    return order
+  }
+
+  it('takes the reason off the order, so nothing stale greets the waiter after the new code', async () => {
+    const order = await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
+
+    expect(order.failure).toBeNull()
+  })
+
+  it('takes the reason out of storage too, so a reload cannot bring it back', async () => {
+    await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
+
+    expect(restoreSendProgress().failure).toBeNull()
+  })
+
+  it('keeps the order closed for changes, because the laptop may still hold it', async () => {
+    const order = await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
+
+    expect(order.changesAreRefused).toBe(true)
+  })
+
+  it('keeps the order and its identity, because it is the same order once the phone is back', async () => {
+    const order = await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(order.draft.clientOrderId).toBe('c0ffee00-1111-4111-8111-111111111111')
   })
 })

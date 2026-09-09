@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../api/client'
+import { onUnauthorisedAnswer, request } from '../api/client'
 import type {
   AppLanguage,
   DeviceKind,
@@ -12,6 +12,7 @@ import type {
 import { restoreDraft } from '../core/draftCart'
 import { parseDeviceKind } from '../core/landing'
 import { useConnectionStore } from './connection'
+import { useOrderStore } from './order'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
@@ -124,20 +125,20 @@ export const useSessionStore = defineStore('session', () => {
         language.value = result.data.language
         return
       case 'error':
-        if (result.status === 401) {
-          clearToken()
-        }
-        return
       case 'unreachable':
         return
     }
   }
 
-  function listenForRevocation(): void {
+  function watchForBeingSignedOut(): void {
     const connection = useConnectionStore()
-    connection.onEvent<{ deviceId: string }>('DeviceRevoked', () => {
+    const order = useOrderStore()
+    function theDeviceIsNoLongerSetUp(): void {
       clearToken()
-    })
+      order.forgetWhyTheSendFailed()
+    }
+    connection.onEvent<{ deviceId: string }>('DeviceRevoked', theDeviceIsNoLongerSetUp)
+    onUnauthorisedAnswer(theDeviceIsNoLongerSetUp)
   }
 
   return {
@@ -153,6 +154,6 @@ export const useSessionStore = defineStore('session', () => {
     loadSession,
     setLanguage,
     clearToken,
-    listenForRevocation,
+    watchForBeingSignedOut,
   }
 })

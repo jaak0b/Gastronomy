@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { request } from '../../src/api/client'
+import { onUnauthorisedAnswer, request } from '../../src/api/client'
 
 function laptopThatNeverAnswers(): void {
   vi.stubGlobal(
@@ -79,5 +79,55 @@ describe('a request the caller gave a time limit', () => {
     await request('/api/anything', { timeoutMs: 10_000 })
 
     expect(vi.getTimerCount()).toBe(0)
+  })
+})
+
+describe('an answer that says the laptop does not know this device', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    onUnauthorisedAnswer(() => undefined)
+  })
+
+  function laptopThatAnswers(status: number): void {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status })))
+  }
+
+  it('is reported, whichever call it came back from, so the phone can be set up again', async () => {
+    laptopThatAnswers(401)
+    const deviceIsNoLongerKnown = vi.fn()
+    onUnauthorisedAnswer(deviceIsNoLongerKnown)
+
+    await request('/api/orders', { method: 'POST', body: {}, token: 'token-the-laptop-forgot' })
+
+    expect(deviceIsNoLongerKnown).toHaveBeenCalledTimes(1)
+  })
+
+  it('still reaches the caller, so the screen that asked can say what happened', async () => {
+    laptopThatAnswers(401)
+    onUnauthorisedAnswer(() => undefined)
+
+    const answer = await request('/api/orders', { method: 'POST', body: {} })
+
+    expect(answer).toEqual({ kind: 'error', status: 401, body: null, raw: {} })
+  })
+
+  it('is not reported for an answer that only refuses what the device may do', async () => {
+    laptopThatAnswers(403)
+    const deviceIsNoLongerKnown = vi.fn()
+    onUnauthorisedAnswer(deviceIsNoLongerKnown)
+
+    await request('/api/station/slices', { token: 'token-of-a-waiter-phone' })
+
+    expect(deviceIsNoLongerKnown).not.toHaveBeenCalled()
+  })
+
+  it('is not reported for an answer the laptop could not save', async () => {
+    laptopThatAnswers(503)
+    const deviceIsNoLongerKnown = vi.fn()
+    onUnauthorisedAnswer(deviceIsNoLongerKnown)
+
+    await request('/api/orders', { method: 'POST', body: {} })
+
+    expect(deviceIsNoLongerKnown).not.toHaveBeenCalled()
   })
 })
