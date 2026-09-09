@@ -23,23 +23,16 @@ export function portionsOfItem(draft: DraftOrder, catalogItemId: string): number
   return linesOfItem(draft, catalogItemId).length
 }
 
-export function positionsForItem(
-  draft: DraftOrder,
-  item: CatalogItem,
-  stationNameOf: (stationId: string) => string,
-): ItemPosition[] {
+export function positionsForItem(draft: DraftOrder, item: CatalogItem): ItemPosition[] {
   const hasAStationChoice = needsStationChoice(item)
 
-  return linesOfItem(draft, item.id)
-    .map((entry) => ({
-      index: entry.index,
-      note: entry.line.note,
-      hasAStationChoice,
-      stationName:
-        hasAStationChoice && entry.line.stationId !== null
-          ? stationNameOf(entry.line.stationId)
-          : null,
-    }))
+  return linesOfItem(draft, item.id).map((entry) => ({
+    index: entry.index,
+    note: entry.line.note,
+    hasAStationChoice,
+    stationName:
+      hasAStationChoice && entry.line.stationId !== null ? entry.line.stationName : null,
+  }))
 }
 
 export interface PositionGroup {

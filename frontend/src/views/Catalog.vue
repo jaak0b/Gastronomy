@@ -130,7 +130,7 @@ function paintedIn(colourHex: string): Record<string, string> {
 
 function positionsFor(itemId: string): ItemPosition[] {
   const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
-  return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
+  return item === undefined ? [] : positionsForItem(order.draft, item)
 }
 
 function readyInMinutesFor(itemId: string): number | null {

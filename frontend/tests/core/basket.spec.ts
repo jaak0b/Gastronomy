@@ -3,6 +3,7 @@ import {
   basketItemCount,
   buildBasketView,
   lineCannotBeOrdered,
+  withStationNamesTheCatalogStillKnows,
   withoutLinesThatCannotBeOrdered,
 } from '../../src/core/basket'
 import { orderTotalCents } from '../../src/core/totals'
@@ -242,6 +243,72 @@ describe('withoutLinesThatCannotBeOrdered', () => {
     const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
     expect(remaining.lines).toHaveLength(1)
+  })
+})
+
+describe('withStationNamesTheCatalogStillKnows', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  function beerRoutedTo(stationId: string | null, stationName: string): DraftOrder {
+    return draftWith([
+      { catalogItemId: 'item-bier', note: null, stationId, name: 'Bier', stationName },
+    ])
+  }
+
+  it('writes down the name the catalog carries for a line that remembers none', () => {
+    const remembered = withStationNamesTheCatalogStillKnows(
+      beerRoutedTo('station-theke-innen', ''),
+      catalog(),
+    )
+
+    expect(remembered.lines[0].stationName).toBe('Theke innen')
+  })
+
+  it('writes down the one station of a line nobody was ever asked about', () => {
+    const draft = draftWith([
+      { catalogItemId: 'item-bratwurst', note: null, stationId: null, name: 'Bratwurst', stationName: '' },
+    ])
+
+    const remembered = withStationNamesTheCatalogStillKnows(draft, catalog())
+
+    expect(remembered.lines[0].stationName).toBe('Kueche')
+  })
+
+  it('leaves a line unnamed when the catalog no longer carries its station either', () => {
+    const remembered = withStationNamesTheCatalogStillKnows(
+      beerRoutedTo('station-abgebaut', ''),
+      catalog(),
+    )
+
+    expect(remembered.lines[0].stationName).toBe('')
+  })
+
+  it('keeps the name a line wrote down when its station was chosen', () => {
+    const remembered = withStationNamesTheCatalogStillKnows(
+      beerRoutedTo('station-theke-innen', 'Theke drinnen'),
+      catalog(),
+    )
+
+    expect(remembered.lines[0].stationName).toBe('Theke drinnen')
+  })
+
+  it('writes the filled name to storage, so the next reload starts with it', () => {
+    withStationNamesTheCatalogStillKnows(beerRoutedTo('station-theke-innen', ''), catalog())
+
+    const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) ?? 'null')
+
+    expect(stored.lines[0].stationName).toBe('Theke innen')
+  })
+
+  it('touches nothing when every line already knows the name of its station', () => {
+    const draft = beerRoutedTo('station-theke-innen', 'Theke innen')
+
+    const remembered = withStationNamesTheCatalogStillKnows(draft, catalog())
+
+    expect(remembered).toBe(draft)
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull()
   })
 })
 

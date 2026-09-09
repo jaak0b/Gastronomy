@@ -15,16 +15,18 @@ function item(stationIds: string[]): CatalogItem {
   }
 }
 
-function line(catalogItemId: string, note: string | null, stationId: string | null): DraftLine {
-  return { catalogItemId, note, stationId, name: 'Bier' }
+function line(
+  catalogItemId: string,
+  note: string | null,
+  stationId: string | null,
+  stationName = '',
+): DraftLine {
+  return { catalogItemId, note, stationId, name: 'Bier', stationName }
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
   return { tableName: '', note: null, lines, clientOrderId: null }
 }
-
-const stationNameOf = (stationId: string): string =>
-  stationId === 'station-1' ? 'Bar innen' : 'Bar aussen'
 
 describe('positionsForItem', () => {
   it('returns one entry per position of that item, in the order they were chosen', () => {
@@ -34,7 +36,7 @@ describe('positionsForItem', () => {
       line('item-1', 'ohne Schaum', null),
     ])
 
-    const positions = positionsForItem(draft, item(['station-1']), stationNameOf)
+    const positions = positionsForItem(draft, item(['station-1']))
 
     expect(positions.map((position) => position.index)).toEqual([0, 2])
     expect(positions[1].note).toBe('ohne Schaum')
@@ -43,16 +45,16 @@ describe('positionsForItem', () => {
   it('reports no station choice for an item only one station prepares', () => {
     const draft = draftWith([line('item-1', null, 'station-1')])
 
-    const positions = positionsForItem(draft, item(['station-1']), stationNameOf)
+    const positions = positionsForItem(draft, item(['station-1']))
 
     expect(positions[0].hasAStationChoice).toBe(false)
     expect(positions[0].stationName).toBeNull()
   })
 
   it('names the chosen station on an item two stations could prepare', () => {
-    const draft = draftWith([line('item-1', null, 'station-2')])
+    const draft = draftWith([line('item-1', null, 'station-2', 'Bar aussen')])
 
-    const positions = positionsForItem(draft, item(['station-1', 'station-2']), stationNameOf)
+    const positions = positionsForItem(draft, item(['station-1', 'station-2']))
 
     expect(positions[0].hasAStationChoice).toBe(true)
     expect(positions[0].stationName).toBe('Bar aussen')
@@ -61,15 +63,23 @@ describe('positionsForItem', () => {
   it('leaves the station unnamed while the server has not chosen one yet', () => {
     const draft = draftWith([line('item-1', null, null)])
 
-    const positions = positionsForItem(draft, item(['station-1', 'station-2']), stationNameOf)
+    const positions = positionsForItem(draft, item(['station-1', 'station-2']))
 
     expect(positions[0].stationName).toBeNull()
+  })
+
+  it('names the station the line remembers once the catalog has dropped that station', () => {
+    const draft = draftWith([line('item-1', null, 'station-abgebaut', 'Theke aussen')])
+
+    const positions = positionsForItem(draft, item(['station-1', 'station-2']))
+
+    expect(positions[0].stationName).toBe('Theke aussen')
   })
 
   it('returns nothing for an item that is not in the basket', () => {
     const draft = draftWith([line('item-2', null, null)])
 
-    expect(positionsForItem(draft, item(['station-1']), stationNameOf)).toEqual([])
+    expect(positionsForItem(draft, item(['station-1']))).toEqual([])
   })
 })
 
