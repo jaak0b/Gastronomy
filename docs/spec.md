@@ -253,6 +253,15 @@ exists both as a backend string and as a frontend string will drift the first ti
 edited. Technical detail is added only for the admin: a waiter's phone never receives a stack trace
 or a socket error string.
 
+**A check the screens already prevent gets one sentence, not five.** An order with no items, an order
+with no table name, a price below zero, a line with no station where the waiter had to pick one, and
+an item the admin never gave a station: the laptop refuses all five, because bad data must never be
+stored, and the phone and the admin pages make all five impossible to produce. They share one message,
+which says that the order could not be processed and asks the waiter to take it to the station in
+person. Which of the five fired, and the item it names, goes into the laptop's log, where a developer
+can find it and a volunteer never has to read it. Writing five separate sentences would ask the person
+holding the phone to fix something the screen never let them get wrong.
+
 ---
 
 ## 3. The decisions behind the model
@@ -346,6 +355,14 @@ standing at the table, so they learn before they send rather than after. Both wa
 held back while an order carries a sold-out item or one that has left the menu, a line under the
 buttons says what has to go, and one button takes all of those lines off at once. The waiter then
 offers the guest something else, which is the conversation the flag exists to start.
+
+**A line whose station no longer prepares its item is the third case of that same family.** A drink
+that two bars could pour carries the bar the waiter picked, and an admin who unticks that bar, or who
+moves an item from the kitchen to a bar, leaves the line pointing at a station that no longer makes
+it. The phone marks that line the way it marks the other two, the same button clears it, and the
+waiter adds the item again, which routes it to the station that is left without asking anybody
+anything. The laptop refuses such an order too, but the phone has usually caught it first, so that
+refusal only ever reaches a phone whose menu was out of date.
 
 **The laptop is deliberately not part of that check.** An order refused by the laptop would arrive
 after the waiter has taken the cash, and handing money back in front of a guest is worse than a
@@ -709,15 +726,15 @@ and the waiter needs to see what falls away in order to offer them something els
 order, the one on the screen, and nothing ever sends it except a person tapping the send button. It
 has no retry loop, no ordering, no head and no ages. Beside the order the storage keeps one small
 record, and only because of the freeze in section 6.4: what became of the last press of send, how
-many attempts have been made, whether the waiter chose to settle, and the message that stands on the
-screen. It exists so that a reload cannot hand back an order that looks untouched while the laptop
+many attempts have been made, whether any attempt was left unanswered, whether the waiter chose to
+settle, and the message that stands on the screen. It exists so that a reload cannot hand back an order that looks untouched while the laptop
 may already be holding it. That record describes one press of one button and can never describe a
 backlog. Any implementation that gives the storage a list, a timer, or anything at all that sends by
 itself has rebuilt the queue this section deliberately removed, and it should be rejected in review
 no matter what it is called.
 
 The draft is cleared when the order is accepted. The one other thing that clears it is the waiter
-saying, on the dialog described in section 6.4, that an order which could not be sent twice is
+saying, on the dialog described in section 6.4, that an order the phone has no way left to send is
 written down on paper.
 
 ### 6.3 The submission id
@@ -743,8 +760,14 @@ with the same wording and the same order number, because to the waiter it is the
 order arrived. A screen that distinguished the two would be describing the network rather than the
 order.
 
-The one case the backend refuses is the same id sent with different content. That is not a retry, and
-the refusal tells the waiter to take the change as a new order and to tell the station.
+**The id alone decides that two requests are the same order.** The backend never compares what the
+second request carries against what it already stored: a request whose id it recognises is answered
+with the order it holds, whatever else that request says. Comparing the two would mean guessing at the
+difference between a retry and an edit, and the phone has already settled that question. An order the
+laptop may be holding is frozen from the press of send until the phone knows what became of it, so the
+id can only meet a stored order again as an unchanged retry. An order the laptop answered no to was
+never stored, so the waiter is free to put it right and send it again under the same id, and the
+laptop takes it as the first order it has seen under that id.
 
 ### 6.4 The specific failure cases
 
@@ -758,28 +781,51 @@ metres towards the marquee and tap again.
 **The request left and the answer never came.** The dangerous one, and section 6.3 is entirely about
 it. The retry carries the same id, so exactly one order exists either way.
 
-**The laptop answered and its disk did not.** The order was not accepted, and the message says the
-laptop could not save it just now rather than saying it could not be reached. A message that states
-the wrong cause sends somebody off to check the WiFi.
+**The laptop answered and its disk did not.** The order was not stored, and the message says the
+laptop could not save the order rather than saying it could not be reached, because a message that
+states the wrong cause sends somebody off to check the WiFi. An order no attempt was ever left
+unanswered on does not freeze, so the message asks for it to be sent again without naming a button:
+both ways of sending are back on the screen and the waiter picks the one they meant.
 
-**The laptop answered, and the answer was no.** A refusal names its reason: an item the laptop has
-never heard of, a line with no station on it, an item with no station set up at all, or a station
-that does not make that item. Nothing was stored, and the answer says so, which leaves the
-waiter nothing to wonder about. The order does not freeze. The reason stands on the summary in their
+**The laptop answered, and the answer was no.** Two reasons have wording of their own, because they
+are the two a waiter can put right at the table: an item that is no longer on the menu, and a station
+that does not prepare the item on the line. Both of them are the menu changing under somebody
+mid-order, both name the item, and both name the tap that clears it. Every other reason is something
+the screens already prevent, and those share the one sentence from section 2.7 while the log keeps
+which of them it was. Nothing was stored, and the answer says so, which leaves the
+waiter nothing to wonder about. An order no attempt was ever left unanswered on does not freeze. The
+reason stands on the summary in their
 own language, every control comes back, the items screen lets them in again, and they put right what
 the reason names and send once more. That attempt carries the same submission id, because an order
 which was never stored gives the laptop nothing to recognise later, and keeping the id is what makes
 the attempt safe if it is the one that goes unanswered. The reason leaves the screen as soon as the
 waiter changes anything, since it described the order as it stood.
 
-**A refusal never counts toward the two failed attempts** that bring up the dialog below. That
-dialog is for the failure nobody can resolve, and a refusal is the one failure a waiter resolves in
-a tap. Sending them off to write on paper because of a line they could have taken off the order
-would be the wrong answer to a question that already has a right one.
+**An answer never counts toward the two failed attempts** that bring up the dialog below. That
+dialog is for the failure nobody can resolve, and an answer is the failure a waiter resolves in a tap.
+Sending them off to write on paper because of a line they could have taken off the order would be the
+wrong answer to a question that already has a right one.
 
-An answer that names no reason is not a refusal. A laptop that could not save the order, or that
-answered with something the phone cannot read, leaves open exactly the question silence leaves, and
-the order freezes as it does here.
+**The phone asks one question about an attempt, and it is whether the laptop answered.** An answer,
+whatever it said, means the laptop is there and has told the phone what exists, so an order no
+attempt was ever left unanswered on stays open for changes, both ways of sending come back, and the
+attempt counts for nothing. Silence means the order may already be at the laptop, so it freezes.
+What the answer contained decides the wording on the screen and nothing else: a laptop that could not
+save the order says exactly that, and its answer still leaves such an order open, because a laptop
+that answers has not lost anything quietly.
+
+**One silence outlasts every answer that follows it.** As soon as a single attempt for an order has
+gone unanswered, that order is frozen for the rest of its life, whatever the laptop says to any
+attempt after it. An answer of no describes the attempt the laptop has just seen, and it says nothing
+at all about the attempt it never answered, which may have landed with the whole order on it. Were
+the order to open again at that point, the waiter could take a line off, send once more, and get a
+plain success back: the laptop would recognise the submission id, hand over the order it had stored
+from the silent attempt, and the station would produce the order as it stood before the edit, with
+the settled-or-open choice of that first attempt. That is the silent wrong answer this product must
+never give, so the freeze that a silence starts ends in two ways only: the laptop accepts the order,
+or the waiter says on the dialog below that the order is written down on paper. Both of those clear
+the order and start an empty one. That an attempt was left unanswered is written into the record
+beside the order in section 6.2, so a reload does not lift the freeze either.
 
 **The waiter presses send, and the order freezes.** From that press until the phone knows what became
 of it, the order takes no change of any kind, on any screen: no item added or removed, no note, no
@@ -790,9 +836,9 @@ summary, which is where the failure and both ways out are. What the laptop pushe
 meantime still arrives and is still shown, because the item list is not the waiter's order and the
 order is what freezes. The freeze is written to the browser's storage with the order, so a
 reload does not lift it, and it ends in exactly three ways: the laptop accepts the order, the laptop
-refuses it and says why, or the waiter says on the dialog below that the order is written down on
-paper. Acceptance and the dialog both clear the order and start an empty one, and a refusal leaves
-it standing to be put right.
+answers no and says why to an order no attempt was ever left unanswered on, or the waiter says on the
+dialog below that the order is written down on paper. Acceptance and the dialog both clear the order
+and start an empty one, and such an answer of no leaves it standing to be put right.
 
 The lines and the total stay readable throughout, because the waiter may have to copy them onto
 paper. The reason for the freeze is the submission id from section 6.3. A retry carries the id the
@@ -835,22 +881,46 @@ is written down", clears the order and starts an empty one so the waiter can ser
 back while the waiter was reading, and the dialog returns if that attempt fails as well. There is no
 close cross and a tap beside the dialog does nothing, because both honest answers are already on it.
 
+**A frozen order the laptop refuses brings the same dialog up at once.** A refusal the waiter can act
+on is one thing, and a refusal on an order that an earlier silence froze is another: the order takes
+no change of any kind, so the item the laptop names cannot be taken off, and pressing the retry again
+fetches the same answer back. There is nothing left on the phone for that waiter to try, which is
+what the dialog is for, so it comes up on the first such refusal instead of waiting for a second
+unanswered attempt. The order stays frozen behind it and every line stays readable for copying. The
+dialog's first sentence still speaks of a laptop that was not reached, which is not what happened
+here, and the red panel behind it names what the laptop actually said. A refusal on an order no
+attempt was ever left unanswered on brings no dialog up at all, however often the laptop repeats it,
+because there the waiter can put the order right and send it again.
+
 **Reconnect.** The connection comes back, the app fetches whatever the current screen needs, and
 replaces what it holds. The phone never has to work out what it missed.
 
-**The device was signed out while it was offline**, because the admin set its owner up again. The next call is refused. The app clears the token, **keeps the draft
-order**, and shows the setup screen saying the started order is still there. Throwing away a
+**The device was signed out while it was offline**, because the admin set its owner up again, took
+the waiter off the list, or started the laptop on a database that knows no devices at all. The next
+call the phone makes is refused, and it does not matter which call that is: the check the app makes
+when it starts, the send from the summary, or anything else the screen asks for. Every one of them is
+read in the one place the answers pass through, so a waiter who was out of range and comes back to
+press send is told that the phone has to be set up again rather than that the laptop could not be
+reached. The app clears the token, **keeps the draft order**, and shows the setup screen saying the
+started order is still there. The reason for that refused call goes with the token, because it would
+tell the waiter that the laptop could not be reached and would point at a retry the setup screen does
+not have. The summary the waiter comes back to after scanning a fresh code carries the table name and
+every line, and nothing red stands on it. Throwing away a
 half-built order because an admin tapped the wrong row would be destroying a guest's order to solve
-an administrative problem.
+an administrative problem. The order keeps the submission id it already had, so once a fresh code has
+been scanned and the waiter sends again, an attempt that did reach the laptop earlier comes back as
+the order the laptop already holds instead of becoming a second one. An answer that refuses only what
+a device may do, such as a station's tablet asking for a waiter's screen, is a different answer and
+signs nobody out.
 
 **The device is signed out and set up again.** The person keeps their identity and everything
 attached to it, because the code the admin issued names them. The orders they already placed are
 unaffected.
 
-**An item sold out, or a price changed, while the basket was open.** The line stays, it is flagged,
-and the phone shows the price the laptop now names, which is also the price that travels back with
-the order. A sold-out line holds the send back until the waiter takes it off with the one button
-that clears such lines, and the laptop would still have accepted it (section 3.3).
+**An item sold out, a price changed, or an item moved to another station while the basket was
+open.** The line stays, it is flagged, and the phone shows the price the laptop now names, which is
+also the price that travels back with the order. A flagged line holds the send back until the waiter
+takes it off with the one button that clears such lines (section 3.3).
 
 **Two phones send the same order.** Not prevented, and not preventable: two waiters can genuinely
 take the same table. The station sees two orders with two different numbers, which is the same

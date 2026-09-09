@@ -192,37 +192,76 @@ exactly the problems this section is looking for.
     cleared, a fresh one is started, and the tablet at the station is what tells you whether your
     slip is needed.
 
-    Now the other kind of failure, the one where the laptop answers and the answer is no. On the
-    laptop, tick both bars on one drink. On the phone, with the WiFi on, take a fresh order with that
-    drink and choose "Theke innen" when the phone asks which bar makes it. Before you send, go back
-    to the laptop and take "Theke innen" off that drink so that only "Theke aussen" is left. Now tap
-    "Bestellung senden". The laptop answers, and its answer is no: a red panel says that this item is
-    not made at the station you chose and asks you to choose another one.
+    Now the other kind of failure, the one where the laptop answers and the answer is no. Take one
+    more order with a single item on it, switch the WiFi off, and tap "Bestellung senden" so that the
+    order freezes the way it did above. With the WiFi still off, go to the laptop, open that item and
+    move it to a station it is not on yet, ticking the new one and unticking the old one so the item
+    still has exactly one place to go. Switch the phone's WiFi back on and look at the summary
+    without reloading it. The line is marked, saying that this station no longer prepares the item,
+    and the button that would clear it is dead, because the order is frozen and the laptop may
+    already hold it. "Erneut senden" is still tappable, so tap it.
 
-    Nothing is frozen this time, and that is what the step is for. The way back to the items is
-    alive, so are the delivery choices, and "Bestellung aufnehmen" in the header opens the items
-    instead of putting you back on the summary. Take the drink off the order there and add it again:
-    it goes to "Theke aussen" without asking, the red panel disappears the moment you change
-    anything, and the order sends. Send into the same refusal twice before you fix it if you want to
-    be sure: the dialog about paper never comes up. Paper is for the failure nobody can resolve, and
-    a waiter resolves this one in a tap.
+    The laptop answers, and its answer is no, and the dialog about paper covers the summary straight
+    away. That is what this step is for. The order is still frozen by the attempt the laptop never
+    answered while the WiFi was off, so the item the laptop named cannot be taken off it, and tapping
+    the retry again would fetch the same answer back. Behind the dialog the red panel says that this
+    station does not prepare the item. The dialog's own first sentence still speaks of a laptop that
+    was not reached, which is not what happened here, and it stays as it is because the panel behind
+    it names the real reason.
 
-34. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
+    So put it right where it can be put right, which is the laptop: tick the station the item was on
+    before and untick the other one again. Tap "Noch einmal versuchen" on the dialog. The order goes
+    through, the confirmation carries its number, and the phone starts an empty order. Acceptance is
+    one of the two ways out of a freeze that a silence started, and "Bestellung ist aufgeschrieben" is
+    the other.
+
+34. **An item moves to another station while a waiter is holding it.** This is the same change as the
+    one you just staged, seen by a phone that is not frozen, and the two results are meant to differ.
+    With the WiFi on and nothing frozen, take a fresh order with one drink on it and leave the phone
+    standing on the summary. On the laptop, open that drink and move it from the bar it is on to the
+    other one. Without a reload, the phone marks the line under that bar's heading, saying that this
+    station no longer prepares the item. Both send buttons are dead and the line under them tells you
+    to remove the item. Tap "Nicht bestellbare Artikel entfernen", go back to the items and add the
+    drink again: it goes to the other bar without asking, because that is the only bar left, and the
+    order sends. The laptop would have refused this order, and the point of the step is that it never
+    had to.
+
+35. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
     stations on one drink so either can pour it. On the phone, tap that drink: the phone asks which
     of the two makes it. Tap "Abbrechen". Nothing is added to the order, you stay in the category,
     and the question does not come back when you open another category. Tap the drink again and
     answer properly this time: the line names the bar you chose, and only that bar sees it.
+
+36. **A phone that was set up again while its waiter was out of range.** Take a fresh order on a
+    phone, with two or three items and a table name on it, and leave it standing on the summary
+    without sending it. Switch that phone's WiFi off, which is the phone being carried out to the far
+    end of the site. On the laptop, open the waiter list and tap "Telefon neu einrichten" on that
+    waiter's row, the way you would for somebody who has handed their phone to the next shift. Leave
+    the code standing on the screen and do not scan it yet.
+
+    Switch the phone's WiFi back on and tap "Bestellung senden". The phone does not tell you that the
+    laptop could not be reached, because it was reached: it shows the screen that asks for the phone
+    to be set up, with the notice that the order you had started is still there. That notice is the
+    step: an order a guest gave a waiter is not thrown away because somebody tapped a row on the
+    laptop.
+
+    Now scan the code that is still on the laptop. The phone comes back to the items with your order
+    still in the basket, and the summary still carries the table name and every line. No red panel
+    stands on it, because the reason the laptop gave went with the setup the phone lost. Send the
+    order and
+    watch the station tablet: exactly one order arrives, with one number, because the order carried
+    the same identity through the whole of this and the laptop recognises it by that identity alone.
 
 ## After the walk
 
 The backup button and the diagnostics page described in the specification are not built yet, so these
 last two steps use what the program window actually offers today.
 
-35. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
+37. **Take the data off the laptop.** Click "Open the data folder" in the program window and copy the
     whole folder onto a stick while the program is still running. Copy `gastronomy.db` on its own as
     well, then open both copies on another machine: the whole folder holds the evening's orders, and
     the single file may be missing the last of them. That difference is the reason the backup belongs
     behind a button, and seeing it once is what makes the point stick.
-36. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
+38. **Read the log.** In that same folder, open the newest file under `logs`. The enrolments, the
     startup and the port are all in it, and no device token and no enrolment code appears anywhere in
     it.
