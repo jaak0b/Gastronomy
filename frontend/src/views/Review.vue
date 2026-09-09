@@ -2,7 +2,6 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isTableNameValid } from '../core/tableName'
-import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
@@ -14,7 +13,6 @@ import SendFailurePanel from '../components/review/SendFailurePanel.vue'
 import SendFailedTwiceDialog from '../components/review/SendFailedTwiceDialog.vue'
 
 const { t } = useI18n()
-const catalog = useCatalogStore()
 const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
@@ -69,7 +67,6 @@ function backToItems(): void {
       :lines="order.basketLines"
       :order-note="order.draft.note"
       :language="session.language"
-      :station-name-for="catalog.stationName"
       :estimates="estimates.stations"
       :delivery-mode-for="order.deliveryModeAt"
       :changes-are-refused="order.changesAreRefused"

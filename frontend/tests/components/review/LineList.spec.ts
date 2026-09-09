@@ -5,6 +5,7 @@ import { createVuetify } from 'vuetify'
 import LineList from '../../../src/components/review/LineList.vue'
 import type { BasketLineView } from '../../../src/core/basket'
 import type { DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
+import { routedStationId } from '../../../src/core/routingPreview'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
@@ -15,12 +16,13 @@ const STATION_NAMES: Record<string, string> = {
 }
 
 function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
-  return {
+  const chosen: BasketLineView = {
     catalogItemId: 'item-bratwurst',
     name: 'Bratwurst',
     unitPriceCents: 350,
     note: null,
     stationId: null,
+    stationName: '',
     candidateStationIds: ['station-kueche'],
     productionMinutes: null,
     isSoldOut: false,
@@ -28,6 +30,11 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     isNoLongerPreparedAtItsStation: false,
     ...overrides,
   }
+  if (overrides.stationName !== undefined) {
+    return chosen
+  }
+  const stationId = routedStationId(chosen)
+  return { ...chosen, stationName: stationId === null ? '' : STATION_NAMES[stationId] ?? '' }
 }
 
 interface ListOptions {
@@ -45,7 +52,6 @@ function mountList(lines: BasketLineView[], options: ListOptions = {}) {
       lines,
       orderNote: options.orderNote ?? null,
       language: 'de' as const,
-      stationNameFor: (stationId: string) => STATION_NAMES[stationId] ?? '',
       estimates: options.estimates ?? [],
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
       changesAreRefused: options.changesAreRefused ?? false,
@@ -323,5 +329,31 @@ describe('a line whose station no longer prepares its item', () => {
     const list = mountList([line({ stationId: 'station-kueche' })])
 
     expect(list.find('.station-no-longer-prepares-it').exists()).toBe(false)
+  })
+})
+
+describe('a station that has left the item list while the order stood on the summary', () => {
+  function beerFromAStationNobodyCanNameAnyMore(): BasketLineView {
+    return line({
+      catalogItemId: 'item-bier',
+      name: 'Bier',
+      stationId: 'station-theke-abgebaut',
+      candidateStationIds: ['station-theke-abgebaut'],
+      stationName: 'Theke aussen',
+    })
+  }
+
+  it('is still named in the header of its card', () => {
+    const list = mountList([beerFromAStationNobodyCanNameAnyMore()])
+
+    expect(list.get('.station-name').text()).toBe('Geht an Theke aussen')
+  })
+
+  it('is still named in the question about how that part is handed out', () => {
+    const list = mountList([beerFromAStationNobodyCanNameAnyMore()])
+
+    expect(list.get('.delivery-question').text()).toBe(
+      'Wie soll Theke aussen die Positionen ausgeben?',
+    )
   })
 })

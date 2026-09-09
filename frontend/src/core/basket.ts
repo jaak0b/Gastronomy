@@ -1,5 +1,5 @@
-import type { Catalog, CatalogItem, DraftOrder } from './apiTypes'
-import { candidateStations, stationStillPreparesIt } from './routingPreview'
+import type { Catalog, CatalogItem, CatalogStation, DraftLine, DraftOrder } from './apiTypes'
+import { candidateStations, routedStationId, stationStillPreparesIt } from './routingPreview'
 import { saveDraft } from './draftCart'
 
 export interface BasketLineView {
@@ -8,6 +8,7 @@ export interface BasketLineView {
   unitPriceCents: number | null
   note: string | null
   stationId: string | null
+  stationName: string
   candidateStationIds: string[]
   productionMinutes: number | null
   isSoldOut: boolean
@@ -17,6 +18,22 @@ export interface BasketLineView {
 
 export function findCatalogItem(catalog: Catalog, catalogItemId: string): CatalogItem | null {
   return catalog.items.find((item) => item.id === catalogItemId) ?? null
+}
+
+export function findCatalogStation(catalog: Catalog, stationId: string): CatalogStation | null {
+  return catalog.stations.find((station) => station.id === stationId) ?? null
+}
+
+function nameOfTheStationTheLineGoesTo(
+  catalog: Catalog,
+  line: DraftLine,
+  candidateStationIds: readonly string[],
+): string {
+  const stationId = routedStationId({ stationId: line.stationId, candidateStationIds })
+  if (stationId === null) {
+    return ''
+  }
+  return findCatalogStation(catalog, stationId)?.name ?? line.stationName
 }
 
 export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLineView[] {
@@ -29,6 +46,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         unitPriceCents: null,
         note: line.note,
         stationId: line.stationId,
+        stationName: nameOfTheStationTheLineGoesTo(catalog, line, []),
         candidateStationIds: [],
         productionMinutes: null,
         isSoldOut: false,
@@ -43,6 +61,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       unitPriceCents: item.priceCents,
       note: line.note,
       stationId: line.stationId,
+      stationName: nameOfTheStationTheLineGoesTo(catalog, line, candidateStationIds),
       candidateStationIds,
       productionMinutes: item.productionMinutes,
       isSoldOut: !item.isAvailable,

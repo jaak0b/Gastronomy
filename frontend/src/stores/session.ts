@@ -9,10 +9,10 @@ import type {
   SessionInfo,
   StationIdentity,
 } from '../core/apiTypes'
+import { assertNever } from '../core/assertNever'
 import { restoreDraft } from '../core/draftCart'
 import { parseDeviceKind } from '../core/landing'
 import { useConnectionStore } from './connection'
-import { useOrderStore } from './order'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
@@ -108,6 +108,8 @@ export const useSessionStore = defineStore('session', () => {
       case 'error':
         redeemErrorKey.value = errorKeyFor(result.status, result.body?.messageKey ?? null)
         return false
+      default:
+        return assertNever(result)
     }
   }
 
@@ -127,15 +129,15 @@ export const useSessionStore = defineStore('session', () => {
       case 'error':
       case 'unreachable':
         return
+      default:
+        return assertNever(result)
     }
   }
 
   function watchForBeingSignedOut(): void {
     const connection = useConnectionStore()
-    const order = useOrderStore()
     function theDeviceIsNoLongerSetUp(): void {
       clearToken()
-      order.forgetWhyTheSendFailed()
     }
     connection.onEvent<{ deviceId: string }>('DeviceRevoked', theDeviceIsNoLongerSetUp)
     onUnauthorisedAnswer(theDeviceIsNoLongerSetUp)

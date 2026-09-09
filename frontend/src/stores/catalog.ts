@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { listFrom, request } from '../api/client'
 import type { Catalog, CatalogCategory, CatalogItem, CatalogStation } from '../core/apiTypes'
+import { findCatalogStation } from '../core/basket'
 import { groupByCategory, type CategoryGroup } from '../core/grouping'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
@@ -26,7 +27,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   )
 
   function stationName(stationId: string): string {
-    return catalog.value.stations.find((station) => station.id === stationId)?.name ?? ''
+    return findCatalogStation(catalog.value, stationId)?.name ?? ''
   }
 
   async function load(): Promise<void> {

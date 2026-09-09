@@ -66,6 +66,7 @@ describe('buildBasketView', () => {
         unitPriceCents: 350,
         note: null,
         stationId: null,
+        stationName: 'Kueche',
         candidateStationIds: ['station-kueche'],
         isSoldOut: false,
         isNoLongerOnTheMenu: false,
@@ -382,5 +383,55 @@ describe('a line whose station no longer prepares its item', () => {
     ])
 
     expect(buildBasketView(draft, catalog())[0].isNoLongerPreparedAtItsStation).toBe(false)
+  })
+})
+
+describe('the station a line names on the summary', () => {
+  function withoutTheOutdoorBar(): Catalog {
+    const menu = catalog()
+    return {
+      ...menu,
+      stations: menu.stations.filter((station) => station.id !== 'station-theke-aussen'),
+    }
+  }
+
+  function beerAtTheOutdoorBar(): DraftOrder {
+    return draftWith([
+      {
+        catalogItemId: 'item-bier',
+        note: null,
+        stationId: 'station-theke-aussen',
+        name: 'Bier',
+        stationName: 'Theke aussen',
+      },
+    ])
+  }
+
+  it('takes the name from the item list, so a station renamed during the evening reads new', () => {
+    const view = buildBasketView(beerAtTheOutdoorBar(), catalog())
+
+    expect(view[0].stationName).toBe('Theke aussen')
+  })
+
+  it('takes the name the line kept once the station has left the item list', () => {
+    const view = buildBasketView(beerAtTheOutdoorBar(), withoutTheOutdoorBar())
+
+    expect(view[0].stationName).toBe('Theke aussen')
+  })
+
+  it('names the one station that prepares an item the waiter was never asked about', () => {
+    const draft = draftWith([
+      {
+        catalogItemId: 'item-bratwurst',
+        note: null,
+        stationId: null,
+        name: 'Bratwurst',
+        stationName: '',
+      },
+    ])
+
+    const view = buildBasketView(draft, catalog())
+
+    expect(view[0].stationName).toBe('Kueche')
   })
 })

@@ -292,7 +292,22 @@ describe('an order holding something that cannot be ordered', () => {
     const review = mountReview()
 
     expect(review.get('.remove-before-sending').text()).toBe(
-      'Ein Artikel kann nicht bestellt werden. Entfernen Sie ihn.',
+      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
+    )
+  })
+
+  it('says the same when several items have to come off the order', () => {
+    const order = soldOutOrder()
+    order.addItem({
+      catalogItemId: 'item-gone',
+      note: null,
+      stationId: null,
+      name: 'Currywurst',
+    })
+    const review = mountReview()
+
+    expect(review.get('.remove-before-sending').text()).toBe(
+      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
     )
   })
 
@@ -708,7 +723,7 @@ describe('an order holding a line the admin moved to another station', () => {
     const review = mountReview()
 
     expect(review.get('.remove-before-sending').text()).toBe(
-      'Ein Artikel kann nicht bestellt werden. Entfernen Sie ihn.',
+      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
     )
   })
 

@@ -20,6 +20,10 @@ export function onUnauthorisedAnswer(report: () => void): void {
   reportThatTheDeviceIsNoLongerKnown = report
 }
 
+export function answerSaysTheDeviceIsNoLongerSetUp(result: ApiResult<unknown>): boolean {
+  return result.kind === 'error' && result.status === UNAUTHORISED
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const headers: Record<string, string> = {}
   if (options.body !== undefined) {

@@ -10,7 +10,7 @@ const { testPlugins } = await import('../support/plugins')
 const { TOKEN_STORAGE_KEY, DEVICE_KIND_STORAGE_KEY } = await import('../../src/stores/session')
 const { useOrderStore } = await import('../../src/stores/order')
 const { useSessionStore } = await import('../../src/stores/session')
-const { restoreDraft } = await import('../../src/core/draftCart')
+const { restoreDraft, saveDraft, saveSendProgress } = await import('../../src/core/draftCart')
 
 const SESSION = {
   deviceKind: 'staffMember',
@@ -164,5 +164,62 @@ describe('a phone that is set up again after the laptop refused the order it was
     await aPhoneBackOnItsOrderAfterANewCodeWasScanned()
 
     expect(phone?.find('.send-failure').exists()).toBe(false)
+  })
+})
+
+describe('a waiter whose order was already frozen when the phone was set up again', () => {
+  async function aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone() {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    localStorage.setItem(DEVICE_KIND_STORAGE_KEY, 'staffMember')
+    saveDraft({
+      tableName: 'Tisch 5',
+      note: null,
+      lines: [
+        { catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' },
+      ],
+      clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+      deliveryModes: {},
+    })
+    saveSendProgress({
+      state: 'sending',
+      attempts: 1,
+      settleOnSend: false,
+      anAttemptWentUnanswered: false,
+      failure: null,
+    })
+    aLaptopThatForgotThisPhoneAfterItStarted()
+    navigate('/review')
+    phone = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
+    const order = useOrderStore()
+    await order.sendAgain()
+    await flushPromises()
+    return order
+  }
+
+  it('is asked to set the phone up again, the same as any other waiter', async () => {
+    await aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone()
+
+    expect(phone?.find('.welcome').exists()).toBe(true)
+  })
+
+  it('reads the same sentence as before on the summary once the new code is scanned', async () => {
+    await aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone()
+
+    await useSessionStore().redeem({ code: '123456' })
+    await flushPromises()
+
+    expect(phone?.find('.send-failure .failure-message').text()).toBe(
+      'Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf "Erneut senden".',
+    )
+  })
+
+  it('comes back to an order that still offers the one thing it offered before, sending again', async () => {
+    await aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone()
+
+    await useSessionStore().redeem({ code: '123456' })
+    await flushPromises()
+
+    expect(phone?.find('.send-again').exists()).toBe(true)
   })
 })

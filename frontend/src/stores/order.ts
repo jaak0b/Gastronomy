@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../api/client'
+import { answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
 import type {
   DeliveryMode,
   DraftLine,
@@ -105,14 +105,6 @@ export const useOrderStore = defineStore('order', () => {
     rememberWhatBecameOfTheSend()
   }
 
-  function forgetWhyTheSendFailed(): void {
-    if (failure.value === null) {
-      return
-    }
-    failure.value = null
-    rememberWhatBecameOfTheSend()
-  }
-
   function change(makeTheChange: (current: DraftOrder) => DraftOrder): void {
     if (changesAreRefused.value) {
       return
@@ -133,12 +125,16 @@ export const useOrderStore = defineStore('order', () => {
     draftWasLost.value = false
   }
 
-  function addItem(line: DraftLine): void {
+  function nameOfTheStation(stationId: string | null): string {
+    return stationId === null ? '' : catalogStore.stationName(stationId)
+  }
+
+  function addItem(line: Omit<DraftLine, 'stationName'>): void {
     if (changesAreRefused.value) {
       return
     }
     dismissDraftLoss()
-    draft.value = addLine(draft.value, line)
+    draft.value = addLine(draft.value, { ...line, stationName: nameOfTheStation(line.stationId) })
     theRefusalNoLongerFitsTheOrder()
   }
 
@@ -155,7 +151,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function chooseStation(index: number, stationId: string | null): void {
-    change((current) => setLineStation(current, index, stationId))
+    change((current) => setLineStation(current, index, stationId, nameOfTheStation(stationId)))
   }
 
   function setTable(tableName: string): void {
@@ -203,10 +199,18 @@ export const useOrderStore = defineStore('order', () => {
     saveSendProgress(whatTheSendHasComeTo())
   }
 
+  function putTheSendBackTo(progress: SendProgress): void {
+    sendState.value = progress.state
+    attemptsMade.value = progress.attempts
+    settledOnSend.value = progress.settleOnSend
+    anAttemptWentUnanswered.value = progress.anAttemptWentUnanswered
+    failure.value = progress.failure
+    rememberWhatBecameOfTheSend()
+  }
+
   async function send(settleOnSend: boolean): Promise<void> {
     const session = useSessionStore()
-    const tokenTheOrderWentOutWith = session.deviceToken
-    const attemptsBeforeThisOne = attemptsMade.value
+    const sendBeforeThisAttempt = whatTheSendHasComeTo()
     settledOnSend.value = settleOnSend
     attemptsMade.value += 1
     failure.value = null
@@ -240,13 +244,14 @@ export const useOrderStore = defineStore('order', () => {
         rememberWhatBecameOfTheSend()
         return
       case 'error':
+        if (answerSaysTheDeviceIsNoLongerSetUp(result)) {
+          putTheSendBackTo(sendBeforeThisAttempt)
+          return
+        }
         failure.value = messageForSendFailure(result)
-        attemptsMade.value = attemptsBeforeThisOne
+        attemptsMade.value = sendBeforeThisAttempt.attempts
         sendState.value = 'rejected'
         rememberWhatBecameOfTheSend()
-        if (session.deviceToken !== tokenTheOrderWentOutWith) {
-          forgetWhyTheSendFailed()
-        }
         return
       default:
         return assertNever(result)
@@ -285,7 +290,6 @@ export const useOrderStore = defineStore('order', () => {
     chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
-    forgetWhyTheSendFailed,
     startNextOrderAfterWritingItDown,
     send,
     sendAgain,

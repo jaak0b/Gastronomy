@@ -90,7 +90,7 @@
     "sent": "Bestellung {number} ist angekommen.",
     "back": "Zurück zur Auswahl",
     "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
-    "removeBeforeSending": "Ein Artikel kann nicht bestellt werden. Entfernen Sie ihn.",
+    "removeBeforeSending": "Die Bestellung lässt sich so nicht senden. Tippen Sie auf \"Nicht bestellbare Artikel entfernen\".",
     "sendFailed": "Der Laptop war nicht erreichbar. Tippen Sie auf \"Erneut senden\".",
     "sendFailedDatabase": "Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
     "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\".",

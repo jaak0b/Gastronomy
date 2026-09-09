@@ -24,6 +24,7 @@ function bratwurstLine(): DraftLine {
     note: null,
     stationId: null,
     name: 'Bratwurst',
+    stationName: '',
   }
 }
 
@@ -111,6 +112,7 @@ describe('restoreDraft', () => {
         note: null,
         stationId: null,
         name: '',
+        stationName: '',
       },
     ])
   })
@@ -129,6 +131,7 @@ describe('restoreDraft', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
   })
@@ -175,7 +178,7 @@ describe('the stored draft shape', () => {
     ])
   })
 
-  it('stores the item, the note, the station and the name it was added under', () => {
+  it('stores the item, the note, the station and the names the two were added under', () => {
     addLine(emptyDraft(), bratwurstLine())
 
     const stored = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) as string) as {
@@ -187,6 +190,7 @@ describe('the stored draft shape', () => {
       'name',
       'note',
       'stationId',
+      'stationName',
     ])
   })
 
@@ -212,6 +216,7 @@ describe('draft mutators', () => {
         note: null,
         stationId: null,
         name: 'Bratwurst',
+        stationName: '',
       },
     ])
   })
@@ -251,14 +256,14 @@ describe('draft mutators', () => {
   it('persists the station chosen for a line', () => {
     const draft = addLine(emptyDraft(), bratwurstLine())
 
-    setLineStation(draft, 0, 'station-2')
+    setLineStation(draft, 0, 'station-2', 'Theke aussen')
 
     expect(restoreDraft().draft.lines[0].stationId).toBe('station-2')
   })
 
   it('leaves the next line without a station after one line got a choice', () => {
     const first = addLine(emptyDraft(), bratwurstLine())
-    const chosen = setLineStation(first, 0, 'station-2')
+    const chosen = setLineStation(first, 0, 'station-2', 'Theke aussen')
 
     const second = addLine(chosen, bratwurstLine())
 
@@ -458,5 +463,43 @@ describe('the record of what became of a send', () => {
     clearDraft()
 
     expect(restoreSendProgress().state).toBe('idle')
+  })
+})
+
+describe('the station name a line keeps', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('is the name the station had when it was chosen for that line', () => {
+    const chosen = setLineStation(addLine(emptyDraft(), bratwurstLine()), 0, 'station-kueche', 'Küche')
+
+    expect(chosen.lines[0].stationName).toBe('Küche')
+  })
+
+  it('comes back with the line after a reload', () => {
+    saveDraft(setLineStation(addLine(emptyDraft(), bratwurstLine()), 0, 'station-kueche', 'Küche'))
+
+    expect(restoreDraft().draft.lines[0].stationName).toBe('Küche')
+  })
+
+  it('is empty on an order stored before lines kept it, and that order still loads', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [
+          { catalogItemId: 'item-1', note: null, stationId: 'station-kueche', name: 'Bratwurst' },
+        ],
+      }),
+    )
+
+    const restoration = restoreDraft()
+
+    expect(restoration.outcome).toBe('restored')
+    expect(restoration.draft.lines[0].stationName).toBe('')
   })
 })

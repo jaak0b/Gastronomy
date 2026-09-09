@@ -90,7 +90,7 @@
     "sent": "Order {number} has arrived.",
     "back": "Back to the items",
     "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
-    "removeBeforeSending": "One item cannot be ordered. Remove it.",
+    "removeBeforeSending": "The order cannot be sent as it is. Tap \"Remove the items that cannot be ordered\".",
     "sendFailed": "The laptop could not be reached. Tap \"Send again\".",
     "sendFailedDatabase": "The laptop could not save the order. Send it again.",
     "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\".",

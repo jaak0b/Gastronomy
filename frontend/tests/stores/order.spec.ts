@@ -6,6 +6,9 @@ import { useOrderStore, ARRIVAL_NOTICE_MS, SEND_TIMEOUT_MS } from '../../src/sto
 import {
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,
+  restoreDraft,
+  restoreSendProgress,
+  saveDraft,
   saveSendProgress,
 } from '../../src/core/draftCart'
 
@@ -930,5 +933,188 @@ describe('an order the laptop answered only after it had already stayed silent o
     order.startNextOrderAfterWritingItDown()
 
     expect(order.changesAreRefused).toBe(false)
+  })
+})
+
+describe('an order sent from a phone the laptop no longer knows', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function aLaptopThatNoLongerKnowsThisPhone(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 401 })),
+    )
+  }
+
+  function anOrderOnThePhone(): void {
+    saveDraft({
+      tableName: 'Tisch 5',
+      note: null,
+      lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' }],
+      clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+      deliveryModes: {},
+    })
+  }
+
+  function anOrderFrozenByAnAttemptTheLaptopNeverAnswered() {
+    anOrderOnThePhone()
+    saveSendProgress({
+      state: 'sending',
+      attempts: 1,
+      settleOnSend: false,
+      anAttemptWentUnanswered: false,
+      failure: null,
+    })
+    aLaptopThatNoLongerKnowsThisPhone()
+    return useOrderStore()
+  }
+
+  it('leaves the sentence the waiter was already reading on the order', async () => {
+    const order = anOrderFrozenByAnAttemptTheLaptopNeverAnswered()
+
+    await order.sendAgain()
+
+    expect(order.failure?.key).toBe('review.sendInterrupted')
+  })
+
+  it('leaves that sentence in storage, so it is still there once the phone is set up again', async () => {
+    const order = anOrderFrozenByAnAttemptTheLaptopNeverAnswered()
+
+    await order.sendAgain()
+
+    expect(restoreSendProgress().failure?.key).toBe('review.sendInterrupted')
+  })
+
+  it('keeps the order frozen, because the silence before it is still unexplained', async () => {
+    const order = anOrderFrozenByAnAttemptTheLaptopNeverAnswered()
+
+    await order.sendAgain()
+
+    expect(order.changesAreRefused).toBe(true)
+  })
+
+  it('counts no attempt, because the laptop never read the order', async () => {
+    const order = anOrderFrozenByAnAttemptTheLaptopNeverAnswered()
+
+    await order.sendAgain()
+
+    expect(order.attemptsMade).toBe(1)
+  })
+
+  it('leaves the paper route where it was, so no dialog jumps in front of the waiter', async () => {
+    const order = anOrderFrozenByAnAttemptTheLaptopNeverAnswered()
+
+    await order.sendAgain()
+
+    expect(order.onlyPaperIsLeft).toBe(false)
+  })
+
+  it('leaves an order nothing had happened to open for changes', async () => {
+    anOrderOnThePhone()
+    aLaptopThatNoLongerKnowsThisPhone()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.changesAreRefused).toBe(false)
+  })
+
+  it('says nothing about that order, because nothing about it was decided', async () => {
+    anOrderOnThePhone()
+    aLaptopThatNoLongerKnowsThisPhone()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.failure).toBeNull()
+    expect(order.sendState).toBe('idle')
+  })
+
+  it('counts no attempt on that order either', async () => {
+    anOrderOnThePhone()
+    aLaptopThatNoLongerKnowsThisPhone()
+    const order = useOrderStore()
+
+    await order.send(false)
+
+    expect(order.attemptsMade).toBe(0)
+    expect(restoreSendProgress().attempts).toBe(0)
+  })
+})
+
+describe('the station name a line is given when it is added', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  function twoBarsAndTheDrinksTheyPour() {
+    const catalog = useCatalogStore()
+    catalog.catalog = {
+      categories: [],
+      items: [
+        {
+          id: 'item-wasser',
+          name: 'Wasser',
+          categoryId: 'category-getraenke',
+          priceCents: 200,
+          sortOrder: 1,
+          isAvailable: true,
+          stationIds: ['station-theke-innen'],
+          productionMinutes: null,
+        },
+        {
+          id: 'item-bier',
+          name: 'Bier',
+          categoryId: 'category-getraenke',
+          priceCents: 420,
+          sortOrder: 2,
+          isAvailable: true,
+          stationIds: ['station-theke-innen', 'station-theke-aussen'],
+          productionMinutes: null,
+        },
+      ],
+      stations: [
+        { id: 'station-theke-innen', name: 'Theke innen', sortOrder: 1 },
+        { id: 'station-theke-aussen', name: 'Theke aussen', sortOrder: 2 },
+      ],
+    }
+    return catalog
+  }
+
+  it('is the name of the one bar that pours it, which the waiter was never asked about', () => {
+    twoBarsAndTheDrinksTheyPour()
+    const order = useOrderStore()
+
+    order.addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-theke-innen',
+      name: 'Wasser',
+    })
+
+    expect(restoreDraft().draft.lines[0].stationName).toBe('Theke innen')
+  })
+
+  it('is the name of the bar the waiter picked when the phone asked', () => {
+    twoBarsAndTheDrinksTheyPour()
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-bier',
+      note: null,
+      stationId: null,
+      name: 'Bier',
+    })
+
+    order.chooseStation(0, 'station-theke-aussen')
+
+    expect(restoreDraft().draft.lines[0].stationName).toBe('Theke aussen')
   })
 })

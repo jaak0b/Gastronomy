@@ -4,7 +4,6 @@ import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
 import {
   clearDraft,
   restoreDraft,
-  restoreSendProgress,
   saveDraft,
   saveSendProgress,
 } from '../../src/core/draftCart'
@@ -218,18 +217,6 @@ describe('a phone that is signed out while a reason stands on the order screen',
     await request('/api/orders', { method: 'POST', body: {}, token: session.deviceToken })
     return order
   }
-
-  it('takes the reason off the order, so nothing stale greets the waiter after the new code', async () => {
-    const order = await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
-
-    expect(order.failure).toBeNull()
-  })
-
-  it('takes the reason out of storage too, so a reload cannot bring it back', async () => {
-    await aPhoneSignedOutWhileTheOrderScreenNamedAReason()
-
-    expect(restoreSendProgress().failure).toBeNull()
-  })
 
   it('keeps the order closed for changes, because the laptop may still hold it', async () => {
     const order = await aPhoneSignedOutWhileTheOrderScreenNamedAReason()

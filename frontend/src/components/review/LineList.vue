@@ -22,7 +22,6 @@ const props = defineProps<{
   lines: BasketLineView[]
   orderNote: string | null
   language: AppLanguage
-  stationNameFor: (stationId: string) => string
   estimates: StationEstimate[]
   deliveryModeFor: (stationId: string) => DeliveryMode
   changesAreRefused: boolean
@@ -64,7 +63,7 @@ const parts = computed<StationPart[]>(() =>
       .filter((minutes): minutes is number => minutes !== null)
     return {
       stationId,
-      stationName: stationId === null ? '' : props.stationNameFor(stationId),
+      stationName: slice.lines[0].stationName,
       deliveryMode,
       sliceMinutes: sliceEstimateMinutes(perItem, deliveryMode),
       entries: collapseLines(slice.lines, nameOf, (line) => line.note).sort(readingOrder),
