@@ -9,6 +9,8 @@ public sealed record RedeemEnrolmentRequest
   public string? Name { get; init; }
 
   public string? UserAgent { get; init; }
+
+  public string? PreviousDeviceToken { get; init; }
 }
 
 public sealed record RedeemedEnrolmentView(

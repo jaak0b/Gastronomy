@@ -15,6 +15,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private readonly DeviceClaimTypes _claimTypes = new();
 
   private readonly IDeviceTokenStore _deviceTokenStore;
+  private readonly DeviceTokenSplitter _tokenSplitter = new();
 
   public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options,
                                      ILoggerFactory logger,
@@ -33,17 +34,14 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
       return AuthenticateResult.NoResult();
     }
 
-    var separatorIndex = presentedToken.IndexOf('.');
-    if (separatorIndex <= 0 || separatorIndex == presentedToken.Length - 1)
+    var tokenParts = _tokenSplitter.Split(presentedToken);
+    if (tokenParts is null)
     {
       return AuthenticateResult.Fail("The device token is not in the form TokenLookupId.secret.");
     }
 
-    var tokenLookupId = presentedToken[..separatorIndex];
-    var secret = presentedToken[(separatorIndex + 1)..];
-
     var verification =
-      await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, Context.RequestAborted);
+      await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
 
     if (!verification.IsValid || verification.Device is null || verification.Owner is null)
     {

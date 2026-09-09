@@ -79,6 +79,10 @@ export function replace(path: string): void {
   keepAWayBackAsSoonAsTheScreenIsTouched()
 }
 
+export function startOverAt(path: string): void {
+  window.location.replace(path)
+}
+
 function keepAWayBackAsSoonAsTheScreenIsTouched(): void {
   function armOnFirstTouch(): void {
     window.removeEventListener('pointerdown', armOnFirstTouch)

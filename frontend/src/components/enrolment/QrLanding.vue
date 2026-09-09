@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
 import { useSessionStore } from '../../stores/session'
-import { replace } from '../../router'
+import { replace, startOverAt } from '../../router'
 import LanguageSwitch from '../LanguageSwitch.vue'
 
 const props = defineProps<{ code: string }>()
@@ -23,14 +23,14 @@ const failureMessage = computed(() => {
 async function submit(): Promise<void> {
   const redeemed = await session.redeem({ code: props.code, name: name.value.trim() })
   if (redeemed) {
-    replace('/')
+    startOverAt('/')
   }
 }
 
 onMounted(async () => {
   const redeemed = await session.redeem({ code: props.code })
   if (redeemed) {
-    replace('/')
+    startOverAt('/')
     return
   }
 

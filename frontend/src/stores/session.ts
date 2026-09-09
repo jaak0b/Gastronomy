@@ -32,6 +32,7 @@ export const useSessionStore = defineStore('session', () => {
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
   const deviceKind = ref<DeviceKind | null>(null)
+  const deviceId = ref<string | null>(null)
   const startingUpFailure = ref<StartingUpFailure | null>(null)
   const deviceSession = computed<DeviceSession>(() => {
     if (deviceToken.value === null) {
@@ -47,20 +48,25 @@ export const useSessionStore = defineStore('session', () => {
     return restoreDraft().draft.lines.length > 0
   }
 
-  function storeToken(token: string, kind: DeviceKind): void {
+  function storeToken(token: string, kind: DeviceKind, id: string): void {
     deviceToken.value = token
     deviceKind.value = kind
+    deviceId.value = id
     startingUpFailure.value = null
     localStorage.setItem(TOKEN_STORAGE_KEY, token)
   }
 
   function clearToken(): void {
+    const tokenThisTabHeld = deviceToken.value
     deviceToken.value = null
     deviceKind.value = null
+    deviceId.value = null
     startingUpFailure.value = null
     staffMember.value = null
     station.value = null
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    if (localStorage.getItem(TOKEN_STORAGE_KEY) === tokenThisTabHeld) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY)
+    }
   }
 
   function setLanguage(next: AppLanguage): void {
@@ -98,11 +104,12 @@ export const useSessionStore = defineStore('session', () => {
         code: input.code ?? null,
         name: input.name ?? null,
         userAgent: navigator.userAgent,
+        previousDeviceToken: localStorage.getItem(TOKEN_STORAGE_KEY),
       },
     })
     switch (result.kind) {
       case 'ok':
-        storeToken(result.data.deviceToken, result.data.deviceKind)
+        storeToken(result.data.deviceToken, result.data.deviceKind, result.data.deviceId)
         staffMember.value = result.data.staffMember
         station.value = result.data.station ?? null
         language.value = result.data.language
@@ -120,20 +127,25 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function loadSession(): Promise<void> {
-    if (deviceToken.value === null) {
+    const tokenTheAnswerBelongsTo = deviceToken.value
+    if (tokenTheAnswerBelongsTo === null) {
       return
     }
     startingUpFailure.value = null
-    const result = await request<SessionInfo>('/api/session', { token: deviceToken.value })
+    const result = await request<SessionInfo>('/api/session', { token: tokenTheAnswerBelongsTo })
+    if (deviceToken.value !== tokenTheAnswerBelongsTo) {
+      return
+    }
     switch (result.kind) {
       case 'ok':
         staffMember.value = result.data.staffMember
         station.value = result.data.station
         deviceKind.value = result.data.deviceKind
+        deviceId.value = result.data.deviceId
         language.value = result.data.language
         return
       case 'error':
-        startingUpFailure.value = deviceToken.value === null ? null : 'theLaptopCouldNotAnswer'
+        startingUpFailure.value = 'theLaptopCouldNotAnswer'
         return
       case 'unreachable':
         startingUpFailure.value = 'theLaptopWasNotReached'
@@ -148,13 +160,23 @@ export const useSessionStore = defineStore('session', () => {
     function theDeviceIsNoLongerSetUp(): void {
       clearToken()
     }
-    connection.onEvent<{ deviceId: string }>('DeviceRevoked', theDeviceIsNoLongerSetUp)
+    function signOutWhenItIsThisDevice(event: { deviceId: string }): void {
+      if (deviceId.value === null) {
+        void loadSession()
+        return
+      }
+      if (event.deviceId === deviceId.value) {
+        clearToken()
+      }
+    }
+    connection.onEvent<{ deviceId: string }>('DeviceRevoked', signOutWhenItIsThisDevice)
     onUnauthorisedAnswer(theDeviceIsNoLongerSetUp)
   }
 
   return {
     deviceToken,
     deviceKind,
+    deviceId,
     deviceSession,
     startingUpFailure,
     staffMember,

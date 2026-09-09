@@ -92,6 +92,14 @@ exactly the problems this section is looking for.
 20. **Replace a tablet.** Tap "Tablet einrichten" on the kitchen again and scan the new code with a
     different device. The new device shows the kitchen's page. The old tablet stops working: reload it
     and it says it is no longer set up. Nothing was lost, because the orders were never on the device.
+
+    **The same tablet scans another station's code.** Take the tablet that is set up for the bar, tap
+    "Tablet einrichten" on the kitchen and scan that code with it. It lands on the kitchen's page, and
+    on the laptop the bar's row goes back to saying that no tablet is set up, because one device
+    belongs in one place. Do not reload the tablet once it lands. Send an order to the kitchen from a
+    phone and watch it appear on the tablet on its own, which is what shows that the tablet is now
+    listening for the kitchen instead of still for the bar. Set the bar up again with a tablet of its
+    own before you go on, so the rest of the walkthrough has the two tablets it expects.
 21. **Place an order that splits, with two different answers.** The phone opens on the two categories,
     each one a wide button in the colour you picked for it. Tap Speisen, add two of the kitchen item,
     and tap the button back to the categories. The Speisen button now reads "2 x Speisen". Tap

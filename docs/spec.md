@@ -383,6 +383,17 @@ the rule the lost phone keeps working all evening, and no amount of admin dilige
 for that. It is also why the replacement happens when the new code is created rather than when the
 new device finishes scanning it.
 
+**A browser holds one setup at a time.** As it scans, the phone or the tablet hands the setup it is
+already holding back to the laptop, and the laptop signs that one out the moment the new one is
+finished. Scanning a code that belongs to somebody else is therefore a handover rather than a second
+setup: the waiter or the station the device was set up for a minute earlier goes back to having no
+device, and the connection the browser had open under that old name is closed with it. Without that,
+one browser would count as two devices at once, the laptop would go on saying that the person it left
+behind is set up, and nobody standing at the laptop could see that it is not. A device that hands over
+nothing, because it was never set up or its storage was cleared, and a device that hands over a setup
+the laptop has long since removed, are both ordinary: the scan finishes exactly as it otherwise would
+and nothing is said about it.
+
 **An order belongs to a person, not to a phone.** That is what makes a flat battery, a signed out
 phone or a fresh setup survivable: the evening's history follows the human, so a waiter who finishes
 the evening on a borrowed handset keeps the orders they took.

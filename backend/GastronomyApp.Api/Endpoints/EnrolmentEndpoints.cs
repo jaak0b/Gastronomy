@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
@@ -32,22 +33,29 @@ public static class EnrolmentEndpoints
 public sealed class EnrolmentRedemptionHandler
 {
   private const string AcceptLanguageHeaderName = "Accept-Language";
+  private readonly DeviceRevoker _deviceRevoker;
+  private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly OutstandingInvitationCache _invitationCache;
 
   private readonly IEnrolmentInvitationStore _invitationStore;
   private readonly ILogger<EnrolmentRedemptionHandler> _log;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly DeviceTokenSplitter _tokenSplitter = new();
 
   public EnrolmentRedemptionHandler(IEnrolmentInvitationStore invitationStore,
                                     HubNotificationDispatcher dispatcher,
                                     OutstandingInvitationCache invitationCache,
+                                    IDeviceTokenStore deviceTokenStore,
+                                    DeviceRevoker deviceRevoker,
                                     ResultEnvelope resultEnvelope,
                                     ILogger<EnrolmentRedemptionHandler> log)
   {
     _invitationStore = invitationStore;
     _dispatcher = dispatcher;
     _invitationCache = invitationCache;
+    _deviceTokenStore = deviceTokenStore;
+    _deviceRevoker = deviceRevoker;
     _resultEnvelope = resultEnvelope;
     _log = log;
   }
@@ -76,7 +84,9 @@ public sealed class EnrolmentRedemptionHandler
 
     return redemption.Outcome switch
            {
-             EnrolmentRedemptionOutcome.Redeemed => await CompletedAsync(redemption, cancellationToken),
+             EnrolmentRedemptionOutcome.Redeemed => await CompletedAsync(redemption,
+                                                                        request.PreviousDeviceToken,
+                                                                        cancellationToken),
              EnrolmentRedemptionOutcome.CodeInvalid => Refused(redemption,
                                                                "the code sent does not match the invitation that is outstanding",
                                                                StatusCodes.Status404NotFound,
@@ -126,6 +136,7 @@ public sealed class EnrolmentRedemptionHandler
   }
 
   private async Task<IResult> CompletedAsync(EnrolmentRedemptionResult redemption,
+                                             string? previousDeviceToken,
                                              CancellationToken cancellationToken)
   {
     _invitationCache.Forget();
@@ -146,6 +157,8 @@ public sealed class EnrolmentRedemptionHandler
                         deviceKind,
                         ownerId);
 
+    await RetireHandedOverDeviceAsync(previousDeviceToken, device.Id, cancellationToken);
+
     await _dispatcher.PushEnrolmentCompletedAsync(new(deviceKind, ownerId, ownerName, device.Id),
                                                  cancellationToken);
 
@@ -159,5 +172,32 @@ public sealed class EnrolmentRedemptionHandler
                                                   ? null
                                                   : new StationSummaryView(redemption.Station.Id, redemption.Station.Name),
                                                 device.Language));
+  }
+
+  private async Task RetireHandedOverDeviceAsync(string? previousDeviceToken,
+                                                 Guid newDeviceId,
+                                                 CancellationToken cancellationToken)
+  {
+    var tokenParts = _tokenSplitter.Split(previousDeviceToken);
+
+    if (tokenParts is null)
+    {
+      return;
+    }
+
+    var verification = await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId,
+                                                           tokenParts.Secret,
+                                                           cancellationToken);
+
+    if (!verification.IsValid || verification.Device is null || verification.Device.Id == newDeviceId)
+    {
+      return;
+    }
+
+    _log.LogInformation("The browser that was just set up handed over the device {PreviousDeviceId} it still held, "
+                        + "so that one is signed out.",
+                        verification.Device.Id);
+
+    await _deviceRevoker.RevokeAsync(verification.Device.Id, cancellationToken);
   }
 }

@@ -3,8 +3,13 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import QrLanding from '../../../src/components/enrolment/QrLanding.vue'
 import { TOKEN_STORAGE_KEY } from '../../../src/stores/session'
-import { currentRoute, navigate } from '../../../src/router'
+import { navigate, startOverAt } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
+
+vi.mock('../../../src/router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../src/router')>()),
+  startOverAt: vi.fn(),
+}))
 
 function answerWith(status: number, body: object) {
   vi.stubGlobal(
@@ -52,10 +57,11 @@ describe('landing on a QR code link', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     document.body.innerHTML = ''
+    vi.mocked(startOverAt).mockClear()
     navigate('/j/abc123')
   })
 
-  it('opens the order screen when the code belongs to somebody already', async () => {
+  it('starts the app over on the order screen when the code belongs to somebody already', async () => {
     answerWith(200, {
       deviceToken: 'token-1',
       staffMember: { id: 'staff-1', name: 'Anna' },
@@ -64,26 +70,7 @@ describe('landing on a QR code link', () => {
 
     mountLanding()
 
-    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
-  })
-
-  it('leaves no way back to the used invitation once the phone is set up', async () => {
-    answerWith(200, {
-      deviceToken: 'token-3',
-      staffMember: { id: 'staff-3', name: 'Carla' },
-      language: 'de',
-    })
-
-    mountLanding()
-    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
-
-    const popped = new Promise<void>((resolve) => {
-      window.addEventListener('popstate', () => resolve(), { once: true })
-    })
-    window.history.back()
-    await popped
-
-    expect(window.location.pathname).toBe('/')
+    await vi.waitFor(() => expect(vi.mocked(startOverAt)).toHaveBeenCalledWith('/'))
   })
 
   it('asks for a name when the invitation belongs to nobody yet', async () => {
@@ -95,7 +82,7 @@ describe('landing on a QR code link', () => {
     expect(landing.find('.failure-notice').exists()).toBe(false)
   })
 
-  it('opens the order screen once the name has been entered', async () => {
+  it('starts the app over once the name has been entered', async () => {
     answerInTurn(
       { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
       {
@@ -114,7 +101,7 @@ describe('landing on a QR code link', () => {
     await landing.get('.name-field input').setValue('Bernd')
     await landing.get('.continue').trigger('click')
 
-    await vi.waitFor(() => expect(currentRoute.value).toEqual({ name: 'home' }))
+    await vi.waitFor(() => expect(vi.mocked(startOverAt)).toHaveBeenCalledWith('/'))
   })
 
   it('tells the volunteer to wait when the laptop has too many requests at once', async () => {

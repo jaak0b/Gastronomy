@@ -35,10 +35,12 @@ const STATION_ORDERS = {
 
 let device: ReturnType<typeof mount> | null = null
 
-function aLaptopThatKnowsThisDeviceAs(deviceKind: 'staffMember' | 'station'): void {
+function aLaptopThatKnowsThisDeviceAs(deviceKind: 'staffMember' | 'station'): string[] {
+  const urls: string[] = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
+      urls.push(url)
       if (url === '/api/session') {
         return new Response(
           JSON.stringify({
@@ -57,6 +59,7 @@ function aLaptopThatKnowsThisDeviceAs(deviceKind: 'staffMember' | 'station'): vo
       return new Response(JSON.stringify(STATION_ORDERS), { status: 200 })
     }),
   )
+  return urls
 }
 
 function aLaptopThatCannotBeReached(): void {
@@ -132,6 +135,15 @@ describe('a device once the laptop has said whose device it is', () => {
     await flushPromises()
 
     expect(phone.find('.category-button').text()).toBe('Essen')
+  })
+
+  it('never asks for the ordering menu on a station tablet, which works off its own list', async () => {
+    const urls = aLaptopThatKnowsThisDeviceAs('station')
+
+    aDeviceThatWasSetUpEarlier()
+    await flushPromises()
+
+    expect(urls).not.toContain('/api/catalog')
   })
 })
 

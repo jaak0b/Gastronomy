@@ -128,7 +128,61 @@ describe('setting a phone up for a waiter who is not on the list yet', () => {
     await useSessionStore().redeem({ code: 'abc123', name: 'Bernd' })
 
     expect(bodies).toEqual([
-      { code: 'abc123', name: 'Bernd', userAgent: navigator.userAgent },
+      {
+        code: 'abc123',
+        name: 'Bernd',
+        userAgent: navigator.userAgent,
+        previousDeviceToken: null,
+      },
+    ])
+  })
+})
+
+describe('the token a browser gives up when it redeems a code', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function aLaptopThatTakesTheCode(): unknown[] {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, options?: RequestInit) => {
+        bodies.push(JSON.parse(String(options?.body ?? 'null')))
+        return new Response(
+          JSON.stringify({
+            deviceId: 'device-of-the-phone',
+            deviceToken: 'token-of-the-phone',
+            deviceKind: 'staffMember',
+            staffMember: { id: 'staff-1', name: 'Anna' },
+            station: null,
+            language: 'de',
+          }),
+          { status: 200 },
+        )
+      }),
+    )
+    return bodies
+  }
+
+  it('is the one in the browser storage, so the laptop can retire it', async () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-tablet')
+    const bodies = aLaptopThatTakesTheCode()
+
+    await useSessionStore().redeem({ code: 'abc123' })
+
+    expect(bodies).toEqual([
+      {
+        code: 'abc123',
+        name: null,
+        userAgent: navigator.userAgent,
+        previousDeviceToken: 'token-of-the-tablet',
+      },
     ])
   })
 })

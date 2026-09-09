@@ -161,10 +161,84 @@ public sealed class EnrolmentEndpointsTest
                     });
   }
 
-  private Task<HttpResponseMessage> RedeemAsync(string? code, string? name = null)
+  [Test]
+  public async Task PostRedeem_TheSameBrowserScansACodeForSomebodyElse_SignsTheSetupItHeldOut()
+  {
+    var firstInvitation = await CreateInvitationAsync();
+    string firstToken;
+
+    using (var firstRedemption = await RedeemAsync(firstInvitation.QrCodeValue))
+    {
+      Assert.That(firstRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      var firstBody = JsonDocument.Parse(await firstRedemption.Content.ReadAsStringAsync());
+      firstToken = firstBody.RootElement.GetProperty("deviceToken").GetString()!;
+    }
+
+    var secondInvitation = await CreateInvitationForNobodyAsync();
+
+    using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue, "Bernd", firstToken);
+    var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
+    var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
+
+    using var theSetupItHeld = await GetSessionAsync(firstToken);
+    using var theSetupItScanned = await GetSessionAsync(secondToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(secondRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(theSetupItHeld.StatusCode,
+                                  Is.EqualTo(HttpStatusCode.Unauthorized),
+                                  "The setup the browser handed over is retired the moment it scans somebody else's code.");
+                      Assert.That(theSetupItScanned.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                    });
+  }
+
+  [Test]
+  public async Task PostRedeem_ARefusedCodeWhileHoldingASetup_LeavesThatSetupWorking()
+  {
+    var invitation = await CreateInvitationAsync();
+    string token;
+
+    using (var redemption = await RedeemAsync(invitation.QrCodeValue))
+    {
+      Assert.That(redemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      var body = JsonDocument.Parse(await redemption.Content.ReadAsStringAsync());
+      token = body.RootElement.GetProperty("deviceToken").GetString()!;
+    }
+
+    using var refused = await RedeemAsync(invitation.QrCodeValue, null, token);
+    using var stillSetUp = await GetSessionAsync(token);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(refused.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
+                      Assert.That(stillSetUp.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                    });
+  }
+
+  [TestCase("nodothere")]
+  [TestCase("unknownlookup.secret")]
+  [TestCase("")]
+  public async Task PostRedeem_APreviousTokenThatNamesNoDevice_StillSetsThePhoneUp(string previousDeviceToken)
+  {
+    var invitation = await CreateInvitationAsync();
+
+    using var response = await RedeemAsync(invitation.QrCodeValue, null, previousDeviceToken);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
+                    });
+  }
+
+  private Task<HttpResponseMessage> RedeemAsync(string? code,
+                                                string? name = null,
+                                                string? previousDeviceToken = null)
   {
     return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                          new RedeemBody(code, name, "NUnit"));
+                                          new RedeemBody(code, name, "NUnit", previousDeviceToken));
   }
 
   private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)
@@ -207,4 +281,4 @@ public sealed class EnrolmentEndpointsTest
   }
 }
 
-public sealed record RedeemBody(string? Code, string? Name, string UserAgent);
+public sealed record RedeemBody(string? Code, string? Name, string UserAgent, string? PreviousDeviceToken = null);
