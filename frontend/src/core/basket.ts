@@ -1,5 +1,4 @@
-import type { Catalog, CatalogItem, DraftLine, DraftOrder } from './apiTypes'
-import { findCatalogStation } from './catalog'
+import type { Catalog, CatalogItem, CatalogStation, DraftLine, DraftOrder } from './apiTypes'
 import { candidateStations, routedStationId, stationStillPreparesIt } from './routingPreview'
 import { saveDraft } from './draftCart'
 
@@ -19,6 +18,10 @@ export interface BasketLineView {
 
 export function findCatalogItem(catalog: Catalog, catalogItemId: string): CatalogItem | null {
   return catalog.items.find((item) => item.id === catalogItemId) ?? null
+}
+
+export function findCatalogStation(catalog: Catalog, stationId: string): CatalogStation | null {
+  return catalog.stations.find((station) => station.id === stationId) ?? null
 }
 
 function nameOfTheStationTheLineGoesTo(
@@ -69,27 +72,6 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       }),
     }
   })
-}
-
-function stationNameToRemember(line: DraftLine, shown: BasketLineView): string {
-  return line.stationName.length > 0 ? line.stationName : shown.stationName
-}
-
-export function withStationNamesTheCatalogStillKnows(
-  draft: DraftOrder,
-  catalog: Catalog,
-): DraftOrder {
-  const shown = buildBasketView(draft, catalog)
-  const lines = draft.lines.map((line, position) => {
-    const stationName = stationNameToRemember(line, shown[position])
-    return stationName === line.stationName ? line : { ...line, stationName }
-  })
-  if (lines.every((line, position) => line === draft.lines[position])) {
-    return draft
-  }
-  const remembered: DraftOrder = { ...draft, lines }
-  saveDraft(remembered)
-  return remembered
 }
 
 export function lineCannotBeOrdered(line: BasketLineView): boolean {

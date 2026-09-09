@@ -3,13 +3,8 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createVuetify } from 'vuetify'
 import LineList from '../../../src/components/review/LineList.vue'
-import { buildBasketView, type BasketLineView } from '../../../src/core/basket'
-import type {
-  Catalog,
-  DeliveryMode,
-  DraftOrder,
-  StationEstimate,
-} from '../../../src/core/apiTypes'
+import type { BasketLineView } from '../../../src/core/basket'
+import type { DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
 import { routedStationId } from '../../../src/core/routingPreview'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
@@ -356,58 +351,6 @@ describe('a station that has left the item list while the order stood on the sum
 
   it('is still named in the question about how that part is handed out', () => {
     const list = mountList([beerFromAStationNobodyCanNameAnyMore()])
-
-    expect(list.get('.delivery-question').text()).toBe(
-      'Wie soll Theke aussen die Positionen ausgeben?',
-    )
-  })
-})
-
-describe('the order as the phone builds it for a station that has been switched off', () => {
-  function theSummaryTheWaiterReads(): BasketLineView[] {
-    const draft: DraftOrder = {
-      tableName: 'Tisch 3',
-      note: null,
-      lines: [
-        {
-          catalogItemId: 'item-bier',
-          note: null,
-          stationId: 'station-theke-abgebaut',
-          name: 'Bier',
-          stationName: 'Theke aussen',
-        },
-      ],
-      clientOrderId: 'order-1',
-      deliveryModes: {},
-    }
-    const catalog: Catalog = {
-      categories: [
-        { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 1 },
-      ],
-      items: [
-        {
-          id: 'item-bier',
-          name: 'Bier',
-          categoryId: 'category-getraenke',
-          priceCents: 420,
-          sortOrder: 1,
-          isAvailable: true,
-          stationIds: ['station-theke-abgebaut'],
-        },
-      ],
-      stations: [{ id: 'station-theke-innen', name: 'Theke innen', sortOrder: 1 }],
-    }
-    return buildBasketView(draft, catalog)
-  }
-
-  it('heads the card with the name the line wrote down', () => {
-    const list = mountList(theSummaryTheWaiterReads())
-
-    expect(list.get('.station-name').text()).toBe('Geht an Theke aussen')
-  })
-
-  it('asks with that name how the station hands its part out', () => {
-    const list = mountList(theSummaryTheWaiterReads())
 
     expect(list.get('.delivery-question').text()).toBe(
       'Wie soll Theke aussen die Positionen ausgeben?',

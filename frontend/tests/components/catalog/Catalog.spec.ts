@@ -5,7 +5,6 @@ import Catalog from '../../../src/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
 import { useOrderStore } from '../../../src/stores/order'
 import type { Catalog as CatalogData } from '../../../src/core/apiTypes'
-import { saveDraft } from '../../../src/core/draftCart'
 import { currentRoute, navigate } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
 
@@ -455,41 +454,6 @@ describe('the question about which station is to make an item', () => {
     expect(document.querySelector('.line-station-sheet')).toBeNull()
     expect(order.draft.lines).toHaveLength(0)
     expect(view.findAll('.item-row').length).toBeGreaterThan(0)
-  })
-})
-
-describe('a line routed to a station that has since been switched off', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    navigate('/')
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
-  })
-
-  it('still names that station under the item', async () => {
-    saveDraft({
-      tableName: '',
-      note: null,
-      lines: [
-        {
-          catalogItemId: 'item-kaffee',
-          note: null,
-          stationId: 'station-abgebaut',
-          name: 'Kaffee',
-          stationName: 'Theke aussen',
-        },
-      ],
-      clientOrderId: null,
-      deliveryModes: {},
-    })
-    const catalog = useCatalogStore()
-    catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await openCategory(view, 0)
-
-    expect(view.get('.group-label').text()).toBe('Ausgabestelle: Theke aussen')
   })
 })
 

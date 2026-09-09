@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
 import type {
   DeliveryMode,
@@ -37,7 +37,6 @@ import {
   buildBasketView,
   basketItemCount,
   lineCannotBeOrdered,
-  withStationNamesTheCatalogStillKnows,
   withoutLinesThatCannotBeOrdered,
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
@@ -81,14 +80,6 @@ export const useOrderStore = defineStore('order', () => {
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
   const catalogStore = useCatalogStore()
-
-  watch(
-    () => catalogStore.catalog,
-    (catalog) => {
-      draft.value = withStationNamesTheCatalogStillKnows(draft.value, catalog)
-    },
-    { immediate: true },
-  )
 
   function whatTheSendHasComeTo(): SendProgress {
     return {
