@@ -149,9 +149,9 @@ export type AppLanguage = 'de' | 'en'
 
 export interface SessionInfo {
   deviceId: string
-  deviceKind?: DeviceKind
+  deviceKind: DeviceKind
   staffMember: StaffMember | null
-  station?: StationIdentity | null
+  station: StationIdentity | null
   language: AppLanguage
 }
 

@@ -122,7 +122,6 @@
     "fromOrder": "Bestellung {number}",
     "itemNote": "Hinweis: {note}",
     "production": {
-      "waiting": "Wartet bei {station}.",
       "inProduction": "In Zubereitung bei {station}.",
       "finished": "Fertig bei {station}."
     },
@@ -305,7 +304,6 @@
     "deliveryTogether": "Geht zusammen raus",
     "deliveryAsItComes": "Geht raus, sobald fertig",
     "status": {
-      "waiting": "wartet",
       "inProduction": "in Zubereitung",
       "finished": "fertig"
     },
@@ -315,6 +313,11 @@
     "finishAll": "Ganze Bestellung fertig melden",
     "finishedNotice": "Fertig für {table}. Schreiben Sie den Tisch auf das Tablett.",
     "dismiss": "Verstanden"
+  },
+  "startingUp": {
+    "laptopNotReached": "Der Laptop antwortet nicht. Versuchen Sie es noch einmal.",
+    "couldNotStart": "Der Laptop hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
+    "tryAgain": "Noch einmal versuchen"
   },
   "welcome": {
     "title": "Dieses Gerät ist noch nicht eingerichtet.",

@@ -82,10 +82,11 @@ Three audiences in one build:
 - **Enrolment is a QR scan.** The QR carries the full URL including the laptop's current IP, so nothing
   in the app may depend on a remembered address. A 6-digit code is the fallback for a broken camera.
   The same QR flow enrols a waiter's phone and a station's tablet; the invitation says which of the
-  two it belongs to, and the device stores that kind beside its token.
+  two it belongs to, and the laptop tells the device which of the two it is when it starts.
 - **The device kind decides the screen.** A station tablet lands on the station screen and stays
-  there; a waiter's phone keeps the ordering flow. That decision lives in `src/core/landing.ts`, not
-  in a component.
+  there; a waiter's phone keeps the ordering flow. A device that is set up but has not yet heard
+  back from the laptop shows a starting screen until it does. That decision lives in
+  `src/core/landing.ts`, not in a component.
 - **A delivery mode is chosen once, before sending, and never afterwards.** The server picks, per
   station, whether that station hands its part of the order out together or as each item is ready.
   No screen may offer to change it after the order is sent.

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@microsoft/signalr', async () => (await import('./../support/hubConnection')).signalrModuleFake())
@@ -18,6 +18,9 @@ function stubTheLaptop(): void {
         new Response(
           JSON.stringify({
             language: 'de',
+            deviceKind: 'staffMember',
+            staffMember: { id: 'staff-1', name: 'Anna' },
+            station: null,
             categories: [],
             items: [],
             stations: [],
@@ -44,6 +47,7 @@ describe('where a notice sits on the screen', () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
     navigate('/')
     const app = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
     const connection = useConnectionStore()
     connection.state = 'offline'
     await app.vm.$nextTick()

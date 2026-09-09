@@ -122,7 +122,6 @@
     "fromOrder": "Order {number}",
     "itemNote": "Note: {note}",
     "production": {
-      "waiting": "Waiting at {station}.",
       "inProduction": "Being prepared at {station}.",
       "finished": "Ready at {station}."
     },
@@ -305,7 +304,6 @@
     "deliveryTogether": "Goes out together",
     "deliveryAsItComes": "Goes out as it is ready",
     "status": {
-      "waiting": "waiting",
       "inProduction": "being prepared",
       "finished": "ready"
     },
@@ -315,6 +313,11 @@
     "finishAll": "Mark the whole order as ready",
     "finishedNotice": "Ready for {table}. Write the table on the tray.",
     "dismiss": "Understood"
+  },
+  "startingUp": {
+    "laptopNotReached": "The laptop is not answering. Try again.",
+    "couldNotStart": "The laptop did not answer properly. Try again.",
+    "tryAgain": "Try again"
   },
   "welcome": {
     "title": "This device is not set up yet.",

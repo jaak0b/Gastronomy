@@ -10,6 +10,7 @@ import AppHeader from './components/header/AppHeader.vue'
 import AppNotices from './components/header/AppNotices.vue'
 import EnrolQr from './views/EnrolQr.vue'
 import Welcome from './views/Welcome.vue'
+import StartingUp from './views/StartingUp.vue'
 import Catalog from './views/Catalog.vue'
 import Review from './views/Review.vue'
 import OpenItems from './views/OpenItems.vue'
@@ -22,9 +23,7 @@ const connection = useConnectionStore()
 
 bindLocaleToSession()
 
-const screen = computed<ScreenName>(() =>
-  screenFor(session.isEnrolled ? session.deviceKind : null, currentRoute.value),
-)
+const screen = computed<ScreenName>(() => screenFor(session.deviceSession, currentRoute.value))
 
 const isAWaiterScreen = computed(
   () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
@@ -80,6 +79,7 @@ onMounted(async () => {
     <AppNotices v-if="isAWaiterScreen" />
     <EnrolQr v-if="screen === 'enrolQr'" />
     <Welcome v-else-if="screen === 'welcome'" />
+    <StartingUp v-else-if="screen === 'startingUp'" />
     <Catalog v-else-if="screen === 'catalog'" />
     <Review v-else-if="screen === 'review'" />
     <OpenItems v-else-if="screen === 'openItems'" />

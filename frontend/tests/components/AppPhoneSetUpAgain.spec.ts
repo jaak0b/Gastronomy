@@ -7,7 +7,7 @@ vi.mock('@microsoft/signalr', async () => (await import('./../support/hubConnect
 const { navigate } = await import('../../src/router')
 const App = (await import('../../src/App.vue')).default
 const { testPlugins } = await import('../support/plugins')
-const { TOKEN_STORAGE_KEY, DEVICE_KIND_STORAGE_KEY } = await import('../../src/stores/session')
+const { TOKEN_STORAGE_KEY } = await import('../../src/stores/session')
 const { useOrderStore } = await import('../../src/stores/order')
 const { useSessionStore } = await import('../../src/stores/session')
 const { restoreDraft, saveDraft, saveSendProgress } = await import('../../src/core/draftCart')
@@ -68,7 +68,6 @@ function aLaptopThatForgotThisPhoneAfterItStarted(): void {
 
 async function aPhoneOnTheSummaryWithAnOrderOnIt() {
   localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
-  localStorage.setItem(DEVICE_KIND_STORAGE_KEY, 'staffMember')
   aLaptopThatForgotThisPhoneAfterItStarted()
   navigate('/review')
   phone = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
@@ -129,7 +128,6 @@ describe('a waiter who sends an order from a phone that was set up again while t
 describe('a phone whose waiter was set up again while the phone was switched off', () => {
   it('asks to be set up again as soon as the laptop refuses the check the app makes at the start', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
-    localStorage.setItem(DEVICE_KIND_STORAGE_KEY, 'staffMember')
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 401 })),
@@ -170,7 +168,6 @@ describe('a phone that is set up again after the laptop refused the order it was
 describe('a waiter whose order was already frozen when the phone was set up again', () => {
   async function aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone() {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
-    localStorage.setItem(DEVICE_KIND_STORAGE_KEY, 'staffMember')
     saveDraft({
       tableName: 'Tisch 5',
       note: null,

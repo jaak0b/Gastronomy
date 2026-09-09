@@ -11,12 +11,12 @@ import type {
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
 import { restoreDraft } from '../core/draftCart'
-import { parseDeviceKind } from '../core/landing'
+import type { DeviceSession } from '../core/landing'
+import type { StartingUpFailure } from '../core/startingUp'
 import { useConnectionStore } from './connection'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
-export const DEVICE_KIND_STORAGE_KEY = 'deviceKind'
 export { LANGUAGE_STORAGE_KEY }
 
 export interface RedeemInput {
@@ -31,11 +31,17 @@ export const useSessionStore = defineStore('session', () => {
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
-  const deviceKind = ref<DeviceKind | null>(
-    deviceToken.value === null
-      ? null
-      : parseDeviceKind(localStorage.getItem(DEVICE_KIND_STORAGE_KEY)),
-  )
+  const deviceKind = ref<DeviceKind | null>(null)
+  const startingUpFailure = ref<StartingUpFailure | null>(null)
+  const deviceSession = computed<DeviceSession>(() => {
+    if (deviceToken.value === null) {
+      return { state: 'notSetUp' }
+    }
+    if (deviceKind.value === null) {
+      return { state: 'startingUp' }
+    }
+    return { state: 'setUp', deviceKind: deviceKind.value }
+  })
 
   function heldDraftExists(): boolean {
     return restoreDraft().draft.lines.length > 0
@@ -44,17 +50,17 @@ export const useSessionStore = defineStore('session', () => {
   function storeToken(token: string, kind: DeviceKind): void {
     deviceToken.value = token
     deviceKind.value = kind
+    startingUpFailure.value = null
     localStorage.setItem(TOKEN_STORAGE_KEY, token)
-    localStorage.setItem(DEVICE_KIND_STORAGE_KEY, kind)
   }
 
   function clearToken(): void {
     deviceToken.value = null
     deviceKind.value = null
+    startingUpFailure.value = null
     staffMember.value = null
     station.value = null
     localStorage.removeItem(TOKEN_STORAGE_KEY)
-    localStorage.removeItem(DEVICE_KIND_STORAGE_KEY)
   }
 
   function setLanguage(next: AppLanguage): void {
@@ -96,7 +102,7 @@ export const useSessionStore = defineStore('session', () => {
     })
     switch (result.kind) {
       case 'ok':
-        storeToken(result.data.deviceToken, parseDeviceKind(result.data.deviceKind ?? null))
+        storeToken(result.data.deviceToken, result.data.deviceKind)
         staffMember.value = result.data.staffMember
         station.value = result.data.station ?? null
         language.value = result.data.language
@@ -117,17 +123,20 @@ export const useSessionStore = defineStore('session', () => {
     if (deviceToken.value === null) {
       return
     }
+    startingUpFailure.value = null
     const result = await request<SessionInfo>('/api/session', { token: deviceToken.value })
     switch (result.kind) {
       case 'ok':
         staffMember.value = result.data.staffMember
-        station.value = result.data.station ?? null
-        deviceKind.value = parseDeviceKind(result.data.deviceKind ?? null)
-        localStorage.setItem(DEVICE_KIND_STORAGE_KEY, deviceKind.value)
+        station.value = result.data.station
+        deviceKind.value = result.data.deviceKind
         language.value = result.data.language
         return
       case 'error':
+        startingUpFailure.value = deviceToken.value === null ? null : 'theLaptopCouldNotAnswer'
+        return
       case 'unreachable':
+        startingUpFailure.value = 'theLaptopWasNotReached'
         return
       default:
         return assertNever(result)
@@ -146,6 +155,8 @@ export const useSessionStore = defineStore('session', () => {
   return {
     deviceToken,
     deviceKind,
+    deviceSession,
+    startingUpFailure,
     staffMember,
     station,
     language,

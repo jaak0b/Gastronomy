@@ -5,17 +5,19 @@ import { assertNever } from './assertNever'
 export type ScreenName =
   | 'enrolQr'
   | 'welcome'
+  | 'startingUp'
   | 'catalog'
   | 'review'
   | 'openItems'
   | 'station'
   | 'admin'
 
-type EnrolledScreenRoute = 'home' | 'review' | 'openItems' | 'stations'
+export type DeviceSession =
+  | { state: 'notSetUp' }
+  | { state: 'startingUp' }
+  | { state: 'setUp'; deviceKind: DeviceKind }
 
-export function parseDeviceKind(stored: string | null): DeviceKind {
-  return stored === 'station' ? 'station' : 'staffMember'
-}
+type EnrolledScreenRoute = 'home' | 'review' | 'openItems' | 'stations'
 
 function screenForAWaiterPhone(route: EnrolledScreenRoute): ScreenName {
   switch (route) {
@@ -32,13 +34,10 @@ function screenForAWaiterPhone(route: EnrolledScreenRoute): ScreenName {
   }
 }
 
-function screenForAnEnrolledDevice(
-  deviceKind: DeviceKind | null,
+function screenForTheKindOfDevice(
+  deviceKind: DeviceKind,
   route: EnrolledScreenRoute,
 ): ScreenName {
-  if (deviceKind === null) {
-    return 'welcome'
-  }
   switch (deviceKind) {
     case 'station':
       return 'station'
@@ -49,7 +48,23 @@ function screenForAnEnrolledDevice(
   }
 }
 
-export function screenFor(deviceKind: DeviceKind | null, route: AppRoute): ScreenName {
+function screenForTheDeviceSession(
+  session: DeviceSession,
+  route: EnrolledScreenRoute,
+): ScreenName {
+  switch (session.state) {
+    case 'notSetUp':
+      return 'welcome'
+    case 'startingUp':
+      return 'startingUp'
+    case 'setUp':
+      return screenForTheKindOfDevice(session.deviceKind, route)
+    default:
+      return assertNever(session)
+  }
+}
+
+export function screenFor(session: DeviceSession, route: AppRoute): ScreenName {
   switch (route.name) {
     case 'enrolQr':
       return 'enrolQr'
@@ -59,7 +74,7 @@ export function screenFor(deviceKind: DeviceKind | null, route: AppRoute): Scree
     case 'review':
     case 'openItems':
     case 'stations':
-      return screenForAnEnrolledDevice(deviceKind, route.name)
+      return screenForTheDeviceSession(session, route.name)
     default:
       return assertNever(route)
   }
