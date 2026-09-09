@@ -246,8 +246,10 @@ exactly the problems this section is looking for.
     laptop.
 
     Now scan the code that is still on the laptop. The phone comes back to the items with your order
-    still in the basket, and the summary still carries the table name and every line. No red panel
-    stands on it, because the reason the laptop gave went with the setup the phone lost. Send the
+    still in the basket, and the summary is the one you left, down to the table name and every line.
+    No red panel stands on it, because the laptop turned the phone away before it read the order and
+    the phone wrote nothing down about it. Had an earlier attempt on this order gone unanswered, the
+    sentence about that attempt would still be standing here, for the same reason. Send the
     order and
     watch the station tablet: exactly one order arrives, with one number, because the order carried
     the same identity through the whole of this and the laptop recognises it by that identity alone.

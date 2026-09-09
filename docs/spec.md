@@ -713,14 +713,24 @@ either one is ever read, on the screen and in the order that travels back to the
 Prices are printed on the paper the waiters carry and do not move during an evening, so a second
 copy of a price on the line would only be a second version of a number that already exists.
 
-The one thing a line keeps of its own is the name the item had when it was added, and it is read in
-exactly one situation: the item has left the menu, so nothing else can name it any more. Such a line
-renders greyed and says so, and it shows no price, because there is no longer a price to show. It
-adds nothing to the total, and it is sent as costing nothing, so the total the waiter reads out and
-the total the laptop would record are the same figure. The line is not dropped: the summary offers
+A line keeps two names of its own, and each of them is read only when the item list can no longer
+supply it. The first is the name the item had when it was added, read when the item has left the
+menu, so nothing else can name it any more. Such a line renders greyed and says so, and it shows no
+price, because there is no longer a price to show. It adds nothing to the total, and it is sent as
+costing nothing, so the total the waiter reads out and the total the laptop would record are the
+same figure. The line is not dropped: the summary offers
 one button that removes every line the guest can no longer be given, whether the item sold out or
 left the menu. **The app never removes such a line by itself**, because the guest ordered something
 and the waiter needs to see what falls away in order to offer them something else.
+
+The second is the name the station had when it was chosen for that line, written down whether the
+waiter picked the station or the item goes to one station only and nobody was asked. The item list
+carries the stations that are switched on, so an admin who switches one off in the middle of service
+leaves the phone holding lines routed to a station it can no longer name. The summary groups an order
+by station and heads each card with that name, and asks under the card how that station is to hand
+its part out, so without the kept name the waiter would read a heading naming nobody and a question
+with a hole in it. While the item list still carries the station its current name wins, so a station
+renamed during the evening reads new on the summary rather than as it was when the line was added.
 
 **This is a draft cart and not a queue, and the distinction is load-bearing.** A draft cart holds one
 order, the one on the screen, and nothing ever sends it except a person tapping the send button. It
@@ -902,10 +912,14 @@ when it starts, the send from the summary, or anything else the screen asks for.
 read in the one place the answers pass through, so a waiter who was out of range and comes back to
 press send is told that the phone has to be set up again rather than that the laptop could not be
 reached. The app clears the token, **keeps the draft order**, and shows the setup screen saying the
-started order is still there. The reason for that refused call goes with the token, because it would
-tell the waiter that the laptop could not be reached and would point at a retry the setup screen does
-not have. The summary the waiter comes back to after scanning a fresh code carries the table name and
-every line, and nothing red stands on it. Throwing away a
+started order is still there. **That refusal leaves no trace on the order.** The laptop turns the
+call away at the door, before a line of ordering code has read anything, so nothing was stored and
+there is nothing for the phone to report: it writes down no reason, it does not freeze the order, and
+it takes back the attempt it had begun to count. The summary the waiter comes back to after scanning
+a fresh code is the one they left, table name, lines and all. If an earlier attempt on that order had
+gone unanswered, the order is still frozen and the sentence that stood on it is still standing, which
+is the truth, because being set up again says nothing about whether that earlier attempt arrived.
+Throwing away a
 half-built order because an admin tapped the wrong row would be destroying a guest's order to solve
 an administrative problem. The order keeps the submission id it already had, so once a fresh code has
 been scanned and the waiter sends again, an attempt that did reach the laptop earlier comes back as
