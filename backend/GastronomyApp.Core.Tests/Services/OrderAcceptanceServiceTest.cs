@@ -165,35 +165,6 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_MoreItemsThanOneOrderMayHold_FailsWithTooManyItems()
-  {
-    IReadOnlyList<OrderAcceptanceItemRequest> items =
-      [.. Enumerable.Range(0, 201).Select(_ => ItemFor(_bratwurstId))];
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith(items), CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TooManyItems));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_AsManyItemsAsOneOrderMayHold_IsAccepted()
-  {
-    IReadOnlyList<OrderAcceptanceItemRequest> items =
-      [.. Enumerable.Range(0, 200).Select(_ => ItemFor(_bratwurstId))];
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith(items), CancellationToken.None);
-
-    Assert.That(result.IsSuccess, Is.True);
-  }
-
-  [Test]
   public async Task AcceptAsync_TheSameItemTwice_StoresOneRowPerItem()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_bratwurstId)]),
@@ -553,8 +524,6 @@ public sealed class OrderAcceptanceServiceTest
     var request = scenario switch
                   {
                     OrderValidationFailureReason.NoItems => RequestWith([]),
-                    OrderValidationFailureReason.TooManyItems =>
-                      RequestWith([.. Enumerable.Range(0, 201).Select(_ => ItemFor(_bratwurstId))]),
                     OrderValidationFailureReason.PriceOutOfRange =>
                       RequestWith([ItemFor(_bratwurstId, unitPriceCents: -1)]),
                     OrderValidationFailureReason.TableNameMissing =>

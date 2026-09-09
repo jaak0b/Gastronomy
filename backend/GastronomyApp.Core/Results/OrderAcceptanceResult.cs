@@ -19,7 +19,6 @@ public sealed record OrderValidationFailure
 public enum OrderValidationFailureReason
 {
   NoItems,
-  TooManyItems,
   TableNameMissing,
   UnknownCatalogItemId,
   StationRequired,

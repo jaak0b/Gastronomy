@@ -42,7 +42,6 @@ public sealed record OrderAcceptanceRequest
 
 public sealed class OrderAcceptanceService
 {
-  private const int MaximumItems = 200;
   private readonly ICatalogItemRepository _catalogItemRepository;
   private readonly IClock _clock;
   private readonly INumberAllocator _numberAllocator;
@@ -149,11 +148,6 @@ public sealed class OrderAcceptanceService
     if (request.Items.Count == 0)
     {
       return new() { Reason = OrderValidationFailureReason.NoItems };
-    }
-
-    if (request.Items.Count > MaximumItems)
-    {
-      return new() { Reason = OrderValidationFailureReason.TooManyItems };
     }
 
     if (string.IsNullOrWhiteSpace(request.TableName))

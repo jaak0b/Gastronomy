@@ -3,7 +3,6 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
@@ -11,6 +10,7 @@ using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Endpoints;
 
@@ -43,6 +43,7 @@ public sealed class OrderPlacementHandler
   private readonly OrderAcceptanceTransaction _acceptanceTransaction;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly HubNotificationDispatcher _dispatcher;
+  private readonly ILogger<OrderPlacementHandler> _log;
   private readonly OrderReader _orderReader;
   private readonly ResultEnvelope _resultEnvelope;
 
@@ -50,13 +51,15 @@ public sealed class OrderPlacementHandler
                                OrderAcceptanceTransaction acceptanceTransaction,
                                OrderReader orderReader,
                                HubNotificationDispatcher dispatcher,
-                               ResultEnvelope resultEnvelope)
+                               ResultEnvelope resultEnvelope,
+                               ILogger<OrderPlacementHandler> log)
   {
     _dbContext = dbContext;
     _acceptanceTransaction = acceptanceTransaction;
     _orderReader = orderReader;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
+    _log = log;
   }
 
   public async Task<IResult> PlaceAsync(PlaceOrderRequest request,
@@ -98,34 +101,25 @@ public sealed class OrderPlacementHandler
 
     if (!acceptance.IsSuccess)
     {
+      _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. "
+                      + "The catalog item it names is {CatalogItemId}.",
+                      request.ClientOrderId,
+                      caller.StaffMemberId,
+                      acceptance.Failure.Reason,
+                      acceptance.Failure.OffendingCatalogItemId);
+
       return _resultEnvelope.ToResult(_resultEnvelope.Describe(acceptance.Failure));
     }
 
-    var orderId = acceptance.Value.Order.Id;
-
-    if (acceptance.Value.WasAlreadyAccepted)
-    {
-      var existing = await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken);
-
-      if (existing is null || !new SubmissionComparison().Matches(request, existing))
-      {
-        return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                      "SubmissionIdReused",
-                                      "order.submissionIdReused");
-      }
-
-      var repeated = _orderReader.Describe(existing);
-      await TellEveryStationThatGotASliceAsync(repeated, cancellationToken);
-
-      return Results.Json(repeated, statusCode: StatusCodes.Status200OK);
-    }
-
-    var placed = (await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken))!;
-    var view = _orderReader.Describe(placed);
+    var stored = (await _orderReader.LoadAsync(_dbContext, acceptance.Value.Order.Id, cancellationToken))!;
+    var view = _orderReader.Describe(stored);
 
     await TellEveryStationThatGotASliceAsync(view, cancellationToken);
 
-    return Results.Json(view, statusCode: StatusCodes.Status201Created);
+    return Results.Json(view,
+                        statusCode: acceptance.Value.WasAlreadyAccepted
+                                      ? StatusCodes.Status200OK
+                                      : StatusCodes.Status201Created);
   }
 
   private async Task TellEveryStationThatGotASliceAsync(PlacedOrderView view, CancellationToken cancellationToken)
@@ -137,46 +131,3 @@ public sealed class OrderPlacementHandler
   }
 }
 
-public sealed class SubmissionComparison
-{
-  public bool Matches(PlaceOrderRequest request, LoadedOrder existing)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-    ArgumentNullException.ThrowIfNull(existing);
-
-    if (!string.Equals(request.TableName ?? string.Empty, existing.Order.TableName, StringComparison.Ordinal))
-    {
-      return false;
-    }
-
-    if (!string.Equals(request.Note ?? string.Empty, existing.Order.Note ?? string.Empty, StringComparison.Ordinal))
-    {
-      return false;
-    }
-
-    List<OrderItemRequest> requestItems = [.. request.Items ?? []];
-
-    if (requestItems.Count != existing.Items.Count)
-    {
-      return false;
-    }
-
-    List<OrderItem> remaining = [.. existing.Items];
-
-    foreach (var item in requestItems)
-    {
-      var match = remaining.FirstOrDefault(candidate =>
-                                             candidate.CatalogItemId == item.CatalogItemId
-                                             && string.Equals(candidate.Note ?? string.Empty, item.Note ?? string.Empty, StringComparison.Ordinal));
-
-      if (match is null)
-      {
-        return false;
-      }
-
-      remaining.Remove(match);
-    }
-
-    return true;
-  }
-}

@@ -56,23 +56,41 @@ public sealed class OrderIdempotencyTest
   }
 
   [Test]
-  public async Task PostOrder_SameSubmissionIdDifferentContent_IsRefused()
+  public async Task PostOrder_SameSubmissionIdDifferentContent_ReturnsTheOrderTheLaptopAlreadyHolds()
   {
     var clientOrderId = Guid.NewGuid();
 
+    string firstBody;
     using (var first = await _context.PostOrderAsync(_context.BuildOrder(clientOrderId)))
     {
+      firstBody = await first.Content.ReadAsStringAsync();
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
     OrderBody different = new(clientOrderId,
                               "Tisch 99",
                               null,
-                              [new(_context.World.BratwurstItemId, 350, null, null), new(_context.World.BratwurstItemId, 350, null, null)]);
+                              [new(_context.World.BratwurstItemId, 350, null, null)]);
 
-    using var second = await _context.PostOrderAsync(different);
+    string secondBody;
+    using (var second = await _context.PostOrderAsync(different))
+    {
+      secondBody = await second.Content.ReadAsStringAsync();
+      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
 
-    Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+    Assert.That(secondBody, Is.EqualTo(firstBody));
+
+    await using var database = _context.Factory.CreateContext();
+
+    var orderCount = await database.Orders.CountAsync();
+    var itemCount = await database.OrderItems.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(orderCount, Is.EqualTo(1));
+                      Assert.That(itemCount, Is.EqualTo(2));
+                    });
   }
 }
 

@@ -8,27 +8,26 @@ public sealed class ResultEnvelope
 {
   private const string ValidationFailedCode = "ValidationFailed";
   private const string UnprocessableEntityCode = "UnprocessableEntity";
+  private const string CannotBeProcessedKey = "order.cannotBeProcessed";
 
   public ProblemDescription Describe(OrderValidationFailure failure)
   {
     return failure.Reason switch
            {
              OrderValidationFailureReason.NoItems =>
-               Validation("order.noItems"),
-             OrderValidationFailureReason.TooManyItems =>
-               Validation("order.tooManyItems"),
+               Validation(CannotBeProcessedKey),
              OrderValidationFailureReason.TableNameMissing =>
-               Validation("order.tableNameMissing"),
+               Validation(CannotBeProcessedKey),
+             OrderValidationFailureReason.PriceOutOfRange =>
+               Validation(CannotBeProcessedKey),
+             OrderValidationFailureReason.StationRequired =>
+               Unprocessable(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.ItemHasNoStation =>
+               Unprocessable(CannotBeProcessedKey, null),
              OrderValidationFailureReason.UnknownCatalogItemId =>
                Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
-             OrderValidationFailureReason.StationRequired =>
-               Unprocessable("order.stationRequired", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationNotAssignedToItem =>
                Unprocessable("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
-             OrderValidationFailureReason.PriceOutOfRange =>
-               Validation("order.priceOutOfRange"),
-             OrderValidationFailureReason.ItemHasNoStation =>
-               Unprocessable("order.itemHasNoStation", failure.OffendingCatalogItemId),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
@@ -45,17 +44,6 @@ public sealed class ResultEnvelope
                Validation("order.settlementNoticeMissing"),
              SettlementFailureReason.UnknownOrderItemId =>
                Unprocessable("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
-             _ => new Never().OfType<ProblemDescription>(failure.Reason)
-           };
-  }
-
-  public ProblemDescription Describe(RoutingFailure failure)
-  {
-    return failure.Reason switch
-           {
-             RoutingFailureReason.ItemHasNoStation => Unprocessable("order.itemHasNoStation", null),
-             RoutingFailureReason.StationRequired => Unprocessable("order.stationRequired", null),
-             RoutingFailureReason.StationNotAssignedToItem => Unprocessable("order.stationNotAssignedToItem", null),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
