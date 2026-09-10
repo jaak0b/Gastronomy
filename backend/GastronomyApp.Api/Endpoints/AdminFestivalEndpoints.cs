@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -481,20 +481,20 @@ public sealed class AdminFestivalMenuHandler
   private const int LowestPriceCents = 0;
 
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly ItemsLeftWithoutAStation _itemsLeftWithoutAStation;
+  private readonly OrderableItems _orderableItems;
   private readonly ILogger<AdminFestivalMenuHandler> _logger;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogWriteTransaction _writeTransaction;
 
   public AdminFestivalMenuHandler(GastronomyAppDbContext dbContext,
                                   CatalogWriteTransaction writeTransaction,
-                                  ItemsLeftWithoutAStation itemsLeftWithoutAStation,
+                                  OrderableItems orderableItems,
                                   ResultEnvelope resultEnvelope,
                                   ILogger<AdminFestivalMenuHandler> logger)
   {
     _dbContext = dbContext;
     _writeTransaction = writeTransaction;
-    _itemsLeftWithoutAStation = itemsLeftWithoutAStation;
+    _orderableItems = orderableItems;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
   }
@@ -561,14 +561,6 @@ public sealed class AdminFestivalMenuHandler
 
     List<Guid> stationIds = [.. request.StationIds ?? []];
 
-    if (await _itemsLeftWithoutAStation.WouldHappenToAnItemAssignedToAsync(stationIds, cancellationToken))
-    {
-      return new(_resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
-                                        "UnprocessableEntity",
-                                        "admin.itemNeedsAStation"),
-                 false);
-    }
-
     List<Guid> stationIdsAtTheFestival = await _dbContext.FestivalStations
                                                          .AsNoTracking()
                                                          .Where(link => link.FestivalId == festivalId)
@@ -587,6 +579,14 @@ public sealed class AdminFestivalMenuHandler
       return new(_resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                         "ValidationFailed",
                                         "admin.actionFailed"),
+                 false);
+    }
+
+    if (!await _orderableItems.AnyOfThemWouldPrepareAtAsync(_dbContext, festivalId, stationIds, cancellationToken))
+    {
+      return new(_resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
+                                        "UnprocessableEntity",
+                                        "admin.itemNeedsAStation"),
                  false);
     }
 
@@ -692,18 +692,18 @@ public sealed class AdminFestivalStationHandler
 
   private readonly StationChangeAnnouncer _announcer;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly ItemsLeftWithoutAStation _itemsLeftWithoutAStation;
+  private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public AdminFestivalStationHandler(GastronomyAppDbContext dbContext,
                                      StationChangeAnnouncer announcer,
-                                     ItemsLeftWithoutAStation itemsLeftWithoutAStation,
+                                     OrderableItems orderableItems,
                                      ResultEnvelope resultEnvelope)
   {
     _dbContext = dbContext;
     _announcer = announcer;
-    _itemsLeftWithoutAStation = itemsLeftWithoutAStation;
+    _orderableItems = orderableItems;
     _resultEnvelope = resultEnvelope;
   }
 
@@ -816,9 +816,10 @@ public sealed class AdminFestivalStationHandler
     }
 
     IReadOnlyList<Guid> strandedItemIds =
-      await _itemsLeftWithoutAStation.WhenTheStationLeavesTheFestivalAsync(festivalId,
-                                                                          stationId,
-                                                                          cancellationToken);
+      await _orderableItems.WouldStopBeingOrderableAtAsync(_dbContext,
+                                                           festivalId,
+                                                           [stationId],
+                                                           cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {

@@ -2,8 +2,10 @@
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Infrastructure.Tests;
 
@@ -159,6 +161,27 @@ public sealed class OrderAcceptanceTransactionTest
                       A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
                        .MustHaveHappened(5, Times.Exactly);
                     });
+  }
+
+  [Test]
+  public async Task AcceptAsync_AnAttemptLosesTheCounter_WritesAWarningNamingTheAttempt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    var alwaysContendedAllocator = A.Fake<INumberAllocator>();
+    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
+     .ThrowsAsync(new DbUpdateConcurrencyException());
+
+    var logger = A.Fake<ILogger<OrderAcceptanceTransaction>>();
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator, logger);
+
+    await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+
+    A.CallTo(logger)
+     .Where(call => call.Method.Name == nameof(ILogger.Log)
+                    && call.GetArgument<LogLevel>(0) == LogLevel.Warning)
+     .MustHaveHappened(4, Times.Exactly);
   }
 
   private OrderAcceptanceRequest BuildRequest(SeededDomain seeded, Guid clientOrderId)

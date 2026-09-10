@@ -250,7 +250,7 @@
     "cancel": "Abbrechen",
     "edit": "Bearbeiten",
     "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
-    "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Ausgabestelle und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.",
+    "itemsWouldHaveNoStation": "{count} Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. | {count} Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder nehmen Sie sie von der Karte.",
     "categories": {
       "new": "Neue Kategorie",
       "name": "Name der Kategorie",

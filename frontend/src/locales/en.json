@@ -250,7 +250,7 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "loadFailed": "Reload the page. The data could not be loaded.",
-    "itemsWouldHaveNoStation": "Give {count} item a different station first, or take it off the menu. Otherwise it is left with no station and cannot be ordered. | Give {count} items a different station first, or take them off the menu. Otherwise they are left with no station and cannot be ordered.",
+    "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or take it off the menu. | {count} items would be left without a station. Assign them to another station first or take them off the menu.",
     "categories": {
       "new": "New category",
       "name": "Category name",

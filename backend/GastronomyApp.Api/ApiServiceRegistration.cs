@@ -93,7 +93,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<DeviceRevoker>();
     services.AddScoped<OutstandingInvitationLookup>();
     services.AddSingleton<StationChangeAnnouncer>();
-    services.AddScoped<ItemsLeftWithoutAStation>();
+    services.AddSingleton<OrderableItems>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();

@@ -2,6 +2,7 @@
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Infrastructure.Repositories;
 
@@ -11,16 +12,19 @@ public sealed class OrderAcceptanceTransaction
 
   private readonly OrderAcceptanceService _acceptanceService;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly ILogger<OrderAcceptanceTransaction> _logger;
   private readonly IOrderRepository _orderRepository;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public OrderAcceptanceTransaction(GastronomyAppDbContext dbContext,
                                     IOrderRepository orderRepository,
-                                    OrderAcceptanceService acceptanceService)
+                                    OrderAcceptanceService acceptanceService,
+                                    ILogger<OrderAcceptanceTransaction> logger)
   {
     _dbContext = dbContext;
     _orderRepository = orderRepository;
     _acceptanceService = acceptanceService;
+    _logger = logger;
   }
 
   public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(OrderAcceptanceRequest request,
@@ -34,6 +38,11 @@ public sealed class OrderAcceptanceTransaction
       }
       catch (DbUpdateConcurrencyException) when (attempt < AttemptsBeforeGivingUp)
       {
+        _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to allocate the numbers for the order {ClientOrderId} lost the counter to another submission, so it is being tried again.",
+                           attempt,
+                           AttemptsBeforeGivingUp,
+                           request.ClientOrderId);
+
         _dbContext.ChangeTracker.Clear();
       }
       catch (DbUpdateConcurrencyException)

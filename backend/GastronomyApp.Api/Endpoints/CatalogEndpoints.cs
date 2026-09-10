@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Auth;
+﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
@@ -50,6 +50,13 @@ public sealed class CatalogChangeAnnouncer
 
 public sealed class CatalogReader
 {
+  private readonly OrderableItems _orderableItems;
+
+  public CatalogReader(OrderableItems orderableItems)
+  {
+    _orderableItems = orderableItems;
+  }
+
   public async Task<CatalogView> ReadAsync(GastronomyAppDbContext dbContext,
                                            Festival? runningFestival,
                                            CancellationToken cancellationToken)
@@ -80,12 +87,15 @@ public sealed class CatalogReader
 
     List<Guid> activeCategoryIds = [.. categories.Select(category => category.Id)];
 
+    List<Guid> orderableItemIds = [.. await _orderableItems.IdsAtAsync(dbContext, festivalId, cancellationToken)];
+
     List<MenuRow> menuRows = await (from menuItem in dbContext.FestivalCatalogItems
                                     join item in dbContext.CatalogItems
                                       on menuItem.CatalogItemId equals item.Id
                                     where menuItem.FestivalId == festivalId
                                           && item.IsActive
                                           && activeCategoryIds.Contains(item.CategoryId)
+                                          && orderableItemIds.Contains(item.Id)
                                     orderby item.SortOrder
                                     select new MenuRow(item, menuItem.PriceCents, menuItem.IsAvailable))
                                    .ToListAsync(cancellationToken);

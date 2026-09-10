@@ -117,7 +117,7 @@ public sealed class AdminStationAnnouncementTest
                services.GetRequiredService<OutstandingInvitationLookup>(),
                services.GetRequiredService<DeviceRevoker>(),
                announcer,
-               services.GetRequiredService<ItemsLeftWithoutAStation>(),
+               services.GetRequiredService<OrderableItems>(),
                services.GetRequiredService<ResultEnvelope>(),
                services.GetRequiredService<IClock>());
   }

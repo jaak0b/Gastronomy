@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
@@ -122,20 +122,20 @@ public sealed class AdminStationHandler
   private readonly GastronomyAppDbContext _dbContext;
   private readonly DeviceRevoker _deviceRevoker;
   private readonly OutstandingInvitationLookup _invitationLookup;
-  private readonly ItemsLeftWithoutAStation _itemsLeftWithoutAStation;
+  private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
 
   public AdminStationHandler(GastronomyAppDbContext dbContext,
                              OutstandingInvitationLookup invitationLookup,
                              DeviceRevoker deviceRevoker,
                              StationChangeAnnouncer announcer,
-                             ItemsLeftWithoutAStation itemsLeftWithoutAStation,
+                             OrderableItems orderableItems,
                              ResultEnvelope resultEnvelope,
                              IClock clock)
   {
     _dbContext = dbContext;
     _invitationLookup = invitationLookup;
-    _itemsLeftWithoutAStation = itemsLeftWithoutAStation;
+    _orderableItems = orderableItems;
     _deviceRevoker = deviceRevoker;
     _announcer = announcer;
     _resultEnvelope = resultEnvelope;
@@ -277,7 +277,9 @@ public sealed class AdminStationHandler
     }
 
     IReadOnlyList<Guid> strandedItemIds =
-      await _itemsLeftWithoutAStation.WhenTheStationIsSwitchedOffAsync(stationId, cancellationToken);
+      await _orderableItems.WouldStopBeingOrderableWhenTheStationIsSwitchedOffAsync(_dbContext,
+                                                                                    stationId,
+                                                                                    cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {
