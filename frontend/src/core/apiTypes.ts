@@ -26,7 +26,13 @@ export interface CatalogStation {
   sortOrder: number
 }
 
+export interface RunningFestival {
+  festivalId: string
+  name: string
+}
+
 export interface Catalog {
+  festival: RunningFestival | null
   categories: CatalogCategory[]
   items: CatalogItem[]
   stations: CatalogStation[]
@@ -47,6 +53,7 @@ export interface DraftLine {
 }
 
 export interface DraftOrder {
+  festivalId: string | null
   tableName: string
   note: string | null
   lines: DraftLine[]

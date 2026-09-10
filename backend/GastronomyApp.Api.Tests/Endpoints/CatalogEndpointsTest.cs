@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Enums;
@@ -179,7 +179,8 @@ public sealed class CatalogEndpointsTest
   {
     await using (var context = _factory.CreateContext())
     {
-      var bratwurst = await context.CatalogItems.FirstAsync(item => item.Id == _world.BratwurstItemId);
+      var bratwurst = await context.FestivalCatalogItems
+                                   .FirstAsync(menuRow => menuRow.CatalogItemId == _world.BratwurstItemId);
       bratwurst.IsAvailable = false;
 
       var beer = await context.CatalogItems.FirstAsync(item => item.Id == _world.BeerItemId);

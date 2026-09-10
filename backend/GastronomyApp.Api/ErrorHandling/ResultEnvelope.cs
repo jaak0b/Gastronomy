@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
 
@@ -25,6 +25,10 @@ public sealed class ResultEnvelope
                Unprocessable(CannotBeProcessedKey, null),
              OrderValidationFailureReason.ItemHasNoStation =>
                Unprocessable(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.NoRunningFestival =>
+               Unprocessable(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.OrderNumberCouldNotBeAllocated =>
+               Unprocessable(CannotBeProcessedKey, null),
              OrderValidationFailureReason.UnknownCatalogItemId =>
                Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationNotAssignedToItem =>
@@ -50,6 +54,8 @@ public sealed class ResultEnvelope
              SettlementFailureReason.AmountPaidNegative =>
                Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.SelectionSpansSeveralTables =>
+               Validation(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.NoRunningFestival =>
                Validation(SettlementCannotBeProcessedKey),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };

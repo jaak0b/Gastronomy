@@ -23,8 +23,9 @@ public static class AdminStationEndpoints
     var group = routes.MapGroup("/api/admin/stations");
 
     group.MapGet(string.Empty,
-                 async (AdminStationHandler handler,
-                        CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+                 async (Guid? festivalId,
+                        AdminStationHandler handler,
+                        CancellationToken cancellationToken) => await handler.ListAsync(festivalId, cancellationToken));
 
     group.MapPost(string.Empty,
                   async (SaveStationRequest request,
@@ -121,25 +122,36 @@ public sealed class AdminStationHandler
   private readonly GastronomyAppDbContext _dbContext;
   private readonly DeviceRevoker _deviceRevoker;
   private readonly OutstandingInvitationLookup _invitationLookup;
+  private readonly ItemsLeftWithoutAStation _itemsLeftWithoutAStation;
   private readonly ResultEnvelope _resultEnvelope;
 
   public AdminStationHandler(GastronomyAppDbContext dbContext,
                              OutstandingInvitationLookup invitationLookup,
                              DeviceRevoker deviceRevoker,
                              StationChangeAnnouncer announcer,
+                             ItemsLeftWithoutAStation itemsLeftWithoutAStation,
                              ResultEnvelope resultEnvelope,
                              IClock clock)
   {
     _dbContext = dbContext;
     _invitationLookup = invitationLookup;
+    _itemsLeftWithoutAStation = itemsLeftWithoutAStation;
     _deviceRevoker = deviceRevoker;
     _announcer = announcer;
     _resultEnvelope = resultEnvelope;
     _clock = clock;
   }
 
-  public async Task<IResult> ListAsync(CancellationToken cancellationToken)
+  public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
+    if (festivalId is { } askedFestivalId
+        && !await _dbContext.Festivals
+                            .AsNoTracking()
+                            .AnyAsync(candidate => candidate.Id == askedFestivalId, cancellationToken))
+    {
+      return Results.NotFound();
+    }
+
     List<Station> stations = await _dbContext.Stations
                                              .AsNoTracking()
                                              .OrderBy(station => station.SortOrder)
@@ -150,6 +162,14 @@ public sealed class AdminStationHandler
     Dictionary<Guid, DateTime> lastSeenByDeviceId =
       await _invitationLookup.LastSeenByDeviceIdAsync(cancellationToken);
 
+    List<Guid> stationIdsAtTheFestival = festivalId is null
+                                           ? []
+                                           : await _dbContext.FestivalStations
+                                                             .AsNoTracking()
+                                                             .Where(link => link.FestivalId == festivalId.Value)
+                                                             .Select(link => link.StationId)
+                                                             .ToListAsync(cancellationToken);
+
     List<AdminStationView> views =
     [
       .. stations.Select(station => new AdminStationView(station.Id,
@@ -159,7 +179,8 @@ public sealed class AdminStationHandler
                                                           station.DeviceId is not null,
                                                           LastSeenOf(lastSeenByDeviceId, station.DeviceId),
                                                           station.EnrolmentInvitationId is not null
-                                                          && outstandingInvitationIds.Contains(station.EnrolmentInvitationId.Value)))
+                                                          && outstandingInvitationIds.Contains(station.EnrolmentInvitationId.Value),
+                                                          stationIdsAtTheFestival.Contains(station.Id)))
     ];
 
     return Results.Ok(new AdminStationListView(views));
@@ -183,8 +204,7 @@ public sealed class AdminStationHandler
                              Id = stationId,
                              Name = request.Name,
                              SortOrder = request.SortOrder,
-                             IsActive = true,
-                             NextStationOrderNumber = 1
+                             IsActive = true
                            });
 
     await TellTheDevicesAsync(await SaveAsync(cancellationToken), stationId);
@@ -256,7 +276,8 @@ public sealed class AdminStationHandler
                                     new Dictionary<string, string> { ["count"] = unfinishedItemCount.ToString() });
     }
 
-    List<Guid> strandedItemIds = await StrandedItemIdsAsync(stationId, cancellationToken);
+    IReadOnlyList<Guid> strandedItemIds =
+      await _itemsLeftWithoutAStation.WhenTheStationIsSwitchedOffAsync(stationId, cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {
@@ -333,36 +354,5 @@ public sealed class AdminStationHandler
                            .CountAsync(item => stationOrderIds.Contains(item.StationOrderId)
                                                && item.ProductionStatus != ProductionStatus.Finished,
                                        cancellationToken);
-  }
-
-  private async Task<List<Guid>> StrandedItemIdsAsync(Guid stationId, CancellationToken cancellationToken)
-  {
-    List<Guid> activeOtherStationIds = await _dbContext.Stations
-                                                       .AsNoTracking()
-                                                       .Where(station => station.IsActive && station.Id != stationId)
-                                                       .Select(station => station.Id)
-                                                       .ToListAsync(cancellationToken);
-
-    List<Guid> assignedItemIds = await _dbContext.ItemStationAssignments
-                                                 .AsNoTracking()
-                                                 .Where(assignment => assignment.StationId == stationId)
-                                                 .Select(assignment => assignment.CatalogItemId)
-                                                 .ToListAsync(cancellationToken);
-
-    List<Guid> itemIdsWithAnotherStation = await _dbContext.ItemStationAssignments
-                                                           .AsNoTracking()
-                                                           .Where(assignment => assignedItemIds.Contains(assignment.CatalogItemId)
-                                                                                && activeOtherStationIds.Contains(assignment.StationId))
-                                                           .Select(assignment => assignment.CatalogItemId)
-                                                           .Distinct()
-                                                           .ToListAsync(cancellationToken);
-
-    List<Guid> activeItemIds = await _dbContext.CatalogItems
-                                               .AsNoTracking()
-                                               .Where(item => item.IsActive && assignedItemIds.Contains(item.Id))
-                                               .Select(item => item.Id)
-                                               .ToListAsync(cancellationToken);
-
-    return [.. activeItemIds.Where(itemId => !itemIdsWithAnotherStation.Contains(itemId))];
   }
 }

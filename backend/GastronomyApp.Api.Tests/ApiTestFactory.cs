@@ -96,7 +96,8 @@ public sealed record SeededWorld(
   Guid FoodCategoryId,
   Guid DrinkCategoryId,
   Guid BratwurstItemId,
-  Guid BeerItemId);
+  Guid BeerItemId,
+  Guid FestivalId);
 
 public sealed class ApiSeeder
 {
@@ -113,7 +114,18 @@ public sealed class ApiSeeder
                             Guid.NewGuid(),
                             Guid.NewGuid(),
                             Guid.NewGuid(),
+                            Guid.NewGuid(),
                             Guid.NewGuid());
+
+    context.Festivals.Add(new()
+                          {
+                            Id = world.FestivalId,
+                            Name = "Sommerfest",
+                            StartsAtUtc = DateTime.UtcNow.AddDays(-1),
+                            EndsAtUtc = DateTime.UtcNow.AddYears(1),
+                            NextOrderNumber = 1,
+                            IsHidden = false
+                          });
 
     context.StaffMembers.Add(new()
                              {
@@ -123,29 +135,40 @@ public sealed class ApiSeeder
                                CreatedAtUtc = _baseline
                              });
 
-    AddStation(context, world.KitchenStationId, "Kueche", 1);
-    AddStation(context, world.BarStationId, "Bar", 2);
+    AddStation(context, world, world.KitchenStationId, "Kueche", 1);
+    AddStation(context, world, world.BarStationId, "Bar", 2);
 
     AddCategory(context, world.FoodCategoryId, "Essen", "#C62828", 1);
     AddCategory(context, world.DrinkCategoryId, "Getraenke", "#1565C0", 2);
 
-    AddItem(context, world.BratwurstItemId, "Bratwurst mit Brot", world.FoodCategoryId, 350, 1, world.KitchenStationId);
-    AddItem(context, world.BeerItemId, "Bier", world.DrinkCategoryId, 300, 2, world.BarStationId);
+    AddItem(context, world, world.BratwurstItemId, "Bratwurst mit Brot", world.FoodCategoryId, 350, 1, world.KitchenStationId);
+    AddItem(context, world, world.BeerItemId, "Bier", world.DrinkCategoryId, 300, 2, world.BarStationId);
 
     await context.SaveChangesAsync(cancellationToken);
     return world;
   }
 
-  private void AddStation(GastronomyAppDbContext context, Guid stationId, string name, int sortOrder)
+  private void AddStation(GastronomyAppDbContext context,
+                          SeededWorld world,
+                          Guid stationId,
+                          string name,
+                          int sortOrder)
   {
     context.Stations.Add(new()
                          {
                            Id = stationId,
                            Name = name,
                            SortOrder = sortOrder,
-                           IsActive = true,
-                           NextStationOrderNumber = 1
+                           IsActive = true
                          });
+
+    context.FestivalStations.Add(new()
+                                 {
+                                   Id = Guid.NewGuid(),
+                                   FestivalId = world.FestivalId,
+                                   StationId = stationId,
+                                   NextStationOrderNumber = 1
+                                 });
   }
 
   private void AddCategory(GastronomyAppDbContext context,
@@ -166,6 +189,7 @@ public sealed class ApiSeeder
   }
 
   private void AddItem(GastronomyAppDbContext context,
+                       SeededWorld world,
                        Guid itemId,
                        string name,
                        Guid categoryId,
@@ -178,15 +202,23 @@ public sealed class ApiSeeder
                                Id = itemId,
                                Name = name,
                                CategoryId = categoryId,
-                               PriceCents = priceCents,
                                IsActive = true,
-                               SortOrder = sortOrder,
-                               IsAvailable = true
+                               SortOrder = sortOrder
                              });
+
+    context.FestivalCatalogItems.Add(new()
+                                     {
+                                       Id = Guid.NewGuid(),
+                                       FestivalId = world.FestivalId,
+                                       CatalogItemId = itemId,
+                                       PriceCents = priceCents,
+                                       IsAvailable = true
+                                     });
 
     context.ItemStationAssignments.Add(new()
                                        {
                                          Id = Guid.NewGuid(),
+                                         FestivalId = world.FestivalId,
                                          CatalogItemId = itemId,
                                          StationId = stationId
                                        });

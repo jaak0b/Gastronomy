@@ -125,8 +125,9 @@ public sealed class CatalogWriteTransactionTest
 
   private async Task<CatalogWrite> RaiseTheBratwurstPriceAsync(CancellationToken cancellationToken)
   {
-    var bratwurst = await _dbContext.CatalogItems
-                                    .FirstAsync(item => item.Id == _context.World.BratwurstItemId, cancellationToken);
+    var bratwurst = await _dbContext.FestivalCatalogItems
+                                    .FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId,
+                                                cancellationToken);
     bratwurst.PriceCents += 50;
     await _dbContext.SaveChangesAsync(cancellationToken);
 

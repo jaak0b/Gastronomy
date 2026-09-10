@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAdminStationsStore } from '../../../stores/admin/stations'
+import { useAdminStationsStore, type AdminStation } from '../../../stores/admin/stations'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
+import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalText } from '../refusalText'
@@ -11,15 +12,32 @@ import StationForm from './StationForm.vue'
 const { t } = useI18n()
 const stations = useAdminStationsStore()
 const enrolment = useAdminEnrolmentStore()
+const festivals = useAdminFestivalsStore()
 const editingId = ref<string | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
+const removedStation = ref<AdminStation | null>(null)
 let stopListening: (() => void) | null = null
+
+const aFestivalIsPicked = computed(() => festivals.pickedFestivalId !== null)
 
 const shown = computed(() =>
   stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
+
+const groups = computed(() => [
+  {
+    key: 'atTheFestival',
+    heading: t('admin.stations.atTheFestival'),
+    stations: shown.value.filter((station) => station.isAtTheFestival),
+  },
+  {
+    key: 'notAtTheFestival',
+    heading: t('admin.stations.notAtTheFestival'),
+    stations: shown.value.filter((station) => !station.isAtTheFestival),
+  },
+])
 
 const refusalText = useRefusalText([() => enrolment.errorMessage, () => stations.errorMessage])
 
@@ -46,6 +64,14 @@ async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
   isCreating.value = false
 }
 
+async function removeFromTheFestival(): Promise<void> {
+  const station = removedStation.value
+  removedStation.value = null
+  if (station !== null) {
+    await stations.removeFromTheFestival(station.stationId)
+  }
+}
+
 async function deactivate(): Promise<void> {
   const stationId = askingAboutId.value
   askingAboutId.value = null
@@ -56,6 +82,7 @@ async function deactivate(): Promise<void> {
 
 onMounted(async () => {
   stopListening = stations.listen()
+  await festivals.load()
   await stations.load()
 })
 
@@ -85,67 +112,98 @@ onUnmounted(() => {
       {{ t('admin.loadFailed') }}
     </v-alert>
 
+    <v-alert
+      v-if="!aFestivalIsPicked"
+      class="no-festival-picked mb-4"
+      type="info"
+      variant="tonal"
+    >
+      {{ t('admin.stations.noFestivalPicked') }}
+    </v-alert>
+
     <v-checkbox
       v-model="showsDeactivated"
       class="show-deactivated"
       :label="t('admin.showDeactivated')"
     />
 
-    <v-card v-for="station in shown" :key="station.stationId" class="station-row mb-2">
-      <div class="d-flex align-center ga-2 px-4 py-2">
-        <span class="name text-h6">{{ station.name }}</span>
-        <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
-          {{ t('admin.deactivated') }}
-        </v-chip>
-        <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
-          {{ t('admin.stations.noTablet') }}
-        </v-chip>
-        <v-spacer />
-        <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
-          {{ t('admin.stations.setUpDevice') }}
-        </v-btn>
-        <v-btn
-          class="edit"
-          variant="text"
-          @click="toggleEditing(station.stationId)"
-        >
-          {{ t('admin.edit') }}
-        </v-btn>
-        <v-btn
-          v-if="station.isActive"
-          class="deactivate"
-          icon="mdi-delete"
-          variant="text"
-          color="error"
-          :aria-label="t('admin.deactivate')"
-          @click="askingAboutId = station.stationId"
-        />
-        <v-btn
-          v-else
-          class="reactivate"
-          variant="text"
-          @click="stations.setActive(station.stationId, true)"
-        >
-          {{ t('admin.stations.activate') }}
-        </v-btn>
-      </div>
-      <v-expand-transition>
-        <StationForm
-          v-if="editingId === station.stationId"
-          :station="station"
-          @save="save"
-        />
-      </v-expand-transition>
-      <v-expand-transition>
-        <InvitationPanel
-          v-if="enrolment.invitation?.station?.id === station.stationId"
-          :invitation="enrolment.invitation"
-          :qr="enrolment.invitationQr"
-          @close="enrolment.closeInvitation"
-          @renew="inviteStation(station.stationId)"
-        />
-      </v-expand-transition>
-    </v-card>
+    <template v-for="group in groups" :key="group.key">
+      <h2 v-if="aFestivalIsPicked" class="group-heading text-h6 mt-4 mb-2">
+        {{ group.heading }}
+      </h2>
+      <v-card
+        v-for="station in group.stations"
+        :key="station.stationId"
+        class="station-row mb-2"
+      >
+        <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
+          <span class="name text-h6">{{ station.name }}</span>
+          <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
+            {{ t('admin.deactivated') }}
+          </v-chip>
+          <v-chip v-if="!station.hasDevice" class="no-tablet" size="small" color="warning">
+            {{ t('admin.stations.noTablet') }}
+          </v-chip>
+          <v-spacer />
+          <v-btn
+            v-if="aFestivalIsPicked && !station.isAtTheFestival"
+            class="add-to-the-festival"
+            color="primary"
+            variant="tonal"
+            @click="stations.addToTheFestival(station.stationId)"
+          >
+            {{ t('admin.stations.addToTheFestival') }}
+          </v-btn>
+          <v-btn
+            v-if="aFestivalIsPicked && station.isAtTheFestival"
+            class="remove-from-the-festival"
+            variant="text"
+            @click="removedStation = station"
+          >
+            {{ t('admin.stations.removeFromTheFestival') }}
+          </v-btn>
+          <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
+            {{ t('admin.stations.setUpDevice') }}
+          </v-btn>
+          <v-btn class="edit" variant="text" @click="toggleEditing(station.stationId)">
+            {{ t('admin.edit') }}
+          </v-btn>
+          <v-btn
+            v-if="station.isActive"
+            class="deactivate"
+            icon="mdi-delete"
+            variant="text"
+            color="error"
+            :aria-label="t('admin.deactivate')"
+            @click="askingAboutId = station.stationId"
+          />
+          <v-btn
+            v-else
+            class="reactivate"
+            variant="text"
+            @click="stations.setActive(station.stationId, true)"
+          >
+            {{ t('admin.stations.activate') }}
+          </v-btn>
+        </div>
+        <v-expand-transition>
+          <StationForm
+            v-if="editingId === station.stationId"
+            :station="station"
+            @save="save"
+          />
+        </v-expand-transition>
+        <v-expand-transition>
+          <InvitationPanel
+            v-if="enrolment.invitation?.station?.id === station.stationId"
+            :invitation="enrolment.invitation"
+            :qr="enrolment.invitationQr"
+            @close="enrolment.closeInvitation"
+            @renew="inviteStation(station.stationId)"
+          />
+        </v-expand-transition>
+      </v-card>
+    </template>
 
     <v-btn class="new-station" color="primary" @click="startCreating">
       {{ t('admin.stations.new') }}
@@ -155,6 +213,14 @@ onUnmounted(() => {
       <StationForm :station="null" @save="save" />
     </v-card>
 
+    <ConfirmDialog
+      v-if="removedStation !== null"
+      :title="t('admin.stations.removeTitle')"
+      :body="t('admin.stations.removeBody')"
+      :confirm-label="t('admin.stations.removeConfirm')"
+      @confirm="removeFromTheFestival"
+      @cancel="removedStation = null"
+    />
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.stations.deactivateTitle')"

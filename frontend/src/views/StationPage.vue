@@ -59,7 +59,7 @@ async function advance(orderItemIds: string[], status: ProductionAdvance): Promi
     </v-alert>
 
     <v-alert v-if="station.loadFailed" class="load-failed mb-4" type="warning" variant="tonal">
-      {{ t('station.loadFailed') }}
+      {{ t(station.loadFailureKey ?? 'station.loadFailed') }}
     </v-alert>
     <v-alert
       v-if="station.failureKey !== null"

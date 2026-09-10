@@ -8,17 +8,12 @@ import CategoryDialog from '../../../src/components/admin/categories/CategoryDia
 import type { AdminCategory } from '../../../src/core/apiTypes'
 import { useAdminCategoriesStore } from '../../../src/stores/admin/categories'
 import type { AdminItem } from '../../../src/stores/admin/items'
-import type { AdminStation } from '../../../src/stores/admin/stations'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 
 const FOOD_ID = '33333333-3333-3333-3333-333333333333'
 const DRINKS_ID = '44444444-4444-4444-4444-444444444444'
 const DESSERT_ID = '55555555-5555-5555-5555-555555555555'
-
-const STATIONS: AdminStation[] = [
-  { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: true },
-]
 
 const CATEGORIES: AdminCategory[] = [
   { categoryId: FOOD_ID, name: 'Speisen', colourHex: '#FFEB3B', sortOrder: 1, isActive: true },
@@ -37,18 +32,16 @@ const BRATWURST: AdminItem = {
   itemId: 'item-1',
   name: 'Bratwurst',
   categoryId: FOOD_ID,
-  priceCents: 350,
   sortOrder: 1,
   isActive: true,
-  isAvailable: true,
-  stationIds: ['station-kueche'],
   productionMinutes: 15,
+  atTheFestival: { priceCents: 350, isAvailable: true, stationIds: ['station-kueche'] },
 }
 
 function mountForm(item: AdminItem | null = null) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemForm, {
-    props: { item, stations: STATIONS, errorText: null },
+    props: { item, errorText: null },
     global: { plugins: [i18n] },
     attachTo: document.body,
   })
@@ -72,73 +65,6 @@ function stubTheLaptop() {
     }),
   )
 }
-
-describe('the price field', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    stubTheLaptop()
-    knownCategories()
-  })
-
-  it('asks for euros rather than cents', () => {
-    const form = mountForm()
-
-    expect(form.get('.price-field label').text()).toBe('Preis in Euro')
-  })
-
-  it('shows an existing price in euros', () => {
-    const form = mountForm(BRATWURST)
-
-    expect((form.get('.price-field input').element as HTMLInputElement).value).toBe('3,50')
-  })
-
-  it('sends a price typed with a comma as cents', async () => {
-    const form = mountForm(BRATWURST)
-
-    await form.get('.price-field input').setValue('4,20')
-    await form.get('form').trigger('submit')
-
-    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ priceCents: 420 })
-  })
-
-  it('sends a price typed with a dot as cents', async () => {
-    const form = mountForm(BRATWURST)
-
-    await form.get('.price-field input').setValue('4.20')
-    await form.get('form').trigger('submit')
-
-    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ priceCents: 420 })
-  })
-
-  it('sends a whole euro price as cents', async () => {
-    const form = mountForm(BRATWURST)
-
-    await form.get('.price-field input').setValue('5')
-    await form.get('form').trigger('submit')
-
-    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ priceCents: 500 })
-  })
-
-  it('says how to write a price rather than saving something it could not read', async () => {
-    const form = mountForm(BRATWURST)
-
-    await form.get('.price-field input').setValue('drei Euro')
-    await form.get('form').trigger('submit')
-
-    expect(form.get('.price-field .v-messages').text()).toBe(
-      'Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.',
-    )
-  })
-
-  it('sends nothing while the price cannot be read', async () => {
-    const form = mountForm(BRATWURST)
-
-    await form.get('.price-field input').setValue('drei Euro')
-    await form.get('form').trigger('submit')
-
-    expect(form.emitted('save')).toBeUndefined()
-  })
-})
 
 describe('the preparation time field', () => {
   beforeEach(() => {

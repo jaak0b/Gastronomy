@@ -18,7 +18,9 @@ public sealed class GastronomyAppDbContextTest
     "StationOrders",
     "OrderItems",
     "OrderItemStatusChanges",
-    "SequenceCounters"
+    "Festivals",
+    "FestivalStations",
+    "FestivalCatalogItems"
   ];
 
   [Test]

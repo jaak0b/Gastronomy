@@ -271,6 +271,64 @@ describe('a station tablet that has lost contact with the laptop', () => {
   })
 })
 
+describe('a station tablet the laptop turned away', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('says that no festival is running instead of blaming the connection', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'NoRunningFestival',
+              messageKey: 'station.noFestivalIsRunning',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          ),
+      ),
+    )
+
+    const page = await mountPage()
+
+    expect(page.get('.load-failed').text()).toBe('Kein Fest aktiv')
+  })
+
+  it('says the station does not belong to this festival', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'StationNotAtTheFestival',
+              messageKey: 'station.notPartOfTheFestival',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          ),
+      ),
+    )
+
+    const page = await mountPage()
+
+    expect(page.get('.load-failed').text()).toBe(
+      'Diese Ausgabestelle gehört nicht zum laufenden Fest.',
+    )
+  })
+})
+
 describe('a station with nothing to prepare', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

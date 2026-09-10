@@ -22,6 +22,7 @@ export const useStationStore = defineStore('station', () => {
   const slices = ref<StationSlice[]>([])
   const hasLoaded = ref(false)
   const loadFailed = ref(false)
+  const loadFailureKey = ref<string | null>(null)
   const failureKey = ref<string | null>(null)
   const readyTableName = ref<string | null>(null)
   const isWorking = ref(false)
@@ -48,9 +49,12 @@ export const useStationStore = defineStore('station', () => {
     })
     if (result.kind !== 'ok') {
       loadFailed.value = true
+      loadFailureKey.value =
+        result.kind === 'error' && result.body !== null ? result.body.messageKey : null
       return
     }
     loadFailed.value = false
+    loadFailureKey.value = null
     station.value = result.data.station
     slices.value = result.data.slices
     hasLoaded.value = true
@@ -110,6 +114,7 @@ export const useStationStore = defineStore('station', () => {
     board,
     hasNothingToPrepare,
     loadFailed,
+    loadFailureKey,
     failureKey,
     readyTableName,
     isWorking,

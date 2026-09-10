@@ -176,9 +176,7 @@ public sealed class AdminItemCategoryTest
                                                               {
                                                                 name = "Bier vom Fass",
                                                                 categoryId,
-                                                                priceCents = 320,
-                                                                sortOrder = 2,
-                                                                stationIds = new[] { _context.World.BarStationId }
+                                                                sortOrder = 2
                                                               });
 
     using var items = await _context.Client.GetAsync("/api/admin/items");
@@ -191,7 +189,6 @@ public sealed class AdminItemCategoryTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(stored.GetProperty("name").GetString(), Is.EqualTo("Bier vom Fass"));
-                      Assert.That(stored.GetProperty("priceCents").GetInt32(), Is.EqualTo(320));
                     });
   }
 

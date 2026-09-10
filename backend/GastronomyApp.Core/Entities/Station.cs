@@ -13,6 +13,4 @@ public sealed class Station
   public Guid? DeviceId { get; set; }
 
   public Guid? EnrolmentInvitationId { get; set; }
-
-  public required int NextStationOrderNumber { get; set; }
 }

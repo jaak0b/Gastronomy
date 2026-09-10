@@ -4,6 +4,7 @@ import {
   SEND_PROGRESS_STORAGE_KEY,
   addLine,
   clearDraft,
+  draftIsForAnotherFestival,
   emptyDraft,
   removeLine,
   restoreDraft,
@@ -15,6 +16,7 @@ import {
   setLineStation,
   setOrderNote,
   setTableName,
+  stampFestival,
 } from '../../src/core/draftCart'
 import type { DraftLine } from '../../src/core/apiTypes'
 
@@ -33,6 +35,7 @@ describe('emptyDraft', () => {
     const draft = emptyDraft()
 
     expect(draft).toEqual({
+      festivalId: null,
       tableName: '',
       note: null,
       lines: [],
@@ -52,12 +55,20 @@ describe('restoreDraft', () => {
 
     expect(restoration).toEqual({
       outcome: 'nothingStored',
-      draft: { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} },
+      draft: {
+        festivalId: null,
+        tableName: '',
+        note: null,
+        lines: [],
+        clientOrderId: null,
+        deliveryModes: {},
+      },
     })
   })
 
   it('reports the half built order it put back on the screen', () => {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 12',
       note: null,
       lines: [bratwurstLine()],
@@ -78,7 +89,14 @@ describe('restoreDraft', () => {
 
     expect(restoration).toEqual({
       outcome: 'unreadableDraftDiscarded',
-      draft: { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} },
+      draft: {
+        festivalId: null,
+        tableName: '',
+        note: null,
+        lines: [],
+        clientOrderId: null,
+        deliveryModes: {},
+      },
     })
   })
 
@@ -158,8 +176,9 @@ describe('the stored draft shape', () => {
     expect(Array.isArray(stored)).toBe(false)
   })
 
-  it('stores no field beyond the table, the note, the lines, the submission id and the delivery choice', () => {
+  it('stores no field beyond the festival, the table, the note, the lines, the submission id and the delivery choice', () => {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 3',
       note: null,
       lines: [],
@@ -172,6 +191,7 @@ describe('the stored draft shape', () => {
     expect(Object.keys(stored).sort()).toEqual([
       'clientOrderId',
       'deliveryModes',
+      'festivalId',
       'lines',
       'note',
       'tableName',
@@ -337,6 +357,7 @@ describe('clearDraft', () => {
 
   it('removes the stored order', () => {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 12',
       note: null,
       lines: [bratwurstLine()],
@@ -351,6 +372,7 @@ describe('clearDraft', () => {
 
   it('leaves the next draft empty', () => {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 12',
       note: null,
       lines: [bratwurstLine()],
@@ -361,6 +383,7 @@ describe('clearDraft', () => {
     clearDraft()
 
     expect(restoreDraft().draft).toEqual({
+      festivalId: null,
       tableName: '',
       note: null,
       lines: [],
@@ -501,5 +524,43 @@ describe('the station name a line keeps', () => {
 
     expect(restoration.outcome).toBe('restored')
     expect(restoration.draft.lines[0].stationName).toBe('')
+  })
+})
+
+describe('the festival a draft belongs to', () => {
+  it('is remembered across a reload, so the order is not thrown away as another festival', () => {
+    saveDraft({ ...emptyDraft(), festivalId: 'fest-1', tableName: 'Tisch 4' })
+
+    expect(restoreDraft().draft.festivalId).toBe('fest-1')
+  })
+
+  it('is read as none when the stored order names no festival', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [],
+      }),
+    )
+
+    expect(restoreDraft().draft.festivalId).toBeNull()
+  })
+
+  it('is stamped on the draft and kept in storage', () => {
+    const stamped = stampFestival(emptyDraft(), 'fest-1')
+
+    expect(stamped.festivalId).toBe('fest-1')
+    expect(restoreDraft().draft.festivalId).toBe('fest-1')
+  })
+
+  it('belongs to another festival when the running one differs', () => {
+    const draft = { ...emptyDraft(), festivalId: 'fest-1' }
+
+    expect(draftIsForAnotherFestival(draft, 'fest-2')).toBe(true)
+    expect(draftIsForAnotherFestival(draft, null)).toBe(true)
+    expect(draftIsForAnotherFestival(draft, 'fest-1')).toBe(false)
   })
 })

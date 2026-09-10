@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Results;
 
@@ -24,5 +24,7 @@ public enum OrderValidationFailureReason
   StationRequired,
   StationNotAssignedToItem,
   ItemHasNoStation,
-  PriceOutOfRange
+  PriceOutOfRange,
+  NoRunningFestival,
+  OrderNumberCouldNotBeAllocated
 }

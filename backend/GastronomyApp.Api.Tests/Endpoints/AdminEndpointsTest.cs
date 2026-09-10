@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -73,59 +73,44 @@ public sealed class AdminEndpointsTest
   }
 
   [Test]
-  public async Task PostItem_EmptyStationList_IsRefusedAsUnprocessable()
+  public async Task PostItem_ValidRequest_CreatesTheItemWithoutAnyPriceOrStation()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
                                                               new
                                                               {
                                                                 name = "Pommes",
                                                                 categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = Array.Empty<Guid>()
-                                                              });
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-  }
-
-  [Test]
-  public async Task PostItem_WithStations_CreatesItAndItsAssignments()
-  {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId }
+                                                                sortOrder = 3
                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var itemId = body.RootElement.GetProperty("itemId").GetGuid();
 
     await using var database = _context.Factory.CreateContext();
-    var assignments = await database.ItemStationAssignments.CountAsync(assignment => assignment.CatalogItemId == itemId);
+    var menuRows = await database.FestivalCatalogItems.CountAsync(menuRow => menuRow.CatalogItemId == itemId);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-                      Assert.That(assignments, Is.EqualTo(1));
+                      Assert.That(menuRows, Is.EqualTo(0));
                     });
   }
 
   [Test]
   public async Task PostAvailability_SoldOutToggle_IsNeverRefused()
   {
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/availability",
-                                                              new { isAvailable = false });
+    using var response =
+      await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability",
+                                            new { isAvailable = false });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
     await using var database = _context.Factory.CreateContext();
-    var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BratwurstItemId);
+    var menuRow = await database.FestivalCatalogItems
+                                .FirstAsync(candidate => candidate.FestivalId == _context.World.FestivalId
+                                                         && candidate.CatalogItemId == _context.World.BratwurstItemId);
 
-    Assert.That(item.IsAvailable, Is.False);
+    Assert.That(menuRow.IsAvailable, Is.False);
   }
 
   [Test]
@@ -244,65 +229,6 @@ public sealed class AdminEndpointsTest
   }
 
   [Test]
-  public async Task Activate_ItemWhoseOnlyStationIsSwitchedOff_IsRefused()
-  {
-    await SwitchOffEveryStationOfBratwurstAsync();
-
-    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/activate",
-                                                        null);
-
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemHasNoActiveStation"));
-                    });
-  }
-
-  [Test]
-  public async Task Activate_ItemWhoseOnlyStationIsSwitchedOff_LeavesItDeactivated()
-  {
-    await SwitchOffEveryStationOfBratwurstAsync();
-
-    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/activate",
-                                                        null);
-
-    await using var database = _context.Factory.CreateContext();
-    var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BratwurstItemId);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(item.IsActive, Is.False);
-                    });
-  }
-
-  [Test]
-  public async Task PutItem_OnlyStationsThatAreSwitchedOff_IsRefused()
-  {
-    await using (var database = _context.Factory.CreateContext())
-    {
-      await database.Stations
-                    .Where(station => station.Id == _context.World.BarStationId)
-                    .ExecuteUpdateAsync(station => station.SetProperty(entry => entry.IsActive, false));
-    }
-
-    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}",
-                                                             new
-                                                             {
-                                                               name = "Bratwurst",
-                                                               categoryId = _context.World.FoodCategoryId,
-                                                               priceCents = 350,
-                                                               sortOrder = 1,
-                                                               stationIds = new[] { _context.World.BarStationId }
-                                                             });
-
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-  }
-
-  [Test]
   public async Task GetAdminOrders_AfterAnOrderWasPlaced_ListsItAsWaiting()
   {
     using (var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
@@ -321,22 +247,6 @@ public sealed class AdminEndpointsTest
                       Assert.That(orders[0].GetProperty("stationOrders")[0].GetProperty("deliveryMode").GetString(),
                                   Is.EqualTo("together"));
                     });
-  }
-
-  private async Task SwitchOffEveryStationOfBratwurstAsync()
-  {
-    await using var database = _context.Factory.CreateContext();
-    List<Guid> stationIds = await database.ItemStationAssignments
-                                          .Where(assignment => assignment.CatalogItemId == _context.World.BratwurstItemId)
-                                          .Select(assignment => assignment.StationId)
-                                          .ToListAsync();
-
-    await database.CatalogItems
-                  .Where(item => item.Id == _context.World.BratwurstItemId)
-                  .ExecuteUpdateAsync(item => item.SetProperty(entry => entry.IsActive, false));
-    await database.Stations
-                  .Where(station => stationIds.Contains(station.Id))
-                  .ExecuteUpdateAsync(station => station.SetProperty(entry => entry.IsActive, false));
   }
 }
 

@@ -8,7 +8,14 @@ export const SEND_PROGRESS_STORAGE_KEY = 'draftOrderSend'
 const DELIVERY_MODES: DeliveryMode[] = ['together', 'asItComes']
 
 export function emptyDraft(): DraftOrder {
-  return { tableName: '', note: null, lines: [], clientOrderId: null, deliveryModes: {} }
+  return {
+    festivalId: null,
+    tableName: '',
+    note: null,
+    lines: [],
+    clientOrderId: null,
+    deliveryModes: {},
+  }
 }
 
 function toDeliveryModes(value: unknown): Record<string, DeliveryMode> {
@@ -60,6 +67,7 @@ function toDraftOrder(value: unknown): DraftOrder | null {
     lines.push(line)
   }
   return {
+    festivalId: typeof candidate.festivalId === 'string' ? candidate.festivalId : null,
     tableName: candidate.tableName,
     note: typeof candidate.note === 'string' ? candidate.note : null,
     lines,
@@ -98,6 +106,7 @@ export function saveDraft(draft: DraftOrder): void {
   localStorage.setItem(
     DRAFT_STORAGE_KEY,
     JSON.stringify({
+      festivalId: draft.festivalId,
       tableName: draft.tableName,
       note: draft.note,
       lines: draft.lines.map((line) => ({
@@ -211,6 +220,17 @@ export function setLineStation(
       position === index ? { ...line, stationId, stationName } : line,
     ),
   )
+}
+
+export function draftIsForAnotherFestival(
+  draft: DraftOrder,
+  runningFestivalId: string | null,
+): boolean {
+  return draft.festivalId !== runningFestivalId
+}
+
+export function stampFestival(draft: DraftOrder, festivalId: string): DraftOrder {
+  return persisted({ ...draft, festivalId })
 }
 
 export function setTableName(draft: DraftOrder, tableName: string): DraftOrder {

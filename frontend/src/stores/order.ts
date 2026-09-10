@@ -10,6 +10,7 @@ import type {
 import {
   addLine,
   clearDraft,
+  draftIsForAnotherFestival,
   removeLine,
   restoreDraft,
   restoreSendProgress,
@@ -19,6 +20,7 @@ import {
   setLineStation,
   setOrderNote,
   setTableName,
+  stampFestival,
 } from '../core/draftCart'
 import {
   changesAreRefusedFor,
@@ -68,6 +70,18 @@ export const useOrderStore = defineStore('order', () => {
     return ensureClientOrderId(draftRestoredFromStorage())
   }
 
+  function runningFestivalId(): string | null {
+    return catalogStore.catalog.festival?.festivalId ?? null
+  }
+
+  function underTheRunningFestival(current: DraftOrder): DraftOrder {
+    const running = runningFestivalId()
+    if (current.festivalId !== null || running === null) {
+      return current
+    }
+    return stampFestival(current, running)
+  }
+
   const draft = ref(draftFromStorage())
   const progressWhenTheAppLoaded = progressAfterALoad(restoreSendProgress())
   const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
@@ -108,7 +122,7 @@ export const useOrderStore = defineStore('order', () => {
     if (changesAreRefused.value) {
       return
     }
-    draft.value = makeTheChange(draft.value)
+    draft.value = underTheRunningFestival(makeTheChange(draft.value))
     theRefusalNoLongerFitsTheOrder()
   }
 
@@ -133,7 +147,9 @@ export const useOrderStore = defineStore('order', () => {
       return
     }
     dismissDraftLoss()
-    draft.value = addLine(draft.value, { ...line, stationName: nameOfTheStation(line.stationId) })
+    draft.value = underTheRunningFestival(
+      addLine(draft.value, { ...line, stationName: nameOfTheStation(line.stationId) }),
+    )
     theRefusalNoLongerFitsTheOrder()
   }
 
@@ -183,7 +199,17 @@ export const useOrderStore = defineStore('order', () => {
 
   function startNextOrder(): void {
     clearDraft()
-    draft.value = draftFromStorage()
+    draft.value = underTheRunningFestival(draftFromStorage())
+  }
+
+  function dropTheDraftIfTheFestivalChanged(): void {
+    if (changesAreRefused.value) {
+      return
+    }
+    if (!draftIsForAnotherFestival(draft.value, runningFestivalId())) {
+      return
+    }
+    startNextOrder()
   }
 
   function startNextOrderAfterWritingItDown(): void {
@@ -289,6 +315,7 @@ export const useOrderStore = defineStore('order', () => {
     chooseDeliveryMode,
     dismissConfirmation,
     dismissDraftLoss,
+    dropTheDraftIfTheFestivalChanged,
     startNextOrderAfterWritingItDown,
     send,
     sendAgain,

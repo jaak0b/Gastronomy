@@ -67,10 +67,27 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Festivals",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    StartsAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    EndsAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    NextOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsHidden = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Festivals", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ItemStationAssignments",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
@@ -80,45 +97,14 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Orders",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ClientOrderId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    GlobalOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    StaffMemberId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    TableName = table.Column<string>(type: "TEXT", nullable: false),
-                    Note = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Orders", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SequenceCounters",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false),
-                    NextOrderNumber = table.Column<int>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SequenceCounters", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CatalogItems",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     CategoryId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PriceCents = table.Column<int>(type: "INTEGER", nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsAvailable = table.Column<bool>(type: "INTEGER", nullable: false),
                     ProductionMinutes = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
@@ -169,8 +155,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     DeviceId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    EnrolmentInvitationId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    NextStationOrderNumber = table.Column<int>(type: "INTEGER", nullable: false)
+                    EnrolmentInvitationId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -190,11 +175,89 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Orders",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ClientOrderId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    GlobalOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
+                    StaffMemberId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TableName = table.Column<string>(type: "TEXT", nullable: false),
+                    Note = table.Column<string>(type: "TEXT", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Orders_Festivals_FestivalId",
+                        column: x => x.FestivalId,
+                        principalTable: "Festivals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FestivalCatalogItems",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CatalogItemId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PriceCents = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsAvailable = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FestivalCatalogItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FestivalCatalogItems_CatalogItems_CatalogItemId",
+                        column: x => x.CatalogItemId,
+                        principalTable: "CatalogItems",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_FestivalCatalogItems_Festivals_FestivalId",
+                        column: x => x.FestivalId,
+                        principalTable: "Festivals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FestivalStations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    NextStationOrderNumber = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FestivalStations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FestivalStations_Festivals_FestivalId",
+                        column: x => x.FestivalId,
+                        principalTable: "Festivals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_FestivalStations_Stations_StationId",
+                        column: x => x.StationId,
+                        principalTable: "Stations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StationOrders",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     DeliveryMode = table.Column<int>(type: "INTEGER", nullable: false)
@@ -202,6 +265,12 @@ namespace GastronomyApp.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_StationOrders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StationOrders_Festivals_FestivalId",
+                        column: x => x.FestivalId,
+                        principalTable: "Festivals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_StationOrders_Orders_OrderId",
                         column: x => x.OrderId,
@@ -287,9 +356,31 @@ namespace GastronomyApp.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ItemStationAssignments_CatalogItemId_StationId",
+                name: "IX_FestivalCatalogItems_CatalogItemId",
+                table: "FestivalCatalogItems",
+                column: "CatalogItemId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FestivalCatalogItems_FestivalId_CatalogItemId",
+                table: "FestivalCatalogItems",
+                columns: new[] { "FestivalId", "CatalogItemId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FestivalStations_FestivalId_StationId",
+                table: "FestivalStations",
+                columns: new[] { "FestivalId", "StationId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FestivalStations_StationId",
+                table: "FestivalStations",
+                column: "StationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemStationAssignments_FestivalId_CatalogItemId_StationId",
                 table: "ItemStationAssignments",
-                columns: new[] { "CatalogItemId", "StationId" },
+                columns: new[] { "FestivalId", "CatalogItemId", "StationId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -319,6 +410,17 @@ namespace GastronomyApp.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Orders_FestivalId",
+                table: "Orders",
+                column: "FestivalId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_FestivalId_GlobalOrderNumber",
+                table: "Orders",
+                columns: new[] { "FestivalId", "GlobalOrderNumber" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_StaffMembers_DeviceId",
                 table: "StaffMembers",
                 column: "DeviceId",
@@ -328,6 +430,12 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "IX_StaffMembers_EnrolmentInvitationId",
                 table: "StaffMembers",
                 column: "EnrolmentInvitationId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StationOrders_FestivalId_StationId_StationOrderNumber",
+                table: "StationOrders",
+                columns: new[] { "FestivalId", "StationId", "StationOrderNumber" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -358,7 +466,10 @@ namespace GastronomyApp.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "CatalogItems");
+                name: "FestivalCatalogItems");
+
+            migrationBuilder.DropTable(
+                name: "FestivalStations");
 
             migrationBuilder.DropTable(
                 name: "ItemStationAssignments");
@@ -367,16 +478,16 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "OrderItemStatusChanges");
 
             migrationBuilder.DropTable(
-                name: "SequenceCounters");
-
-            migrationBuilder.DropTable(
                 name: "StaffMembers");
 
             migrationBuilder.DropTable(
-                name: "CatalogCategories");
+                name: "CatalogItems");
 
             migrationBuilder.DropTable(
                 name: "OrderItems");
+
+            migrationBuilder.DropTable(
+                name: "CatalogCategories");
 
             migrationBuilder.DropTable(
                 name: "StationOrders");
@@ -386,6 +497,9 @@ namespace GastronomyApp.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Stations");
+
+            migrationBuilder.DropTable(
+                name: "Festivals");
 
             migrationBuilder.DropTable(
                 name: "Devices");

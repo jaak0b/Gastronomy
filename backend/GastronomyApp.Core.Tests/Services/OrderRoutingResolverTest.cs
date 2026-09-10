@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -26,6 +26,7 @@ public sealed class OrderRoutingResolverTest
     return new()
            {
              Id = Guid.NewGuid(),
+             FestivalId = Guid.NewGuid(),
              CatalogItemId = _catalogItemId,
              StationId = stationId
            };
@@ -38,8 +39,7 @@ public sealed class OrderRoutingResolverTest
              Id = id,
              Name = name,
              SortOrder = sortOrder,
-             IsActive = true,
-             NextStationOrderNumber = 1
+             IsActive = true
            };
   }
 

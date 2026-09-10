@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
@@ -16,8 +16,9 @@ public static class AdminItemEndpoints
     var group = routes.MapGroup("/api/admin/items");
 
     group.MapGet(string.Empty,
-                 async (AdminItemHandler handler,
-                        CancellationToken cancellationToken) => await handler.ListAsync(cancellationToken));
+                 async (Guid? festivalId,
+                        AdminItemHandler handler,
+                        CancellationToken cancellationToken) => await handler.ListAsync(festivalId, cancellationToken));
 
     group.MapPost(string.Empty,
                   async (SaveItemRequest request,
@@ -29,13 +30,6 @@ public static class AdminItemEndpoints
                         SaveItemRequest request,
                         AdminItemHandler handler,
                         CancellationToken cancellationToken) => await handler.UpdateAsync(itemId, request, cancellationToken));
-
-    group.MapPost("/{itemId:guid}/availability",
-                  async (Guid itemId,
-                         SetAvailabilityRequest request,
-                         AdminItemHandler handler,
-                         CancellationToken cancellationToken) =>
-                    await handler.SetAvailabilityAsync(itemId, request, cancellationToken));
 
     group.MapPost("/{itemId:guid}/activate",
                   async (Guid itemId,
@@ -69,32 +63,45 @@ public sealed class AdminItemHandler
     _resultEnvelope = resultEnvelope;
   }
 
-  public async Task<IResult> ListAsync(CancellationToken cancellationToken)
+  public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
+    if (festivalId is { } askedFestivalId
+        && !await _dbContext.Festivals
+                            .AsNoTracking()
+                            .AnyAsync(candidate => candidate.Id == askedFestivalId, cancellationToken))
+    {
+      return Results.NotFound();
+    }
+
     List<CatalogItem> items = await _dbContext.CatalogItems
                                              .AsNoTracking()
                                              .OrderBy(item => item.SortOrder)
                                              .ToListAsync(cancellationToken);
 
-    List<ItemStationAssignment> assignments = await _dbContext.ItemStationAssignments
-                                                             .AsNoTracking()
-                                                             .ToListAsync(cancellationToken);
+    Dictionary<Guid, FestivalCatalogItem> menuRows = festivalId is null
+                                                       ? []
+                                                       : await _dbContext.FestivalCatalogItems
+                                                                         .AsNoTracking()
+                                                                         .Where(menuRow => menuRow.FestivalId == festivalId.Value)
+                                                                         .ToDictionaryAsync(menuRow => menuRow.CatalogItemId,
+                                                                                            cancellationToken);
+
+    List<ItemStationAssignment> assignments = festivalId is null
+                                                ? []
+                                                : await _dbContext.ItemStationAssignments
+                                                                  .AsNoTracking()
+                                                                  .Where(assignment => assignment.FestivalId == festivalId.Value)
+                                                                  .ToListAsync(cancellationToken);
 
     List<AdminItemView> views =
     [
       .. items.Select(item => new AdminItemView(item.Id,
                                                 item.Name,
                                                 item.CategoryId,
-                                                item.PriceCents,
                                                 item.SortOrder,
                                                 item.IsActive,
-                                                item.IsAvailable,
                                                 item.ProductionMinutes,
-                                                [
-                                                  .. assignments
-                                                    .Where(assignment => assignment.CatalogItemId == item.Id)
-                                                    .Select(assignment => assignment.StationId)
-                                                ]))
+                                                AtTheFestivalOf(item.Id, menuRows, assignments)))
     ];
 
     return Results.Ok(new AdminItemListView(views));
@@ -122,18 +129,6 @@ public sealed class AdminItemHandler
                                       cancellationToken);
   }
 
-  public Task<IResult> SetAvailabilityAsync(Guid itemId,
-                                            SetAvailabilityRequest request,
-                                            CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        AvailabilitySetAsync(itemId, request, transactionCancellationToken),
-                                      cancellationToken);
-  }
-
   public Task<IResult> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
     return _writeTransaction.RunAsync(_dbContext,
@@ -150,14 +145,26 @@ public sealed class AdminItemHandler
                                       cancellationToken);
   }
 
+  private AdminItemAtFestivalView? AtTheFestivalOf(Guid itemId,
+                                                   Dictionary<Guid, FestivalCatalogItem> menuRows,
+                                                   IReadOnlyCollection<ItemStationAssignment> assignments)
+  {
+    if (!menuRows.TryGetValue(itemId, out var menuRow))
+    {
+      return null;
+    }
+
+    return new(menuRow.PriceCents,
+               menuRow.IsAvailable,
+               [
+                 .. assignments.Where(assignment => assignment.CatalogItemId == itemId)
+                               .Select(assignment => assignment.StationId)
+               ]);
+  }
+
   private async Task<CatalogWrite> CreatedAsync(SaveItemRequest request, CancellationToken cancellationToken)
   {
     var refusal = Validate(request) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
-
-    if (refusal is null && !await AnyStationIsActiveAsync(request.StationIds!, cancellationToken))
-    {
-      refusal = ItemHasNoActiveStation();
-    }
 
     if (refusal is not null)
     {
@@ -171,14 +178,10 @@ public sealed class AdminItemHandler
                                  Id = itemId,
                                  Name = request.Name!,
                                  CategoryId = request.CategoryId!.Value,
-                                 PriceCents = request.PriceCents,
                                  SortOrder = request.SortOrder,
                                  IsActive = true,
-                                 IsAvailable = true,
                                  ProductionMinutes = request.ProductionMinutes
                                });
-
-    AssignStations(itemId, request.StationIds!);
 
     await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -200,11 +203,6 @@ public sealed class AdminItemHandler
     var refusal = Validate(request)
                   ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
 
-    if (refusal is null && !await AnyStationIsActiveAsync(request.StationIds!, cancellationToken))
-    {
-      refusal = ItemHasNoActiveStation();
-    }
-
     if (refusal is not null)
     {
       return new(refusal, false);
@@ -212,40 +210,9 @@ public sealed class AdminItemHandler
 
     item.Name = request.Name!;
     item.CategoryId = request.CategoryId!.Value;
-    item.PriceCents = request.PriceCents;
     item.SortOrder = request.SortOrder;
     item.ProductionMinutes = request.ProductionMinutes;
 
-    List<ItemStationAssignment> existing = await _dbContext.ItemStationAssignments
-                                                          .Where(assignment => assignment.CatalogItemId == itemId)
-                                                          .ToListAsync(cancellationToken);
-
-    _dbContext.ItemStationAssignments.RemoveRange(existing);
-    AssignStations(itemId, request.StationIds!);
-
-    await _dbContext.SaveChangesAsync(cancellationToken);
-
-    return new(Results.Ok(new SavedItemView(itemId)), true);
-  }
-
-  private async Task<CatalogWrite> AvailabilitySetAsync(Guid itemId,
-                                                        SetAvailabilityRequest request,
-                                                        CancellationToken cancellationToken)
-  {
-    var item = await _dbContext.CatalogItems
-                              .FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
-
-    if (item is null)
-    {
-      return new(Results.NotFound(), false);
-    }
-
-    if (item.IsAvailable == request.IsAvailable)
-    {
-      return new(Results.Ok(new SavedItemView(itemId)), false);
-    }
-
-    item.IsAvailable = request.IsAvailable;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     return new(Results.Ok(new SavedItemView(itemId)), true);
@@ -259,17 +226,6 @@ public sealed class AdminItemHandler
     if (item is null)
     {
       return new(Results.NotFound(), false);
-    }
-
-    List<Guid> assignedStationIds = await _dbContext.ItemStationAssignments
-                                                   .AsNoTracking()
-                                                   .Where(assignment => assignment.CatalogItemId == itemId)
-                                                   .Select(assignment => assignment.StationId)
-                                                   .ToListAsync(cancellationToken);
-
-    if (!await AnyStationIsActiveAsync(assignedStationIds, cancellationToken))
-    {
-      return new(ItemHasNoActiveStation(), false);
     }
 
     var categoryRefusal = await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
@@ -301,19 +257,6 @@ public sealed class AdminItemHandler
     return new(Results.Ok(new SavedItemView(itemId)), true);
   }
 
-  private void AssignStations(Guid itemId, IReadOnlyCollection<Guid> stationIds)
-  {
-    foreach (var stationId in stationIds)
-    {
-      _dbContext.ItemStationAssignments.Add(new()
-                                           {
-                                             Id = Guid.NewGuid(),
-                                             CatalogItemId = itemId,
-                                             StationId = stationId
-                                           });
-    }
-  }
-
   private async Task<IResult?> CategoryRefusalAsync(Guid? categoryId,
                                                     bool theArticleIsSwitchedOn,
                                                     CancellationToken cancellationToken)
@@ -339,22 +282,6 @@ public sealed class AdminItemHandler
                                        "admin.itemCategoryIsOff");
   }
 
-  private async Task<bool> AnyStationIsActiveAsync(IReadOnlyCollection<Guid> stationIds,
-                                                   CancellationToken cancellationToken)
-  {
-    return await _dbContext.Stations
-                          .AsNoTracking()
-                          .AnyAsync(station => station.IsActive && stationIds.Contains(station.Id),
-                                    cancellationToken);
-  }
-
-  private IResult ItemHasNoActiveStation()
-  {
-    return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
-                                  "UnprocessableEntity",
-                                  "admin.itemHasNoActiveStation");
-  }
-
   private IResult? Validate(SaveItemRequest request)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
@@ -362,13 +289,6 @@ public sealed class AdminItemHandler
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                     "ValidationFailed",
                                     "admin.itemNameMissing");
-    }
-
-    if (request.StationIds is null || request.StationIds.Count == 0)
-    {
-      return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
-                                    "UnprocessableEntity",
-                                    "admin.itemNeedsAStation");
     }
 
     if (request.ProductionMinutes is < ShortestProductionMinutes or > LongestProductionMinutes)

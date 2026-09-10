@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
@@ -19,6 +19,8 @@ public sealed record SeededDomain
   public required Guid SausageItemId { get; init; }
 
   public required Guid LemonadeItemId { get; init; }
+
+  public required Guid FestivalId { get; init; }
 }
 
 public sealed class DomainSeeder
@@ -36,10 +38,21 @@ public sealed class DomainSeeder
                             FoodCategoryId = Guid.NewGuid(),
                             DrinkCategoryId = Guid.NewGuid(),
                             SausageItemId = Guid.NewGuid(),
-                            LemonadeItemId = Guid.NewGuid()
+                            LemonadeItemId = Guid.NewGuid(),
+                            FestivalId = Guid.NewGuid()
                           };
 
     DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+
+    dbContext.Festivals.Add(new()
+                            {
+                              Id = seeded.FestivalId,
+                              Name = "Sommerfest",
+                              StartsAtUtc = DateTime.UtcNow.AddDays(-1),
+                              EndsAtUtc = DateTime.UtcNow.AddYears(1),
+                              NextOrderNumber = 1,
+                              IsHidden = false
+                            });
 
     dbContext.StaffMembers.Add(new()
                                {
@@ -54,8 +67,7 @@ public sealed class DomainSeeder
                              Id = seeded.KitchenStationId,
                              Name = "Kueche",
                              SortOrder = 1,
-                             IsActive = true,
-                             NextStationOrderNumber = 1
+                             IsActive = true
                            });
 
     dbContext.Stations.Add(new()
@@ -63,9 +75,24 @@ public sealed class DomainSeeder
                              Id = seeded.BarStationId,
                              Name = "Theke",
                              SortOrder = 2,
-                             IsActive = true,
-                             NextStationOrderNumber = 1
+                             IsActive = true
                            });
+
+    dbContext.FestivalStations.Add(new()
+                                   {
+                                     Id = Guid.NewGuid(),
+                                     FestivalId = seeded.FestivalId,
+                                     StationId = seeded.KitchenStationId,
+                                     NextStationOrderNumber = 1
+                                   });
+
+    dbContext.FestivalStations.Add(new()
+                                   {
+                                     Id = Guid.NewGuid(),
+                                     FestivalId = seeded.FestivalId,
+                                     StationId = seeded.BarStationId,
+                                     NextStationOrderNumber = 1
+                                   });
 
     dbContext.CatalogCategories.Add(new()
                                     {
@@ -92,10 +119,8 @@ public sealed class DomainSeeder
                                  Id = seeded.SausageItemId,
                                  Name = "Bratwurst",
                                  CategoryId = seeded.FoodCategoryId,
-                                 PriceCents = 350,
                                  SortOrder = 1,
-                                 IsActive = true,
-                                 IsAvailable = true
+                                 IsActive = true
                                });
 
     dbContext.CatalogItems.Add(new()
@@ -103,15 +128,32 @@ public sealed class DomainSeeder
                                  Id = seeded.LemonadeItemId,
                                  Name = "Limonade",
                                  CategoryId = seeded.DrinkCategoryId,
-                                 PriceCents = 250,
                                  SortOrder = 2,
-                                 IsActive = true,
-                                 IsAvailable = true
+                                 IsActive = true
                                });
+
+    dbContext.FestivalCatalogItems.Add(new()
+                                       {
+                                         Id = Guid.NewGuid(),
+                                         FestivalId = seeded.FestivalId,
+                                         CatalogItemId = seeded.SausageItemId,
+                                         PriceCents = 350,
+                                         IsAvailable = true
+                                       });
+
+    dbContext.FestivalCatalogItems.Add(new()
+                                       {
+                                         Id = Guid.NewGuid(),
+                                         FestivalId = seeded.FestivalId,
+                                         CatalogItemId = seeded.LemonadeItemId,
+                                         PriceCents = 250,
+                                         IsAvailable = true
+                                       });
 
     dbContext.ItemStationAssignments.Add(new()
                                          {
                                            Id = Guid.NewGuid(),
+                                           FestivalId = seeded.FestivalId,
                                            CatalogItemId = seeded.SausageItemId,
                                            StationId = seeded.KitchenStationId
                                          });
@@ -119,6 +161,7 @@ public sealed class DomainSeeder
     dbContext.ItemStationAssignments.Add(new()
                                          {
                                            Id = Guid.NewGuid(),
+                                           FestivalId = seeded.FestivalId,
                                            CatalogItemId = seeded.LemonadeItemId,
                                            StationId = seeded.BarStationId
                                          });

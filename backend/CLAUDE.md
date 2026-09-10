@@ -42,15 +42,21 @@ reverse proxy.
    short-lived: the first scan consumes the code, so a photographed QR cannot enrol a second device.
    Revoking a device invalidates its token immediately.
 
-7. **Shipped migrations are frozen from `20260907192954_InitialCreate` onward.** The owner approved
-   recreating the initial migration twice while the product was still local only: once for the change
-   that put a tablet at every station, and once for the change that made a category a thing the admin
-   creates. That second recreation is the current baseline and history starts there. Once a migration has run on a real fire
-   department's laptop, it is history. Editing, renaming, reordering, squashing, or deleting an
-   existing migration or its designer file is forbidden: it desynchronizes the migrations history from
-   the schema and bricks the app on startup. Migrations are append-only and forward-only. A wrong
-   migration is corrected by a new corrective migration, never by touching the old one. The
-   auto-managed model snapshot is the single file EF may regenerate.
+7. **While the product has not been installed anywhere, there is exactly one migration and it is
+   called `InitialCreate`.** A schema change is made by editing the model and recreating that
+   migration: delete it and its designer file, delete the local database, regenerate. That is the
+   wanted behaviour, not a favour anybody has to ask for. **Adding a second migration is forbidden**
+   while this holds. A chain of migrations that has only ever run on the owner's own machine
+   protects nothing and costs time, energy and tokens on every change.
+
+   **This flips the day the product is installed on a fire department's laptop, and the owner says
+   when that day is.** From that first install the shipped migrations are history: editing, renaming,
+   reordering, squashing or deleting an existing migration or its designer file desynchronizes the
+   migrations history from the schema and bricks the app on startup. Migrations become append-only
+   and forward-only, and a wrong migration is corrected by a new corrective migration, never by
+   touching the old one.
+
+   The auto-managed model snapshot is the single file EF may regenerate.
 
 8. **No positional tuple access.** Never read a tuple by element position (`.Item1`) and never
    destructure one positionally. Every multi-value return is a named `record` or `record struct` read
@@ -58,10 +64,22 @@ reverse proxy.
 
 ## The order model
 
-One order, split per station, worked off item by item on that station's tablet.
+One order, split per station, worked off item by item on that station's tablet, and all of it belongs
+to one festival.
 
-- **Order**: what the waiter sent. Global order number, table name, note, who took it, when. It has no
-  status and no total: both are derived, never stored.
+- **Festival**: a named period with a start and an end. It owns the menu, the prices, the stations and
+  the orders of one event, and it carries the next global order number. Running means not hidden and
+  `StartsAtUtc <= now < EndsAtUtc`; `FestivalSchedule` is the only place that decides that, and the
+  hide flag is `IsHidden`, never `IsActive`.
+- **FestivalStation**: a station taking part in one festival, carrying the number that station shows
+  at that festival. Unique on `(FestivalId, StationId)`.
+- **FestivalCatalogItem**: an item on one festival's menu, with the price it costs there and whether
+  it has sold out tonight. Unique on `(FestivalId, CatalogItemId)`. `CatalogItem` itself carries
+  neither, because both are facts about an item at one festival.
+- **ItemStationAssignment**: which station prepares an item at one festival. Unique on
+  `(FestivalId, CatalogItemId, StationId)`.
+- **Order**: what the waiter sent. The festival it belongs to, global order number, table name, note,
+  who took it, when. It has no status and no total: both are derived, never stored.
 - **StationOrder**: the slice of that order belonging to one station, carrying the number that station
   shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two slices of one
   order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the station
@@ -86,8 +104,9 @@ One order, split per station, worked off item by item on that station's tablet.
 
 The status of an order is calculated from the production status of its items, so the two can never
 disagree. Enums persist as numbers with pinned values, so a member may be renamed freely but never
-reordered. Counters live where they belong: `Station.NextStationOrderNumber` per station, and one
-single row for the next global order number.
+reordered. Counters live where they belong: `Festival.NextOrderNumber` for the global order number
+and `FestivalStation.NextStationOrderNumber` for each station at that festival, so every festival
+starts at 1 by itself and nothing ever sets a counter back.
 
 ## Intended project structure
 

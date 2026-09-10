@@ -90,11 +90,17 @@ public sealed class AdminStationAnnouncementTest
                         Id = Guid.NewGuid(),
                         Name = "Kuchenbuffet",
                         SortOrder = 3,
-                        IsActive = true,
-                        NextStationOrderNumber = 1
+                        IsActive = true
                       };
 
     dbContext.Stations.Add(station);
+    dbContext.FestivalStations.Add(new()
+                                   {
+                                     Id = Guid.NewGuid(),
+                                     FestivalId = _context.World.FestivalId,
+                                     StationId = station.Id,
+                                     NextStationOrderNumber = 1
+                                   });
     await dbContext.SaveChangesAsync(CancellationToken.None);
 
     return station.Id;
@@ -111,6 +117,7 @@ public sealed class AdminStationAnnouncementTest
                services.GetRequiredService<OutstandingInvitationLookup>(),
                services.GetRequiredService<DeviceRevoker>(),
                announcer,
+               services.GetRequiredService<ItemsLeftWithoutAStation>(),
                services.GetRequiredService<ResultEnvelope>(),
                services.GetRequiredService<IClock>());
   }

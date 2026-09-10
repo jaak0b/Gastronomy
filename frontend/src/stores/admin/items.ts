@@ -1,26 +1,36 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listFrom, request } from '../../api/client'
-import {
-  adminErrorMessage,
-  adminMessage,
-  type AdminErrorMessage,
-} from '../../core/adminErrorMessage'
+import { listFrom, request, type ApiResult } from '../../api/client'
+import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import { useAdminFestivalsStore } from './festivals'
+
+export interface AdminItemAtFestival {
+  priceCents: number
+  isAvailable: boolean
+  stationIds: string[]
+}
 
 export interface AdminItem {
   itemId: string
   name: string
   categoryId: string
-  priceCents: number
   sortOrder: number
   isActive: boolean
-  isAvailable: boolean
-  stationIds: string[]
+  productionMinutes: number | null
+  atTheFestival: AdminItemAtFestival | null
+}
+
+export interface AdminItemDraft {
+  itemId?: string
+  name: string
+  categoryId: string
+  sortOrder: number
   productionMinutes: number | null
 }
 
-export type AdminItemDraft = Omit<AdminItem, 'itemId' | 'isActive' | 'isAvailable'> & {
-  itemId?: string
+export interface MenuPlacement {
+  priceCents: number
+  stationIds: string[]
 }
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
@@ -28,9 +38,16 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   const loadFailed = ref(false)
   const errorMessage = ref<AdminErrorMessage | null>(null)
 
+  function pickedFestivalId(): string | null {
+    return useAdminFestivalsStore().pickedFestivalId
+  }
+
   async function load(): Promise<void> {
     loadFailed.value = false
-    const result = await request<unknown>('/api/admin/items')
+    const festivalId = pickedFestivalId()
+    const path =
+      festivalId === null ? '/api/admin/items' : `/api/admin/items?festivalId=${festivalId}`
+    const result = await request<unknown>(path)
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
@@ -43,25 +60,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     items.value = rows
   }
 
-  async function save(item: AdminItemDraft): Promise<boolean> {
-    errorMessage.value = null
-    if (item.stationIds.length === 0) {
-      errorMessage.value = adminMessage('admin.itemNeedsAStation')
-      return false
-    }
-    const path =
-      item.itemId === undefined ? '/api/admin/items' : `/api/admin/items/${item.itemId}`
-    const result = await request(path, {
-      method: item.itemId === undefined ? 'POST' : 'PUT',
-      body: {
-        name: item.name,
-        categoryId: item.categoryId,
-        priceCents: item.priceCents,
-        sortOrder: item.sortOrder,
-        stationIds: item.stationIds,
-        productionMinutes: item.productionMinutes,
-      },
-    })
+  async function reportAndReload(result: ApiResult<unknown>): Promise<boolean> {
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return false
@@ -70,23 +69,72 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     return true
   }
 
-  async function setAvailability(id: string, isAvailable: boolean): Promise<void> {
-    await request(`/api/admin/items/${id}/availability`, {
-      method: 'POST',
-      body: { isAvailable },
-    })
-    await load()
+  async function save(item: AdminItemDraft): Promise<boolean> {
+    errorMessage.value = null
+    const body = {
+      name: item.name,
+      categoryId: item.categoryId,
+      sortOrder: item.sortOrder,
+      productionMinutes: item.productionMinutes,
+    }
+    if (item.itemId === undefined) {
+      return reportAndReload(await request('/api/admin/items', { method: 'POST', body }))
+    }
+    return reportAndReload(
+      await request(`/api/admin/items/${item.itemId}`, { method: 'PUT', body }),
+    )
   }
 
-  async function setActive(id: string, isActive: boolean): Promise<void> {
+  async function putOnTheMenu(itemId: string, placement: MenuPlacement): Promise<boolean> {
     errorMessage.value = null
-    const action = isActive ? 'activate' : 'deactivate'
-    const result = await request(`/api/admin/items/${id}/${action}`, { method: 'POST' })
-    if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+    const festivalId = pickedFestivalId()
+    if (festivalId === null) {
+      return false
+    }
+    return reportAndReload(
+      await request(`/api/admin/festivals/${festivalId}/items/${itemId}`, {
+        method: 'PUT',
+        body: { priceCents: placement.priceCents, stationIds: placement.stationIds },
+      }),
+    )
+  }
+
+  async function takeOffTheMenu(itemId: string): Promise<boolean> {
+    errorMessage.value = null
+    const festivalId = pickedFestivalId()
+    if (festivalId === null) {
+      return false
+    }
+    return reportAndReload(
+      await request(`/api/admin/festivals/${festivalId}/items/${itemId}`, { method: 'DELETE' }),
+    )
+  }
+
+  async function setAvailability(itemId: string, isAvailable: boolean): Promise<boolean> {
+    errorMessage.value = null
+    const festivalId = pickedFestivalId()
+    if (festivalId === null) {
+      return false
+    }
+    return reportAndReload(
+      await request(`/api/admin/festivals/${festivalId}/items/${itemId}/availability`, {
+        method: 'POST',
+        body: { isAvailable },
+      }),
+    )
+  }
+
+  async function setActive(itemId: string, isActive: boolean): Promise<void> {
+    errorMessage.value = null
+    if (isActive) {
+      await reportAndReload(
+        await request(`/api/admin/items/${itemId}/activate`, { method: 'POST' }),
+      )
       return
     }
-    await load()
+    await reportAndReload(
+      await request(`/api/admin/items/${itemId}/deactivate`, { method: 'POST' }),
+    )
   }
 
   function forgetError(): void {
@@ -99,8 +147,10 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     errorMessage,
     load,
     save,
-    forgetError,
+    putOnTheMenu,
+    takeOffTheMenu,
     setAvailability,
     setActive,
+    forgetError,
   }
 })

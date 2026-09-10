@@ -68,16 +68,19 @@ This is the walk the product exists for. Do it with a real phone in one hand and
 standing where a station would stand, because reading it off two browser tabs on the laptop hides
 exactly the problems this section is looking for.
 
-17. **Set the menu up.** In the admin pages create two stations, for example Küche and Theke. The
-    overview then asks for a category, because an item cannot be created without one. On the
-    Artikel page tap "Neue Kategorie" twice, for example Speisen and Getränke, and pick a colour for
-    each one. The heading of each category is written on that colour, and the lettering stays readable
-    on a light colour as well as on a dark one. Move Getränke above Speisen with the arrows beside its
-    heading, and the two headings swap places. Neither category is on the phones yet, because a
-    category with no items in it, or with all of its items switched off, does not appear on a phone
-    at all. Create one item in Speisen that takes a while, with a preparation time in minutes,
-    assigned to the kitchen only. Create one drink in Getränke with the preparation time left
-    empty, assigned to the bar only. The overview now asks for one thing only, and it asks it once
+17. **Set the menu up.** In the admin pages open Feste and create a festival whose period covers
+    today generously, for example from this morning until tomorrow afternoon. Its row says "Läuft
+    gerade". Open it, and every page below is about that festival. Add two stations to it, for example
+    Küche and Theke. The overview then asks for a category, because an item cannot be created without
+    one. On the Artikel page tap "Neue Kategorie" twice, for example Speisen and Getränke, and pick a
+    colour for each one. The heading of each category is written on that colour, and the lettering
+    stays readable on a light colour as well as on a dark one. Move Getränke above Speisen with the
+    arrows beside its heading, and the two headings swap places. Neither category is on the phones
+    yet, because a category with no items in it, or with all of its items switched off, does not
+    appear on a phone at all. Create one item in Speisen that takes a while and put it on this
+    festival's menu with a price, a preparation time in minutes, and the kitchen as its only station.
+    Create one drink in Getränke, put it on the menu with a price and the bar as its only station, and
+    leave the preparation time empty. The overview now asks for one thing only, and it asks it once
     per station: set that station's tablet up.
 18. **Enrol a station tablet.** On the stations page, tap "Tablet einrichten" on the kitchen and scan
     the QR code with the tablet's own camera. The tablet lands straight on the kitchen's own page,
@@ -151,8 +154,12 @@ exactly the problems this section is looking for.
 29. **The gap check.** Place three more orders to the kitchen and read the kitchen tablet's numbers.
     They run consecutively. That run is the whole loss detection mechanism and it is worth seeing once
     with your own eyes.
-30. **Reset the numbers.** In the admin overview, reset the numbering and confirm. The next order the
-    phone sends carries number 1 again, and the orders already taken keep the numbers they had.
+30. **A second festival counts from one.** In Feste, edit tonight's festival so that its end lies in
+    the past. The phone's menu goes empty and the kitchen tablet says that no festival is active. Now
+    click "Kopieren" on that same row and give the copy a period that covers right now. The copy
+    arrives with the same stations, the same items and the same prices. Open it and place an order
+    from the phone: it carries number 1, and at the kitchen it is number 1 as well, while the orders
+    of the first festival keep the numbers they had.
 
 31. **Something disappears while a waiter is holding it.** With items already in a waiter's basket,
     go to the laptop and mark one of those items sold out, switch a second one off, and switch off

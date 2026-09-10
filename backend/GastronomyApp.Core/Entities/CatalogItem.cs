@@ -8,13 +8,9 @@ public sealed class CatalogItem
 
   public required Guid CategoryId { get; set; }
 
-  public required int PriceCents { get; set; }
-
   public required int SortOrder { get; set; }
 
   public required bool IsActive { get; set; }
-
-  public required bool IsAvailable { get; set; }
 
   public int? ProductionMinutes { get; set; }
 }

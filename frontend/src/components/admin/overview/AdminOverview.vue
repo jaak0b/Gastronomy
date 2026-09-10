@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminItemsStore } from '../../../stores/admin/items'
 import { useAdminCategoriesStore } from '../../../stores/admin/categories'
-import { request } from '../../../api/client'
+import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
 
 const { t } = useI18n()
 const phoneAddress = window.location.origin
 const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
+const festivals = useAdminFestivalsStore()
 
 interface ReadinessRow {
   key: string
@@ -18,18 +19,27 @@ interface ReadinessRow {
   count: number | null
 }
 
+const noFestivalExists = computed(() => festivals.shownFestivals.length === 0)
+const pickedFestival = computed(() => festivals.pickedFestival)
+
 const rows = computed<ReadinessRow[]>(() => {
   const readiness: ReadinessRow[] = []
-  if (stations.stations.length === 0) {
+  if (pickedFestival.value === null) {
+    return readiness
+  }
+  if (stations.stations.every((station) => !station.isAtTheFestival)) {
     readiness.push({ key: 'admin.overview.missingStation', parameters: {}, count: null })
   }
   if (categories.categories.length === 0) {
     readiness.push({ key: 'admin.overview.missingCategory', parameters: {}, count: null })
   }
-  if (items.items.length === 0) {
+  const onTheMenu = items.items.filter((item) => item.atTheFestival !== null)
+  if (onTheMenu.length === 0) {
     readiness.push({ key: 'admin.overview.missingItems', parameters: {}, count: null })
   }
-  const withoutStation = items.items.filter((item) => item.stationIds.length === 0).length
+  const withoutStation = onTheMenu.filter(
+    (item) => (item.atTheFestival?.stationIds.length ?? 0) === 0,
+  ).length
   if (withoutStation > 0) {
     readiness.push({
       key: 'admin.overview.itemsWithoutStation',
@@ -38,7 +48,7 @@ const rows = computed<ReadinessRow[]>(() => {
     })
   }
   for (const station of stations.stations) {
-    if (station.isActive && !station.hasDevice) {
+    if (station.isAtTheFestival && station.isActive && !station.hasDevice) {
       readiness.push({
         key: 'admin.overview.stationWithoutTablet',
         parameters: { name: station.name },
@@ -49,34 +59,8 @@ const rows = computed<ReadinessRow[]>(() => {
   return readiness
 })
 
-const isConfirmingReset = ref(false)
-const resetDoneText = ref<string | null>(null)
-const resetFailed = ref(false)
-
-function askToReset(): void {
-  resetDoneText.value = null
-  resetFailed.value = false
-  isConfirmingReset.value = true
-}
-
-function cancelReset(): void {
-  isConfirmingReset.value = false
-}
-
-async function confirmReset(): Promise<void> {
-  isConfirmingReset.value = false
-  const result = await request('/api/admin/numbers/reset', { method: 'POST' })
-  if (result.kind === 'ok') {
-    resetDoneText.value = t('admin.numbers.done')
-    resetFailed.value = false
-    return
-  }
-
-  resetDoneText.value = null
-  resetFailed.value = true
-}
-
 onMounted(async () => {
+  await festivals.load()
   await stations.load()
   await categories.load()
   await items.load()
@@ -86,47 +70,40 @@ onMounted(async () => {
 <template>
   <v-container class="admin-overview">
     <h1 class="text-h5 mb-4">{{ t('admin.overview.title') }}</h1>
-    <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
-      {{ t('admin.overview.ready') }}
+    <v-alert v-if="noFestivalExists" class="missing-festival mb-4" type="warning" variant="tonal">
+      {{ t('admin.overview.missingFestival') }}
     </v-alert>
     <v-alert
-      v-for="(row, index) in rows"
-      :key="index"
-      class="readiness-row mb-2"
+      v-else-if="pickedFestival === null"
+      class="no-festival-picked mb-4"
       type="warning"
       variant="tonal"
     >
-      {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
+      {{ t('admin.overview.noFestivalPicked') }}
     </v-alert>
+    <template v-else>
+      <h2 class="picked-festival text-h6 mb-2">{{ pickedFestival.name }}</h2>
+      <v-alert
+        v-if="!pickedFestival.isRunning"
+        class="not-running mb-4"
+        type="info"
+        variant="tonal"
+      >
+        {{ t('admin.overview.noFestivalIsRunning') }}
+      </v-alert>
+      <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
+        {{ t('admin.overview.ready') }}
+      </v-alert>
+      <v-alert
+        v-for="(row, index) in rows"
+        :key="index"
+        class="readiness-row mb-2"
+        type="warning"
+        variant="tonal"
+      >
+        {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
+      </v-alert>
+    </template>
     <p class="phone-address mt-4">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
-
-    <v-card class="numbers-reset mt-6">
-      <v-card-title>{{ t('admin.numbers.title') }}</v-card-title>
-      <v-card-text>
-        <p class="numbers-help text-medium-emphasis">{{ t('admin.numbers.help') }}</p>
-        <template v-if="isConfirmingReset">
-          <p class="confirm-question mt-2">{{ t('admin.numbers.confirm') }}</p>
-        </template>
-        <v-alert v-if="resetDoneText !== null" class="reset-done mt-2" type="success" variant="tonal">
-          {{ resetDoneText }}
-        </v-alert>
-        <v-alert v-if="resetFailed" class="reset-failed mt-2" type="error" variant="tonal">
-          {{ t('admin.loadFailed') }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn v-if="!isConfirmingReset" class="secondary" variant="text" @click="askToReset()">
-          {{ t('admin.numbers.reset') }}
-        </v-btn>
-        <template v-else>
-          <v-btn class="primary" color="primary" @click="confirmReset()">
-            {{ t('admin.numbers.confirmYes') }}
-          </v-btn>
-          <v-btn class="secondary" variant="text" @click="cancelReset()">
-            {{ t('admin.numbers.confirmNo') }}
-          </v-btn>
-        </template>
-      </v-card-actions>
-    </v-card>
   </v-container>
 </template>

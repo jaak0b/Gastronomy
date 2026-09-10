@@ -17,8 +17,8 @@ function mountApp() {
 }
 
 describe('resolveRoute', () => {
-  it('reads the bare admin path as the admin', () => {
-    expect(resolveRoute('/admin')).toEqual({ name: 'admin', section: 'overview' })
+  it('reads the bare admin path as the festivals, where the admin starts', () => {
+    expect(resolveRoute('/admin')).toEqual({ name: 'admin', section: 'festivals' })
   })
 
   it('reads a deep admin path as that admin section', () => {
@@ -42,12 +42,12 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ stations: [], items: [], staffMembers: [] }), {
+          new Response(JSON.stringify({ festivals: [], stations: [], items: [], staffMembers: [] }), {
             status: 200,
           }),
       ),
     )
-    currentRoute.value = { name: 'admin', section: 'overview' }
+    currentRoute.value = { name: 'admin', section: 'festivals' }
   })
 
   it('renders the admin shell without a device token', async () => {

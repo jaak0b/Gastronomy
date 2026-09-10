@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Contracts;
 
@@ -9,7 +9,8 @@ public sealed record AdminStationView(
   bool IsActive,
   bool HasDevice,
   DateTime? LastSeenAtUtc,
-  bool HasOutstandingInvitation);
+  bool HasOutstandingInvitation,
+  bool IsAtTheFestival);
 
 public sealed record AdminStationListView(IReadOnlyList<AdminStationView> Stations);
 
@@ -43,16 +44,19 @@ public sealed record MoveCategoryRequest
   public required CategoryMoveDirection Direction { get; init; }
 }
 
+public sealed record AdminItemAtFestivalView(
+  int PriceCents,
+  bool IsAvailable,
+  IReadOnlyList<Guid> StationIds);
+
 public sealed record AdminItemView(
   Guid ItemId,
   string Name,
   Guid CategoryId,
-  int PriceCents,
   int SortOrder,
   bool IsActive,
-  bool IsAvailable,
   int? ProductionMinutes,
-  IReadOnlyList<Guid> StationIds);
+  AdminItemAtFestivalView? AtTheFestival);
 
 public sealed record AdminItemListView(IReadOnlyList<AdminItemView> Items);
 
@@ -62,13 +66,16 @@ public sealed record SaveItemRequest
 
   public required Guid? CategoryId { get; init; }
 
-  public required int PriceCents { get; init; }
-
   public required int SortOrder { get; init; }
 
-  public required IReadOnlyList<Guid>? StationIds { get; init; }
-
   public int? ProductionMinutes { get; init; }
+}
+
+public sealed record SaveFestivalItemRequest
+{
+  public required int PriceCents { get; init; }
+
+  public required IReadOnlyList<Guid>? StationIds { get; init; }
 }
 
 public sealed record SetAvailabilityRequest
@@ -107,4 +114,26 @@ public sealed record InvitationView(
   StationSummaryView? Station,
   IReadOnlyList<string> AvailableAddresses);
 
-public sealed record ResetNumbersView(int StationCountersCleared);
+public sealed record AdminFestivalView(
+  Guid FestivalId,
+  string Name,
+  DateTime StartsAtUtc,
+  DateTime EndsAtUtc,
+  bool IsHidden,
+  bool IsRunning,
+  int StationCount,
+  int MenuItemCount,
+  int OrderCount);
+
+public sealed record AdminFestivalListView(IReadOnlyList<AdminFestivalView> Festivals);
+
+public sealed record SaveFestivalRequest
+{
+  public required string? Name { get; init; }
+
+  public required DateTime StartsAtUtc { get; init; }
+
+  public required DateTime EndsAtUtc { get; init; }
+}
+
+public sealed record SavedFestivalView(Guid FestivalId);

@@ -32,7 +32,11 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<OrderItemStatusChange> OrderItemStatusChanges => Set<OrderItemStatusChange>();
 
-  public DbSet<SequenceCounters> SequenceCounters => Set<SequenceCounters>();
+  public DbSet<Festival> Festivals => Set<Festival>();
+
+  public DbSet<FestivalStation> FestivalStations => Set<FestivalStation>();
+
+  public DbSet<FestivalCatalogItem> FestivalCatalogItems => Set<FestivalCatalogItem>();
 
   override protected void OnModelCreating(ModelBuilder modelBuilder)
   {

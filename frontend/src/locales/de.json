@@ -143,13 +143,16 @@
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
-      "missingStation": "Legen Sie mindestens eine Ausgabestelle an, zum Beispiel Küche und Theke.",
+      "missingStation": "Fügen Sie diesem Fest mindestens eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
       "missingCategory": "Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.",
-      "missingItems": "Legen Sie die Artikel mit ihren Preisen an.",
+      "missingItems": "Setzen Sie Artikel auf die Karte dieses Festes und tragen Sie die Preise ein.",
       "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
       "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.",
       "address": "Die Telefone erreichen den Laptop unter {url}.",
-      "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}."
+      "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}.",
+      "missingFestival": "Legen Sie zuerst ein Fest an.",
+      "noFestivalPicked": "Öffnen Sie unter \"Feste\" das Fest, um das es heute geht.",
+      "noFestivalIsRunning": "Zurzeit läuft kein Fest. Sehen Sie unter \"Feste\" nach."
     },
     "stations": {
       "title": "Ausgabestellen",
@@ -161,7 +164,15 @@
       "activate": "Ausgabestelle einschalten",
       "deactivateTitle": "Ausgabestelle abschalten?",
       "deactivateBody": "Die Ausgabestelle verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Ausgabestelle später wieder einschalten.",
-      "deactivateConfirm": "Ausgabestelle abschalten"
+      "deactivateConfirm": "Ausgabestelle abschalten",
+      "atTheFestival": "Bei diesem Fest",
+      "notAtTheFestival": "Nicht bei diesem Fest",
+      "addToTheFestival": "Zum Fest hinzufügen",
+      "removeFromTheFestival": "Vom Fest entfernen",
+      "removeTitle": "Ausgabestelle entfernen",
+      "removeBody": "Danach gehört die Ausgabestelle nicht mehr zu diesem Fest. Bei allen anderen Festen bleibt alles, wie es ist.",
+      "removeConfirm": "Entfernen",
+      "noFestivalPicked": "Ausgabestellen gehören zu einem Fest. Öffnen Sie ein Fest unter \"Feste\"."
     },
     "items": {
       "title": "Artikel",
@@ -176,10 +187,13 @@
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",
       "deactivateBody": "Der Artikel verschwindet von den Telefonen und kann nicht mehr bestellt werden. Die bisherigen Bestellungen bleiben gespeichert. Sie können ihn später wieder aktivieren.",
-      "deactivateConfirm": "Artikel deaktivieren"
-    },
-    "assignment": {
-      "title": "Zubereitet an diesen Ausgabestellen"
+      "deactivateConfirm": "Artikel deaktivieren",
+      "onTheMenu": "Auf der Karte",
+      "notOnTheMenu": "Nicht auf der Karte",
+      "putOnTheMenu": "Auf die Karte setzen",
+      "putOnTheMenuTitle": "Artikel auf die Karte setzen",
+      "takeOffTheMenu": "Von der Karte nehmen",
+      "noFestivalPicked": "Preise und Ausgabestellen gehören zu einem Fest. Öffnen Sie ein Fest unter \"Feste\"."
     },
     "tables": {
       "title": "Tische",
@@ -237,15 +251,6 @@
     "edit": "Bearbeiten",
     "loadFailed": "Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.",
     "itemsWouldHaveNoStation": "Ordnen Sie {count} Artikel zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Ausgabestelle und kann nicht bestellt werden. | Ordnen Sie {count} Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.",
-    "numbers": {
-      "title": "Bestellnummern",
-      "help": "Die Bestellnummer und die eigenen Laufnummern jeder Ausgabestelle zählen fortlaufend. Setzen Sie sie vor einem neuen Fest auf 1 zurück.",
-      "reset": "Nummern zurücksetzen",
-      "confirm": "Sollen die Nummern jetzt auf 1 zurückgesetzt werden? Bereits aufgenommene Bestellungen behalten ihre Nummern.",
-      "confirmYes": "Ja, zurücksetzen",
-      "confirmNo": "Abbrechen",
-      "done": "Die Nummern beginnen wieder bei 1."
-    },
     "categories": {
       "new": "Neue Kategorie",
       "name": "Name der Kategorie",
@@ -258,7 +263,8 @@
       "deactivateTitle": "Kategorie abschalten?",
       "deactivateBody": "Die Kategorie verschwindet von den Telefonen. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Kategorie später wieder einschalten.",
       "deactivateConfirm": "Kategorie abschalten",
-      "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
+      "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können.",
+      "sharedAcrossFestivals": "Die Kategorien gelten für alle Feste. Wenn Sie hier eine umbenennen, heißt sie auf jedem Fest so."
     },
     "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
     "categoryNameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
@@ -267,14 +273,43 @@
     "categoryHasActiveItems": "Diese Kategorie hat noch eingeschaltete Artikel. Schalten Sie die Artikel ab und danach die Kategorie.",
     "itemCategoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
     "itemCategoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
-    "itemNeedsAStation": "Kreuzen Sie mindestens eine Ausgabestelle an, damit der Artikel bestellt werden kann.",
+    "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
     "stationHasUnfinishedItems": "Diese Ausgabestelle hat noch eine unfertige Bestellung und kann jetzt nicht abgeschaltet werden. Arbeiten Sie sie ab und versuchen Sie es danach erneut. | Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.",
     "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
     "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
     "deactivate": "Deaktivieren",
     "deactivated": "Deaktiviert",
     "showDeactivated": "Deaktivierte anzeigen",
-    "itemHasNoActiveStation": "Alle Ausgabestellen dieses Artikels sind abgeschaltet. Schalten Sie eine davon wieder ein oder ordnen Sie den Artikel einer Ausgabestelle zu, die läuft."
+    "festivalNameMissing": "Geben Sie dem Fest einen Namen.",
+    "festivalPeriodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
+    "festivalOverlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
+    "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
+    "stationHasOrdersAtTheFestival": "Diese Ausgabestelle hat bei diesem Fest schon {count} Bestellung bekommen. Schalten Sie sie ab, wenn dort niemand mehr arbeitet. | Diese Ausgabestelle hat bei diesem Fest schon {count} Bestellungen bekommen. Schalten Sie sie ab, wenn dort niemand mehr arbeitet.",
+    "festivals": {
+      "title": "Feste",
+      "help": "Hier legen Sie jedes Fest an. Auf den Telefonen und den Tablets erscheint das Fest, dessen Zeitraum gerade läuft.",
+      "new": "Neues Fest",
+      "name": "Name des Festes",
+      "start": "Beginn",
+      "end": "Ende",
+      "open": "Fest öffnen",
+      "running": "Läuft gerade",
+      "hidden": "Ausgeblendet",
+      "showHidden": "Ausgeblendete Feste anzeigen",
+      "copy": "Kopieren",
+      "copyTitle": "Fest kopieren",
+      "copyHelp": "Die Ausgabestellen, die Artikel und die Preise übernimmt das neue Fest. Tragen Sie unten den Namen, den Beginn und das Ende ein.",
+      "copyConfirm": "Fest anlegen",
+      "hide": "Ausblenden",
+      "show": "Wieder einblenden",
+      "hideTitle": "Fest ausblenden",
+      "hideBody": "Das Fest verschwindet aus der Liste. Die bisherigen Bestellungen bleiben gespeichert.",
+      "hideConfirm": "Ausblenden",
+      "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
+      "stationCount": "{count} Ausgabestelle | {count} Ausgabestellen",
+      "menuItemCount": "{count} Artikel | {count} Artikel",
+      "orderCount": "{count} Bestellung | {count} Bestellungen"
+    }
   },
   "station": {
     "togetherHeading": "Bestellungen, die zusammen rausgehen",
@@ -294,6 +329,7 @@
     "deliveryTogether": "Geht zusammen raus",
     "deliveryAsItComes": "Geht raus, sobald fertig",
     "status": {
+      "waiting": "wartet",
       "inProduction": "in Zubereitung",
       "finished": "fertig"
     },
@@ -302,7 +338,9 @@
     "startAll": "Ganze Bestellung beginnen",
     "finishAll": "Ganze Bestellung fertig melden",
     "finishedNotice": "Fertig für {table}. Schreiben Sie den Tisch auf das Tablett.",
-    "dismiss": "Verstanden"
+    "dismiss": "Verstanden",
+    "noFestivalIsRunning": "Kein Fest aktiv",
+    "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
   },
   "startingUp": {
     "laptopNotReached": "Der Laptop antwortet nicht. Versuchen Sie es noch einmal.",

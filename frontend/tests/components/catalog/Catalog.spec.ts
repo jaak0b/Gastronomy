@@ -22,6 +22,7 @@ const CATALOG: CatalogData = {
       sortOrder: 1,
       isAvailable: true,
       stationIds: ['station-kueche'],
+      productionMinutes: null,
     },
     {
       id: 'item-wasser',
@@ -31,6 +32,7 @@ const CATALOG: CatalogData = {
       sortOrder: 2,
       isAvailable: true,
       stationIds: ['station-bar'],
+      productionMinutes: null,
     },
   ],
   stations: [
@@ -404,6 +406,7 @@ const CATALOG_WITH_A_STATION_CHOICE: CatalogData = {
       sortOrder: 3,
       isAvailable: true,
       stationIds: ['station-kueche', 'station-bar'],
+      productionMinutes: null,
     },
   ],
 }

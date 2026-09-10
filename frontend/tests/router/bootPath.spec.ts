@@ -10,7 +10,7 @@ describe('the route the app boots into, read from the address bar', () => {
 
     const { currentRoute } = await import('../../src/router')
 
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview' })
+    expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals' })
   })
 
   it('boots the admin section when the laptop opens a deep admin address', async () => {
@@ -34,7 +34,7 @@ describe('the route the app boots into, read from the address bar', () => {
 
     const { currentRoute } = await import('../../src/router')
 
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview' })
+    expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals' })
   })
 
   it('boots the admin even when the address was typed with a capital letter', async () => {
@@ -42,7 +42,7 @@ describe('the route the app boots into, read from the address bar', () => {
 
     const { currentRoute } = await import('../../src/router')
 
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview' })
+    expect(currentRoute.value).toEqual({ name: 'admin', section: 'festivals' })
   })
 
   it('boots the enrolment landing when a server scans an invitation', async () => {

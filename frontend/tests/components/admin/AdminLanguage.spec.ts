@@ -12,7 +12,7 @@ function stubFetchWithLanguage(language: string) {
     vi.fn(async (url: string) => {
       const payload = url.startsWith('/api/language')
         ? { language }
-        : { stations: [], items: [] }
+        : { festivals: [], stations: [], items: [] }
       return new Response(JSON.stringify(payload), { status: 200 })
     }),
   )
@@ -53,7 +53,7 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Overview'))
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Festivals'))
   })
 
   it('stays in German when the laptop is set to German', async () => {
@@ -61,6 +61,6 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Übersicht'))
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Feste'))
   })
 })

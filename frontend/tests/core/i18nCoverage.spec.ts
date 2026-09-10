@@ -11,6 +11,10 @@ const PLURAL_KEYS = [
   'admin.overview.itemsWithoutStation',
   'admin.itemsWouldHaveNoStation',
   'admin.stationHasUnfinishedItems',
+  'admin.stationHasOrdersAtTheFestival',
+  'admin.festivals.stationCount',
+  'admin.festivals.menuItemCount',
+  'admin.festivals.orderCount',
   'openItems.listIncomplete',
   'openItems.someWereAlreadySettled',
 ]

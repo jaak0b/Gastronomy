@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,11 +19,13 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
                            .FirstOrDefaultAsync(item => item.Id == catalogItemId, cancellationToken);
   }
 
-  public async Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(Guid catalogItemId,
+  public async Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId,
+                                                                                     Guid catalogItemId,
                                                                                      CancellationToken cancellationToken)
   {
     return await _dbContext.ItemStationAssignments
-                           .Where(assignment => assignment.CatalogItemId == catalogItemId)
+                           .Where(assignment => assignment.FestivalId == festivalId
+                                                && assignment.CatalogItemId == catalogItemId)
                            .ToListAsync(cancellationToken);
   }
 }

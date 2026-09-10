@@ -15,7 +15,6 @@ public sealed class StationConfiguration : IEntityTypeConfiguration<Station>
     builder.Property(station => station.IsActive).IsRequired();
     builder.Property(station => station.DeviceId).IsRequired(false);
     builder.Property(station => station.EnrolmentInvitationId).IsRequired(false);
-    builder.Property(station => station.NextStationOrderNumber).IsRequired();
     builder.HasIndex(station => station.DeviceId).IsUnique();
     builder.HasIndex(station => station.EnrolmentInvitationId).IsUnique();
     builder.HasOne<Device>()

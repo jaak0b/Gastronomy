@@ -49,9 +49,11 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
+    services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
 
     services.AddSingleton<OrderRoutingResolver>();
+    services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<OrderStatusCalculator>();
     services.AddSingleton<OrderItemSettlementService>();
     services.AddSingleton<OrderItemProductionService>();
@@ -91,7 +93,11 @@ public sealed class ApiServiceRegistration
     services.AddScoped<DeviceRevoker>();
     services.AddScoped<OutstandingInvitationLookup>();
     services.AddSingleton<StationChangeAnnouncer>();
+    services.AddScoped<ItemsLeftWithoutAStation>();
     services.AddScoped<AdminStationHandler>();
+    services.AddScoped<AdminFestivalHandler>();
+    services.AddScoped<AdminFestivalMenuHandler>();
+    services.AddScoped<AdminFestivalStationHandler>();
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
     services.AddScoped<AdminStaffMembersHandler>();
@@ -101,6 +107,8 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<StationQueueReader>();
+    services.AddSingleton<StationsAtTheFestivalReader>();
+    services.AddScoped<RunningFestivalLookup>();
     services.AddSingleton<DeviceKindGate>();
     services.AddScoped<StationQueryHandler>();
     services.AddScoped<StationEstimateHandler>();

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
@@ -104,15 +104,13 @@ public sealed class StationDeactivationTest
       await database.SaveChangesAsync();
     }
 
-    using (var assigned = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}",
-                                                              new
-                                                              {
-                                                                name = "Bratwurst mit Brot",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 350,
-                                                                sortOrder = 1,
-                                                                stationIds = new[] { _context.World.BarStationId }
-                                                              }))
+    using (var assigned = await _context.Client
+                                        .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                        new
+                                                        {
+                                                          priceCents = 350,
+                                                          stationIds = new[] { _context.World.BarStationId }
+                                                        }))
     {
       Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }

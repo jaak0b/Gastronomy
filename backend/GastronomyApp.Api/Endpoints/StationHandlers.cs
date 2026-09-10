@@ -16,19 +16,25 @@ namespace GastronomyApp.Api.Endpoints;
 public sealed class StationQueryHandler
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly StationsAtTheFestivalReader _stationsReader;
 
-  public StationQueryHandler(GastronomyAppDbContext dbContext)
+  public StationQueryHandler(GastronomyAppDbContext dbContext,
+                             RunningFestivalLookup runningFestivalLookup,
+                             StationsAtTheFestivalReader stationsReader)
   {
     _dbContext = dbContext;
+    _runningFestivalLookup = runningFestivalLookup;
+    _stationsReader = stationsReader;
   }
 
   public async Task<IResult> ListStationsAsync(CancellationToken cancellationToken)
   {
-    List<Station> stations = await _dbContext.Stations
-                                             .AsNoTracking()
-                                             .Where(station => station.IsActive)
-                                             .OrderBy(station => station.SortOrder)
-                                             .ToListAsync(cancellationToken);
+    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    IReadOnlyList<Station> stations = festival is null
+                                        ? []
+                                        : await _stationsReader.ReadAsync(_dbContext, festival.Id, cancellationToken);
 
     return Results.Ok(new StationListView([
                                             .. stations.Select(station => new StationView(station.Id,
@@ -40,32 +46,76 @@ public sealed class StationQueryHandler
 
 public sealed record QueuedItemRow(Guid StationId, ProductionStatus Status, int? ProductionMinutes);
 
+public sealed class StationsAtTheFestivalReader
+{
+  public async Task<IReadOnlyList<Station>> ReadAsync(GastronomyAppDbContext dbContext,
+                                                      Guid festivalId,
+                                                      CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return await (from station in dbContext.Stations.AsNoTracking()
+                  join link in dbContext.FestivalStations.AsNoTracking()
+                    on station.Id equals link.StationId
+                  where link.FestivalId == festivalId && station.IsActive
+                  orderby station.SortOrder
+                  select station)
+                 .ToListAsync(cancellationToken);
+  }
+
+  public async Task<bool> IsAtTheFestivalAsync(GastronomyAppDbContext dbContext,
+                                               Guid festivalId,
+                                               Guid stationId,
+                                               CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return await dbContext.FestivalStations
+                          .AsNoTracking()
+                          .AnyAsync(link => link.FestivalId == festivalId && link.StationId == stationId,
+                                    cancellationToken);
+  }
+}
+
 public sealed class StationEstimateHandler
 {
   private readonly ProductionEstimateCalculator _estimateCalculator;
 
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly StationsAtTheFestivalReader _stationsReader;
 
-  public StationEstimateHandler(GastronomyAppDbContext dbContext, ProductionEstimateCalculator estimateCalculator)
+  public StationEstimateHandler(GastronomyAppDbContext dbContext,
+                                ProductionEstimateCalculator estimateCalculator,
+                                RunningFestivalLookup runningFestivalLookup,
+                                StationsAtTheFestivalReader stationsReader)
   {
     _dbContext = dbContext;
     _estimateCalculator = estimateCalculator;
+    _runningFestivalLookup = runningFestivalLookup;
+    _stationsReader = stationsReader;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    List<Station> stations = await _dbContext.Stations
-                                             .AsNoTracking()
-                                             .Where(station => station.IsActive)
-                                             .OrderBy(station => station.SortOrder)
-                                             .ToListAsync(cancellationToken);
+    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    if (festival is null)
+    {
+      return Results.Ok(new StationEstimateListView([]));
+    }
+
+    IReadOnlyList<Station> stations = await _stationsReader.ReadAsync(_dbContext, festival.Id, cancellationToken);
 
     List<QueuedItemRow> queued = await (from item in _dbContext.OrderItems.AsNoTracking()
                                         join slice in _dbContext.StationOrders.AsNoTracking()
                                           on item.StationOrderId equals slice.Id
+                                        join order in _dbContext.Orders.AsNoTracking()
+                                          on slice.OrderId equals order.Id
                                         join catalogItem in _dbContext.CatalogItems.AsNoTracking()
                                           on item.CatalogItemId equals catalogItem.Id
                                         where item.ProductionStatus != ProductionStatus.Finished
+                                              && order.FestivalId == festival.Id
                                         select new QueuedItemRow(slice.StationId,
                                                                  item.ProductionStatus,
                                                                  catalogItem.ProductionMinutes))
@@ -88,6 +138,7 @@ public sealed class StationEstimateHandler
 public sealed class StationQueueReader
 {
   public async Task<IReadOnlyList<StationQueueSliceView>> DescribeUnfinishedAsync(GastronomyAppDbContext dbContext,
+                                                                                   Guid festivalId,
                                                                                    Guid stationId,
                                                                                    CancellationToken cancellationToken)
   {
@@ -100,11 +151,14 @@ public sealed class StationQueueReader
                                                      .Distinct()
                                                      .ToListAsync(cancellationToken);
 
-    List<StationOrder> slices = await dbContext.StationOrders
-                                               .AsNoTracking()
-                                               .Where(slice => slice.StationId == stationId
-                                                               && sliceIdsWithWorkLeft.Contains(slice.Id))
-                                               .ToListAsync(cancellationToken);
+    List<StationOrder> slices = await (from slice in dbContext.StationOrders.AsNoTracking()
+                                       join order in dbContext.Orders.AsNoTracking()
+                                         on slice.OrderId equals order.Id
+                                       where slice.StationId == stationId
+                                             && order.FestivalId == festivalId
+                                             && sliceIdsWithWorkLeft.Contains(slice.Id)
+                                       select slice)
+                                      .ToListAsync(cancellationToken);
 
     return await DescribeAsync(dbContext, slices, cancellationToken);
   }
@@ -176,6 +230,8 @@ public sealed class StationQueueHandler
   private readonly OrderItemProductionService _productionService;
   private readonly StationQueueReader _queueReader;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly StationsAtTheFestivalReader _stationsReader;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public StationQueueHandler(GastronomyAppDbContext dbContext,
@@ -184,9 +240,13 @@ public sealed class StationQueueHandler
                              OrderReader orderReader,
                              HubNotificationDispatcher dispatcher,
                              ResultEnvelope resultEnvelope,
+                             RunningFestivalLookup runningFestivalLookup,
+                             StationsAtTheFestivalReader stationsReader,
                              IClock clock)
   {
     _dbContext = dbContext;
+    _runningFestivalLookup = runningFestivalLookup;
+    _stationsReader = stationsReader;
     _queueReader = queueReader;
     _productionService = productionService;
     _orderReader = orderReader;
@@ -208,8 +268,18 @@ public sealed class StationQueueHandler
       return Results.Unauthorized();
     }
 
+    FestivalStanding standing = await StandingOfAsync(caller.StationId, cancellationToken);
+
+    if (standing.Refusal is not null)
+    {
+      return standing.Refusal;
+    }
+
     IReadOnlyList<StationQueueSliceView> slices =
-      await _queueReader.DescribeUnfinishedAsync(_dbContext, station.Id, cancellationToken);
+      await _queueReader.DescribeUnfinishedAsync(_dbContext,
+                                                 standing.FestivalId,
+                                                 station.Id,
+                                                 cancellationToken);
 
     return Results.Ok(new StationQueueView(new(station.Id, station.Name), slices));
   }
@@ -220,6 +290,13 @@ public sealed class StationQueueHandler
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
+
+    FestivalStanding standing = await StandingOfAsync(caller.StationId, cancellationToken);
+
+    if (standing.Refusal is not null)
+    {
+      return standing.Refusal;
+    }
 
     List<Guid> selectedIds = [.. request.OrderItemIds ?? []];
 
@@ -318,6 +395,32 @@ public sealed class StationQueueHandler
     return tableNames.Count == 1 ? tableNames[0] : null;
   }
 
+  private async Task<FestivalStanding> StandingOfAsync(Guid stationId, CancellationToken cancellationToken)
+  {
+    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    if (festival is null)
+    {
+      return new(Guid.Empty,
+                 _resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                        "NoRunningFestival",
+                                        "station.noFestivalIsRunning"));
+    }
+
+    var isAtTheFestival =
+      await _stationsReader.IsAtTheFestivalAsync(_dbContext, festival.Id, stationId, cancellationToken);
+
+    if (!isAtTheFestival)
+    {
+      return new(festival.Id,
+                 _resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                        "StationNotAtTheFestival",
+                                        "station.notPartOfTheFestival"));
+    }
+
+    return new(festival.Id, null);
+  }
+
   private IResult Refuse(ProductionStatusFailure failure)
   {
     return failure.Reason switch
@@ -338,3 +441,5 @@ public sealed class StationQueueHandler
            };
   }
 }
+
+public sealed record FestivalStanding(Guid FestivalId, IResult? Refusal);

@@ -143,13 +143,16 @@
     "overview": {
       "title": "Overview",
       "ready": "Everything is set up. You can now set up the phones and the tablets.",
-      "missingStation": "Create at least one station, for example Kitchen and Bar.",
+      "missingStation": "Add at least one station to this festival, for example Kitchen and Bar.",
       "missingCategory": "Create at least one category, for example Food and Drinks.",
-      "missingItems": "Create the items with their prices.",
+      "missingItems": "Put items on this festival's menu and fill in their prices.",
       "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
       "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders.",
       "address": "Phones reach the laptop at {url}.",
-      "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}."
+      "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}.",
+      "missingFestival": "Create a festival first.",
+      "noFestivalPicked": "Open the festival you are working on under \"Festivals\".",
+      "noFestivalIsRunning": "No festival is running. Look under \"Festivals\"."
     },
     "stations": {
       "title": "Stations",
@@ -161,7 +164,15 @@
       "activate": "Switch this station on",
       "deactivateTitle": "Switch this station off?",
       "deactivateBody": "The station disappears from the list and takes no more orders. The orders placed so far stay saved. You can switch the station back on later.",
-      "deactivateConfirm": "Switch the station off"
+      "deactivateConfirm": "Switch the station off",
+      "atTheFestival": "At this festival",
+      "notAtTheFestival": "Not at this festival",
+      "addToTheFestival": "Add to the festival",
+      "removeFromTheFestival": "Remove from the festival",
+      "removeTitle": "Remove the station",
+      "removeBody": "The station leaves this festival only. At every other festival it stays where it is.",
+      "removeConfirm": "Remove",
+      "noFestivalPicked": "Stations belong to a festival. Open one under \"Festivals\"."
     },
     "items": {
       "title": "Items",
@@ -176,10 +187,13 @@
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",
       "deactivateBody": "The item disappears from the phones and can no longer be ordered. The orders placed so far stay saved. You can activate it again later.",
-      "deactivateConfirm": "Deactivate the item"
-    },
-    "assignment": {
-      "title": "Prepared at these stations"
+      "deactivateConfirm": "Deactivate the item",
+      "onTheMenu": "On the menu",
+      "notOnTheMenu": "Not on the menu",
+      "putOnTheMenu": "Put on the menu",
+      "putOnTheMenuTitle": "Put the item on the menu",
+      "takeOffTheMenu": "Take off the menu",
+      "noFestivalPicked": "Prices and stations belong to a festival. Open one under \"Festivals\"."
     },
     "tables": {
       "title": "Tables",
@@ -237,15 +251,6 @@
     "edit": "Edit",
     "loadFailed": "Reload the page. The data could not be loaded.",
     "itemsWouldHaveNoStation": "Give {count} item a different station first, or take it off the menu. Otherwise it is left with no station and cannot be ordered. | Give {count} items a different station first, or take them off the menu. Otherwise they are left with no station and cannot be ordered.",
-    "numbers": {
-      "title": "Order numbers",
-      "help": "The order number and each station's own sequence numbers count up continuously. Reset them to 1 before a new festival.",
-      "reset": "Reset the numbers",
-      "confirm": "Reset the numbers to 1 now? Orders already taken keep their numbers.",
-      "confirmYes": "Yes, reset them",
-      "confirmNo": "Cancel",
-      "done": "The numbers start at 1 again."
-    },
     "categories": {
       "new": "New category",
       "name": "Category name",
@@ -258,7 +263,8 @@
       "deactivateTitle": "Switch this category off?",
       "deactivateBody": "The category disappears from the phones. The orders placed so far stay saved. You can switch the category on again later.",
       "deactivateConfirm": "Switch the category off",
-      "noneYet": "Click \"New category\". There is no category to choose yet."
+      "noneYet": "Click \"New category\". There is no category to choose yet.",
+      "sharedAcrossFestivals": "Every festival shares these categories. Rename one here and it is renamed at every festival."
     },
     "itemNameMissing": "Give the item a name before you save it.",
     "categoryNameMissing": "Give the category a name before you save.",
@@ -267,14 +273,43 @@
     "categoryHasActiveItems": "This category still has items switched on. Switch the items off first, then the category.",
     "itemCategoryUnknown": "Choose a category before you save.",
     "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
-    "itemNeedsAStation": "Tick at least one station so the item can be ordered.",
+    "itemNeedsAStation": "Choose at least one station for the item.",
     "stationHasUnfinishedItems": "This station still has one unfinished order and cannot be switched off yet. Finish that order and try again afterwards. | This station still has unfinished orders and cannot be switched off yet. Finish the orders and try again afterwards.",
     "stationNameMissing": "Give the station a name before you save it.",
     "actionFailed": "That did not work. Try again, and reload the page if it still does not work.",
     "deactivate": "Deactivate",
     "deactivated": "Deactivated",
     "showDeactivated": "Show deactivated entries",
-    "itemHasNoActiveStation": "Every station this item belongs to is switched off. Switch one of them back on, or assign the item to a station that is running."
+    "festivalNameMissing": "Give the festival a name.",
+    "festivalPeriodInvalid": "The end has to come after the start. Set the end to a later time.",
+    "festivalOverlaps": "The festival {name} overlaps this period. Move the start or the end.",
+    "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
+    "stationHasOrdersAtTheFestival": "This station has already taken {count} order at this festival. Switch it off if nobody is working there any more. | This station has already taken {count} orders at this festival. Switch it off if nobody is working there any more.",
+    "festivals": {
+      "title": "Festivals",
+      "help": "Every festival is created on this page. The phones and the tablets follow whichever one is running now.",
+      "new": "New festival",
+      "name": "Festival name",
+      "start": "Start",
+      "end": "End",
+      "open": "Open the festival",
+      "running": "Running now",
+      "hidden": "Hidden",
+      "showHidden": "Show hidden festivals",
+      "copy": "Copy",
+      "copyTitle": "Copy the festival",
+      "copyHelp": "The new festival starts with the same stations, items and prices. Fill in the name, the start and the end below.",
+      "copyConfirm": "Create the festival",
+      "hide": "Hide",
+      "show": "Show again",
+      "hideTitle": "Hide the festival",
+      "hideBody": "The festival disappears from the list. The orders placed so far stay saved.",
+      "hideConfirm": "Hide",
+      "noneYet": "No festival has been set up yet. Click \"New festival\".",
+      "stationCount": "{count} station | {count} stations",
+      "menuItemCount": "{count} item | {count} items",
+      "orderCount": "{count} order | {count} orders"
+    }
   },
   "station": {
     "togetherHeading": "Orders that go out together",
@@ -294,6 +329,7 @@
     "deliveryTogether": "Goes out together",
     "deliveryAsItComes": "Goes out as it is ready",
     "status": {
+      "waiting": "waiting",
       "inProduction": "being prepared",
       "finished": "ready"
     },
@@ -302,7 +338,9 @@
     "startAll": "Start the whole order",
     "finishAll": "Mark the whole order as ready",
     "finishedNotice": "Ready for {table}. Write the table on the tray.",
-    "dismiss": "Understood"
+    "dismiss": "Understood",
+    "noFestivalIsRunning": "No festival active",
+    "notPartOfTheFestival": "This station is not part of the festival that is running."
   },
   "startingUp": {
     "laptopNotReached": "The laptop is not answering. Try again.",

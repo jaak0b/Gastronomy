@@ -1,4 +1,4 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
@@ -35,7 +35,8 @@ public sealed class AdminItemAvailabilityAnnouncementTest
     var hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
     await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .SetAvailabilityAsync(_context.World.BratwurstItemId,
+      .SetAvailabilityAsync(_context.World.FestivalId,
+                            _context.World.BratwurstItemId,
                             new() { IsAvailable = true },
                             CancellationToken.None);
 
@@ -49,14 +50,15 @@ public sealed class AdminItemAvailabilityAnnouncementTest
     var hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
     await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .SetAvailabilityAsync(_context.World.BratwurstItemId,
+      .SetAvailabilityAsync(_context.World.FestivalId,
+                            _context.World.BratwurstItemId,
                             new() { IsAvailable = false },
                             CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustHaveHappened();
   }
 
-  private AdminItemHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
+  private AdminFestivalMenuHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
   {
     CatalogChangeAnnouncer announcer =
       new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
@@ -65,6 +67,8 @@ public sealed class AdminItemAvailabilityAnnouncementTest
                new(announcer,
                    new(services.GetRequiredService<IHostApplicationLifetime>(),
                        A.Fake<ILogger<SavedChangeAnnouncement>>())),
-               services.GetRequiredService<ResultEnvelope>());
+               services.GetRequiredService<ItemsLeftWithoutAStation>(),
+               services.GetRequiredService<ResultEnvelope>(),
+               A.Fake<ILogger<AdminFestivalMenuHandler>>());
   }
 }

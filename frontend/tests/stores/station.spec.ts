@@ -344,3 +344,79 @@ describe('a change the laptop did not take', () => {
     expect(station.failureKey).toBe('station.actionNotReached')
   })
 })
+
+describe('why a station tablet could not load its orders', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    enrolledStationTablet()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is the reason the laptop named, so the tablet can say no festival is running', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'NoRunningFestival',
+              messageKey: 'station.noFestivalIsRunning',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          ),
+      ),
+    )
+    const station = useStationStore()
+
+    await station.load()
+
+    expect(station.loadFailed).toBe(true)
+    expect(station.loadFailureKey).toBe('station.noFestivalIsRunning')
+  })
+
+  it('is unnamed when the laptop could not be reached at all', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('the laptop is not there')
+      }),
+    )
+    const station = useStationStore()
+
+    await station.load()
+
+    expect(station.loadFailed).toBe(true)
+    expect(station.loadFailureKey).toBeNull()
+  })
+
+  it('is forgotten once the orders come through again', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'StationNotAtTheFestival',
+              messageKey: 'station.notPartOfTheFestival',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          ),
+      ),
+    )
+    const station = useStationStore()
+    await station.load()
+
+    stubTheLaptop(accepted)
+    await station.load()
+
+    expect(station.loadFailed).toBe(false)
+    expect(station.loadFailureKey).toBeNull()
+  })
+})

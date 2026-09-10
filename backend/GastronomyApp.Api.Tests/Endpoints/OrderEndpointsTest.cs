@@ -127,7 +127,8 @@ public sealed class OrderEndpointsTest
   {
     await using (var database = _context.Factory.CreateContext())
     {
-      var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BratwurstItemId);
+      var item = await database.FestivalCatalogItems
+                               .FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId);
       item.IsAvailable = false;
       await database.SaveChangesAsync();
     }

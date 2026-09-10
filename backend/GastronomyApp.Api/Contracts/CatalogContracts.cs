@@ -14,7 +14,10 @@ public sealed record CatalogItemView(
 
 public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);
 
+public sealed record RunningFestivalView(Guid FestivalId, string Name);
+
 public sealed record CatalogView(
+  RunningFestivalView? Festival,
   IReadOnlyList<CatalogCategoryView> Categories,
   IReadOnlyList<CatalogItemView> Items,
   IReadOnlyList<CatalogStationView> Stations);

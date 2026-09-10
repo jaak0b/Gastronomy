@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { AdminItemDraft } from '../../../stores/admin/items'
-import type { AdminStation } from '../../../stores/admin/stations'
 import ItemForm from './ItemForm.vue'
 
-defineProps<{ stations: AdminStation[]; errorText: string | null }>()
+defineProps<{ errorText: string | null }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
 const { t } = useI18n()
@@ -16,7 +15,6 @@ const { t } = useI18n()
       <v-card-title class="new-item-title">{{ t('admin.items.new') }}</v-card-title>
       <ItemForm
         :item="null"
-        :stations="stations"
         :error-text="errorText"
         is-cancellable
         @save="(item: AdminItemDraft) => emit('save', item)"

@@ -60,15 +60,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("PriceCents")
-                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("ProductionMinutes")
                         .HasColumnType("INTEGER");
@@ -174,6 +168,85 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("EnrolmentInvitations");
                 });
 
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Festival", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EndsAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NextOrderNumber")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Festivals");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalCatalogItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CatalogItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PriceCents")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CatalogItemId");
+
+                    b.HasIndex("FestivalId", "CatalogItemId")
+                        .IsUnique();
+
+                    b.ToTable("FestivalCatalogItems");
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NextStationOrderNumber")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("StationId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StationId");
+
+                    b.HasIndex("FestivalId", "StationId")
+                        .IsUnique();
+
+                    b.ToTable("FestivalStations");
+                });
+
             modelBuilder.Entity("GastronomyApp.Core.Entities.ItemStationAssignment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -182,12 +255,15 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("StationId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CatalogItemId", "StationId")
+                    b.HasIndex("FestivalId", "CatalogItemId", "StationId")
                         .IsUnique();
 
                     b.ToTable("ItemStationAssignments");
@@ -202,6 +278,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FestivalId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("GlobalOrderNumber")
@@ -220,6 +299,11 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClientOrderId")
+                        .IsUnique();
+
+                    b.HasIndex("FestivalId");
+
+                    b.HasIndex("FestivalId", "GlobalOrderNumber")
                         .IsUnique();
 
                     b.ToTable("Orders");
@@ -293,19 +377,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.ToTable("OrderItemStatusChanges");
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.SequenceCounters", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("NextOrderNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SequenceCounters");
-                });
-
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
                 {
                     b.Property<Guid>("Id")
@@ -356,9 +427,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("NextStationOrderNumber")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
@@ -381,6 +449,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int>("DeliveryMode")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid>("FestivalId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("OrderId")
                         .HasColumnType("TEXT");
 
@@ -397,6 +468,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.HasIndex("OrderId", "StationId")
                         .IsUnique();
 
+                    b.HasIndex("FestivalId", "StationId", "StationOrderNumber")
+                        .IsUnique();
+
                     b.ToTable("StationOrders");
                 });
 
@@ -405,6 +479,45 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.HasOne("GastronomyApp.Core.Entities.CatalogCategory", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalCatalogItem", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.CatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", null)
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.FestivalStation", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", null)
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GastronomyApp.Core.Entities.Station", null)
+                        .WithMany()
+                        .HasForeignKey("StationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>
+                {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", null)
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -455,6 +568,12 @@ namespace GastronomyApp.Infrastructure.Migrations
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>
                 {
+                    b.HasOne("GastronomyApp.Core.Entities.Festival", null)
+                        .WithMany()
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("GastronomyApp.Core.Entities.Order", null)
                         .WithMany("StationOrders")
                         .HasForeignKey("OrderId")

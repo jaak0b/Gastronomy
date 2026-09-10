@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listFrom, request } from '../../api/client'
+import { listFrom, request, type ApiResult } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
 import { useConnectionStore } from '../connection'
 import { useAdminEnrolmentStore } from './enrolment'
+import { useAdminFestivalsStore } from './festivals'
 
 export interface AdminStation {
   stationId: string
@@ -11,6 +12,7 @@ export interface AdminStation {
   sortOrder: number
   isActive: boolean
   hasDevice: boolean
+  isAtTheFestival: boolean
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
@@ -18,9 +20,16 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   const loadFailed = ref(false)
   const errorMessage = ref<AdminErrorMessage | null>(null)
 
+  function pickedFestivalId(): string | null {
+    return useAdminFestivalsStore().pickedFestivalId
+  }
+
   async function load(): Promise<void> {
     loadFailed.value = false
-    const result = await request<unknown>('/api/admin/stations')
+    const festivalId = pickedFestivalId()
+    const path =
+      festivalId === null ? '/api/admin/stations' : `/api/admin/stations?festivalId=${festivalId}`
+    const result = await request<unknown>(path)
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
@@ -33,21 +42,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     stations.value = rows
   }
 
-  async function save(
-    station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
-  ): Promise<boolean> {
-    errorMessage.value = null
-    const path =
-      station.stationId === undefined
-        ? '/api/admin/stations'
-        : `/api/admin/stations/${station.stationId}`
-    const result = await request(path, {
-      method: station.stationId === undefined ? 'POST' : 'PUT',
-      body: {
-        name: station.name,
-        sortOrder: station.sortOrder,
-      },
-    })
+  async function reportAndReload(result: ApiResult<unknown>): Promise<boolean> {
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return false
@@ -56,15 +51,56 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     return true
   }
 
+  async function save(
+    station: Pick<AdminStation, 'name' | 'sortOrder'> & { stationId?: string },
+  ): Promise<boolean> {
+    errorMessage.value = null
+    const body = { name: station.name, sortOrder: station.sortOrder }
+    if (station.stationId === undefined) {
+      return reportAndReload(await request('/api/admin/stations', { method: 'POST', body }))
+    }
+    return reportAndReload(
+      await request(`/api/admin/stations/${station.stationId}`, { method: 'PUT', body }),
+    )
+  }
+
+  async function addToTheFestival(stationId: string): Promise<boolean> {
+    errorMessage.value = null
+    const festivalId = pickedFestivalId()
+    if (festivalId === null) {
+      return false
+    }
+    return reportAndReload(
+      await request(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
+        method: 'PUT',
+      }),
+    )
+  }
+
+  async function removeFromTheFestival(stationId: string): Promise<boolean> {
+    errorMessage.value = null
+    const festivalId = pickedFestivalId()
+    if (festivalId === null) {
+      return false
+    }
+    return reportAndReload(
+      await request(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
+        method: 'DELETE',
+      }),
+    )
+  }
+
   async function setActive(id: string, isActive: boolean): Promise<void> {
     errorMessage.value = null
-    const action = isActive ? 'activate' : 'deactivate'
-    const result = await request(`/api/admin/stations/${id}/${action}`, { method: 'POST' })
-    if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+    if (isActive) {
+      await reportAndReload(
+        await request(`/api/admin/stations/${id}/activate`, { method: 'POST' }),
+      )
       return
     }
-    await load()
+    await reportAndReload(
+      await request(`/api/admin/stations/${id}/deactivate`, { method: 'POST' }),
+    )
   }
 
   function listen(): () => void {
@@ -86,5 +122,16 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     errorMessage.value = null
   }
 
-  return { stations, loadFailed, errorMessage, load, save, setActive, forgetError, listen }
+  return {
+    stations,
+    loadFailed,
+    errorMessage,
+    load,
+    save,
+    addToTheFestival,
+    removeFromTheFestival,
+    setActive,
+    forgetError,
+    listen,
+  }
 })

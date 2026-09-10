@@ -56,6 +56,7 @@ public sealed class OrderRepositoryTest
                   {
                     Id = orderId,
                     ClientOrderId = clientOrderId,
+                    FestivalId = seeded.FestivalId,
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
                     TableName = "Tisch 12",
@@ -67,6 +68,7 @@ public sealed class OrderRepositoryTest
                                 {
                                   Id = stationOrderId,
                                   OrderId = orderId,
+                                  FestivalId = seeded.FestivalId,
                                   StationId = seeded.KitchenStationId,
                                   StationOrderNumber = 1,
                                   DeliveryMode = DeliveryMode.AsItComes

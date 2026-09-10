@@ -5,6 +5,7 @@ import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
 import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
 import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
+import { useAdminFestivalsStore } from '../../../src/stores/admin/festivals'
 import { useAdminItemsStore } from '../../../src/stores/admin/items'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
@@ -41,18 +42,34 @@ const CREATED_CATEGORY = {
   isActive: true,
 }
 
+const FESTIVAL_ID = '66666666-6666-6666-6666-666666666666'
+
+const ONE_FESTIVAL = {
+  festivals: [
+    {
+      festivalId: FESTIVAL_ID,
+      name: 'Sommerfest',
+      startsAtUtc: '2026-07-18T10:00:00Z',
+      endsAtUtc: '2026-07-19T02:00:00Z',
+      isHidden: false,
+      isRunning: true,
+      stationCount: 1,
+      menuItemCount: 1,
+      orderCount: 0,
+    },
+  ],
+}
+
 const ONE_ITEM = {
   items: [
     {
       itemId: ITEM_ID,
       name: 'Bratwurst',
       categoryId: FOOD_ID,
-      priceCents: 350,
       sortOrder: 1,
       isActive: true,
-      isAvailable: true,
-      stationIds: [STATION_ID],
       productionMinutes: null,
+      atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [STATION_ID] },
     },
   ],
 }
@@ -65,6 +82,23 @@ const ONE_STATION = {
       sortOrder: 1,
       isActive: true,
       hasDevice: true,
+      isAtTheFestival: true,
+    },
+  ],
+}
+
+const SWITCHED_OFF_STATION_ID = '77777777-7777-7777-7777-777777777777'
+
+const TWO_STATIONS = {
+  stations: [
+    ONE_STATION.stations[0],
+    {
+      stationId: SWITCHED_OFF_STATION_ID,
+      name: 'Zelt',
+      sortOrder: 2,
+      isActive: false,
+      hasDevice: false,
+      isAtTheFestival: true,
     },
   ],
 }
@@ -90,6 +124,7 @@ interface Call {
 interface Laptop {
   items?: unknown
   categories?: unknown
+  stations?: unknown
   refusal?: { status: number; body: unknown }
 }
 
@@ -115,10 +150,16 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
         }
         return new Response(JSON.stringify(laptop.categories ?? TWO_CATEGORIES), { status: 200 })
       }
+      if (url.includes('/api/admin/festivals/')) {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+      if (url.includes('/api/admin/festivals')) {
+        return new Response(JSON.stringify(ONE_FESTIVAL), { status: 200 })
+      }
       if (url.includes('/api/admin/items')) {
         return new Response(JSON.stringify(laptop.items ?? ONE_ITEM), { status: 200 })
       }
-      return new Response(JSON.stringify(ONE_STATION), { status: 200 })
+      return new Response(JSON.stringify(laptop.stations ?? ONE_STATION), { status: 200 })
     }),
   )
   return calls
@@ -129,12 +170,14 @@ function urlsOf(calls: Call[]): string[] {
 }
 
 function mountList() {
+  useAdminFestivalsStore().pick(FESTIVAL_ID)
   return mount(ItemsList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
 describe('the item list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -210,6 +253,7 @@ describe('the item list', () => {
 describe('the controls beside a category name', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -337,6 +381,7 @@ describe('the controls beside a category name', () => {
 describe('a category that is switched off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -376,6 +421,7 @@ describe('a category that is switched off', () => {
 describe('adding a category from the item list', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -459,6 +505,7 @@ describe('adding a category from the item list', () => {
 describe('deactivating an item', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -505,6 +552,7 @@ describe('deactivating an item', () => {
 describe('an item that is deactivated', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -546,6 +594,7 @@ describe('an item that is deactivated', () => {
 describe('the sold-out button beside an item', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -553,43 +602,25 @@ describe('the sold-out button beside an item', () => {
     vi.unstubAllGlobals()
   })
 
-  it('marks that item sold out at its own address', async () => {
+  it('marks that item sold out at this festival alone', async () => {
     const calls = stubLaptop()
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
     await list.get('.sold-out-toggle').trigger('click')
 
-    await vi.waitFor(() => expect(urlsOf(calls)).toContain(`/api/admin/items/${ITEM_ID}/availability`))
-  })
-})
-
-describe('the station checkboxes on an item', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    document.body.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('show the station an item is already assigned to as ticked', async () => {
-    stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(list.find('.assignment-editor').exists()).toBe(true))
-
-    const checkbox = list.get('.assignment-editor input[type="checkbox"]')
-    expect((checkbox.element as HTMLInputElement).checked).toBe(true)
+    await vi.waitFor(() =>
+      expect(urlsOf(calls)).toContain(
+        `/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}/availability`,
+      ),
+    )
   })
 })
 
 describe('adding an item', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    localStorage.clear()
     document.body.innerHTML = ''
   })
 
@@ -608,53 +639,6 @@ describe('adding an item', () => {
     await list.get('.new-item').trigger('click')
 
     await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
-  })
-
-  it('drops the complaint about a missing station once the edit form is closed again', async () => {
-    stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.edit').exists()).toBe(true))
-    await list.get('.edit').trigger('click')
-
-    await list.findComponent(ItemForm).vm.$emit('save', {
-      itemId: ITEM_ID,
-      name: 'Bratwurst',
-      categoryId: FOOD_ID,
-      priceCents: 350,
-      sortOrder: 1,
-      productionMinutes: null,
-      stationIds: [],
-    })
-    await vi.waitFor(() => expect(useAdminItemsStore().errorMessage).not.toBeNull())
-
-    await list.get('.edit').trigger('click')
-
-    expect(list.find('.admin-items .refusal').exists()).toBe(false)
-  })
-
-  it('drops the complaint about a missing station once the dialog is cancelled', async () => {
-    stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.new-item').exists()).toBe(true))
-    await list.get('.new-item').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
-
-    await list.findComponent(NewItemDialog).vm.$emit('save', {
-      name: 'Pommes',
-      categoryId: FOOD_ID,
-      priceCents: 300,
-      sortOrder: 1,
-      productionMinutes: null,
-      stationIds: [],
-    })
-    await vi.waitFor(() => expect(useAdminItemsStore().errorMessage).not.toBeNull())
-
-    await list.findComponent(NewItemDialog).vm.$emit('cancel')
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
-
-    expect(list.find('.admin-items .refusal').exists()).toBe(false)
   })
 
   it('drops the refusal to switch a category off once the admin writes a new item', async () => {
@@ -682,5 +666,142 @@ describe('adding an item', () => {
     await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
 
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
+  })
+})
+
+describe('an item that is not on this festival menu', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stands under its own heading, away from the menu', async () => {
+    stubLaptop({ items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] } })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.get('.not-on-the-menu-heading').text()).toBe('Nicht auf der Karte')
+    expect(list.findAll('.item-row.rest')).toHaveLength(1)
+  })
+
+  it('sends nothing while the admin is still filling the dialog in', async () => {
+    const calls = stubLaptop({
+      items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.put-on-the-menu').exists()).toBe(true))
+    await list.get('.put-on-the-menu').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.menu-item-dialog')).not.toBeNull(),
+    )
+
+    expect(calls.every((call) => call.method === 'GET')).toBe(true)
+  })
+
+  it('goes on the menu with its price and its station once the dialog is confirmed', async () => {
+    const calls = stubLaptop({
+      items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.put-on-the-menu').exists()).toBe(true))
+    await list.get('.put-on-the-menu').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.menu-item-dialog')).not.toBeNull(),
+    )
+    const dialog = document.querySelector('.menu-item-dialog') as HTMLElement
+    const price = dialog.querySelector('.price-field input') as HTMLInputElement
+    price.value = '3,50'
+    price.dispatchEvent(new Event('input'))
+    ;(dialog.querySelector('.station-chip') as HTMLElement).click()
+    await vi.waitFor(() =>
+      expect(dialog.querySelector('.station-chip.is-selected')).not.toBeNull(),
+    )
+    ;(dialog.querySelector('.confirm') as HTMLElement).click()
+
+    await vi.waitFor(() => {
+      const sent = calls.find((call) => call.method === 'PUT')
+      expect(sent?.url).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}`)
+      expect(sent?.body).toEqual({ priceCents: 350, stationIds: [STATION_ID] })
+    })
+  })
+})
+
+describe('an item on this festival menu', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows its price and the stations that prepare it here', async () => {
+    stubLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.get('.item-row .price').text()).toBe('3,50 €')
+    expect(list.get('.item-row .station-chip.is-selected').text()).toBe('Küche')
+  })
+
+  it('offers only the stations that are switched on', async () => {
+    stubLaptop({ stations: TWO_STATIONS })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row .station-chip').exists()).toBe(true))
+
+    expect(list.findAll('.item-row .station-chip').map((chip) => chip.text())).toEqual(['Küche'])
+  })
+
+  it('comes off this festival menu alone', async () => {
+    const calls = stubLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.take-off-the-menu').exists()).toBe(true))
+    await list.get('.take-off-the-menu').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(
+        calls.find((call) => call.method === 'DELETE')?.url,
+      ).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}`),
+    )
+  })
+})
+
+describe('the item page while no festival is open', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('says where the prices and the stations live, and offers no menu control', async () => {
+    stubLaptop({ items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] } })
+
+    const list = mount(ItemsList, {
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.get('.no-festival-picked').text()).toBe(
+      'Preise und Ausgabestellen gehören zu einem Fest. Öffnen Sie ein Fest unter "Feste".',
+    )
+    expect(list.find('.put-on-the-menu').exists()).toBe(false)
   })
 })

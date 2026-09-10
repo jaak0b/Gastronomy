@@ -83,8 +83,9 @@ public sealed class HubConnectionSecurityTest
 
   private async Task ChangeTheCatalogAsync()
   {
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}/availability",
-                                                               new { isAvailable = false });
+    using var response =
+      await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability",
+                                            new { isAvailable = false });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }

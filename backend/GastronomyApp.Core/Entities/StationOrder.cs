@@ -8,6 +8,8 @@ public sealed class StationOrder
 
   public required Guid OrderId { get; set; }
 
+  public required Guid FestivalId { get; set; }
+
   public required Guid StationId { get; set; }
 
   public required int StationOrderNumber { get; set; }

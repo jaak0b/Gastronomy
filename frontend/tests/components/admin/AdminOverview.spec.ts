@@ -3,8 +3,32 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import AdminOverview from '../../../src/components/admin/overview/AdminOverview.vue'
+import { useAdminFestivalsStore } from '../../../src/stores/admin/festivals'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
+
+const SUMMER = {
+  festivalId: 'fest-1',
+  name: 'Sommerfest',
+  startsAtUtc: '2026-07-18T10:00:00Z',
+  endsAtUtc: '2026-07-19T02:00:00Z',
+  isHidden: false,
+  isRunning: true,
+  stationCount: 1,
+  menuItemCount: 1,
+  orderCount: 0,
+}
+
+function answerFor(url: string, payload: Record<string, unknown>): Response {
+  const body = url.startsWith('/api/admin/festivals')
+    ? { festivals: [SUMMER] }
+    : { stations: [], items: [], categories: [], ...payload }
+  return new Response(JSON.stringify(body), { status: 200 })
+}
+
+function theFestivalIsOpen(): void {
+  useAdminFestivalsStore().pick('fest-1')
+}
 
 function mountOverview(locale: 'de' | 'en' = 'de') {
   const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
@@ -17,10 +41,7 @@ describe('the address the phones connect to', () => {
     window.history.replaceState({}, '', '/admin')
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ stations: [], items: [] }), { status: 200 }),
-      ),
+      vi.fn(async (url: string) => answerFor(url, {})),
     )
   })
 
@@ -59,17 +80,20 @@ describe('what the overview says is still missing', () => {
   })
 
   function stubStations(stations: unknown[]) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () => new Response(JSON.stringify({ stations, items: [] }), { status: 200 }),
-      ),
-    )
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => answerFor(url, { stations })))
+    theFestivalIsOpen()
   }
 
   it('asks for the tablet of a station that has none yet', async () => {
     stubStations([
-      { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: false },
+      {
+        stationId: 'station-kueche',
+        name: 'Küche',
+        sortOrder: 1,
+        isActive: true,
+        hasDevice: false,
+        isAtTheFestival: true,
+      },
     ])
 
     const overview = mountOverview()
@@ -82,7 +106,14 @@ describe('what the overview says is still missing', () => {
 
   it('says nothing about a station whose tablet is already set up', async () => {
     stubStations([
-      { stationId: 'station-kueche', name: 'Küche', sortOrder: 1, isActive: true, hasDevice: true },
+      {
+        stationId: 'station-kueche',
+        name: 'Küche',
+        sortOrder: 1,
+        isActive: true,
+        hasDevice: true,
+        isAtTheFestival: true,
+      },
     ])
 
     const overview = mountOverview()
@@ -101,15 +132,8 @@ describe('the category the admin needs before any item', () => {
   })
 
   function stubCategories(categories: unknown[]) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/api/admin/categories')) {
-          return new Response(JSON.stringify({ categories }), { status: 200 })
-        }
-        return new Response(JSON.stringify({ stations: [], items: [] }), { status: 200 })
-      }),
-    )
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => answerFor(url, { categories })))
+    theFestivalIsOpen()
   }
 
   it('asks for a category while the laptop holds none', async () => {
@@ -133,6 +157,73 @@ describe('the category the admin needs before any item', () => {
 
     expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
       'Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.',
+    )
+  })
+})
+
+describe('the overview before a festival is open', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    window.history.replaceState({}, '', '/admin')
+  })
+
+  it('asks for a festival while the laptop knows none', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.startsWith('/api/admin/festivals')
+                ? { festivals: [] }
+                : { stations: [], items: [], categories: [] },
+            ),
+            { status: 200 },
+          ),
+      ),
+    )
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.get('.missing-festival').text()).toBe('Legen Sie zuerst ein Fest an.')
+    expect(overview.findAll('.readiness-row')).toHaveLength(0)
+  })
+
+  it('asks the admin to open one while none is open', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => answerFor(url, {})))
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.get('.no-festival-picked').text()).toBe(
+      'Öffnen Sie unter "Feste" das Fest, um das es heute geht.',
+    )
+    expect(overview.findAll('.readiness-row')).toHaveLength(0)
+  })
+
+  it('says that nothing is running when the festival the admin opened has not started', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.startsWith('/api/admin/festivals')
+                ? { festivals: [{ ...SUMMER, isRunning: false }] }
+                : { stations: [], items: [], categories: [] },
+            ),
+            { status: 200 },
+          ),
+      ),
+    )
+    theFestivalIsOpen()
+
+    const overview = mountOverview()
+    await flushPromises()
+
+    expect(overview.get('.not-running').text()).toBe(
+      'Zurzeit läuft kein Fest. Sehen Sie unter "Feste" nach.',
     )
   })
 })

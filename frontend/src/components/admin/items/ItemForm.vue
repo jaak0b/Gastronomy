@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage } from '../../../core/apiTypes'
-import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import {
   formatProductionMinutes,
   parseProductionMinutes,
@@ -12,33 +10,25 @@ import {
   type AdminCategoryDraft,
 } from '../../../stores/admin/categories'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
-import type { AdminStation } from '../../../stores/admin/stations'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import { useRefusalText } from '../refusalText'
-import AssignmentEditor from './AssignmentEditor.vue'
 
 const props = defineProps<{
   item: AdminItem | null
-  stations: AdminStation[]
   errorText: string | null
   isCancellable?: boolean
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const categories = useAdminCategoriesStore()
 const name = ref(props.item?.name ?? '')
 const categoryId = ref<string | null>(props.item?.categoryId ?? null)
 const categoryIsMissing = ref(false)
 const isCreatingCategory = ref(false)
-const priceText = ref(
-  formatEuroInput(props.item?.priceCents ?? null, locale.value as AppLanguage),
-)
-const priceIsUnreadable = ref(false)
 const productionMinutesText = ref(formatProductionMinutes(props.item?.productionMinutes ?? null))
 const productionMinutesAreUnreadable = ref(false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
-const stationIds = ref<string[]>([...(props.item?.stationIds ?? [])])
 
 watch(categoryId, () => {
   categoryIsMissing.value = false
@@ -51,12 +41,6 @@ const offeredCategories = computed(() =>
 )
 
 const categoryRefusal = useRefusalText([() => categories.errorMessage])
-
-function toggle(stationId: string): void {
-  stationIds.value = stationIds.value.includes(stationId)
-    ? stationIds.value.filter((id) => id !== stationId)
-    : [...stationIds.value, stationId]
-}
 
 function startCreatingCategory(): void {
   categories.forgetError()
@@ -78,22 +62,18 @@ async function createCategory(draft: AdminCategoryDraft): Promise<void> {
 }
 
 function save(): void {
-  const priceCents = parseEuroInput(priceText.value)
-  priceIsUnreadable.value = priceCents === null
   const minutes = parseProductionMinutes(productionMinutesText.value)
   productionMinutesAreUnreadable.value = minutes.kind === 'invalid'
   const chosenCategoryId = categoryId.value
   categoryIsMissing.value = chosenCategoryId === null
-  if (priceCents === null || minutes.kind === 'invalid' || chosenCategoryId === null) {
+  if (minutes.kind === 'invalid' || chosenCategoryId === null) {
     return
   }
   emit('save', {
     itemId: props.item?.itemId,
     name: name.value,
     categoryId: chosenCategoryId,
-    priceCents,
     sortOrder: sortOrder.value,
-    stationIds: stationIds.value,
     productionMinutes: minutes.minutes,
   })
 }
@@ -126,14 +106,6 @@ function save(): void {
           </v-btn>
         </div>
         <v-text-field
-          v-model="priceText"
-          class="price-field mb-2"
-          :label="t('admin.items.price')"
-          inputmode="decimal"
-          :error="priceIsUnreadable"
-          :error-messages="priceIsUnreadable ? [t('admin.items.priceInvalid')] : []"
-        />
-        <v-text-field
           v-model="productionMinutesText"
           class="production-minutes-field mb-2"
           :label="t('admin.items.productionMinutes')"
@@ -142,12 +114,6 @@ function save(): void {
           :error-messages="
             productionMinutesAreUnreadable ? [t('admin.items.productionMinutesInvalid')] : []
           "
-        />
-        <AssignmentEditor
-          :item-name="name"
-          :stations="stations"
-          :selected-station-ids="stationIds"
-          @toggle="toggle"
         />
         <v-alert v-if="errorText !== null" class="error" type="error" variant="tonal">
           {{ errorText }}

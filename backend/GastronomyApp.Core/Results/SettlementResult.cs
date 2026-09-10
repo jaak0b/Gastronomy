@@ -10,7 +10,8 @@ public enum SettlementFailureReason
   UnknownOrderItemId,
   AmountPaidMissing,
   AmountPaidNegative,
-  SelectionSpansSeveralTables
+  SelectionSpansSeveralTables,
+  NoRunningFestival
 }
 
 public sealed record SettlementFailure

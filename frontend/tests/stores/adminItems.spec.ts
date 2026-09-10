@@ -5,9 +5,8 @@ import { useAdminItemsStore } from '../../src/stores/admin/items'
 const AN_ITEM = {
   name: 'Bratwurst',
   categoryId: 'category-speisen',
-  priceCents: 350,
   sortOrder: 1,
-  stationIds: ['11111111-1111-1111-1111-111111111111'],
+  productionMinutes: null,
 }
 
 function refuseWith(status: number, body: unknown) {
@@ -52,9 +51,9 @@ describe('an item the laptop would not save', () => {
   })
 
   it('keeps the reason the laptop named', async () => {
-    refuseWith(409, {
-      code: 'Conflict',
-      messageKey: 'admin.itemHasNoActiveStation',
+    refuseWith(400, {
+      code: 'ValidationFailed',
+      messageKey: 'admin.itemNameMissing',
       parameters: {},
       details: null,
     })
@@ -62,7 +61,7 @@ describe('an item the laptop would not save', () => {
 
     await items.save(AN_ITEM)
 
-    expect(items.errorMessage?.key).toBe('admin.itemHasNoActiveStation')
+    expect(items.errorMessage?.key).toBe('admin.itemNameMissing')
   })
 
   it('says the action did not work when the laptop cannot be reached at all', async () => {
@@ -72,15 +71,6 @@ describe('an item the laptop would not save', () => {
     await items.save(AN_ITEM)
 
     expect(items.errorMessage?.key).toBe('admin.actionFailed')
-  })
-
-  it('still asks for a station before it sends anything', async () => {
-    refuseWith(500, {})
-    const items = useAdminItemsStore()
-
-    await items.save({ ...AN_ITEM, stationIds: [] })
-
-    expect(items.errorMessage?.key).toBe('admin.itemNeedsAStation')
   })
 })
 
@@ -114,7 +104,7 @@ describe('an item the laptop would not switch on or off the menu', () => {
   it('keeps the reason the laptop named', async () => {
     refuseWith(422, {
       code: 'UnprocessableEntity',
-      messageKey: 'admin.itemHasNoActiveStation',
+      messageKey: 'admin.itemCategoryIsOff',
       parameters: {},
       details: null,
     })
@@ -122,6 +112,6 @@ describe('an item the laptop would not switch on or off the menu', () => {
 
     await items.setActive('item-1', true)
 
-    expect(items.errorMessage?.key).toBe('admin.itemHasNoActiveStation')
+    expect(items.errorMessage?.key).toBe('admin.itemCategoryIsOff')
   })
 })

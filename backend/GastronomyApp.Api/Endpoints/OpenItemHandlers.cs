@@ -41,19 +41,21 @@ public sealed class OpenItemsReader
     _logger = logger;
   }
 
-  public async Task<OpenItemsView> ReadAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
+  public async Task<OpenItemsView> ReadAsync(GastronomyAppDbContext dbContext,
+                                             Guid festivalId,
+                                             CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    List<OrderItem> openItems = await dbContext.OrderItems
-                                               .AsNoTracking()
-                                               .Where(item => item.SettledAtUtc == null)
-                                               .ToListAsync(cancellationToken);
+    IQueryable<OrderItem> itemsOfTheFestival = ItemsOfTheFestival(dbContext, festivalId);
 
-    List<OrderItem> givenAwayItems = await dbContext.OrderItems
-                                                    .AsNoTracking()
-                                                    .Where(_settlementService.WasGivenAwaySince(_clock.UtcNow - _givenAwayLookback))
-                                                    .ToListAsync(cancellationToken);
+    List<OrderItem> openItems = await itemsOfTheFestival
+                                     .Where(item => item.SettledAtUtc == null)
+                                     .ToListAsync(cancellationToken);
+
+    List<OrderItem> givenAwayItems = await itemsOfTheFestival
+                                          .Where(_settlementService.WasGivenAwaySince(_clock.UtcNow - _givenAwayLookback))
+                                          .ToListAsync(cancellationToken);
 
     OpenItemOwnerLookup lookup = await OwnersOfAsync(dbContext, [.. openItems, .. givenAwayItems], cancellationToken);
 
@@ -73,13 +75,30 @@ public sealed class OpenItemsReader
                lookup.OrderItemIdsWithoutAnOrder.Count);
   }
 
+  public IQueryable<OrderItem> ItemsOfTheFestival(GastronomyAppDbContext dbContext, Guid festivalId)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    IQueryable<Guid> sliceIdsOfAnotherFestival = from slice in dbContext.StationOrders.AsNoTracking()
+                                                 join order in dbContext.Orders.AsNoTracking()
+                                                   on slice.OrderId equals order.Id
+                                                 where order.FestivalId != festivalId
+                                                 select slice.Id;
+
+    return dbContext.OrderItems
+                    .AsNoTracking()
+                    .Where(item => !sliceIdsOfAnotherFestival.Contains(item.StationOrderId));
+  }
+
   public async Task<TableNamesView> ReadTableNamesAsync(GastronomyAppDbContext dbContext,
+                                                        Guid festivalId,
                                                         CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
     List<string> recentlyUsed = await dbContext.Orders
                                                .AsNoTracking()
+                                               .Where(order => order.FestivalId == festivalId)
                                                .OrderByDescending(order => order.GlobalOrderNumber)
                                                .Select(order => order.TableName)
                                                .Take(TableNamesFromTheMostRecentOrders)
@@ -247,21 +266,33 @@ public sealed class OpenItemQueryHandler
 {
   private readonly GastronomyAppDbContext _dbContext;
   private readonly OpenItemsReader _reader;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
 
-  public OpenItemQueryHandler(GastronomyAppDbContext dbContext, OpenItemsReader reader)
+  public OpenItemQueryHandler(GastronomyAppDbContext dbContext,
+                              OpenItemsReader reader,
+                              RunningFestivalLookup runningFestivalLookup)
   {
     _dbContext = dbContext;
     _reader = reader;
+    _runningFestivalLookup = runningFestivalLookup;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    return Results.Ok(await _reader.ReadAsync(_dbContext, cancellationToken));
+    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    return festival is null
+             ? Results.Ok(new OpenItemsView([], 0))
+             : Results.Ok(await _reader.ReadAsync(_dbContext, festival.Id, cancellationToken));
   }
 
   public async Task<IResult> ListTableNamesAsync(CancellationToken cancellationToken)
   {
-    return Results.Ok(await _reader.ReadTableNamesAsync(_dbContext, cancellationToken));
+    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    return festival is null
+             ? Results.Ok(new TableNamesView([]))
+             : Results.Ok(await _reader.ReadTableNamesAsync(_dbContext, festival.Id, cancellationToken));
   }
 }
 
@@ -274,6 +305,7 @@ public sealed class OrderItemSettlementHandler
   private readonly OpenItemsReader _reader;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly OrderItemSettlementService _settlementService;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public OrderItemSettlementHandler(GastronomyAppDbContext dbContext,
@@ -281,10 +313,12 @@ public sealed class OrderItemSettlementHandler
                                     OpenItemsReader reader,
                                     HubNotificationDispatcher dispatcher,
                                     ResultEnvelope resultEnvelope,
+                                    RunningFestivalLookup runningFestivalLookup,
                                     IClock clock,
                                     ILogger<OrderItemSettlementHandler> logger)
   {
     _dbContext = dbContext;
+    _runningFestivalLookup = runningFestivalLookup;
     _settlementService = settlementService;
     _reader = reader;
     _dispatcher = dispatcher;
@@ -293,9 +327,9 @@ public sealed class OrderItemSettlementHandler
     _logger = logger;
   }
 
-  public Task<IResult> SettleAsync(SettleItemsRequest request,
-                                   StaffDeviceCaller caller,
-                                   CancellationToken cancellationToken)
+  public async Task<IResult> SettleAsync(SettleItemsRequest request,
+                                         StaffDeviceCaller caller,
+                                         CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
@@ -305,10 +339,19 @@ public sealed class OrderItemSettlementHandler
       SettlementFailure amountIsMissing = new() { Reason = SettlementFailureReason.AmountPaidMissing };
       WarnAboutASettlementTheScreenCannotProduce(amountIsMissing, caller.StaffMemberId, request.AmountPaidCents);
 
-      return Task.FromResult(_resultEnvelope.ToResult(_resultEnvelope.Describe(amountIsMissing)));
+      return _resultEnvelope.ToResult(_resultEnvelope.Describe(amountIsMissing));
     }
 
-    return ApplyAsync(new()
+    if (await _runningFestivalLookup.FindAsync(cancellationToken) is null)
+    {
+      SettlementFailure noFestivalIsRunning = new() { Reason = SettlementFailureReason.NoRunningFestival };
+      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because no festival is running, so nothing was settled.",
+                         caller.StaffMemberId);
+
+      return _resultEnvelope.ToResult(_resultEnvelope.Describe(noFestivalIsRunning));
+    }
+
+    return await ApplyAsync(new()
                       {
                         OrderItemIds = request.OrderItemIds ?? [],
                         AmountPaidCents = amountPaidCents,

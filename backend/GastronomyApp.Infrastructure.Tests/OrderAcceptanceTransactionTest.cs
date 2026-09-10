@@ -1,4 +1,6 @@
-﻿using GastronomyApp.Core.Results;
+﻿using FakeItEasy;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +102,62 @@ public sealed class OrderAcceptanceTransactionTest
                       Assert.That(kitchenTicket.StationOrderNumber, Is.EqualTo(2));
                       Assert.That(barTicket.StationOrderNumber, Is.EqualTo(2));
                       Assert.That(second.Value.Order.GlobalOrderNumber, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_CounterMovedOnAfterThisContextReadIt_RetriesAndTakesTheNumberThatFollowsIt()
+  {
+    using SqliteTempFileFixture fixture = new();
+    var seedContext = fixture.CreateContext();
+    var seeded = await new DomainSeeder().SeedAsync(seedContext, TestContext.CurrentContext.CancellationToken);
+
+    var acceptanceContext = fixture.CreateContext();
+    await acceptanceContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId,
+                                                 TestContext.CurrentContext.CancellationToken);
+
+    var competingContext = fixture.CreateContext();
+    var competingFestival = await competingContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId,
+                                                                        TestContext.CurrentContext.CancellationToken);
+    competingFestival.NextOrderNumber = 5;
+    await competingContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    var transaction = new OrderAcceptanceComposition().Create(acceptanceContext);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(result.Value.Order.GlobalOrderNumber, Is.EqualTo(5));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_EveryAttemptLosesTheCounter_RefusesTheOrderAndWritesNothing()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    var alwaysContendedAllocator = A.Fake<INumberAllocator>();
+    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
+     .ThrowsAsync(new DbUpdateConcurrencyException());
+
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+
+    var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.OrderNumberCouldNotBeAllocated));
+                      Assert.That(orderCount, Is.EqualTo(0));
+                      A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
+                       .MustHaveHappened(5, Times.Exactly);
                     });
   }
 

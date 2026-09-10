@@ -262,6 +262,23 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     place to find it. When a contract genuinely has to change mid-flight, it changes in the written
     contract first and every affected agent is told, never in one side's code alone.
 
+    **The contract is essentially an API description, and it is never the specification of the
+    feature.** Its whole job is that both agents build halves that meet on the first run, so the
+    owner does not have to sit through several attempts before a feature works.
+
+    In: every route with its request and response shape, field names and types, status codes and
+    error codes, message keys, localization keys with their German and English text, event names, the
+    wire format of anything ambiguous such as a timestamp, and the few invariants both sides depend
+    on. Out: screen layouts, which component holds which control, dialog flows, the tests each side
+    writes, and the reasoning behind decisions already taken.
+
+    Apply one test to every line before it goes in: **could each agent get this right on its own and
+    still fail to meet the other?** If the answer is no, cut it: it belongs to whichever agent owns
+    that part of the tree, and putting it in the contract only makes a reviewer check it again and
+    again. Aim for something read at one sitting. The festival contract ignored all of this, ran past
+    a thousand lines, and cost nine review rounds and more than four hours before a single line of
+    code was written.
+
     The rule binds the main agent and every subagent, in different ways. The main agent writes the
     contract, owns it, and is the only one allowed to change it. A subagent obeys it literally.
     **A subagent that finds the contract cannot work stops at once.** It makes no further edits, it

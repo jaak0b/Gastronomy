@@ -5,6 +5,7 @@ import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../..
 import { assertNever } from '../../core/assertNever'
 import { request } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
+import FestivalsList from '../../components/admin/festivals/FestivalsList.vue'
 import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
@@ -18,13 +19,15 @@ bindLocaleToLaptop()
 
 const section = computed<AdminSection>(() => {
   const route = currentRoute.value
-  return route.name === 'admin' ? route.section : 'overview'
+  return route.name === 'admin' ? route.section : 'festivals'
 })
 
 const sections: AdminSection[] = ADMIN_SECTIONS
 
 function titleFor(value: AdminSection): string {
   switch (value) {
+    case 'festivals':
+      return t('admin.festivals.title')
     case 'overview':
       return t('admin.overview.title')
     case 'stations':
@@ -38,7 +41,7 @@ function titleFor(value: AdminSection): string {
   }
 }
 
-void request('/api/admin/stations').then((result) => {
+void request('/api/admin/festivals').then((result) => {
   isReachable.value = !(result.kind === 'error' && result.status === 404)
 })
 </script>
@@ -59,9 +62,10 @@ void request('/api/admin/stations').then((result) => {
         </v-tab>
       </v-tabs>
     </v-toolbar>
-    <AdminOverview v-if="section === 'overview'" />
+    <FestivalsList v-if="section === 'festivals'" />
+    <AdminOverview v-else-if="section === 'overview'" />
     <StationsList v-else-if="section === 'stations'" />
     <ItemsList v-else-if="section === 'items'" />
-    <StaffList v-else />
+    <StaffList v-else-if="section === 'staff'" />
   </div>
 </template>

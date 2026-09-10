@@ -1,4 +1,4 @@
-export type AdminSection = 'overview' | 'stations' | 'items' | 'staff'
+export type AdminSection = 'festivals' | 'overview' | 'stations' | 'items' | 'staff'
 
 export type AppRoute =
   | { name: 'enrolQr'; code: string }
@@ -8,12 +8,12 @@ export type AppRoute =
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection }
 
-const ADMIN_SECTIONS: AdminSection[] = ['overview', 'stations', 'items', 'staff']
+const ADMIN_SECTIONS: AdminSection[] = ['festivals', 'overview', 'stations', 'items', 'staff']
 
 function adminSectionFrom(segment: string | undefined): AdminSection {
   const wanted = (segment ?? '').toLowerCase()
   const match = ADMIN_SECTIONS.find((section) => section === wanted)
-  return match ?? 'overview'
+  return match ?? 'festivals'
 }
 
 export function resolveRoute(path: string): AppRoute {

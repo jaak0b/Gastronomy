@@ -119,11 +119,11 @@ The following are out of scope. They are listed so that a future change request 
 | Notifying a waiter that food is ready | Deliberate, and section 4.5 gives the reasoning. Whoever passes the station takes the tray. |
 | Stock, inventory, portion counts | An item is marked sold out by hand, in one tap, by whoever hears that the kitchen has run out. Counting portions is not attempted, because nobody will keep the count correct while serving. |
 | Table reservations or floor plans | Tables are moved during the evening. Managing them as objects is more work than the problem is worth. |
-| Zones or areas grouping stations | Almost every festival has one kitchen and one bar. Routing comes from the item itself, and section 3.1 describes the one remaining choice a waiter makes. |
+| Zones or areas grouping stations | Almost every festival has one kitchen and one bar. Routing comes from the item itself, and section 3.2 describes the one remaining choice a waiter makes. |
 | Cloud, remote access, multi-site | There is no internet on site. |
 | Accounts, usernames, passwords | Nobody will manage credentials at a festival. Section 2.4 describes what replaces them. |
 | Guest self-ordering | The waiter at the table is the product. |
-| Reporting and analytics beyond a list of the evening's orders | Nobody will read it. The status change log in section 3.7 exists so that the question "how long did the kitchen actually take" can be answered later from the database, not so that a screen can be built for it now. |
+| Reporting and analytics beyond a list of the evening's orders | Nobody will read it. The status change log in section 3.8 exists so that the question "how long did the kitchen actually take" can be answered later from the database, not so that a screen can be built for it now. |
 | Tray tracking, delivery confirmation | A waiter carries the tray. The app is not told when it arrives. |
 | Cancelling or correcting an order after it is placed | The moment an order is placed it is on a station's tablet and somebody may already be cooking it. Cancelling in software would tell the waiter the order is withdrawn while the kitchen carries on. Section 4.6 says what happens instead. |
 | Deleting or cleaning up a mistaken order | It stays in the database. No money moves through the app and nothing aggregates orders, so a wrong order costs a line in a list the treasurer skims once. |
@@ -266,7 +266,45 @@ holding the phone to fix something the screen never let them get wrong.
 
 ## 3. The decisions behind the model
 
-### 3.1 Stations, and how an item finds one
+### 3.1 The festival, and what belongs to it
+
+A festival is a named period with a start and an end, and it is the thing everything a waiter or a
+station sees belongs to. The fire department runs the same festivals again and again, at different
+places, with different stands and different goods, so the menu, the prices and the stations are facts
+about one festival rather than about the program.
+
+**The phones and the tablets follow whichever festival is running right now.** Running means the
+festival is not hidden and the current moment is at or after its start and before its end. Nobody
+picks a festival on a phone and no screen has a switch for it: the laptop works it out from the clock
+every time it is asked. When no festival is running the menu is simply empty, the open items list is
+empty, and a station tablet says that no festival is active. That is not an error state, it is what a
+Tuesday afternoon in March looks like.
+
+**The period is padded well beyond the real opening hours**, and that is the intended way to use it.
+A festival that runs from five in the afternoon until three in the morning is entered as noon until
+three the following afternoon. Nobody has to be at the laptop when it starts or ends, and nothing in
+the program treats the boundary as a special moment.
+
+**Stations and items are created once and reused.** A station belongs to a festival by being added to
+it, and an item goes onto a festival's menu with the price it costs there. Last year's price survives
+this year's, because the two prices sit on two different festivals. Two places that both have a
+kitchen are two stations, each named for its place, rather than one station that means something
+different depending on the weekend. Waiters are never tied to a festival: a waiter works at whichever
+one is running.
+
+**A festival can be copied**, and that is how a repeat location is set up. The copy starts with the
+same stations, the same items and the same prices, and the person at the laptop types only the name,
+the start and the end, then corrects the few prices that changed. The copy has no orders and its
+numbering starts at one.
+
+**A festival is hidden rather than deleted.** Hiding takes it out of the list without touching the
+orders that were placed at it, and a festival that is running cannot be hidden, because that would
+empty every phone and every tablet in the middle of service. A hidden festival can always be shown
+again, because no two festivals ever cover the same period in the first place. The laptop refuses a
+start and an end that run into another festival, and it counts the hidden ones too, so hiding a
+festival never frees its dates for a second one.
+
+### 3.2 Stations, and how an item finds one
 
 A station is a kitchen or a bar. There is no grouping above it: a station is the whole of the site
 structure the system models.
@@ -286,9 +324,11 @@ shift setting, and nothing about it is remembered for the next item or the next 
 carrying one tray to the marquee and the next to the terrace would otherwise be fighting a setting
 they never set.
 
-**An item can never be left with no station**, which is what keeps that rule free of a "nothing"
-case. The admin cannot save an item without one, and a station cannot be switched off while it is the
-last active station of any item still on the menu. The refusal names the items rather than simply
+**An item on a festival's menu can never be left with no station**, which is what keeps that rule
+free of a "nothing" case. The admin cannot put an item on a menu without naming at least one station
+of that festival, a station cannot be taken off a festival while it is the only one preparing
+something on that festival's menu, and a station cannot be switched off while it is the last active
+station of any item still on the menu of a festival that has not finished. The refusal names the items rather than simply
 saying no. A station also cannot be switched off while it still has unfinished work, and that refusal
 names how many. Because of those two rules there is no fallback station and no default station
 anywhere in the system.
@@ -296,7 +336,7 @@ anywhere in the system.
 The rule lives in one place and is used by order submission, by the phone's own preview and by the
 tests. It is not reimplemented anywhere.
 
-### 3.2 A table is free text, with suggestions
+### 3.3 A table is free text, with suggestions
 
 **A table is a name typed onto the order, not an entity that orders point to.** There is no table
 list to maintain.
@@ -319,14 +359,14 @@ moment it would be made.
 The open items screen groups on that exact name, so a table settles together rather than order by
 order.
 
-### 3.3 On the menu, and sold out, are two different things
+### 3.4 On the menu, and sold out, are two different things
 
 An item carries two separate flags, they are set by two different people at two different times, and
 the product never uses one word for both.
 
 | | Deactivated ("deaktiviert") | Sold out ("ausverkauft") |
 |---|---|---|
-| What it means | The item is not on this festival's menu | The item is on the menu and has run out tonight |
+| What it means | The item is not in use at all, at any festival | The item is on this festival's menu and has run out tonight |
 | Who sets it | The admin, at the laptop, setting up the event | Whoever hears that the kitchen has run out |
 | When | Before the event, between events | During service, and very often reversed twenty minutes later when somebody finds another crate |
 | How | The item editor, with a confirmation, because it is a considered edit | One toggle in the item list, one tap each way, no form and no dialog |
@@ -369,7 +409,7 @@ after the waiter has taken the cash, and handing money back in front of a guest 
 station being asked for something it has run out of. The block lives on the phone, before the money
 changes hands, and the laptop goes on accepting whatever reaches it.
 
-### 3.4 One device per owner
+### 3.5 One device per owner
 
 **A waiter has at most one phone, and a station has at most one tablet.** The owner points at the
 device rather than the other way round, because the question the product actually asks is "which
@@ -430,7 +470,7 @@ app and in every message the laptop sends them. The station page carries its own
 switch, because a tablet is set up once and then stands at a station all evening, and the person who
 works it may not be the person who set it up.
 
-### 3.5 An order keeps what the guest was told
+### 3.6 An order keeps what the guest was told
 
 **Every item on an order carries the name and the price as they stood when the order was taken.**
 Editing an item in the admin never changes an order that already exists.
@@ -457,7 +497,7 @@ read, so the two can never disagree with each other or with the rows underneath.
 be a second place for the same fact to live, and the first half-written transaction would leave them
 contradicting each other.
 
-### 3.6 Settlement is recorded per item
+### 3.7 Settlement is recorded per item
 
 **No money changes hands in the app.** It shows prices so the waiter can add up, and it records
 whether items have been settled so the people running the stand can see what a table still owes. It
@@ -532,7 +572,7 @@ because the choice decides whether anybody still expects cash at that table.
 recorded.** The second one is stored and nothing more: no screen shows it today. It is there for the
 takings-per-waiter figures the fire department will want after the festival.
 
-### 3.7 The status change log
+### 3.8 The status change log
 
 Every time an item's production status changes, one row is appended to a log, in the same transaction
 that writes the new status. Nothing in the log is ever updated or deleted.
@@ -731,16 +771,16 @@ built the way they are rather than in any simpler way:
 So every gap in a station's list means one thing and only one thing: that part of an order did not
 arrive, and the admin order list can name which order it belonged to in five seconds.
 
-### 5.2 Resetting the numbers
+### 5.2 Every festival counts from one
 
-Numbers count up continuously and are reset by hand, before a new festival, from the admin overview.
-The reset puts the order number and every station's own number back to 1 in one step, and orders
-already taken keep the numbers they have.
+Both counters belong to the festival. Its first order is number 1, and at every station of that
+festival the first slice is number 1 as well. A second festival starts at one again without anybody
+doing anything, and the orders of the festival before it keep the numbers they were given.
 
-It is a deliberate action rather than a scheduled one because the only person who knows that
-yesterday is over is the person standing at the laptop. Nothing about it deletes anything:
-yesterday's orders keep their numbers and stay in the database, and section 7.8 describes the backup
-that is taken with them.
+There is nothing to reset and no button to press, which is the point: the one thing a volunteer could
+forget on the evening has been taken away. A station that is added to a festival part way through
+starts at one there, and taking a station off a festival is refused once it has been sent any work,
+because a station that came back would repeat numbers its tablet had already shown.
 
 ---
 
@@ -998,7 +1038,7 @@ unaffected.
 **An item sold out, a price changed, or an item moved to another station while the basket was
 open.** The line stays, it is flagged, and the phone shows the price the laptop now names, which is
 also the price that travels back with the order. A flagged line holds the send back until the waiter
-takes it off with the one button that clears such lines (section 3.3).
+takes it off with the one button that clears such lines (section 3.4).
 
 **Two phones send the same order.** Not prevented, and not preventable: two waiters can genuinely
 take the same table. The station sees two orders with two different numbers, which is the same
@@ -1224,15 +1264,18 @@ else: the program opens the Windows firewall settings and does not pretend the r
 The order matters, because each step needs the one before it. The overview screen enforces it by
 naming the next missing thing rather than letting the admin wander.
 
-1. **Stations.** One per kitchen or bar. At a normal site this is two rows.
-2. **Categories.** The headings the items are sorted under, each with a colour, because on the phone
-   a category is a large coloured button.
-3. **Items and prices**, with a preparation time for anything that takes a while. Every item belongs
-   to exactly one category, which is why the categories come first.
-4. **Assignment.** Tick which stations can produce each item. An item must have at least one.
-5. **Reset the numbers**, if this is a new festival rather than a second evening of the same one.
-6. **Set up the station tablets.** One per station, from the stations page.
-7. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One waiter at
+1. **The festival.** Its name, its start and its end. Everything below belongs to it, so nothing else
+   can be done first. A festival like last year's is copied instead of typed again.
+2. **Stations.** One per kitchen or bar, and each one is added to this festival. At a normal site
+   this is two rows.
+3. **Categories.** The headings the items are sorted under, each with a colour, because on the phone
+   a category is a large coloured button. Categories are shared by every festival.
+4. **The menu.** Put each item on this festival's menu, with the price it costs here, the stations of
+   this festival that prepare it, and a preparation time for anything that takes a while. An item
+   needs at least one station, and every item belongs to exactly one category, which is why the
+   categories come first.
+5. **Set up the station tablets.** One per station, from the stations page.
+6. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One waiter at
    a time: put the person on the list, create their QR code, and they scan it.
 
 ### 7.5 Setup checklist, English
@@ -1245,20 +1288,28 @@ Print this page and take it with you.
    program may make a change: confirm it. The program uses that one moment to allow access from the
    network and to create its data folder, and it never asks again.
 2. In the program window, click "Open the admin pages".
-3. Create the stations, for example Kitchen and Bar.
-4. Create the categories the items are sorted under, for example Food and Drinks, and pick a colour for
+3. **Create the festival.** Give it a name, a start and an end, and set the period generously: if the
+   evening runs from five until three in the morning, enter noon until three the following afternoon.
+   Everything below belongs to this festival, so it comes first. If you ran this festival before, open
+   the old one and click "Copy" instead. The stations, the items and the prices come across, and you
+   only fill in the name and the dates and correct the prices that changed.
+4. Open the festival and add the stations to it, for example Kitchen and Bar. A station you used last
+   year is already in the list and only has to be added; a new one is created here.
+5. Create the categories the items are sorted under, for example Food and Drinks, and pick a colour for
    each one. On the phone a category is a large coloured button, and tapping it opens the items of
    that category with one button back to the list. Every item belongs to exactly one category, so
-   this step comes before the items. The "New category" button is at the bottom of the items page,
-   beside "New item".
-5. Enter the items with their prices. Where an item takes a while to make, fill in the preparation
-   time in minutes as well, so the waiters can tell a guest roughly how long they will wait. Leave the
-   field empty for drinks and anything else that is handed over right away.
-6. Tick, for each item, which stations can prepare it. Food usually gets only the kitchen. Beer at a
-   site with two bars gets both, and the waiter then picks one while taking the order.
+   this step comes before the items. Categories are shared by every festival, so renaming one here
+   renames it everywhere. The "New category" button is at the bottom of the items page, beside
+   "New item".
+6. Put the items on this festival's menu. For each one, enter the price it costs here and tick which
+   of this festival's stations prepare it. Food usually gets only the kitchen. Beer at a place with
+   two bars gets both, and the waiter then picks one while taking the order. Where an item takes a
+   while to make, fill in the preparation time in minutes as well, so the waiters can tell a guest
+   roughly how long they will wait. Leave that field empty for drinks and anything else that is handed
+   over right away.
 7. Take one phone, set it up, and place a couple of practice orders so you have seen the screens once
-   before the evening. Delete nothing afterwards: reset the numbers in step 13 and the practice orders
-   simply stay in the history.
+   before the evening. Delete nothing afterwards. If you would rather the evening started at order
+   number 1, practise on a festival you created for practising and create the real one afterwards.
 
 **On site, before the guests arrive**
 
@@ -1276,8 +1327,9 @@ Print this page and take it with you.
 12. Take one phone and scan the QR code shown on the admin pages. Seeing any page from the program at
     all is the proof that the devices reach the laptop. If nothing opens, go back to step 9, and then
     use "Repair the setup" in the program window.
-13. Reset the order numbers, so the evening starts at 1. Orders you took while practising keep the
-    numbers they already have.
+13. Check that the festival is running. Open the festivals page: the one for tonight has to say
+    "Running now". If it does not, the start or the end is wrong, and "Edit" on that row puts it
+    right.
 14. **Set up one tablet per station.** Open the stations page, tap "Set up the tablet" on the first
     station, and scan the QR code with the camera of the tablet that will stand there. The tablet then
     shows that station's orders and nothing else. Carry it to the station, plug it in, and leave it
@@ -1327,21 +1379,30 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
    einen Moment den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an, und danach fragt es
    nie wieder.
 2. Klicken Sie im Programmfenster auf "Verwaltung öffnen".
-3. Legen Sie die Ausgabestellen an, zum Beispiel Küche und Theke.
-4. Legen Sie die Kategorien an, unter denen die Artikel einsortiert werden, zum Beispiel Speisen und
+3. **Legen Sie das Fest an.** Geben Sie ihm einen Namen, einen Beginn und ein Ende, und fassen Sie den
+   Zeitraum großzügig: Wenn der Abend um 17 Uhr anfängt und um 3 Uhr endet, tragen Sie 12 Uhr bis 15
+   Uhr am nächsten Tag ein. Alles Weitere gehört zu diesem Fest, deshalb steht es am Anfang. Gab es
+   dieses Fest schon einmal, öffnen Sie das alte und klicken Sie auf "Kopieren". Die Ausgabestellen,
+   die Artikel und die Preise kommen mit, und Sie tragen nur den Namen und die Daten ein und ändern
+   die Preise, die sich geändert haben.
+4. Öffnen Sie das Fest und fügen Sie ihm die Ausgabestellen hinzu, zum Beispiel Küche und Theke. Eine
+   Ausgabestelle vom letzten Jahr steht schon in der Liste und muss nur hinzugefügt werden; eine neue
+   legen Sie hier an.
+5. Legen Sie die Kategorien an, unter denen die Artikel einsortiert werden, zum Beispiel Speisen und
    Getränke, und wählen Sie für jede eine Farbe. Auf dem Telefon ist eine Kategorie ein großer farbiger
    Knopf, und ein Tippen darauf öffnet die Artikel dieser Kategorie, mit einem Knopf zurück zur Liste.
-   Jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den Artikeln. Der
+   Jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den Artikeln. Die
+   Kategorien gelten für alle Feste: Wenn Sie hier eine umbenennen, heißt sie auf jedem Fest so. Der
    Knopf "Neue Kategorie" steht unten auf der Artikel-Seite, neben "Neuer Artikel".
-5. Tragen Sie die Artikel mit ihren Preisen ein. Wo ein Artikel eine Weile braucht, tragen Sie auch die
-   Zubereitungszeit in Minuten ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er
-   wartet. Bei Getränken und allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.
-6. Kreuzen Sie bei jedem Artikel an, welche Ausgabestellen ihn zubereiten können. Essen bekommt meist
+6. Setzen Sie die Artikel auf die Karte dieses Festes. Tragen Sie bei jedem den Preis ein, den er hier
+   kostet, und kreuzen Sie an, welche Ausgabestellen dieses Festes ihn zubereiten. Essen bekommt meist
    nur die Küche. Bier bekommt an einem Platz mit zwei Theken beide, und der Kellner wählt dann beim
-   Aufnehmen aus.
+   Aufnehmen aus. Wo ein Artikel eine Weile braucht, tragen Sie auch die Zubereitungszeit in Minuten
+   ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er wartet. Bei Getränken und
+   allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.
 7. Richten Sie ein Telefon ein und geben Sie ein paar Übungsbestellungen auf, damit Sie die Bildschirme
-   einmal gesehen haben. Löschen Sie danach nichts: Sie setzen in Schritt 13 die Nummern zurück, und
-   die Übungsbestellungen bleiben einfach im Verlauf stehen.
+   einmal gesehen haben. Löschen Sie danach nichts. Wenn der Abend bei Bestellung 1 anfangen soll,
+   üben Sie auf einem Fest, das Sie zum Üben angelegt haben, und legen Sie das richtige danach an.
 
 **Am Festplatz, bevor die Gäste kommen**
 
@@ -1361,8 +1422,9 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
     überhaupt eine Seite des Programms erscheint, ist der Beweis, dass die Geräte den Laptop
     erreichen. Wenn sich nichts öffnet, gehen Sie zurück zu Schritt 9 und nehmen Sie danach im
     Programmfenster "Einrichtung reparieren".
-13. Setzen Sie die Bestellnummern zurück, damit der Abend bei 1 anfängt. Die Bestellungen aus der
-    Übung behalten die Nummern, die sie schon haben.
+13. Prüfen Sie, ob das Fest läuft. Öffnen Sie die Seite Feste: Bei dem Fest von heute muss "Läuft
+    gerade" stehen. Steht es dort nicht, stimmt der Beginn oder das Ende nicht, und "Bearbeiten" in
+    dieser Zeile bringt es in Ordnung.
 14. **Richten Sie an jeder Ausgabestelle ein Tablet ein.** Öffnen Sie die Seite Ausgabestellen, tippen
     Sie bei der ersten Ausgabestelle auf "Tablet einrichten" und scannen Sie den QR-Code mit der Kamera
     des Tablets, das dort stehen soll. Danach zeigt das Tablet die Bestellungen genau dieser
@@ -1501,13 +1563,13 @@ If the fallback is wanted, it is a second hashed secret on the invitation, a cap
 and a screen, and it should be specified before it is built rather than pieced together from the
 leftover strings.
 
-**Event sessions and practice runs.** An earlier design scoped the numbering to a named evening and
-had a practice mode whose orders were kept out of the treasurer's figures. Neither exists. Numbering
-is reset by hand from the admin overview instead (section 5.2), and a practice order is simply an
-order that was taken before the numbers were reset.
+**A practice mode.** An earlier design had a practice mode whose orders were kept out of the
+treasurer's figures. It does not exist. The festival now carries the numbering (section 5.2), so an
+evening starts at one by itself, and anybody who wants their practice orders somewhere else creates a
+festival to practise on and the real one afterwards.
 
 **A curated list of table names in the admin.** The suggestions come from the table names already
-typed on orders (section 3.2). A few strings for an admin screen are left in the locale files and are
+typed on orders (section 3.3). A few strings for an admin screen are left in the locale files and are
 not reachable from anything.
 
 **The backup button and the diagnostics screen.** Section 7.8 explains why copying the database file
@@ -1523,7 +1585,7 @@ today. The format is worth keeping if it is asked for again, because the two det
 work, the semicolon and the byte order mark, are exactly the two a first attempt gets wrong.
 
 **A screen that names a waiter's takings.** Which waiter collected the money is recorded on every
-settled item (section 3.6), and nothing reads it back out yet.
+settled item (section 3.7), and nothing reads it back out yet.
 
 ### 8.3 Genuinely open
 
@@ -1540,5 +1602,5 @@ settled item (section 3.6), and nothing reads it back out yet.
 
 3. **Whether the production times the admin types turn out to be worth typing.** The estimate is only
    as good as the numbers behind it, and nobody has yet filled a real menu in. The status change log
-   in section 3.7 is what will answer this after the first festival: it holds how long each step
+   in section 3.8 is what will answer this after the first festival: it holds how long each step
    actually took, so the guesses can be compared against the evening rather than argued about.
