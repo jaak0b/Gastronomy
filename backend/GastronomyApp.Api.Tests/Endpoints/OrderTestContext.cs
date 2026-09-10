@@ -16,9 +16,10 @@ public sealed record OrderBody(
   IReadOnlyList<OrderItemBody> Items,
   bool SettleOnSend = false);
 
-public sealed record SettleItemsBody(IReadOnlyList<Guid> OrderItemIds);
-
-public sealed record SettleFreeOfChargeBody(IReadOnlyList<Guid> OrderItemIds, string? PaymentNotice);
+public sealed record SettleItemsBody(
+  IReadOnlyList<Guid> OrderItemIds,
+  int? AmountPaidCents,
+  string? PaymentNotice = null);
 
 public sealed class OrderTestContext : IAsyncDisposable
 {

@@ -36,18 +36,7 @@ public static class OpenItemEndpoints
                          CancellationToken cancellationToken) =>
                   {
                     var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
-                    return await handler.SettleAtTheDisplayedPriceAsync(request, caller, cancellationToken);
-                  });
-
-    group.MapPost("/settle-free-of-charge",
-                  async (SettleItemsFreeOfChargeRequest request,
-                         HttpContext httpContext,
-                         CallerIdentity callerIdentity,
-                         OrderItemSettlementHandler handler,
-                         CancellationToken cancellationToken) =>
-                  {
-                    var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
-                    return await handler.SettleFreeOfChargeAsync(request, caller, cancellationToken);
+                    return await handler.SettleAsync(request, caller, cancellationToken);
                   });
 
     return routes;

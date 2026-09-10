@@ -26,23 +26,15 @@ describe('the dialog after a second failed send, in German', () => {
     mountDialog()
 
     expect(textOf('.send-failed-twice-dialog .what-happened')).toBe(
-      'Das Telefon hat den Laptop zweimal nicht erreicht. Wir wissen nicht, ob die Bestellung trotzdem angekommen ist.',
+      'Der Laptop hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.',
     )
   })
 
-  it('asks for the order on a slip of paper', () => {
+  it('asks for the order on a slip of paper and for a look at the tablet', () => {
     mountDialog()
 
     expect(textOf('.send-failed-twice-dialog .write-it-down')).toBe(
-      'Schreiben Sie die Bestellung auf einen Zettel.',
-    )
-  })
-
-  it('says how the tablet at the station settles whether the slip is needed', () => {
-    mountDialog()
-
-    expect(textOf('.send-failed-twice-dialog .check-the-tablet')).toBe(
-      'Schauen Sie an der Ausgabestelle auf das Tablet. Steht die Bestellung dort schon, werfen Sie den Zettel weg. Steht sie nicht dort, geben Sie den Zettel ab.',
+      'Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet.',
     )
   })
 
@@ -65,23 +57,15 @@ describe('the dialog after a second failed send, in English', () => {
     mountDialog('en')
 
     expect(textOf('.send-failed-twice-dialog .what-happened')).toBe(
-      'The phone could not reach the laptop twice. We do not know whether the order arrived anyway.',
+      'The laptop did not answer either time. The order may have arrived anyway.',
     )
   })
 
-  it('asks for the order on a slip of paper', () => {
+  it('asks for the order on a slip of paper and for a look at the tablet', () => {
     mountDialog('en')
 
     expect(textOf('.send-failed-twice-dialog .write-it-down')).toBe(
-      'Write the order down on a slip of paper.',
-    )
-  })
-
-  it('says how the tablet at the station settles whether the slip is needed', () => {
-    mountDialog('en')
-
-    expect(textOf('.send-failed-twice-dialog .check-the-tablet')).toBe(
-      'Look at the tablet at the station. If the order is already there, throw the slip away. If it is not there, hand the slip over.',
+      'Write the order on a slip of paper and check the tablet at the station.',
     )
   })
 

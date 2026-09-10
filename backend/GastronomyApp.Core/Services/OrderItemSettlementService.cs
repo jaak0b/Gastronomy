@@ -6,13 +6,20 @@ namespace GastronomyApp.Core.Services;
 
 public sealed record SettlementRequest
 {
-  public required SettlementKind Kind { get; init; }
-
   public required IReadOnlyList<Guid> OrderItemIds { get; init; }
+
+  public required int AmountPaidCents { get; init; }
 
   public required Guid SettledByStaffMemberId { get; init; }
 
   public string? PaymentNotice { get; init; }
+}
+
+public sealed record SettlementCandidate
+{
+  public required OrderItem Item { get; init; }
+
+  public required string TableName { get; init; }
 }
 
 public sealed class OrderItemSettlementService
@@ -20,7 +27,7 @@ public sealed class OrderItemSettlementService
   private const int MaximumItemsInOneSettlement = 500;
 
   public Result<SettlementResult, SettlementFailure> Settle(SettlementRequest request,
-                                                            IReadOnlyCollection<OrderItem> knownItems,
+                                                            IReadOnlyCollection<SettlementCandidate> knownItems,
                                                             DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(request);
@@ -34,12 +41,12 @@ public sealed class OrderItemSettlementService
       return Result<SettlementResult, SettlementFailure>.Failed(shapeFailure);
     }
 
-    Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
-    List<OrderItem> selected = [];
+    Dictionary<Guid, SettlementCandidate> candidatesById = knownItems.ToDictionary(candidate => candidate.Item.Id);
+    List<SettlementCandidate> selected = [];
 
     foreach (var orderItemId in selectedIds)
     {
-      if (!itemsById.TryGetValue(orderItemId, out var item))
+      if (!candidatesById.TryGetValue(orderItemId, out var candidate))
       {
         return Result<SettlementResult, SettlementFailure>.Failed(new()
                                                                    {
@@ -48,15 +55,35 @@ public sealed class OrderItemSettlementService
                                                                    });
       }
 
-      selected.Add(item);
+      selected.Add(candidate);
     }
 
-    List<OrderItem> alreadySettled = [.. selected.Where(item => item.SettledAtUtc is not null)];
-    List<OrderItem> stillOpen = [.. selected.Where(item => item.SettledAtUtc is null)];
+    List<OrderItem> alreadySettled = [.. ItemsOf(selected.Where(candidate => candidate.Item.SettledAtUtc is not null))];
+    List<SettlementCandidate> stillOpenCandidates = [.. selected.Where(candidate => candidate.Item.SettledAtUtc is null)];
 
-    foreach (var item in stillOpen)
+    var tableFailure = ValidateOneTable(stillOpenCandidates);
+    if (tableFailure is not null)
     {
-      Apply(item, request, settledAtUtc);
+      return Result<SettlementResult, SettlementFailure>.Failed(tableFailure);
+    }
+
+    List<OrderItem> stillOpen = [.. ItemsOf(stillOpenCandidates)];
+
+    var noticeFailure = ValidatePaymentNotice(request, DisplayedTotalCentsOf(stillOpen));
+    if (noticeFailure is not null)
+    {
+      return Result<SettlementResult, SettlementFailure>.Failed(noticeFailure);
+    }
+
+    IReadOnlyList<int> chargedAmounts = ChargedAmountsOf(stillOpen, request.AmountPaidCents);
+
+    for (var index = 0; index < stillOpen.Count; index++)
+    {
+      MarkSettled(stillOpen[index],
+                  chargedAmounts[index],
+                  request.PaymentNotice,
+                  request.SettledByStaffMemberId,
+                  settledAtUtc);
     }
 
     return Result<SettlementResult, SettlementFailure>.Success(new()
@@ -104,59 +131,58 @@ public sealed class OrderItemSettlementService
                 && item.ChargedPriceCents < item.UnitPriceCents;
   }
 
-  public void SettleAtTheDisplayedPrice(OrderItem item, Guid settledByStaffMemberId, DateTime settledAtUtc)
+  public void MarkSettled(OrderItem item,
+                          int chargedPriceCents,
+                          string? paymentNotice,
+                          Guid settledByStaffMemberId,
+                          DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(item);
 
-    MarkSettled(item, item.UnitPriceCents, null, settledByStaffMemberId, settledAtUtc);
-  }
-
-  public void SettleFreeOfCharge(OrderItem item,
-                                 string paymentNotice,
-                                 Guid settledByStaffMemberId,
-                                 DateTime settledAtUtc)
-  {
-    ArgumentNullException.ThrowIfNull(item);
-    ArgumentNullException.ThrowIfNull(paymentNotice);
-
-    MarkSettled(item, 0, paymentNotice.Trim(), settledByStaffMemberId, settledAtUtc);
-  }
-
-  private void MarkSettled(OrderItem item,
-                           int chargedPriceCents,
-                           string? paymentNotice,
-                           Guid settledByStaffMemberId,
-                           DateTime settledAtUtc)
-  {
     if (settledByStaffMemberId == Guid.Empty)
     {
       throw new ArgumentException("A settled item has to name the staff member who collected the money.",
                                   nameof(settledByStaffMemberId));
     }
 
+    var written = NoticeWrittenIn(paymentNotice);
+
     item.SettledAtUtc = settledAtUtc;
     item.ChargedPriceCents = chargedPriceCents;
     item.SettledByStaffMemberId = settledByStaffMemberId;
-    item.PaymentNotice = paymentNotice;
+    item.PaymentNotice = written.Length == 0 ? null : written;
   }
 
-  private void Apply(OrderItem item, SettlementRequest request, DateTime settledAtUtc)
+  private IReadOnlyList<int> ChargedAmountsOf(IReadOnlyList<OrderItem> items, int amountPaidCents)
   {
-    switch (request.Kind)
+    if (items.Count == 0)
     {
-      case SettlementKind.AtTheDisplayedPrice:
-        SettleAtTheDisplayedPrice(item, request.SettledByStaffMemberId, settledAtUtc);
-        return;
-      case SettlementKind.FreeOfCharge:
-        SettleFreeOfCharge(item,
-                           request.PaymentNotice ?? string.Empty,
-                           request.SettledByStaffMemberId,
-                           settledAtUtc);
-        return;
-      default:
-        new Never().OfType<SettlementKind>(request.Kind);
-        return;
+      return [];
     }
+
+    var displayedTotalCents = DisplayedTotalCentsOf(items);
+    int[] chargedAmounts = new int[items.Count];
+
+    for (var index = 0; index < items.Count; index++)
+    {
+      chargedAmounts[index] = displayedTotalCents > 0
+                                ? (int)((long)amountPaidCents * items[index].UnitPriceCents / displayedTotalCents)
+                                : amountPaidCents / items.Count;
+    }
+
+    var centsLeftToHandOut = amountPaidCents - chargedAmounts.Sum();
+
+    for (var index = 0; index < centsLeftToHandOut; index++)
+    {
+      chargedAmounts[index % items.Count]++;
+    }
+
+    return chargedAmounts;
+  }
+
+  private int DisplayedTotalCentsOf(IReadOnlyList<OrderItem> items)
+  {
+    return items.Sum(item => item.UnitPriceCents);
   }
 
   private SettlementFailure? ValidateShape(SettlementRequest request, IReadOnlyList<Guid> selectedIds)
@@ -171,23 +197,57 @@ public sealed class OrderItemSettlementService
       return new() { Reason = SettlementFailureReason.TooManyItemsSelected };
     }
 
-    return request.Kind switch
+    if (request.AmountPaidCents < 0)
+    {
+      return new() { Reason = SettlementFailureReason.AmountPaidNegative };
+    }
+
+    return null;
+  }
+
+  private IEnumerable<OrderItem> ItemsOf(IEnumerable<SettlementCandidate> candidates)
+  {
+    return candidates.Select(candidate => candidate.Item);
+  }
+
+  private SettlementFailure? ValidateOneTable(IReadOnlyList<SettlementCandidate> stillOpen)
+  {
+    List<string> tableNames =
+    [
+      .. stillOpen.Select(candidate => candidate.TableName)
+                  .Distinct(StringComparer.Ordinal)
+                  .OrderBy(tableName => tableName, StringComparer.Ordinal)
+    ];
+
+    if (tableNames.Count <= 1)
+    {
+      return null;
+    }
+
+    return new()
            {
-             SettlementKind.AtTheDisplayedPrice => null,
-             SettlementKind.FreeOfCharge => ValidatePaymentNotice(request.PaymentNotice),
-             _ => new Never().OfType<SettlementFailure?>(request.Kind)
+             Reason = SettlementFailureReason.SelectionSpansSeveralTables,
+             TableNamesInTheSelection = tableNames
            };
   }
 
-  private SettlementFailure? ValidatePaymentNotice(string? paymentNotice)
+  private SettlementFailure? ValidatePaymentNotice(SettlementRequest request, int displayedTotalCents)
   {
-    var written = (paymentNotice ?? string.Empty).Trim();
+    if (request.AmountPaidCents >= displayedTotalCents)
+    {
+      return null;
+    }
 
-    if (written.Length == 0)
+    if (NoticeWrittenIn(request.PaymentNotice).Length == 0)
     {
       return new() { Reason = SettlementFailureReason.PaymentNoticeMissing };
     }
 
     return null;
+  }
+
+  private string NoticeWrittenIn(string? paymentNotice)
+  {
+    return (paymentNotice ?? string.Empty).Trim();
   }
 }

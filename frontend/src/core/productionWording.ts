@@ -47,27 +47,3 @@ export function advanceSliceKey(advance: ProductionAdvance): string {
       return assertNever(advance)
   }
 }
-
-export function openItemProductionKey(status: ProductionStatus): string {
-  switch (status) {
-    case 'waiting':
-      return 'openItems.production.waiting'
-    case 'inProduction':
-      return 'openItems.production.inProduction'
-    case 'finished':
-      return 'openItems.production.finished'
-    default:
-      return assertNever(status)
-  }
-}
-
-export function openItemDeliveryKey(deliveryMode: DeliveryMode): string {
-  switch (deliveryMode) {
-    case 'together':
-      return 'openItems.delivery.together'
-    case 'asItComes':
-      return 'openItems.delivery.asItComes'
-    default:
-      return assertNever(deliveryMode)
-  }
-}

@@ -3,6 +3,12 @@ import { assertNever } from './assertNever'
 
 const EURO_INPUT = /^\d+(?:[.,]\d{1,2})?$/
 
+const EURO_INPUT_BEING_TYPED = /^(?:\d+(?:[.,]\d{0,2})?)?$/
+
+export function canBeTypedIntoAEuroField(typed: string): boolean {
+  return EURO_INPUT_BEING_TYPED.test(typed)
+}
+
 export function parseEuroInput(typed: string): number | null {
   const trimmed = typed.trim()
   if (!EURO_INPUT.test(trimmed)) {

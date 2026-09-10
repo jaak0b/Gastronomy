@@ -1,5 +1,7 @@
 import type { OpenOrderItem, OpenTable, SettlementResponse } from './apiTypes'
 
+export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
+
 export interface SettleNotice {
   key: string
   parameters: Record<string, string | number>
@@ -36,10 +38,39 @@ export function isTheWholeTableSelected(
   )
 }
 
+export function tableHoldingTheSelection(
+  tables: readonly OpenTable[],
+  selectedItemIds: readonly string[],
+): string | null {
+  const holding = tables.find(
+    (table) => selectedItemsOfTable(table, selectedItemIds).length > 0,
+  )
+  return holding === undefined ? null : holding.tableName
+}
+
+export function tableOfItem(tables: readonly OpenTable[], orderItemId: string): string | null {
+  const owning = tables.find((table) => itemIdsOfTable(table).includes(orderItemId))
+  return owning === undefined ? null : owning.tableName
+}
+
+export function isHeldBackByAnotherTable(
+  tables: readonly OpenTable[],
+  selectedItemIds: readonly string[],
+  tableName: string,
+): boolean {
+  const holding = tableHoldingTheSelection(tables, selectedItemIds)
+  return holding !== null && holding !== tableName
+}
+
 export function withItemToggled(
   selectedItemIds: readonly string[],
+  tables: readonly OpenTable[],
   orderItemId: string,
 ): string[] {
+  const tableName = tableOfItem(tables, orderItemId)
+  if (tableName === null || isHeldBackByAnotherTable(tables, selectedItemIds, tableName)) {
+    return [...selectedItemIds]
+  }
   return selectedItemIds.includes(orderItemId)
     ? selectedItemIds.filter((id) => id !== orderItemId)
     : [...selectedItemIds, orderItemId]
@@ -47,9 +78,13 @@ export function withItemToggled(
 
 export function withWholeTable(
   selectedItemIds: readonly string[],
+  tables: readonly OpenTable[],
   table: OpenTable,
   isWanted: boolean,
 ): string[] {
+  if (isHeldBackByAnotherTable(tables, selectedItemIds, table.tableName)) {
+    return [...selectedItemIds]
+  }
   const idsOfTable = itemIdsOfTable(table)
   const untouched = selectedItemIds.filter((id) => !idsOfTable.includes(id))
   return isWanted ? [...untouched, ...idsOfTable] : untouched
@@ -65,6 +100,26 @@ export function withoutItemsThatAreGone(
 
 export function isPaymentNoticeWritten(reason: string): boolean {
   return reason.trim().length > 0
+}
+
+export function isPaymentNoticeNeeded(
+  amountPaidCents: number,
+  selectedTotalCents: number,
+): boolean {
+  return amountPaidCents < selectedTotalCents
+}
+
+export function canTheAmountBeSettled(
+  amountPaidCents: number | null,
+  reason: string,
+  selectedTotalCents: number,
+): boolean {
+  if (amountPaidCents === null) {
+    return false
+  }
+  return (
+    !isPaymentNoticeNeeded(amountPaidCents, selectedTotalCents) || isPaymentNoticeWritten(reason)
+  )
 }
 
 export function noticeAfterSettling(settlement: SettlementResponse): SettleNotice | null {

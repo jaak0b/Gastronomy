@@ -101,18 +101,25 @@ exactly the problems this section is looking for.
     listening for the kitchen instead of still for the bar. Set the bar up again with a tablet of its
     own before you go on, so the rest of the walkthrough has the two tablets it expects.
 21. **Place an order that splits, with two different answers.** The phone opens on the two categories,
-    each one a wide button in the colour you picked for it. Tap Speisen, add two of the kitchen item,
-    and tap the button back to the categories. The Speisen button now reads "2 x Speisen". Tap
-    Getränke, add two of the bar drink, and go back the same way. Then type a table name, and go to
+    each one a wide button in the colour you picked for it. Tap Speisen, add one of the kitchen item,
+    then tap "Hinweis" beside it and write something the kitchen needs to know, for example ohne
+    Zwiebeln, which puts a second one on the order carrying that note. Tap the button back to the
+    categories. The Speisen button now reads "2 x Speisen". Tap Getränke, add three of the bar drink,
+    and go back the same way. Then type a table name, and go to
     the summary. There are two cards, one
-    per station. Leave the kitchen on "Zusammen" and switch the bar to "Sobald fertig". The kitchen
-    card shows a waiting time built from its preparation minutes, and the bar card does not, because
-    its items go out one at a time. Scroll the summary up and down and watch the total and both send
-    buttons stay along the bottom the whole time. Send the order and read the confirmation with its
-    order number.
+    per station. Leave the kitchen on "Gesammelt ausgeben" and switch the bar to
+    "Einzeln ausgeben". The kitchen
+    card now carries a waiting time on its "Gesammelt ausgeben" button, built from the
+    preparation minutes standing in front of it, and the bar card carries none, because its items go
+    out one at a time. Scroll the summary up and down and watch the total and both send
+    buttons stay along the bottom the whole time. Tap "Bestellung senden". Nothing goes out yet. The
+    question lists the table, the amount, and one line per station saying what that station will do
+    with its part. Tap "Abbrechen" and check that the summary
+    stands exactly as you left it. Tap "Bestellung senden" again, confirm it this time, and
+    read the confirmation with its order number.
 22. **Watch it arrive.** Without touching either tablet, the kitchen's page gains one card in the left
     hand column, "Bestellungen, die zusammen rausgehen", carrying the order number and the kitchen's
-    own number for it. The bar's page gains two separate items in the right hand column, "Positionen,
+    own number for it. The bar's page gains three separate items in the right hand column, "Positionen,
     die rausgehen, sobald sie fertig sind". Neither tablet was reloaded and neither shows the other
     station's work.
 23. **Advance one item.** On the kitchen tablet, start one of the two items. It reads "in Zubereitung"
@@ -121,18 +128,26 @@ exactly the problems this section is looking for.
 24. **See the table name.** Marking something ready shows the table on the tablet, with the sentence
     telling somebody to write it on the tray. Nothing happens on the phone: no sound, no banner, no
     notification anywhere. That is the intended behaviour and this step exists to prove it.
-25. **Advance a whole card.** On the bar tablet, mark one of the two drinks ready. It leaves the
-    screen immediately, because it goes out as soon as it is ready, and the other one stays. On the
+25. **Advance a whole card.** On the bar tablet, mark one of the three drinks ready. It leaves the
+    screen immediately, because it goes out as soon as it is ready, and the other two stay. On the
     kitchen tablet, use the card's own button to move everything left on the card in one tap. When the
     last item is ready the card leaves the screen.
 26. **Ready is final.** Look for any way to move a ready item back on either tablet. There is none.
 27. **The open tables overview.** On the phone, open the open items screen. The table is there with
-    what it still owes. Each item says where it is in production and names its station, and says
-    whether it comes with the rest of the order or on its own. Advance an item on a tablet and watch
-    the phone's line change without a reload.
-28. **Settle.** Select part of the table and settle it at its displayed price. Those lines disappear
-    and the open amount drops. Select the rest and settle it free of charge with a typed reason. The
-    table's given-away section names the reason and the amount.
+    the five lines it still owes for, each one listed with the order number it came from and the
+    price the guest was quoted, and the one you wrote a note for carries that note. Tap "Liste neu
+    laden" and the same five lines come back, which is what the screen's own notices tell a waiter
+    to do when they cannot be sure what reached the laptop.
+28. **Settle.** Select one line of the table and tap the settle button, which sends the full price of
+    what you selected and asks nothing further. That line disappears and the open amount drops.
+    Select another line, tap the second button, type 0 as the amount, and try to confirm before
+    you have typed a reason: the confirming button does nothing. Type the reason and confirm. The
+    table's section for what was not collected names the reason and the amount. Select two of the
+    three lines that are left, tap the second button again, enter an amount smaller than what they
+    cost together, type a reason, and confirm. Those lines disappear as well, and the part nobody
+    paid shows up in that same section, which is the table that hands over twenty euro on a bigger
+    tab. Settle the last line with more than it costs, which needs no reason, because a guest is
+    allowed to round up.
 29. **The gap check.** Place three more orders to the kitchen and read the kitchen tablet's numbers.
     They run consecutively. That run is the whole loss detection mechanism and it is worth seeing once
     with your own eyes.
@@ -147,16 +162,16 @@ exactly the problems this section is looking for.
     three lines are marked there. The sold-out one still shows its price and still counts toward the
     total, because the laptop still names a price for it. The two whose items have left the menu show
     no price at all and add nothing to the total, so the figure you would read out is the figure the
-    laptop would record. Both send buttons are now dead, with a line under them telling you to take
-    the items off first. Tap "Nicht bestellbare Artikel entfernen": the marked lines go, the total
-    drops to what is left, and sending works again. Write down what you saw, because a festival is
-    the wrong place to find this out.
+    laptop would record. The two send buttons have left the strip at the bottom, and "Nicht
+    bestellbare Artikel entfernen" stands there in their place. Tap it: the marked lines go, the
+    total drops to what is left, and the send buttons are back. Write down what you saw, because a festival is the wrong place to find
+    this out.
 
 32. **A tap that arrives while the list is still moving.** Inside a category with more items than fit
     on the screen, flick the list hard and put your finger straight back down on the button at the
     bottom to stop it. Nothing happens, which is what should happen. Wait half a second and tap it
     again, and it answers at once. Do the same on the summary against the send buttons, where an
-    accidental tap would have sent the order.
+    accidental tap would start the order on its way.
 
     While you are there, take the second order of the evening as far as a category and use the
     phone's own back gesture. One press closes the category and shows the categories again, and a
@@ -164,8 +179,8 @@ exactly the problems this section is looking for.
     back to the summary you already sent.
 
 33. **An order that never reaches the laptop.** Build a full order on a phone and go to the
-    summary. Switch the phone's WiFi off and tap "Bestellung senden". The button reads "Wird
-    gesendet" and the phone gives up after about ten seconds: a red panel says the laptop was not
+    summary. Switch the phone's WiFi off, tap "Bestellung senden" and confirm the question that
+    follows. The button reads "Wird gesendet" and the phone gives up after about ten seconds: a red panel says the laptop was not
     reached, and the strip at the bottom now carries "Erneut senden" where the two send buttons
     stood. Time that pause once with a watch, because it is the whole point of the limit. Without
     it the phone would stand there for a minute waiting for the operating system to lose patience,
@@ -192,17 +207,18 @@ exactly the problems this section is looking for.
     may already exist.
 
     Tap "Erneut senden" with the WiFi still off. A dialog covers the screen and cannot be tapped
-    away: no cross, and a tap beside it does nothing. It tells you to write the order on a slip of
-    paper and to look at the tablet at the station, throwing the slip away if the order is already
-    there and handing it over if it is not. Switch the WiFi on and tap "Noch einmal versuchen": the
-    order goes through and the phone is back at the items with an empty order. Stage the two
-    failures once more, leave the WiFi off, and tap "Bestellung ist aufgeschrieben": the order is
-    cleared, a fresh one is started, and the tablet at the station is what tells you whether your
-    slip is needed.
+    away: no cross, and a tap beside it does nothing. Its heading reads in full, wrapping onto a
+    second line rather than breaking off mid-word, and its two buttons sit one above the other across
+    the full width of the card with their labels complete. It tells you to write the order on a slip
+    of paper and to look at the tablet at the station. Switch the WiFi on and tap "Noch einmal
+    versuchen": the order goes through and the phone is back at the items with an empty order. Stage
+    the two failures once more, leave the WiFi off, and tap "Bestellung ist aufgeschrieben": the
+    order is cleared, a fresh one is started, and the tablet at the station is what tells you whether
+    your slip is needed.
 
     Now the other kind of failure, the one where the laptop answers and the answer is no. Take one
-    more order with a single item on it, switch the WiFi off, and tap "Bestellung senden" so that the
-    order freezes the way it did above. With the WiFi still off, go to the laptop, open that item and
+    more order with a single item on it, switch the WiFi off, and tap "Bestellung senden" and confirm it, so that
+    the order freezes the way it did above. With the WiFi still off, go to the laptop, open that item and
     move it to a station it is not on yet, ticking the new one and unticking the old one so the item
     still has exactly one place to go. Switch the phone's WiFi back on and look at the summary
     without reloading it. The line is marked, saying that this station no longer prepares the item,
@@ -228,11 +244,12 @@ exactly the problems this section is looking for.
     With the WiFi on and nothing frozen, take a fresh order with one drink on it and leave the phone
     standing on the summary. On the laptop, open that drink and move it from the bar it is on to the
     other one. Without a reload, the phone marks the line under that bar's heading, saying that this
-    station no longer prepares the item. Both send buttons are dead and the line under them tells you
-    to remove the item. Tap "Nicht bestellbare Artikel entfernen", go back to the items and add the
-    drink again: it goes to the other bar without asking, because that is the only bar left, and the
-    order sends. The laptop would have refused this order, and the point of the step is that it never
-    had to.
+    station no longer prepares the item. The two send buttons have left the strip at the bottom, and
+    "Nicht bestellbare Artikel entfernen" stands there in their place. Tap it, go back to the items
+    and add the drink again:
+    it goes to the other bar without asking, because that is the only bar left, and the order
+    sends. The laptop would have refused this order, and the point of the step is that it never had
+    to.
 
 35. **The question about which bar makes it, and backing out of it.** On the laptop, tick both
     stations on one drink so either can pour it. On the phone, tap that drink: the phone asks which
@@ -247,7 +264,7 @@ exactly the problems this section is looking for.
     waiter's row, the way you would for somebody who has handed their phone to the next shift. Leave
     the code standing on the screen and do not scan it yet.
 
-    Switch the phone's WiFi back on and tap "Bestellung senden". The phone does not tell you that the
+    Switch the phone's WiFi back on, tap "Bestellung senden" and confirm it. The phone does not tell you that the
     laptop could not be reached, because it was reached: it shows the screen that asks for the phone
     to be set up, with the notice that the order you had started is still there. That notice is the
     step: an order a guest gave a waiter is not thrown away because somebody tapped a row on the

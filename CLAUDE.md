@@ -27,7 +27,10 @@ Flow:
    Each catalog item may carry a production time in minutes. The phone shows the server an estimate
    per item and per slice, computed from the station's current queue plus the item's own time.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
-   table's items later, or settle them at zero with a typed reason when something is given away.
+   table's items later. Settling always names the amount the table actually paid: the full price in
+   one tap, or any other amount the server types, which needs a typed reason whenever it falls short.
+   Giving something away is that same act with the amount set to zero, not a second kind of
+   settlement.
 
 **No money changes hands in the app.** It displays prices to help the server add up, and it records
 whether items have been settled so the people running the stand can see what a table still owes. It

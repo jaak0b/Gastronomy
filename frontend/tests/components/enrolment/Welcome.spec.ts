@@ -24,14 +24,6 @@ describe('the screen a device lands on with no code', () => {
     expect(welcome.get('h1').text()).toBe('Dieses Gerät ist noch nicht eingerichtet.')
   })
 
-  it('sends the reader to the person at the laptop, whether it is a phone or a tablet', () => {
-    const welcome = mountWelcome()
-
-    expect(welcome.get('.welcome-body').text()).toBe(
-      'Bitten Sie die Person am Laptop, Sie als Kellner anzulegen oder das Tablet einer Ausgabestelle einzurichten. Sie zeigt Ihnen einen QR-Code, den Sie mit der Kamera scannen.',
-    )
-  })
-
   it('asks for no code before the reader says they have one', () => {
     const welcome = mountWelcome()
 

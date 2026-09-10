@@ -31,7 +31,7 @@ function noted(index: number, note: string): ItemPosition {
 function mountRow(isAvailable: boolean, positions: ItemPosition[]) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions, language: 'de' as const },
+    props: { item: item(isAvailable), positions, language: 'de' as const, readyInMinutes: null },
     global: { plugins: [createVuetify(), i18n] },
     attachTo: document.body,
   })
@@ -248,44 +248,47 @@ describe('the length of a note on one line', () => {
   })
 })
 
-function mountRowReadyIn(minutes: number | null, locale: 'de' | 'en' = 'de') {
+function mountRowReadyIn(
+  minutes: number | null,
+  locale: 'de' | 'en' = 'de',
+  isAvailable = true,
+) {
   const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(ItemRow, {
-    props: { item: item(true), positions: [], language: locale, readyInMinutes: minutes },
+    props: { item: item(isAvailable), positions: [], language: locale, readyInMinutes: minutes },
     global: { plugins: [createVuetify(), i18n] },
     attachTo: document.body,
   })
 }
 
 describe('the waiting time written on an item row', () => {
-  it('stays short enough in German to sit beside the name and the price', () => {
+  it('rides in the item name in German, short enough to leave the price its place', () => {
     const row = mountRowReadyIn(6)
 
-    expect(row.get('.ready-in').text()).toBe('ca. 6 Minuten')
+    expect(row.get('.name').text()).toBe('Wasser (~6 Min.)')
   })
 
   it('stays just as short in English', () => {
     const row = mountRowReadyIn(6, 'en')
 
-    expect(row.get('.ready-in').text()).toBe('about 6 minutes')
-  })
-
-  it('writes a single minute in the singular', () => {
-    const row = mountRowReadyIn(1)
-
-    expect(row.get('.ready-in').text()).toBe('ca. 1 Minute')
-  })
-
-  it('keeps a place of its own in the row, so the name stays easy to pick out', () => {
-    const row = mountRowReadyIn(6)
-
-    expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.ready-in').text()).not.toContain('Wasser')
+    expect(row.get('.name').text()).toBe('Wasser (~6 min)')
   })
 
   it('says right away when there is nothing to wait for', () => {
     const row = mountRowReadyIn(0)
 
-    expect(row.get('.ready-in').text()).toBe('Sofort fertig')
+    expect(row.get('.name').text()).toBe('Wasser (~0 Min.)')
+  })
+
+  it('names the item alone when it carries no time of its own', () => {
+    const row = mountRowReadyIn(null)
+
+    expect(row.get('.name').text()).toBe('Wasser')
+  })
+
+  it('names a sold out item alone, because nobody can order it and wait for it', () => {
+    const row = mountRowReadyIn(6, 'de', false)
+
+    expect(row.get('.name').text()).toBe('Wasser')
   })
 })

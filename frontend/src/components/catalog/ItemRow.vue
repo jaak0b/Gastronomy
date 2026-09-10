@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
 import { itemState } from '../../core/catalogItemState'
 import { assertNever } from '../../core/assertNever'
+import { withEstimate } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 
@@ -41,13 +42,9 @@ const isSoldOut = computed(() => {
 
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
 
-const readyText = computed(() => {
-  const minutes = props.readyInMinutes
-  if (minutes === null) {
-    return null
-  }
-  return minutes === 0 ? t('catalog.readyNow') : t('catalog.readyIn', { count: minutes }, minutes)
-})
+const nameWithEstimate = computed(() =>
+  withEstimate(props.item.name, isSoldOut.value ? null : props.readyInMinutes, t),
+)
 
 const groups = computed(() => groupPositions(props.positions))
 
@@ -110,13 +107,11 @@ function mostRecentOf(group: PositionGroup): number {
       <v-btn
         class="add flex-grow-1"
         variant="text"
-        height="64"
         :disabled="isSoldOut"
         @click="emit('add')"
       >
-        <span class="name text-body-1">{{ item.name }}</span>
+        <span class="name text-body-1">{{ nameWithEstimate }}</span>
         <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
-        <span v-else-if="readyText !== null" class="ready-in text-caption">{{ readyText }}</span>
         <span class="price text-body-1">{{ price }}</span>
       </v-btn>
       <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
@@ -195,16 +190,52 @@ function mostRecentOf(group: PositionGroup): number {
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
+.item-line {
+  min-width: 0;
+}
+
+.remove-one,
+.add-note {
+  align-self: stretch;
+  flex: 0 0 auto;
+  height: auto;
+  border-radius: 8px;
+}
+
+.add {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 64px;
+  height: auto;
+  padding-block: 0.5rem;
+}
+
 .add :deep(.v-btn__content) {
   display: flex;
   width: 100%;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  white-space: normal;
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.price,
+.sold-out {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .count {
   min-width: 2ch;
   text-align: center;
+  align-self: center;
 }
 
 .group-label {

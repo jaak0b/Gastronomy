@@ -1,11 +1,8 @@
 import type { CatalogItem, DeliveryMode, StationEstimate } from './apiTypes'
 import { assertNever } from './assertNever'
 
-export function readyInMinutes(
-  queuedMinutes: number,
-  productionMinutes: number | null,
-): number {
-  return queuedMinutes + (productionMinutes ?? 0)
+export function readyInMinutes(queuedMinutes: number, productionMinutes: number): number {
+  return queuedMinutes + productionMinutes
 }
 
 export function queuedMinutesAt(
@@ -33,8 +30,23 @@ export function pickerEstimateMinutes(
   item: CatalogItem,
   estimates: readonly StationEstimate[],
 ): number | null {
+  const productionMinutes = item.productionMinutes
+  if (productionMinutes === null) {
+    return null
+  }
   const perStation = item.stationIds.map((stationId) =>
-    readyInMinutes(queuedMinutesAt(estimates, stationId), item.productionMinutes),
+    readyInMinutes(queuedMinutesAt(estimates, stationId), productionMinutes),
   )
   return perStation.length === 0 ? null : Math.min(...perStation)
+}
+
+export function lineEstimateMinutes(
+  estimates: readonly StationEstimate[],
+  stationId: string | null,
+  productionMinutes: number | null,
+): number | null {
+  if (stationId === null || productionMinutes === null) {
+    return null
+  }
+  return readyInMinutes(queuedMinutesAt(estimates, stationId), productionMinutes)
 }

@@ -15,7 +15,9 @@ import {
   withWholeTable,
   withoutItemsThatAreGone,
   type SettleNotice,
+  type SettleOutcome,
 } from '../core/openItems'
+import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
@@ -89,22 +91,22 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   function toggleItem(orderItemId: string): void {
     dismissNotice()
-    selectedItemIds.value = withItemToggled(selectedItemIds.value, orderItemId)
+    selectedItemIds.value = withItemToggled(selectedItemIds.value, tables.value, orderItemId)
   }
 
   function setWholeTable(table: OpenTable, isWanted: boolean): void {
     dismissNotice()
-    selectedItemIds.value = withWholeTable(selectedItemIds.value, table, isWanted)
+    selectedItemIds.value = withWholeTable(selectedItemIds.value, tables.value, table, isWanted)
   }
 
-  async function accept(result: ApiResult<SettlementResponse>): Promise<boolean> {
+  async function accept(result: ApiResult<SettlementResponse>): Promise<SettleOutcome> {
     isSettling.value = false
     switch (result.kind) {
       case 'ok':
         notice.value = noticeAfterSettling(result.data)
         selectedItemIds.value = []
         await load()
-        return true
+        return 'accepted'
       case 'error':
         notice.value = {
           key: result.body?.messageKey ?? 'openItems.settleFailed',
@@ -112,33 +114,26 @@ export const useOpenItemsStore = defineStore('openItems', () => {
           count: null,
         }
         await load()
-        return false
+        return 'refused'
       case 'unreachable':
-        notice.value = { key: 'openItems.settleNotReached', parameters: {}, count: null }
-        return false
+        notice.value = { key: 'openItems.settleAnswerNeverCame', parameters: {}, count: null }
+        return 'answerNeverCame'
       default:
         return assertNever(result)
     }
   }
 
-  async function settle(): Promise<boolean> {
+  async function settle(
+    amountPaidCents: number,
+    paymentNotice: string | null,
+  ): Promise<SettleOutcome> {
     isSettling.value = true
     return await accept(
       await request<SettlementResponse>('/api/open-items/settle', {
         method: 'POST',
-        body: { orderItemIds: [...selectedItemIds.value] },
+        body: { orderItemIds: [...selectedItemIds.value], amountPaidCents, paymentNotice },
         token: deviceToken(),
-      }),
-    )
-  }
-
-  async function settleFreeOfCharge(paymentNotice: string): Promise<boolean> {
-    isSettling.value = true
-    return await accept(
-      await request<SettlementResponse>('/api/open-items/settle-free-of-charge', {
-        method: 'POST',
-        body: { orderItemIds: [...selectedItemIds.value], paymentNotice },
-        token: deviceToken(),
+        timeoutMs: SEND_TIMEOUT_MS,
       }),
     )
   }
@@ -160,6 +155,5 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     toggleItem,
     setWholeTable,
     settle,
-    settleFreeOfCharge,
   }
 })

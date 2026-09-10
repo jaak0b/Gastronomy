@@ -83,9 +83,6 @@ export interface OpenOrderItem {
   note: string | null
   unitPriceCents: number
   orderedAtUtc: string
-  stationName: string
-  deliveryMode: DeliveryMode
-  productionStatus: ProductionStatus
 }
 
 export interface GivenAwayOrderItem {

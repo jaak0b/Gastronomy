@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, OpenOrderItem, OpenTable } from '../../core/apiTypes'
+import type { AppLanguage, OpenTable } from '../../core/apiTypes'
 import { isTheWholeTableSelected } from '../../core/openItems'
-import { openItemDeliveryKey, openItemProductionKey } from '../../core/productionWording'
 import { formatPrice } from '../../core/totals'
 
 const props = defineProps<{
   table: OpenTable
   selectedItemIds: string[]
   language: AppLanguage
+  isHeldBackByAnotherTable: boolean
 }>()
 const emit = defineEmits<{
   'toggle-item': [orderItemId: string]
@@ -30,19 +30,29 @@ function isSelected(orderItemId: string): boolean {
   return props.selectedItemIds.includes(orderItemId)
 }
 
-function productionTextOf(item: OpenOrderItem): string {
-  return t(openItemProductionKey(item.productionStatus), { station: item.stationName })
+function toggleItem(orderItemId: string): void {
+  if (props.isHeldBackByAnotherTable) {
+    return
+  }
+  emit('toggle-item', orderItemId)
 }
 
-function deliveryTextOf(item: OpenOrderItem): string {
-  return t(openItemDeliveryKey(item.deliveryMode))
+function setWholeTable(): void {
+  if (props.isHeldBackByAnotherTable) {
+    return
+  }
+  emit('set-whole-table', !wholeTableIsSelected.value)
 }
 </script>
 
 <template>
-  <v-expansion-panel class="open-table" :value="table.tableName">
+  <v-expansion-panel
+    class="open-table"
+    :value="table.tableName"
+    :disabled="isHeldBackByAnotherTable"
+  >
     <v-expansion-panel-title>
-      <span class="table-name text-h6">{{ table.tableName }}</span>
+      <span class="table-name text-h6">{{ t('openItems.tableIs', { name: table.tableName }) }}</span>
       <v-spacer />
       <span class="open-amount text-body-1">
         {{ t('openItems.tableOpen', { amount: priceOf(table.openAmountCents) }) }}
@@ -54,16 +64,18 @@ function deliveryTextOf(item: OpenOrderItem): string {
           class="whole-table"
           density="comfortable"
           hide-details
+          :disabled="isHeldBackByAnotherTable"
           :label="t('openItems.wholeTable')"
           :model-value="wholeTableIsSelected"
-          @update:model-value="emit('set-whole-table', !wholeTableIsSelected)"
+          @update:model-value="setWholeTable"
         />
         <v-list class="open-lines" lines="three">
           <v-list-item
             v-for="item in table.items"
             :key="item.orderItemId"
             class="open-line"
-            @click="emit('toggle-item', item.orderItemId)"
+            :disabled="isHeldBackByAnotherTable"
+            @click="toggleItem(item.orderItemId)"
           >
             <template #prepend>
               <v-checkbox-btn
@@ -78,12 +90,6 @@ function deliveryTextOf(item: OpenOrderItem): string {
             </v-list-item-subtitle>
             <v-list-item-subtitle v-if="item.note !== null" class="line-note">
               {{ t('openItems.itemNote', { note: item.note }) }}
-            </v-list-item-subtitle>
-            <v-list-item-subtitle class="line-production">
-              {{ productionTextOf(item) }}
-            </v-list-item-subtitle>
-            <v-list-item-subtitle class="line-delivery">
-              {{ deliveryTextOf(item) }}
             </v-list-item-subtitle>
             <template #append>
               <span class="line-price text-body-1">{{ priceOf(item.unitPriceCents) }}</span>
@@ -123,3 +129,30 @@ function deliveryTextOf(item: OpenOrderItem): string {
     </v-expansion-panel-text>
   </v-expansion-panel>
 </template>
+
+<style scoped>
+.line-name,
+.line-origin,
+.line-note,
+.given-away-name,
+.given-away-origin,
+.given-away-reason {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+.line-price,
+.given-away-price {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding-inline-start: 0.75rem;
+}
+
+.open-line,
+.given-away-line {
+  min-height: 0;
+  padding-block: 0.75rem;
+}
+</style>

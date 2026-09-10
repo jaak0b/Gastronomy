@@ -3,7 +3,6 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
@@ -18,9 +17,7 @@ public sealed record OpenItemOwner(
   Guid OrderId,
   string TableName,
   int GlobalOrderNumber,
-  DateTime OrderedAtUtc,
-  string StationName,
-  DeliveryMode DeliveryMode);
+  DateTime OrderedAtUtc);
 
 public sealed record OpenItemOwnerLookup(
   IReadOnlyDictionary<Guid, OpenItemOwner> Owners,
@@ -108,16 +105,27 @@ public sealed class OpenItemsReader
                                            .Where(item => ids.Contains(item.Id))
                                            .ToListAsync(cancellationToken);
 
-    OpenItemOwnerLookup lookup = await OwnersOfAsync(dbContext, items, cancellationToken);
+    IReadOnlyDictionary<Guid, string> tableNames = await TableNameByOrderItemIdAsync(dbContext, items, cancellationToken);
 
     return
     [
-      .. lookup.Owners
-               .Values
-               .Select(owner => owner.TableName)
-               .Distinct(StringComparer.Ordinal)
-               .OrderBy(tableName => tableName, StringComparer.Ordinal)
+      .. tableNames.Values
+                   .Distinct(StringComparer.Ordinal)
+                   .OrderBy(tableName => tableName, StringComparer.Ordinal)
     ];
+  }
+
+  public async Task<IReadOnlyDictionary<Guid, string>> TableNameByOrderItemIdAsync(
+    GastronomyAppDbContext dbContext,
+    IReadOnlyCollection<OrderItem> items,
+    CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(items);
+
+    OpenItemOwnerLookup lookup = await OwnersOfAsync(dbContext, items, cancellationToken);
+
+    return lookup.Owners.ToDictionary(owner => owner.Key, owner => owner.Value.TableName);
   }
 
   private IReadOnlyCollection<OrderItem> ItemsOf(Dictionary<string, List<OrderItem>> byTable, string tableName)
@@ -158,10 +166,7 @@ public sealed class OpenItemsReader
                                               item.ItemName,
                                               item.Note,
                                               item.UnitPriceCents,
-                                              lookup.Owners[item.Id].OrderedAtUtc,
-                                              lookup.Owners[item.Id].StationName,
-                                              lookup.Owners[item.Id].DeliveryMode,
-                                              item.ProductionStatus))
+                                              lookup.Owners[item.Id].OrderedAtUtc))
         .OrderBy(view => view.GlobalOrderNumber)
         .ThenBy(view => view.ItemName, StringComparer.Ordinal)
     ];
@@ -206,15 +211,6 @@ public sealed class OpenItemsReader
     Dictionary<Guid, StationOrder> stationOrderById =
       stationOrders.ToDictionary(stationOrder => stationOrder.Id);
 
-    List<Guid> stationIds = [.. stationOrders.Select(stationOrder => stationOrder.StationId).Distinct()];
-
-    Dictionary<Guid, string> stationNames = await dbContext.Stations
-                                                           .AsNoTracking()
-                                                           .Where(station => stationIds.Contains(station.Id))
-                                                           .ToDictionaryAsync(station => station.Id,
-                                                                              station => station.Name,
-                                                                              cancellationToken);
-
     Dictionary<Guid, OpenItemOwner> owners = [];
     List<Guid> withoutAnOrder = [];
 
@@ -230,11 +226,7 @@ public sealed class OpenItemsReader
       owners[item.Id] = new(order.Id,
                             order.TableName,
                             order.GlobalOrderNumber,
-                            order.CreatedAtUtc,
-                            stationNames.TryGetValue(stationOrder.StationId, out var stationName)
-                              ? stationName
-                              : string.Empty,
-                            stationOrder.DeliveryMode);
+                            order.CreatedAtUtc);
     }
 
     if (withoutAnOrder.Count > 0)
@@ -301,33 +293,25 @@ public sealed class OrderItemSettlementHandler
     _logger = logger;
   }
 
-  public Task<IResult> SettleAtTheDisplayedPriceAsync(SettleItemsRequest request,
-                                                      StaffDeviceCaller caller,
-                                                      CancellationToken cancellationToken)
+  public Task<IResult> SettleAsync(SettleItemsRequest request,
+                                   StaffDeviceCaller caller,
+                                   CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    return ApplyAsync(new()
-                      {
-                        Kind = SettlementKind.AtTheDisplayedPrice,
-                        OrderItemIds = request.OrderItemIds ?? [],
-                        SettledByStaffMemberId = caller.StaffMemberId
-                      },
-                      cancellationToken);
-  }
+    if (request.AmountPaidCents is not { } amountPaidCents)
+    {
+      SettlementFailure amountIsMissing = new() { Reason = SettlementFailureReason.AmountPaidMissing };
+      WarnAboutASettlementTheScreenCannotProduce(amountIsMissing, caller.StaffMemberId, request.AmountPaidCents);
 
-  public Task<IResult> SettleFreeOfChargeAsync(SettleItemsFreeOfChargeRequest request,
-                                               StaffDeviceCaller caller,
-                                               CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-    ArgumentNullException.ThrowIfNull(caller);
+      return Task.FromResult(_resultEnvelope.ToResult(_resultEnvelope.Describe(amountIsMissing)));
+    }
 
     return ApplyAsync(new()
                       {
-                        Kind = SettlementKind.FreeOfCharge,
                         OrderItemIds = request.OrderItemIds ?? [],
+                        AmountPaidCents = amountPaidCents,
                         SettledByStaffMemberId = caller.StaffMemberId,
                         PaymentNotice = request.PaymentNotice
                       },
@@ -346,8 +330,11 @@ public sealed class OrderItemSettlementHandler
                                                                                      .Where(item => ids.Contains(item.Id))
                                                                                      .ToListAsync(transactionCancellationToken);
 
+                                          IReadOnlyCollection<SettlementCandidate> candidates =
+                                            await CandidatesOfAsync(selected, transactionCancellationToken);
+
                                           Result<SettlementResult, SettlementFailure> outcome =
-                                            _settlementService.Settle(request, selected, _clock.UtcNow);
+                                            _settlementService.Settle(request, candidates, _clock.UtcNow);
 
                                           if (outcome.IsSuccess)
                                           {
@@ -364,6 +351,10 @@ public sealed class OrderItemSettlementHandler
 
     if (!settlement.IsSuccess)
     {
+      WarnAboutASettlementTheScreenCannotProduce(settlement.Failure,
+                                                request.SettledByStaffMemberId,
+                                                request.AmountPaidCents);
+
       return _resultEnvelope.ToResult(_resultEnvelope.Describe(settlement.Failure));
     }
 
@@ -374,6 +365,43 @@ public sealed class OrderItemSettlementHandler
                               || await TellTheOtherPhonesWithoutFailingTheSettlementAsync(settledIds, cancellationToken);
 
     return Results.Ok(new SettlementView(settledIds, alreadySettledIds, otherPhonesWereTold));
+  }
+
+  private async Task<IReadOnlyCollection<SettlementCandidate>> CandidatesOfAsync(
+    IReadOnlyCollection<OrderItem> selected,
+    CancellationToken cancellationToken)
+  {
+    IReadOnlyDictionary<Guid, string> tableNames =
+      await _reader.TableNameByOrderItemIdAsync(_dbContext, selected, cancellationToken);
+
+    return
+    [
+      .. selected.Where(item => tableNames.ContainsKey(item.Id))
+                 .Select(item => new SettlementCandidate { Item = item, TableName = tableNames[item.Id] })
+    ];
+  }
+
+  private void WarnAboutASettlementTheScreenCannotProduce(SettlementFailure failure,
+                                                          Guid staffMemberId,
+                                                          int? amountPaidCents)
+  {
+    if (failure.Reason is SettlementFailureReason.AmountPaidMissing
+                          or SettlementFailureReason.AmountPaidNegative)
+    {
+      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The amount the phone sent was {AmountPaidCents}, and the open items screen cannot produce that, so nothing was settled.",
+                         staffMemberId,
+                         failure.Reason,
+                         amountPaidCents);
+      return;
+    }
+
+    if (failure.Reason is SettlementFailureReason.SelectionSpansSeveralTables)
+    {
+      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The items the phone sent belong to the tables {TableNames}, and the open items screen holds every other table back once one of them has something ticked, so nothing was settled.",
+                         staffMemberId,
+                         failure.Reason,
+                         failure.TableNamesInTheSelection);
+    }
   }
 
   private async Task<bool> TellTheOtherPhonesWithoutFailingTheSettlementAsync(IReadOnlyList<Guid> settledIds,

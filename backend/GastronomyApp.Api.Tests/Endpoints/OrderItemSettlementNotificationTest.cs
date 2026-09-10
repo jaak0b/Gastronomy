@@ -40,9 +40,9 @@ public sealed class OrderItemSettlementNotificationTest
     using var scope = _context.Factory.Services.CreateScope();
 
     var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider)
-                   .SettleAtTheDisplayedPriceAsync(new() { OrderItemIds = itemIds },
-                                                   new(_context.World.StaffMemberId, _context.DeviceId, "de"),
-                                                   CancellationToken.None);
+                   .SettleAsync(new() { OrderItemIds = itemIds, AmountPaidCents = 700, PaymentNotice = null },
+                                new(_context.World.StaffMemberId, _context.DeviceId, "de"),
+                                CancellationToken.None);
 
     var view = ((Ok<SettlementView>)result).Value!;
     await using var database = _context.Factory.CreateContext();

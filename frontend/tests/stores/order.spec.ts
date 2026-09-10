@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { useCatalogStore } from '../../src/stores/catalog'
-import { useOrderStore, ARRIVAL_NOTICE_MS, SEND_TIMEOUT_MS } from '../../src/stores/order'
+import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
+import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../src/stores/order'
 import {
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,

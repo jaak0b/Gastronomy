@@ -243,7 +243,11 @@ public sealed class OrderAcceptanceService
 
       if (request.SettleOnSend)
       {
-        _settlementService.SettleAtTheDisplayedPrice(orderItem, request.StaffMemberId, createdAtUtc);
+        _settlementService.MarkSettled(orderItem,
+                                       orderItem.UnitPriceCents,
+                                       null,
+                                       request.StaffMemberId,
+                                       createdAtUtc);
       }
 
       stationOrder.Items.Add(orderItem);

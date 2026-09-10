@@ -9,6 +9,7 @@ public sealed class ResultEnvelope
   private const string ValidationFailedCode = "ValidationFailed";
   private const string UnprocessableEntityCode = "UnprocessableEntity";
   private const string CannotBeProcessedKey = "order.cannotBeProcessed";
+  private const string SettlementCannotBeProcessedKey = "order.settlementCannotBeProcessed";
 
   public ProblemDescription Describe(OrderValidationFailure failure)
   {
@@ -41,9 +42,15 @@ public sealed class ResultEnvelope
              SettlementFailureReason.TooManyItemsSelected =>
                Validation("order.settlementTooManyItemsSelected"),
              SettlementFailureReason.PaymentNoticeMissing =>
-               Validation("order.settlementNoticeMissing"),
+               Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.UnknownOrderItemId =>
                Unprocessable("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
+             SettlementFailureReason.AmountPaidMissing =>
+               Validation(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.AmountPaidNegative =>
+               Validation(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.SelectionSpansSeveralTables =>
+               Validation(SettlementCannotBeProcessedKey),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }

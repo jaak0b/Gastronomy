@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/views/Review.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
@@ -16,6 +16,7 @@ const WASSER = {
   sortOrder: 1,
   isAvailable: true,
   stationIds: ['station-bar'],
+  productionMinutes: 0,
 }
 
 function prepareOrder() {
@@ -36,6 +37,19 @@ function prepareOrder() {
   })
   order.setTable('Tisch 3')
   return order
+}
+
+async function confirmTheSend(review: VueWrapper): Promise<void> {
+  await vi.waitFor(() =>
+    expect(document.querySelector('.confirm-send-dialog .confirm')).not.toBeNull(),
+  )
+  ;(document.querySelector('.confirm-send-dialog .confirm') as HTMLElement).click()
+  await review.vm.$nextTick()
+}
+
+async function sendFromTheStrip(review: VueWrapper, button: string): Promise<void> {
+  await review.get(button).trigger('click')
+  await confirmTheSend(review)
 }
 
 describe('an order holding an item the laptop no longer has', () => {
@@ -120,7 +134,7 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     expect(currentRoute.value).toEqual({ name: 'home' })
@@ -129,7 +143,7 @@ describe('sending the order from the review screen', () => {
   it('lets the next order be sent while the arrival notice of the last one is still up', async () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     prepareOrder()
@@ -151,7 +165,7 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     expect(currentRoute.value).toEqual({ name: 'review' })
@@ -170,7 +184,7 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     expect(review.find('.send').exists()).toBe(false)
@@ -190,7 +204,7 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
@@ -201,7 +215,7 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await review.get('.send-and-settle').trigger('click')
+    await sendFromTheStrip(review, '.send-and-settle')
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
@@ -217,7 +231,7 @@ describe('sending the order from the review screen', () => {
       }),
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await review.get('.send-and-settle').trigger('click')
+    await sendFromTheStrip(review, '.send-and-settle')
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     await review.get('.send-again').trigger('click')
@@ -234,7 +248,6 @@ describe('sending the order from the review screen', () => {
     const footer = review.get('.review-footer')
 
     expect(footer.classes()).toContain('docked-strip')
-    expect(footer.find('.total-display').exists()).toBe(true)
     expect(footer.find('.send').exists()).toBe(true)
     expect(footer.find('.send-and-settle').exists()).toBe(true)
   })
@@ -271,52 +284,30 @@ describe('an order holding something that cannot be ordered', () => {
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
-  it('holds both ways of sending back while an item has sold out', () => {
+  it('offers only the way to take the sold-out item off, not a way to send', () => {
     soldOutOrder()
     const review = mountReview()
 
-    expect(review.get('.send').attributes('disabled')).toBeDefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+    expect(review.find('.send').exists()).toBe(false)
+    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
-  it('holds both ways of sending back while an item has left the menu', () => {
+  it('offers only the way to take the vanished item off, not a way to send', () => {
     orderWithAVanishedItem()
     const review = mountReview()
 
-    expect(review.get('.send').attributes('disabled')).toBeDefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+    expect(review.find('.send').exists()).toBe(false)
+    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
-  it('says under the buttons what has to be taken off the order first', () => {
-    soldOutOrder()
-    const review = mountReview()
-
-    expect(review.get('.remove-before-sending').text()).toBe(
-      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
-    )
-  })
-
-  it('says the same when several items have to come off the order', () => {
-    const order = soldOutOrder()
-    order.addItem({
-      catalogItemId: 'item-gone',
-      note: null,
-      stationId: null,
-      name: 'Currywurst',
-    })
-    const review = mountReview()
-
-    expect(review.get('.remove-before-sending').text()).toBe(
-      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
-    )
-  })
-
-  it('says nothing of the sort while the whole order can be ordered', () => {
+  it('leaves both ways of sending open while the whole order can be ordered', () => {
     prepareOrder()
     const review = mountReview()
 
-    expect(review.find('.remove-before-sending').exists()).toBe(false)
     expect(review.get('.send').attributes('disabled')).toBeUndefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
   })
 
   it('offers one button that takes the sold-out item off as well', async () => {
@@ -345,7 +336,6 @@ describe('an order holding something that cannot be ordered', () => {
 
     expect(review.get('.send').attributes('disabled')).toBeUndefined()
     expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
-    expect(review.find('.remove-before-sending').exists()).toBe(false)
   })
 })
 
@@ -369,7 +359,7 @@ describe('an order the laptop did not confirm', () => {
 
   async function reviewAfterAFailedSend(order: ReturnType<typeof useOrderStore>) {
     const review = mountReview()
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
     return review
   }
@@ -379,14 +369,15 @@ describe('an order the laptop did not confirm', () => {
     catalog.catalog = { ...catalog.catalog, items: [{ ...WASSER, isAvailable: false }] }
   }
 
-  it('refuses to take the sold-out line off, because the laptop may hold the order as it was', async () => {
+  it('offers no way to take the sold-out line off, because the laptop may hold the order as it was', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
     sellOutTheWater()
     await review.vm.$nextTick()
 
-    expect(review.get('.drop-lines-that-cannot-be-ordered').attributes('disabled')).toBeDefined()
+    expect(review.find('.drop-lines-that-cannot-be-ordered').exists()).toBe(false)
+    expect(review.get('.send-again').exists()).toBe(true)
   })
 
   it('refuses the way back to the items, because everything there would change the order', async () => {
@@ -407,8 +398,8 @@ describe('an order the laptop did not confirm', () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
-    expect(review.get('.line-name').text()).toBe('1 x Wasser')
-    expect(review.get('.total-display').text()).toContain('2.00')
+    expect(review.get('.line-name').text()).toBe('1 x Wasser (~0 Min.)')
+    expect(review.get('.order-total').text()).toContain('2.00')
   })
   it('offers the retry in the docked strip, where the send buttons stood', async () => {
     const order = prepareOrder()
@@ -515,7 +506,7 @@ describe('an order that is still on its way to the laptop', () => {
   async function reviewOfAnOrderOnItsWay() {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await review.get('.send').trigger('click')
+    await sendFromTheStrip(review, '.send')
     return review
   }
 
@@ -701,12 +692,13 @@ describe('an order holding a line the admin moved to another station', () => {
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
-  it('holds both ways of sending back, so the laptop is never asked to refuse it', () => {
+  it('offers only the way to take the moved line off, so the laptop is never asked to refuse it', () => {
     orderWhoseStationWasTakenOff()
     const review = mountReview()
 
-    expect(review.get('.send').attributes('disabled')).toBeDefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeDefined()
+    expect(review.find('.send').exists()).toBe(false)
+    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
   it('marks the line on the card of the station that no longer prepares it', () => {
@@ -715,15 +707,6 @@ describe('an order holding a line the admin moved to another station', () => {
 
     expect(review.get('.station-no-longer-prepares-it').text()).toBe(
       'Diese Ausgabestelle bereitet den Artikel nicht mehr zu.',
-    )
-  })
-
-  it('says under the buttons what has to be taken off the order first', () => {
-    orderWhoseStationWasTakenOff()
-    const review = mountReview()
-
-    expect(review.get('.remove-before-sending').text()).toBe(
-      'Die Bestellung lässt sich so nicht senden. Tippen Sie auf "Nicht bestellbare Artikel entfernen".',
     )
   })
 
@@ -810,6 +793,115 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     const review = await reviewAfterTheRefusedRetry(order)
 
     expect(order.draft.lines).toHaveLength(1)
-    expect(review.get('.line-name').text()).toBe('1 x Wasser')
+    expect(review.get('.line-name').text()).toBe('1 x Wasser (~0 Min.)')
+  })
+})
+
+describe('the question the waiter answers before an order goes out', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              orderId: 'order-1',
+              globalOrderNumber: 1,
+              totalCents: 200,
+              stationOrders: [],
+            }),
+            { status: 200 },
+          ),
+      ),
+    )
+  })
+
+  function mountReview() {
+    return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('sends nothing on the tap itself, so a pocket cannot place an order', async () => {
+    const order = prepareOrder()
+    const review = mountReview()
+
+    await review.get('.send-and-settle').trigger('click')
+
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
+    expect(order.sendState).toBe('idle')
+    expect(document.querySelector('.confirm-send-dialog')).not.toBeNull()
+  })
+
+  it('settles the table only once the waiter has confirmed it', async () => {
+    const order = prepareOrder()
+    const review = mountReview()
+
+    await sendFromTheStrip(review, '.send-and-settle')
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    expect(sent.settleOnSend).toBe(true)
+  })
+
+  it('leaves the table open only once the waiter has confirmed it', async () => {
+    const order = prepareOrder()
+    const review = mountReview()
+
+    await sendFromTheStrip(review, '.send')
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    expect(sent.settleOnSend).toBe(false)
+  })
+
+  it('names the table, the amount and what the station will do in the question', async () => {
+    prepareOrder()
+    const review = mountReview()
+
+    await review.get('.send').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.confirm-send-dialog .row-table')).not.toBeNull(),
+    )
+
+    const rowText = (selector: string) =>
+      document.querySelector(`.confirm-send-dialog ${selector}`)?.textContent?.trim() ?? ''
+    expect(rowText('.row-table .value')).toBe('Tisch 3')
+    expect(rowText('.row-amount .value')).toContain('2.00')
+    expect(rowText('.row-station .label')).toBe('Bar:')
+    expect(rowText('.row-station .value')).toBe('Gesammelt ausgeben (~0 Min.)')
+  })
+
+  it('hands the order back untouched when the waiter backs out', async () => {
+    const order = prepareOrder()
+    const review = mountReview()
+    await review.get('.send-and-settle').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
+
+    ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
+    await review.vm.$nextTick()
+
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
+    expect(order.sendState).toBe('idle')
+    expect(order.basketLines).toHaveLength(1)
+    expect(review.get('.send').attributes('disabled')).toBeUndefined()
+    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
+  })
+
+  it('asks again after a cancelled send, with the choice made afresh', async () => {
+    const order = prepareOrder()
+    const review = mountReview()
+    await review.get('.send-and-settle').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
+    ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
+    await review.vm.$nextTick()
+
+    await sendFromTheStrip(review, '.send')
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    expect(sent.settleOnSend).toBe(false)
   })
 })

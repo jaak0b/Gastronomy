@@ -468,21 +468,65 @@ running the stand, not an accounting record and not a till.
 because food and drink are sometimes given away, for example to the band playing at the festival.
 Everything above the item is derived and never stored: an order is fully settled when all of its
 items are, a table's open amount is the sum over its unsettled items, and what was given away is the
-difference between what an item cost and what was collected for it.
+difference between what an item cost and what was collected for it. A table that pays only part of
+its tab therefore shows the rest in that same figure, because from the stand's side the two are the
+same thing: money that was never collected. The phone names that figure under each table as what was
+not collected in the last twenty four hours, wording that covers the giveaway and the short payment
+alike. Calling it a giveaway would be a lie about the table that paid part of its tab.
 
 **A settled item is never settled a second time.** A double tap cannot double count and cannot
 overwrite the reason somebody typed earlier. When part of a selection had already been settled by
 somebody else, the phone says so and names how many, so the waiter can check whether they collected
 that cash twice.
 
-**Giving something away always carries a typed reason.** The confirm button stays disabled until one
-is typed, so nothing is given away without a note somebody can read the next morning, and the reason
-stays readable on the table afterwards rather than only being stored.
+**One settlement covers one table and never two.** As soon as a line of a table is ticked, every
+other table on the screen is held back: its lines cannot be ticked, its box for the whole table is
+dead, and it stays that way until the selection is empty again. The laptop refuses a selection
+spanning two tables as well, and says only that the settlement could not be processed, because a
+waiter working from the screen can never produce one. A settlement that did span two tables would
+record the second table as paid in full and take it off the list, and nobody would ever ask that
+table for its money.
+
+**A settlement whose answer never arrived is not a settlement that failed.** The phone waits ten
+seconds and then stops waiting, which tells it nothing about what the laptop did with the items. It
+says so in those words and sends the waiter to look at the list, rather than claiming that nothing
+was settled and inviting a second attempt that the laptop would answer as a double tap. A refusal
+that did arrive is knowledge and keeps saying what it says. The list fetches itself again whenever
+the laptop reports a settlement, and beside the heading sits a control that fetches it on demand,
+which is the one thing a waiter has to do after an answer that never came.
+
+**Settling means naming the amount the table handed over.** There is one settle action and it takes a
+number. The full price of the selected lines is the ordinary case and the screen offers it ready to
+send. Nothing at all is the item that was given away, to the band for instance. Everything between
+the two is the table that pays twenty euro off a two hundred euro tab, which happens often enough at
+a festival that it needs an answer of its own instead of a waiter settling one line and leaving the
+rest standing. More than the price is allowed too, because a guest who rounds up should not have to
+be argued with.
+
+**The amount is spread over the selected lines by what each one costs.** A line that already carried
+a settlement is left exactly as it was and takes no part of the money. The cents that do not divide
+evenly go to the first lines in the selection, so the shares always add back up to the amount that
+was typed, to the cent. When every selected line is priced at nothing, the amount is split equally
+instead.
+
+**An amount below what the selection costs always carries a typed reason.** The confirm button stays
+disabled until one is typed, so nothing leaves a table short without a note somebody can read the
+next morning, and the reason stays readable on the table afterwards rather than only being stored.
+Paying the full price or more needs no reason, because there is nothing to explain.
+
+**The phone keeps the ordinary case at one tap.** Settling at the full price is a button of its own
+and asks nothing further, because that is what most tables do. Beside it sits a second button for any
+other amount, which opens a screen asking what the table handed over. That screen names what the
+selection costs, offers the same figure in the amount field ready to be overwritten, and asks for a
+reason as soon as the typed amount falls below it. While the amount covers the price there is no
+reason field at all, and while a short amount has no reason beside it the confirming button does
+nothing.
 
 **The two send buttons exist because the two cases are decided at the table.** Sending the order
 plainly leaves every item open for the table to settle later. Sending it settled marks every item as
 paid at its displayed price, which is the guest who pays on the spot. The order that reaches the
-stations is identical either way.
+stations is identical either way. Which of the two it is gets confirmed before the order goes out,
+because the choice decides whether anybody still expects cash at that table.
 
 **Who took the order and who collected the money are two different people often enough that both are
 recorded.** The second one is stored and nothing more: no screen shows it today. It is there for the
@@ -508,14 +552,14 @@ would disagree the first time a write half succeeded.
 
 ### 4.1 Delivery mode
 
-Before sending, the waiter answers one question per station the order touches: should this station
-hand its part of the order out **together**, or **as each item is ready**?
+Before sending, the waiter chooses per station the order touches whether that station hands its
+part of the order out **together**, or **as each item is ready**.
 
 | | Together | As it is ready |
 |---|---|---|
-| German | Zusammen | Sobald fertig |
-| English | Together | As it is ready |
-| What it means | The station holds everything back until the last item is ready | Each item goes out on its own as soon as it is ready |
+| German | Gesammelt ausgeben | Einzeln ausgeben |
+| English | Hand out together | Hand out item by item |
+| What it means | The station keeps the part back until its last item is ready | The station passes each item across as soon as that item is ready |
 | When it is right | A family eating together | A round of drinks, or a table that is happy to be served in waves |
 
 **Together is the default**, because a table sitting down to eat is the ordinary case and a waiter who
@@ -586,11 +630,19 @@ before the order is sent, roughly how long the guest will be waiting.
 * **The phone adds the item's own minutes** to its station's queued minutes, and that is the estimate
   it shows for the item. An item that more than one station could produce is shown the shortest of
   those stations' answers, because that is the one the waiter would pick.
-* **A part of an order sent together is ready when its slowest item is ready**, so the estimate shown
-  for the whole card is the largest of its items' estimates.
-* **A part sent as it is ready has no single estimate**, and none is shown for it. Its items leave the
-  station one at a time, so a number for the whole card would be answering a question nobody asked.
-  Each item still carries its own.
+* **On the summary the estimate stands in parentheses behind the item**, on the same line as the
+  count and the name, so a line reads "5 x Bier (~34 Min.)" and the price keeps the right-hand
+  edge to itself. The tilde says the number is a rough one, and an item with nothing in front of it
+  reads "(~0 Min.)". An item whose production time was never filled in has no estimate to show at
+  all, and so does a line that has not been given its station yet: both carry the count and the name
+  alone rather than a placeholder or a guess.
+* **A part of an order sent together is ready when its slowest item is ready**, so the figure for the
+  whole part is the largest of its items' estimates. That figure is written on the button that
+  chooses the collected handout, which then reads "Gesammelt ausgeben (~40 Min.)", so the
+  choice and the waiting it costs stand in one place.
+* **A part sent as it is ready has no single estimate**, and its button carries none. Its items leave
+  the station one at a time, so a number for the whole part would be answering a question nobody
+  asked. Each item still carries its own.
 
 **Estimates are computed, never stored.** Nothing in the database holds a predicted time, nothing
 compares a prediction against what happened, and no screen reports on the accuracy of an estimate. It
@@ -602,9 +654,11 @@ never have one filled in, and an estimate that refuses to appear because somebod
 is worse than an estimate that is a little optimistic. The admin form says so: leave the field empty
 for items that are handed over right away.
 
-On an item row the estimate is written as short as it can be read, "ca. 6 Minuten" in German and
-"about 6 minutes" in English, because the row also has to carry the item's name and its price on a
-phone held in one hand.
+On an item row the estimate rides inside the item's own name, in parentheses behind it, written as
+short as it can be read: "Wasser (~6 Min.)" in German and "Wasser (~6 min)" in English. The row also
+has to carry the price on a phone held in one hand, and the tilde says the number is a rough one. An
+item with no production time of its own carries no estimate at all, so the parentheses never appear
+for a drink that is simply handed over.
 
 **If the estimates cannot be loaded the order can still be sent.** The phone says so once and every
 other control on the screen carries on working. An estimate is decoration on the ordering path and is
@@ -640,7 +694,7 @@ which is the one defect this entire document is written against.
 **What happens instead** is what happened before there was any software: the waiter walks over and
 tells the station. That walk is short, it is certain, and it is the same walk any workable design
 would have required. The extra order stays in the database, which costs nothing: no money moves
-through the app, and the item can be settled free of charge with a typed reason if it was made and
+through the app, and the item can be settled with nothing paid and a typed reason if it was made and
 given away.
 
 ---
@@ -889,12 +943,11 @@ on the screen. The attempt is counted from the moment it starts, for exactly thi
 dies mid-send must not buy the waiter a free try.
 
 **Sending fails twice, and the phone stops offering the same thing again.** A dialog covers the
-summary. It says the laptop was not reached twice and that nobody can tell whether the order arrived
-anyway, it asks the waiter to write the order on a slip of paper, and it says what to do with the
-slip: look at the tablet at the station, throw the slip away if the order is already there, and hand
-it over if it is not. That is a check a volunteer can carry out while walking, and it answers the one
-question the phone cannot. Writing the order on paper and carrying it to the station is the honest
-fallback when the laptop is not reachable, and it is what the crew were doing last year.
+summary. It says in two short sentences that the laptop did not answer twice and that the order may
+have arrived anyway, and it asks the waiter to write the order on a slip of paper and to look at the
+tablet at the station. The tablet is a check a volunteer can carry out while walking, and it answers
+the one question the phone cannot. Writing the order on paper and carrying it to the station is the
+honest fallback when the laptop is not reachable, and it is what the crew were doing last year.
 
 The dialog leaves two ways out and no others. "Bestellung ist aufgeschrieben", in English "The order
 is written down", clears the order and starts an empty one so the waiter can serve the next table.
@@ -966,6 +1019,18 @@ tenths of a second of the list coming to rest, and it ignores any tap whose fing
 lifted. Sending cannot be undone, because the part of the order is at the station the moment it
 lands, and a finger coming down to stop a flying list must never send an order by accident. A waiter
 who scrolls, stops, looks and then presses notices nothing.
+
+**Both ways of sending ask once before anything leaves the phone.** A tap on either send
+button puts a short question on the screen. Under it stands one labelled line per fact: the
+table, the amount, and then one line for each station saying what that station will do with
+its part, carrying the waiting time when that part goes out together. The button that
+confirms carries the same words the waiter just tapped, so whether the order is settled now
+or left open is read off that button and the question needs no sentence about it. Only that
+second tap sends anything. Backing
+out closes the question and changes nothing: the order stands as it was and the
+settled-or-open choice is forgotten, so a waiter who taps the wrong one of the two starts the
+choice afresh. The retry after a failed send is not asked twice, because a waiter who reaches
+for it has already decided to find out what became of an order the laptop may be holding.
 
 ---
 

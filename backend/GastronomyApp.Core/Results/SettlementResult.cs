@@ -2,18 +2,15 @@ using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Results;
 
-public enum SettlementKind
-{
-  AtTheDisplayedPrice,
-  FreeOfCharge
-}
-
 public enum SettlementFailureReason
 {
   NoItemsSelected,
   TooManyItemsSelected,
   PaymentNoticeMissing,
-  UnknownOrderItemId
+  UnknownOrderItemId,
+  AmountPaidMissing,
+  AmountPaidNegative,
+  SelectionSpansSeveralTables
 }
 
 public sealed record SettlementFailure
@@ -21,6 +18,8 @@ public sealed record SettlementFailure
   public required SettlementFailureReason Reason { get; init; }
 
   public Guid? OffendingOrderItemId { get; init; }
+
+  public IReadOnlyList<string> TableNamesInTheSelection { get; init; } = [];
 }
 
 public sealed record SettlementResult

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  lineEstimateMinutes,
   pickerEstimateMinutes,
   queuedMinutesAt,
   readyInMinutes,
@@ -30,12 +31,8 @@ describe('readyInMinutes', () => {
     expect(readyInMinutes(12, 8)).toBe(20)
   })
 
-  it('counts an item without a preparation time as taking no time', () => {
-    expect(readyInMinutes(12, null)).toBe(12)
-  })
-
   it('reports zero when nothing is queued and the item takes no time', () => {
-    expect(readyInMinutes(0, null)).toBe(0)
+    expect(readyInMinutes(0, 0)).toBe(0)
   })
 })
 
@@ -74,5 +71,23 @@ describe('pickerEstimateMinutes, what the item list shows before a station is ch
 
   it('shows nothing for an item that has no station at all', () => {
     expect(pickerEstimateMinutes(item([], 8), QUEUES)).toBeNull()
+  })
+})
+
+describe('lineEstimateMinutes, what one line on the summary shows', () => {
+  it('adds the queue of the line station to the time the item itself needs', () => {
+    expect(lineEstimateMinutes(QUEUES, 'station-kueche', 8)).toBe(20)
+  })
+
+  it('reports nothing for an item nobody gave a preparation time', () => {
+    expect(lineEstimateMinutes(QUEUES, 'station-grill', null)).toBeNull()
+  })
+
+  it('reports the queue alone for an item whose preparation takes no time at all', () => {
+    expect(lineEstimateMinutes(QUEUES, 'station-grill', 0)).toBe(4)
+  })
+
+  it('reports nothing while the line still waits for its station', () => {
+    expect(lineEstimateMinutes(QUEUES, null, 8)).toBeNull()
   })
 })

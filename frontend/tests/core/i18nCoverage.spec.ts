@@ -8,8 +8,6 @@ type LocaleTree = { [key: string]: string | LocaleTree }
 
 const PLURAL_KEYS = [
   'catalog.basketSummary',
-  'catalog.readyIn',
-  'review.sliceReadyIn',
   'admin.overview.itemsWithoutStation',
   'admin.itemsWouldHaveNoStation',
   'admin.stationHasUnfinishedItems',
@@ -69,6 +67,16 @@ describe('the two locale files', () => {
       .map(([key]) => key)
 
     expect(withEmDash).toEqual([])
+  })
+})
+
+describe('the example the table field offers a waiter', () => {
+  it('names a bare number in German, because the open items screen writes the word itself', () => {
+    expect(german.get('catalog.tablePlaceholder')).toBe('Zum Beispiel: 12')
+  })
+
+  it('names a bare number in English for the same reason', () => {
+    expect(english.get('catalog.tablePlaceholder')).toBe('For example: 12')
   })
 })
 

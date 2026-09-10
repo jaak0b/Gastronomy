@@ -41,12 +41,11 @@ import {
 } from '../core/basket'
 import { orderTotalCents } from '../core/totals'
 import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
+import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { useCatalogStore } from './catalog'
 import { useSessionStore } from './session'
 
 export const ARRIVAL_NOTICE_MS = 8000
-
-export const SEND_TIMEOUT_MS = 10000
 
 export const useOrderStore = defineStore('order', () => {
   const draftWasLost = ref(false)

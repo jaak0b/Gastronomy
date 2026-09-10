@@ -2,18 +2,20 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { OpenTable } from '../core/apiTypes'
+import { assertNever } from '../core/assertNever'
+import { isHeldBackByAnotherTable, type SettleOutcome } from '../core/openItems'
 import { formatPrice } from '../core/totals'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useSessionStore } from '../stores/session'
 import OpenTablePanel from '../components/openItems/OpenTablePanel.vue'
-import FreeOfChargeDialog from '../components/openItems/FreeOfChargeDialog.vue'
+import AmountPaidDialog from '../components/openItems/AmountPaidDialog.vue'
 import SettleNotice from '../components/openItems/SettleNotice.vue'
 
 const { t } = useI18n()
 const openItems = useOpenItemsStore()
 const session = useSessionStore()
 
-const freeOfChargeIsOpen = ref(false)
+const amountPaidIsOpen = ref(false)
 const openedTables = ref<string[]>([])
 let stopListening: (() => void) | null = null
 
@@ -21,6 +23,7 @@ const selectedTotal = computed(() =>
   formatPrice(openItems.selectedTotalCents, session.language),
 )
 const somethingIsSelected = computed(() => openItems.selectedItemIds.length > 0)
+
 const everythingIsSettled = computed(
   () => openItems.hasLoaded && !openItems.loadFailed && openItems.tables.length === 0,
 )
@@ -36,24 +39,48 @@ onUnmounted(() => {
 })
 
 async function settle(): Promise<void> {
-  await openItems.settle()
+  await openItems.settle(openItems.selectedTotalCents, null)
 }
 
-async function settleFreeOfCharge(paymentNotice: string): Promise<void> {
-  const wasAccepted = await openItems.settleFreeOfCharge(paymentNotice)
-  if (wasAccepted) {
-    freeOfChargeIsOpen.value = false
+async function settleTheAmountPaid(
+  amountPaidCents: number,
+  paymentNotice: string | null,
+): Promise<void> {
+  closeTheAmountAskedForUnlessTheLaptopRefused(
+    await openItems.settle(amountPaidCents, paymentNotice),
+  )
+}
+
+function closeTheAmountAskedForUnlessTheLaptopRefused(outcome: SettleOutcome): void {
+  switch (outcome) {
+    case 'accepted':
+    case 'answerNeverCame':
+      amountPaidIsOpen.value = false
+      return
+    case 'refused':
+      return
+    default:
+      return assertNever(outcome)
   }
 }
 
 function setWholeTable(table: OpenTable, isWanted: boolean): void {
   openItems.setWholeTable(table, isWanted)
 }
+
+function isHeldBack(table: OpenTable): boolean {
+  return isHeldBackByAnotherTable(openItems.tables, openItems.selectedItemIds, table.tableName)
+}
 </script>
 
 <template>
   <v-container class="open-items">
-    <h1 class="text-h5 mb-2">{{ t('openItems.title') }}</h1>
+    <div class="head d-flex align-center ga-3 mb-2">
+      <h1 class="text-h5 flex-grow-1">{{ t('openItems.title') }}</h1>
+      <v-btn class="reload" variant="outlined" size="large" @click="openItems.load">
+        {{ t('openItems.reload') }}
+      </v-btn>
+    </div>
     <v-alert v-if="openItems.loadFailed" class="load-failed mb-2" type="warning" variant="tonal">
       {{ t('openItems.loadFailed') }}
     </v-alert>
@@ -72,7 +99,7 @@ function setWholeTable(table: OpenTable, isWanted: boolean): void {
       }}
     </v-alert>
     <SettleNotice
-      v-if="openItems.notice !== null && !freeOfChargeIsOpen"
+      v-if="openItems.notice !== null && !amountPaidIsOpen"
       class="mb-2"
       :notice="openItems.notice"
       closable
@@ -88,6 +115,7 @@ function setWholeTable(table: OpenTable, isWanted: boolean): void {
         :table="table"
         :selected-item-ids="openItems.selectedItemIds"
         :language="session.language"
+        :is-held-back-by-another-table="isHeldBack(table)"
         @toggle-item="openItems.toggleItem"
         @set-whole-table="setWholeTable(table, $event)"
       />
@@ -107,23 +135,25 @@ function setWholeTable(table: OpenTable, isWanted: boolean): void {
         {{ t('openItems.settle') }}
       </v-btn>
       <v-btn
-        class="settle-free-of-charge mt-2"
+        class="settle-amount-paid mt-2"
         color="primary"
         variant="outlined"
         block
         size="large"
         :disabled="openItems.isSettling"
-        @click="freeOfChargeIsOpen = true"
+        @click="amountPaidIsOpen = true"
       >
-        {{ t('openItems.settleFreeOfCharge') }}
+        {{ t('openItems.settleAmountPaid') }}
       </v-btn>
     </v-sheet>
-    <FreeOfChargeDialog
-      v-if="freeOfChargeIsOpen"
+    <AmountPaidDialog
+      v-if="amountPaidIsOpen"
       :is-settling="openItems.isSettling"
       :notice="openItems.notice"
-      @confirm="settleFreeOfCharge"
-      @cancel="freeOfChargeIsOpen = false"
+      :selected-total-cents="openItems.selectedTotalCents"
+      :language="session.language"
+      @confirm="settleTheAmountPaid"
+      @cancel="amountPaidIsOpen = false"
     />
   </v-container>
 </template>

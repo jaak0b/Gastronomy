@@ -1,5 +1,3 @@
-using GastronomyApp.Core.Enums;
-
 namespace GastronomyApp.Api.Contracts;
 
 public sealed record OpenOrderItemView(
@@ -9,10 +7,7 @@ public sealed record OpenOrderItemView(
   string ItemName,
   string? Note,
   int UnitPriceCents,
-  DateTime OrderedAtUtc,
-  string StationName,
-  DeliveryMode DeliveryMode,
-  ProductionStatus ProductionStatus);
+  DateTime OrderedAtUtc);
 
 public sealed record GivenAwayOrderItemView(
   Guid OrderItemId,
@@ -39,11 +34,8 @@ public sealed record TableNamesView(IReadOnlyList<string> TableNames);
 public sealed record SettleItemsRequest
 {
   public required IReadOnlyList<Guid>? OrderItemIds { get; init; }
-}
 
-public sealed record SettleItemsFreeOfChargeRequest
-{
-  public required IReadOnlyList<Guid>? OrderItemIds { get; init; }
+  public required int? AmountPaidCents { get; init; }
 
   public required string? PaymentNotice { get; init; }
 }

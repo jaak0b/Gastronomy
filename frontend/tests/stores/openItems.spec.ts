@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
 import { useOpenItemsStore } from '../../src/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
 
@@ -161,31 +162,35 @@ describe('settling what the waiter ticked', () => {
     vi.unstubAllGlobals()
   })
 
-  it('sends the ticked items and clears the selection once they are settled', async () => {
+  it('sends the ticked items with the amount paid and clears the selection', async () => {
     const { openItems, calls } = await storeWithTheOpenList([jsonOf(SETTLED), jsonOf(EMPTY_LIST)])
     openItems.toggleItem('item-1')
 
-    await openItems.settle()
+    await openItems.settle(350, null)
 
     expect(calls[1]).toEqual({
       url: '/api/open-items/settle',
       method: 'POST',
-      body: { orderItemIds: ['item-1'] },
+      body: { orderItemIds: ['item-1'], amountPaidCents: 350, paymentNotice: null },
     })
     expect(openItems.selectedItemIds).toEqual([])
     expect(openItems.notice).toBeNull()
   })
 
-  it('carries the typed reason when the table pays nothing', async () => {
+  it('carries the typed reason when the table pays less than it owes', async () => {
     const { openItems, calls } = await storeWithTheOpenList([jsonOf(SETTLED), jsonOf(EMPTY_LIST)])
     openItems.toggleItem('item-1')
 
-    await openItems.settleFreeOfCharge('Essen fuer die Kapelle')
+    await openItems.settle(0, 'Essen fuer die Kapelle')
 
     expect(calls[1]).toEqual({
-      url: '/api/open-items/settle-free-of-charge',
+      url: '/api/open-items/settle',
       method: 'POST',
-      body: { orderItemIds: ['item-1'], paymentNotice: 'Essen fuer die Kapelle' },
+      body: {
+        orderItemIds: ['item-1'],
+        amountPaidCents: 0,
+        paymentNotice: 'Essen fuer die Kapelle',
+      },
     })
   })
 
@@ -200,7 +205,7 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    await openItems.settle()
+    await openItems.settle(350, null)
 
     expect(openItems.notice).toEqual({
       key: 'openItems.someWereAlreadySettled',
@@ -220,9 +225,9 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    const wasAccepted = await openItems.settle()
+    const outcome = await openItems.settle(350, null)
 
-    expect(wasAccepted).toBe(true)
+    expect(outcome).toBe('accepted')
     expect(openItems.notice?.key).toBe('openItems.otherPhonesWereNotTold')
   })
 
@@ -231,7 +236,7 @@ describe('settling what the waiter ticked', () => {
       jsonOf(
         {
           code: 'ValidationFailed',
-          messageKey: 'order.settlementNoticeMissing',
+          messageKey: 'order.settlementUnknownItem',
           parameters: {},
           details: null,
         },
@@ -241,13 +246,45 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    const wasAccepted = await openItems.settleFreeOfCharge('   ')
+    const outcome = await openItems.settle(200, '   ')
 
-    expect(wasAccepted).toBe(false)
-    expect(openItems.notice?.key).toBe('order.settlementNoticeMissing')
+    expect(outcome).toBe('refused')
+    expect(openItems.notice?.key).toBe('order.settlementUnknownItem')
   })
 
-  it('keeps the selection standing when the laptop was not reached at all', async () => {
+  it('stops waiting after ten seconds and claims nothing about what was settled', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          (_path: string, init: RequestInit) =>
+            new Promise<Response>((_resolve, reject) => {
+              init.signal?.addEventListener('abort', () => {
+                reject(new DOMException('The request was aborted', 'AbortError'))
+              })
+            }),
+        ),
+      )
+      localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+      useSessionStore().deviceToken = 'token-here'
+      const openItems = useOpenItemsStore()
+      openItems.tables = OPEN_LIST.tables
+      openItems.toggleItem('item-1')
+
+      const settling = openItems.settle(350, null)
+      await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
+
+      expect(await settling).toBe('answerNeverCame')
+      expect(openItems.notice?.key).toBe('openItems.settleAnswerNeverCame')
+      expect(openItems.selectedItemIds).toEqual(['item-1'])
+      expect(openItems.isSettling).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('claims nothing about what was settled when the laptop was not reached at all', async () => {
     const { openItems } = await storeWithTheOpenList([
       () => {
         throw new TypeError('the laptop cannot be reached')
@@ -255,9 +292,29 @@ describe('settling what the waiter ticked', () => {
     ])
     openItems.toggleItem('item-1')
 
-    await openItems.settle()
+    await openItems.settle(350, null)
 
-    expect(openItems.notice?.key).toBe('openItems.settleNotReached')
+    expect(openItems.notice?.key).toBe('openItems.settleAnswerNeverCame')
     expect(openItems.selectedItemIds).toEqual(['item-1'])
+  })
+
+  it('keeps saying what a refusal from the laptop said, because a refusal is knowledge', async () => {
+    const { openItems } = await storeWithTheOpenList([
+      jsonOf(
+        {
+          code: 'ValidationFailed',
+          messageKey: 'order.settlementCannotBeProcessed',
+          parameters: {},
+          details: null,
+        },
+        400,
+      ),
+      jsonOf(OPEN_LIST),
+    ])
+    openItems.toggleItem('item-1')
+
+    await openItems.settle(200, null)
+
+    expect(openItems.notice?.key).toBe('order.settlementCannotBeProcessed')
   })
 })

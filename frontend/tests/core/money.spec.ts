@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatEuroInput, parseEuroInput } from '../../src/core/money'
+import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../src/core/money'
 
 describe('parseEuroInput, what an admin types', () => {
   it('reads a German price with a comma', () => {
@@ -80,5 +80,93 @@ describe('formatEuroInput, what the form shows back', () => {
 
   it('leaves a new item empty rather than showing a price of nothing', () => {
     expect(formatEuroInput(null, 'de')).toBe('')
+  })
+})
+
+describe('the amount a table hands over on the open items screen', () => {
+  it('reads a part payment written the German way', () => {
+    expect(parseEuroInput('20,50')).toBe(2050)
+  })
+
+  it('reads a part payment written the English way', () => {
+    expect(parseEuroInput('20.50')).toBe(2050)
+  })
+
+  it('reads a whole tab typed without decimals', () => {
+    expect(parseEuroInput('200')).toBe(20000)
+  })
+
+  it('reads a table that hands over nothing', () => {
+    expect(parseEuroInput('0')).toBe(0)
+  })
+
+  it('offers a German tab back with a comma, ready to be overwritten', () => {
+    expect(formatEuroInput(20000, 'de')).toBe('200,00')
+  })
+
+  it('offers an English tab back with a dot, ready to be overwritten', () => {
+    expect(formatEuroInput(20000, 'en')).toBe('200.00')
+  })
+})
+
+describe('canBeTypedIntoAEuroField, what the amount field lets a waiter type', () => {
+  it('lets the field stand empty while the waiter clears the amount offered to them', () => {
+    expect(canBeTypedIntoAEuroField('')).toBe(true)
+  })
+
+  it('lets a whole euro amount stand before any cents are typed', () => {
+    expect(canBeTypedIntoAEuroField('5')).toBe(true)
+  })
+
+  it('lets the comma stand while the cents are still being typed', () => {
+    expect(canBeTypedIntoAEuroField('5,')).toBe(true)
+  })
+
+  it('lets the dot stand while the cents are still being typed', () => {
+    expect(canBeTypedIntoAEuroField('5.')).toBe(true)
+  })
+
+  it('lets a single cent digit stand on the way to two of them', () => {
+    expect(canBeTypedIntoAEuroField('5,0')).toBe(true)
+  })
+
+  it('takes the finished amount written with a comma', () => {
+    expect(canBeTypedIntoAEuroField('5,00')).toBe(true)
+  })
+
+  it('takes the finished amount written with a dot', () => {
+    expect(canBeTypedIntoAEuroField('5.00')).toBe(true)
+  })
+
+  it('refuses a third decimal, because a cent is the smallest coin', () => {
+    expect(canBeTypedIntoAEuroField('5,000')).toBe(false)
+  })
+
+  it('refuses a euro sign, because the field already stands for euros', () => {
+    expect(canBeTypedIntoAEuroField('5€')).toBe(false)
+  })
+
+  it('refuses letters', () => {
+    expect(canBeTypedIntoAEuroField('fünf')).toBe(false)
+  })
+
+  it('refuses a space', () => {
+    expect(canBeTypedIntoAEuroField('5 ')).toBe(false)
+  })
+
+  it('refuses a second separator', () => {
+    expect(canBeTypedIntoAEuroField('5,0,0')).toBe(false)
+  })
+
+  it('refuses a thousands separator, because no table hands over that much', () => {
+    expect(canBeTypedIntoAEuroField('1.234,56')).toBe(false)
+  })
+
+  it('refuses a minus sign, because a table never hands over less than nothing', () => {
+    expect(canBeTypedIntoAEuroField('-5')).toBe(false)
+  })
+
+  it('refuses a separator before the first digit, because that amount can never be read', () => {
+    expect(canBeTypedIntoAEuroField(',50')).toBe(false)
   })
 })
