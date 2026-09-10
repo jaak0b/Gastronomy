@@ -287,7 +287,6 @@
     "stationHasOrdersAtTheFestival": "This station has already taken {count} order at this festival. Switch it off if nobody is working there any more. | This station has already taken {count} orders at this festival. Switch it off if nobody is working there any more.",
     "festivals": {
       "title": "Festivals",
-      "help": "Every festival is created on this page. The phones and the tablets follow whichever one is running now.",
       "new": "New festival",
       "name": "Festival name",
       "start": "Start",

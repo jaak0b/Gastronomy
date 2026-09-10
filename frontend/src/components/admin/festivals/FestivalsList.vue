@@ -100,7 +100,6 @@ onUnmounted(() => {
 <template>
   <v-container class="admin-festivals">
     <h1 class="text-h5 mb-2">{{ t('admin.festivals.title') }}</h1>
-    <p class="help text-medium-emphasis mb-4">{{ t('admin.festivals.help') }}</p>
 
     <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{ refusalText }}
