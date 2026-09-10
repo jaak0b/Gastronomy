@@ -53,7 +53,7 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Festivals'))
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Overview'))
   })
 
   it('stays in German when the laptop is set to German', async () => {
@@ -61,6 +61,6 @@ describe('the language the admin screens are written in', () => {
 
     const { shell } = mountShell()
 
-    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Feste'))
+    await vi.waitFor(() => expect(shell.get('.admin-tabs .v-tab').text()).toBe('Übersicht'))
   })
 })

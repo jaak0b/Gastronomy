@@ -8,7 +8,7 @@ export type AppRoute =
   | { name: 'stations' }
   | { name: 'admin'; section: AdminSection }
 
-const ADMIN_SECTIONS: AdminSection[] = ['festivals', 'overview', 'stations', 'items', 'staff']
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'festivals', 'stations', 'items', 'staff']
 
 function adminSectionFrom(segment: string | undefined): AdminSection {
   const wanted = (segment ?? '').toLowerCase()
