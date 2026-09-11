@@ -75,9 +75,19 @@ describe('what each station of an order is asked to do', () => {
 })
 
 describe('how long a station says its part will take', () => {
-  it('takes the slowest item of the part when the station hands it out together', () => {
+  it('adds the queue to every line of the part that goes to the station', () => {
     const deliveries = stationDeliveries(
       [line(), line({ catalogItemId: 'item-pommes', name: 'Pommes', productionMinutes: 3 })],
+      QUEUES,
+      alwaysTogether,
+    )
+
+    expect(deliveries[0].minutes).toBe(23)
+  })
+
+  it('counts two portions of the same item as two lines', () => {
+    const deliveries = stationDeliveries(
+      [line({ productionMinutes: 4 }), line({ productionMinutes: 4 })],
       QUEUES,
       alwaysTogether,
     )
@@ -91,13 +101,23 @@ describe('how long a station says its part will take', () => {
     expect(deliveries[0].minutes).toBeNull()
   })
 
-  it('names no time for a part whose items nobody gave a preparation time', () => {
+  it('names no time for a part whose items nobody gave a preparation time and nothing is queued', () => {
     const deliveries = stationDeliveries([beer()], QUEUES, alwaysTogether)
 
     expect(deliveries[0].minutes).toBeNull()
   })
 
-  it('takes the slowest item that has a time when the rest of the part has none', () => {
+  it('names the queue alone for a part whose items nobody gave a preparation time', () => {
+    const deliveries = stationDeliveries(
+      [line({ productionMinutes: null })],
+      QUEUES,
+      alwaysTogether,
+    )
+
+    expect(deliveries[0].minutes).toBe(12)
+  })
+
+  it('adds the timed line and counts the untimed one as nothing', () => {
     const deliveries = stationDeliveries(
       [line(), line({ catalogItemId: 'item-brot', name: 'Brot', productionMinutes: null })],
       QUEUES,
@@ -148,14 +168,14 @@ describe('how long a station says its part will take', () => {
     expect(deliveries[0].minutes).toBe(16)
   })
 
-  it('names no time for a part where nothing at all can be ordered', () => {
+  it('names the queue alone for a part where nothing at all can be ordered', () => {
     const deliveries = stationDeliveries(
       [line({ productionMinutes: 8, isSoldOut: true })],
       QUEUES,
       alwaysTogether,
     )
 
-    expect(deliveries[0].minutes).toBeNull()
+    expect(deliveries[0].minutes).toBe(12)
   })
 
   it('counts a station the laptop said nothing about as having nothing queued', () => {

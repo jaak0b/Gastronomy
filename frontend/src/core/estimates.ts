@@ -1,8 +1,15 @@
-import type { CatalogItem, DeliveryMode, StationEstimate } from './apiTypes'
-import { assertNever } from './assertNever'
+import type { CatalogItem, StationEstimate } from './apiTypes'
+import { routedStationId } from './routingPreview'
 
-export function readyInMinutes(queuedMinutes: number, productionMinutes: number): number {
-  return queuedMinutes + productionMinutes
+export interface EstimateRange {
+  min: number
+  max: number
+}
+
+export interface EstimableLine {
+  stationId: string | null
+  candidateStationIds: readonly string[]
+  productionMinutes: number | null
 }
 
 export function queuedMinutesAt(
@@ -12,41 +19,55 @@ export function queuedMinutesAt(
   return estimates.find((estimate) => estimate.stationId === stationId)?.queuedMinutes ?? 0
 }
 
-export function sliceEstimateMinutes(
-  itemMinutes: readonly number[],
-  deliveryMode: DeliveryMode,
-): number | null {
-  switch (deliveryMode) {
-    case 'together':
-      return itemMinutes.length === 0 ? null : Math.max(...itemMinutes)
-    case 'asItComes':
-      return null
-    default:
-      return assertNever(deliveryMode)
-  }
+function minutesAtTheStation(lines: readonly EstimableLine[], stationId: string): number {
+  return lines.reduce(
+    (total, line) =>
+      routedStationId(line) === stationId ? total + (line.productionMinutes ?? 0) : total,
+    0,
+  )
 }
 
-export function pickerEstimateMinutes(
+export function stationReadyInMinutes(
+  estimates: readonly StationEstimate[],
+  lines: readonly EstimableLine[],
+  stationId: string,
+): number | null {
+  const queuedMinutes = queuedMinutesAt(estimates, stationId)
+  const linesAtTheStation = lines.filter((line) => routedStationId(line) === stationId)
+  if (queuedMinutes === 0 && linesAtTheStation.every((line) => line.productionMinutes === null)) {
+    return null
+  }
+  return queuedMinutes + minutesAtTheStation(linesAtTheStation, stationId)
+}
+
+export function stationEstimateAfterAdding(
+  estimates: readonly StationEstimate[],
+  lines: readonly EstimableLine[],
+  stationId: string,
+  productionMinutes: number,
+  units: number = 1,
+): number {
+  return (
+    queuedMinutesAt(estimates, stationId) +
+    minutesAtTheStation(lines, stationId) +
+    productionMinutes * units
+  )
+}
+
+export function pickerEstimateRange(
   item: CatalogItem,
   estimates: readonly StationEstimate[],
-): number | null {
+  lines: readonly EstimableLine[],
+): EstimateRange | null {
   const productionMinutes = item.productionMinutes
   if (productionMinutes === null) {
     return null
   }
   const perStation = item.stationIds.map((stationId) =>
-    readyInMinutes(queuedMinutesAt(estimates, stationId), productionMinutes),
+    stationEstimateAfterAdding(estimates, lines, stationId, productionMinutes),
   )
-  return perStation.length === 0 ? null : Math.min(...perStation)
-}
-
-export function lineEstimateMinutes(
-  estimates: readonly StationEstimate[],
-  stationId: string | null,
-  productionMinutes: number | null,
-): number | null {
-  if (stationId === null || productionMinutes === null) {
+  if (perStation.length === 0) {
     return null
   }
-  return readyInMinutes(queuedMinutesAt(estimates, stationId), productionMinutes)
+  return { min: Math.min(...perStation), max: Math.max(...perStation) }
 }

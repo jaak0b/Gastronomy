@@ -165,22 +165,22 @@ describe('choosing how a station hands its part of the order out', () => {
     expect(list.findAll('.delivery-modes')).toHaveLength(2)
   })
 
-  it('names both ways the station can hand its part out, the first with the time it takes', () => {
+  it('names both ways the station can hand its part out', () => {
     const list = mountList([line({ productionMinutes: 8 })], {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
     })
 
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben (~20 Min.)')
+    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben')
     expect(list.get('.delivery-as-it-comes').text()).toBe('Einzeln ausgeben')
   })
 
-  it('names both ways in English, with the same time behind the first one', () => {
+  it('names both ways in English', () => {
     const list = mountList([line({ productionMinutes: 8 })], {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
       language: 'en',
     })
 
-    expect(list.get('.delivery-together').text()).toBe('Hand out together (~20 min)')
+    expect(list.get('.delivery-together').text()).toBe('Hand out together')
     expect(list.get('.delivery-as-it-comes').text()).toBe('Hand out item by item')
   })
 
@@ -243,89 +243,60 @@ describe('choosing how a station hands its part of the order out', () => {
   })
 })
 
-describe('how long the order will take', () => {
-  it('adds the queue of the station to the time the item itself needs', () => {
-    const list = mountList([line({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst (~20 Min.)')
-  })
-
-  it('writes the same time beside the item in English', () => {
-    const list = mountList([line({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-      language: 'en',
-    })
-
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst (~20 min)')
-  })
-
-  it('says the item is ready right away when it takes no time and nothing is queued', () => {
-    const list = mountList([line({ productionMinutes: 0 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 0 }],
-    })
-
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst (~0 Min.)')
-  })
-
-  it('names the item alone when nobody gave it a preparation time', () => {
-    const list = mountList([line({ productionMinutes: null })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst')
-  })
-
-  it('leaves the button plain when no item of the part carries a preparation time', () => {
-    const list = mountList([line({ productionMinutes: null })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben')
-  })
-
-  it('names the item alone while the line still waits for its station', () => {
-    const list = mountList([
-      line({ candidateStationIds: ['station-kueche', 'station-theke-innen'] }),
-    ])
-
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst')
-  })
-
-  it('carries the slowest item of the part as the time on the button', () => {
+describe('how long the station will take for its part of the order', () => {
+  it('adds the queue of the station to every line that goes to it, on the station header', () => {
     const list = mountList(
       [
-        line({ productionMinutes: 8 }),
-        line({ catalogItemId: 'item-pommes', name: 'Pommes', productionMinutes: 3 }),
+        line({ productionMinutes: 10 }),
+        line({ catalogItemId: 'item-schnitzel', name: 'Schnitzel', productionMinutes: 10 }),
       ],
-      { estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }] },
+      { estimates: [{ stationId: 'station-kueche', queuedMinutes: 132 }] },
     )
 
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben (~20 Min.)')
+    expect(list.get('.station-name').text()).toBe('Geht an Küche (~152 Min.)')
   })
 
-  it('leaves the button plain when each item comes out on its own and keeps the item time', () => {
+  it('writes the same header in English', () => {
+    const list = mountList(
+      [
+        line({ productionMinutes: 10 }),
+        line({ catalogItemId: 'item-schnitzel', name: 'Schnitzel', productionMinutes: 10 }),
+      ],
+      {
+        estimates: [{ stationId: 'station-kueche', queuedMinutes: 132 }],
+        language: 'en',
+      },
+    )
+
+    expect(list.get('.station-name').text()).toBe('Goes to Küche (~152 min)')
+  })
+
+  it('keeps the header time while each item comes out on its own', () => {
     const list = mountList([line({ productionMinutes: 8 })], {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
       deliveryModes: { 'station-kueche': 'asItComes' },
     })
 
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben')
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst (~20 Min.)')
+    expect(list.get('.station-name').text()).toBe('Geht an Küche (~20 Min.)')
   })
-})
 
-describe('a line whose item has sold out', () => {
-  it('promises no waiting time, because the item cannot be ordered at all', () => {
-    const list = mountList([line({ productionMinutes: 8, isSoldOut: true })], {
+  it('names the queue alone when no line of the part has a time', () => {
+    const list = mountList([line({ productionMinutes: null })], {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
     })
 
-    expect(list.get('.line-name').text()).toBe('1 x Bratwurst')
+    expect(list.get('.station-name').text()).toBe('Geht an Küche (~12 Min.)')
   })
 
-  it('is left out of the time on the button, because the order will not carry it', () => {
+  it('leaves the time off the header when the station has no queue and no line has a time', () => {
+    const list = mountList([line({ productionMinutes: null })], {
+      estimates: [{ stationId: 'station-kueche', queuedMinutes: 0 }],
+    })
+
+    expect(list.get('.station-name').text()).toBe('Geht an Küche')
+  })
+
+  it('leaves a line that cannot be ordered out of the header time', () => {
     const list = mountList(
       [
         line({ productionMinutes: 4 }),
@@ -339,15 +310,7 @@ describe('a line whose item has sold out', () => {
       { estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }] },
     )
 
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben (~16 Min.)')
-  })
-
-  it('leaves the button plain when no item of the part can be ordered at all', () => {
-    const list = mountList([line({ productionMinutes: 8, isSoldOut: true })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.delivery-together').text()).toBe('Gesammelt ausgeben')
+    expect(list.get('.station-name').text()).toBe('Geht an Küche (~16 Min.)')
   })
 })
 
@@ -368,15 +331,6 @@ describe('a line whose item is no longer on the menu', () => {
     const list = mountList([line({ name: 'Currywurst', isNoLongerOnTheMenu: true })])
 
     expect(list.get('.line').classes()).toContain('is-unavailable')
-  })
-
-  it('promises no waiting time, because the item cannot be ordered at all', () => {
-    const list = mountList(
-      [line({ name: 'Currywurst', productionMinutes: 8, isNoLongerOnTheMenu: true })],
-      { estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }] },
-    )
-
-    expect(list.get('.line-name').text()).toBe('1 x Currywurst')
   })
 
   it('shows no price, because the laptop no longer names one and the total must match it', () => {
@@ -418,14 +372,6 @@ describe('a line whose station no longer prepares its item', () => {
     const list = mountList([movedLine()])
 
     expect(list.get('.line').classes()).toContain('is-unavailable')
-  })
-
-  it('promises no waiting time, because the station will not prepare it', () => {
-    const list = mountList([movedLine({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-theke-innen', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.line-name').text()).toBe('1 x Bier')
   })
 
   it('says nothing of the sort while the station still prepares the item', () => {

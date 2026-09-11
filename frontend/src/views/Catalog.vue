@@ -2,9 +2,15 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CatalogCategory, CatalogItem } from '../core/apiTypes'
+import { lineCannotBeOrdered } from '../core/basket'
+import { itemState } from '../core/catalogItemState'
 import { portionsOfCategory } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
-import { pickerEstimateMinutes } from '../core/estimates'
+import {
+  pickerEstimateRange,
+  stationEstimateAfterAdding,
+  type EstimateRange,
+} from '../core/estimates'
 import { letteringColourOn } from '../core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
@@ -133,9 +139,39 @@ function positionsFor(itemId: string): ItemPosition[] {
   return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
 }
 
-function readyInMinutesFor(itemId: string): number | null {
+const orderableBasketLines = computed(() =>
+  order.basketLines.filter((line) => !lineCannotBeOrdered(line)),
+)
+
+function estimateRangeFor(itemId: string): EstimateRange | null {
   const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
-  return item === undefined ? null : pickerEstimateMinutes(item, estimates.stations)
+  return item === undefined
+    ? null
+    : pickerEstimateRange(item, estimates.stations, orderableBasketLines.value)
+}
+
+function estimateForTheStationChoice(stationId: string): number | null {
+  const item = itemBehindTheStationChoice.value
+  if (item === null || itemState(item) === 'soldOut') {
+    return null
+  }
+  const productionMinutes = item.productionMinutes
+  if (productionMinutes === null) {
+    return null
+  }
+  const movedIndexes = new Set(linesAwaitingStation.value)
+  const linesStaying = order.basketLines.filter(
+    (line, index) => !movedIndexes.has(index) && !lineCannotBeOrdered(line),
+  )
+  const unitsAtTheStation =
+    linesAwaitingStation.value.length === 0 ? 1 : linesAwaitingStation.value.length
+  return stationEstimateAfterAdding(
+    estimates.stations,
+    linesStaying,
+    stationId,
+    productionMinutes,
+    unitsAtTheStation,
+  )
 }
 
 function place(item: CatalogItem, note: string | null, stationId: string | null): void {
@@ -230,7 +266,7 @@ function chooseStation(stationId: string): void {
         :items="itemsOfTheOpenCategory"
         :language="session.language"
         :positions-for="positionsFor"
-        :ready-in-minutes-for="readyInMinutesFor"
+        :estimate-range-for="estimateRangeFor"
         class="my-2"
         @add="addItem"
         @add-with-a-note="addItemWithANote"
@@ -242,6 +278,7 @@ function chooseStation(stationId: string): void {
         v-if="itemBehindTheStationChoice !== null"
         :item="itemBehindTheStationChoice"
         :station-name-for="catalog.stationName"
+        :estimate-for="estimateForTheStationChoice"
         @choose="chooseStation"
         @cancel="forgetTheStationQuestion"
       />

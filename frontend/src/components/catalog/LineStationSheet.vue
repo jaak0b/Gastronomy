@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { CatalogItem } from '../../core/apiTypes'
+import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
 
 const props = defineProps<{
   item: CatalogItem
   stationNameFor: (stationId: string) => string
+  estimateFor: (stationId: string) => number | null
 }>()
 defineEmits<{ choose: [stationId: string]; cancel: [] }>()
 
@@ -27,7 +29,7 @@ const choices = candidateStations(props.item)
           block
           @click="$emit('choose', stationId)"
         >
-          {{ stationNameFor(stationId) }}
+          {{ withEstimate(stationNameFor(stationId), estimateFor(stationId), t) }}
         </v-btn>
         <v-btn class="cancel-station-choice" variant="text" block @click="$emit('cancel')">
           {{ t('line.cancel') }}

@@ -3,8 +3,9 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Catalog from '../../../src/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
+import { useEstimatesStore } from '../../../src/stores/estimates'
 import { useOrderStore } from '../../../src/stores/order'
-import type { Catalog as CatalogData } from '../../../src/core/apiTypes'
+import type { Catalog as CatalogData, StationEstimate } from '../../../src/core/apiTypes'
 import { currentRoute, navigate } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
 
@@ -467,6 +468,183 @@ describe('the question about which station is to make an item', () => {
     expect(document.querySelector('.line-station-sheet')).toBeNull()
     expect(order.draft.lines).toHaveLength(0)
     expect(view.findAll('.item-row').length).toBeGreaterThan(0)
+  })
+})
+
+const CATALOG_WITH_TIMED_ITEMS: CatalogData = {
+  ...CATALOG,
+  items: [
+    { ...CATALOG.items[0], productionMinutes: 10 },
+    { ...CATALOG.items[1], productionMinutes: 2 },
+    {
+      id: 'item-kaffee',
+      name: 'Kaffee',
+      categoryId: 'category-essen',
+      priceCents: 250,
+      sortOrder: 3,
+      isAvailable: true,
+      stationIds: ['station-kueche', 'station-bar'],
+      productionMinutes: 10,
+    },
+  ],
+}
+
+const TIMED_QUEUES: StationEstimate[] = [
+  { stationId: 'station-kueche', queuedMinutes: 0 },
+  { stationId: 'station-bar', queuedMinutes: 50 },
+]
+
+describe('the waiting time on the ordering screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  function mountCatalogWithEstimates(): MountedCatalog {
+    const catalog = useCatalogStore()
+    catalog.catalog = CATALOG_WITH_TIMED_ITEMS
+    useEstimatesStore().stations = TIMED_QUEUES
+    return mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+  }
+
+  it('writes one time on an item only one station makes', async () => {
+    const view = mountCatalogWithEstimates()
+
+    await openCategory(view, 0)
+
+    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
+      'Bratwurst (~10 Min.)',
+      'Kaffee (~10 bis 60 Min.)',
+    ])
+  })
+
+  it('shifts the range with the portions already on the order', async () => {
+    const view = mountCatalogWithEstimates()
+    useOrderStore().addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    })
+
+    await openCategory(view, 0)
+
+    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
+      'Bratwurst (~10 Min.)',
+      'Kaffee (~10 bis 62 Min.)',
+    ])
+  })
+
+  it('writes the time of each station on its button in the station question', async () => {
+    const view = mountCatalogWithEstimates()
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[1].trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+
+    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
+      element.textContent?.trim(),
+    )
+    expect(choices).toEqual(['Küche (~10 Min.)', 'Bar (~60 Min.)'])
+  })
+
+  it('writes no time on the buttons of an item nobody gave a production time', async () => {
+    const catalog = useCatalogStore()
+    catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
+    useEstimatesStore().stations = TIMED_QUEUES
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[1].trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+
+    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
+      element.textContent?.trim(),
+    )
+    expect(choices).toEqual(['Küche', 'Bar'])
+  })
+
+  it('writes the station time after moving the portions that are already on the order', async () => {
+    const view = mountCatalogWithEstimates()
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-kaffee',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+    order.addItem({
+      catalogItemId: 'item-kaffee',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row')[1].get('.change-station').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+
+    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
+      element.textContent?.trim(),
+    )
+    expect(choices).toEqual(['Küche (~20 Min.)', 'Bar (~70 Min.)'])
+  })
+
+  it('keeps a line that sold out out of the range on the row', async () => {
+    const catalogWithASoldOutWasser: CatalogData = {
+      ...CATALOG_WITH_TIMED_ITEMS,
+      items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
+        item.id === 'item-wasser' ? { ...item, isAvailable: false } : item,
+      ),
+    }
+    const catalog = useCatalogStore()
+    catalog.catalog = catalogWithASoldOutWasser
+    useEstimatesStore().stations = TIMED_QUEUES
+    useOrderStore().addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    })
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await openCategory(view, 0)
+
+    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
+      'Bratwurst (~10 Min.)',
+      'Kaffee (~10 bis 60 Min.)',
+    ])
+  })
+
+  it('writes no time on the station buttons when the item has just sold out', async () => {
+    const catalogWithASoldOutKaffee: CatalogData = {
+      ...CATALOG_WITH_TIMED_ITEMS,
+      items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
+        item.id === 'item-kaffee' ? { ...item, isAvailable: false } : item,
+      ),
+    }
+    const catalog = useCatalogStore()
+    catalog.catalog = catalogWithASoldOutKaffee
+    useEstimatesStore().stations = TIMED_QUEUES
+    useOrderStore().addItem({
+      catalogItemId: 'item-kaffee',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row')[1].get('.change-station').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+
+    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
+      element.textContent?.trim(),
+    )
+    expect(choices).toEqual(['Küche', 'Bar'])
   })
 })
 

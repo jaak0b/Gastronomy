@@ -398,7 +398,7 @@ describe('an order the laptop did not confirm', () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
-    expect(review.get('.line-name').text()).toBe('1 x Wasser (~0 Min.)')
+    expect(review.get('.line-name').text()).toBe('1 x Wasser')
     expect(review.get('.order-total').text()).toContain('2.00')
   })
   it('offers the retry in the docked strip, where the send buttons stood', async () => {
@@ -793,7 +793,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     const review = await reviewAfterTheRefusedRetry(order)
 
     expect(order.draft.lines).toHaveLength(1)
-    expect(review.get('.line-name').text()).toBe('1 x Wasser (~0 Min.)')
+    expect(review.get('.line-name').text()).toBe('1 x Wasser')
   })
 })
 

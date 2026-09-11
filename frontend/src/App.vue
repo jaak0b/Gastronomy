@@ -6,6 +6,7 @@ import { screenFor, type ScreenName } from './core/landing'
 import { useSessionStore } from './stores/session'
 import { useCatalogStore } from './stores/catalog'
 import { useConnectionStore } from './stores/connection'
+import { useEstimatesStore } from './stores/estimates'
 import AppHeader from './components/header/AppHeader.vue'
 import AppNotices from './components/header/AppNotices.vue'
 import EnrolQr from './views/EnrolQr.vue'
@@ -20,6 +21,7 @@ import AdminShell from './views/admin/AdminShell.vue'
 const session = useSessionStore()
 const catalog = useCatalogStore()
 const connection = useConnectionStore()
+const estimates = useEstimatesStore()
 
 bindLocaleToSession()
 
@@ -29,12 +31,13 @@ const isAWaiterScreen = computed(
   () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
 )
 
-let isListeningToTheCatalog = false
+let areTheWaiterListenersInPlace = false
 
 async function followTheCatalog(): Promise<void> {
-  if (!isListeningToTheCatalog) {
-    isListeningToTheCatalog = true
+  if (!areTheWaiterListenersInPlace) {
+    areTheWaiterListenersInPlace = true
     catalog.listen()
+    estimates.listen()
   }
   await catalog.load()
 }

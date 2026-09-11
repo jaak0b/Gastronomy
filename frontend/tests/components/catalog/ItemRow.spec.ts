@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { createVuetify } from 'vuetify'
 import ItemRow from '../../../src/components/catalog/ItemRow.vue'
 import type { CatalogItem } from '../../../src/core/apiTypes'
+import type { EstimateRange } from '../../../src/core/estimates'
 import type { ItemPosition } from '../../../src/core/itemPositions'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
@@ -31,7 +32,7 @@ function noted(index: number, note: string): ItemPosition {
 function mountRow(isAvailable: boolean, positions: ItemPosition[]) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions, language: 'de' as const, readyInMinutes: null },
+    props: { item: item(isAvailable), positions, language: 'de' as const, estimateRange: null },
     global: { plugins: [createVuetify(), i18n] },
     attachTo: document.body,
   })
@@ -248,14 +249,14 @@ describe('the length of a note on one line', () => {
   })
 })
 
-function mountRowReadyIn(
-  minutes: number | null,
+function mountRowWithEstimate(
+  range: EstimateRange | null,
   locale: 'de' | 'en' = 'de',
   isAvailable = true,
 ) {
   const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions: [], language: locale, readyInMinutes: minutes },
+    props: { item: item(isAvailable), positions: [], language: locale, estimateRange: range },
     global: { plugins: [createVuetify(), i18n] },
     attachTo: document.body,
   })
@@ -263,31 +264,43 @@ function mountRowReadyIn(
 
 describe('the waiting time written on an item row', () => {
   it('rides in the item name in German, short enough to leave the price its place', () => {
-    const row = mountRowReadyIn(6)
+    const row = mountRowWithEstimate({ min: 6, max: 6 })
 
     expect(row.get('.name').text()).toBe('Wasser (~6 Min.)')
   })
 
   it('stays just as short in English', () => {
-    const row = mountRowReadyIn(6, 'en')
+    const row = mountRowWithEstimate({ min: 6, max: 6 }, 'en')
 
     expect(row.get('.name').text()).toBe('Wasser (~6 min)')
   })
 
   it('says right away when there is nothing to wait for', () => {
-    const row = mountRowReadyIn(0)
+    const row = mountRowWithEstimate({ min: 0, max: 0 })
 
     expect(row.get('.name').text()).toBe('Wasser (~0 Min.)')
   })
 
+  it('names the span between the quickest and the slowest station', () => {
+    const row = mountRowWithEstimate({ min: 10, max: 62 })
+
+    expect(row.get('.name').text()).toBe('Wasser (~10 bis 62 Min.)')
+  })
+
+  it('names the same span in English', () => {
+    const row = mountRowWithEstimate({ min: 10, max: 62 }, 'en')
+
+    expect(row.get('.name').text()).toBe('Wasser (~10 to 62 min)')
+  })
+
   it('names the item alone when it carries no time of its own', () => {
-    const row = mountRowReadyIn(null)
+    const row = mountRowWithEstimate(null)
 
     expect(row.get('.name').text()).toBe('Wasser')
   })
 
   it('names a sold out item alone, because nobody can order it and wait for it', () => {
-    const row = mountRowReadyIn(6, 'de', false)
+    const row = mountRowWithEstimate({ min: 6, max: 6 }, 'de', false)
 
     expect(row.get('.name').text()).toBe('Wasser')
   })

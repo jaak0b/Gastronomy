@@ -40,7 +40,7 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.StationOrdersChanged,
                       new StationOrdersChangedEvent(stationId),
-                      [_groupNames.Station(stationId), _groupNames.Admin],
+                      [_groupNames.Devices, _groupNames.Station(stationId), _groupNames.Admin],
                       ct);
   }
 

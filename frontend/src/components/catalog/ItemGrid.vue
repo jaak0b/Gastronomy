@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
+import type { EstimateRange } from '../../core/estimates'
 import type { ItemPosition } from '../../core/itemPositions'
 import ItemRow from './ItemRow.vue'
 
@@ -7,7 +8,7 @@ defineProps<{
   items: CatalogItem[]
   language: AppLanguage
   positionsFor: (itemId: string) => ItemPosition[]
-  readyInMinutesFor: (itemId: string) => number | null
+  estimateRangeFor: (itemId: string) => EstimateRange | null
 }>()
 defineEmits<{
   add: [item: CatalogItem]
@@ -26,7 +27,7 @@ defineEmits<{
       :item="item"
       :language="language"
       :positions="positionsFor(item.id)"
-      :ready-in-minutes="readyInMinutesFor(item.id)"
+      :estimate-range="estimateRangeFor(item.id)"
       @add="$emit('add', item)"
       @add-with-a-note="(note) => $emit('addWithANote', item, note)"
       @remove-one="(index) => $emit('removeOne', index)"

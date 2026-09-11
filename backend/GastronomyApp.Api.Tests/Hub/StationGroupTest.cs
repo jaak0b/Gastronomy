@@ -27,7 +27,7 @@ public sealed class StationGroupTest
   private string _kitchenToken = null!;
 
   [Test]
-  public async Task PlaceOrder_ASliceForThatStation_ReachesItsTabletAndNotTheWaiterPhones()
+  public async Task PlaceOrder_ASliceForThatStation_ReachesItsTabletAndTheWaiterPhones()
   {
     TaskCompletionSource<Guid> heardByTheTablet = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource<Guid> heardByThePhone = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -48,16 +48,15 @@ public sealed class StationGroupTest
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    var received = await Task.WhenAny(heardByTheTablet.Task, Task.Delay(_patience));
+    var heardByBoth = Task.WhenAll(heardByTheTablet.Task, heardByThePhone.Task);
+    var received = await Task.WhenAny(heardByBoth, Task.Delay(_patience));
 
-    Assert.That(received, Is.SameAs(heardByTheTablet.Task), "The tablet of the station must be told about its new slice.");
+    Assert.That(received, Is.SameAs(heardByBoth), "The tablet of the station and the waiter phones must be told about its new slice.");
 
     Assert.Multiple(() =>
                     {
                       Assert.That(heardByTheTablet.Task.Result, Is.EqualTo(_context.World.KitchenStationId));
-                      Assert.That(heardByThePhone.Task.IsCompleted,
-                                  Is.False,
-                                  "A waiter phone has no use for the queue of a station.");
+                      Assert.That(heardByThePhone.Task.Result, Is.EqualTo(_context.World.KitchenStationId));
                     });
   }
 

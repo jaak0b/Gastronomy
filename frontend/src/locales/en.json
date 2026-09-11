@@ -61,6 +61,7 @@
   },
   "estimates": {
     "inMinutes": "~{count} min",
+    "inMinuteRange": "~{min} to {max} min",
     "withEstimate": "{line} ({estimate})",
     "loadFailed": "The waiting times could not be loaded. The order can still be sent."
   },

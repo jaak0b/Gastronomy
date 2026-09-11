@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request } from '../api/client'
 import type { EstimatesResponse, StationEstimate } from '../core/apiTypes'
+import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
 export const useEstimatesStore = defineStore('estimates', () => {
@@ -24,5 +25,29 @@ export const useEstimatesStore = defineStore('estimates', () => {
     stations.value = result.data.stations
   }
 
-  return { stations, loadFailed, load }
+  function listen(): () => void {
+    const connection = useConnectionStore()
+    const releases = [
+      connection.registerRefetch(load),
+      connection.onEvent<{ stationId: string }>('StationOrdersChanged', () => {
+        void load()
+      }),
+      connection.onEvent<unknown>('OrderStatusChanged', () => {
+        void load()
+      }),
+      connection.onEvent<unknown>('CatalogChanged', () => {
+        void load()
+      }),
+      connection.onEvent<unknown>('StationsChanged', () => {
+        void load()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
+  }
+
+  return { stations, loadFailed, load, listen }
 })

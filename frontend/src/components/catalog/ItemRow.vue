@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
 import { itemState } from '../../core/catalogItemState'
 import { assertNever } from '../../core/assertNever'
-import { withEstimate } from '../../core/estimateWording'
+import type { EstimateRange } from '../../core/estimates'
+import { withRangeEstimate } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 
@@ -12,7 +13,7 @@ const props = defineProps<{
   item: CatalogItem
   positions: ItemPosition[]
   language: AppLanguage
-  readyInMinutes: number | null
+  estimateRange: EstimateRange | null
 }>()
 const emit = defineEmits<{
   add: []
@@ -43,7 +44,7 @@ const isSoldOut = computed(() => {
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
 
 const nameWithEstimate = computed(() =>
-  withEstimate(props.item.name, isSoldOut.value ? null : props.readyInMinutes, t),
+  withRangeEstimate(props.item.name, isSoldOut.value ? null : props.estimateRange, t),
 )
 
 const groups = computed(() => groupPositions(props.positions))

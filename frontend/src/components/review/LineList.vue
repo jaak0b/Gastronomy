@@ -5,9 +5,7 @@ import type { AppLanguage, DeliveryMode, StationEstimate } from '../../core/apiT
 import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { collapseLines, type CollapsedLine } from '../../core/collapse'
 import { countedName } from '../../core/countedName'
-import { lineEstimateMinutes } from '../../core/estimates'
 import { withEstimate } from '../../core/estimateWording'
-import { orderSlices } from '../../core/orderSlices'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice, collapsedTotalCents } from '../../core/totals'
 
@@ -44,29 +42,15 @@ function readingOrder(
   return (left.line.note ?? '').localeCompare(right.line.note ?? '')
 }
 
-function minutesOf(line: BasketLineView, stationId: string | null): number | null {
-  return lineEstimateMinutes(props.estimates, stationId, line.productionMinutes)
-}
+const parts = computed<StationPart[]>(() =>
+  stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map((delivery) => ({
+    ...delivery,
+    entries: collapseLines(delivery.lines, nameOf, (line) => line.note).sort(readingOrder),
+  })),
+)
 
-const parts = computed<StationPart[]>(() => {
-  const entriesPerSlice = orderSlices(props.lines).map((slice) =>
-    collapseLines(slice.lines, nameOf, (line) => line.note).sort(readingOrder),
-  )
-  return stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map(
-    (delivery, position) => ({ ...delivery, entries: entriesPerSlice[position] }),
-  )
-})
-
-function countedNameOf(entry: CollapsedLine<BasketLineView>, stationId: string | null): string {
-  const counted = countedName(entry.quantity, nameOf(entry.line), t)
-  if (lineCannotBeOrdered(entry.line)) {
-    return counted
-  }
-  return withEstimate(counted, minutesOf(entry.line, stationId), t)
-}
-
-function togetherLabelOf(part: StationPart): string {
-  return withEstimate(t('review.deliveryTogether'), part.minutes, t)
+function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
+  return countedName(entry.quantity, nameOf(entry.line), t)
 }
 
 function priceOf(entry: CollapsedLine<BasketLineView>): string | null {
@@ -88,7 +72,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       variant="outlined"
     >
       <v-card-title v-if="part.stationId !== null" class="station-name text-subtitle-1">
-        {{ t('review.goesTo', { name: part.stationName }) }}
+        {{ withEstimate(t('review.goesTo', { name: part.stationName }), part.stationMinutes, t) }}
       </v-card-title>
       <v-divider v-if="part.stationId !== null" />
       <div
@@ -115,7 +99,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
           </legend>
           <div class="d-flex align-start">
             <span class="line-name text-body-1 flex-grow-1">
-              {{ countedNameOf(entry, part.stationId) }}
+              {{ countedNameOf(entry) }}
             </span>
             <span v-if="priceOf(entry) !== null" class="price text-body-1">
               {{ priceOf(entry) }}
@@ -147,7 +131,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
               size="large"
               :disabled="changesAreRefused"
             >
-              {{ togetherLabelOf(part) }}
+              {{ t('review.deliveryTogether') }}
             </v-btn>
             <v-btn
               class="delivery-as-it-comes"

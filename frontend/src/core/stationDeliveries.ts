@@ -1,6 +1,7 @@
 import type { DeliveryMode, StationEstimate } from './apiTypes'
+import { assertNever } from './assertNever'
 import { lineCannotBeOrdered, type BasketLineView } from './basket'
-import { lineEstimateMinutes, sliceEstimateMinutes } from './estimates'
+import { stationReadyInMinutes } from './estimates'
 import { DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES, orderSlices } from './orderSlices'
 
 export interface StationDelivery {
@@ -8,6 +9,22 @@ export interface StationDelivery {
   stationName: string
   deliveryMode: DeliveryMode
   minutes: number | null
+  stationMinutes: number | null
+  lines: BasketLineView[]
+}
+
+function minutesForTheChosenMode(
+  deliveryMode: DeliveryMode,
+  stationMinutes: number | null,
+): number | null {
+  switch (deliveryMode) {
+    case 'together':
+      return stationMinutes
+    case 'asItComes':
+      return null
+    default:
+      return assertNever(deliveryMode)
+  }
 }
 
 export function stationDeliveries(
@@ -19,15 +36,16 @@ export function stationDeliveries(
     const stationId = slice.stationId
     const deliveryMode =
       stationId === null ? DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES : deliveryModeFor(stationId)
-    const itemMinutes = slice.lines
-      .filter((line) => !lineCannotBeOrdered(line))
-      .map((line) => lineEstimateMinutes(estimates, stationId, line.productionMinutes))
-      .filter((minutes): minutes is number => minutes !== null)
+    const orderableLines = slice.lines.filter((line) => !lineCannotBeOrdered(line))
+    const stationMinutes =
+      stationId === null ? null : stationReadyInMinutes(estimates, orderableLines, stationId)
     return {
       stationId,
       stationName: slice.lines[0].stationName,
       deliveryMode,
-      minutes: sliceEstimateMinutes(itemMinutes, deliveryMode),
+      minutes: minutesForTheChosenMode(deliveryMode, stationMinutes),
+      stationMinutes,
+      lines: slice.lines,
     }
   })
 }

@@ -104,6 +104,25 @@ describe('the question before an order goes out, in German', () => {
     ])
   })
 
+  it('adds every line of the station to the queue, not just the slowest one', () => {
+    mountDialog({
+      lines: [
+        bratwurst(),
+        bratwurst({ catalogItemId: 'item-currywurst', name: 'Currywurst' }),
+      ],
+    })
+
+    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
+      'Gesammelt ausgeben (~68 Min.)',
+    ])
+  })
+
+  it('names no time for a station that hands its part out item by item', () => {
+    mountDialog({ deliveryModes: { 'station-kueche': 'asItComes' } })
+
+    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual(['Einzeln ausgeben'])
+  })
+
   it('gives each station of a split order a line, and only the collected one a time', () => {
     mountDialog(ORDER_ACROSS_TWO_STATIONS)
 
@@ -158,6 +177,20 @@ describe('the question before an order goes out, in English', () => {
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
       'Hand out together (~40 min)',
+    ])
+  })
+
+  it('adds every line of the station to the queue, not just the slowest one', () => {
+    mountDialog({
+      lines: [
+        bratwurst(),
+        bratwurst({ catalogItemId: 'item-currywurst', name: 'Currywurst' }),
+      ],
+      locale: 'en',
+    })
+
+    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
+      'Hand out together (~68 min)',
     ])
   })
 

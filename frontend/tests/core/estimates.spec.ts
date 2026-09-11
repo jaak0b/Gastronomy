@@ -1,17 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import {
-  lineEstimateMinutes,
-  pickerEstimateMinutes,
+  pickerEstimateRange,
   queuedMinutesAt,
-  readyInMinutes,
-  sliceEstimateMinutes,
+  stationEstimateAfterAdding,
+  stationReadyInMinutes,
 } from '../../src/core/estimates'
 import type { CatalogItem, StationEstimate } from '../../src/core/apiTypes'
+import type { BasketLineView } from '../../src/core/basket'
 
 const QUEUES: StationEstimate[] = [
   { stationId: 'station-kueche', queuedMinutes: 12 },
-  { stationId: 'station-grill', queuedMinutes: 4 },
+  { stationId: 'station-grill', queuedMinutes: 50 },
 ]
+
+const PICKER_QUEUES: StationEstimate[] = [
+  { stationId: 'station-kueche', queuedMinutes: 0 },
+  { stationId: 'station-grill', queuedMinutes: 50 },
+]
+
+function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
+  return {
+    catalogItemId: 'item-bratwurst',
+    name: 'Bratwurst',
+    unitPriceCents: 350,
+    note: null,
+    stationId: 'station-kueche',
+    stationName: 'Küche',
+    candidateStationIds: ['station-kueche'],
+    productionMinutes: 8,
+    isSoldOut: false,
+    isNoLongerOnTheMenu: false,
+    isNoLongerPreparedAtItsStation: false,
+    ...overrides,
+  }
+}
 
 function item(stationIds: string[], productionMinutes: number | null): CatalogItem {
   return {
@@ -26,19 +48,9 @@ function item(stationIds: string[], productionMinutes: number | null): CatalogIt
   }
 }
 
-describe('readyInMinutes', () => {
-  it('adds the queue at the station to the time the item itself takes', () => {
-    expect(readyInMinutes(12, 8)).toBe(20)
-  })
-
-  it('reports zero when nothing is queued and the item takes no time', () => {
-    expect(readyInMinutes(0, 0)).toBe(0)
-  })
-})
-
 describe('queuedMinutesAt', () => {
   it('finds the queue of the station', () => {
-    expect(queuedMinutesAt(QUEUES, 'station-grill')).toBe(4)
+    expect(queuedMinutesAt(QUEUES, 'station-grill')).toBe(50)
   })
 
   it('counts a station the laptop said nothing about as having no queue', () => {
@@ -46,48 +58,106 @@ describe('queuedMinutesAt', () => {
   })
 })
 
-describe('sliceEstimateMinutes', () => {
-  it('takes the slowest item when the station hands everything out together', () => {
-    expect(sliceEstimateMinutes([20, 12, 15], 'together')).toBe(20)
+describe('stationReadyInMinutes, what one station will take for the whole order', () => {
+  it('adds the queue to every line that goes to the station', () => {
+    const lines = [
+      line({ productionMinutes: 8 }),
+      line({ catalogItemId: 'item-pommes', name: 'Pommes', productionMinutes: 3 }),
+    ]
+
+    expect(stationReadyInMinutes(QUEUES, lines, 'station-kueche')).toBe(23)
   })
 
-  it('gives no slice estimate when items come out as they are ready', () => {
-    expect(sliceEstimateMinutes([20, 12, 15], 'asItComes')).toBeNull()
+  it('counts two portions of the same item as two lines', () => {
+    expect(stationReadyInMinutes(QUEUES, [line(), line()], 'station-kueche')).toBe(28)
   })
 
-  it('gives no slice estimate for an empty slice', () => {
-    expect(sliceEstimateMinutes([], 'together')).toBeNull()
+  it('counts a line nobody gave a time for as adding nothing', () => {
+    expect(
+      stationReadyInMinutes(QUEUES, [line({ productionMinutes: null })], 'station-kueche'),
+    ).toBe(12)
+  })
+
+  it('names the queue alone when the station has no timed line at all', () => {
+    expect(
+      stationReadyInMinutes(QUEUES, [line({ productionMinutes: null })], 'station-grill'),
+    ).toBe(50)
+  })
+
+  it('names nothing when there is neither a queue nor a line with a time', () => {
+    expect(
+      stationReadyInMinutes([], [line({ productionMinutes: null })], 'station-kueche'),
+    ).toBeNull()
+  })
+
+  it('names nothing for a line that still waits for its station', () => {
+    const undecided = line({
+      stationId: null,
+      candidateStationIds: ['station-kueche', 'station-grill'],
+      productionMinutes: 8,
+    })
+
+    expect(stationReadyInMinutes([], [undecided], 'station-kueche')).toBeNull()
   })
 })
 
-describe('pickerEstimateMinutes, what the item list shows before a station is chosen', () => {
-  it('uses the one station an item can go to', () => {
-    expect(pickerEstimateMinutes(item(['station-kueche'], 8), QUEUES)).toBe(20)
+describe('stationEstimateAfterAdding, what one station button promises', () => {
+  it('adds the queue, the basket already routed there and the item itself', () => {
+    const alreadyThere = line({
+      stationId: 'station-grill',
+      candidateStationIds: ['station-grill'],
+      productionMinutes: 2,
+    })
+
+    expect(
+      stationEstimateAfterAdding(PICKER_QUEUES, [alreadyThere], 'station-grill', 10),
+    ).toBe(62)
   })
 
-  it('takes the quickest station when the item could go to several', () => {
-    expect(pickerEstimateMinutes(item(['station-kueche', 'station-grill'], 8), QUEUES)).toBe(12)
-  })
-
-  it('shows nothing for an item that has no station at all', () => {
-    expect(pickerEstimateMinutes(item([], 8), QUEUES)).toBeNull()
+  it('counts every portion that moves to the station', () => {
+    expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-grill', 10, 2)).toBe(70)
   })
 })
 
-describe('lineEstimateMinutes, what one line on the summary shows', () => {
-  it('adds the queue of the line station to the time the item itself needs', () => {
-    expect(lineEstimateMinutes(QUEUES, 'station-kueche', 8)).toBe(20)
+describe('pickerEstimateRange, what the item list shows before a station is chosen', () => {
+  it('spans from the quickest station to the slowest one', () => {
+    expect(
+      pickerEstimateRange(
+        item(['station-kueche', 'station-grill'], 10),
+        PICKER_QUEUES,
+        [],
+      ),
+    ).toEqual({ min: 10, max: 60 })
   })
 
-  it('reports nothing for an item nobody gave a preparation time', () => {
-    expect(lineEstimateMinutes(QUEUES, 'station-grill', null)).toBeNull()
+  it('shifts the range with the basket already routed to a station', () => {
+    const alreadyThere = line({
+      stationId: 'station-grill',
+      candidateStationIds: ['station-grill'],
+      productionMinutes: 2,
+    })
+
+    expect(
+      pickerEstimateRange(
+        item(['station-kueche', 'station-grill'], 10),
+        PICKER_QUEUES,
+        [alreadyThere],
+      ),
+    ).toEqual({ min: 10, max: 62 })
   })
 
-  it('reports the queue alone for an item whose preparation takes no time at all', () => {
-    expect(lineEstimateMinutes(QUEUES, 'station-grill', 0)).toBe(4)
+  it('names the one station when the item can only go there', () => {
+    expect(pickerEstimateRange(item(['station-kueche'], 10), PICKER_QUEUES, [])).toEqual({
+      min: 10,
+      max: 10,
+    })
   })
 
-  it('reports nothing while the line still waits for its station', () => {
-    expect(lineEstimateMinutes(QUEUES, null, 8)).toBeNull()
+  it('names nothing for an item nobody gave a production time', () => {
+    expect(pickerEstimateRange(item(['station-kueche'], null), PICKER_QUEUES, [])).toBeNull()
+  })
+
+  it('names nothing for an item no station prepares', () => {
+    expect(pickerEstimateRange(item([], 10), PICKER_QUEUES, [])).toBeNull()
   })
 })
