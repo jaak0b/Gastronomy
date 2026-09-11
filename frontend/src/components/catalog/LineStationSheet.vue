@@ -35,7 +35,7 @@ function choose(stationId: string): void {
 <template>
   <v-dialog :model-value="true" max-width="480" persistent>
     <v-card class="line-station-sheet">
-      <v-card-title>{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
+      <v-card-title class="station-where-title">{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
       <v-card-text v-if="withNote">
         <v-text-field
           ref="noteInput"
@@ -70,6 +70,11 @@ function choose(stationId: string): void {
 </template>
 
 <style scoped>
+.station-where-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .station-choice {
   white-space: normal;
   height: auto;

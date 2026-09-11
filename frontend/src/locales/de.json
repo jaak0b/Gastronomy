@@ -66,7 +66,7 @@
     "loadFailed": "Die Wartezeiten konnten nicht geladen werden. Die Bestellung lässt sich trotzdem senden."
   },
   "line": {
-    "whereTitle": "Wo soll {item} zubereitet werden?",
+    "whereTitle": "Ausgabestelle für {item}",
     "station": "Ausgabestelle: {name}",
     "currentStation": "Aktuell",
     "cancel": "Abbrechen"

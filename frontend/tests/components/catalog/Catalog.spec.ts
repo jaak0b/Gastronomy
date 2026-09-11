@@ -478,6 +478,9 @@ describe('the question about which station is to make an item', () => {
     await view.findAll('.item-row .add-note')[1].trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
     expect(document.querySelector('.line-station-sheet .station-note-input')).not.toBeNull()
+    expect(
+      document.querySelector('.line-station-sheet .station-where-title')?.textContent?.trim(),
+    ).toBe('Ausgabestelle für Kaffee')
 
     const field = document.querySelector(
       '.line-station-sheet .station-note-input input',
