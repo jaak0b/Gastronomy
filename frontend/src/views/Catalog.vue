@@ -37,8 +37,8 @@ const tappedCategory = ref<string | null>(null)
 const tableField = ref<{ focus: () => void } | null>(null)
 const isTableMissing = ref(false)
 const itemAwaitingStation = ref<CatalogItem | null>(null)
-const noteAwaitingStation = ref<string | null>(null)
 const linesAwaitingStation = ref<number[]>([])
+const focusTheNoteField = ref(false)
 
 onMounted(() => {
   if (order.changesAreRefused) {
@@ -70,8 +70,8 @@ watch(openCategory, (category) => {
 
 function forgetTheStationQuestion(): void {
   itemAwaitingStation.value = null
-  noteAwaitingStation.value = null
   linesAwaitingStation.value = []
+  focusTheNoteField.value = false
 }
 
 function closeTheOpenCategory(): void {
@@ -139,6 +139,11 @@ function positionsFor(itemId: string): ItemPosition[] {
   return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
 }
 
+const currentStationId = computed(() => {
+  const first = linesAwaitingStation.value[0]
+  return first === undefined ? null : order.draft.lines[first]?.stationId ?? null
+})
+
 const orderableBasketLines = computed(() =>
   order.basketLines.filter((line) => !lineCannotBeOrdered(line)),
 )
@@ -186,7 +191,7 @@ function place(item: CatalogItem, note: string | null, stationId: string | null)
 function addItem(item: CatalogItem, note: string | null = null): void {
   if (needsStationChoice(item)) {
     itemAwaitingStation.value = item
-    noteAwaitingStation.value = note
+    focusTheNoteField.value = false
     return
   }
   place(item, note, item.stationIds[0] ?? null)
@@ -196,13 +201,23 @@ function addItemWithANote(item: CatalogItem, note: string): void {
   addItem(item, note)
 }
 
+function addItemWithANoteAtAStation(item: CatalogItem): void {
+  addItem(item)
+  focusTheNoteField.value = true
+}
+
+function addLikeGroup(item: CatalogItem, note: string | null, stationId: string | null): void {
+  place(item, note, stationId)
+}
+
 function renameNote(indexes: number[], note: string): void {
   indexes.forEach((index) => order.noteLine(index, note))
 }
 
-function chooseStation(stationId: string): void {
-  if (linesAwaitingStation.value.length > 0) {
-    linesAwaitingStation.value.forEach((index) => order.chooseStation(index, stationId))
+function chooseStation(stationId: string, note: string | null): void {
+  const movedLines = linesAwaitingStation.value
+  if (movedLines.length > 0) {
+    movedLines.forEach((index) => order.chooseStation(index, stationId))
     linesAwaitingStation.value = []
     return
   }
@@ -210,9 +225,8 @@ function chooseStation(stationId: string): void {
   if (item === null) {
     return
   }
-  place(item, noteAwaitingStation.value, stationId)
   itemAwaitingStation.value = null
-  noteAwaitingStation.value = null
+  place(item, note, stationId)
 }
 </script>
 
@@ -270,6 +284,8 @@ function chooseStation(stationId: string): void {
         class="my-2"
         @add="addItem"
         @add-with-a-note="addItemWithANote"
+        @add-with-a-note-at-a-station="addItemWithANoteAtAStation"
+        @add-like-group="addLikeGroup"
         @remove-one="order.dropLine"
         @rename-note="renameNote"
         @change-station="(indexes) => (linesAwaitingStation = indexes)"
@@ -279,6 +295,9 @@ function chooseStation(stationId: string): void {
         :item="itemBehindTheStationChoice"
         :station-name-for="catalog.stationName"
         :estimate-for="estimateForTheStationChoice"
+        :current-station-id="currentStationId"
+        :with-note="linesAwaitingStation.length === 0"
+        :focus-the-note="focusTheNoteField"
         @choose="chooseStation"
         @cancel="forgetTheStationQuestion"
       />

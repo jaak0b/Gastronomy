@@ -5,6 +5,7 @@ export interface ItemPosition {
   index: number
   note: string | null
   hasAStationChoice: boolean
+  stationId: string | null
   stationName: string | null
 }
 
@@ -35,6 +36,7 @@ export function positionsForItem(
       index: entry.index,
       note: entry.line.note,
       hasAStationChoice,
+      stationId: entry.line.stationId,
       stationName:
         hasAStationChoice && entry.line.stationId !== null
           ? stationNameOf(entry.line.stationId)
@@ -44,6 +46,7 @@ export function positionsForItem(
 
 export interface PositionGroup {
   note: string | null
+  stationId: string | null
   stationName: string | null
   indexes: number[]
 }
@@ -53,12 +56,13 @@ export function groupPositions(positions: readonly ItemPosition[]): PositionGrou
   const positionByKey = new Map<string, number>()
 
   for (const position of positions) {
-    const key = JSON.stringify([position.note ?? '', position.stationName ?? ''])
+    const key = JSON.stringify([position.note ?? '', position.stationId ?? ''])
     const found = positionByKey.get(key)
     if (found === undefined) {
       positionByKey.set(key, groups.length)
       groups.push({
         note: position.note,
+        stationId: position.stationId,
         stationName: position.stationName,
         indexes: [position.index],
       })

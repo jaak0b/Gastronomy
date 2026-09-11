@@ -40,6 +40,14 @@ describe('positionsForItem', () => {
     expect(positions[1].note).toBe('ohne Schaum')
   })
 
+  it('carries the station of every line, even one station only', () => {
+    const draft = draftWith([line('item-1', null, 'station-1')])
+
+    const positions = positionsForItem(draft, item(['station-1']), stationNameOf)
+
+    expect(positions[0].stationId).toBe('station-1')
+  })
+
   it('reports no station choice for an item only one station prepares', () => {
     const draft = draftWith([line('item-1', null, 'station-1')])
 
@@ -92,8 +100,13 @@ describe('portionsOfItem', () => {
 })
 
 describe('groupPositions', () => {
-  function position(index: number, note: string | null, stationName: string | null): ItemPosition {
-    return { index, note, hasAStationChoice: stationName !== null, stationName }
+  function position(
+    index: number,
+    note: string | null,
+    stationId: string | null,
+    stationName: string | null = stationId,
+  ): ItemPosition {
+    return { index, note, hasAStationChoice: stationName !== null, stationId, stationName }
   }
 
   it('counts positions without a note or a station of their own as one group', () => {
@@ -105,6 +118,7 @@ describe('groupPositions', () => {
 
     expect(groups).toHaveLength(1)
     expect(groups[0].note).toBeNull()
+    expect(groups[0].stationId).toBeNull()
     expect(groups[0].stationName).toBeNull()
     expect(groups[0].indexes).toEqual([0, 1, 2])
   })
@@ -131,15 +145,48 @@ describe('groupPositions', () => {
 
   it('keeps positions apart when they go to different stations', () => {
     const groups = groupPositions([
-      position(0, null, 'Bar innen'),
-      position(1, null, 'Bar aussen'),
-      position(2, null, 'Bar innen'),
+      position(0, null, 'station-1', 'Bar innen'),
+      position(1, null, 'station-2', 'Bar aussen'),
+      position(2, null, 'station-1', 'Bar innen'),
     ])
 
     expect(groups).toHaveLength(2)
     expect(groups[0].stationName).toBe('Bar innen')
+    expect(groups[0].stationId).toBe('station-1')
     expect(groups[0].indexes).toEqual([0, 2])
     expect(groups[1].indexes).toEqual([1])
+  })
+
+  it('keeps two lines apart when the same note goes to different stations', () => {
+    const groups = groupPositions([
+      position(0, 'ohne Eis', 'station-1', 'Bar innen'),
+      position(1, 'ohne Eis', 'station-2', 'Bar aussen'),
+    ])
+
+    expect(groups).toHaveLength(2)
+    expect(groups[0].indexes).toEqual([0])
+    expect(groups[1].indexes).toEqual([1])
+  })
+
+  it('keeps two lines apart when two stations share a display name', () => {
+    const groups = groupPositions([
+      position(0, null, 'station-1', 'Bar'),
+      position(1, null, 'station-2', 'Bar'),
+    ])
+
+    expect(groups).toHaveLength(2)
+    expect(groups[0].stationId).toBe('station-1')
+    expect(groups[1].stationId).toBe('station-2')
+  })
+
+  it('counts lines with the same note at the same station together', () => {
+    const groups = groupPositions([
+      position(0, 'ohne Eis', 'station-1', null),
+      position(1, 'ohne Eis', 'station-1', null),
+    ])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].indexes).toEqual([0, 1])
   })
 
   it('keeps the order the groups first appeared in', () => {

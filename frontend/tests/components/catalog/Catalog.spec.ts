@@ -469,6 +469,78 @@ describe('the question about which station is to make an item', () => {
     expect(order.draft.lines).toHaveLength(0)
     expect(view.findAll('.item-row').length).toBeGreaterThan(0)
   })
+
+  it('takes the note in the station sheet and puts both on the line', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    await openCategory(view, 0)
+
+    await view.findAll('.item-row .add-note')[1].trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+    expect(document.querySelector('.line-station-sheet .station-note-input')).not.toBeNull()
+
+    const field = document.querySelector(
+      '.line-station-sheet .station-note-input input',
+    ) as HTMLInputElement
+    expect(document.activeElement).toBe(field)
+    field.value = 'ohne Zucker'
+    field.dispatchEvent(new Event('input'))
+    await view.vm.$nextTick()
+    document.querySelector<HTMLElement>('.station-choice')?.click()
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).toBeNull())
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(order.draft.lines[0].note).toBe('ohne Zucker')
+    expect(order.draft.lines[0].stationId).toBe('station-kueche')
+  })
+
+  it('adds another portion to the station of that group', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-kaffee',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+    order.addItem({
+      catalogItemId: 'item-kaffee',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row')[1].get('.group-add').trigger('click')
+
+    expect(order.draft.lines).toHaveLength(3)
+    expect(order.draft.lines[2].stationId).toBe('station-bar')
+    expect(order.draft.lines[2].note).toBeNull()
+  })
+
+  it('keeps the note of a line while its station is changed', async () => {
+    const view = mountCatalogWithAStationChoice()
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-kaffee',
+      note: 'ohne Zucker',
+      stationId: 'station-bar',
+      name: 'Kaffee',
+    })
+
+    await openCategory(view, 0)
+    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+
+    expect(document.querySelector('.line-station-sheet .station-note-input')).toBeNull()
+
+    document.querySelectorAll<HTMLElement>('.station-choice')[0]?.click()
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).toBeNull())
+
+    expect(order.draft.lines).toHaveLength(1)
+    expect(order.draft.lines[0].note).toBe('ohne Zucker')
+    expect(order.draft.lines[0].stationId).toBe('station-kueche')
+  })
 })
 
 const CATALOG_WITH_TIMED_ITEMS: CatalogData = {
@@ -584,13 +656,13 @@ describe('the waiting time on the ordering screen', () => {
     })
 
     await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.change-station').trigger('click')
+    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
 
     const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
       element.textContent?.trim(),
     )
-    expect(choices).toEqual(['Küche (~20 Min.)', 'Bar (~70 Min.)'])
+    expect(choices).toEqual(['Küche (~20 Min.)', 'Bar (~70 Min.) Aktuell'])
   })
 
   it('keeps a line that sold out out of the range on the row', async () => {
@@ -638,13 +710,13 @@ describe('the waiting time on the ordering screen', () => {
     const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.change-station').trigger('click')
+    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
 
     const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
       element.textContent?.trim(),
     )
-    expect(choices).toEqual(['Küche', 'Bar'])
+    expect(choices).toEqual(['Küche', 'Bar Aktuell'])
   })
 })
 

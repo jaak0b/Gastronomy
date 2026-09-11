@@ -69,7 +69,7 @@
     "whereTitle": "Wo soll {item} zubereitet werden?",
     "whereHelp": "Die Auswahl gilt nur für diese Position.",
     "station": "Ausgabestelle: {name}",
-    "changeStation": "Ausgabestelle ändern",
+    "currentStation": "Aktuell",
     "cancel": "Abbrechen"
   },
   "review": {

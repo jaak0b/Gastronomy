@@ -22,17 +22,43 @@ function item(isAvailable: boolean): CatalogItem {
 }
 
 function plain(index: number): ItemPosition {
-  return { index, note: null, hasAStationChoice: false, stationName: null }
+  return {
+    index,
+    note: null,
+    hasAStationChoice: false,
+    stationId: 'station-bar',
+    stationName: null,
+  }
 }
 
 function noted(index: number, note: string): ItemPosition {
-  return { index, note, hasAStationChoice: false, stationName: null }
+  return {
+    index,
+    note,
+    hasAStationChoice: false,
+    stationId: 'station-bar',
+    stationName: null,
+  }
 }
 
 function mountRow(isAvailable: boolean, positions: ItemPosition[]) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemRow, {
     props: { item: item(isAvailable), positions, language: 'de' as const, estimateRange: null },
+    global: { plugins: [createVuetify(), i18n] },
+    attachTo: document.body,
+  })
+}
+
+function mountRowForAnItemAtSeveralStations(isAvailable: boolean, positions: ItemPosition[]) {
+  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
+  return mount(ItemRow, {
+    props: {
+      item: { ...item(isAvailable), stationIds: ['station-kueche', 'station-bar'] },
+      positions,
+      language: 'de' as const,
+      estimateRange: null,
+    },
     global: { plugins: [createVuetify(), i18n] },
     attachTo: document.body,
   })
@@ -183,12 +209,12 @@ describe('the portions that carry a note', () => {
     expect(row.get('.note-group .group-count').text()).toBe('2')
   })
 
-  it('adds another portion carrying that same note', async () => {
+  it('adds another portion carrying that same note at that same station', async () => {
     const row = mountRow(true, [noted(0, 'ohne Eis')])
 
     await row.get('.note-group .group-add').trigger('click')
 
-    expect(row.emitted('addWithANote')).toEqual([['ohne Eis']])
+    expect(row.emitted('addLikeGroup')).toEqual([['ohne Eis', 'station-bar']])
   })
 
   it('takes the most recently added portion of that note off again', async () => {
@@ -202,7 +228,7 @@ describe('the portions that carry a note', () => {
   it('reopens the note for correcting, filled in as it stands', async () => {
     const row = mountRow(true, [noted(0, 'ohne Eis'), noted(2, 'ohne Eis')])
 
-    await row.get('.note-group .group-label').trigger('click')
+    await row.get('.note-group .group-note').trigger('click')
 
     expect(dialogField().value).toBe('ohne Eis')
 
@@ -215,7 +241,7 @@ describe('the portions that carry a note', () => {
 
   it('names the station on a line whose item two stations could prepare', () => {
     const row = mountRow(true, [
-      { index: 0, note: null, hasAStationChoice: true, stationName: 'Bar innen' },
+      { index: 0, note: null, hasAStationChoice: true, stationId: 'station-1', stationName: 'Bar innen' },
     ])
 
     expect(row.get('.note-group .group-label').text()).toBe('Ausgabestelle: Bar innen')
@@ -223,7 +249,13 @@ describe('the portions that carry a note', () => {
 
   it('keeps the station visible on a line that also carries a note', () => {
     const row = mountRow(true, [
-      { index: 0, note: 'ohne Eis', hasAStationChoice: true, stationName: 'Bar innen' },
+      {
+        index: 0,
+        note: 'ohne Eis',
+        hasAStationChoice: true,
+        stationId: 'station-1',
+        stationName: 'Bar innen',
+      },
     ])
 
     const label = row.get('.note-group .group-label').text()
@@ -231,13 +263,31 @@ describe('the portions that carry a note', () => {
     expect(label).toContain('ohne Eis')
   })
 
-  it('offers to change the station of that line', async () => {
+  it('adds another portion to a station-only group', async () => {
     const row = mountRow(true, [
-      { index: 0, note: null, hasAStationChoice: true, stationName: 'Bar innen' },
-      { index: 1, note: null, hasAStationChoice: true, stationName: 'Bar innen' },
+      { index: 0, note: null, hasAStationChoice: true, stationId: 'station-bar', stationName: 'Bar innen' },
     ])
 
-    await row.get('.note-group .change-station').trigger('click')
+    await row.get('.note-group .group-add').trigger('click')
+
+    expect(row.emitted('addLikeGroup')).toEqual([[null, 'station-bar']])
+  })
+
+  it('offers no plus on a sold out item', () => {
+    const row = mountRow(false, [
+      { index: 0, note: null, hasAStationChoice: true, stationId: 'station-bar', stationName: 'Bar innen' },
+    ])
+
+    expect(row.get('.note-group .group-add').attributes('disabled')).toBeDefined()
+  })
+
+  it('offers to change the station of that line', async () => {
+    const row = mountRow(true, [
+      { index: 0, note: null, hasAStationChoice: true, stationId: 'station-1', stationName: 'Bar innen' },
+      { index: 1, note: null, hasAStationChoice: true, stationId: 'station-1', stationName: 'Bar innen' },
+    ])
+
+    await row.get('.note-group .group-station').trigger('click')
 
     expect(row.emitted('changeStation')).toEqual([[[0, 1]]])
   })
@@ -245,7 +295,18 @@ describe('the portions that carry a note', () => {
   it('offers no station control on an item only one station prepares', () => {
     const row = mountRow(true, [noted(0, 'ohne Eis')])
 
-    expect(row.find('.change-station').exists()).toBe(false)
+    expect(row.find('.group-station').exists()).toBe(false)
+  })
+})
+
+describe('asking for a note on an item several stations could prepare', () => {
+  it('sends the waiter to the station question instead of opening the note dialog', async () => {
+    const row = mountRowForAnItemAtSeveralStations(true, [])
+
+    await row.get('.add-note').trigger('click')
+
+    expect(row.emitted('addWithANoteAtAStation')).toHaveLength(1)
+    expect(document.querySelector('.note-dialog')).toBeNull()
   })
 })
 

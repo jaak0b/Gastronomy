@@ -8,6 +8,7 @@ import type { EstimateRange } from '../../core/estimates'
 import { withRangeEstimate } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
+import { needsStationChoice } from '../../core/routingPreview'
 
 const props = defineProps<{
   item: CatalogItem
@@ -18,6 +19,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   add: []
   addWithANote: [note: string]
+  addWithANoteAtAStation: []
+  addLikeGroup: [note: string | null, stationId: string | null]
   removeOne: [index: number]
   renameNote: [indexes: number[], note: string]
   changeStation: [indexes: number[]]
@@ -58,6 +61,10 @@ const noteGroups = computed(() => groups.value.filter((group) => group !== plain
 const canConfirm = computed(() => typedNote.value.trim().length > 0)
 
 function askForANote(): void {
+  if (needsStationChoice(props.item)) {
+    emit('addWithANoteAtAStation')
+    return
+  }
   groupBeingCorrected.value = null
   typedNote.value = ''
   isAsking.value = true
@@ -130,34 +137,30 @@ function mostRecentOf(group: PositionGroup): number {
         @click="emit('removeOne', mostRecentOf(group))"
       />
       <span class="group-count text-body-1">{{ group.indexes.length }}</span>
-      <button
-        class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column"
-        @click="correctTheNoteOf(group)"
-      >
-        <span v-if="group.stationName !== null" class="group-station">
+      <div class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column">
+        <button
+          v-if="group.stationName !== null"
+          class="group-station"
+          @click="emit('changeStation', group.indexes)"
+        >
           {{ t('line.station', { name: group.stationName }) }}
-        </span>
-        <span v-if="group.note !== null" class="group-note text-medium-emphasis">
+        </button>
+        <button
+          v-if="group.note !== null"
+          class="group-note text-medium-emphasis"
+          @click="correctTheNoteOf(group)"
+        >
           {{ group.note }}
-        </span>
-      </button>
+        </button>
+      </div>
       <v-btn
-        v-if="group.stationName !== null"
-        class="change-station"
-        variant="text"
-        size="small"
-        @click="emit('changeStation', group.indexes)"
-      >
-        {{ t('line.changeStation') }}
-      </v-btn>
-      <v-btn
-        v-if="group.note !== null"
         class="group-add"
         icon="mdi-plus"
         variant="text"
         size="small"
+        :disabled="isSoldOut"
         :aria-label="t('catalog.addOne', { name: item.name })"
-        @click="emit('addWithANote', group.note)"
+        @click="emit('addLikeGroup', group.note, group.stationId)"
       />
     </div>
 
@@ -243,10 +246,13 @@ function mostRecentOf(group: PositionGroup): number {
   align-self: center;
 }
 
-.group-label {
+.group-station,
+.group-note {
   background: none;
   border: none;
   color: inherit;
-  padding: 0;
+  text-align: start;
+  padding-block: 6px;
+  min-height: 2.5rem;
 }
 </style>

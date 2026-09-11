@@ -69,7 +69,7 @@
     "whereTitle": "Where should {item} be prepared?",
     "whereHelp": "The choice applies to this item only.",
     "station": "Station: {name}",
-    "changeStation": "Change the station",
+    "currentStation": "Current",
     "cancel": "Cancel"
   },
   "review": {

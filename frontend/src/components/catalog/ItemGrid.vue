@@ -13,6 +13,8 @@ defineProps<{
 defineEmits<{
   add: [item: CatalogItem]
   addWithANote: [item: CatalogItem, note: string]
+  addWithANoteAtAStation: [item: CatalogItem]
+  addLikeGroup: [item: CatalogItem, note: string | null, stationId: string | null]
   removeOne: [index: number]
   renameNote: [indexes: number[], note: string]
   changeStation: [indexes: number[]]
@@ -30,6 +32,8 @@ defineEmits<{
       :estimate-range="estimateRangeFor(item.id)"
       @add="$emit('add', item)"
       @add-with-a-note="(note) => $emit('addWithANote', item, note)"
+      @add-with-a-note-at-a-station="$emit('addWithANoteAtAStation', item)"
+      @add-like-group="(note, stationId) => $emit('addLikeGroup', item, note, stationId)"
       @remove-one="(index) => $emit('removeOne', index)"
       @rename-note="(indexes, note) => $emit('renameNote', indexes, note)"
       @change-station="(indexes) => $emit('changeStation', indexes)"
