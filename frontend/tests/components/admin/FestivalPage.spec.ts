@@ -640,3 +640,112 @@ describe('the items of this festival', () => {
     expect(page.findAllComponents(VAutocomplete)[1].props('modelValue')).toBe('item-neu')
   })
 })
+
+describe('an item change the laptop refuses', () => {
+  const REFUSED_PUT = {
+    method: 'PUT',
+    status: 400,
+    body: {
+      code: 'Conflict',
+      messageKey: 'admin.actionFailed',
+      parameters: {},
+      details: null,
+    },
+  }
+
+  const REFUSAL_TEXT =
+    'Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.'
+
+  it('puts the chip back where the laptop has it and says why', async () => {
+    stubLaptop({
+      stations: [KITCHEN, { ...BAR, isAtTheFestival: true }],
+      refusal: REFUSED_PUT,
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await page.findAll('.festival-item-row .station-chip')[1].trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+    )
+    const chips = page.findAll('.festival-item-row .station-chip')
+    expect(chips[0].classes()).toContain('is-selected')
+    expect(chips[1].classes()).not.toContain('is-selected')
+  })
+
+  it('puts the price back to the one the laptop has', async () => {
+    stubLaptop({ refusal: REFUSED_PUT })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await page.get('.price-field input').setValue('4,00')
+    await page.get('.price-field input').trigger('blur')
+
+    await vi.waitFor(() =>
+      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+    )
+    await page.vm.$nextTick()
+    expect((page.get('.price-field input').element as HTMLInputElement).value).toBe('3,50')
+  })
+
+  it('leaves the sold out switch as the laptop has it', async () => {
+    stubLaptop({
+      refusal: {
+        method: 'POST',
+        status: 400,
+        body: {
+          code: 'Conflict',
+          messageKey: 'admin.actionFailed',
+          parameters: {},
+          details: null,
+        },
+      },
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.sold-out-switch').exists()).toBe(true))
+    await page.get('.sold-out-switch input').setValue(true)
+
+    await vi.waitFor(() =>
+      expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT),
+    )
+    await page.vm.$nextTick()
+    expect((page.get('.sold-out-switch input').element as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('sends one price change once when the admin presses enter and then leaves the field', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await page.get('.price-field input').setValue('4,00')
+    await page.get('.price-field input').trigger('keyup.enter')
+    await page.get('.price-field input').trigger('blur')
+
+    await vi.waitFor(() => expect(writtenCalls(calls).length).toBeGreaterThan(0))
+    await new Promise((carryOn) => setTimeout(carryOn, 20))
+    expect(writtenCalls(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
+      `PUT /api/admin/festivals/${FESTIVAL_ID}/items/${SAUSAGE_ID}`,
+    ])
+  })
+
+  it('shows the price the laptop holds after another tab changed it', async () => {
+    const listed = [SAUSAGE, BEER]
+    stubLaptop({ items: listed })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.price-field input').exists()).toBe(true))
+    expect((page.get('.price-field input').element as HTMLInputElement).value).toBe('3,50')
+
+    listed[0] = {
+      ...SAUSAGE,
+      atTheFestival: { priceCents: 500, isAvailable: true, stationIds: [KITCHEN_ID] },
+    }
+    await useConnectionStore().refetchAll()
+
+    await vi.waitFor(() =>
+      expect((page.get('.price-field input').element as HTMLInputElement).value).toBe('5,00'),
+    )
+  })
+})

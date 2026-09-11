@@ -18,11 +18,18 @@ import ItemForm from '../items/ItemForm.vue'
 import StationChips from '../items/StationChips.vue'
 import { useRefusalText } from '../refusalText'
 
+interface Placement {
+  priceText: string
+  stationIds: string[]
+}
+
 interface ItemRow {
   priceText: string
   stationIds: string[]
   sentPriceText: string
   sentStationIds: string[]
+  onItsWay: Placement | null
+  refusedAvailabilityCount: number
 }
 
 const props = defineProps<{ festivalId: string }>()
@@ -92,7 +99,22 @@ function rowFrom(item: AdminItem): ItemRow {
     locale.value as AppLanguage,
   )
   const stationIds = [...(item.atTheFestival?.stationIds ?? [])]
-  return { priceText, stationIds, sentPriceText: priceText, sentStationIds: [...stationIds] }
+  return {
+    priceText,
+    stationIds,
+    sentPriceText: priceText,
+    sentStationIds: [...stationIds],
+    onItsWay: null,
+    refusedAvailabilityCount: refusedAvailabilityCountOf(item.itemId),
+  }
+}
+
+function refusedAvailabilityCountOf(itemId: string): number {
+  return rows.value.get(itemId)?.refusedAvailabilityCount ?? 0
+}
+
+function isBeingEdited(row: ItemRow): boolean {
+  return row.onItsWay !== null || !matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
 }
 
 watch(
@@ -100,7 +122,8 @@ watch(
   (listed) => {
     const next = new Map<string, ItemRow>()
     for (const item of listed) {
-      next.set(item.itemId, rows.value.get(item.itemId) ?? rowFrom(item))
+      const known = rows.value.get(item.itemId)
+      next.set(item.itemId, known !== undefined && isBeingEdited(known) ? known : rowFrom(item))
     }
     rows.value = next
   },
@@ -110,7 +133,14 @@ watch(
 function rowOf(itemId: string): ItemRow {
   return (
     rows.value.get(itemId)
-    ?? { priceText: '', stationIds: [], sentPriceText: '', sentStationIds: [] }
+    ?? {
+      priceText: '',
+      stationIds: [],
+      sentPriceText: '',
+      sentStationIds: [],
+      onItsWay: null,
+      refusedAvailabilityCount: 0,
+    }
   )
 }
 
@@ -118,11 +148,16 @@ function namesTheSameStations(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((stationId) => right.includes(stationId))
 }
 
+function matchesTheLaptop(row: ItemRow, priceText: string, stationIds: string[]): boolean {
+  return row.priceText === priceText && namesTheSameStations(row.stationIds, stationIds)
+}
+
 function isAlreadyAtTheLaptop(row: ItemRow): boolean {
-  return (
-    row.priceText === row.sentPriceText
-    && namesTheSameStations(row.stationIds, row.sentStationIds)
-  )
+  const onItsWay = row.onItsWay
+  if (onItsWay !== null) {
+    return matchesTheLaptop(row, onItsWay.priceText, onItsWay.stationIds)
+  }
+  return matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
 }
 
 function refuse(itemId: string, messageKey: string): void {
@@ -164,15 +199,23 @@ async function save(itemId: string): Promise<void> {
   }
   refusedItemId.value = itemId
   ownRefusal.value = null
-  row.sentPriceText = row.priceText
-  row.sentStationIds = [...row.stationIds]
+  const onItsWay: Placement = { priceText: row.priceText, stationIds: [...row.stationIds] }
+  row.onItsWay = onItsWay
   const placed = await items.putAtTheFestival(props.festivalId, itemId, {
     priceCents,
-    stationIds: [...row.stationIds],
+    stationIds: [...onItsWay.stationIds],
   })
-  if (placed) {
-    justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== itemId)
+  if (row.onItsWay === onItsWay) {
+    row.onItsWay = null
   }
+  if (placed) {
+    row.sentPriceText = onItsWay.priceText
+    row.sentStationIds = [...onItsWay.stationIds]
+    justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== itemId)
+    return
+  }
+  row.priceText = row.sentPriceText
+  row.stationIds = [...row.sentStationIds]
 }
 
 async function toggleStation(itemId: string, stationId: string): Promise<void> {
@@ -198,7 +241,14 @@ async function toggleStation(itemId: string, stationId: string): Promise<void> {
 async function setSoldOut(item: AdminItem, isSoldOut: boolean): Promise<void> {
   refusedItemId.value = item.itemId
   ownRefusal.value = null
-  await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
+  const accepted = await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
+  if (accepted) {
+    return
+  }
+  const row = rows.value.get(item.itemId)
+  if (row !== undefined) {
+    row.refusedAvailabilityCount += 1
+  }
 }
 
 function add(): void {
@@ -309,6 +359,7 @@ async function remove(): Promise<void> {
                 <v-spacer />
                 <v-switch
                   v-if="item.atTheFestival !== null"
+                  :key="`${item.itemId}-${rowOf(item.itemId).refusedAvailabilityCount}`"
                   class="sold-out-switch flex-grow-0"
                   density="compact"
                   color="warning"
