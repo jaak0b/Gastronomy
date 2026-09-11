@@ -7,7 +7,6 @@ import type { AdminFestival, FestivalDraft } from '../../../stores/admin/festiva
 const props = defineProps<{
   festival: AdminFestival | null
   title: string
-  help: string | null
   confirmLabel: string
   errorText: string | null
 }>()
@@ -42,9 +41,6 @@ function save(): void {
     <v-card class="festival-form" role="dialog" aria-modal="true">
       <v-card-title class="festival-form-title">{{ title }}</v-card-title>
       <v-card-text>
-        <p v-if="help !== null" class="festival-form-help text-medium-emphasis mb-4">
-          {{ help }}
-        </p>
         <v-text-field
           v-model="name"
           class="festival-name-field mb-4"

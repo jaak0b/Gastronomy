@@ -117,28 +117,38 @@ onUnmounted(() => {
           {{ t('admin.festivals.hidden') }}
         </v-chip>
         <v-spacer />
-        <v-btn class="open" color="primary" variant="tonal" @click="open(festival)">
-          {{ t('admin.festivals.edit') }}
-        </v-btn>
-        <v-btn class="copy" variant="text" @click="startCopying(festival)">
-          {{ t('admin.festivals.copy') }}
-        </v-btn>
-        <v-btn
-          v-if="!festival.isRunning && !festival.isHidden"
-          class="hide"
-          variant="text"
-          @click="hiddenFestival = festival"
-        >
-          {{ t('admin.festivals.hide') }}
-        </v-btn>
-        <v-btn
-          v-if="festival.isHidden"
-          class="show"
-          variant="text"
-          @click="festivals.show(festival.festivalId)"
-        >
-          {{ t('admin.festivals.show') }}
-        </v-btn>
+        <div class="actions d-flex align-center ga-2">
+          <v-btn class="open" color="primary" variant="tonal" @click="open(festival)">
+            {{ t('admin.festivals.edit') }}
+          </v-btn>
+          <v-btn class="copy" variant="text" @click="startCopying(festival)">
+            {{ t('admin.festivals.copy') }}
+          </v-btn>
+          <span class="conditional-action">
+            <v-btn
+              v-if="!festival.isRunning && !festival.isHidden"
+              class="hide"
+              variant="text"
+              @click="hiddenFestival = festival"
+            >
+              {{ t('admin.festivals.hide') }}
+            </v-btn>
+            <v-btn
+              v-if="festival.isHidden"
+              class="show"
+              variant="text"
+              @click="festivals.show(festival.festivalId)"
+            >
+              {{ t('admin.festivals.show') }}
+            </v-btn>
+            <v-btn class="action-measure" variant="text" tabindex="-1" aria-hidden="true">
+              <span class="measure-labels">
+                <span>{{ t('admin.festivals.hide') }}</span>
+                <span>{{ t('admin.festivals.show') }}</span>
+              </span>
+            </v-btn>
+          </span>
+        </div>
       </div>
       <div class="festival-facts d-flex flex-wrap ga-4 px-4 pb-3 text-medium-emphasis">
         <span class="period-start">
@@ -167,7 +177,6 @@ onUnmounted(() => {
       v-if="isCreating"
       :festival="null"
       :title="t('admin.festivals.new')"
-      :help="null"
       :confirm-label="t('admin.save')"
       :error-text="refusalText"
       @save="create"
@@ -178,7 +187,6 @@ onUnmounted(() => {
       :key="copiedFestival.festivalId"
       :festival="null"
       :title="t('admin.festivals.copyTitle')"
-      :help="t('admin.festivals.copyHelp')"
       :confirm-label="t('admin.festivals.copyConfirm')"
       :error-text="refusalText"
       @save="copy"
@@ -194,3 +202,30 @@ onUnmounted(() => {
     />
   </v-container>
 </template>
+
+<style scoped>
+.actions {
+  flex: 0 0 auto;
+}
+
+.conditional-action {
+  display: grid;
+  flex: 0 0 auto;
+}
+
+.conditional-action > * {
+  grid-area: 1 / 1;
+}
+
+.action-measure {
+  visibility: hidden;
+}
+
+.measure-labels {
+  display: grid;
+}
+
+.measure-labels > * {
+  grid-area: 1 / 1;
+}
+</style>

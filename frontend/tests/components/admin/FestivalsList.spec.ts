@@ -112,6 +112,22 @@ describe('the list of festivals', () => {
     )
   })
 
+  it("keeps every row's buttons in one shared group so they line up", async () => {
+    stubLaptop([RUNNING, OVER])
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.findAll('.festival-row')).toHaveLength(2))
+
+    const rows = list.findAll('.festival-row')
+    expect(rows[0].find('.actions .open').exists()).toBe(true)
+    expect(rows[0].find('.actions .copy').exists()).toBe(true)
+    expect(rows[1].find('.actions .hide').exists()).toBe(true)
+
+    const reserved = rows[0].get('.conditional-action .action-measure')
+    expect(reserved.text()).toContain('Ausblenden')
+    expect(reserved.text()).toContain('Einblenden')
+  })
+
   it('offers no way to hide the festival that is running', async () => {
     stubLaptop([RUNNING, OVER])
 
@@ -196,9 +212,6 @@ describe('the list of festivals', () => {
 
     const form = document.querySelector('.festival-form') as HTMLElement
     expect((form.querySelector('.festival-name-field input') as HTMLInputElement).value).toBe('')
-    expect(form.querySelector('.festival-form-help')?.textContent?.trim()).toBe(
-      'Die Ausgabestellen, die Artikel und die Preise übernimmt das neue Fest. Tragen Sie unten den Namen, den Beginn und das Ende ein.',
-    )
     expect(calls.some((call) => call.method === 'POST')).toBe(false)
   })
 })
