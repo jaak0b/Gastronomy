@@ -237,17 +237,19 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     A delegated prompt must be self-contained: files, constraints, conventions, definition of done, and
     every decision already made.
 
-16. **Every user-facing feature is documented in the same change.** Written in human, conversational
-    prose, not terse machine-speak. The setup checklist that the fire department follows is part of the
-    product, not an afterthought.
+16. **There is no documentation folder and no written manual.** The owner removed `docs/` on
+    2026-09-11: nobody reads a spec, and a checklist nobody follows rots. A feature has to explain
+    itself on the screen where it is used, in the two languages, and the three `CLAUDE.md` files are
+    the only prose kept in the repository. Never recreate a spec, a checklist or a verification
+    script under `docs/`.
 
 17. **Deleting means removing, everywhere, in the same change. This rule is always binding, with no
     exception for a hurry, a small change, or a deletion somebody calls obvious.** When a feature, a
     control, a string or an endpoint is dropped, every trace of it goes: the component and its route,
     the endpoint, its contract and its handler, the store, the type, the localized strings in both
-    languages, the tests that covered it, and every sentence of documentation that describes it.
+    languages, the tests that covered it, and every sentence in a `CLAUDE.md` that describes it.
     Hiding a control behind a condition, leaving an unreachable endpoint, leaving a dead key in a
-    resource file, or leaving the paragraph in the spec is not a deletion, it is a rename to
+    resource file, or leaving the paragraph in a guide is not a deletion, it is a rename to
     invisible. Before reporting a deletion as done, search the repository for the concept's name and
     for the strings it used, and quote what the search returned. An empty result is the evidence;
     without it the deletion is not finished.
