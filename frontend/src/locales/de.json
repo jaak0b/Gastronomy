@@ -61,7 +61,7 @@
   },
   "estimates": {
     "inMinutes": "~{count} Min.",
-    "inMinuteRange": "~{min} bis {max} Min.",
+    "inMinuteRange": "~{min} - {max} Min.",
     "withEstimate": "{line} ({estimate})",
     "loadFailed": "Die Wartezeiten konnten nicht geladen werden. Die Bestellung lässt sich trotzdem senden."
   },

@@ -11,7 +11,7 @@ function wording(key: string, values: Record<string, string | number>): string {
     return `~${values.count} Min.`
   }
   if (key === 'estimates.inMinuteRange') {
-    return `~${values.min} bis ${values.max} Min.`
+    return `~${values.min} - ${values.max} Min.`
   }
   return `${values.line} (${values.estimate})`
 }
@@ -36,7 +36,7 @@ describe('the waiting time behind a station', () => {
   })
 
   it('names the span between the quickest and the slowest station', () => {
-    expect(estimateRangeText({ min: 10, max: 62 }, wording)).toBe('~10 bis 62 Min.')
+    expect(estimateRangeText({ min: 10, max: 62 }, wording)).toBe('~10 - 62 Min.')
   })
 
   it('names nothing when there is no time to promise', () => {
@@ -61,7 +61,7 @@ describe('a line with the waiting time behind it', () => {
 
   it('writes the span behind the line when the stations differ', () => {
     expect(withRangeEstimate('1 x Bratwurst', { min: 10, max: 62 }, wording)).toBe(
-      '1 x Bratwurst (~10 bis 62 Min.)',
+      '1 x Bratwurst (~10 - 62 Min.)',
     )
   })
 

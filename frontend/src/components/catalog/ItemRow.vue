@@ -57,10 +57,6 @@ const noteGroups = computed(() => groups.value.filter((group) => group !== plain
 
 const canConfirm = computed(() => typedNote.value.trim().length > 0)
 
-function labelFor(group: PositionGroup): string {
-  return group.note ?? t('line.station', { name: group.stationName })
-}
-
 function askForANote(): void {
   groupBeingCorrected.value = null
   typedNote.value = ''
@@ -122,7 +118,7 @@ function mostRecentOf(group: PositionGroup): number {
 
     <div
       v-for="group in noteGroups"
-      :key="labelFor(group)"
+      :key="group.indexes[0]"
       class="note-group d-flex align-center ga-2 ps-6 pe-2 pb-2"
     >
       <v-btn
@@ -134,8 +130,16 @@ function mostRecentOf(group: PositionGroup): number {
         @click="emit('removeOne', mostRecentOf(group))"
       />
       <span class="group-count text-body-1">{{ group.indexes.length }}</span>
-      <button class="group-label text-body-2 text-start flex-grow-1" @click="correctTheNoteOf(group)">
-        {{ labelFor(group) }}
+      <button
+        class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column"
+        @click="correctTheNoteOf(group)"
+      >
+        <span v-if="group.stationName !== null" class="group-station">
+          {{ t('line.station', { name: group.stationName }) }}
+        </span>
+        <span v-if="group.note !== null" class="group-note text-medium-emphasis">
+          {{ group.note }}
+        </span>
       </button>
       <v-btn
         v-if="group.stationName !== null"

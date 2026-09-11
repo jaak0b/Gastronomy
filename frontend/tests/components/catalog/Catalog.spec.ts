@@ -517,7 +517,7 @@ describe('the waiting time on the ordering screen', () => {
 
     expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
       'Bratwurst (~10 Min.)',
-      'Kaffee (~10 bis 60 Min.)',
+      'Kaffee (~10 - 60 Min.)',
     ])
   })
 
@@ -534,7 +534,7 @@ describe('the waiting time on the ordering screen', () => {
 
     expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
       'Bratwurst (~10 Min.)',
-      'Kaffee (~10 bis 62 Min.)',
+      'Kaffee (~10 - 62 Min.)',
     ])
   })
 
@@ -615,7 +615,7 @@ describe('the waiting time on the ordering screen', () => {
 
     expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
       'Bratwurst (~10 Min.)',
-      'Kaffee (~10 bis 60 Min.)',
+      'Kaffee (~10 - 60 Min.)',
     ])
   })
 

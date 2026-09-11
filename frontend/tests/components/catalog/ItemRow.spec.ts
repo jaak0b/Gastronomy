@@ -221,6 +221,16 @@ describe('the portions that carry a note', () => {
     expect(row.get('.note-group .group-label').text()).toBe('Ausgabestelle: Bar innen')
   })
 
+  it('keeps the station visible on a line that also carries a note', () => {
+    const row = mountRow(true, [
+      { index: 0, note: 'ohne Eis', hasAStationChoice: true, stationName: 'Bar innen' },
+    ])
+
+    const label = row.get('.note-group .group-label').text()
+    expect(label).toContain('Ausgabestelle: Bar innen')
+    expect(label).toContain('ohne Eis')
+  })
+
   it('offers to change the station of that line', async () => {
     const row = mountRow(true, [
       { index: 0, note: null, hasAStationChoice: true, stationName: 'Bar innen' },
@@ -284,13 +294,13 @@ describe('the waiting time written on an item row', () => {
   it('names the span between the quickest and the slowest station', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 })
 
-    expect(row.get('.name').text()).toBe('Wasser (~10 bis 62 Min.)')
+    expect(row.get('.name').text()).toBe('Wasser (~10 - 62 Min.)')
   })
 
   it('names the same span in English', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 }, 'en')
 
-    expect(row.get('.name').text()).toBe('Wasser (~10 to 62 min)')
+    expect(row.get('.name').text()).toBe('Wasser (~10 - 62 min)')
   })
 
   it('names the item alone when it carries no time of its own', () => {
