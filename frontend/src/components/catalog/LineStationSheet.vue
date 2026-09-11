@@ -36,7 +36,6 @@ function choose(stationId: string): void {
   <v-dialog :model-value="true" max-width="480" persistent>
     <v-card class="line-station-sheet">
       <v-card-title>{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
-      <v-card-text>{{ t('line.whereHelp') }}</v-card-text>
       <v-card-text v-if="withNote">
         <v-text-field
           ref="noteInput"

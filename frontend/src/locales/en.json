@@ -67,7 +67,6 @@
   },
   "line": {
     "whereTitle": "Where should {item} be prepared?",
-    "whereHelp": "The choice applies to this item only.",
     "station": "Station: {name}",
     "currentStation": "Current",
     "cancel": "Cancel"
