@@ -386,7 +386,7 @@ async function remove(): Promise<void> {
                   :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowOf(item.itemId).laptopAnswers}`"
                   class="sold-out-switch flex-grow-0"
                   density="compact"
-                  color="warning"
+                  color="primary"
                   hide-details
                   :model-value="!item.atTheFestival.isAvailable"
                   :label="t('admin.items.soldOut')"

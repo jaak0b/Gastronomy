@@ -584,6 +584,7 @@ describe('the items of this festival', () => {
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.sold-out-switch').exists()).toBe(true))
+    expect(page.findComponent({ name: 'VSwitch' }).props('color')).toBe('primary')
     await page.get('.sold-out-switch input').setValue(true)
 
     await vi.waitFor(() =>
