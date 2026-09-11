@@ -61,6 +61,16 @@ const SAUSAGE = {
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [KITCHEN_ID] },
 }
 
+const DRINKS_ID = 'category-getraenke'
+
+const DRINKS = {
+  categoryId: DRINKS_ID,
+  name: 'Getränke',
+  colourHex: '#90CAF9',
+  sortOrder: 2,
+  isActive: true,
+}
+
 const BEER = {
   itemId: BEER_ID,
   name: 'Bier',
@@ -80,6 +90,7 @@ interface Call {
 interface Laptop {
   festivals?: unknown[]
   stations?: unknown[]
+  categories?: unknown[]
   items?: unknown[]
   refusal?: { status: number; body: unknown; method: string }
   created?: Record<string, unknown>
@@ -115,7 +126,9 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
         })
       }
       if (url.startsWith('/api/admin/categories')) {
-        return new Response(JSON.stringify({ categories: [FOOD] }), { status: 200 })
+        return new Response(JSON.stringify({ categories: laptop.categories ?? [FOOD] }), {
+          status: 200,
+        })
       }
       return new Response(JSON.stringify({ items: laptop.items ?? [SAUSAGE, BEER] }), {
         status: 200,
@@ -352,6 +365,17 @@ describe('the stations of this festival', () => {
     )
   })
 
+  it('tints every second station row so the eye can follow it', async () => {
+    stubLaptop({ stations: [KITCHEN, { ...BAR, isAtTheFestival: true }] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.findAll('.festival-station-row').length).toBe(2))
+
+    const rows = page.findAll('.festival-station-row')
+    expect(rows[0].classes()).not.toContain('tinted-row')
+    expect(rows[1].classes()).toContain('tinted-row')
+  })
+
   it('names how many orders the station already took when the laptop keeps it', async () => {
     stubLaptop({
       refusal: {
@@ -478,6 +502,77 @@ describe('the items of this festival', () => {
       expect(sent?.url).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${SAUSAGE_ID}`)
       expect(sent?.body).toEqual({ priceCents: 400, stationIds: [KITCHEN_ID] })
     })
+  })
+
+  it('tints every second item row so the eye can follow it', async () => {
+    stubLaptop({
+      items: [
+        SAUSAGE,
+        { ...BEER, atTheFestival: { priceCents: 400, isAvailable: true, stationIds: [KITCHEN_ID] } },
+      ],
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
+
+    const rows = page.findAll('.festival-item-row')
+    expect(rows[0].classes()).not.toContain('tinted-row')
+    expect(rows[1].classes()).toContain('tinted-row')
+  })
+
+  it('says once that the price cannot be read, at the field the admin typed in', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await page.get('.price-field input').setValue('drei euro')
+    await page.get('.price-field input').trigger('blur')
+    await page.vm.$nextTick()
+
+    expect(page.get('.price-field .v-messages__message').text()).toBe(
+      'Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.',
+    )
+    expect(page.find('.festival-item-row .refusal').exists()).toBe(false)
+    expect(writtenCalls(calls)).toEqual([])
+  })
+
+  it('keeps the chip as it was while the price in that row cannot be read', async () => {
+    const calls = stubLaptop({ stations: [KITCHEN, { ...BAR, isAtTheFestival: true }] })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row').exists()).toBe(true))
+    await page.get('.price-field input').setValue('drei euro')
+    await page.findAll('.festival-item-row .station-chip')[1].trigger('click')
+    await page.vm.$nextTick()
+
+    expect(page.findAll('.festival-item-row .station-chip')[1].classes()).not.toContain(
+      'is-selected',
+    )
+    expect(writtenCalls(calls)).toEqual([])
+    expect(page.get('.festival-item-row .refusal').text()).toBe(
+      'Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.',
+    )
+  })
+
+  it('counts the tint through the whole list instead of starting over at each category', async () => {
+    stubLaptop({
+      categories: [FOOD, DRINKS],
+      items: [
+        SAUSAGE,
+        {
+          ...BEER,
+          categoryId: DRINKS_ID,
+          atTheFestival: { priceCents: 400, isAvailable: true, stationIds: [KITCHEN_ID] },
+        },
+      ],
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
+
+    const rows = page.findAll('.festival-item-row')
+    expect(rows[0].classes()).not.toContain('tinted-row')
+    expect(rows[1].classes()).toContain('tinted-row')
   })
 
   it('marks an item sold out at this festival alone', async () => {

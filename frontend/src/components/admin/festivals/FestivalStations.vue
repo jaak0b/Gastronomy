@@ -78,9 +78,10 @@ async function remove(): Promise<void> {
 
         <div class="rows mb-3">
           <div
-            v-for="station in atTheFestival"
+            v-for="(station, position) in atTheFestival"
             :key="station.stationId"
             class="festival-station-row"
+            :class="{ 'tinted-row': position % 2 === 1 }"
           >
             <div class="row-line d-flex align-center flex-wrap ga-3 py-2">
               <span class="name text-body-1">{{ station.name }}</span>
@@ -175,5 +176,9 @@ async function remove(): Promise<void> {
 <style scoped>
 .festival-station-row + .festival-station-row {
   border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+}
+
+.festival-station-row.tinted-row {
+  background-color: rgba(var(--v-theme-on-surface), 0.08);
 }
 </style>

@@ -78,6 +78,10 @@ The product removes one step from the paper process: the walk from the table to 
 else about the process changes. Nobody at a station logs in, nobody is paged, and no screen tells a
 waiter to come and fetch anything.
 
+Every screen, on a phone and on the laptop alike, takes its light or dark look from whatever the
+device is already set to, so a waiter whose phone goes dark at night gets a dark screen without
+changing a thing.
+
 ### 1.2 Why it exists
 
 Orders get lost. A paper slip falls behind a fridge, a waiter forgets which table a tray belongs to,

@@ -61,6 +61,20 @@ const groups = computed(() =>
   ).filter((group) => group.items.length > 0),
 )
 
+const tintedItemIds = computed(() => {
+  const tinted = new Set<string>()
+  let position = 0
+  for (const group of groups.value) {
+    for (const item of group.items) {
+      if (position % 2 === 1) {
+        tinted.add(item.itemId)
+      }
+      position += 1
+    }
+  }
+  return tinted
+})
+
 const stillToAdd = computed(() =>
   [
     ...items.items.filter(
@@ -136,6 +150,9 @@ async function save(itemId: string): Promise<void> {
   if (isAlreadyAtTheLaptop(row)) {
     return
   }
+  if (priceIsUnreadable(itemId)) {
+    return
+  }
   const priceCents = parseEuroInput(row.priceText)
   if (priceCents === null) {
     refuse(itemId, 'admin.itemPriceOutOfRange')
@@ -161,6 +178,10 @@ async function save(itemId: string): Promise<void> {
 async function toggleStation(itemId: string, stationId: string): Promise<void> {
   const row = rows.value.get(itemId)
   if (row === undefined) {
+    return
+  }
+  if (priceIsUnreadable(itemId)) {
+    refuse(itemId, 'admin.itemPriceOutOfRange')
     return
   }
   const isOnTheItem = row.stationIds.includes(stationId)
@@ -254,7 +275,12 @@ async function remove(): Promise<void> {
             >
               {{ group.category.name }}
             </h3>
-            <div v-for="item in group.items" :key="item.itemId" class="festival-item-row">
+            <div
+              v-for="item in group.items"
+              :key="item.itemId"
+              class="festival-item-row"
+              :class="{ 'tinted-row': tintedItemIds.has(item.itemId) }"
+            >
               <div class="item-line d-flex align-center flex-wrap ga-3 py-2">
                 <span class="name text-body-1">{{ item.name }}</span>
                 <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
@@ -370,6 +396,10 @@ async function remove(): Promise<void> {
 <style scoped>
 .festival-item-row + .festival-item-row {
   border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+}
+
+.festival-item-row.tinted-row {
+  background-color: rgba(var(--v-theme-on-surface), 0.08);
 }
 
 .festival-item-row .name {

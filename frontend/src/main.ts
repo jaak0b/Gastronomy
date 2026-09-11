@@ -9,6 +9,7 @@ import App from './App.vue'
 import de from './locales/de.json'
 import en from './locales/en.json'
 import { startRouter } from './router'
+import { appTheme } from './theme'
 import { initialLanguage } from './appLanguage'
 
 export const i18n = createI18n({
@@ -19,6 +20,7 @@ export const i18n = createI18n({
 })
 
 export const vuetify = createVuetify({
+  theme: appTheme,
   defaults: {
     VBtn: { size: 'large', variant: 'flat' },
     VTextField: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
