@@ -183,18 +183,19 @@ function chooseStation(stationId: string): void {
 <template>
   <v-container class="catalog">
     <template v-if="openCategory === null">
-      <v-btn
-        v-for="category in catalog.catalog.categories"
-        :key="category.categoryId"
-        class="category-button my-2"
-        block
-        size="x-large"
-        variant="flat"
-        :style="paintedIn(category.colourHex)"
-        @click="openTheCategory(category)"
-      >
-        {{ labelFor(category) }}
-      </v-btn>
+      <div class="category-grid my-2">
+        <v-btn
+          v-for="category in catalog.catalog.categories"
+          :key="category.categoryId"
+          class="category-button"
+          size="x-large"
+          variant="flat"
+          :style="paintedIn(category.colourHex)"
+          @click="openTheCategory(category)"
+        >
+          {{ labelFor(category) }}
+        </v-btn>
+      </div>
       <TableField
         ref="tableField"
         v-model="tableName"
@@ -262,6 +263,16 @@ function chooseStation(stationId: string): void {
 </template>
 
 <style scoped>
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.category-button {
+  min-width: 0;
+}
+
 .catalog {
   padding-bottom: 96px;
 }
