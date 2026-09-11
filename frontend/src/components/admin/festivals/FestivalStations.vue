@@ -83,7 +83,7 @@ async function remove(): Promise<void> {
             class="festival-station-row"
             :class="{ 'tinted-row': position % 2 === 1 }"
           >
-            <div class="row-line d-flex align-center flex-wrap ga-3 py-2">
+            <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
               <span class="name text-body-1">{{ station.name }}</span>
               <v-chip v-if="!station.isActive" class="deactivated" size="small" color="grey">
                 {{ t('admin.deactivated') }}
@@ -104,7 +104,7 @@ async function remove(): Promise<void> {
           </div>
 
           <div v-if="atTheFestival.length === 0" class="festival-station-placeholder">
-            <div class="row-line d-flex align-center flex-wrap ga-3 py-2">
+            <div class="row-line d-flex align-center flex-wrap ga-3 py-2 px-3">
               <span class="text-body-1">&nbsp;</span>
             </div>
           </div>
@@ -180,5 +180,6 @@ async function remove(): Promise<void> {
 
 .festival-station-row.tinted-row {
   background-color: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 6px;
 }
 </style>

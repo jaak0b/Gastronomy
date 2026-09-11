@@ -303,7 +303,7 @@ async function remove(): Promise<void> {
         <h2 class="section-heading text-h6 mb-3">{{ t('admin.items.title') }}</h2>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder">
-          <div class="item-line d-flex align-center flex-wrap ga-3 py-2">
+          <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
             <span class="needs-a-station text-body-1">
               {{ t('admin.festival.needsAStationFirst') }}
             </span>
@@ -331,7 +331,7 @@ async function remove(): Promise<void> {
               class="festival-item-row"
               :class="{ 'tinted-row': tintedItemIds.has(item.itemId) }"
             >
-              <div class="item-line d-flex align-center flex-wrap ga-3 py-2">
+              <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
                 <span class="name text-body-1">{{ item.name }}</span>
                 <v-chip v-if="!item.isActive" class="deactivated" size="small" color="grey">
                   {{ t('admin.deactivated') }}
@@ -451,6 +451,7 @@ async function remove(): Promise<void> {
 
 .festival-item-row.tinted-row {
   background-color: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 6px;
 }
 
 .festival-item-row .name {
