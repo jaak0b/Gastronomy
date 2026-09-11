@@ -145,14 +145,12 @@
       "ready": "Everything is set up. You can now set up the phones and the tablets.",
       "missingStation": "Add at least one station to this festival, for example Kitchen and Bar.",
       "missingCategory": "Create at least one category, for example Food and Drinks.",
-      "missingItems": "Put items on this festival's menu and fill in their prices.",
+      "missingItems": "Add items to this festival and fill in their prices.",
       "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
       "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders.",
-      "address": "Phones reach the laptop at {url}.",
       "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}.",
       "missingFestival": "Create a festival first.",
-      "noFestivalPicked": "Open the festival you are working on under \"Festivals\".",
-      "noFestivalIsRunning": "No festival is running. Look under \"Festivals\"."
+      "noFestivalIsRunning": "No festival is active right now. Look under \"Festivals\"."
     },
     "stations": {
       "title": "Stations",
@@ -164,20 +162,11 @@
       "activate": "Switch this station on",
       "deactivateTitle": "Switch this station off?",
       "deactivateBody": "The station disappears from the list and takes no more orders. The orders placed so far stay saved. You can switch the station back on later.",
-      "deactivateConfirm": "Switch the station off",
-      "atTheFestival": "At this festival",
-      "notAtTheFestival": "Not at this festival",
-      "addToTheFestival": "Add to the festival",
-      "removeFromTheFestival": "Remove from the festival",
-      "removeTitle": "Remove the station",
-      "removeBody": "The station leaves this festival only. At every other festival it stays where it is.",
-      "removeConfirm": "Remove",
-      "noFestivalPicked": "Stations belong to a festival. Open one under \"Festivals\"."
+      "deactivateConfirm": "Switch the station off"
     },
     "items": {
       "title": "Items",
       "soldOut": "Sold out",
-      "soldOutUndo": "Available again",
       "new": "New item",
       "category": "Category",
       "price": "Price in euros",
@@ -187,13 +176,7 @@
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",
       "deactivateBody": "The item disappears from the phones and can no longer be ordered. The orders placed so far stay saved. You can activate it again later.",
-      "deactivateConfirm": "Deactivate the item",
-      "onTheMenu": "On the menu",
-      "notOnTheMenu": "Not on the menu",
-      "putOnTheMenu": "Put on the menu",
-      "putOnTheMenuTitle": "Put the item on the menu",
-      "takeOffTheMenu": "Take off the menu",
-      "noFestivalPicked": "Prices and stations belong to a festival. Open one under \"Festivals\"."
+      "deactivateConfirm": "Deactivate the item"
     },
     "tables": {
       "title": "Tables",
@@ -250,7 +233,7 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "loadFailed": "Reload the page. The data could not be loaded.",
-    "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or take it off the menu. | {count} items would be left without a station. Assign them to another station first or take them off the menu.",
+    "itemsWouldHaveNoStation": "{count} item would be left without a station. Assign it to another station first or remove it from the festival. | {count} items would be left without a station. Assign them to another station first or remove them from the festival.",
     "categories": {
       "new": "New category",
       "name": "Category name",
@@ -272,8 +255,8 @@
     "categoryColourInvalid": "Choose a colour before you save.",
     "categoryHasActiveItems": "This category still has items switched on. Switch the items off first, then the category.",
     "itemCategoryUnknown": "Choose a category before you save.",
-    "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
     "itemNeedsAStation": "Choose at least one station for the item.",
+    "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
     "stationHasUnfinishedItems": "This station still has one unfinished order and cannot be switched off yet. Finish that order and try again afterwards. | This station still has unfinished orders and cannot be switched off yet. Finish the orders and try again afterwards.",
     "stationNameMissing": "Give the station a name before you save it.",
     "actionFailed": "That did not work. Try again, and reload the page if it still does not work.",
@@ -291,8 +274,7 @@
       "name": "Festival name",
       "start": "Start",
       "end": "End",
-      "open": "Open the festival",
-      "running": "Running now",
+      "running": "Active",
       "hidden": "Hidden",
       "showHidden": "Show hidden festivals",
       "copy": "Copy",
@@ -307,7 +289,22 @@
       "noneYet": "No festival has been set up yet. Click \"New festival\".",
       "stationCount": "{count} station | {count} stations",
       "menuItemCount": "{count} item | {count} items",
-      "orderCount": "{count} order | {count} orders"
+      "orderCount": "{count} order | {count} orders",
+      "edit": "Edit the festival"
+    },
+    "festival": {
+      "addStation": "Add the station",
+      "stationName": "Station name",
+      "noStationsToAdd": "Every station that is switched on already belongs to this festival. Click \"New station\".",
+      "remove": "Remove",
+      "removeStationTitle": "Remove the station",
+      "removeStationBody": "The station leaves this festival only. At every other festival it stays where it is.",
+      "addItem": "Add the item",
+      "itemName": "Item name",
+      "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
+      "removeItemTitle": "Remove the item",
+      "removeItemBody": "The item leaves this festival only. At every other festival it stays where it is.",
+      "needsAStationFirst": "This festival has no station yet. Add one first."
     }
   },
   "station": {

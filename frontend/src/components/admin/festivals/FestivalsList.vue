@@ -16,7 +16,6 @@ const { t, locale } = useI18n()
 const festivals = useAdminFestivalsStore()
 const showsHidden = ref(false)
 const isCreating = ref(false)
-const editedFestival = ref<AdminFestival | null>(null)
 const copiedFestival = ref<AdminFestival | null>(null)
 const hiddenFestival = ref<AdminFestival | null>(null)
 let stopListening: (() => void) | null = null
@@ -33,7 +32,6 @@ function moment(value: string): string {
 
 function closeTheForms(): void {
   isCreating.value = false
-  editedFestival.value = null
   copiedFestival.value = null
   festivals.forgetError()
 }
@@ -43,30 +41,17 @@ function startCreating(): void {
   isCreating.value = true
 }
 
-function startEditing(festival: AdminFestival): void {
-  closeTheForms()
-  editedFestival.value = festival
-}
-
 function startCopying(festival: AdminFestival): void {
   closeTheForms()
   copiedFestival.value = festival
 }
 
 function open(festival: AdminFestival): void {
-  festivals.pick(festival.festivalId)
-  navigate('/admin/items')
+  navigate(`/admin/festivals/${festival.festivalId}`)
 }
 
 async function create(draft: FestivalDraft): Promise<void> {
   if (await festivals.create(draft)) {
-    closeTheForms()
-  }
-}
-
-async function save(draft: FestivalDraft): Promise<void> {
-  const festival = editedFestival.value
-  if (festival !== null && (await festivals.save(festival.festivalId, draft))) {
     closeTheForms()
   }
 }
@@ -99,7 +84,7 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-festivals">
-    <h1 class="text-h5 mb-2">{{ t('admin.festivals.title') }}</h1>
+    <h1 class="text-h5 mb-4">{{ t('admin.festivals.title') }}</h1>
 
     <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{ refusalText }}
@@ -122,7 +107,6 @@ onUnmounted(() => {
       v-for="festival in shown"
       :key="festival.festivalId"
       class="festival-row mb-2"
-      :class="{ 'is-picked': festival.festivalId === festivals.pickedFestivalId }"
     >
       <div class="d-flex align-center flex-wrap ga-2 px-4 py-2">
         <span class="name text-h6">{{ festival.name }}</span>
@@ -134,10 +118,7 @@ onUnmounted(() => {
         </v-chip>
         <v-spacer />
         <v-btn class="open" color="primary" variant="tonal" @click="open(festival)">
-          {{ t('admin.festivals.open') }}
-        </v-btn>
-        <v-btn class="edit" variant="text" @click="startEditing(festival)">
-          {{ t('admin.edit') }}
+          {{ t('admin.festivals.edit') }}
         </v-btn>
         <v-btn class="copy" variant="text" @click="startCopying(festival)">
           {{ t('admin.festivals.copy') }}
@@ -190,17 +171,6 @@ onUnmounted(() => {
       :confirm-label="t('admin.save')"
       :error-text="refusalText"
       @save="create"
-      @cancel="closeTheForms"
-    />
-    <FestivalForm
-      v-if="editedFestival !== null"
-      :key="editedFestival.festivalId"
-      :festival="editedFestival"
-      :title="t('admin.edit')"
-      :help="null"
-      :confirm-label="t('admin.save')"
-      :error-text="refusalText"
-      @save="save"
       @cancel="closeTheForms"
     />
     <FestivalForm

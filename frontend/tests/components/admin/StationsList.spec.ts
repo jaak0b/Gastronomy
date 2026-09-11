@@ -435,7 +435,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Ordnen Sie 2 Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.',
+      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.',
     )
   })
 
@@ -455,7 +455,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Ordnen Sie 1 Artikel zuerst einer anderen Ausgabestelle zu oder nehmen Sie ihn von der Karte. Sonst bleibt er ohne Ausgabestelle und kann nicht bestellt werden.',
+      '1 Artikel hätte dann keine Ausgabestelle mehr. Ordnen Sie ihn zuerst einer anderen Ausgabestelle zu oder entfernen Sie ihn vom Fest.',
     )
   })
 
@@ -466,7 +466,7 @@ describe('a station the laptop refuses to switch off', () => {
     await deactivateFirstStation(list)
 
     expect(list.get('.refusal').text()).toBe(
-      'Ordnen Sie 2 Artikeln zuerst eine andere Ausgabestelle zu oder nehmen Sie sie von der Karte. Sonst bleiben sie ohne Ausgabestelle und können nicht bestellt werden.',
+      '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.',
     )
   })
 
@@ -558,133 +558,5 @@ describe('the length of a station name', () => {
     await list.get('.edit').trigger('click')
 
     expect(list.get('.station-name-field input').attributes('maxlength')).toBe('40')
-  })
-})
-
-describe('the stations of the festival that is open', () => {
-  const FESTIVAL_ID = '66666666-6666-6666-6666-666666666666'
-
-  const FESTIVALS = JSON.stringify({
-    festivals: [
-      {
-        festivalId: FESTIVAL_ID,
-        name: 'Sommerfest',
-        startsAtUtc: '2026-07-18T10:00:00Z',
-        endsAtUtc: '2026-07-19T02:00:00Z',
-        isHidden: false,
-        isRunning: true,
-        stationCount: 1,
-        menuItemCount: 1,
-        orderCount: 0,
-      },
-    ],
-  })
-
-  interface Call {
-    url: string
-    method: string
-  }
-
-  function stubLaptop(isAtTheFestival: boolean): Call[] {
-    const calls: Call[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        calls.push({ url, method: init?.method ?? 'GET' })
-        if (url.includes('/api/admin/festivals/')) {
-          return new Response(JSON.stringify({}), { status: 200 })
-        }
-        if (url.includes('/api/admin/festivals')) {
-          return new Response(FESTIVALS, { status: 200 })
-        }
-        return new Response(
-          JSON.stringify({
-            stations: [{ ...JSON.parse(ONE_STATION).stations[0], isAtTheFestival }],
-          }),
-          { status: 200 },
-        )
-      }),
-    )
-    return calls
-  }
-
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    const { useAdminFestivalsStore } = await import('../../../src/stores/admin/festivals')
-    useAdminFestivalsStore().pick(FESTIVAL_ID)
-  })
-
-  it('stand under their own heading, apart from the ones that are not there', async () => {
-    stubLaptop(true)
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
-
-    expect(list.findAll('.group-heading').map((heading) => heading.text())).toEqual([
-      'Bei diesem Fest',
-      'Nicht bei diesem Fest',
-    ])
-  })
-
-  it('take a station in at that festival alone', async () => {
-    const calls = stubLaptop(false)
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.add-to-the-festival').exists()).toBe(true))
-    await list.get('.add-to-the-festival').trigger('click')
-
-    await vi.waitFor(() =>
-      expect(calls.find((call) => call.method === 'PUT')?.url).toBe(
-        `/api/admin/festivals/${FESTIVAL_ID}/stations/${STATION_ID}`,
-      ),
-    )
-  })
-
-  it('ask before a station leaves the festival', async () => {
-    const calls = stubLaptop(true)
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.remove-from-the-festival').exists()).toBe(true))
-    await list.get('.remove-from-the-festival').trigger('click')
-    await waitForDialog()
-
-    expect(calls.some((call) => call.method === 'DELETE')).toBe(false)
-  })
-
-  it('let it leave that festival once the question is answered with yes', async () => {
-    const calls = stubLaptop(true)
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.remove-from-the-festival').exists()).toBe(true))
-    await list.get('.remove-from-the-festival').trigger('click')
-    await pressInDialog('.confirm')
-
-    await vi.waitFor(() =>
-      expect(calls.find((call) => call.method === 'DELETE')?.url).toBe(
-        `/api/admin/festivals/${FESTIVAL_ID}/stations/${STATION_ID}`,
-      ),
-    )
-  })
-})
-
-describe('the station page while no festival is open', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-  })
-
-  it('says where stations belong and offers no way to add one to a festival', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
-
-    expect(list.get('.no-festival-picked').text()).toBe(
-      'Ausgabestellen gehören zu einem Fest. Öffnen Sie ein Fest unter "Feste".',
-    )
-    expect(list.find('.add-to-the-festival').exists()).toBe(false)
   })
 })

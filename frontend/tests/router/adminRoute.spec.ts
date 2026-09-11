@@ -18,11 +18,27 @@ function mountApp() {
 
 describe('resolveRoute', () => {
   it('reads the bare admin path as the festivals, where the admin starts', () => {
-    expect(resolveRoute('/admin')).toEqual({ name: 'admin', section: 'festivals' })
+    expect(resolveRoute('/admin')).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: null,
+    })
   })
 
   it('reads a deep admin path as that admin section', () => {
-    expect(resolveRoute('/admin/items')).toEqual({ name: 'admin', section: 'items' })
+    expect(resolveRoute('/admin/items')).toEqual({
+      name: 'admin',
+      section: 'items',
+      festivalId: null,
+    })
+  })
+
+  it('reads the address of one festival as that festival page', () => {
+    expect(resolveRoute('/admin/festivals/fest-1')).toEqual({
+      name: 'admin',
+      section: 'festivals',
+      festivalId: 'fest-1',
+    })
   })
 
   it('reads the stations path as the station screen', () => {
@@ -47,7 +63,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
           }),
       ),
     )
-    currentRoute.value = { name: 'admin', section: 'festivals' }
+    currentRoute.value = { name: 'admin', section: 'festivals', festivalId: null }
   })
 
   it('renders the admin shell without a device token', async () => {

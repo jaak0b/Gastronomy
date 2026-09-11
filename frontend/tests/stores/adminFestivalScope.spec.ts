@@ -1,22 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useAdminFestivalsStore } from '../../src/stores/admin/festivals'
 import { useAdminItemsStore } from '../../src/stores/admin/items'
 import { useAdminStationsStore } from '../../src/stores/admin/stations'
 import { useConnectionStore } from '../../src/stores/connection'
-import { PICKED_FESTIVAL_STORAGE_KEY } from '../../src/core/pickedFestival'
 
-const SUMMER = {
-  festivalId: 'fest-1',
-  name: 'Sommerfest',
-  startsAtUtc: '2026-07-18T10:00:00Z',
-  endsAtUtc: '2026-07-19T02:00:00Z',
-  isHidden: false,
-  isRunning: true,
-  stationCount: 2,
-  menuItemCount: 8,
-  orderCount: 0,
-}
+const FESTIVAL_ID = 'fest-1'
 
 interface Call {
   url: string
@@ -34,9 +22,6 @@ function stubTheLaptop(): Call[] {
         method: init?.method ?? 'GET',
         body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
       })
-      if (url.startsWith('/api/admin/festivals?') || url === '/api/admin/festivals') {
-        return new Response(JSON.stringify({ festivals: [SUMMER] }), { status: 200 })
-      }
       if (url.startsWith('/api/admin/items')) {
         return new Response(JSON.stringify({ items: [] }), { status: 200 })
       }
@@ -49,27 +34,16 @@ function stubTheLaptop(): Call[] {
   return calls
 }
 
-describe('the festival the admin has open', () => {
+describe('the lists the admin reads', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    localStorage.clear()
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
-    localStorage.clear()
   })
 
-  it('scopes the item list to that festival', async () => {
-    const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
-
-    await useAdminItemsStore().load()
-
-    expect(calls.at(-1)?.url).toBe('/api/admin/items?festivalId=fest-1')
-  })
-
-  it('leaves the item list unscoped while no festival is open', async () => {
+  it('carry every item of the laptop while no festival is named', async () => {
     const calls = stubTheLaptop()
 
     await useAdminItemsStore().load()
@@ -77,65 +51,55 @@ describe('the festival the admin has open', () => {
     expect(calls.at(-1)?.url).toBe('/api/admin/items')
   })
 
-  it('scopes the station list to that festival', async () => {
+  it('carry the items of the festival whose page is open', async () => {
     const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
+
+    await useAdminItemsStore().loadAtTheFestival(FESTIVAL_ID)
+
+    expect(calls.at(-1)?.url).toBe('/api/admin/items?festivalId=fest-1')
+  })
+
+  it('carry every station of the laptop while no festival is named', async () => {
+    const calls = stubTheLaptop()
 
     await useAdminStationsStore().load()
+
+    expect(calls.at(-1)?.url).toBe('/api/admin/stations')
+  })
+
+  it('carry the stations of the festival whose page is open', async () => {
+    const calls = stubTheLaptop()
+
+    await useAdminStationsStore().loadAtTheFestival(FESTIVAL_ID)
 
     expect(calls.at(-1)?.url).toBe('/api/admin/stations?festivalId=fest-1')
   })
 
-  it('is still the scope after the connection asks for everything again', async () => {
+  it('stay on that festival after the connection asks for everything again', async () => {
     const calls = stubTheLaptop()
-    const festivals = useAdminFestivalsStore()
-    const items = useAdminItemsStore()
     const stations = useAdminStationsStore()
-    festivals.pick('fest-1')
-    const connection = useConnectionStore()
-    connection.registerRefetch(items.load)
     stations.listen()
+    await stations.loadAtTheFestival(FESTIVAL_ID)
 
-    await connection.refetchAll()
+    await useConnectionStore().refetchAll()
 
-    expect(calls.map((call) => call.url)).toContain('/api/admin/items?festivalId=fest-1')
-    expect(calls.map((call) => call.url)).toContain('/api/admin/stations?festivalId=fest-1')
-  })
-
-  it('is remembered in the browser, so a reload lands on the same festival', () => {
-    useAdminFestivalsStore().pick('fest-1')
-
-    expect(localStorage.getItem(PICKED_FESTIVAL_STORAGE_KEY)).toBe('fest-1')
-  })
-
-  it('is dropped when the laptop no longer lists it', async () => {
-    stubTheLaptop()
-    const festivals = useAdminFestivalsStore()
-    festivals.pick('fest-gone')
-
-    await festivals.load()
-
-    expect(festivals.pickedFestivalId).toBeNull()
-    expect(localStorage.getItem(PICKED_FESTIVAL_STORAGE_KEY)).toBeNull()
+    expect(calls.at(-1)?.url).toBe('/api/admin/stations?festivalId=fest-1')
   })
 })
 
-describe('an item on a festival menu', () => {
+describe('an item at a festival', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    localStorage.clear()
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
-    localStorage.clear()
   })
 
-  it('is put on the menu of the festival that is open, with its price and its stations', async () => {
+  it('is put at the festival in the address, with its price and its stations', async () => {
     const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
 
-    await useAdminItemsStore().putOnTheMenu('item-1', {
+    await useAdminItemsStore().putAtTheFestival(FESTIVAL_ID, 'item-1', {
       priceCents: 350,
       stationIds: ['station-kueche'],
     })
@@ -145,11 +109,10 @@ describe('an item on a festival menu', () => {
     expect(sent?.body).toEqual({ priceCents: 350, stationIds: ['station-kueche'] })
   })
 
-  it('is taken off that festival menu alone', async () => {
+  it('is removed from that festival alone', async () => {
     const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
 
-    await useAdminItemsStore().takeOffTheMenu('item-1')
+    await useAdminItemsStore().removeFromTheFestival(FESTIVAL_ID, 'item-1')
 
     expect(calls.find((call) => call.method === 'DELETE')?.url).toBe(
       '/api/admin/festivals/fest-1/items/item-1',
@@ -158,44 +121,28 @@ describe('an item on a festival menu', () => {
 
   it('is sold out at that festival alone', async () => {
     const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
 
-    await useAdminItemsStore().setAvailability('item-1', false)
+    await useAdminItemsStore().setAvailability(FESTIVAL_ID, 'item-1', false)
 
     const sent = calls.find((call) => call.method === 'POST')
     expect(sent?.url).toBe('/api/admin/festivals/fest-1/items/item-1/availability')
     expect(sent?.body).toEqual({ isAvailable: false })
-  })
-
-  it('is not sent anywhere while no festival is open', async () => {
-    const calls = stubTheLaptop()
-
-    const wasPut = await useAdminItemsStore().putOnTheMenu('item-1', {
-      priceCents: 350,
-      stationIds: ['station-kueche'],
-    })
-
-    expect(wasPut).toBe(false)
-    expect(calls).toEqual([])
   })
 })
 
 describe('a station at a festival', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    localStorage.clear()
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
-    localStorage.clear()
   })
 
-  it('is added to the festival that is open, without a body', async () => {
+  it('is added to that festival, without a body', async () => {
     const calls = stubTheLaptop()
-    useAdminFestivalsStore().pick('fest-1')
 
-    await useAdminStationsStore().addToTheFestival('station-kueche')
+    await useAdminStationsStore().addToTheFestival(FESTIVAL_ID, 'station-kueche')
 
     const sent = calls.find((call) => call.method === 'PUT')
     expect(sent?.url).toBe('/api/admin/festivals/fest-1/stations/station-kueche')
@@ -219,12 +166,26 @@ describe('a station at a festival', () => {
           : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
       ),
     )
-    useAdminFestivalsStore().pick('fest-1')
     const stations = useAdminStationsStore()
 
-    await stations.removeFromTheFestival('station-kueche')
+    await stations.removeFromTheFestival(FESTIVAL_ID, 'station-kueche')
 
     expect(stations.errorMessage?.key).toBe('admin.stationHasOrdersAtTheFestival')
     expect(stations.errorMessage?.count).toBe(3)
+  })
+
+  it('is created and handed back with its id, so it can be added straight away', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? new Response(JSON.stringify({ stationId: 'station-new' }), { status: 201 })
+          : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
+      ),
+    )
+
+    const stationId = await useAdminStationsStore().create({ name: 'Theke', sortOrder: 1 })
+
+    expect(stationId).toBe('station-new')
   })
 })

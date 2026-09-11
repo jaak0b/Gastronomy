@@ -6,7 +6,7 @@ export type AppRoute =
   | { name: 'review' }
   | { name: 'openItems' }
   | { name: 'stations' }
-  | { name: 'admin'; section: AdminSection }
+  | { name: 'admin'; section: AdminSection; festivalId: string | null }
 
 const ADMIN_SECTIONS: AdminSection[] = ['overview', 'festivals', 'stations', 'items', 'staff']
 
@@ -14,6 +14,12 @@ function adminSectionFrom(segment: string | undefined): AdminSection {
   const wanted = (segment ?? '').toLowerCase()
   const match = ADMIN_SECTIONS.find((section) => section === wanted)
   return match ?? 'festivals'
+}
+
+function adminRouteFrom(segments: string[]): AppRoute {
+  const section = adminSectionFrom(segments[1])
+  const festivalId = section === 'festivals' ? (segments[2] ?? null) : null
+  return { name: 'admin', section, festivalId }
 }
 
 export function resolveRoute(path: string): AppRoute {
@@ -39,7 +45,7 @@ export function resolveRoute(path: string): AppRoute {
     return { name: 'stations' }
   }
   if (first === 'admin') {
-    return { name: 'admin', section: adminSectionFrom(segments[1]) }
+    return adminRouteFrom(segments)
   }
   return { name: 'home' }
 }

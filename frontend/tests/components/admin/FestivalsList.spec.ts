@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalsList from '../../../src/components/admin/festivals/FestivalsList.vue'
-import { useAdminFestivalsStore } from '../../../src/stores/admin/festivals'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const RUNNING = {
@@ -76,7 +75,7 @@ describe('the list of festivals', () => {
     await vi.waitFor(() => expect(list.find('.festival-row').exists()).toBe(true))
 
     expect(list.get('.festival-row .name').text()).toBe('Sommerfest')
-    expect(list.get('.festival-row .running').text()).toBe('Läuft gerade')
+    expect(list.get('.festival-row .running').text()).toBe('Aktiv')
   })
 
   it('counts the stations, the items and the orders of each festival', async () => {
@@ -124,14 +123,16 @@ describe('the list of festivals', () => {
     expect(rows[1].find('.hide').exists()).toBe(true)
   })
 
-  it('opens a festival and keeps it open for the pages below', async () => {
+  it('opens the page of that festival, which is where its stations and its menu live', async () => {
     stubLaptop([RUNNING])
 
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.open').exists()).toBe(true))
+    expect(list.get('.open').text()).toBe('Fest bearbeiten')
+
     await list.get('.open').trigger('click')
 
-    expect(useAdminFestivalsStore().pickedFestivalId).toBe('fest-1')
+    expect(window.location.pathname).toBe('/admin/festivals/fest-1')
   })
 
   it('asks before a festival is hidden and hides it once the answer is yes', async () => {

@@ -7,7 +7,6 @@ import { useAdminCategoriesStore } from '../../../stores/admin/categories'
 import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
 
 const { t } = useI18n()
-const phoneAddress = window.location.origin
 const stations = useAdminStationsStore()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
@@ -20,11 +19,11 @@ interface ReadinessRow {
 }
 
 const noFestivalExists = computed(() => festivals.shownFestivals.length === 0)
-const pickedFestival = computed(() => festivals.pickedFestival)
+const runningFestival = computed(() => festivals.runningFestival)
 
 const rows = computed<ReadinessRow[]>(() => {
   const readiness: ReadinessRow[] = []
-  if (pickedFestival.value === null) {
+  if (runningFestival.value === null) {
     return readiness
   }
   if (stations.stations.every((station) => !station.isAtTheFestival)) {
@@ -33,11 +32,11 @@ const rows = computed<ReadinessRow[]>(() => {
   if (categories.categories.length === 0) {
     readiness.push({ key: 'admin.overview.missingCategory', parameters: {}, count: null })
   }
-  const onTheMenu = items.items.filter((item) => item.atTheFestival !== null)
-  if (onTheMenu.length === 0) {
+  const atTheFestival = items.items.filter((item) => item.atTheFestival !== null)
+  if (atTheFestival.length === 0) {
     readiness.push({ key: 'admin.overview.missingItems', parameters: {}, count: null })
   }
-  const withoutStation = onTheMenu.filter(
+  const withoutStation = atTheFestival.filter(
     (item) => (item.atTheFestival?.stationIds.length ?? 0) === 0,
   ).length
   if (withoutStation > 0) {
@@ -61,9 +60,13 @@ const rows = computed<ReadinessRow[]>(() => {
 
 onMounted(async () => {
   await festivals.load()
-  await stations.load()
+  const festival = festivals.runningFestival
+  if (festival === null) {
+    return
+  }
+  await stations.loadAtTheFestival(festival.festivalId)
   await categories.load()
-  await items.load()
+  await items.loadAtTheFestival(festival.festivalId)
 })
 </script>
 
@@ -74,23 +77,15 @@ onMounted(async () => {
       {{ t('admin.overview.missingFestival') }}
     </v-alert>
     <v-alert
-      v-else-if="pickedFestival === null"
-      class="no-festival-picked mb-4"
-      type="warning"
+      v-else-if="runningFestival === null"
+      class="not-running mb-4"
+      type="info"
       variant="tonal"
     >
-      {{ t('admin.overview.noFestivalPicked') }}
+      {{ t('admin.overview.noFestivalIsRunning') }}
     </v-alert>
     <template v-else>
-      <h2 class="picked-festival text-h6 mb-2">{{ pickedFestival.name }}</h2>
-      <v-alert
-        v-if="!pickedFestival.isRunning"
-        class="not-running mb-4"
-        type="info"
-        variant="tonal"
-      >
-        {{ t('admin.overview.noFestivalIsRunning') }}
-      </v-alert>
+      <h2 class="running-festival text-h6 mb-2">{{ runningFestival.name }}</h2>
       <v-alert v-if="rows.length === 0" class="ready mb-4" type="success" variant="tonal">
         {{ t('admin.overview.ready') }}
       </v-alert>
@@ -104,6 +99,5 @@ onMounted(async () => {
         {{ row.count === null ? t(row.key, row.parameters) : t(row.key, row.parameters, row.count) }}
       </v-alert>
     </template>
-    <p class="phone-address mt-4">{{ t('admin.overview.address', { url: phoneAddress }) }}</p>
   </v-container>
 </template>

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request, type ApiResult } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
-import { useAdminFestivalsStore } from './festivals'
+import { useConnectionStore } from '../connection'
 
 export interface AdminItemAtFestival {
   priceCents: number
@@ -28,25 +28,23 @@ export interface AdminItemDraft {
   productionMinutes: number | null
 }
 
-export interface MenuPlacement {
+export interface FestivalPlacement {
   priceCents: number
   stationIds: string[]
+}
+
+interface CreatedItem {
+  itemId: string
 }
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
   const items = ref<AdminItem[]>([])
   const loadFailed = ref(false)
   const errorMessage = ref<AdminErrorMessage | null>(null)
+  const festivalInView = ref<string | null>(null)
 
-  function pickedFestivalId(): string | null {
-    return useAdminFestivalsStore().pickedFestivalId
-  }
-
-  async function load(): Promise<void> {
+  async function readInto(path: string): Promise<void> {
     loadFailed.value = false
-    const festivalId = pickedFestivalId()
-    const path =
-      festivalId === null ? '/api/admin/items' : `/api/admin/items?festivalId=${festivalId}`
     const result = await request<unknown>(path)
     if (result.kind !== 'ok') {
       loadFailed.value = true
@@ -60,37 +58,73 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     items.value = rows
   }
 
+  async function load(): Promise<void> {
+    festivalInView.value = null
+    await readInto('/api/admin/items')
+  }
+
+  async function loadAtTheFestival(festivalId: string): Promise<void> {
+    festivalInView.value = festivalId
+    await readInto(`/api/admin/items?festivalId=${festivalId}`)
+  }
+
+  async function reload(): Promise<void> {
+    const festivalId = festivalInView.value
+    if (festivalId === null) {
+      await load()
+      return
+    }
+    await loadAtTheFestival(festivalId)
+  }
+
   async function reportAndReload(result: ApiResult<unknown>): Promise<boolean> {
     if (result.kind !== 'ok') {
       errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       return false
     }
-    await load()
+    await reload()
     return true
   }
 
-  async function save(item: AdminItemDraft): Promise<boolean> {
-    errorMessage.value = null
-    const body = {
+  function bodyOf(item: AdminItemDraft): Record<string, unknown> {
+    return {
       name: item.name,
       categoryId: item.categoryId,
       sortOrder: item.sortOrder,
       productionMinutes: item.productionMinutes,
     }
+  }
+
+  async function create(item: AdminItemDraft): Promise<string | null> {
+    errorMessage.value = null
+    const result = await request<CreatedItem>('/api/admin/items', {
+      method: 'POST',
+      body: bodyOf(item),
+    })
+    if (result.kind !== 'ok') {
+      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
+      return null
+    }
+    await reload()
+    return result.data.itemId
+  }
+
+  async function save(item: AdminItemDraft): Promise<boolean> {
+    errorMessage.value = null
     if (item.itemId === undefined) {
-      return reportAndReload(await request('/api/admin/items', { method: 'POST', body }))
+      return (await create(item)) !== null
     }
     return reportAndReload(
-      await request(`/api/admin/items/${item.itemId}`, { method: 'PUT', body }),
+      await request(`/api/admin/items/${item.itemId}`, { method: 'PUT', body: bodyOf(item) }),
     )
   }
 
-  async function putOnTheMenu(itemId: string, placement: MenuPlacement): Promise<boolean> {
+  async function putAtTheFestival(
+    festivalId: string,
+    itemId: string,
+    placement: FestivalPlacement,
+  ): Promise<boolean> {
     errorMessage.value = null
-    const festivalId = pickedFestivalId()
-    if (festivalId === null) {
-      return false
-    }
     return reportAndReload(
       await request(`/api/admin/festivals/${festivalId}/items/${itemId}`, {
         method: 'PUT',
@@ -99,23 +133,19 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     )
   }
 
-  async function takeOffTheMenu(itemId: string): Promise<boolean> {
+  async function removeFromTheFestival(festivalId: string, itemId: string): Promise<boolean> {
     errorMessage.value = null
-    const festivalId = pickedFestivalId()
-    if (festivalId === null) {
-      return false
-    }
     return reportAndReload(
       await request(`/api/admin/festivals/${festivalId}/items/${itemId}`, { method: 'DELETE' }),
     )
   }
 
-  async function setAvailability(itemId: string, isAvailable: boolean): Promise<boolean> {
+  async function setAvailability(
+    festivalId: string,
+    itemId: string,
+    isAvailable: boolean,
+  ): Promise<boolean> {
     errorMessage.value = null
-    const festivalId = pickedFestivalId()
-    if (festivalId === null) {
-      return false
-    }
     return reportAndReload(
       await request(`/api/admin/festivals/${festivalId}/items/${itemId}/availability`, {
         method: 'POST',
@@ -137,6 +167,21 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     )
   }
 
+  function listen(): () => void {
+    const connection = useConnectionStore()
+    const releases = [
+      connection.registerRefetch(reload),
+      connection.onEvent<unknown>('CatalogChanged', () => {
+        void reload()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
+  }
+
   function forgetError(): void {
     errorMessage.value = null
   }
@@ -146,11 +191,14 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     loadFailed,
     errorMessage,
     load,
+    loadAtTheFestival,
+    create,
     save,
-    putOnTheMenu,
-    takeOffTheMenu,
+    putAtTheFestival,
+    removeFromTheFestival,
     setAvailability,
     setActive,
     forgetError,
+    listen,
   }
 })

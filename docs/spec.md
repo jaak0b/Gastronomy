@@ -286,7 +286,7 @@ three the following afternoon. Nobody has to be at the laptop when it starts or 
 the program treats the boundary as a special moment.
 
 **Stations and items are created once and reused.** A station belongs to a festival by being added to
-it, and an item goes onto a festival's menu with the price it costs there. Last year's price survives
+it, and an item belongs to a festival the same way, carrying the price it costs there. Last year's price survives
 this year's, because the two prices sit on two different festivals. Two places that both have a
 kitchen are two stations, each named for its place, rather than one station that means something
 different depending on the weekend. Waiters are never tied to a festival: a waiter works at whichever
@@ -324,11 +324,11 @@ shift setting, and nothing about it is remembered for the next item or the next 
 carrying one tray to the marquee and the next to the terrace would otherwise be fighting a setting
 they never set.
 
-**An item on a festival's menu can never be left with no station**, which is what keeps that rule
-free of a "nothing" case. The admin cannot put an item on a menu without naming at least one station
-of that festival, a station cannot be taken off a festival while it is the only one preparing
-something on that festival's menu, and a station cannot be switched off while it is the last active
-station of any item still on the menu of a festival that has not finished. The refusal names the items rather than simply
+**An item at a festival can never be left with no station**, which is what keeps that rule
+free of a "nothing" case. The admin cannot add an item to a festival without naming at least one
+station of that festival, a station cannot be taken off a festival while it is the only one preparing
+something there, and a station cannot be switched off while it is the last active station of any item
+at a festival that has not finished. The refusal names the items rather than simply
 saying no. A station also cannot be switched off while it still has unfinished work, and that refusal
 names how many. Because of those two rules there is no fallback station and no default station
 anywhere in the system.
@@ -359,14 +359,14 @@ moment it would be made.
 The open items screen groups on that exact name, so a table settles together rather than order by
 order.
 
-### 3.4 On the menu, and sold out, are two different things
+### 3.4 Deactivated, and sold out, are two different things
 
 An item carries two separate flags, they are set by two different people at two different times, and
 the product never uses one word for both.
 
 | | Deactivated ("deaktiviert") | Sold out ("ausverkauft") |
 |---|---|---|
-| What it means | The item is not in use at all, at any festival | The item is on this festival's menu and has run out tonight |
+| What it means | The item is not in use at all, at any festival | The item is at this festival and has run out tonight |
 | Who sets it | The admin, at the laptop, setting up the event | Whoever hears that the kitchen has run out |
 | When | Before the event, between events | During service, and very often reversed twenty minutes later when somebody finds another crate |
 | How | The item editor, with a confirmation, because it is a considered edit | One toggle in the item list, one tap each way, no form and no dialog |
@@ -1270,10 +1270,10 @@ naming the next missing thing rather than letting the admin wander.
    this is two rows.
 3. **Categories.** The headings the items are sorted under, each with a colour, because on the phone
    a category is a large coloured button. Categories are shared by every festival.
-4. **The menu.** Put each item on this festival's menu, with the price it costs here, the stations of
-   this festival that prepare it, and a preparation time for anything that takes a while. An item
-   needs at least one station, and every item belongs to exactly one category, which is why the
-   categories come first.
+4. **The items.** Add each item to this festival, with the price it costs here and the stations of
+   this festival that prepare it. An item needs at least one station, and every item belongs to
+   exactly one category, which is why the categories come first. A preparation time belongs to the
+   item itself rather than to one festival, so it is filled in on the items page.
 5. **Set up the station tablets.** One per station, from the stations page.
 6. **Set up the phones.** Last, because a phone fetches the catalog when it is set up. One waiter at
    a time: put the person on the list, create their QR code, and they scan it.
@@ -1290,23 +1290,28 @@ Print this page and take it with you.
 2. In the program window, click "Open the admin pages".
 3. **Create the festival.** Give it a name, a start and an end, and set the period generously: if the
    evening runs from five until three in the morning, enter noon until three the following afternoon.
-   Everything below belongs to this festival, so it comes first. If you ran this festival before, open
-   the old one and click "Copy" instead. The stations, the items and the prices come across, and you
+   Everything below belongs to this festival, so it comes first. If you ran this festival before, click
+   "Copy" on its row in the festivals list instead. The stations, the items and the prices come across, and you
    only fill in the name and the dates and correct the prices that changed.
-4. Open the festival and add the stations to it, for example Kitchen and Bar. A station you used last
-   year is already in the list and only has to be added; a new one is created here.
+4. Click "Edit the festival" on its row. The name, the start and the end sit at the top of that page,
+   and each of the three saves itself the moment you leave the field, so there is no save button to
+   hunt for. Under them, pick a station in the dropdown and click "Add the station", for example
+   Kitchen and Bar. A station you used last year is already in that dropdown; "New station" creates
+   one that is not, and you still click "Add the station" afterwards.
 5. Create the categories the items are sorted under, for example Food and Drinks, and pick a colour for
    each one. On the phone a category is a large coloured button, and tapping it opens the items of
    that category with one button back to the list. Every item belongs to exactly one category, so
    this step comes before the items. Categories are shared by every festival, so renaming one here
    renames it everywhere. The "New category" button is at the bottom of the items page, beside
    "New item".
-6. Put the items on this festival's menu. For each one, enter the price it costs here and tick which
-   of this festival's stations prepare it. Food usually gets only the kitchen. Beer at a place with
+6. Stay on the festival's page and add the items under "Items". Pick one in the dropdown, click
+   "Add the item", and an empty row appears. Type the price it costs here and click the stations that
+   prepare it: the row saves itself as soon as it has a price and at least one station, and every
+   later change to it saves the same way. Food usually gets only the kitchen. Beer at a place with
    two bars gets both, and the waiter then picks one while taking the order. Where an item takes a
-   while to make, fill in the preparation time in minutes as well, so the waiters can tell a guest
-   roughly how long they will wait. Leave that field empty for drinks and anything else that is handed
-   over right away.
+   while to make, open the items page and fill in its preparation time in minutes, so the waiters can
+   tell a guest roughly how long they will wait. Leave that field empty for drinks and anything else
+   that is handed over right away.
 7. Take one phone, set it up, and place a couple of practice orders so you have seen the screens once
    before the evening. Delete nothing afterwards. If you would rather the evening started at order
    number 1, practise on a festival you created for practising and create the real one afterwards.
@@ -1328,8 +1333,8 @@ Print this page and take it with you.
     all is the proof that the devices reach the laptop. If nothing opens, go back to step 9, and then
     use "Repair the setup" in the program window.
 13. Check that the festival is running. Open the festivals page: the one for tonight has to say
-    "Running now". If it does not, the start or the end is wrong, and "Edit" on that row puts it
-    right.
+    "Active". If it does not, the start or the end is wrong, and "Edit the festival" on that row
+    opens the page where you correct them.
 14. **Set up one tablet per station.** Open the stations page, tap "Set up the tablet" on the first
     station, and scan the QR code with the camera of the tablet that will stand there. The tablet then
     shows that station's orders and nothing else. Carry it to the station, plug it in, and leave it
@@ -1382,24 +1387,30 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
 3. **Legen Sie das Fest an.** Geben Sie ihm einen Namen, einen Beginn und ein Ende, und fassen Sie den
    Zeitraum großzügig: Wenn der Abend um 17 Uhr anfängt und um 3 Uhr endet, tragen Sie 12 Uhr bis 15
    Uhr am nächsten Tag ein. Alles Weitere gehört zu diesem Fest, deshalb steht es am Anfang. Gab es
-   dieses Fest schon einmal, öffnen Sie das alte und klicken Sie auf "Kopieren". Die Ausgabestellen,
+   dieses Fest schon einmal, klicken Sie in der Liste der Feste in seiner Zeile auf "Kopieren". Die Ausgabestellen,
    die Artikel und die Preise kommen mit, und Sie tragen nur den Namen und die Daten ein und ändern
    die Preise, die sich geändert haben.
-4. Öffnen Sie das Fest und fügen Sie ihm die Ausgabestellen hinzu, zum Beispiel Küche und Theke. Eine
-   Ausgabestelle vom letzten Jahr steht schon in der Liste und muss nur hinzugefügt werden; eine neue
-   legen Sie hier an.
+4. Klicken Sie in seiner Zeile auf "Fest bearbeiten". Oben auf dieser Seite stehen der Name, der
+   Beginn und das Ende, und jedes der drei Felder speichert sich selbst, sobald Sie es verlassen:
+   einen Knopf zum Speichern suchen Sie dort vergebens. Darunter wählen Sie im Auswahlfeld eine
+   Ausgabestelle aus und klicken auf "Ausgabestelle hinzufügen", zum Beispiel Küche und Theke. Eine
+   Ausgabestelle vom letzten Jahr steht schon im Auswahlfeld; mit "Neue Ausgabestelle" legen Sie eine
+   neue an und fügen sie danach genauso hinzu.
 5. Legen Sie die Kategorien an, unter denen die Artikel einsortiert werden, zum Beispiel Speisen und
    Getränke, und wählen Sie für jede eine Farbe. Auf dem Telefon ist eine Kategorie ein großer farbiger
    Knopf, und ein Tippen darauf öffnet die Artikel dieser Kategorie, mit einem Knopf zurück zur Liste.
    Jeder Artikel gehört zu genau einer Kategorie, deshalb kommt dieser Schritt vor den Artikeln. Die
    Kategorien gelten für alle Feste: Wenn Sie hier eine umbenennen, heißt sie auf jedem Fest so. Der
    Knopf "Neue Kategorie" steht unten auf der Artikel-Seite, neben "Neuer Artikel".
-6. Setzen Sie die Artikel auf die Karte dieses Festes. Tragen Sie bei jedem den Preis ein, den er hier
-   kostet, und kreuzen Sie an, welche Ausgabestellen dieses Festes ihn zubereiten. Essen bekommt meist
-   nur die Küche. Bier bekommt an einem Platz mit zwei Theken beide, und der Kellner wählt dann beim
-   Aufnehmen aus. Wo ein Artikel eine Weile braucht, tragen Sie auch die Zubereitungszeit in Minuten
-   ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er wartet. Bei Getränken und
-   allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.
+6. Bleiben Sie auf der Seite des Festes und fügen Sie unter "Artikel" die Artikel hinzu. Wählen Sie
+   einen im Auswahlfeld aus, klicken Sie auf "Artikel hinzufügen", und eine leere Zeile erscheint.
+   Tragen Sie den Preis ein, den der Artikel hier kostet, und klicken Sie die Ausgabestellen an, die
+   ihn zubereiten: Die Zeile speichert sich selbst, sobald sie einen Preis und mindestens eine
+   Ausgabestelle hat, und jede spätere Änderung genauso. Essen bekommt meist nur die Küche. Bier
+   bekommt an einem Platz mit zwei Theken beide, und der Kellner wählt dann beim Aufnehmen aus. Wo ein
+   Artikel eine Weile braucht, öffnen Sie die Seite Artikel und tragen dort seine Zubereitungszeit in
+   Minuten ein, damit die Kellner einem Gast ungefähr sagen können, wie lange er wartet. Bei Getränken
+   und allem anderen, was sofort über die Theke geht, lassen Sie das Feld leer.
 7. Richten Sie ein Telefon ein und geben Sie ein paar Übungsbestellungen auf, damit Sie die Bildschirme
    einmal gesehen haben. Löschen Sie danach nichts. Wenn der Abend bei Bestellung 1 anfangen soll,
    üben Sie auf einem Fest, das Sie zum Üben angelegt haben, und legen Sie das richtige danach an.
@@ -1422,9 +1433,9 @@ Drucken Sie diese Seite aus und nehmen Sie sie mit.
     überhaupt eine Seite des Programms erscheint, ist der Beweis, dass die Geräte den Laptop
     erreichen. Wenn sich nichts öffnet, gehen Sie zurück zu Schritt 9 und nehmen Sie danach im
     Programmfenster "Einrichtung reparieren".
-13. Prüfen Sie, ob das Fest läuft. Öffnen Sie die Seite Feste: Bei dem Fest von heute muss "Läuft
-    gerade" stehen. Steht es dort nicht, stimmt der Beginn oder das Ende nicht, und "Bearbeiten" in
-    dieser Zeile bringt es in Ordnung.
+13. Prüfen Sie, ob das Fest aktiv ist. Öffnen Sie die Seite Feste: Bei dem Fest von heute muss "Aktiv"
+    stehen. Steht es dort nicht, stimmt der Beginn oder das Ende nicht: "Fest bearbeiten" in dieser
+    Zeile öffnet die Seite des Festes, und dort ändern Sie den Beginn und das Ende.
 14. **Richten Sie an jeder Ausgabestelle ein Tablet ein.** Öffnen Sie die Seite Ausgabestellen, tippen
     Sie bei der ersten Ausgabestelle auf "Tablet einrichten" und scannen Sie den QR-Code mit der Kamera
     des Tablets, das dort stehen soll. Danach zeigt das Tablet die Bestellungen genau dieser

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { hubEventsRegistered } from '../support/hubConnection'
+import { fireHubEvent, forgetHubEvents, hubEventsRegistered } from '../support/hubConnection'
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
@@ -9,6 +9,7 @@ const { useAdminEnrolmentStore } = await import('../../src/stores/admin/enrolmen
 const { useAdminCategoriesStore } = await import('../../src/stores/admin/categories')
 const { useAdminStaffStore } = await import('../../src/stores/admin/staff')
 const { useAdminStationsStore } = await import('../../src/stores/admin/stations')
+const { useAdminItemsStore } = await import('../../src/stores/admin/items')
 
 const EMPTY_LISTS = { staffMembers: [], stations: [] }
 
@@ -106,6 +107,59 @@ describe('the category list of the admin', () => {
   it('is left alone once the admin has moved to another screen', async () => {
     const urls = stubTheLaptop()
     const stopListening = useAdminCategoriesStore().listen()
+
+    stopListening()
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual([])
+  })
+})
+
+describe('the item list of the admin', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is reloaded while the screen that asked for it is open', async () => {
+    const urls = stubTheLaptop()
+    useAdminItemsStore().listen()
+
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual(['/api/admin/items'])
+  })
+
+  it('stays on the festival whose page is open when it is read again', async () => {
+    const urls = stubTheLaptop()
+    const items = useAdminItemsStore()
+    items.listen()
+    await items.loadAtTheFestival('fest-1')
+    urls.length = 0
+
+    await useConnectionStore().refetchAll()
+
+    expect(urls).toEqual(['/api/admin/items?festivalId=fest-1'])
+  })
+
+  it('is read again when the laptop says the catalog changed', async () => {
+    const urls = stubTheLaptop()
+    useAdminItemsStore().listen()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('CatalogChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/items']))
+  })
+
+  it('is left alone once the admin has moved to another screen', async () => {
+    const urls = stubTheLaptop()
+    const stopListening = useAdminItemsStore().listen()
 
     stopListening()
     await useConnectionStore().refetchAll()

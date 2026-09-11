@@ -3,10 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
 import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
-import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
-import { useAdminFestivalsStore } from '../../../src/stores/admin/festivals'
-import { useAdminItemsStore } from '../../../src/stores/admin/items'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const ITEM_ID = '22222222-2222-2222-2222-222222222222'
@@ -87,22 +84,6 @@ const ONE_STATION = {
   ],
 }
 
-const SWITCHED_OFF_STATION_ID = '77777777-7777-7777-7777-777777777777'
-
-const TWO_STATIONS = {
-  stations: [
-    ONE_STATION.stations[0],
-    {
-      stationId: SWITCHED_OFF_STATION_ID,
-      name: 'Zelt',
-      sortOrder: 2,
-      isActive: false,
-      hasDevice: false,
-      isAtTheFestival: true,
-    },
-  ],
-}
-
 const DEACTIVATED_ITEM = {
   items: [{ ...ONE_ITEM.items[0], isActive: false }],
 }
@@ -170,7 +151,6 @@ function urlsOf(calls: Call[]): string[] {
 }
 
 function mountList() {
-  useAdminFestivalsStore().pick(FESTIVAL_ID)
   return mount(ItemsList, { global: { plugins: testPlugins() }, attachTo: document.body })
 }
 
@@ -244,7 +224,6 @@ describe('the item list', () => {
     const line = list.get('.item-row .item-line')
 
     expect(line.find('.name').exists()).toBe(true)
-    expect(line.find('.sold-out-toggle').exists()).toBe(true)
     expect(line.find('.edit').exists()).toBe(true)
     expect(line.find('.deactivate').exists()).toBe(true)
   })
@@ -569,16 +548,6 @@ describe('an item that is deactivated', () => {
     expect(list.find('.item-row').exists()).toBe(false)
   })
 
-  it('offers no sold-out toggle, because nobody can order it', async () => {
-    stubLaptop({ items: DEACTIVATED_ITEM })
-
-    const list = mountList()
-    await list.get('.show-deactivated input').setValue(true)
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-
-    expect(list.find('.sold-out-toggle').exists()).toBe(false)
-  })
-
   it('offers to activate it again without asking a question first', async () => {
     const calls = stubLaptop({ items: DEACTIVATED_ITEM })
 
@@ -588,32 +557,6 @@ describe('an item that is deactivated', () => {
     await list.get('.reactivate').trigger('click')
 
     await vi.waitFor(() => expect(urlsOf(calls)).toContain(`/api/admin/items/${ITEM_ID}/activate`))
-  })
-})
-
-describe('the sold-out button beside an item', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('marks that item sold out at this festival alone', async () => {
-    const calls = stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.sold-out-toggle').trigger('click')
-
-    await vi.waitFor(() =>
-      expect(urlsOf(calls)).toContain(
-        `/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}/availability`,
-      ),
-    )
   })
 })
 
@@ -669,139 +612,3 @@ describe('adding an item', () => {
   })
 })
 
-describe('an item that is not on this festival menu', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('stands under its own heading, away from the menu', async () => {
-    stubLaptop({ items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] } })
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-
-    expect(list.get('.not-on-the-menu-heading').text()).toBe('Nicht auf der Karte')
-    expect(list.findAll('.item-row.rest')).toHaveLength(1)
-  })
-
-  it('sends nothing while the admin is still filling the dialog in', async () => {
-    const calls = stubLaptop({
-      items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] },
-    })
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.put-on-the-menu').exists()).toBe(true))
-    await list.get('.put-on-the-menu').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.menu-item-dialog')).not.toBeNull(),
-    )
-
-    expect(calls.every((call) => call.method === 'GET')).toBe(true)
-  })
-
-  it('goes on the menu with its price and its station once the dialog is confirmed', async () => {
-    const calls = stubLaptop({
-      items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] },
-    })
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.put-on-the-menu').exists()).toBe(true))
-    await list.get('.put-on-the-menu').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.menu-item-dialog')).not.toBeNull(),
-    )
-    const dialog = document.querySelector('.menu-item-dialog') as HTMLElement
-    const price = dialog.querySelector('.price-field input') as HTMLInputElement
-    price.value = '3,50'
-    price.dispatchEvent(new Event('input'))
-    ;(dialog.querySelector('.station-chip') as HTMLElement).click()
-    await vi.waitFor(() =>
-      expect(dialog.querySelector('.station-chip.is-selected')).not.toBeNull(),
-    )
-    ;(dialog.querySelector('.confirm') as HTMLElement).click()
-
-    await vi.waitFor(() => {
-      const sent = calls.find((call) => call.method === 'PUT')
-      expect(sent?.url).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}`)
-      expect(sent?.body).toEqual({ priceCents: 350, stationIds: [STATION_ID] })
-    })
-  })
-})
-
-describe('an item on this festival menu', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('shows its price and the stations that prepare it here', async () => {
-    stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-
-    expect(list.get('.item-row .price').text()).toBe('3,50 €')
-    expect(list.get('.item-row .station-chip.is-selected').text()).toBe('Küche')
-  })
-
-  it('offers only the stations that are switched on', async () => {
-    stubLaptop({ stations: TWO_STATIONS })
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row .station-chip').exists()).toBe(true))
-
-    expect(list.findAll('.item-row .station-chip').map((chip) => chip.text())).toEqual(['Küche'])
-  })
-
-  it('comes off this festival menu alone', async () => {
-    const calls = stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.take-off-the-menu').exists()).toBe(true))
-    await list.get('.take-off-the-menu').trigger('click')
-
-    await vi.waitFor(() =>
-      expect(
-        calls.find((call) => call.method === 'DELETE')?.url,
-      ).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${ITEM_ID}`),
-    )
-  })
-})
-
-describe('the item page while no festival is open', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('says where the prices and the stations live, and offers no menu control', async () => {
-    stubLaptop({ items: { items: [{ ...ONE_ITEM.items[0], atTheFestival: null }] } })
-
-    const list = mount(ItemsList, {
-      global: { plugins: testPlugins() },
-      attachTo: document.body,
-    })
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-
-    expect(list.get('.no-festival-picked').text()).toBe(
-      'Preise und Ausgabestellen gehören zu einem Fest. Öffnen Sie ein Fest unter "Feste".',
-    )
-    expect(list.find('.put-on-the-menu').exists()).toBe(false)
-  })
-})

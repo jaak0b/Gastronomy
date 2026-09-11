@@ -6,6 +6,7 @@ import { assertNever } from '../../core/assertNever'
 import { request } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import FestivalsList from '../../components/admin/festivals/FestivalsList.vue'
+import FestivalPage from '../../components/admin/festivals/FestivalPage.vue'
 import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
@@ -20,6 +21,11 @@ bindLocaleToLaptop()
 const section = computed<AdminSection>(() => {
   const route = currentRoute.value
   return route.name === 'admin' ? route.section : 'festivals'
+})
+
+const festivalId = computed<string | null>(() => {
+  const route = currentRoute.value
+  return route.name === 'admin' ? route.festivalId : null
 })
 
 const sections: AdminSection[] = ADMIN_SECTIONS
@@ -62,7 +68,12 @@ void request('/api/admin/festivals').then((result) => {
         </v-tab>
       </v-tabs>
     </v-toolbar>
-    <FestivalsList v-if="section === 'festivals'" />
+    <FestivalPage
+      v-if="section === 'festivals' && festivalId !== null"
+      :key="festivalId"
+      :festival-id="festivalId"
+    />
+    <FestivalsList v-else-if="section === 'festivals'" />
     <AdminOverview v-else-if="section === 'overview'" />
     <StationsList v-else-if="section === 'stations'" />
     <ItemsList v-else-if="section === 'items'" />

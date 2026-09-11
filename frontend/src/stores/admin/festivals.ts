@@ -2,11 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { listFrom, request, type ApiResult } from '../../api/client'
 import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
-import {
-  forgetPickedFestival,
-  readPickedFestival,
-  writePickedFestival,
-} from '../../core/pickedFestival'
 import { useConnectionStore } from '../connection'
 
 export interface AdminFestival {
@@ -31,35 +26,14 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   const festivals = ref<AdminFestival[]>([])
   const loadFailed = ref(false)
   const errorMessage = ref<AdminErrorMessage | null>(null)
-  const pickedFestivalId = ref<string | null>(readPickedFestival())
 
-  const pickedFestival = computed<AdminFestival | null>(
-    () =>
-      festivals.value.find((festival) => festival.festivalId === pickedFestivalId.value) ?? null,
-  )
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestival | null>(
     () => festivals.value.find((festival) => festival.isRunning) ?? null,
   )
 
-  function pick(festivalId: string): void {
-    pickedFestivalId.value = festivalId
-    writePickedFestival(festivalId)
-  }
-
-  function forgetThePick(): void {
-    pickedFestivalId.value = null
-    forgetPickedFestival()
-  }
-
-  function dropAPickThatNoLongerWorks(): void {
-    const picked = pickedFestival.value
-    if (pickedFestivalId.value === null) {
-      return
-    }
-    if (picked === null || picked.isHidden) {
-      forgetThePick()
-    }
+  function festivalWithId(festivalId: string): AdminFestival | null {
+    return festivals.value.find((festival) => festival.festivalId === festivalId) ?? null
   }
 
   async function load(): Promise<void> {
@@ -75,7 +49,6 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
       return
     }
     festivals.value = rows
-    dropAPickThatNoLongerWorks()
   }
 
   function bodyOf(draft: FestivalDraft): FestivalDraft {
@@ -141,19 +114,16 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   return {
     festivals,
     shownFestivals,
-    pickedFestivalId,
-    pickedFestival,
     runningFestival,
     loadFailed,
     errorMessage,
+    festivalWithId,
     load,
     create,
     save,
     copy,
     hide,
     show,
-    pick,
-    forgetThePick,
     forgetError,
     listen,
   }

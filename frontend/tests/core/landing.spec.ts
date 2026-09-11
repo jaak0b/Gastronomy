@@ -51,8 +51,8 @@ describe('screenFor, the screen a device lands on', () => {
   })
 
   it('opens the admin for whoever asks for it', () => {
-    expect(screenFor(aDeviceThatIsNotSetUp, { name: 'admin', section: 'overview' })).toBe('admin')
-    expect(screenFor(aStationTablet, { name: 'admin', section: 'items' })).toBe('admin')
+    expect(screenFor(aDeviceThatIsNotSetUp, { name: 'admin', section: 'overview', festivalId: null })).toBe('admin')
+    expect(screenFor(aStationTablet, { name: 'admin', section: 'items', festivalId: null })).toBe('admin')
   })
 })
 
@@ -69,7 +69,7 @@ describe('a device that is set up while the laptop has not said yet whose device
   })
 
   it('still opens the admin when the address asks for it', () => {
-    expect(screenFor(aDeviceWaitingForTheLaptop, { name: 'admin', section: 'overview' })).toBe(
+    expect(screenFor(aDeviceWaitingForTheLaptop, { name: 'admin', section: 'overview', festivalId: null })).toBe(
       'admin',
     )
   })

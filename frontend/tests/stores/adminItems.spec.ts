@@ -74,7 +74,7 @@ describe('an item the laptop would not save', () => {
   })
 })
 
-describe('an item the laptop would not switch on or off the menu', () => {
+describe('an item the laptop would not switch on or off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

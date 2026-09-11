@@ -100,15 +100,6 @@ describe('the festivals the laptop knows about', () => {
     expect(festivals.loadFailed).toBe(true)
   })
 
-  it('drop a festival the admin had open once it is hidden', async () => {
-    laptopLists([LAST_YEAR])
-    const festivals = useAdminFestivalsStore()
-    festivals.pick('fest-0')
-
-    await festivals.load()
-
-    expect(festivals.pickedFestivalId).toBeNull()
-  })
 })
 
 describe('setting a festival up', () => {
