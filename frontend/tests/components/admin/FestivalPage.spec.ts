@@ -94,6 +94,7 @@ interface Laptop {
   items?: unknown[]
   refusal?: { status: number; body: unknown; method: string }
   created?: Record<string, unknown>
+  waitBeforeAnswering?: (call: Call) => Promise<void>
 }
 
 function stubLaptop(laptop: Laptop = {}): Call[] {
@@ -107,6 +108,9 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
         method,
         body: init?.body === undefined ? null : JSON.parse(String(init.body)),
       })
+      if (laptop.waitBeforeAnswering !== undefined) {
+        await laptop.waitBeforeAnswering(calls[calls.length - 1])
+      }
       if (laptop.refusal !== undefined && method === laptop.refusal.method) {
         return new Response(JSON.stringify(laptop.refusal.body), {
           status: laptop.refusal.status,
@@ -712,6 +716,63 @@ describe('an item change the laptop refuses', () => {
     )
     await page.vm.$nextTick()
     expect((page.get('.sold-out-switch input').element as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('keeps what the admin typed in a row the laptop does not hold yet', async () => {
+    stubLaptop({ refusal: REFUSED_PUT })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
+    await page.findAllComponents(VAutocomplete)[1].setValue(BEER_ID)
+    await page.get('.add-item').trigger('click')
+    await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
+
+    const row = page.findAll('.festival-item-row')[0]
+    await row.get('.price-field input').setValue('3,00')
+    await row.findAll('.station-chip')[0].trigger('click')
+
+    await vi.waitFor(() => expect(row.get('.refusal').text()).toBe(REFUSAL_TEXT))
+    await page.vm.$nextTick()
+    expect((row.get('.price-field input').element as HTMLInputElement).value).toBe('3,00')
+    expect(row.findAll('.station-chip')[0].classes()).toContain('is-selected')
+  })
+
+  it('sends a second change to the same row only once the first one is answered', async () => {
+    let releaseTheFirstAnswer = (): void => {}
+    const theFirstAnswer = new Promise<void>((carryOn) => {
+      releaseTheFirstAnswer = carryOn
+    })
+    let held = false
+    const calls = stubLaptop({
+      stations: [KITCHEN, { ...BAR, isAtTheFestival: true }],
+      waitBeforeAnswering: async (call) => {
+        if (call.method === 'PUT' && !held) {
+          held = true
+          await theFirstAnswer
+        }
+      },
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-item-row .station-chip').exists()).toBe(true))
+    await page.findAll('.festival-item-row .station-chip')[1].trigger('click')
+    await page.findAll('.festival-item-row .station-chip')[1].trigger('click')
+
+    expect(writtenCalls(calls).length).toBe(1)
+
+    releaseTheFirstAnswer()
+    await vi.waitFor(() => expect(writtenCalls(calls).length).toBe(2))
+    await new Promise((carryOn) => setTimeout(carryOn, 20))
+
+    expect(writtenCalls(calls).map((call) => call.body)).toEqual([
+      { priceCents: 350, stationIds: [KITCHEN_ID, BAR_ID] },
+      { priceCents: 350, stationIds: [KITCHEN_ID] },
+    ])
+    await vi.waitFor(() =>
+      expect(page.findAll('.festival-item-row .station-chip')[1].classes()).not.toContain(
+        'is-selected',
+      ),
+    )
   })
 
   it('sends one price change once when the admin presses enter and then leaves the field', async () => {

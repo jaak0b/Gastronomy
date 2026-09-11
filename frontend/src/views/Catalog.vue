@@ -271,6 +271,14 @@ function chooseStation(stationId: string): void {
 
 .category-button {
   min-width: 0;
+  height: auto;
+  min-height: 64px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.category-button :deep(.v-btn__content) {
+  white-space: normal;
 }
 
 .catalog {

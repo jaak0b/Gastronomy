@@ -29,7 +29,7 @@ interface ItemRow {
   sentPriceText: string
   sentStationIds: string[]
   onItsWay: Placement | null
-  refusedAvailabilityCount: number
+  laptopAnswers: number
 }
 
 const props = defineProps<{ festivalId: string }>()
@@ -105,12 +105,12 @@ function rowFrom(item: AdminItem): ItemRow {
     sentPriceText: priceText,
     sentStationIds: [...stationIds],
     onItsWay: null,
-    refusedAvailabilityCount: refusedAvailabilityCountOf(item.itemId),
+    laptopAnswers: laptopAnswersAbout(item.itemId),
   }
 }
 
-function refusedAvailabilityCountOf(itemId: string): number {
-  return rows.value.get(itemId)?.refusedAvailabilityCount ?? 0
+function laptopAnswersAbout(itemId: string): number {
+  return rows.value.get(itemId)?.laptopAnswers ?? 0
 }
 
 function isBeingEdited(row: ItemRow): boolean {
@@ -139,7 +139,7 @@ function rowOf(itemId: string): ItemRow {
       sentPriceText: '',
       sentStationIds: [],
       onItsWay: null,
-      refusedAvailabilityCount: 0,
+      laptopAnswers: 0,
     }
   )
 }
@@ -160,6 +160,10 @@ function isAlreadyAtTheLaptop(row: ItemRow): boolean {
   return matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
 }
 
+function theLaptopHoldsTheRow(itemId: string): boolean {
+  return !justAddedItemIds.value.includes(itemId)
+}
+
 function refuse(itemId: string, messageKey: string): void {
   refusedItemId.value = itemId
   ownRefusal.value = adminMessage(messageKey)
@@ -177,6 +181,19 @@ function priceIsUnreadable(itemId: string): boolean {
   return typed.trim().length > 0 && parseEuroInput(typed) === null
 }
 
+function priceTheLaptopCanTake(itemId: string, row: ItemRow): number | null {
+  const priceCents = parseEuroInput(row.priceText)
+  if (priceCents === null) {
+    refuse(itemId, 'admin.itemPriceOutOfRange')
+    return null
+  }
+  if (row.stationIds.length === 0) {
+    refuse(itemId, 'admin.itemNeedsAStation')
+    return null
+  }
+  return priceCents
+}
+
 async function save(itemId: string): Promise<void> {
   const row = rows.value.get(itemId)
   if (row === undefined) {
@@ -188,34 +205,44 @@ async function save(itemId: string): Promise<void> {
   if (priceIsUnreadable(itemId)) {
     return
   }
-  const priceCents = parseEuroInput(row.priceText)
-  if (priceCents === null) {
-    refuse(itemId, 'admin.itemPriceOutOfRange')
-    return
-  }
-  if (row.stationIds.length === 0) {
-    refuse(itemId, 'admin.itemNeedsAStation')
+  if (priceTheLaptopCanTake(itemId, row) === null) {
     return
   }
   refusedItemId.value = itemId
   ownRefusal.value = null
-  const onItsWay: Placement = { priceText: row.priceText, stationIds: [...row.stationIds] }
-  row.onItsWay = onItsWay
-  const placed = await items.putAtTheFestival(props.festivalId, itemId, {
-    priceCents,
-    stationIds: [...onItsWay.stationIds],
-  })
-  if (row.onItsWay === onItsWay) {
-    row.onItsWay = null
-  }
-  if (placed) {
-    row.sentPriceText = onItsWay.priceText
-    row.sentStationIds = [...onItsWay.stationIds]
-    justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== itemId)
+  if (row.onItsWay !== null) {
     return
   }
-  row.priceText = row.sentPriceText
-  row.stationIds = [...row.sentStationIds]
+  await sendUntilTheLaptopHasTheRow(itemId, row)
+}
+
+async function sendUntilTheLaptopHasTheRow(itemId: string, row: ItemRow): Promise<void> {
+  while (!matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)) {
+    const priceCents = priceTheLaptopCanTake(itemId, row)
+    if (priceCents === null) {
+      return
+    }
+    const onItsWay: Placement = { priceText: row.priceText, stationIds: [...row.stationIds] }
+    row.onItsWay = onItsWay
+    const placed = await items.putAtTheFestival(props.festivalId, itemId, {
+      priceCents,
+      stationIds: [...onItsWay.stationIds],
+    })
+    row.laptopAnswers += 1
+    if (placed) {
+      row.sentPriceText = onItsWay.priceText
+      row.sentStationIds = [...onItsWay.stationIds]
+      justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== itemId)
+      row.onItsWay = null
+      continue
+    }
+    if (theLaptopHoldsTheRow(itemId)) {
+      row.priceText = row.sentPriceText
+      row.stationIds = [...row.sentStationIds]
+    }
+    row.onItsWay = null
+    return
+  }
 }
 
 async function toggleStation(itemId: string, stationId: string): Promise<void> {
@@ -241,13 +268,10 @@ async function toggleStation(itemId: string, stationId: string): Promise<void> {
 async function setSoldOut(item: AdminItem, isSoldOut: boolean): Promise<void> {
   refusedItemId.value = item.itemId
   ownRefusal.value = null
-  const accepted = await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
-  if (accepted) {
-    return
-  }
+  await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
   const row = rows.value.get(item.itemId)
   if (row !== undefined) {
-    row.refusedAvailabilityCount += 1
+    row.laptopAnswers += 1
   }
 }
 
@@ -359,7 +383,7 @@ async function remove(): Promise<void> {
                 <v-spacer />
                 <v-switch
                   v-if="item.atTheFestival !== null"
-                  :key="`${item.itemId}-${rowOf(item.itemId).refusedAvailabilityCount}`"
+                  :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowOf(item.itemId).laptopAnswers}`"
                   class="sold-out-switch flex-grow-0"
                   density="compact"
                   color="warning"

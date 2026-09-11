@@ -65,19 +65,22 @@ async function goBackToTheCategories(view: MountedCatalog): Promise<void> {
 }
 
 describe('the categories on the ordering screen', () => {
-  it('lays the category buttons out in a two column grid', () => {
-    const view = mountCatalog()
-
-    const grid = view.get('.category-grid')
-    expect(grid.findAll('.category-button')).toHaveLength(2)
-  })
-
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
     document.body.innerHTML = ''
     navigate('/')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('lays the category buttons out in a grid of their own', () => {
+    const view = mountCatalog()
+
+    const grid = view.get('.category-grid')
+    expect(grid.findAll('.category-button')).toHaveLength(2)
+    view.findAll('.category-button').forEach((button) => {
+      expect(button.element.parentElement).toBe(grid.element)
+    })
   })
 
   it('offers every category as a button of its own', () => {
