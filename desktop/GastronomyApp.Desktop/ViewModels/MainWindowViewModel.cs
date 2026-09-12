@@ -111,8 +111,6 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public string AdminUrl => $"http://localhost:{_adminPort}/admin";
 
-  public string LanguageLabel => _text.Get("desktop.language");
-
   public ObservableCollection<LanguageOption> Languages { get; } = [];
 
   public LanguageOption? SelectedLanguage

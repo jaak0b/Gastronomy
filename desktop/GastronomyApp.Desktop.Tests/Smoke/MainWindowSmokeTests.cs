@@ -233,6 +233,27 @@ public sealed class MainWindowSmokeTests
   }
 
   [AvaloniaTest]
+  public void MainWindow_RendersTheCustomTitleBarWithTheTitleTheVersionAndTheLanguagePicker()
+  {
+    var viewModel = CreateMainWindowViewModel();
+
+    MainWindow window = new() { DataContext = viewModel };
+    window.Show();
+
+    var title = window.FindControl<TextBlock>("TitleBarTitle");
+    var versionText = window.FindControl<TextBlock>("VersionText");
+    var languageSelector = window.FindControl<ComboBox>("LanguageSelector");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(title!.Text, Is.EqualTo(_text.Get("desktop.windowTitle")));
+                      Assert.That(versionText!.Text, Is.EqualTo(CurrentVersion));
+                      Assert.That(languageSelector, Is.Not.Null);
+                      Assert.That(languageSelector!.ItemsSource, Is.SameAs(viewModel.Languages));
+                    });
+  }
+
+  [AvaloniaTest]
   public void MainWindow_WithAnInstalledCopy_ShowsTheUpdateButton()
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();

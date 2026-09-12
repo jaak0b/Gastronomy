@@ -66,9 +66,6 @@
     <data name="desktop.windowTitle" xml:space="preserve">
     <value>Ordering system</value>
   </data>
-    <data name="desktop.language" xml:space="preserve">
-    <value>Language</value>
-  </data>
     <data name="desktop.language.german" xml:space="preserve">
     <value>Deutsch</value>
   </data>
@@ -142,7 +139,7 @@
     <value>Look on the task bar for a window of this program. If there is none, restart the laptop and open the program again. The program could not check whether it is already running and has not started the server.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
-    <value>Version {version}</value>
+    <value>{version}</value>
   </data>
     <data name="desktop.update.confirmTitle" xml:space="preserve">
     <value>Install the new version?</value>

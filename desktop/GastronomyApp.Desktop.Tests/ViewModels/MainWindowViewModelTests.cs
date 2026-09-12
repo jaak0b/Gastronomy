@@ -637,7 +637,7 @@ public sealed class MainWindowViewModelTests
   {
     var viewModel = CreateViewModel();
 
-    Assert.That(viewModel.VersionText, Is.EqualTo("Version 1.2.3"));
+    Assert.That(viewModel.VersionText, Is.EqualTo("1.2.3"));
   }
 
   [Test]

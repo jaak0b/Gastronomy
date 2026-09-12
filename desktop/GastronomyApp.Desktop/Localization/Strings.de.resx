@@ -66,9 +66,6 @@
     <data name="desktop.windowTitle" xml:space="preserve">
     <value>Bestellsystem</value>
   </data>
-    <data name="desktop.language" xml:space="preserve">
-    <value>Sprache</value>
-  </data>
     <data name="desktop.language.german" xml:space="preserve">
     <value>Deutsch</value>
   </data>
@@ -151,7 +148,7 @@
     <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Laptop neu und öffnen Sie das Programm noch einmal. Das Programm konnte nicht prüfen, ob es schon läuft, und hat den Server nicht gestartet.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
-    <value>Version {version}</value>
+    <value>{version}</value>
   </data>
     <data name="desktop.update.confirmTitle" xml:space="preserve">
     <value>Neue Version installieren?</value>

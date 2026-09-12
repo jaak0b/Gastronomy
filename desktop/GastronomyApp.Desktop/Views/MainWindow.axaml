@@ -11,7 +11,10 @@
         Height="400"
         MinWidth="420"
         MinHeight="340"
-        Title="{Binding WindowTitle}">
+        Title="{Binding WindowTitle}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40"
+        WindowDecorations="BorderOnly">
 
     <Window.Resources>
         <conv:StatusLevelConverter x:Key="StatusLevelIs" />
@@ -71,16 +74,17 @@
 
     <DockPanel LastChildFill="True">
 
-        <Border DockPanel.Dock="Top"
+        <Border Name="TitleBar"
+                DockPanel.Dock="Top"
+                MinHeight="40"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="20,12">
+                Padding="20,0"
+                PointerPressed="OnTitleBarPointerPressed">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0"
-                           Text="{Binding WindowTitle}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
+                <TextBlock Name="TitleBarTitle"
+                           Text="{Binding WindowTitle, FallbackValue=''}"
                            VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                     <TextBlock Name="VersionText"
@@ -88,10 +92,8 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                FontSize="11"
                                VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding LanguageLabel}"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
-                    <ComboBox ItemsSource="{Binding Languages}"
+                    <ComboBox Name="LanguageSelector"
+                              ItemsSource="{Binding Languages}"
                               SelectedItem="{Binding SelectedLanguage}"
                               MinWidth="120"
                               VerticalAlignment="Center">
