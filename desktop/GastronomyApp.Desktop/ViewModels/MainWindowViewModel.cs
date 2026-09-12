@@ -34,16 +34,19 @@ public sealed class MainWindowViewModel : ViewModelBase
   private const int MaximumPortAttempts = 10;
   private const string EveryNetworkInterface = "0.0.0.0";
   private readonly AppLanguage _appLanguage = new();
+  private readonly string _currentVersion;
   private readonly IFreePortProvider _freePorts;
   private readonly IHostLauncher _launcher;
   private readonly Never _never = new();
   private readonly IPowerManager _power;
   private readonly ISettingsStore _settingsStore;
   private readonly IDesktopTextProvider _text;
+  private readonly IUpdateInstaller _updateInstaller;
   private int _adminPort;
   private string? _errorMessageKey;
   private TextPlaceholder[] _errorPlaceholders = [];
   private string? _failureDetail;
+  private bool _isUpdateCheckRunning;
   private StatusNotice? _notice;
   private LanguageOption? _selectedLanguage;
 
@@ -53,13 +56,17 @@ public sealed class MainWindowViewModel : ViewModelBase
                              IPowerManager power,
                              ISettingsStore settingsStore,
                              IDesktopTextProvider text,
-                             IFreePortProvider freePorts)
+                             IFreePortProvider freePorts,
+                             IUpdateInstaller updateInstaller,
+                             string currentVersion)
   {
     _launcher = launcher;
     _power = power;
     _settingsStore = settingsStore;
     _text = text;
     _freePorts = freePorts;
+    _updateInstaller = updateInstaller;
+    _currentVersion = currentVersion;
 
     Languages.Add(new("de", text.Get("desktop.language.german")));
     Languages.Add(new("en", text.Get("desktop.language.english")));
@@ -81,6 +88,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     RepairSetupCommand = new RelayCommand(() => RepairRequested?.Invoke());
     RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
     ShowFailureDetailCommand = new RelayCommand(ShowFailureDetail);
+    CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesAsync, () => !IsUpdateCheckRunning);
   }
 
   public IRelayCommand OpenAdminPagesCommand { get; }
@@ -93,7 +101,13 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public IRelayCommand ShowFailureDetailCommand { get; }
 
+  public IAsyncRelayCommand CheckForUpdatesCommand { get; }
+
   public string WindowTitle => _text.Get("desktop.windowTitle");
+
+  public string VersionText => _text.Format("desktop.version", new TextPlaceholder("version", _currentVersion));
+
+  public bool CanCheckForUpdates => _updateInstaller.IsInstalled;
 
   public string AdminUrl => $"http://localhost:{_adminPort}/admin";
 
@@ -135,6 +149,18 @@ public sealed class MainWindowViewModel : ViewModelBase
       if (SetProperty(ref _status, value))
       {
         RaiseStatusChanged();
+      }
+    }
+  }
+
+  public bool IsUpdateCheckRunning
+  {
+    get => _isUpdateCheckRunning;
+    private set
+    {
+      if (SetProperty(ref _isUpdateCheckRunning, value))
+      {
+        CheckForUpdatesCommand.NotifyCanExecuteChanged();
       }
     }
   }
@@ -192,6 +218,10 @@ public sealed class MainWindowViewModel : ViewModelBase
   public event Action? QuitRequested;
 
   public event Action? FailureDetailRequested;
+
+  public event Action<string>? UpdateReadyRequested;
+
+  public event Action<Exception>? UpdateFailureRequested;
 
   private void OnLanguageChanged()
   {
@@ -307,6 +337,45 @@ public sealed class MainWindowViewModel : ViewModelBase
     await _launcher.StopAsync(cancellationToken);
     Status = HostStatus.Stopped;
     _power.AllowSleep();
+  }
+
+  private async Task CheckForUpdatesAsync()
+  {
+    if (IsUpdateCheckRunning)
+    {
+      return;
+    }
+
+    IsUpdateCheckRunning = true;
+
+    try
+    {
+      var preparation = await _updateInstaller.CheckAndDownloadAsync(CancellationToken.None);
+
+      switch (preparation)
+      {
+        case UpdatePreparation.Ready ready:
+          UpdateReadyRequested?.Invoke(ready.Version);
+
+          break;
+
+        case UpdatePreparation.Failed failed:
+          UpdateFailureRequested?.Invoke(failed.Failure);
+
+          break;
+
+        case UpdatePreparation.UpToDate:
+          break;
+
+        default:
+          _never.OfType<UpdatePreparation>(preparation);
+
+          break;
+      }
+    } finally
+    {
+      IsUpdateCheckRunning = false;
+    }
   }
 
   public void ShowRepairOutcome(ElevatedSetupOutcome outcome)

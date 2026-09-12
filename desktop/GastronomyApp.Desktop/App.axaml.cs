@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Diagnostics;
+﻿using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -65,6 +65,8 @@ public class App : Application
     _mainWindowViewModel.RepairRequested += RepairSetup;
     _mainWindowViewModel.QuitRequested += AskWhetherToQuit;
     _mainWindowViewModel.FailureDetailRequested += ShowFailureDetail;
+    _mainWindowViewModel.UpdateReadyRequested += ShowUpdateConfirmation;
+    _mainWindowViewModel.UpdateFailureRequested += ShowUpdateFailure;
 
     _mainWindow = new() { DataContext = _mainWindowViewModel };
 
@@ -181,6 +183,7 @@ public class App : Application
     }
 
     await _mainWindowViewModel.StartAsync();
+    _ = _composition.AutomaticUpdateChecker.CheckOnStartupAsync();
   }
 
   private void OpenAdminPages(string adminUrl)
@@ -220,13 +223,68 @@ public class App : Application
 
   private void ShowFailureDetail()
   {
-    if (_mainWindowViewModel is null || _mainWindow is null)
+    if (_mainWindowViewModel?.FailureDetail is not { } detail)
     {
       return;
     }
 
-    FailureDetailDialog dialog = new() { DataContext = _mainWindowViewModel };
-    dialog.ShowDialog(_mainWindow);
+    _ = ShowTechnicalDetailAsync(detail);
+  }
+
+  private async void ShowUpdateFailure(Exception failure)
+  {
+    await ShowTechnicalDetailAsync(failure.ToString());
+  }
+
+  private async Task ShowTechnicalDetailAsync(string detail)
+  {
+    if (_mainWindow is null || _mainWindowViewModel is null)
+    {
+      return;
+    }
+
+    TechnicalDetailViewModel viewModel = new(_mainWindowViewModel.FailureDetailTitle,
+                                             detail,
+                                             _mainWindowViewModel.FailureDetailCloseLabel);
+    FailureDetailDialog dialog = new() { DataContext = viewModel };
+    await dialog.ShowDialog(_mainWindow);
+  }
+
+  private async void ShowUpdateConfirmation(string version)
+  {
+    if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
+    {
+      return;
+    }
+
+    UpdateConfirmViewModel confirm = _composition.CreateUpdateConfirmViewModel(version);
+    UpdateConfirmDialog dialog = new() { DataContext = confirm };
+    var accepted = await dialog.ShowDialog<bool>(_mainWindow);
+
+    if (!accepted)
+    {
+      _composition.UpdateOnQuit.RequestInstallDespiteFestival();
+
+      return;
+    }
+
+    try
+    {
+      _composition.UpdateInstaller.InstallOnQuit(restart: true);
+    }
+    catch (Exception failure)
+    {
+      await ShowTechnicalDetailAsync(failure.ToString());
+
+      return;
+    }
+
+    await _mainWindowViewModel.StopAsync();
+
+    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
+    {
+      lifetime.Shutdown();
+    }
   }
 
   private async void AskWhetherToQuit()

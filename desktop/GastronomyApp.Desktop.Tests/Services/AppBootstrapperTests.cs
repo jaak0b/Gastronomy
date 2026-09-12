@@ -1,4 +1,4 @@
-﻿﻿using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services;
@@ -52,7 +52,9 @@ public sealed class AppBootstrapperTests
                A.Fake<IPowerManager>(),
                settingsStore,
                new DesktopTextProvider(),
-               A.Fake<IFreePortProvider>());
+               A.Fake<IFreePortProvider>(),
+               A.Fake<IUpdateInstaller>(),
+               "1.2.3");
   }
 
   private AppBootstrapper CreateBootstrapper()

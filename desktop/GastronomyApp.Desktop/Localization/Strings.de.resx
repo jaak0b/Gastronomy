@@ -150,4 +150,19 @@
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
     <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Laptop neu und öffnen Sie das Programm noch einmal. Das Programm konnte nicht prüfen, ob es schon läuft, und hat den Server nicht gestartet.</value>
   </data>
+    <data name="desktop.version" xml:space="preserve">
+    <value>Version {version}</value>
+  </data>
+    <data name="desktop.update.confirmTitle" xml:space="preserve">
+    <value>Neue Version installieren?</value>
+  </data>
+    <data name="desktop.update.confirmBody" xml:space="preserve">
+    <value>Version {version} ist bereit. Beim Neustart wird sie sofort installiert. Ohne Neustart installiert sie sich beim nächsten Beenden.</value>
+  </data>
+    <data name="desktop.update.confirmRestart" xml:space="preserve">
+    <value>Jetzt neu starten</value>
+  </data>
+    <data name="desktop.update.confirmLater" xml:space="preserve">
+    <value>Später</value>
+  </data>
 </root>

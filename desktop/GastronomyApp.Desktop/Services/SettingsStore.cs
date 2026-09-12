@@ -11,6 +11,8 @@ public sealed record StoredSettings
   public string? SelectedNetworkInterface { get; init; }
 
   public string? Language { get; init; }
+
+  public DateTimeOffset? LastUpdateCheckUtc { get; init; }
 }
 
 public sealed class SettingsStore : ISettingsStore
@@ -37,7 +39,8 @@ public sealed class SettingsStore : ISettingsStore
     return new(stored.Port,
                stored.DataDirectory ?? _settingsDirectory,
                stored.SelectedNetworkInterface,
-               stored.Language);
+               stored.Language,
+               stored.LastUpdateCheckUtc);
   }
 
   public void Save(DesktopSettings settings)
@@ -49,7 +52,8 @@ public sealed class SettingsStore : ISettingsStore
                               Port = settings.Port,
                               DataDirectory = settings.DataDirectory,
                               SelectedNetworkInterface = settings.SelectedNetworkInterface,
-                              Language = settings.Language
+                              Language = settings.Language,
+                              LastUpdateCheckUtc = settings.LastUpdateCheckUtc
                             };
 
     File.WriteAllText(Path.Combine(_settingsDirectory, SettingsFileName),

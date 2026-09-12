@@ -4,6 +4,7 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class QuitConfirmViewModel : ViewModelBase
 {
+  private readonly Func<CancellationToken, Task> _prepareUpdateOnQuit;
   private readonly Action _requestApplicationExit;
   private readonly Func<CancellationToken, Task> _stopServer;
   private readonly IDesktopTextProvider _text;
@@ -12,11 +13,13 @@ public sealed class QuitConfirmViewModel : ViewModelBase
 
   public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer,
                               IDesktopTextProvider text,
-                              Action requestApplicationExit)
+                              Action requestApplicationExit,
+                              Func<CancellationToken, Task> prepareUpdateOnQuit)
   {
     _stopServer = stopServer;
     _text = text;
     _requestApplicationExit = requestApplicationExit;
+    _prepareUpdateOnQuit = prepareUpdateOnQuit;
   }
 
   public string Title => _text.Get("desktop.quit.title");
@@ -50,6 +53,7 @@ public sealed class QuitConfirmViewModel : ViewModelBase
       return;
     }
 
+    await _prepareUpdateOnQuit(cancellationToken);
     await _stopServer(cancellationToken);
     IsConfirmationVisible = false;
     _requestApplicationExit();

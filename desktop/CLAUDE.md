@@ -14,7 +14,7 @@ sees a console, never edits a configuration file, and can never end the evening 
 
 **The admin interface is the web page. This window is a launcher and nothing else.** It shows the
 language picker, whatever has gone wrong, and buttons to open the admin page, open settings, and quit.
-While the server is healthy it carries no text at all. It must never grow a second admin UI: no item
+While the server is healthy it carries only the version line. It must never grow a second admin UI: no item
 editing, no station management, no order views, no address, no QR code, no counts and no status
 readouts. The web admin has to exist for the phones regardless, and two admin surfaces would have to be
 kept true.
@@ -30,6 +30,25 @@ another, writes that down, and tells the operator that everybody has to set thei
 which is the truth because a phone's device token is scoped to the origin and a new port is a new
 origin. It retries only on "address already in use", at most ten times; any other bind failure stops
 at once and is shown.
+
+## Updates
+
+The program updates itself from the public GitHub releases of its repository through Velopack. It
+never reads prereleases and needs no access token.
+
+On every start it checks at most once an hour. The moment of the last attempt is written down, so a
+failed check counts and the next start waits an hour before trying again. A found update is
+downloaded in the background at once.
+
+Installation happens on quit, inside the confirmed quit flow: the downloaded update is applied when
+no festival is running and none starts within the next 24 hours, hidden festivals included. If a
+festival is near, the download stays on disk and a later quit can still install it. A quit while the
+server is not running postpones as well.
+
+The window always shows the version of the running program in its header, and a small download icon
+only in an installed copy. That icon checks and downloads on demand, ignoring the hourly limit and
+the festival window, and asks before installing: a restart applies it now, and Later never installs
+it immediately and instead applies it at the next quit. It never restarts the program on its own.
 
 ## Hard rules
 

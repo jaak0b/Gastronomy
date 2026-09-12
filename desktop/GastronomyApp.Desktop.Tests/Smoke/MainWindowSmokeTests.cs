@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
@@ -30,7 +31,10 @@ public sealed class MainWindowSmokeTests
 {
   private readonly IDesktopTextProvider _text = new DesktopTextProvider();
 
-  private MainWindowViewModel CreateMainWindowViewModel(IHostLauncher? launcher = null)
+  private const string CurrentVersion = "1.2.3";
+
+  private MainWindowViewModel CreateMainWindowViewModel(IHostLauncher? launcher = null,
+                                                       IUpdateInstaller? updateInstaller = null)
   {
     var settingsStore = A.Fake<ISettingsStore>();
     A.CallTo(() => settingsStore.Load())
@@ -40,7 +44,9 @@ public sealed class MainWindowSmokeTests
                A.Fake<IPowerManager>(),
                settingsStore,
                _text,
-               A.Fake<IFreePortProvider>());
+               A.Fake<IFreePortProvider>(),
+               updateInstaller ?? A.Fake<IUpdateInstaller>(),
+               CurrentVersion);
   }
 
   private static IHostLauncher LauncherThat(HostLaunchResult result)
@@ -210,5 +216,80 @@ public sealed class MainWindowSmokeTests
                       Assert.That(RenderedColours.LabelForegroundOf(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
                       Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#991B1B")));
                     });
+  }
+
+  [AvaloniaTest]
+  public void MainWindow_ShowsTheVersionOfTheRunningProgram()
+  {
+    var viewModel = CreateMainWindowViewModel();
+
+    MainWindow window = new() { DataContext = viewModel };
+    window.Show();
+
+    var versionText = window.FindControl<TextBlock>("VersionText");
+
+    Assert.That(versionText!.Text,
+                Is.EqualTo(_text.Format("desktop.version", new TextPlaceholder("version", CurrentVersion))));
+  }
+
+  [AvaloniaTest]
+  public void MainWindow_WithAnInstalledCopy_ShowsTheUpdateButton()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    A.CallTo(() => updateInstaller.IsInstalled).Returns(true);
+    var viewModel = CreateMainWindowViewModel(updateInstaller: updateInstaller);
+
+    MainWindow window = new() { DataContext = viewModel };
+    window.Show();
+
+    var button = window.FindControl<Button>("CheckForUpdates");
+
+    Assert.That(button!.IsVisible, Is.True);
+  }
+
+  [AvaloniaTest]
+  public void MainWindow_WithoutAnInstalledCopy_HidesTheUpdateButton()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    A.CallTo(() => updateInstaller.IsInstalled).Returns(false);
+    var viewModel = CreateMainWindowViewModel(updateInstaller: updateInstaller);
+
+    MainWindow window = new() { DataContext = viewModel };
+    window.Show();
+
+    var button = window.FindControl<Button>("CheckForUpdates");
+
+    Assert.That(button!.IsVisible, Is.False);
+  }
+
+  [AvaloniaTest]
+  public async Task MainWindow_WhileTheUpdateCheckRuns_ShowsTheSpinner()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    A.CallTo(() => updateInstaller.IsInstalled).Returns(true);
+    var pending = new TaskCompletionSource<UpdatePreparation>();
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(pending.Task);
+    var viewModel = CreateMainWindowViewModel(updateInstaller: updateInstaller);
+
+    MainWindow window = new() { DataContext = viewModel };
+    window.Show();
+    Dispatcher.UIThread.RunJobs();
+
+    var spinner = window.FindControl<Ellipse>("UpdateSpinner");
+    Assert.That(spinner!.IsVisible, Is.False);
+
+    var running = viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
+    Dispatcher.UIThread.RunJobs();
+    var spinnerWhileRunning = spinner.IsVisible;
+
+    pending.SetResult(new UpdatePreparation.UpToDate());
+    Dispatcher.UIThread.RunJobs();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(spinnerWhileRunning, Is.True);
+                      Assert.That(spinner.IsVisible, Is.False);
+                    });
+    await running;
   }
 }

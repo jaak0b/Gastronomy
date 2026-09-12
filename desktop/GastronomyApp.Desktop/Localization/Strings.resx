@@ -141,4 +141,19 @@
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
     <value>Look on the task bar for a window of this program. If there is none, restart the laptop and open the program again. The program could not check whether it is already running and has not started the server.</value>
   </data>
+    <data name="desktop.version" xml:space="preserve">
+    <value>Version {version}</value>
+  </data>
+    <data name="desktop.update.confirmTitle" xml:space="preserve">
+    <value>Install the new version?</value>
+  </data>
+    <data name="desktop.update.confirmBody" xml:space="preserve">
+    <value>Version {version} is ready. A restart installs it now. Without a restart it installs itself when you next quit.</value>
+  </data>
+    <data name="desktop.update.confirmRestart" xml:space="preserve">
+    <value>Restart now</value>
+  </data>
+    <data name="desktop.update.confirmLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 ﻿using GastronomyApp.Api.Options;
+using GastronomyApp.Core.Entities;
 using Microsoft.AspNetCore.Builder;
 
 namespace GastronomyApp.Desktop.Services;
@@ -88,11 +89,42 @@ public sealed record DesktopSettings(
   int? Port,
   string DataDirectory,
   string? SelectedNetworkInterface,
-  string? Language);
+  string? Language,
+  DateTimeOffset? LastUpdateCheckUtc = null);
 
 public interface IFreePortProvider
 {
   public int Reserve();
+}
+
+public interface IUpdateInstaller
+{
+  public bool IsInstalled { get; }
+
+  public bool HasDownloadedUpdate { get; }
+
+  public Task<UpdatePreparation> CheckAndDownloadAsync(CancellationToken cancellationToken);
+
+  public void InstallOnQuit(bool restart);
+}
+
+public abstract record UpdatePreparation
+{
+  public sealed record UpToDate : UpdatePreparation;
+
+  public sealed record Ready(string Version) : UpdatePreparation;
+
+  public sealed record Failed(Exception Failure) : UpdatePreparation;
+}
+
+public interface IUpdateInstallGate
+{
+  public Task<bool> CanInstallNowAsync(CancellationToken cancellationToken);
+}
+
+public interface IFestivalReader
+{
+  public Task<IReadOnlyCollection<Festival>> ReadAllAsync(CancellationToken cancellationToken);
 }
 
 public interface IElevatedSetupLauncher

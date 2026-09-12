@@ -19,6 +19,7 @@ public sealed class MainWindowViewModelTests
     _settingsStore = A.Fake<ISettingsStore>();
     _text = new DesktopTextProvider();
     _freePorts = A.Fake<IFreePortProvider>();
+    _updateInstaller = A.Fake<IUpdateInstaller>();
     A.CallTo(() => _freePorts.Reserve()).Returns(51234);
 
     A.CallTo(() => _settingsStore.Load())
@@ -30,16 +31,20 @@ public sealed class MainWindowViewModelTests
   private ISettingsStore _settingsStore = null!;
   private IDesktopTextProvider _text = null!;
   private IFreePortProvider _freePorts = null!;
+  private IUpdateInstaller _updateInstaller = null!;
 
   private const string DataFolder = @"C:\ProgramData\GastronomyApp";
+  private const string CurrentVersion = "1.2.3";
 
-  private MainWindowViewModel CreateViewModel()
+  private MainWindowViewModel CreateViewModel(IUpdateInstaller? updateInstaller = null)
   {
     return new(_launcher,
                _power,
                _settingsStore,
                _text,
-               _freePorts);
+               _freePorts,
+               updateInstaller ?? _updateInstaller,
+               CurrentVersion);
   }
 
   private void LauncherReturns(HostLaunchResult result)
@@ -624,6 +629,82 @@ public sealed class MainWindowViewModelTests
                     {
                       Assert.That(viewModel.StatusText, Is.EqualTo(_text.Get("desktop.error.noNetwork")));
                       Assert.That(viewModel.StatusText, Is.Not.EqualTo(english));
+                    });
+  }
+
+  [Test]
+  public void VersionText_CarriesTheVersionOfTheRunningProgram()
+  {
+    var viewModel = CreateViewModel();
+
+    Assert.That(viewModel.VersionText, Is.EqualTo("Version 1.2.3"));
+  }
+
+  [Test]
+  public void CanCheckForUpdates_WhenTheProgramIsInstalled_IsTrue()
+  {
+    A.CallTo(() => _updateInstaller.IsInstalled).Returns(true);
+
+    Assert.That(CreateViewModel().CanCheckForUpdates, Is.True);
+  }
+
+  [Test]
+  public void CanCheckForUpdates_WhenTheProgramIsNotInstalled_IsFalse()
+  {
+    A.CallTo(() => _updateInstaller.IsInstalled).Returns(false);
+
+    Assert.That(CreateViewModel().CanCheckForUpdates, Is.False);
+  }
+
+  [Test]
+  public async Task CheckForUpdatesCommand_WhenAnUpdateIsReady_AsksForTheConfirmationWithTheVersion()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._))
+     .Returns(new UpdatePreparation.Ready("2.0.0"));
+    var viewModel = CreateViewModel(updateInstaller);
+    string? requestedVersion = null;
+    viewModel.UpdateReadyRequested += version => requestedVersion = version;
+
+    await viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
+
+    Assert.That(requestedVersion, Is.EqualTo("2.0.0"));
+  }
+
+  [Test]
+  public async Task CheckForUpdatesCommand_WhenTheCheckFails_AsksForTheTechnicalDetail()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    var failure = new InvalidOperationException("The network is down.");
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._))
+     .Returns(new UpdatePreparation.Failed(failure));
+    var viewModel = CreateViewModel(updateInstaller);
+    Exception? requestedFailure = null;
+    viewModel.UpdateFailureRequested += exception => requestedFailure = exception;
+
+    await viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
+
+    Assert.That(requestedFailure, Is.SameAs(failure));
+  }
+
+  [Test]
+  public async Task CheckForUpdatesCommand_WhileTheCheckRuns_ReportsThatItIsRunning()
+  {
+    var updateInstaller = A.Fake<IUpdateInstaller>();
+    var pending = new TaskCompletionSource<UpdatePreparation>();
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(pending.Task);
+    var viewModel = CreateViewModel(updateInstaller);
+
+    var running = viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
+    var runningDuringCheck = viewModel.IsUpdateCheckRunning;
+
+    pending.SetResult(new UpdatePreparation.UpToDate());
+    await running;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(runningDuringCheck, Is.True);
+                      Assert.That(viewModel.IsUpdateCheckRunning, Is.False);
                     });
   }
 }

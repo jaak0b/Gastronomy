@@ -16,7 +16,7 @@ public sealed class QuitConfirmDialogSmokeTests
 
   private QuitConfirmViewModel CreateQuitConfirmViewModel()
   {
-    return new(_ => Task.CompletedTask, _text, () => { });
+    return new(_ => Task.CompletedTask, _text, () => { }, _ => Task.CompletedTask);
   }
 
   [AvaloniaTest]

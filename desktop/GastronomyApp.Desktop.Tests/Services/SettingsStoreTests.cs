@@ -67,4 +67,17 @@ public sealed class SettingsStoreTests
 
     Assert.That(reloaded, Is.EqualTo(new DesktopSettings(8080, _settingsDirectory, "Festival", null)));
   }
+
+  [Test]
+  public void Save_WritesTheLastUpdateCheckMomentThatLoadReadsBackUnchanged()
+  {
+    var store = CreateStore();
+    var checkedAt = new DateTimeOffset(2026, 9, 12, 18, 30, 0, TimeSpan.Zero);
+
+    store.Save(new(8080, _settingsDirectory, "Festival", null, checkedAt));
+
+    var reloaded = CreateStore().Load();
+
+    Assert.That(reloaded.LastUpdateCheckUtc, Is.EqualTo(checkedAt));
+  }
 }

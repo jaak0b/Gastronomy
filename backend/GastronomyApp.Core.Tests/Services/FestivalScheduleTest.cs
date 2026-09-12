@@ -63,6 +63,44 @@ public sealed class FestivalScheduleTest
   }
 
   [Test]
+  public void HasStartWithin_HiddenFestivalStartsInTwelveHours_IsTrue()
+  {
+    var hidden = FestivalOf("Sommerfest", _start.AddHours(12), _end.AddHours(12), true);
+
+    Assert.That(_schedule.HasStartWithin([hidden], _start, TimeSpan.FromHours(24)), Is.True);
+  }
+
+  [Test]
+  public void HasStartWithin_FestivalStartsExactlyAtNowPlusWindow_IsTrue()
+  {
+    var festival = FestivalOf("Sommerfest", _start.AddHours(24), _end.AddHours(24));
+
+    Assert.That(_schedule.HasStartWithin([festival], _start, TimeSpan.FromHours(24)), Is.True);
+  }
+
+  [Test]
+  public void HasStartWithin_FestivalStartsAfterTheWindow_IsFalse()
+  {
+    var festival = FestivalOf("Sommerfest", _start.AddHours(25), _end.AddHours(25));
+
+    Assert.That(_schedule.HasStartWithin([festival], _start, TimeSpan.FromHours(24)), Is.False);
+  }
+
+  [Test]
+  public void HasStartWithin_FestivalAlreadyStarted_IsFalse()
+  {
+    var festival = FestivalOf("Sommerfest", _start.AddHours(-2), _end.AddHours(2));
+
+    Assert.That(_schedule.HasStartWithin([festival], _start, TimeSpan.FromHours(24)), Is.False);
+  }
+
+  [Test]
+  public void HasStartWithin_NoFestivals_IsFalse()
+  {
+    Assert.That(_schedule.HasStartWithin([], _start, TimeSpan.FromHours(24)), Is.False);
+  }
+
+  [Test]
   public void Overlapping_PeriodInsideAnotherFestival_ReturnsTheFestivalInTheWay()
   {
     var standing = FestivalOf("Sommerfest", _start, _end);

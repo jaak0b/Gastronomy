@@ -18,6 +18,14 @@ public sealed class FestivalSchedule
     return festivals.FirstOrDefault(festival => IsRunning(festival, nowUtc));
   }
 
+  public bool HasStartWithin(IReadOnlyCollection<Festival> festivals, DateTime nowUtc, TimeSpan window)
+  {
+    ArgumentNullException.ThrowIfNull(festivals);
+
+    return festivals.Any(festival => festival.StartsAtUtc > nowUtc
+                                     && festival.StartsAtUtc <= nowUtc + window);
+  }
+
   public Festival? Overlapping(Guid candidateId,
                                DateTime startsAtUtc,
                                DateTime endsAtUtc,

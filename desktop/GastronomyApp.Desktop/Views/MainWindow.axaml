@@ -43,6 +43,30 @@
         <Style Selector="Border#StatusBar.withText">
             <Setter Property="Padding" Value="20,12" />
         </Style>
+
+        <Style Selector="Button#CheckForUpdates">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button#CheckForUpdates:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        </Style>
+        <Style Selector="Ellipse#UpdateSpinner">
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="RotateTransform.Angle" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="RotateTransform.Angle" Value="360" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </Window.Styles>
 
     <DockPanel LastChildFill="True">
@@ -59,6 +83,11 @@
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Name="VersionText"
+                               Text="{Binding VersionText, FallbackValue=''}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
                     <TextBlock Text="{Binding LanguageLabel}"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
@@ -72,6 +101,32 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+                    <Button Name="CheckForUpdates"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            IsVisible="{Binding CanCheckForUpdates, FallbackValue=False}"
+                            VerticalAlignment="Center">
+                        <Panel>
+                            <Path Name="UpdateDownloadArrow"
+                                  Data="M5,20h14v-2H5V20z M19,9h-4V3H9v6H5l7,7 7,-7z"
+                                  Fill="{DynamicResource TextSecondaryBrush}"
+                                  Stretch="Uniform"
+                                  Width="14"
+                                  Height="14"
+                                  IsVisible="{Binding !IsUpdateCheckRunning, FallbackValue=False}" />
+                            <Ellipse Name="UpdateSpinner"
+                                     Width="14"
+                                     Height="14"
+                                     Stroke="{DynamicResource TextSecondaryBrush}"
+                                     StrokeThickness="2"
+                                     StrokeDashArray="2,3"
+                                     RenderTransformOrigin="50%,50%"
+                                     IsVisible="{Binding IsUpdateCheckRunning, FallbackValue=False}">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Panel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>

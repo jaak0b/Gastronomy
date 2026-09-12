@@ -33,12 +33,14 @@ public sealed class QuitConfirmViewModelTests
                _power,
                settingsStore,
                _text,
-               A.Fake<IFreePortProvider>());
+               A.Fake<IFreePortProvider>(),
+               A.Fake<IUpdateInstaller>(),
+               "1.2.3");
   }
 
   private QuitConfirmViewModel CreateViewModel()
   {
-    return new(CreateHostViewModel().StopAsync, _text, () => _exitRequests++);
+    return new(CreateHostViewModel().StopAsync, _text, () => _exitRequests++, _ => Task.CompletedTask);
   }
 
   [Test]
@@ -102,7 +104,7 @@ public sealed class QuitConfirmViewModelTests
   public async Task ConfirmAsync_ReleasesTheAwakeRequestWhileStoppingTheServer()
   {
     var host = CreateHostViewModel();
-    QuitConfirmViewModel viewModel = new(host.StopAsync, _text, () => _exitRequests++);
+    QuitConfirmViewModel viewModel = new(host.StopAsync, _text, () => _exitRequests++, _ => Task.CompletedTask);
     viewModel.RequestQuit();
 
     await viewModel.ConfirmAsync();
@@ -120,5 +122,28 @@ public sealed class QuitConfirmViewModelTests
 
     Assert.That(_exitRequests, Is.Zero);
     A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task ConfirmAsync_PreparesTheUpdateBeforeStoppingTheServer()
+  {
+    List<string> order = [];
+    QuitConfirmViewModel viewModel = new(_ =>
+                                         {
+                                           order.Add("stop");
+                                           return Task.CompletedTask;
+                                         },
+                                         _text,
+                                         () => _exitRequests++,
+                                         _ =>
+                                         {
+                                           order.Add("update");
+                                           return Task.CompletedTask;
+                                         });
+    viewModel.RequestQuit();
+
+    await viewModel.ConfirmAsync();
+
+    Assert.That(order, Is.EqualTo(new List<string> { "update", "stop" }));
   }
 }
