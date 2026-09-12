@@ -239,9 +239,9 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 16. **There is no documentation folder and no written manual.** The owner removed `docs/` on
     2026-09-11: nobody reads a spec, and a checklist nobody follows rots. A feature has to explain
-    itself on the screen where it is used, in the two languages, and the three `CLAUDE.md` files are
-    the only prose kept in the repository. Never recreate a spec, a checklist or a verification
-    script under `docs/`.
+    itself on the screen where it is used, in the two languages, and the three `CLAUDE.md` files plus
+    the root `README.md` are the only prose kept in the repository. Never recreate a spec, a checklist
+    or a verification script under `docs/`.
 
 17. **Deleting means removing, everywhere, in the same change. This rule is always binding, with no
     exception for a hurry, a small change, or a deletion somebody calls obvious.** When a feature, a
