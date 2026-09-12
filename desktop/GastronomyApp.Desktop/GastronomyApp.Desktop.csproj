@@ -28,6 +28,7 @@
         <PackageReference Include="CommunityToolkit.Mvvm"/>
         <PackageReference Include="Serilog"/>
         <PackageReference Include="Serilog.Sinks.File"/>
+        <PackageReference Include="Velopack"/>
     </ItemGroup>
 
     <ItemGroup>

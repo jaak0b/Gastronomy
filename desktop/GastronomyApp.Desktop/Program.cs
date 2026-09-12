@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using GastronomyApp.Desktop.Services;
+using Velopack;
 
 namespace GastronomyApp.Desktop;
 
@@ -10,6 +11,8 @@ sealed internal class Program
   [STAThread]
   public static void Main(string[] args)
   {
+    VelopackApp.Build().Run();
+
     ApplicationLog log = new();
     DesktopComposition composition = new();
 
