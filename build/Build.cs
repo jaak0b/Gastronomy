@@ -21,7 +21,7 @@ internal class Build : NukeBuild
   private AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
   private AbsolutePath DesktopPublishDirectory => ArtifactsDirectory / "desktop";
   private AbsolutePath VelopackDirectory => ArtifactsDirectory / "velopack";
-  private AbsolutePath AppIcon => RootDirectory / "desktop" / "GastronomyApp.Desktop" / "Assets" / "avalonia-logo.ico";
+  private AbsolutePath AppIcon => RootDirectory / "desktop" / "GastronomyApp.Desktop" / "Assets" / "app.ico";
 
   private const string GitHubRepoUrl = "https://github.com/jaak0b/Gastronomy";
 

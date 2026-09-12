@@ -1,5 +1,7 @@
 # GastronomyApp
 
+<img src="branding/gastronomy-icon-512.png" alt="GastronomyApp icon" width="88">
+
 [![Build & test](https://img.shields.io/github/actions/workflow/status/jaak0b/Gastronomy/build.yml?label=build%20%26%20test)](https://github.com/jaak0b/Gastronomy/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/jaak0b/Gastronomy?label=release&sort=semver)](https://github.com/jaak0b/Gastronomy/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/jaak0b/Gastronomy)](LICENSE)

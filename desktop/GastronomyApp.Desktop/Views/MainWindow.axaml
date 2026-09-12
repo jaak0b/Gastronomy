@@ -5,7 +5,7 @@
         xmlns:conv="using:GastronomyApp.Desktop.Converters"
         x:Class="GastronomyApp.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/app.ico"
         TextOptions.TextRenderingMode="Antialias"
         Width="460"
         Height="400"
