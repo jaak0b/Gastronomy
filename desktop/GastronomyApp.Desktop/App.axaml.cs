@@ -48,7 +48,7 @@ public class App : Application
 
     if (outcome == BootstrapOutcome.ExitImmediately)
     {
-      lifetime.Shutdown();
+      ExitOnceTheDispatcherRuns(lifetime);
 
       return;
     }
@@ -76,6 +76,13 @@ public class App : Application
     lifetime.MainWindow = _mainWindow;
 
     CreateTrayIcon();
+  }
+
+  internal void ExitOnceTheDispatcherRuns(IClassicDesktopStyleApplicationLifetime lifetime)
+  {
+    // Avalonia shuts its dispatcher down immediately when Shutdown runs before the main loop,
+    // and then the loop itself fails to start.
+    Dispatcher.UIThread.Post(() => lifetime.Shutdown());
   }
 
   private bool ServesTheOrderPages(BootstrapOutcome outcome)

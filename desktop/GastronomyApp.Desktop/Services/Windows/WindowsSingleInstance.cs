@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using Serilog;
 
 namespace GastronomyApp.Desktop.Services.Windows;
@@ -73,6 +74,7 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
   private const string ActivationSignal = "activate";
   private const int ConnectAttempts = 5;
   private const int ConnectAttemptMilliseconds = 400;
+  private const uint AnyProcess = 0xFFFFFFFF;
   private readonly ActivationPipeListener _listener;
   private readonly string _mutexName;
   private readonly string _pipeName;
@@ -115,10 +117,13 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
       return SingleInstanceOutcome.SignaledExistingAndShouldExit;
     }
 
+    return SingleInstanceOutcome.AcquiredPrimary;
+  }
+
+  public void StartListeningForActivation()
+  {
     _listening = new();
     _ = _listener.ListenAsync(_listening.Token);
-
-    return SingleInstanceOutcome.AcquiredPrimary;
   }
 
   public void Release()
@@ -159,6 +164,8 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
       using NamedPipeClientStream client = new(".", _pipeName, PipeDirection.Out);
       client.Connect(TimeSpan.FromMilliseconds(ConnectAttemptMilliseconds));
 
+      AllowTheRunningInstanceToComeToFront();
+
       using StreamWriter writer = new(client);
       writer.WriteLine(ActivationSignal);
       writer.Flush();
@@ -170,4 +177,17 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
       return failure;
     }
   }
+
+  private static void AllowTheRunningInstanceToComeToFront()
+  {
+    if (OperatingSystem.IsWindows() && !AllowSetForegroundWindow(AnyProcess))
+    {
+      Log.Warning("Windows did not grant this start the right to raise the running window, so "
+                  + "starting the program again may only flash its task bar button (error {ErrorCode}).",
+                  Marshal.GetLastWin32Error());
+    }
+  }
+
+  [DllImport("user32.dll", SetLastError = true)]
+  private static extern bool AllowSetForegroundWindow(uint processId);
 }

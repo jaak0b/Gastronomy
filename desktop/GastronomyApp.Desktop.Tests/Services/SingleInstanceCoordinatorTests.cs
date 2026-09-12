@@ -64,4 +64,22 @@ public sealed class SingleInstanceCoordinatorTests
 
     Assert.That(outcome, Is.EqualTo(SingleInstanceOutcome.SignaledExistingAndShouldExit));
   }
+
+  [Test]
+  public void ActivationRequested_AfterListeningStarts_IsRaisedWhenASecondStartSignals()
+  {
+    var instanceName = UnusedName();
+    var pipeName = UnusedName();
+    using SingleInstanceCoordinator primary = new(instanceName, pipeName);
+    primary.AcquireOrSignalExisting();
+    using ManualResetEventSlim activationArrived = new();
+    primary.ActivationRequested += activationArrived.Set;
+    primary.StartListeningForActivation();
+
+    using SingleInstanceCoordinator second = new(instanceName, pipeName);
+
+    Assert.That(second.AcquireOrSignalExisting(),
+                Is.EqualTo(SingleInstanceOutcome.SignaledExistingAndShouldExit));
+    Assert.That(activationArrived.Wait(TimeSpan.FromSeconds(10)), Is.True);
+  }
 }

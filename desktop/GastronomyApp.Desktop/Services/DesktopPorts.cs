@@ -57,6 +57,8 @@ public interface ISingleInstance
 {
   public SingleInstanceOutcome AcquireOrSignalExisting();
 
+  public void StartListeningForActivation();
+
   public event Action? ActivationRequested;
 
   public void Release();

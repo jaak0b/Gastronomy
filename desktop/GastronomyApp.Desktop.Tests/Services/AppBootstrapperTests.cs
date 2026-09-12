@@ -79,6 +79,7 @@ public sealed class AppBootstrapperTests
                       Assert.That(bootstrapper.MainWindowViewModel, Is.Null);
                     });
     A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._)).MustNotHaveHappened();
+    A.CallTo(() => _singleInstance.StartListeningForActivation()).MustNotHaveHappened();
   }
 
   [Test]
@@ -96,6 +97,9 @@ public sealed class AppBootstrapperTests
                       Assert.That(_viewModelsBuilt, Is.EqualTo(1));
                       Assert.That(bootstrapper.MainWindowViewModel, Is.Not.Null);
                     });
+    A.CallTo(() => _singleInstance.AcquireOrSignalExisting())
+     .MustHaveHappened()
+     .Then(A.CallTo(() => _singleInstance.StartListeningForActivation()).MustHaveHappenedOnceExactly());
   }
 
   [Test]

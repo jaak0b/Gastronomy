@@ -57,6 +57,7 @@ public sealed class AppBootstrapper
     {
       case SingleInstanceOutcome.AcquiredPrimary:
         _holdsTheInstance = true;
+        _singleInstance.StartListeningForActivation();
         MainWindowViewModel = _mainWindowViewModelFactory();
 
         return BootstrapOutcome.ProceedToWindow;
