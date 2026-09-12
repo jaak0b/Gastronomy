@@ -44,7 +44,7 @@ wording.
 
 | Folder | Role |
 |---|---|
-| `backend/` | .NET 9 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
+| `backend/` | .NET 10 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
 | `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
 | `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app, station tablet page and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
 
@@ -186,8 +186,8 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 11. **No trademarked words in file names or identifiers.** The app supports no specific hardware, so
     everything keeps to neutral names.
 
-12. **Git: commit at will on `master`.** The owner granted standing approval to commit directly to
-    `master`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
+12. **Git: commit at will on `main`.** The owner granted standing approval to commit directly to
+    `main`. **Pushes still require explicit approval.** Commit messages are a short single sentence:
     one line, no body, no bullet list. A change too big to describe in one sentence is split into
     smaller commits.
 

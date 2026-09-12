@@ -5,7 +5,7 @@ never contradicts it.
 
 ## The stack
 
-ASP.NET Core on .NET 9. `GastronomyApp.Api` is a **class library** that configures and returns the web
+ASP.NET Core on .NET 10. `GastronomyApp.Api` is a **class library** that configures and returns the web
 application; the Avalonia desktop app (`desktop/GastronomyApp.Desktop`) hosts it in-process and is the
 only executable. One process serves the REST API, the SignalR hub, and the built frontend from
 `wwwroot`, on one port. No runtime install on the operator's laptop, no separate web server, no
