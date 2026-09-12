@@ -291,7 +291,6 @@ onUnmounted(() => {
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.items.deactivateTitle')"
-      :body="t('admin.items.deactivateBody')"
       :confirm-label="t('admin.items.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"
@@ -299,7 +298,6 @@ onUnmounted(() => {
     <ConfirmDialog
       v-if="askingAboutCategoryId !== null"
       :title="t('admin.categories.deactivateTitle')"
-      :body="t('admin.categories.deactivateBody')"
       :confirm-label="t('admin.categories.deactivateConfirm')"
       @confirm="deactivateCategory"
       @cancel="askingAboutCategoryId = null"

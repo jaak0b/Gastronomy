@@ -7,22 +7,17 @@
       "codeUsed": "Ask at the laptop for a new QR code. This code is no longer valid.",
       "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the laptop."
     },
-    "orderHeld": "The order you had started is still here. It comes back on the screen as soon as the phone is set up.",
+    "orderHeld": "The order you had started is still here.",
     "carryOn": "Carry on with this phone"
   },
   "enrolCode": {
-    "title": "Set up with the six digit code",
-    "intro": "Enter the six digit code shown on the laptop.",
-    "validity": "The code is valid for five minutes and for one phone.",
-    "field": "Code",
-    "continue": "Continue",
     "error": {
       "wrong": "Read the six digits from the laptop again. This code is not correct.",
       "retired": "Ask at the laptop for a new QR code. This code was entered wrongly too often and is not accepted any more."
     }
   },
   "header": {
-    "reconnecting": "No connection to the laptop. The app keeps trying.",
+    "reconnecting": "No connection to the laptop.",
     "backOnline": "The connection is back.",
     "settings": "Settings",
     "openItems": "Open items"
@@ -134,7 +129,7 @@
     "givenAwayReason": "Reason: {reason}",
     "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the laptop can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the laptop can no longer find the orders they belong to.",
     "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Check whether you took money for it and give that money back to the guest. | Somebody else had already settled {count} items in your selection. Check whether you took money for them and give that money back to the guest.",
-    "otherPhonesWereNotTold": "The items are settled. The other phones were not told, so their list may still be out of date.",
+    "otherPhonesWereNotTold": "The items are settled. The list on other phones may still be out of date.",
     "settleFailed": "Try again. Settling did not work.",
     "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open."
   },
@@ -148,20 +143,17 @@
       "missingItems": "Add items to this festival and fill in their prices.",
       "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
       "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders.",
-      "addressChanged": "Set every phone up again. The laptop's address was {previous} and is now {current}.",
       "missingFestival": "Create a festival first.",
       "noFestivalIsRunning": "No festival is active right now. Look under \"Festivals\"."
     },
     "stations": {
       "title": "Stations",
-      "help": "A station is a kitchen or a bar. Each station gets a tablet that shows the orders it has to prepare.",
       "new": "New station",
       "noTablet": "No tablet set up",
       "setUpDevice": "Set up the tablet",
       "deactivate": "Switch this station off",
       "activate": "Switch this station on",
       "deactivateTitle": "Switch this station off?",
-      "deactivateBody": "The station disappears from the list and takes no more orders. The orders placed so far stay saved. You can switch the station back on later.",
       "deactivateConfirm": "Switch the station off"
     },
     "items": {
@@ -175,13 +167,7 @@
       "productionMinutesInvalid": "Enter whole minutes from 0 to 600.",
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",
-      "deactivateBody": "The item disappears from the phones and can no longer be ordered. The orders placed so far stay saved. You can activate it again later.",
       "deactivateConfirm": "Deactivate the item"
-    },
-    "tables": {
-      "title": "Tables",
-      "help": "These names appear as suggestions on the phone. A waiter can always type a different table.",
-      "fromLastSession": "Add the table names from the last event"
     },
     "staff": {
       "title": "Waiters",
@@ -190,10 +176,10 @@
       "noPhone": "No phone set up",
       "newCode": "Set the phone up again",
       "rename": "Change the name",
-      "renameHelp": "Change the name when a waiter mistyped it. The new name is used from the next order onwards.",
+      "renameHelp": "The new name is used from the next order onwards.",
       "activate": "Put the waiter back on the list",
       "deactivateTitle": "Take this waiter off the list?",
-      "deactivateBody": "The name disappears from the list and the enrolled phone is signed out. The orders placed so far stay saved. You can put the waiter back on the list later.",
+      "deactivateBody": "The waiter's phone is signed out.",
       "deactivateConfirm": "Take the waiter off"
     },
     "enrol": {
@@ -203,7 +189,6 @@
       "done": "{name} has set up their phone.",
       "doneStation": "The tablet at {name} is set up.",
       "expired": "Create a new QR code. This one was not scanned for five minutes.",
-      "codeRetired": "Create a new QR code. The six digit code was entered wrongly too often and is not accepted any more.",
       "copyUrl": "Copy the address",
       "copied": "Address copied",
       "copyUnavailable": "Type the address above by hand. Copying does not work on this page.",
@@ -216,18 +201,6 @@
       "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
       "qrUnreachable": "Reload the page. The laptop did not deliver the QR code.",
       "newQrCode": "Create a new QR code"
-    },
-    "backup": {
-      "title": "Backup",
-      "create": "Create a backup file",
-      "done": "Copy the file {name} onto a USB stick. It holds the whole history and is in the folder {path}.",
-      "openFolderHint": "Open the folder from the program window, under Settings, with \"Open the data folder\".",
-      "help": "Create the backup file with this button. Copying the database file while the program is running can leave out the most recent orders."
-    },
-    "diagnostics": {
-      "title": "Technical details",
-      "log": "Open the log file",
-      "logHelp": "This holds what the program did this evening. The file helps when a station received nothing."
     },
     "save": "Save",
     "cancel": "Cancel",
@@ -244,10 +217,9 @@
       "activate": "Switch the category on",
       "deactivate": "Switch the category off",
       "deactivateTitle": "Switch this category off?",
-      "deactivateBody": "The category disappears from the phones. The orders placed so far stay saved. You can switch the category on again later.",
       "deactivateConfirm": "Switch the category off",
       "noneYet": "Click \"New category\". There is no category to choose yet.",
-      "sharedAcrossFestivals": "Every festival shares these categories. Rename one here and it is renamed at every festival."
+      "sharedAcrossFestivals": "Renaming a category here renames it at every festival."
     },
     "itemNameMissing": "Give the item a name before you save it.",
     "categoryNameMissing": "Give the category a name before you save.",
@@ -283,7 +255,6 @@
       "hide": "Hide",
       "show": "Show",
       "hideTitle": "Hide the festival",
-      "hideBody": "The festival disappears from the list. The orders placed so far stay saved.",
       "hideConfirm": "Hide",
       "noneYet": "No festival has been set up yet. Click \"New festival\".",
       "stationCount": "{count} station | {count} stations",
@@ -297,12 +268,12 @@
       "noStationsToAdd": "Every station that is switched on already belongs to this festival. Click \"New station\".",
       "remove": "Remove",
       "removeStationTitle": "Remove the station",
-      "removeStationBody": "The station leaves this festival only. At every other festival it stays where it is.",
+      "removeStationBody": "This removes the station from this festival only.",
       "addItem": "Add the item",
       "itemName": "Item name",
       "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
       "removeItemTitle": "Remove the item",
-      "removeItemBody": "The item leaves this festival only. At every other festival it stays where it is.",
+      "removeItemBody": "This removes the item from this festival only.",
       "needsAStationFirst": "This festival has no station yet. Add one first."
     }
   },
@@ -315,10 +286,9 @@
     "actionNotReached": "Tap again. The laptop could not be reached, so nothing was changed.",
     "statusAlreadyPassed": "Reload the page. This item is already further along than it shows here.",
     "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
-    "noItemsSelected": "Tap an item. Nothing was selected, so nothing was changed.",
+    "noItemsSelected": "Tap an item.",
     "language": "Language",
     "order": "Order {order}, number {sequence} here",
-    "orderedAt": "Taken at {time}",
     "note": "Note: {note}",
     "orderNote": "Note for the order: {note}",
     "deliveryTogether": "Goes out together",

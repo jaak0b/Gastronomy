@@ -68,7 +68,6 @@ onUnmounted(() => {
 <template>
   <v-container class="admin-stations">
     <h1 class="text-h5 mb-4">{{ t('admin.stations.title') }}</h1>
-    <p class="help text-medium-emphasis mb-4">{{ t('admin.stations.help') }}</p>
 
     <v-alert
       v-if="enrolment.enrolledStationName !== null"
@@ -150,7 +149,6 @@ onUnmounted(() => {
     <ConfirmDialog
       v-if="askingAboutId !== null"
       :title="t('admin.stations.deactivateTitle')"
-      :body="t('admin.stations.deactivateBody')"
       :confirm-label="t('admin.stations.deactivateConfirm')"
       @confirm="deactivate"
       @cancel="askingAboutId = null"

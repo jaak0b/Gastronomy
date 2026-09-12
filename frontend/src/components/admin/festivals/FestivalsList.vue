@@ -195,7 +195,6 @@ onUnmounted(() => {
     <ConfirmDialog
       v-if="hiddenFestival !== null"
       :title="t('admin.festivals.hideTitle')"
-      :body="t('admin.festivals.hideBody')"
       :confirm-label="t('admin.festivals.hideConfirm')"
       @confirm="hide"
       @cancel="hiddenFestival = null"

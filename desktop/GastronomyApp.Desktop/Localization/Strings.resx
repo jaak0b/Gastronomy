@@ -79,7 +79,7 @@
     <value>Quit the program</value>
   </data>
     <data name="desktop.minimised" xml:space="preserve">
-    <value>The program keeps running and keeps taking orders. You get it back from the taskbar.</value>
+    <value>The program keeps taking orders.</value>
   </data>
     <data name="desktop.quit.title" xml:space="preserve">
     <value>Really quit the program?</value>
@@ -136,7 +136,7 @@
     <value>Another program on this laptop is blocking the connection. Restart the laptop and open the program again.</value>
   </data>
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
-    <value>Look on the task bar for a window of this program. If there is none, restart the laptop and open the program again. The program could not check whether it is already running and has not started the server.</value>
+    <value>Look on the task bar for a window of this program. If there is none, restart the laptop and open the program again.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
     <value>{version}</value>
@@ -145,7 +145,7 @@
     <value>Install the new version?</value>
   </data>
     <data name="desktop.update.confirmBody" xml:space="preserve">
-    <value>Version {version} is ready. A restart installs it now. Without a restart it installs itself when you next quit.</value>
+    <value>Version {version} installs on the next restart or when you quit.</value>
   </data>
     <data name="desktop.update.confirmRestart" xml:space="preserve">
     <value>Restart now</value>

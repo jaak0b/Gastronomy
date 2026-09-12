@@ -504,18 +504,6 @@ describe('deactivating an item', () => {
     expect(urlsOf(calls).some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
-  it('says that the orders already placed are kept', async () => {
-    stubLaptop()
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
-
-    await waitForDialog()
-
-    expect(document.querySelector('.confirm-body')!.textContent).toContain('bleiben gespeichert')
-  })
-
   it('deactivates it once the question is answered with yes', async () => {
     const calls = stubLaptop()
 

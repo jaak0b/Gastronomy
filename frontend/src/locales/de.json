@@ -7,22 +7,17 @@
       "codeUsed": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
       "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht."
     },
-    "orderHeld": "Ihre angefangene Bestellung ist noch da. Sie steht wieder auf dem Bildschirm, sobald das Telefon eingerichtet ist.",
+    "orderHeld": "Ihre angefangene Bestellung ist noch da.",
     "carryOn": "Mit diesem Telefon weiterarbeiten"
   },
   "enrolCode": {
-    "title": "Einrichten mit dem sechsstelligen Code",
-    "intro": "Geben Sie den sechsstelligen Code ein, der auf dem Laptop steht.",
-    "validity": "Der Code gilt fünf Minuten und für ein Telefon.",
-    "field": "Code",
-    "continue": "Weiter",
     "error": {
       "wrong": "Lesen Sie die sechs Ziffern noch einmal vom Laptop ab. Dieser Code stimmt nicht.",
       "retired": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen."
     }
   },
   "header": {
-    "reconnecting": "Keine Verbindung zum Laptop. Es wird weiter versucht.",
+    "reconnecting": "Keine Verbindung zum Laptop.",
     "backOnline": "Die Verbindung ist wieder da.",
     "settings": "Einstellungen",
     "openItems": "Offene Posten"
@@ -134,7 +129,7 @@
     "givenAwayReason": "Grund: {reason}",
     "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Laptop die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Laptop die Bestellungen dazu nicht mehr findet.",
     "someWereAlreadySettled": "{count} Position aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück. | {count} Positionen aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück.",
-    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet. Die anderen Telefone wurden aber nicht benachrichtigt, deshalb kann ihre Liste noch veraltet sein.",
+    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet. Die Liste auf anderen Telefonen kann noch veraltet sein.",
     "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen hat nicht geklappt.",
     "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind."
   },
@@ -148,20 +143,17 @@
       "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
       "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
       "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.",
-      "addressChanged": "Richten Sie alle Telefone noch einmal ein. Die Adresse des Laptops war zuletzt {previous} und ist jetzt {current}.",
       "missingFestival": "Legen Sie zuerst ein Fest an.",
       "noFestivalIsRunning": "Zurzeit ist kein Fest aktiv. Sehen Sie unter \"Feste\" nach."
     },
     "stations": {
       "title": "Ausgabestellen",
-      "help": "Eine Ausgabestelle ist eine Küche oder eine Theke. Jede Ausgabestelle bekommt ein Tablet, auf dem die Bestellungen stehen, die sie zubereiten soll.",
       "new": "Neue Ausgabestelle",
       "noTablet": "Kein Tablet eingerichtet",
       "setUpDevice": "Tablet einrichten",
       "deactivate": "Ausgabestelle abschalten",
       "activate": "Ausgabestelle einschalten",
       "deactivateTitle": "Ausgabestelle abschalten?",
-      "deactivateBody": "Die Ausgabestelle verschwindet aus der Liste und nimmt keine Bestellungen mehr an. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Ausgabestelle später wieder einschalten.",
       "deactivateConfirm": "Ausgabestelle abschalten"
     },
     "items": {
@@ -175,13 +167,7 @@
       "productionMinutesInvalid": "Tragen Sie ganze Minuten von 0 bis 600 ein.",
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",
-      "deactivateBody": "Der Artikel verschwindet von den Telefonen und kann nicht mehr bestellt werden. Die bisherigen Bestellungen bleiben gespeichert. Sie können ihn später wieder aktivieren.",
       "deactivateConfirm": "Artikel deaktivieren"
-    },
-    "tables": {
-      "title": "Tische",
-      "help": "Diese Namen erscheinen als Vorschläge auf dem Telefon. Der Kellner kann jederzeit einen anderen Tisch eintippen.",
-      "fromLastSession": "Tischnamen der letzten Veranstaltung übernehmen"
     },
     "staff": {
       "title": "Kellner",
@@ -190,10 +176,10 @@
       "noPhone": "Kein Telefon eingerichtet",
       "newCode": "Telefon neu einrichten",
       "rename": "Namen ändern",
-      "renameHelp": "Ändern Sie den Namen, wenn ein Kellner sich vertippt hat. Ab der nächsten Bestellung gilt der neue Name.",
+      "renameHelp": "Ab der nächsten Bestellung gilt der neue Name.",
       "activate": "Kellner wieder aufnehmen",
       "deactivateTitle": "Kellner aus der Liste nehmen?",
-      "deactivateBody": "Der Name verschwindet aus der Liste, und das angemeldete Telefon wird abgemeldet. Die bisherigen Bestellungen bleiben gespeichert. Sie können den Kellner später wieder aufnehmen.",
+      "deactivateBody": "Das Telefon des Kellners wird abgemeldet.",
       "deactivateConfirm": "Kellner herausnehmen"
     },
     "enrol": {
@@ -203,7 +189,6 @@
       "done": "{name} hat das Telefon eingerichtet.",
       "doneStation": "Das Tablet an der Ausgabestelle {name} ist eingerichtet.",
       "expired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
-      "codeRetired": "Erstellen Sie einen neuen QR-Code. Der sechsstellige Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen.",
       "copyUrl": "Adresse kopieren",
       "copied": "Adresse kopiert",
       "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren funktioniert auf dieser Seite nicht.",
@@ -216,18 +201,6 @@
       "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
       "qrUnreachable": "Laden Sie die Seite neu. Der Laptop hat den QR-Code nicht geliefert.",
       "newQrCode": "Neuen QR-Code erstellen"
-    },
-    "backup": {
-      "title": "Datensicherung",
-      "create": "Sicherungsdatei anlegen",
-      "done": "Kopieren Sie die Datei {name} auf einen USB-Stick. Sie enthält den ganzen Verlauf und liegt im Ordner {path}.",
-      "openFolderHint": "Den Ordner öffnen Sie im Programmfenster unter Einstellungen mit \"Datenordner öffnen\".",
-      "help": "Legen Sie die Sicherungsdatei über diese Schaltfläche an. Die Datenbankdatei einfach zu kopieren, während das Programm läuft, kann die letzten Bestellungen auslassen."
-    },
-    "diagnostics": {
-      "title": "Technische Angaben",
-      "log": "Protokolldatei öffnen",
-      "logHelp": "Hier steht, was das Programm heute Abend getan hat. Diese Datei hilft, wenn eine Ausgabestelle nichts bekommen hat."
     },
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -244,10 +217,9 @@
       "activate": "Kategorie einschalten",
       "deactivate": "Kategorie abschalten",
       "deactivateTitle": "Kategorie abschalten?",
-      "deactivateBody": "Die Kategorie verschwindet von den Telefonen. Die bisherigen Bestellungen bleiben gespeichert. Sie können die Kategorie später wieder einschalten.",
       "deactivateConfirm": "Kategorie abschalten",
       "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können.",
-      "sharedAcrossFestivals": "Die Kategorien gelten für alle Feste. Wenn Sie hier eine umbenennen, heißt sie auf jedem Fest so."
+      "sharedAcrossFestivals": "Wenn Sie eine Kategorie hier umbenennen, heißt sie auf jedem Fest so."
     },
     "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
     "categoryNameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
@@ -283,7 +255,6 @@
       "hide": "Ausblenden",
       "show": "Einblenden",
       "hideTitle": "Fest ausblenden",
-      "hideBody": "Das Fest verschwindet aus der Liste. Die bisherigen Bestellungen bleiben gespeichert.",
       "hideConfirm": "Ausblenden",
       "noneYet": "Es ist noch kein Fest angelegt. Klicken Sie auf \"Neues Fest\".",
       "stationCount": "{count} Ausgabestelle | {count} Ausgabestellen",
@@ -297,12 +268,12 @@
       "noStationsToAdd": "Alle eingeschalteten Ausgabestellen gehören schon zu diesem Fest. Klicken Sie auf \"Neue Ausgabestelle\".",
       "remove": "Entfernen",
       "removeStationTitle": "Ausgabestelle entfernen",
-      "removeStationBody": "Danach gehört die Ausgabestelle nicht mehr zu diesem Fest. Bei allen anderen Festen bleibt alles, wie es ist.",
+      "removeStationBody": "Die Ausgabestelle wird nur von diesem Fest entfernt.",
       "addItem": "Artikel hinzufügen",
       "itemName": "Name des Artikels",
       "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
       "removeItemTitle": "Artikel entfernen",
-      "removeItemBody": "Danach gehört der Artikel nicht mehr zu diesem Fest. Bei allen anderen Festen bleibt alles, wie es ist.",
+      "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
       "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu."
     }
   },
@@ -315,10 +286,9 @@
     "actionNotReached": "Tippen Sie noch einmal. Der Laptop war nicht erreichbar, deshalb wurde nichts geändert.",
     "statusAlreadyPassed": "Laden Sie die Seite neu. Diese Position ist schon weiter, als hier steht.",
     "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
-    "noItemsSelected": "Tippen Sie eine Position an. Es war nichts ausgewählt, deshalb wurde nichts geändert.",
+    "noItemsSelected": "Tippen Sie eine Position an.",
     "language": "Sprache",
     "order": "Bestellung {order}, hier Nummer {sequence}",
-    "orderedAt": "Aufgenommen um {time}",
     "note": "Hinweis: {note}",
     "orderNote": "Hinweis zur Bestellung: {note}",
     "deliveryTogether": "Geht zusammen raus",

@@ -75,18 +75,6 @@ describe('switching a station off', () => {
     expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
-  it('says that the orders already placed are kept', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(ONE_STATION, { status: 200 })))
-
-    const list = mountList()
-    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
-    await list.get('.deactivate').trigger('click')
-
-    await waitForDialog()
-
-    expect(document.querySelector('.confirm-body')!.textContent).toContain('bleiben gespeichert')
-  })
-
   it('does nothing when the question is answered with no', async () => {
     const urls: string[] = []
     vi.stubGlobal(

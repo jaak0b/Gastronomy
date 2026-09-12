@@ -84,7 +84,7 @@ describe('taking a staff member off the list', () => {
     expect(urls.some((url) => url.endsWith('/deactivate'))).toBe(false)
   })
 
-  it('says that the orders already placed are kept', async () => {
+  it('says that the phone is signed out', async () => {
     stubFetchWith(ONE_STAFF_MEMBER)
 
     const list = mountList()
@@ -93,7 +93,9 @@ describe('taking a staff member off the list', () => {
 
     await waitForDialog()
 
-    expect(document.querySelector('.confirm-body')!.textContent).toContain('bleiben gespeichert')
+    expect(document.querySelector('.confirm-body')!.textContent).toContain(
+      'Das Telefon des Kellners wird abgemeldet',
+    )
   })
 
   it('takes them off the list once the question is answered with yes', async () => {

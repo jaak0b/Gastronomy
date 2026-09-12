@@ -170,8 +170,7 @@ public sealed class AppBootstrapperTests
 
     Assert.That(bootstrapper.MainWindowViewModel!.ErrorMessage,
                 Is.EqualTo("Look on the task bar for a window of this program. If there is none, "
-                           + "restart the laptop and open the program again. The program could not "
-                           + "check whether it is already running and has not started the server."));
+                           + "restart the laptop and open the program again."));
   }
 
   [Test]
