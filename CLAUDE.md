@@ -317,4 +317,6 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 Backend and frontend tests green for what you touched, with real output quoted. See each folder's
 `CLAUDE.md` for the exact commands. **After every code change, rebuild the app before handing back so
 the owner can test it without asking: `npm run build` in `frontend/`, then `dotnet build
-GastronomyApp.slnx` from the root. The running desktop app locks its own binaries, so stop it first.**
+GastronomyApp.slnx` from the root. The running desktop app locks its own binaries, so stop it first,
+and start it again once the build succeeds. Handing back a stopped app is not a handoff, so the
+restart is part of the change and never left to the owner.**
