@@ -13,8 +13,9 @@ reverse proxy.
 
 - **SQLite via EF Core.** One file. A backup is a file copy, which is what a volunteer can actually do.
 - **SignalR** for every server-to-client push: an order accepted, the queue of a station changed, an
-  order's status changed, items settled, a device enrolled or revoked, the catalog changed. Clients
-  never poll for state that the server already knows has changed.
+  order's status changed, items settled, a device enrolled or revoked, the catalog changed, a
+  festival's start state changed. Clients never poll for state that the server already knows has
+  changed.
 - **REST** for commands and queries.
 
 ## Hard rules

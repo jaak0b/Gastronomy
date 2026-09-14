@@ -12,6 +12,8 @@ public sealed record StationOrdersChangedEvent(Guid StationId);
 
 public sealed record StationsChangedEvent;
 
+public sealed record FestivalChangedEvent;
+
 public sealed record CatalogChangedEvent;
 
 public sealed record EnrolmentCompletedEvent(

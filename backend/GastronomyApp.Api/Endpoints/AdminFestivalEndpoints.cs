@@ -1,5 +1,6 @@
 ﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
@@ -110,8 +111,10 @@ public sealed class AdminFestivalHandler
 {
   private const int FirstNumber = 1;
 
+  private readonly SavedChangeAnnouncement _announcement;
   private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly HubNotificationDispatcher _dispatcher;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ILogger<AdminFestivalHandler> _logger;
   private readonly FestivalMoment _moment = new();
@@ -123,6 +126,8 @@ public sealed class AdminFestivalHandler
                               IFestivalRepository festivalRepository,
                               FestivalSchedule schedule,
                               CatalogWriteTransaction writeTransaction,
+                              HubNotificationDispatcher dispatcher,
+                              SavedChangeAnnouncement announcement,
                               ResultEnvelope resultEnvelope,
                               IClock clock,
                               ILogger<AdminFestivalHandler> logger)
@@ -131,6 +136,8 @@ public sealed class AdminFestivalHandler
     _festivalRepository = festivalRepository;
     _schedule = schedule;
     _writeTransaction = writeTransaction;
+    _dispatcher = dispatcher;
+    _announcement = announcement;
     _resultEnvelope = resultEnvelope;
     _clock = clock;
     _logger = logger;
@@ -186,10 +193,8 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        CreatedAsync(request, transactionCancellationToken),
-                                      cancellationToken);
+    return RunAndAnnounceAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken),
+                               cancellationToken);
   }
 
   public Task<IResult> UpdateAsync(Guid festivalId,
@@ -198,10 +203,9 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        UpdatedAsync(festivalId, request, transactionCancellationToken),
-                                      cancellationToken);
+    return RunAndAnnounceAsync(transactionCancellationToken =>
+                                 UpdatedAsync(festivalId, request, transactionCancellationToken),
+                               cancellationToken);
   }
 
   public Task<IResult> CopyAsync(Guid festivalId,
@@ -210,26 +214,45 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        CopiedAsync(festivalId, request, transactionCancellationToken),
-                                      cancellationToken);
+    return RunAndAnnounceAsync(transactionCancellationToken =>
+                                 CopiedAsync(festivalId, request, transactionCancellationToken),
+                               cancellationToken);
   }
 
   public Task<IResult> HideAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        HiddenAsync(festivalId, transactionCancellationToken),
-                                      cancellationToken);
+    return RunAndAnnounceAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken),
+                               cancellationToken);
   }
 
   public Task<IResult> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        ShownAsync(festivalId, transactionCancellationToken),
-                                      cancellationToken);
+    return RunAndAnnounceAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken),
+                               cancellationToken);
+  }
+
+  private async Task<IResult> RunAndAnnounceAsync(Func<CancellationToken, Task<CatalogWrite>> write,
+                                                  CancellationToken cancellationToken)
+  {
+    CatalogWrite? written = null;
+
+    IResult response = await _writeTransaction.RunWithoutCatalogAnnouncementAsync(_dbContext,
+                                                        async transactionCancellationToken =>
+                                                        {
+                                                          CatalogWrite outcome = await write(transactionCancellationToken);
+                                                          written = outcome;
+
+                                                          return outcome;
+                                                        },
+                                                        cancellationToken);
+
+    if (written is { SomethingChanged: true })
+    {
+      await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(token =>
+                                                                           _dispatcher.PushFestivalChangedAsync(token));
+    }
+
+    return response;
   }
 
   private async Task<CatalogWrite> CreatedAsync(SaveFestivalRequest request, CancellationToken cancellationToken)

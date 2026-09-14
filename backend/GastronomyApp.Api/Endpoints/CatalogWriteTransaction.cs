@@ -21,6 +21,21 @@ public sealed class CatalogWriteTransaction
                                       Func<CancellationToken, Task<CatalogWrite>> write,
                                       CancellationToken cancellationToken)
   {
+    return await RunTransactionAsync(dbContext, write, announceTheCatalogChange: true, cancellationToken);
+  }
+
+  public async Task<IResult> RunWithoutCatalogAnnouncementAsync(GastronomyAppDbContext dbContext,
+                                                                Func<CancellationToken, Task<CatalogWrite>> write,
+                                                                CancellationToken cancellationToken)
+  {
+    return await RunTransactionAsync(dbContext, write, announceTheCatalogChange: false, cancellationToken);
+  }
+
+  private async Task<IResult> RunTransactionAsync(GastronomyAppDbContext dbContext,
+                                                  Func<CancellationToken, Task<CatalogWrite>> write,
+                                                  bool announceTheCatalogChange,
+                                                  CancellationToken cancellationToken)
+  {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(write);
 
@@ -38,7 +53,7 @@ public sealed class CatalogWriteTransaction
                                         },
                                         cancellationToken);
 
-    if (outcome.SomethingChanged)
+    if (outcome.SomethingChanged && announceTheCatalogChange)
     {
       await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
     }

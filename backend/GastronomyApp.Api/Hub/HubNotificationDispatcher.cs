@@ -60,6 +60,14 @@ public sealed class HubNotificationDispatcher
                       ct);
   }
 
+  public async Task PushFestivalChangedAsync(CancellationToken ct)
+  {
+    await SendToAsync(_eventNames.FestivalChanged,
+                      new FestivalChangedEvent(),
+                      [_groupNames.Devices, _groupNames.Stations, _groupNames.Admin],
+                      ct);
+  }
+
   public async Task PushCatalogChangedAsync(CancellationToken ct)
   {
     await SendToAsync(_eventNames.CatalogChanged,

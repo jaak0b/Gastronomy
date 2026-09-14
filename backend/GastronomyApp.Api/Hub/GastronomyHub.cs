@@ -8,6 +8,8 @@ public sealed record HubGroupNames
 {
   public string Devices { get; } = "devices";
 
+  public string Stations { get; } = "stations";
+
   public string Admin { get; } = "admin";
 
   public string Device(Guid deviceId)
@@ -30,6 +32,8 @@ public sealed record HubEventNames
   public string StationOrdersChanged { get; } = "StationOrdersChanged";
 
   public string StationsChanged { get; } = "StationsChanged";
+
+  public string FestivalChanged { get; } = "FestivalChanged";
 
   public string CatalogChanged { get; } = "CatalogChanged";
 
@@ -65,9 +69,15 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
     {
       joinedGroups.Add(_groupNames.Device(caller.DeviceId));
 
-      joinedGroups.Add(caller.OwnerKind == DeviceOwnerKind.Station
-                         ? _groupNames.Station(caller.OwnerId)
-                         : _groupNames.Devices);
+      if (caller.OwnerKind == DeviceOwnerKind.Station)
+      {
+        joinedGroups.Add(_groupNames.Station(caller.OwnerId));
+        joinedGroups.Add(_groupNames.Stations);
+      }
+      else
+      {
+        joinedGroups.Add(_groupNames.Devices);
+      }
     }
 
     if (caller is null
