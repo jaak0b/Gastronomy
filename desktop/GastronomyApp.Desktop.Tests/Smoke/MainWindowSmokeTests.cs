@@ -103,7 +103,7 @@ public sealed class MainWindowSmokeTests
                     {
                       Assert.That(statusBar!.Classes, Does.Contain("running"));
                       Assert.That(RenderedColours.Of(statusBar.Background),
-                                  Is.EqualTo(Color.Parse("#15803D")));
+                                  Is.EqualTo(Color.Parse("#2E8B57")));
                     });
   }
 
@@ -214,7 +214,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(RenderedColours.LabelForegroundOf(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
-                      Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#991B1B")));
+                      Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#2F6FDB")));
                     });
   }
 

@@ -115,7 +115,7 @@ function backToItems(): void {
         <v-btn
           v-else-if="order.hasLinesThatCannotBeOrdered"
           class="drop-lines-that-cannot-be-ordered mt-2"
-          color="warning"
+          color="primary"
           variant="outlined"
           block
           size="x-large"

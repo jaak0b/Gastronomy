@@ -81,6 +81,14 @@ it immediately and instead applies it at the next quit. It never restarts the pr
    gotchas). No static methods or properties beyond `AvaloniaProperty.Register` and framework
    metadata.
 
+10. **The window carries the same colour meanings as the web app.** The palette lives in
+    `Themes/Colors.axaml` and the accent in `App.axaml`, never as a raw hex in a view: blue
+    `Primary` for the action that moves work forward, red `Danger` for anything destructive, green
+    `StatusRunning` for a healthy server, red `StatusDown` for a failure, amber `StatusWarning` for a
+    warning, grey `StatusStarting` while the answer is still out. Green, amber and red are status
+    only, never a button. When the palette changes it changes here and in `frontend/src/theme.ts`
+    together, because `frontend/CLAUDE.md` rule 8 is the same list.
+
 ## Avalonia gotchas (hard-won, do not relearn them)
 
 - **Dynamic `MenuItem` submenus:** build them in code-behind (`CollectionChanged` handler producing a

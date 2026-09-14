@@ -14,13 +14,13 @@
                 <ResourceInclude Source="avares://GastronomyApp.Desktop/Themes/Colors.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Color x:Key="SystemAccentColor">#991B1B</Color>
-            <Color x:Key="SystemAccentColorLight1">#991B1B</Color>
-            <Color x:Key="SystemAccentColorLight2">#991B1B</Color>
-            <Color x:Key="SystemAccentColorLight3">#991B1B</Color>
-            <Color x:Key="SystemAccentColorDark1">#991B1B</Color>
-            <Color x:Key="SystemAccentColorDark2">#991B1B</Color>
-            <Color x:Key="SystemAccentColorDark3">#991B1B</Color>
+            <Color x:Key="SystemAccentColor">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorLight1">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorLight2">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorLight3">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorDark1">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorDark2">#2F6FDB</Color>
+            <Color x:Key="SystemAccentColorDark3">#2F6FDB</Color>
         </ResourceDictionary>
     </Application.Resources>
 

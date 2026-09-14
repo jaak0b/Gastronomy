@@ -31,11 +31,11 @@ public sealed class QuitConfirmDialogSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(RenderedColours.LabelBackgroundOf(confirm),
-                                  Is.EqualTo(Color.Parse("#DC2626")));
+                                  Is.EqualTo(Color.Parse("#C94F4F")));
                       Assert.That(RenderedColours.LabelBackgroundWhile(confirm, ":pointerover"),
-                                  Is.EqualTo(Color.Parse("#EF4444")));
+                                  Is.EqualTo(Color.Parse("#D96060")));
                       Assert.That(RenderedColours.LabelBackgroundWhile(confirm, ":pressed"),
-                                  Is.EqualTo(Color.Parse("#B91C1C")));
+                                  Is.EqualTo(Color.Parse("#A83E3E")));
                     });
   }
 
