@@ -39,12 +39,12 @@ export function deliveryModeKey(deliveryMode: DeliveryMode): string {
   }
 }
 
-export function deliveryModeClass(deliveryMode: DeliveryMode): string {
+export function deliveryModeColour(deliveryMode: DeliveryMode): 'primary' | 'warning' {
   switch (deliveryMode) {
     case 'together':
-      return 'mode-together'
+      return 'primary'
     case 'asItComes':
-      return 'mode-as-it-comes'
+      return 'warning'
     default:
       return assertNever(deliveryMode)
   }

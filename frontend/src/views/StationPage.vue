@@ -2,7 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationSlice } from '../core/apiTypes'
-import { selectedUnits, stationStats, type ItemUnits } from '../core/stationBoard'
+import {
+  deliveryModeColour,
+  selectedUnits,
+  stationStats,
+  type ItemUnits,
+} from '../core/stationBoard'
 import { useStationStore } from '../stores/station'
 import { useSessionStore } from '../stores/session'
 import LanguageSwitch from '../components/LanguageSwitch.vue'
@@ -60,6 +65,16 @@ async function confirmDone(): Promise<void> {
         label-key="station.language"
         @select="session.setLanguage"
       />
+      <v-btn
+        v-if="!station.isShowingFulfilled"
+        class="show-done"
+        color="primary"
+        variant="outlined"
+        size="large"
+        @click="station.openFulfilled"
+      >
+        {{ t('station.showDone') }}
+      </v-btn>
     </header>
 
     <v-alert v-if="station.loadFailed" class="load-failed mb-4" type="warning" variant="tonal">
@@ -102,32 +117,35 @@ async function confirmDone(): Promise<void> {
     </template>
 
     <template v-else>
-      <section v-if="station.hasWork" class="station-stats mb-4">
-        <h2 class="stats-heading text-h6 mb-1">{{ t('station.statsHeading') }}</h2>
-        <p class="stat-together text-body-1 mb-0">
-          {{ t('station.statsTogether', { count: stats.togetherOrders }, stats.togetherOrders) }}
-        </p>
-        <p class="stat-as-it-comes text-body-1 mb-1">
-          {{
-            t('station.statsAsItComes', { count: stats.asItComesOrders }, stats.asItComesOrders)
-          }}
-        </p>
-        <div class="stat-items d-flex flex-wrap ga-4">
-          <span v-for="unit in stats.openUnits" :key="unit.itemName" class="stat-item">
+      <section v-if="station.hasWork" class="station-stats mb-3">
+        <div class="stat-chips d-flex flex-wrap ga-2">
+          <v-chip
+            class="stat-together"
+            :color="deliveryModeColour('together')"
+            variant="flat"
+            size="large"
+          >
+            {{ t('station.statsTogetherChip', { count: stats.togetherOrders }) }}
+          </v-chip>
+          <v-chip
+            class="stat-as-it-comes"
+            :color="deliveryModeColour('asItComes')"
+            variant="flat"
+            size="large"
+          >
+            {{ t('station.statsAsItComesChip', { count: stats.asItComesOrders }) }}
+          </v-chip>
+          <v-chip
+            v-for="unit in stats.openUnits"
+            :key="unit.itemName"
+            class="stat-item"
+            variant="tonal"
+            size="large"
+          >
             {{ t('station.itemUnits', { count: unit.units, item: unit.itemName }) }}
-          </span>
+          </v-chip>
         </div>
       </section>
-
-      <v-btn
-        class="show-done mb-4"
-        color="primary"
-        variant="outlined"
-        size="large"
-        @click="station.openFulfilled"
-      >
-        {{ t('station.showDone') }}
-      </v-btn>
 
       <v-row>
         <v-col cols="12" md="6" class="orders-column">

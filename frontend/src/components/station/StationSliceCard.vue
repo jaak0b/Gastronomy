@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationSlice } from '../../core/apiTypes'
 import {
-  deliveryModeClass,
+  deliveryModeColour,
   deliveryModeKey,
   itemUnits,
   openItemsOf,
@@ -27,7 +27,9 @@ const { t } = useI18n()
 const openItems = computed(() => openItemsOf(props.slice))
 const selectedHere = computed(() => selectedOpenItemIds(props.slice, props.selectedItemIds))
 const deliveryText = computed(() => t(deliveryModeKey(props.slice.deliveryMode)))
-const modeClass = computed(() => deliveryModeClass(props.slice.deliveryMode))
+const modeColour = computed(
+  () => `rgb(var(--v-theme-${deliveryModeColour(props.slice.deliveryMode)}))`,
+)
 const orderReference = computed(() =>
   t('station.order', {
     order: props.slice.globalOrderNumber,
@@ -52,7 +54,7 @@ function isSelected(orderItemId: string): boolean {
 </script>
 
 <template>
-  <v-card class="station-slice mb-4" :class="modeClass" variant="outlined">
+  <v-card class="station-slice mb-4" :style="{ borderColor: modeColour }" variant="outlined">
     <v-card-text>
       <div class="slice-head d-flex align-baseline ga-2">
         <span class="table-name text-h4">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
@@ -60,7 +62,9 @@ function isSelected(orderItemId: string): boolean {
         <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
       </div>
       <div class="slice-meta d-flex flex-wrap align-baseline ga-2 mt-1">
-        <span class="delivery-mode text-body-1 font-weight-medium">{{ deliveryText }}</span>
+        <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
+          {{ deliveryText }}
+        </span>
         <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
       </div>
       <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
@@ -113,22 +117,6 @@ function isSelected(orderItemId: string): boolean {
 .station-slice {
   border-width: 3px;
   border-style: solid;
-}
-
-.station-slice.mode-together {
-  border-color: rgb(var(--v-theme-primary));
-}
-
-.station-slice.mode-as-it-comes {
-  border-color: rgb(var(--v-theme-warning));
-}
-
-.station-slice.mode-together .delivery-mode {
-  color: rgb(var(--v-theme-primary));
-}
-
-.station-slice.mode-as-it-comes .delivery-mode {
-  color: rgb(var(--v-theme-warning));
 }
 
 .station-item {

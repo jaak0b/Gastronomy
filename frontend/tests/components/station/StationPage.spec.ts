@@ -150,8 +150,8 @@ describe('the screen at a station', () => {
   it('counts the orders by delivery mode at the top', async () => {
     const page = await mountPage()
 
-    expect(page.get('.stat-together').text()).toBe('1 gemeinsame Lieferung')
-    expect(page.get('.stat-as-it-comes').text()).toBe('1 Einzellieferung')
+    expect(page.get('.stat-together').text()).toBe('Gemeinsam 1')
+    expect(page.get('.stat-as-it-comes').text()).toBe('Einzeln 1')
   })
 
   it('counts the open units per item name at the top', async () => {
@@ -193,9 +193,11 @@ describe('the screen at a station', () => {
       'Gemeinsame Lieferung',
       'Einzellieferung',
     ])
-    expect(page.findAll('.orders-column .station-slice')[0].classes()).toContain('mode-together')
-    expect(page.findAll('.orders-column .station-slice')[1].classes()).toContain(
-      'mode-as-it-comes',
+    expect(page.findAll('.orders-column .station-slice')[0].attributes('style')).toContain(
+      'var(--v-theme-primary)',
+    )
+    expect(page.findAll('.orders-column .station-slice')[1].attributes('style')).toContain(
+      'var(--v-theme-warning)',
     )
   })
 

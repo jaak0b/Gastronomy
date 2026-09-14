@@ -282,9 +282,8 @@
   "station": {
     "ordersHeading": "All orders",
     "asItComesHeading": "Individual deliveries",
-    "statsHeading": "What is open right now",
-    "statsTogether": "{count} combined delivery | {count} combined deliveries",
-    "statsAsItComes": "{count} individual delivery | {count} individual deliveries",
+    "statsTogetherChip": "Together {count}",
+    "statsAsItComesChip": "Individual {count}",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",

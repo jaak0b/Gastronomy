@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  deliveryModeClass,
+  deliveryModeColour,
   deliveryModeKey,
   itemUnits,
   openItemsOf,
@@ -47,11 +47,11 @@ describe('the words a station tablet uses for a delivery mode', () => {
   })
 
   it('marks a card that hands the order out together', () => {
-    expect(deliveryModeClass('together')).toBe('mode-together')
+    expect(deliveryModeColour('together')).toBe('primary')
   })
 
   it('marks a card that hands each item out as it is ready', () => {
-    expect(deliveryModeClass('asItComes')).toBe('mode-as-it-comes')
+    expect(deliveryModeColour('asItComes')).toBe('warning')
   })
 })
 

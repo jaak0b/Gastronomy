@@ -282,9 +282,8 @@
   "station": {
     "ordersHeading": "Alle Bestellungen",
     "asItComesHeading": "Einzellieferungen",
-    "statsHeading": "Was gerade offen ist",
-    "statsTogether": "{count} gemeinsame Lieferung | {count} gemeinsame Lieferungen",
-    "statsAsItComes": "{count} Einzellieferung | {count} Einzellieferungen",
+    "statsTogetherChip": "Gemeinsam {count}",
+    "statsAsItComesChip": "Einzeln {count}",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
