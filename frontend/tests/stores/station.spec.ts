@@ -140,18 +140,6 @@ describe('the orders a station tablet is showing', () => {
     await station.load()
 
     expect(station.loadFailed).toBe(true)
-    expect(station.hasNothingToPrepare).toBe(false)
-  })
-
-  it('says there is nothing to prepare once the laptop has answered with an empty list', async () => {
-    stubTheLaptop({ '/api/station/orders': () => aQueue([]) })
-    enrolledStationTablet()
-    const station = useStationStore()
-
-    await station.load()
-
-    expect(station.hasNothingToPrepare).toBe(true)
-    expect(station.hasWork).toBe(false)
   })
 })
 

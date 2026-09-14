@@ -41,6 +41,9 @@ export const useEstimatesStore = defineStore('estimates', () => {
       connection.onEvent<unknown>('StationsChanged', () => {
         void load()
       }),
+      connection.onEvent<unknown>('FestivalChanged', () => {
+        void load()
+      }),
     ]
     return () => {
       for (const release of releases) {

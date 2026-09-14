@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
+import { useConnectionStore } from '../../src/stores/connection'
 import { useOpenItemsStore } from '../../src/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
+
+vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const OPEN_LIST = {
   tables: [
@@ -316,5 +320,36 @@ describe('settling what the waiter ticked', () => {
     await openItems.settle(200, null)
 
     expect(openItems.notice?.key).toBe('order.settlementCannotBeProcessed')
+  })
+})
+
+describe('the open list a phone follows', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    forgetHubEvents()
+    useSessionStore().deviceToken = 'token-here'
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('loads again when the festival starts or stops', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify(EMPTY_LIST), { status: 200 })
+      }),
+    )
+    useOpenItemsStore().listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    urls.length = 0
+
+    fireHubEvent('FestivalChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/open-items']))
   })
 })

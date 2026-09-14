@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationSlice } from '../../core/apiTypes'
-import { deliveryModeKey, isFulfilled } from '../../core/stationBoard'
+import { deliveryModeClass, deliveryModeKey, isFulfilled, itemUnits } from '../../core/stationBoard'
 
 const props = defineProps<{ slice: StationSlice; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
@@ -10,29 +10,39 @@ const emit = defineEmits<{ putBack: [orderItemId: string] }>()
 const { t } = useI18n()
 
 const deliveryText = computed(() => t(deliveryModeKey(props.slice.deliveryMode)))
+const modeClass = computed(() => deliveryModeClass(props.slice.deliveryMode))
+const orderReference = computed(() =>
+  t('station.order', {
+    order: props.slice.globalOrderNumber,
+    sequence: props.slice.stationOrderNumber,
+  }),
+)
 const doneCounter = computed(() =>
   t('station.doneCounter', {
     fulfilled: props.slice.fulfilledItemCount,
     total: props.slice.itemCount,
   }),
 )
+const unitSummary = computed(() =>
+  itemUnits(props.slice.items)
+    .map((unit) => t('station.itemUnits', { count: unit.units, item: unit.itemName }))
+    .join(t('station.unitSeparator')),
+)
 </script>
 
 <template>
-  <v-card class="station-fulfilled mb-4" variant="outlined">
-    <v-card-title class="slice-heading text-subtitle-1">
-      {{
-        t('station.order', {
-          order: slice.globalOrderNumber,
-          sequence: slice.stationOrderNumber,
-        })
-      }}
-    </v-card-title>
-    <v-card-subtitle class="table-name text-h4">{{ slice.tableName }}</v-card-subtitle>
+  <v-card class="station-fulfilled mb-4" :class="modeClass" variant="outlined">
     <v-card-text>
-      <v-chip class="delivery-mode" variant="tonal" size="large">{{ deliveryText }}</v-chip>
-      <p class="done-counter text-body-1 mt-2 mb-0">{{ doneCounter }}</p>
-      <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1">
+      <div class="slice-head d-flex align-baseline ga-2">
+        <span class="table-name text-h4">{{ slice.tableName }}</span>
+        <span class="slice-heading text-body-1 text-medium-emphasis">{{ orderReference }}</span>
+        <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
+      </div>
+      <div class="slice-meta d-flex flex-wrap align-baseline ga-2 mt-1">
+        <span class="delivery-mode text-body-1 font-weight-medium">{{ deliveryText }}</span>
+        <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
+      </div>
+      <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
         {{ t('station.orderNote', { note: slice.note }) }}
       </p>
       <v-divider class="my-2" />
@@ -65,6 +75,27 @@ const doneCounter = computed(() =>
 </template>
 
 <style scoped>
+.station-fulfilled {
+  border-width: 3px;
+  border-style: solid;
+}
+
+.station-fulfilled.mode-together {
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.station-fulfilled.mode-as-it-comes {
+  border-color: rgb(var(--v-theme-warning));
+}
+
+.station-fulfilled.mode-together .delivery-mode {
+  color: rgb(var(--v-theme-primary));
+}
+
+.station-fulfilled.mode-as-it-comes .delivery-mode {
+  color: rgb(var(--v-theme-warning));
+}
+
 .station-item.fulfilled .item-name {
   color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }

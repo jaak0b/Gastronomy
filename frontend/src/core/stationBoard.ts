@@ -31,9 +31,20 @@ export function stationFailureKey(failure: StationFailure): string {
 export function deliveryModeKey(deliveryMode: DeliveryMode): string {
   switch (deliveryMode) {
     case 'together':
-      return 'station.deliveryTogether'
+      return 'delivery.together'
     case 'asItComes':
-      return 'station.deliveryAsItComes'
+      return 'delivery.asItComes'
+    default:
+      return assertNever(deliveryMode)
+  }
+}
+
+export function deliveryModeClass(deliveryMode: DeliveryMode): string {
+  switch (deliveryMode) {
+    case 'together':
+      return 'mode-together'
+    case 'asItComes':
+      return 'mode-as-it-comes'
     default:
       return assertNever(deliveryMode)
   }

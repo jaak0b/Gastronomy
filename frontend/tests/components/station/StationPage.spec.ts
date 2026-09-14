@@ -150,10 +150,8 @@ describe('the screen at a station', () => {
   it('counts the orders by delivery mode at the top', async () => {
     const page = await mountPage()
 
-    expect(page.get('.stat-together').text()).toBe('1 Bestellung geht zusammen raus')
-    expect(page.get('.stat-as-it-comes').text()).toBe(
-      '1 Bestellung geht raus, sobald sie fertig ist',
-    )
+    expect(page.get('.stat-together').text()).toBe('1 gemeinsame Lieferung')
+    expect(page.get('.stat-as-it-comes').text()).toBe('1 Einzellieferung')
   })
 
   it('counts the open units per item name at the top', async () => {
@@ -178,7 +176,7 @@ describe('the screen at a station', () => {
     const page = await mountPage()
 
     expect(page.findAll('.orders-column .slice-heading')[0].text()).toBe(
-      'Bestellung 137, hier Nummer 12',
+      'Bestellung 137 · Nr. 12',
     )
   })
 
@@ -188,17 +186,26 @@ describe('the screen at a station', () => {
     expect(page.findAll('.orders-column .table-name')[0].text()).toBe('3')
   })
 
-  it('names the delivery mode in words and marks it apart from the other mode', async () => {
+  it('names the delivery mode in words and marks the card by mode', async () => {
     const page = await mountPage()
 
     expect(page.findAll('.orders-column .delivery-mode').map((entry) => entry.text())).toEqual([
-      'Geht zusammen raus',
-      'Geht raus, sobald fertig',
+      'Gemeinsame Lieferung',
+      'Einzellieferung',
     ])
-    expect(page.findAll('.orders-column .delivery-mode')[0].classes()).toContain('mode-together')
-    expect(page.findAll('.orders-column .delivery-mode')[1].classes()).toContain(
+    expect(page.findAll('.orders-column .station-slice')[0].classes()).toContain('mode-together')
+    expect(page.findAll('.orders-column .station-slice')[1].classes()).toContain(
       'mode-as-it-comes',
     )
+  })
+
+  it('summarises the open units of a card on one line', async () => {
+    const page = await mountPage()
+
+    expect(page.findAll('.orders-column .unit-summary').map((entry) => entry.text())).toEqual([
+      '1 x Bratwurst · 1 x Pommes',
+      '1 x Bier · 1 x Bratwurst',
+    ])
   })
 
   it('shows the note that belongs to the whole order', async () => {
@@ -425,6 +432,15 @@ describe('the done view', () => {
     expect(items[2].find('.item-tick').exists()).toBe(true)
   })
 
+  it('summarises on one line what the order contained', async () => {
+    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
+    const page = await mountPage()
+    await page.get('.show-done').trigger('click')
+    await flushPromises()
+
+    expect(page.get('.station-fulfilled .unit-summary').text()).toBe('2 x Bratwurst · 1 x Pommes')
+  })
+
   it('offers a put back control on a done item only and posts it', async () => {
     const posts = stubTheLaptop({
       fulfilled: () => ok({ slices: [DONE_SLICE] }),
@@ -490,12 +506,6 @@ describe('a station tablet that has lost contact with the laptop', () => {
       'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
     )
   })
-
-  it('never claims there is nothing to prepare while it is out of contact', async () => {
-    const page = await mountPage()
-
-    expect(page.find('.empty').exists()).toBe(false)
-  })
 })
 
 describe('a station tablet the laptop turned away', () => {
@@ -532,21 +542,3 @@ describe('a station tablet the laptop turned away', () => {
   })
 })
 
-describe('a station with nothing to prepare', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    document.body.innerHTML = ''
-    stubTheLaptop({ orders: () => ok({ station: KITCHEN, orders: [], asItComes: [] }) })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('says so rather than showing two empty columns without a word', async () => {
-    const page = await mountPage()
-
-    expect(page.get('.empty').text()).toBe('Im Moment ist nichts zuzubereiten.')
-  })
-})

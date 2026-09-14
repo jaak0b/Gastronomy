@@ -82,6 +82,9 @@ export const useCatalogStore = defineStore('catalog', () => {
     connection.onEvent<unknown>('StationsChanged', () => {
       void load()
     })
+    connection.onEvent<unknown>('FestivalChanged', () => {
+      void load()
+    })
   }
 
   return { catalog, hasLoaded, groups, stationName, load, listen }

@@ -27,9 +27,6 @@ export const useStationStore = defineStore('station', () => {
   const fulfilledLoadFailed = ref(false)
 
   const hasWork = computed(() => hasLoaded.value && !loadFailed.value && orders.value.length > 0)
-  const hasNothingToPrepare = computed(
-    () => hasLoaded.value && !loadFailed.value && orders.value.length === 0,
-  )
   const hasNothingDone = computed(
     () =>
       fulfilledHasLoaded.value && !fulfilledLoadFailed.value && fulfilled.value.length === 0,
@@ -167,6 +164,9 @@ export const useStationStore = defineStore('station', () => {
       connection.onEvent<unknown>('StationsChanged', () => {
         void refresh()
       }),
+      connection.onEvent<unknown>('FestivalChanged', () => {
+        void refresh()
+      }),
     ]
     return () => {
       for (const release of releases) {
@@ -190,7 +190,6 @@ export const useStationStore = defineStore('station', () => {
     fulfilledHasLoaded,
     fulfilledLoadFailed,
     hasWork,
-    hasNothingToPrepare,
     hasNothingDone,
     load,
     loadFulfilled,

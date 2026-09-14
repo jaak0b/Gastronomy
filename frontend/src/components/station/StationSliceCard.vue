@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { DeliveryMode, StationSlice } from '../../core/apiTypes'
-import { assertNever } from '../../core/assertNever'
-import { deliveryModeKey, openItemsOf, selectedOpenItemIds } from '../../core/stationBoard'
+import type { StationSlice } from '../../core/apiTypes'
+import {
+  deliveryModeClass,
+  deliveryModeKey,
+  itemUnits,
+  openItemsOf,
+  selectedOpenItemIds,
+} from '../../core/stationBoard'
 
 const props = defineProps<{
   slice: StationSlice
@@ -22,36 +27,24 @@ const { t } = useI18n()
 const openItems = computed(() => openItemsOf(props.slice))
 const selectedHere = computed(() => selectedOpenItemIds(props.slice, props.selectedItemIds))
 const deliveryText = computed(() => t(deliveryModeKey(props.slice.deliveryMode)))
-const modeColour = computed(() => modeColourOf(props.slice.deliveryMode))
-const modeClass = computed(() => modeClassOf(props.slice.deliveryMode))
+const modeClass = computed(() => deliveryModeClass(props.slice.deliveryMode))
+const orderReference = computed(() =>
+  t('station.order', {
+    order: props.slice.globalOrderNumber,
+    sequence: props.slice.stationOrderNumber,
+  }),
+)
 const doneCounter = computed(() =>
   t('station.doneCounter', {
     fulfilled: props.slice.fulfilledItemCount,
     total: props.slice.itemCount,
   }),
 )
-
-function modeColourOf(deliveryMode: DeliveryMode): string {
-  switch (deliveryMode) {
-    case 'together':
-      return 'primary'
-    case 'asItComes':
-      return 'warning'
-    default:
-      return assertNever(deliveryMode)
-  }
-}
-
-function modeClassOf(deliveryMode: DeliveryMode): string {
-  switch (deliveryMode) {
-    case 'together':
-      return 'mode-together'
-    case 'asItComes':
-      return 'mode-as-it-comes'
-    default:
-      return assertNever(deliveryMode)
-  }
-}
+const unitSummary = computed(() =>
+  itemUnits(openItems.value)
+    .map((unit) => t('station.itemUnits', { count: unit.units, item: unit.itemName }))
+    .join(t('station.unitSeparator')),
+)
 
 function isSelected(orderItemId: string): boolean {
   return selectedHere.value.includes(orderItemId)
@@ -59,28 +52,18 @@ function isSelected(orderItemId: string): boolean {
 </script>
 
 <template>
-  <v-card class="station-slice mb-4" variant="outlined">
-    <v-card-title class="slice-heading text-subtitle-1">
-      {{
-        t('station.order', {
-          order: slice.globalOrderNumber,
-          sequence: slice.stationOrderNumber,
-        })
-      }}
-    </v-card-title>
-    <v-card-subtitle class="table-name text-h4">{{ slice.tableName }}</v-card-subtitle>
+  <v-card class="station-slice mb-4" :class="modeClass" variant="outlined">
     <v-card-text>
-      <v-chip
-        class="delivery-mode"
-        :class="modeClass"
-        :color="modeColour"
-        variant="flat"
-        size="large"
-      >
-        {{ deliveryText }}
-      </v-chip>
-      <p class="done-counter text-body-1 mt-2 mb-0">{{ doneCounter }}</p>
-      <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1">
+      <div class="slice-head d-flex align-baseline ga-2">
+        <span class="table-name text-h4">{{ slice.tableName }}</span>
+        <span class="slice-heading text-body-1 text-medium-emphasis">{{ orderReference }}</span>
+        <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
+      </div>
+      <div class="slice-meta d-flex flex-wrap align-baseline ga-2 mt-1">
+        <span class="delivery-mode text-body-1 font-weight-medium">{{ deliveryText }}</span>
+        <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
+      </div>
+      <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
         {{ t('station.orderNote', { note: slice.note }) }}
       </p>
       <v-divider class="my-2" />
@@ -127,6 +110,27 @@ function isSelected(orderItemId: string): boolean {
 </template>
 
 <style scoped>
+.station-slice {
+  border-width: 3px;
+  border-style: solid;
+}
+
+.station-slice.mode-together {
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.station-slice.mode-as-it-comes {
+  border-color: rgb(var(--v-theme-warning));
+}
+
+.station-slice.mode-together .delivery-mode {
+  color: rgb(var(--v-theme-primary));
+}
+
+.station-slice.mode-as-it-comes .delivery-mode {
+  color: rgb(var(--v-theme-warning));
+}
+
 .station-item {
   justify-content: flex-start;
   height: auto;

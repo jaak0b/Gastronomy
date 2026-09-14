@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 import { useCatalogStore } from '../../src/stores/catalog'
-import { TOKEN_STORAGE_KEY } from '../../src/stores/session'
+import { useConnectionStore } from '../../src/stores/connection'
+import { useSessionStore, TOKEN_STORAGE_KEY } from '../../src/stores/session'
+
+vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const FULL_CATALOG = {
   categories: [
@@ -67,5 +71,36 @@ describe('the catalog on the phone', () => {
     expect(catalog.groups).toEqual([])
     expect(catalog.catalog.items).toEqual([])
     expect(catalog.stationName('station-kueche')).toBe('')
+  })
+})
+
+describe('the catalog a phone follows while it is open', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    forgetHubEvents()
+    useSessionStore().deviceToken = 'token-here'
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('loads again when the festival starts or stops', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify(FULL_CATALOG), { status: 200 })
+      }),
+    )
+    useCatalogStore().listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    urls.length = 0
+
+    fireHubEvent('FestivalChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/catalog']))
   })
 })

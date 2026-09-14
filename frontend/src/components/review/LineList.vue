@@ -6,6 +6,7 @@ import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { collapseLines, type CollapsedLine } from '../../core/collapse'
 import { countedName } from '../../core/countedName'
 import { withEstimate } from '../../core/estimateWording'
+import { deliveryModeKey } from '../../core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice, collapsedTotalCents } from '../../core/totals'
 
@@ -51,6 +52,10 @@ const parts = computed<StationPart[]>(() =>
 
 function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
   return countedName(entry.quantity, nameOf(entry.line), t)
+}
+
+function deliveryTextOf(deliveryMode: DeliveryMode): string {
+  return t(deliveryModeKey(deliveryMode))
 }
 
 function priceOf(entry: CollapsedLine<BasketLineView>): string | null {
@@ -131,7 +136,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
               size="large"
               :disabled="changesAreRefused"
             >
-              {{ t('review.deliveryTogether') }}
+              {{ deliveryTextOf('together') }}
             </v-btn>
             <v-btn
               class="delivery-as-it-comes"
@@ -139,7 +144,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
               size="large"
               :disabled="changesAreRefused"
             >
-              {{ t('review.deliveryAsItComes') }}
+              {{ deliveryTextOf('asItComes') }}
             </v-btn>
           </v-btn-toggle>
         </div>

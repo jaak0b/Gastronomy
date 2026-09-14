@@ -151,6 +151,15 @@ describe('the waiting times a phone follows while it takes orders', () => {
     expect(urls).toEqual(['/api/estimates'])
   })
 
+  it('loads again when the festival starts or stops', async () => {
+    const urls = await listeningPhone()
+
+    fireHubEvent('FestivalChanged')
+    await letTheReloadFinish()
+
+    expect(urls).toEqual(['/api/estimates'])
+  })
+
   it('loads again when the connection comes back', async () => {
     const urls = await listeningPhone()
 

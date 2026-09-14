@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage, DeliveryMode, StationEstimate } from '../../core/apiTypes'
-import { assertNever } from '../../core/assertNever'
 import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
+import { deliveryModeKey } from '../../core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice } from '../../core/totals'
 
@@ -30,19 +30,8 @@ const stations = computed(() =>
   ),
 )
 
-function deliveryLabelOf(deliveryMode: DeliveryMode): string {
-  switch (deliveryMode) {
-    case 'together':
-      return t('review.deliveryTogether')
-    case 'asItComes':
-      return t('review.deliveryAsItComes')
-    default:
-      return assertNever(deliveryMode)
-  }
-}
-
 function deliveryTextOf(station: StationDelivery): string {
-  return withEstimate(deliveryLabelOf(station.deliveryMode), station.minutes, t)
+  return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t)
 }
 
 const confirmLabel = computed(() =>

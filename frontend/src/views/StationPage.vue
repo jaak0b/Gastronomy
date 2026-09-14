@@ -119,10 +119,6 @@ async function confirmDone(): Promise<void> {
         </div>
       </section>
 
-      <v-alert v-if="station.hasNothingToPrepare" class="empty mb-4" type="info" variant="tonal">
-        {{ t('station.empty') }}
-      </v-alert>
-
       <v-btn
         class="show-done mb-4"
         color="primary"

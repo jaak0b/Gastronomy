@@ -871,7 +871,7 @@ describe('the question the waiter answers before an order goes out', () => {
     expect(rowText('.row-table .value')).toBe('Tisch 3')
     expect(rowText('.row-amount .value')).toContain('2.00')
     expect(rowText('.row-station .label')).toBe('Bar:')
-    expect(rowText('.row-station .value')).toBe('Gesammelt ausgeben (~0 Min.)')
+    expect(rowText('.row-station .value')).toBe('Gemeinsame Lieferung (~0 Min.)')
   })
 
   it('hands the order back untouched when the waiter backs out', async () => {

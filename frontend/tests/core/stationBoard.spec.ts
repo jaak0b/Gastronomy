@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deliveryModeClass,
   deliveryModeKey,
   itemUnits,
   openItemsOf,
@@ -38,11 +39,19 @@ function slice(overrides: Partial<StationSlice> = {}): StationSlice {
 
 describe('the words a station tablet uses for a delivery mode', () => {
   it('names the mode that goes out together', () => {
-    expect(deliveryModeKey('together')).toBe('station.deliveryTogether')
+    expect(deliveryModeKey('together')).toBe('delivery.together')
   })
 
   it('names the mode that goes out as it is ready', () => {
-    expect(deliveryModeKey('asItComes')).toBe('station.deliveryAsItComes')
+    expect(deliveryModeKey('asItComes')).toBe('delivery.asItComes')
+  })
+
+  it('marks a card that hands the order out together', () => {
+    expect(deliveryModeClass('together')).toBe('mode-together')
+  })
+
+  it('marks a card that hands each item out as it is ready', () => {
+    expect(deliveryModeClass('asItComes')).toBe('mode-as-it-comes')
   })
 })
 
