@@ -276,7 +276,9 @@
       "noItemsToAdd": "Alle eingeschalteten Artikel gehören schon zu diesem Fest. Klicken Sie auf \"Neuer Artikel\".",
       "removeItemTitle": "Artikel entfernen",
       "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
-      "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu."
+      "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
+      "chooseStation": "Ausgabestelle wählen",
+      "itemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle. Wählen Sie mindestens eine aus."
     }
   },
   "station": {

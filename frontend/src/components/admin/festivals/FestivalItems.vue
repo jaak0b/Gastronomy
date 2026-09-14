@@ -15,8 +15,9 @@ import {
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import ItemForm from '../items/ItemForm.vue'
-import StationChips from '../items/StationChips.vue'
-import { useRefusalText } from '../refusalText'
+import { refusalMessageText, useRefusalText } from '../refusalText'
+import FestivalPlacementDialog from './FestivalPlacementDialog.vue'
+import StationSelect from './StationSelect.vue'
 
 interface Placement {
   priceText: string
@@ -30,7 +31,10 @@ interface ItemRow {
   sentStationIds: string[]
   onItsWay: Placement | null
   laptopAnswers: number
+  refusal: AdminErrorMessage | null
 }
+
+type PlacedItem = AdminItem & { atTheFestival: NonNullable<AdminItem['atTheFestival']> }
 
 const props = defineProps<{ festivalId: string }>()
 
@@ -39,23 +43,19 @@ const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const stations = useAdminStationsStore()
 const rows = ref(new Map<string, ItemRow>())
-const justAddedItemIds = ref<string[]>([])
 const chosenItemId = ref<string | null>(null)
+const itemToPlace = ref<AdminItem | null>(null)
 const isCreating = ref(false)
 const removedItem = ref<AdminItem | null>(null)
-const refusedItemId = ref<string | null>(null)
-const ownRefusal = ref<AdminErrorMessage | null>(null)
 
-const refusalText = useRefusalText([() => items.errorMessage, () => ownRefusal.value])
+const refusalText = useRefusalText([() => items.errorMessage])
 
 const festivalStations = computed(() =>
   stations.stations.filter((station) => station.isAtTheFestival && station.isActive),
 )
 
 const itemsAtTheFestival = computed(() =>
-  items.items.filter(
-    (item) => item.atTheFestival !== null || justAddedItemIds.value.includes(item.itemId),
-  ),
+  items.items.filter((item): item is PlacedItem => item.atTheFestival !== null),
 )
 
 const groups = computed(() =>
@@ -83,22 +83,18 @@ const tintedItemIds = computed(() => {
 })
 
 const stillToAdd = computed(() =>
-  [
-    ...items.items.filter(
-      (item) =>
-        item.isActive
-        && item.atTheFestival === null
-        && !justAddedItemIds.value.includes(item.itemId),
-    ),
-  ].sort((left, right) => left.name.localeCompare(right.name)),
+  items.items
+    .filter((item) => item.isActive && item.atTheFestival === null)
+    .sort((left, right) => left.name.localeCompare(right.name)),
 )
 
-function rowFrom(item: AdminItem): ItemRow {
-  const priceText = formatEuroInput(
-    item.atTheFestival?.priceCents ?? null,
-    locale.value as AppLanguage,
-  )
-  const stationIds = [...(item.atTheFestival?.stationIds ?? [])]
+const chosenItem = computed(
+  () => items.items.find((item) => item.itemId === chosenItemId.value) ?? null,
+)
+
+function rowFrom(item: PlacedItem): ItemRow {
+  const priceText = formatEuroInput(item.atTheFestival.priceCents, locale.value as AppLanguage)
+  const stationIds = [...item.atTheFestival.stationIds]
   return {
     priceText,
     stationIds,
@@ -106,6 +102,7 @@ function rowFrom(item: AdminItem): ItemRow {
     sentStationIds: [...stationIds],
     onItsWay: null,
     laptopAnswers: laptopAnswersAbout(item.itemId),
+    refusal: null,
   }
 }
 
@@ -140,6 +137,7 @@ function rowOf(itemId: string): ItemRow {
       sentStationIds: [],
       onItsWay: null,
       laptopAnswers: 0,
+      refusal: null,
     }
   )
 }
@@ -160,13 +158,34 @@ function isAlreadyAtTheLaptop(row: ItemRow): boolean {
   return matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
 }
 
-function theLaptopHoldsTheRow(itemId: string): boolean {
-  return !justAddedItemIds.value.includes(itemId)
+function itemNameOf(itemId: string): string {
+  return items.items.find((item) => item.itemId === itemId)?.name ?? ''
 }
 
-function refuse(itemId: string, messageKey: string): void {
-  refusedItemId.value = itemId
-  ownRefusal.value = adminMessage(messageKey)
+function refuse(
+  itemId: string,
+  messageKey: string,
+  parameters: Record<string, string | number> = {},
+): void {
+  const row = rows.value.get(itemId)
+  if (row !== undefined) {
+    row.refusal = adminMessage(messageKey, parameters)
+  }
+}
+
+function moveTheStoreRefusalOnto(itemId: string): void {
+  const message = items.errorMessage
+  const row = rows.value.get(itemId)
+  if (message === null || row === undefined) {
+    return
+  }
+  row.refusal = message
+  items.forgetError()
+}
+
+function rowRefusalText(itemId: string): string | null {
+  const message = rowOf(itemId).refusal
+  return message === null ? null : refusalMessageText(t, message)
 }
 
 function typePrice(itemId: string, typed: string): void {
@@ -188,7 +207,7 @@ function priceTheLaptopCanTake(itemId: string, row: ItemRow): number | null {
     return null
   }
   if (row.stationIds.length === 0) {
-    refuse(itemId, 'admin.itemNeedsAStation')
+    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameOf(itemId) })
     return null
   }
   return priceCents
@@ -208,8 +227,7 @@ async function save(itemId: string): Promise<void> {
   if (priceTheLaptopCanTake(itemId, row) === null) {
     return
   }
-  refusedItemId.value = itemId
-  ownRefusal.value = null
+  row.refusal = null
   if (row.onItsWay !== null) {
     return
   }
@@ -224,6 +242,7 @@ async function sendUntilTheLaptopHasTheRow(itemId: string, row: ItemRow): Promis
     }
     const onItsWay: Placement = { priceText: row.priceText, stationIds: [...row.stationIds] }
     row.onItsWay = onItsWay
+    row.refusal = null
     const placed = await items.putAtTheFestival(props.festivalId, itemId, {
       priceCents,
       stationIds: [...onItsWay.stationIds],
@@ -232,20 +251,19 @@ async function sendUntilTheLaptopHasTheRow(itemId: string, row: ItemRow): Promis
     if (placed) {
       row.sentPriceText = onItsWay.priceText
       row.sentStationIds = [...onItsWay.stationIds]
-      justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== itemId)
       row.onItsWay = null
+      row.refusal = null
       continue
     }
-    if (theLaptopHoldsTheRow(itemId)) {
-      row.priceText = row.sentPriceText
-      row.stationIds = [...row.sentStationIds]
-    }
+    moveTheStoreRefusalOnto(itemId)
+    row.priceText = row.sentPriceText
+    row.stationIds = [...row.sentStationIds]
     row.onItsWay = null
     return
   }
 }
 
-async function toggleStation(itemId: string, stationId: string): Promise<void> {
+async function changeStations(itemId: string, stationIds: string[]): Promise<void> {
   const row = rows.value.get(itemId)
   if (row === undefined) {
     return
@@ -254,42 +272,50 @@ async function toggleStation(itemId: string, stationId: string): Promise<void> {
     refuse(itemId, 'admin.itemPriceOutOfRange')
     return
   }
-  const isOnTheItem = row.stationIds.includes(stationId)
-  if (isOnTheItem && row.stationIds.length === 1) {
-    refuse(itemId, 'admin.itemNeedsAStation')
+  if (stationIds.length === 0) {
+    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameOf(itemId) })
     return
   }
-  row.stationIds = isOnTheItem
-    ? row.stationIds.filter((id) => id !== stationId)
-    : [...row.stationIds, stationId]
+  row.stationIds = [...stationIds]
   await save(itemId)
 }
 
 async function setSoldOut(item: AdminItem, isSoldOut: boolean): Promise<void> {
-  refusedItemId.value = item.itemId
-  ownRefusal.value = null
-  await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
+  const started = rows.value.get(item.itemId)
+  if (started !== undefined) {
+    started.refusal = null
+  }
+  const accepted = await items.setAvailability(props.festivalId, item.itemId, !isSoldOut)
   const row = rows.value.get(item.itemId)
   if (row !== undefined) {
     row.laptopAnswers += 1
   }
+  if (!accepted) {
+    moveTheStoreRefusalOnto(item.itemId)
+  }
+}
+
+function startPlacing(item: AdminItem): void {
+  items.forgetError()
+  itemToPlace.value = item
+}
+
+function stopPlacing(): void {
+  items.forgetError()
+  itemToPlace.value = null
 }
 
 function add(): void {
-  const itemId = chosenItemId.value
-  if (itemId === null) {
+  const item = chosenItem.value
+  if (item === null) {
     return
   }
-  if (!justAddedItemIds.value.includes(itemId)) {
-    justAddedItemIds.value = [...justAddedItemIds.value, itemId]
-  }
+  startPlacing(item)
   chosenItemId.value = null
 }
 
 function startCreating(): void {
   items.forgetError()
-  ownRefusal.value = null
-  refusedItemId.value = null
   isCreating.value = true
 }
 
@@ -304,7 +330,10 @@ async function create(draft: AdminItemDraft): Promise<void> {
     return
   }
   isCreating.value = false
-  chosenItemId.value = itemId
+  const created = items.items.find((item) => item.itemId === itemId)
+  if (created !== undefined) {
+    startPlacing(created)
+  }
 }
 
 async function remove(): Promise<void> {
@@ -313,10 +342,14 @@ async function remove(): Promise<void> {
   if (item === null) {
     return
   }
-  refusedItemId.value = item.itemId
-  ownRefusal.value = null
-  justAddedItemIds.value = justAddedItemIds.value.filter((id) => id !== item.itemId)
-  await items.removeFromTheFestival(props.festivalId, item.itemId)
+  const row = rows.value.get(item.itemId)
+  if (row !== undefined) {
+    row.refusal = null
+  }
+  const accepted = await items.removeFromTheFestival(props.festivalId, item.itemId)
+  if (!accepted) {
+    moveTheStoreRefusalOnto(item.itemId)
+  }
 }
 </script>
 
@@ -325,6 +358,15 @@ async function remove(): Promise<void> {
     <v-card variant="outlined">
       <div class="pa-4">
         <h2 class="section-heading text-h6 mb-3">{{ t('admin.items.title') }}</h2>
+
+        <v-alert
+          v-if="items.loadFailed || categories.loadFailed"
+          class="error mb-3"
+          type="error"
+          variant="tonal"
+        >
+          {{ t('admin.loadFailed') }}
+        </v-alert>
 
         <div v-if="festivalStations.length === 0" class="festival-item-placeholder">
           <div class="item-line d-flex align-center flex-wrap ga-3 py-2 px-3">
@@ -375,14 +417,14 @@ async function remove(): Promise<void> {
                   @blur="save(item.itemId)"
                   @keyup.enter="save(item.itemId)"
                 />
-                <StationChips
+                <StationSelect
                   :stations="festivalStations"
                   :selected-station-ids="rowOf(item.itemId).stationIds"
-                  @toggle="(stationId: string) => toggleStation(item.itemId, stationId)"
+                  :error-text="null"
+                  @select="(stationIds: string[]) => changeStations(item.itemId, stationIds)"
                 />
                 <v-spacer />
                 <v-switch
-                  v-if="item.atTheFestival !== null"
                   :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowOf(item.itemId).laptopAnswers}`"
                   class="sold-out-switch flex-grow-0"
                   density="compact"
@@ -397,12 +439,12 @@ async function remove(): Promise<void> {
                 </v-btn>
               </div>
               <v-alert
-                v-if="refusalText !== null && refusedItemId === item.itemId"
+                v-if="rowRefusalText(item.itemId) !== null"
                 class="refusal mb-2"
                 type="warning"
                 variant="tonal"
               >
-                {{ refusalText }}
+                {{ rowRefusalText(item.itemId) }}
               </v-alert>
             </div>
           </section>
@@ -433,7 +475,7 @@ async function remove(): Promise<void> {
             </v-btn>
           </div>
           <v-alert
-            v-if="refusalText !== null && refusedItemId === null && !isCreating"
+            v-if="refusalText !== null && !isCreating"
             class="refusal mt-3"
             type="warning"
             variant="tonal"
@@ -456,6 +498,15 @@ async function remove(): Promise<void> {
         />
       </v-card>
     </v-dialog>
+
+    <FestivalPlacementDialog
+      v-if="itemToPlace !== null"
+      :festival-id="festivalId"
+      :item="itemToPlace"
+      :stations="festivalStations"
+      @placed="stopPlacing"
+      @cancel="stopPlacing"
+    />
 
     <ConfirmDialog
       v-if="removedItem !== null"
@@ -486,7 +537,7 @@ async function remove(): Promise<void> {
   flex: 0 0 9rem;
 }
 
-.festival-item-row .station-chips {
+.festival-item-row .station-select-field {
   flex: 0 1 auto;
 }
 </style>

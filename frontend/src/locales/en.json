@@ -276,7 +276,9 @@
       "noItemsToAdd": "Every item that is switched on already belongs to this festival. Click \"New item\".",
       "removeItemTitle": "Remove the item",
       "removeItemBody": "This removes the item from this festival only.",
-      "needsAStationFirst": "This festival has no station yet. Add one first."
+      "needsAStationFirst": "This festival has no station yet. Add one first.",
+      "chooseStation": "Choose a station",
+      "itemNeedsAStation": "{item} needs at least one station. Choose at least one."
     }
   },
   "station": {

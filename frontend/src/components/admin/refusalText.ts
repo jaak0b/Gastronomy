@@ -1,11 +1,20 @@
 import { computed, ref, watch, type ComputedRef } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useI18n, type ComposerTranslation } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
 
 type RefusalSource = () => AdminErrorMessage | null | undefined
 
 function anyStillStanding(sources: RefusalSource[]): AdminErrorMessage | null {
   return sources.map((source) => source() ?? null).find((message) => message !== null) ?? null
+}
+
+export function refusalMessageText(
+  translate: ComposerTranslation,
+  message: AdminErrorMessage,
+): string {
+  return message.count === null
+    ? translate(message.key, message.parameters)
+    : translate(message.key, message.parameters, message.count)
 }
 
 export function useRefusalText(sources: RefusalSource[]): ComputedRef<string | null> {
@@ -23,8 +32,6 @@ export function useRefusalText(sources: RefusalSource[]): ComputedRef<string | n
     if (message === null) {
       return null
     }
-    return message.count === null
-      ? t(message.key, message.parameters)
-      : t(message.key, message.parameters, message.count)
+    return refusalMessageText(t, message)
   })
 }
