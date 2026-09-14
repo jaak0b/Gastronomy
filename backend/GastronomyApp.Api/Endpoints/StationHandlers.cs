@@ -54,13 +54,17 @@ public sealed class StationsAtTheFestivalReader
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    return await (from station in dbContext.Stations.AsNoTracking()
-                  join link in dbContext.FestivalStations.AsNoTracking()
-                    on station.Id equals link.StationId
-                  where link.FestivalId == festivalId && station.IsActive
-                  orderby station.SortOrder
-                  select station)
-                 .ToListAsync(cancellationToken);
+    return await dbContext.Stations
+                          .AsNoTracking()
+                          .Join(dbContext.FestivalStations.AsNoTracking(),
+                                station => station.Id,
+                                link => link.StationId,
+                                (station, link) => new { Station = station, Link = link })
+                          .Where(joined => joined.Link.FestivalId == festivalId
+                                           && joined.Station.IsActive)
+                          .OrderBy(joined => joined.Station.SortOrder)
+                          .Select(joined => joined.Station)
+                          .ToListAsync(cancellationToken);
   }
 
   public async Task<bool> IsAtTheFestivalAsync(GastronomyAppDbContext dbContext,
@@ -107,17 +111,31 @@ public sealed class StationEstimateHandler
 
     IReadOnlyList<Station> stations = await _stationsReader.ReadAsync(_dbContext, festival.Id, cancellationToken);
 
-    List<QueuedItemRow> queued = await (from item in _dbContext.OrderItems.AsNoTracking()
-                                        join slice in _dbContext.StationOrders.AsNoTracking()
-                                          on item.StationOrderId equals slice.Id
-                                        join order in _dbContext.Orders.AsNoTracking()
-                                          on slice.OrderId equals order.Id
-                                        join catalogItem in _dbContext.CatalogItems.AsNoTracking()
-                                          on item.CatalogItemId equals catalogItem.Id
-                                        where item.FulfilledAtUtc == null
-                                              && order.FestivalId == festival.Id
-                                        select new QueuedItemRow(slice.StationId, catalogItem.ProductionMinutes))
-                                       .ToListAsync(cancellationToken);
+    List<QueuedItemRow> queued = await _dbContext.OrderItems
+                                                 .AsNoTracking()
+                                                 .Join(_dbContext.StationOrders.AsNoTracking(),
+                                                       item => item.StationOrderId,
+                                                       slice => slice.Id,
+                                                       (item, slice) => new { Item = item, Slice = slice })
+                                                 .Join(_dbContext.Orders.AsNoTracking(),
+                                                       joined => joined.Slice.OrderId,
+                                                       order => order.Id,
+                                                       (joined, order) => new { joined.Item, joined.Slice, Order = order })
+                                                 .Join(_dbContext.CatalogItems.AsNoTracking(),
+                                                       joined => joined.Item.CatalogItemId,
+                                                       catalogItem => catalogItem.Id,
+                                                       (joined, catalogItem) => new
+                                                                                {
+                                                                                  joined.Item,
+                                                                                  joined.Slice,
+                                                                                  joined.Order,
+                                                                                  CatalogItem = catalogItem
+                                                                                })
+                                                 .Where(joined => joined.Item.FulfilledAtUtc == null
+                                                                  && joined.Order.FestivalId == festival.Id)
+                                                 .Select(joined => new QueuedItemRow(joined.Slice.StationId,
+                                                                                     joined.CatalogItem.ProductionMinutes))
+                                                 .ToListAsync(cancellationToken);
 
     return Results.Ok(new StationEstimateListView([
                                                     .. stations.Select(station => new StationEstimateView(station.Id,
@@ -149,14 +167,17 @@ public sealed class StationQueueReader
                                                       .Distinct()
                                                       .ToListAsync(cancellationToken);
 
-    List<StationOrder> slices = await (from slice in dbContext.StationOrders.AsNoTracking()
-                                       join order in dbContext.Orders.AsNoTracking()
-                                         on slice.OrderId equals order.Id
-                                       where slice.StationId == stationId
-                                             && order.FestivalId == festivalId
-                                             && sliceIdsWithOpenItems.Contains(slice.Id)
-                                       select slice)
-                                      .ToListAsync(cancellationToken);
+    List<StationOrder> slices = await dbContext.StationOrders
+                                               .AsNoTracking()
+                                               .Join(dbContext.Orders.AsNoTracking(),
+                                                     slice => slice.OrderId,
+                                                     order => order.Id,
+                                                     (slice, order) => new { Slice = slice, Order = order })
+                                               .Where(joined => joined.Slice.StationId == stationId
+                                                                && joined.Order.FestivalId == festivalId
+                                                                && sliceIdsWithOpenItems.Contains(joined.Slice.Id))
+                                               .Select(joined => joined.Slice)
+                                               .ToListAsync(cancellationToken);
 
     return await DescribeAsync(dbContext, slices, cancellationToken);
   }
@@ -175,14 +196,17 @@ public sealed class StationQueueReader
                                                            .Distinct()
                                                            .ToListAsync(cancellationToken);
 
-    List<StationOrder> slices = await (from slice in dbContext.StationOrders.AsNoTracking()
-                                       join order in dbContext.Orders.AsNoTracking()
-                                         on slice.OrderId equals order.Id
-                                       where slice.StationId == stationId
-                                             && order.FestivalId == festivalId
-                                             && sliceIdsWithFulfilledItems.Contains(slice.Id)
-                                       select slice)
-                                      .ToListAsync(cancellationToken);
+    List<StationOrder> slices = await dbContext.StationOrders
+                                               .AsNoTracking()
+                                               .Join(dbContext.Orders.AsNoTracking(),
+                                                     slice => slice.OrderId,
+                                                     order => order.Id,
+                                                     (slice, order) => new { Slice = slice, Order = order })
+                                               .Where(joined => joined.Slice.StationId == stationId
+                                                                && joined.Order.FestivalId == festivalId
+                                                                && sliceIdsWithFulfilledItems.Contains(joined.Slice.Id))
+                                               .Select(joined => joined.Slice)
+                                               .ToListAsync(cancellationToken);
 
     return await DescribeAsync(dbContext, slices, cancellationToken);
   }

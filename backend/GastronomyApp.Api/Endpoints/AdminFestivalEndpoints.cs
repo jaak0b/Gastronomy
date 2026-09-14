@@ -799,12 +799,16 @@ public sealed class AdminFestivalStationHandler
       return new(Results.NotFound(), false);
     }
 
-    var sliceCount = await (from slice in _dbContext.StationOrders.AsNoTracking()
-                            join order in _dbContext.Orders.AsNoTracking()
-                              on slice.OrderId equals order.Id
-                            where slice.StationId == stationId && order.FestivalId == festivalId
-                            select slice.Id)
-                           .CountAsync(cancellationToken);
+    var sliceCount = await _dbContext.StationOrders
+                                     .AsNoTracking()
+                                     .Join(_dbContext.Orders.AsNoTracking(),
+                                           slice => slice.OrderId,
+                                           order => order.Id,
+                                           (slice, order) => new { Slice = slice, Order = order })
+                                     .Where(joined => joined.Slice.StationId == stationId
+                                                      && joined.Order.FestivalId == festivalId)
+                                     .Select(joined => joined.Slice.Id)
+                                     .CountAsync(cancellationToken);
 
     if (sliceCount > 0)
     {

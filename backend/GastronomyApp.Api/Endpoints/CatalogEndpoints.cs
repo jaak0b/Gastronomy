@@ -70,13 +70,16 @@ public sealed class CatalogReader
 
     var festivalId = runningFestival.Id;
 
-    List<Station> stations = await (from station in dbContext.Stations
-                                    join link in dbContext.FestivalStations
-                                      on station.Id equals link.StationId
-                                    where link.FestivalId == festivalId && station.IsActive
-                                    orderby station.SortOrder
-                                    select station)
-                                   .ToListAsync(cancellationToken);
+    List<Station> stations = await dbContext.Stations
+                                            .Join(dbContext.FestivalStations,
+                                                  station => station.Id,
+                                                  link => link.StationId,
+                                                  (station, link) => new { Station = station, Link = link })
+                                            .Where(joined => joined.Link.FestivalId == festivalId
+                                                             && joined.Station.IsActive)
+                                            .OrderBy(joined => joined.Station.SortOrder)
+                                            .Select(joined => joined.Station)
+                                            .ToListAsync(cancellationToken);
 
     HashSet<Guid> stationIdsAtTheFestival = [.. stations.Select(station => station.Id)];
 
@@ -89,16 +92,20 @@ public sealed class CatalogReader
 
     List<Guid> orderableItemIds = [.. await _orderableItems.IdsAtAsync(dbContext, festivalId, cancellationToken)];
 
-    List<MenuRow> menuRows = await (from menuItem in dbContext.FestivalCatalogItems
-                                    join item in dbContext.CatalogItems
-                                      on menuItem.CatalogItemId equals item.Id
-                                    where menuItem.FestivalId == festivalId
-                                          && item.IsActive
-                                          && activeCategoryIds.Contains(item.CategoryId)
-                                          && orderableItemIds.Contains(item.Id)
-                                    orderby item.SortOrder
-                                    select new MenuRow(item, menuItem.PriceCents, menuItem.IsAvailable))
-                                   .ToListAsync(cancellationToken);
+    List<MenuRow> menuRows = await dbContext.FestivalCatalogItems
+                                            .Join(dbContext.CatalogItems,
+                                                  menuItem => menuItem.CatalogItemId,
+                                                  item => item.Id,
+                                                  (menuItem, item) => new { MenuItem = menuItem, Item = item })
+                                            .Where(joined => joined.MenuItem.FestivalId == festivalId
+                                                             && joined.Item.IsActive
+                                                             && activeCategoryIds.Contains(joined.Item.CategoryId)
+                                                             && orderableItemIds.Contains(joined.Item.Id))
+                                            .OrderBy(joined => joined.Item.SortOrder)
+                                            .Select(joined => new MenuRow(joined.Item,
+                                                                          joined.MenuItem.PriceCents,
+                                                                          joined.MenuItem.IsAvailable))
+                                            .ToListAsync(cancellationToken);
 
     List<ItemStationAssignment> assignments = await dbContext.ItemStationAssignments
                                                              .Where(assignment => assignment.FestivalId == festivalId)

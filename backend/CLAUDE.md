@@ -62,6 +62,10 @@ reverse proxy.
    destructure one positionally. Every multi-value return is a named `record` or `record struct` read
    by name, so reordering or renaming a member is a compile error rather than a silent value swap.
 
+9. **LINQ is written in method syntax.** Every query is a fluent chain (`.Where`, `.Select`,
+   `.Join`, `.OrderBy`), never query-comprehension syntax (`from ... in ...`). The whole codebase
+   keeps one query style, and a join stays a chain instead of a block of SQL pasted into C#.
+
 ## The order model
 
 One order, split per station, worked off item by item on that station's tablet, and all of it belongs

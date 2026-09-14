@@ -95,14 +95,17 @@ public sealed class OrderableItems
 
     return
     [
-      .. await (from menuRow in dbContext.FestivalCatalogItems.AsNoTracking()
-                join item in dbContext.CatalogItems.AsNoTracking()
-                  on menuRow.CatalogItemId equals item.Id
-                where menuRow.FestivalId == festivalId
-                      && item.IsActive
-                      && itemIdsWithAStation.Contains(item.Id)
-                select item.Id)
-       .ToListAsync(cancellationToken)
+      .. await dbContext.FestivalCatalogItems
+                        .AsNoTracking()
+                        .Join(dbContext.CatalogItems.AsNoTracking(),
+                              menuRow => menuRow.CatalogItemId,
+                              item => item.Id,
+                              (menuRow, item) => new { MenuRow = menuRow, Item = item })
+                        .Where(joined => joined.MenuRow.FestivalId == festivalId
+                                         && joined.Item.IsActive
+                                         && itemIdsWithAStation.Contains(joined.Item.Id))
+                        .Select(joined => joined.Item.Id)
+                        .ToListAsync(cancellationToken)
     ];
   }
 
@@ -115,13 +118,16 @@ public sealed class OrderableItems
 
     List<Guid> gone = [.. stationsNoLongerPreparing];
 
-    return await (from link in dbContext.FestivalStations.AsNoTracking()
-                  join station in dbContext.Stations.AsNoTracking()
-                    on link.StationId equals station.Id
-                  where link.FestivalId == festivalId
-                        && station.IsActive
-                        && !gone.Contains(station.Id)
-                  select station.Id)
-                 .ToListAsync(cancellationToken);
+    return await dbContext.FestivalStations
+                          .AsNoTracking()
+                          .Join(dbContext.Stations.AsNoTracking(),
+                                link => link.StationId,
+                                station => station.Id,
+                                (link, station) => new { Link = link, Station = station })
+                          .Where(joined => joined.Link.FestivalId == festivalId
+                                           && joined.Station.IsActive
+                                           && !gone.Contains(joined.Station.Id))
+                          .Select(joined => joined.Station.Id)
+                          .ToListAsync(cancellationToken);
   }
 }

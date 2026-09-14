@@ -16,12 +16,15 @@ public sealed class StationRepository : IStationRepository
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId,
                                                                       CancellationToken cancellationToken)
   {
-    return await (from station in _dbContext.Stations
-                  join link in _dbContext.FestivalStations
-                    on station.Id equals link.StationId
-                  where link.FestivalId == festivalId && station.IsActive
-                  orderby station.SortOrder
-                  select station)
-                 .ToListAsync(cancellationToken);
+    return await _dbContext.Stations
+                           .Join(_dbContext.FestivalStations,
+                                 station => station.Id,
+                                 link => link.StationId,
+                                 (station, link) => new { Station = station, Link = link })
+                           .Where(joined => joined.Link.FestivalId == festivalId
+                                            && joined.Station.IsActive)
+                           .OrderBy(joined => joined.Station.SortOrder)
+                           .Select(joined => joined.Station)
+                           .ToListAsync(cancellationToken);
   }
 }

@@ -79,11 +79,14 @@ public sealed class OpenItemsReader
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    IQueryable<Guid> sliceIdsOfAnotherFestival = from slice in dbContext.StationOrders.AsNoTracking()
-                                                 join order in dbContext.Orders.AsNoTracking()
-                                                   on slice.OrderId equals order.Id
-                                                 where order.FestivalId != festivalId
-                                                 select slice.Id;
+    IQueryable<Guid> sliceIdsOfAnotherFestival = dbContext.StationOrders
+                                                          .AsNoTracking()
+                                                          .Join(dbContext.Orders.AsNoTracking(),
+                                                                slice => slice.OrderId,
+                                                                order => order.Id,
+                                                                (slice, order) => new { Slice = slice, Order = order })
+                                                          .Where(joined => joined.Order.FestivalId != festivalId)
+                                                          .Select(joined => joined.Slice.Id);
 
     return dbContext.OrderItems
                     .AsNoTracking()
