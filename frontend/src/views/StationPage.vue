@@ -68,7 +68,6 @@ async function confirmDone(): Promise<void> {
       <v-btn
         v-if="!station.isShowingFulfilled"
         class="show-done"
-        color="primary"
         variant="outlined"
         size="large"
         @click="station.openFulfilled"

@@ -194,10 +194,10 @@ describe('the screen at a station', () => {
       'Einzellieferung',
     ])
     expect(page.findAll('.orders-column .station-slice')[0].attributes('style')).toContain(
-      'var(--v-theme-primary)',
+      'var(--v-theme-together)',
     )
     expect(page.findAll('.orders-column .station-slice')[1].attributes('style')).toContain(
-      'var(--v-theme-warning)',
+      'var(--v-theme-individual)',
     )
   })
 
@@ -267,9 +267,11 @@ describe('marking selected items as done from a card', () => {
 
     await line.trigger('click')
     expect(line.attributes('aria-pressed')).toBe('true')
+    expect(line.find('.selected-tick').exists()).toBe(true)
 
     await line.trigger('click')
     expect(line.attributes('aria-pressed')).toBe('false')
+    expect(line.find('.selected-tick').exists()).toBe(false)
   })
 
   it('asks again on a full screen before anything is done', async () => {

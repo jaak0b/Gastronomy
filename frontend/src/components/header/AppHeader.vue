@@ -1,17 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { navigate } from '../../router'
+import { assertNever } from '../../core/assertNever'
+import { currentRoute, navigate } from '../../router'
 import SettingsSheet from './SettingsSheet.vue'
+
+type Destination = 'catalog' | 'openItems' | 'none'
 
 const { t } = useI18n()
 const settingsAreOpen = ref(false)
+
+const currentDestination = computed<Destination>(() => {
+  const route = currentRoute.value
+  switch (route.name) {
+    case 'home':
+    case 'review':
+      return 'catalog'
+    case 'openItems':
+      return 'openItems'
+    case 'enrolQr':
+    case 'stations':
+    case 'admin':
+      return 'none'
+    default:
+      return assertNever(route)
+  }
+})
 </script>
 
 <template>
-  <v-app-bar class="app-header" height="72" color="primary">
+  <v-app-bar class="app-header" height="72">
     <div class="destinations d-flex flex-grow-1">
-      <v-btn class="catalog-link flex-grow-1" variant="text" stacked @click="navigate('/')">
+      <v-btn
+        class="catalog-link flex-grow-1"
+        variant="text"
+        stacked
+        :class="currentDestination === 'catalog' ? 'text-primary' : 'text-medium-emphasis'"
+        @click="navigate('/')"
+      >
         <v-icon icon="mdi-clipboard-text-outline" />
         <span class="label">{{ t('catalog.title') }}</span>
       </v-btn>
@@ -19,6 +45,7 @@ const settingsAreOpen = ref(false)
         class="open-items-link flex-grow-1"
         variant="text"
         stacked
+        :class="currentDestination === 'openItems' ? 'text-primary' : 'text-medium-emphasis'"
         @click="navigate('/open-items')"
       >
         <v-icon icon="mdi-cash-register" />

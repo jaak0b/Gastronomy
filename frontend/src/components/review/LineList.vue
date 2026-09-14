@@ -215,4 +215,14 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
   white-space: normal;
   line-height: 1.35;
 }
+
+.delivery-modes .v-btn.delivery-together.v-btn--active {
+  background: rgb(var(--v-theme-together));
+  color: rgb(var(--v-theme-on-together));
+}
+
+.delivery-modes .v-btn.delivery-as-it-comes.v-btn--active {
+  background: rgb(var(--v-theme-individual));
+  color: rgb(var(--v-theme-on-individual));
+}
 </style>

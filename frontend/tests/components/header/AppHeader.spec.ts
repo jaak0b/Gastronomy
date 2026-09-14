@@ -72,6 +72,41 @@ describe('the row of destinations', () => {
   })
 })
 
+describe('the destination the waiter is on', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+  })
+
+  it('marks the ordering screen with the action colour and leaves the other destination quiet', () => {
+    navigate('/')
+    const header = mountHeader()
+
+    expect(header.get('.catalog-link').classes()).toContain('text-primary')
+    expect(header.get('.open-items-link').classes()).toContain('text-medium-emphasis')
+  })
+
+  it('moves the mark to the open items once the waiter goes there', async () => {
+    navigate('/')
+    const header = mountHeader()
+
+    navigate('/open-items')
+    await header.vm.$nextTick()
+
+    expect(header.get('.open-items-link').classes()).toContain('text-primary')
+    expect(header.get('.catalog-link').classes()).toContain('text-medium-emphasis')
+  })
+
+  it('counts the review screen as the ordering destination', () => {
+    navigate('/review')
+    const header = mountHeader()
+
+    expect(header.get('.catalog-link').classes()).toContain('text-primary')
+    expect(header.get('.open-items-link').classes()).toContain('text-medium-emphasis')
+  })
+})
+
 describe('the way to the ordering screen while a category is open on it', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

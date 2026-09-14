@@ -47,11 +47,11 @@ describe('the words a station tablet uses for a delivery mode', () => {
   })
 
   it('marks a card that hands the order out together', () => {
-    expect(deliveryModeColour('together')).toBe('primary')
+    expect(deliveryModeColour('together')).toBe('together')
   })
 
   it('marks a card that hands each item out as it is ready', () => {
-    expect(deliveryModeColour('asItComes')).toBe('warning')
+    expect(deliveryModeColour('asItComes')).toBe('individual')
   })
 })
 

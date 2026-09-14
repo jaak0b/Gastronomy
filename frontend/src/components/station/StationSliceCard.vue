@@ -86,6 +86,11 @@ function isSelected(orderItemId: string): boolean {
         <span v-if="item.note !== null" class="item-note text-body-2">
           {{ t('station.note', { note: item.note }) }}
         </span>
+        <v-icon
+          v-if="isSelected(item.orderItemId)"
+          class="selected-tick ms-auto"
+          icon="mdi-check"
+        />
       </v-btn>
     </v-card-text>
     <v-card-actions class="card-actions">

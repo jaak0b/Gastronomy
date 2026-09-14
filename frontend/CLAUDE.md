@@ -68,6 +68,17 @@ Three audiences in one build:
 
 7. **No code comments**, per the root rules. Rename until the comment is redundant.
 
+8. **Colour carries meaning, one meaning per colour.** Surfaces, navigation and structure stay
+   neutral; saturated colour is reserved for meaning, and at most one filled coloured control appears
+   per view. The palette lives in `src/theme.ts` and UI code uses its tokens, never raw hex values:
+   - `primary` green: the action that moves work forward (Erledigen, send, settle) and the done state.
+   - `together` blue: Gemeinsame Lieferung, on card borders, mode words and chips.
+   - `individual` amber: Einzellieferung, on card borders, mode words and chips.
+   - `error` red: refusals and destructive actions.
+   - `warning` amber: real warnings only, such as a connection that is gone.
+   Colour never carries meaning alone: the word or the icon is always there. A new control takes a
+   token from this list; it never invents a hue and never borrows a mode colour for an action.
+
 ## Design constraints from the deployment
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.
