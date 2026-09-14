@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
-import { createVuetify } from 'vuetify'
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
@@ -13,7 +12,7 @@ const en = (await import('../../src/locales/en.json')).default
 
 function mountApp() {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
-  return mount(App, { global: { plugins: [i18n, createVuetify()] } })
+  return mount(App, { global: { plugins: [i18n] } })
 }
 
 describe('a phone that is not enrolled', () => {

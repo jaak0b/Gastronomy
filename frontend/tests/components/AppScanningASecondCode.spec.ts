@@ -51,7 +51,8 @@ function aLaptopThatTurnsTheTabletIntoAPhone(): unknown[] {
           items: [],
           stations: [],
           station: THE_TABLET.station,
-          slices: [],
+          orders: [],
+          asItComes: [],
         }),
         { status: 200 },
       )

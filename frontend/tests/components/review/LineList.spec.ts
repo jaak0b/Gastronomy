@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { createVuetify } from 'vuetify'
+
 import LineList from '../../../src/components/review/LineList.vue'
 import type { BasketLineView } from '../../../src/core/basket'
 import type { AppLanguage, DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
@@ -58,7 +58,7 @@ function mountList(lines: BasketLineView[], options: ListOptions = {}) {
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
       changesAreRefused: options.changesAreRefused ?? false,
     },
-    global: { plugins: [createVuetify(), i18n] },
+    global: { plugins: [i18n] },
   })
 }
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { createVuetify } from 'vuetify'
+
 import ItemRow from '../../../src/components/catalog/ItemRow.vue'
 import type { CatalogItem } from '../../../src/core/apiTypes'
 import type { EstimateRange } from '../../../src/core/estimates'
@@ -45,7 +45,7 @@ function mountRow(isAvailable: boolean, positions: ItemPosition[]) {
   const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
   return mount(ItemRow, {
     props: { item: item(isAvailable), positions, language: 'de' as const, estimateRange: null },
-    global: { plugins: [createVuetify(), i18n] },
+    global: { plugins: [i18n] },
     attachTo: document.body,
   })
 }
@@ -59,7 +59,7 @@ function mountRowForAnItemAtSeveralStations(isAvailable: boolean, positions: Ite
       language: 'de' as const,
       estimateRange: null,
     },
-    global: { plugins: [createVuetify(), i18n] },
+    global: { plugins: [i18n] },
     attachTo: document.body,
   })
 }
@@ -328,7 +328,7 @@ function mountRowWithEstimate(
   const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(ItemRow, {
     props: { item: item(isAvailable), positions: [], language: locale, estimateRange: range },
-    global: { plugins: [createVuetify(), i18n] },
+    global: { plugins: [i18n] },
     attachTo: document.body,
   })
 }

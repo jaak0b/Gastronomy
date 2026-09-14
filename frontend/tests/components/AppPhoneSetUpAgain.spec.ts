@@ -59,7 +59,7 @@ function aLaptopThatForgotThisPhoneAfterItStarted(): void {
           { status: 200 },
         )
       }
-      return new Response(JSON.stringify({ stations: [], slices: [], tableNames: [] }), {
+      return new Response(JSON.stringify({ stations: [], tableNames: [] }), {
         status: 200,
       })
     }),

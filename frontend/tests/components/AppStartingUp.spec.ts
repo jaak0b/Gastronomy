@@ -30,7 +30,8 @@ const CATALOG = {
 
 const STATION_ORDERS = {
   station: { id: 'station-kueche', name: 'Küche' },
-  slices: [],
+  orders: [],
+  asItComes: [],
 }
 
 let device: ReturnType<typeof mount> | null = null
