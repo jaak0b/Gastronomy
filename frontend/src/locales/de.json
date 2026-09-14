@@ -307,7 +307,7 @@
     "doneHeading": "Erledigte Bestellungen",
     "nothingDone": "Es ist noch keine Bestellung erledigt.",
     "confirmDoneTitle": "Diese Positionen erledigen?",
-    "tableIs": "Tisch: {name}",
+    "tableIs": "Tisch {name}",
     "cancel": "Abbrechen",
     "noFestivalIsRunning": "Kein Fest aktiv",
     "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."

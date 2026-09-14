@@ -307,7 +307,7 @@
     "doneHeading": "Done orders",
     "nothingDone": "No order is done yet.",
     "confirmDoneTitle": "Mark these items as done?",
-    "tableIs": "Table: {name}",
+    "tableIs": "Table {name}",
     "cancel": "Cancel",
     "noFestivalIsRunning": "No festival active",
     "notPartOfTheFestival": "This station is not part of the festival that is running."

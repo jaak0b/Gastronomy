@@ -169,7 +169,7 @@ describe('the screen at a station', () => {
 
     expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
     expect(page.findAll('.as-it-comes-column .station-slice')).toHaveLength(1)
-    expect(page.get('.as-it-comes-column .table-name').text()).toBe('7')
+    expect(page.get('.as-it-comes-column .table-name').text()).toBe('Tisch 7')
   })
 
   it('shows the order number and the number of this station on a card', async () => {
@@ -183,7 +183,7 @@ describe('the screen at a station', () => {
   it('shows the table prominently, because that is what goes on the tray', async () => {
     const page = await mountPage()
 
-    expect(page.findAll('.orders-column .table-name')[0].text()).toBe('3')
+    expect(page.findAll('.orders-column .table-name')[0].text()).toBe('Tisch 3')
   })
 
   it('names the delivery mode in words and marks the card by mode', async () => {
@@ -280,7 +280,7 @@ describe('marking selected items as done from a card', () => {
     await card.get('.fulfill').trigger('click')
     await flushPromises()
 
-    expect(textsOf('.station-done-dialog .row-table')).toEqual(['Tisch: 3'])
+    expect(textsOf('.station-done-dialog .row-table')).toEqual(['Tisch 3'])
     expect(textsOf('.station-done-dialog .unit')).toEqual(['1 x Bratwurst', '1 x Pommes'])
     expect(document.querySelector('.station-done-dialog .confirm')?.textContent?.trim()).toBe(
       'Erledigen',
@@ -324,7 +324,7 @@ describe('marking selected items as done from a card', () => {
       { url: '/api/station/items/fulfill', body: { orderItemIds: ['a', 'b'] } },
     ])
     expect(page.findAll('.orders-column .station-slice')).toHaveLength(1)
-    expect(page.get('.orders-column .table-name').text()).toBe('7')
+    expect(page.get('.orders-column .table-name').text()).toBe('Tisch 7')
   })
 
   it('states the reason when the laptop did not save the change', async () => {

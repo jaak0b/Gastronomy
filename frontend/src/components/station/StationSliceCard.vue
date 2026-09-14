@@ -55,7 +55,7 @@ function isSelected(orderItemId: string): boolean {
   <v-card class="station-slice mb-4" :class="modeClass" variant="outlined">
     <v-card-text>
       <div class="slice-head d-flex align-baseline ga-2">
-        <span class="table-name text-h4">{{ slice.tableName }}</span>
+        <span class="table-name text-h4">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
         <span class="slice-heading text-body-1 text-medium-emphasis">{{ orderReference }}</span>
         <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
       </div>
