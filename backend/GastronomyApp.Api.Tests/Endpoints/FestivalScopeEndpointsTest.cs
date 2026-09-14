@@ -257,7 +257,7 @@ public sealed class FestivalScopeEndpointsTest
   }
 
   [Test]
-  public async Task PostStationItemStatus_NoFestivalIsRunning_ChangesNothingAndIsRefused()
+  public async Task PostStationItemFulfill_NoFestivalIsRunning_ChangesNothingAndIsRefused()
   {
     var stationToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
 
@@ -277,21 +277,20 @@ public sealed class FestivalScopeEndpointsTest
 
     using var response = await _context.SendAsAsync(stationToken,
                                                     HttpMethod.Post,
-                                                    "/api/station/items/status",
-                                                    new { orderItemIds, status = "inProduction" });
+                                                    "/api/station/items/fulfill",
+                                                    new { orderItemIds });
 
     var body = await BodyOfAsync(response);
 
     await using var afterwards = _context.Factory.CreateContext();
-    var stillWaiting = await afterwards.OrderItems
-                                       .CountAsync(item => item.ProductionStatus == Core.Enums.ProductionStatus.Waiting);
+    var stillOpen = await afterwards.OrderItems.CountAsync(item => item.FulfilledAtUtc == null);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
                                   Is.EqualTo("station.noFestivalIsRunning"));
-                      Assert.That(stillWaiting, Is.EqualTo(orderItemIds.Count));
+                      Assert.That(stillOpen, Is.EqualTo(orderItemIds.Count));
                     });
   }
 }

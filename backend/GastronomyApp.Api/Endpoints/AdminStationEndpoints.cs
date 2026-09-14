@@ -4,7 +4,6 @@ using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
@@ -354,7 +353,7 @@ public sealed class AdminStationHandler
     return await _dbContext.OrderItems
                            .AsNoTracking()
                            .CountAsync(item => stationOrderIds.Contains(item.StationOrderId)
-                                               && item.ProductionStatus != ProductionStatus.Finished,
+                                               && item.FulfilledAtUtc == null,
                                        cancellationToken);
   }
 }

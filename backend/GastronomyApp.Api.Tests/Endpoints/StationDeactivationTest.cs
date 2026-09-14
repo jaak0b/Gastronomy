@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -85,7 +84,7 @@ public sealed class StationDeactivationTest
   }
 
   [Test]
-  public async Task Deactivate_StationWhoseItemsAreAllFinished_SwitchesOff()
+  public async Task Deactivate_StationWhoseItemsAreAllFulfilled_SwitchesOff()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -98,7 +97,7 @@ public sealed class StationDeactivationTest
 
       foreach (var item in items)
       {
-        item.ProductionStatus = ProductionStatus.Finished;
+        item.FulfilledAtUtc = DateTime.UtcNow;
       }
 
       await database.SaveChangesAsync();

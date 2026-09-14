@@ -1,8 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Core.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -46,13 +44,6 @@ public sealed class OrderPlacementScenarioTest
                                   "Each station keeps its own independent run of sequence numbers.");
                       Assert.That(placed.TotalCents, Is.EqualTo(1000));
                     });
-
-    await using var database = _factory.CreateContext();
-    List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges.ToListAsync();
-
-    Assert.That(changes,
-                Has.Count.EqualTo(3),
-                "Every placed item is logged as waiting from the moment the order lands.");
   }
 
   [Test]
@@ -83,7 +74,7 @@ public sealed class OrderPlacementScenarioTest
       Assert.That(queue.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
       var body = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
-      var slice = body.RootElement.GetProperty("slices")[0];
+      var slice = body.RootElement.GetProperty("orders")[0];
 
       kitchenItemIds =
       [
@@ -94,30 +85,19 @@ public sealed class OrderPlacementScenarioTest
 
       Assert.Multiple(() =>
                       {
-                        Assert.That(body.RootElement.GetProperty("slices").GetArrayLength(), Is.EqualTo(1));
+                        Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.EqualTo(1));
                         Assert.That(slice.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
                         Assert.That(slice.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
                         Assert.That(kitchenItemIds, Has.Count.EqualTo(2));
                       });
     }
 
-    using (var advanced = await SendAsync(HttpMethod.Post,
-                                          "/api/station/items/status",
-                                          kitchenToken,
-                                          new StationItemStatusBody(kitchenItemIds, "finished")))
+    using (var fulfilled = await SendAsync(HttpMethod.Post,
+                                           "/api/station/items/fulfill",
+                                           kitchenToken,
+                                           new StationItemSelectionBody(kitchenItemIds)))
     {
-      Assert.That(advanced.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-    }
-
-    await using (var database = _factory.CreateContext())
-    {
-      List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges
-                                                          .Where(change => kitchenItemIds.Contains(change.OrderItemId))
-                                                          .ToListAsync();
-
-      Assert.That(changes,
-                  Has.Count.EqualTo(4),
-                  "Every kitchen item is logged once when it is placed and once when it is finished.");
+      Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     using var openItems = await SendAsync(HttpMethod.Get, "/api/open-items", deviceToken);

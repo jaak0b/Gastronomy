@@ -83,27 +83,28 @@ to one festival.
 - **StationOrder**: the slice of that order belonging to one station, carrying the number that station
   shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two slices of one
   order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the station
-  hands the whole slice over at once, `AsItComes` means each item leaves as soon as it is ready.
+  hands the whole slice over at once, `AsItComes` means each item leaves as soon as it is ready. It
+  also carries `IsHiddenFromAsItComesQueue`, the employee's manual decision to keep that order out of
+  the as-it-comes column; hiding only removes it from that column and is only meaningful for an
+  `AsItComes` slice.
 - **OrderItem**: one entry of that slice. The item name comes from the catalog; the price is the one
   the phone displayed to the guest and the laptop stores it untouched, including when the item is given
-  away. `ProductionStatus` is how far the station has got with it: `Waiting`, `InProduction`,
-  `Finished`, and it only ever moves forward. It also carries whether it has been settled:
+  away. `FulfilledAtUtc` records the hand-out: null means the item is still open, a value means the
+  station handed it out at that moment, and it is cleared again when a mistaken tap is put back. It
+  also carries whether it has been settled:
   `SettledAtUtc` is the paid flag (null means still open, so a flag and a timestamp can never
   disagree), `ChargedPriceCents` is what was actually collected, and `PaymentNotice` is the reason
   typed when less than the displayed price was collected. A settled item is never settled again, so a
   double tap cannot double count. What a table still owes and what was given away are derived from
   these on every read, never stored.
-- **OrderItemStatusChange**: an append-only log of every production status an item has been in, with
-  the moment it moved there. It exists so the evening can be reconstructed and so waiting times can be
-  measured afterwards. **It is never read to work out an item's current state**: that is
-  `OrderItem.ProductionStatus`, and nothing else.
 - **Device**: one phone or one tablet. It is owned 1:1 by exactly one `StaffMember` or one `Station`,
   and the owner points at it (`StaffMember.DeviceId`, `Station.DeviceId`), so an owner holds at most
   one device and at most one outstanding enrolment invitation. Setting a device up again deletes the
   old row, which is what revoking is.
 
-The status of an order is calculated from the production status of its items, so the two can never
-disagree. Enums persist as numbers with pinned values, so a member may be renamed freely but never
+The status of an order is derived from its items, so the two can never disagree: `Open` when none is
+done, `PartiallyFulfilled` when some are, `Fulfilled` when all are. It is never stored. Enums persist
+as numbers with pinned values, so a member may be renamed freely but never
 reordered. Counters live where they belong: `Festival.NextOrderNumber` for the global order number
 and `FestivalStation.NextStationOrderNumber` for each station at that festival, so every festival
 starts at 1 by itself and nothing ever sets a counter back.

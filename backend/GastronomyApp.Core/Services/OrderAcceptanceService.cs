@@ -48,7 +48,6 @@ public sealed class OrderAcceptanceService
   private readonly INumberAllocator _numberAllocator;
 
   private readonly IOrderRepository _orderRepository;
-  private readonly OrderItemProductionService _productionService;
   private readonly OrderRoutingResolver _routingResolver;
   private readonly OrderItemSettlementService _settlementService;
   private readonly IStationRepository _stationRepository;
@@ -60,7 +59,6 @@ public sealed class OrderAcceptanceService
                                 INumberAllocator numberAllocator,
                                 OrderRoutingResolver routingResolver,
                                 OrderItemSettlementService settlementService,
-                                OrderItemProductionService productionService,
                                 IClock clock)
   {
     _orderRepository = orderRepository;
@@ -70,7 +68,6 @@ public sealed class OrderAcceptanceService
     _numberAllocator = numberAllocator;
     _routingResolver = routingResolver;
     _settlementService = settlementService;
-    _productionService = productionService;
     _clock = clock;
   }
 
@@ -254,8 +251,6 @@ public sealed class OrderAcceptanceService
                               UnitPriceCents = resolvedItem.Request.UnitPriceCents,
                               Note = resolvedItem.Request.Note
                             };
-
-      _productionService.RecordPlacement(orderItem, createdAtUtc);
 
       if (request.SettleOnSend)
       {

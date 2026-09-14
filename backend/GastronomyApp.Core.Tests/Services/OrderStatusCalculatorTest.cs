@@ -15,89 +15,26 @@ public sealed class OrderStatusCalculatorTest
   private OrderStatusCalculator _calculator = new();
 
   [Test]
-  public void Calculate_EveryItemWaiting_IsWaiting()
+  public void Calculate_NothingFulfilled_IsOpen()
   {
-    Assert.That(_calculator.Calculate([ProductionStatus.Waiting, ProductionStatus.Waiting]),
-                Is.EqualTo(OrderStatus.Waiting));
+    Assert.That(_calculator.Calculate(2, 0), Is.EqualTo(OrderStatus.Open));
   }
 
   [Test]
-  public void Calculate_OneItemInProductionAndTheRestWaiting_IsInProduction()
+  public void Calculate_SomeItemsFulfilled_IsPartiallyFulfilled()
   {
-    Assert.That(_calculator.Calculate([ProductionStatus.Waiting, ProductionStatus.InProduction]),
-                Is.EqualTo(OrderStatus.InProduction));
+    Assert.That(_calculator.Calculate(3, 1), Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
 
   [Test]
-  public void Calculate_OneItemFinishedAndTheRestWaiting_IsInProduction()
+  public void Calculate_EveryItemFulfilled_IsFulfilled()
   {
-    Assert.That(_calculator.Calculate([ProductionStatus.Finished, ProductionStatus.Waiting]),
-                Is.EqualTo(OrderStatus.InProduction));
+    Assert.That(_calculator.Calculate(2, 2), Is.EqualTo(OrderStatus.Fulfilled));
   }
 
   [Test]
-  public void Calculate_EveryItemFinished_IsFinished()
+  public void Calculate_AnOrderWithoutItems_IsOpen()
   {
-    Assert.That(_calculator.Calculate([ProductionStatus.Finished, ProductionStatus.Finished]),
-                Is.EqualTo(OrderStatus.Finished));
-  }
-
-  [Test]
-  public void Calculate_NoItemsAtAll_IsWaiting()
-  {
-    Assert.That(_calculator.Calculate([]), Is.EqualTo(OrderStatus.Waiting));
-  }
-
-  private OrderStatus ExpectedByTable(IReadOnlyCollection<ProductionStatus> statuses)
-  {
-    if (statuses.Count == 0)
-    {
-      return OrderStatus.Waiting;
-    }
-
-    var everyItemIsFinished = true;
-    var everyItemIsWaiting = true;
-
-    foreach (var status in statuses)
-    {
-      if (status != ProductionStatus.Finished)
-      {
-        everyItemIsFinished = false;
-      }
-
-      if (status != ProductionStatus.Waiting)
-      {
-        everyItemIsWaiting = false;
-      }
-    }
-
-    if (everyItemIsFinished)
-    {
-      return OrderStatus.Finished;
-    }
-
-    return everyItemIsWaiting ? OrderStatus.Waiting : OrderStatus.InProduction;
-  }
-
-  [Test]
-  public void Calculate_EveryTwoItemCombination_MatchesTheTable()
-  {
-    ProductionStatus[] allStatuses = Enum.GetValues<ProductionStatus>();
-    var checkedCombinations = 0;
-
-    foreach (var first in allStatuses)
-    {
-      foreach (var second in allStatuses)
-      {
-        List<ProductionStatus> statuses = [first, second];
-
-        Assert.That(_calculator.Calculate(statuses),
-                    Is.EqualTo(ExpectedByTable(statuses)),
-                    $"statuses {first} and {second}");
-        checkedCombinations++;
-      }
-    }
-
-    Assert.That(checkedCombinations, Is.EqualTo(9));
+    Assert.That(_calculator.Calculate(0, 0), Is.EqualTo(OrderStatus.Open));
   }
 }

@@ -320,6 +320,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                     b.Property<int?>("ChargedPriceCents")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("FulfilledAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -329,9 +332,6 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<string>("PaymentNotice")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("ProductionStatus")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("SettledAtUtc")
                         .HasColumnType("TEXT");
@@ -347,34 +347,13 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductionStatus");
+                    b.HasIndex("FulfilledAtUtc");
 
                     b.HasIndex("SettledAtUtc");
 
                     b.HasIndex("StationOrderId");
 
                     b.ToTable("OrderItems");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatusChange", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("ChangedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("OrderItemId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderItemId");
-
-                    b.ToTable("OrderItemStatusChanges");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
@@ -451,6 +430,9 @@ namespace GastronomyApp.Infrastructure.Migrations
 
                     b.Property<Guid>("FestivalId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsHiddenFromAsItComesQueue")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("TEXT");
@@ -531,15 +513,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItemStatusChange", b =>
-                {
-                    b.HasOne("GastronomyApp.Core.Entities.OrderItem", null)
-                        .WithMany("StatusChanges")
-                        .HasForeignKey("OrderItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GastronomyApp.Core.Entities.StaffMember", b =>
                 {
                     b.HasOne("GastronomyApp.Core.Entities.Device", null)
@@ -590,11 +563,6 @@ namespace GastronomyApp.Infrastructure.Migrations
             modelBuilder.Entity("GastronomyApp.Core.Entities.Order", b =>
                 {
                     b.Navigation("StationOrders");
-                });
-
-            modelBuilder.Entity("GastronomyApp.Core.Entities.OrderItem", b =>
-                {
-                    b.Navigation("StatusChanges");
                 });
 
             modelBuilder.Entity("GastronomyApp.Core.Entities.StationOrder", b =>

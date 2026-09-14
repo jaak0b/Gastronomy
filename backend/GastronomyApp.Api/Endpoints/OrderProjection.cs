@@ -39,18 +39,18 @@ public sealed class OrderReader
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
-    return _statusCalculator.Calculate([.. loaded.Items.Select(item => item.ProductionStatus)]);
+    return _statusCalculator.Calculate(loaded.Items.Count,
+                                       loaded.Items.Count(item => item.FulfilledAtUtc is not null));
   }
 
   public OrderStatus StatusOfStationOrder(LoadedOrder loaded, Guid stationOrderId)
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
-    return _statusCalculator.Calculate([
-                                        .. loaded.Items
-                                                 .Where(item => item.StationOrderId == stationOrderId)
-                                                 .Select(item => item.ProductionStatus)
-                                      ]);
+    List<OrderItem> itemsOfTheSlice = [.. loaded.Items.Where(item => item.StationOrderId == stationOrderId)];
+
+    return _statusCalculator.Calculate(itemsOfTheSlice.Count,
+                                       itemsOfTheSlice.Count(item => item.FulfilledAtUtc is not null));
   }
 
   public int TotalCentsOf(LoadedOrder loaded)

@@ -260,7 +260,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                     FestivalId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StationOrderNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    DeliveryMode = table.Column<int>(type: "INTEGER", nullable: false)
+                    DeliveryMode = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsHiddenFromAsItComesQueue = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -295,7 +296,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                     ItemName = table.Column<string>(type: "TEXT", nullable: false),
                     UnitPriceCents = table.Column<int>(type: "INTEGER", nullable: false),
                     Note = table.Column<string>(type: "TEXT", nullable: true),
-                    ProductionStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    FulfilledAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
                     SettledAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ChargedPriceCents = table.Column<int>(type: "INTEGER", nullable: true),
                     SettledByStaffMemberId = table.Column<Guid>(type: "TEXT", nullable: true),
@@ -308,26 +309,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                         name: "FK_OrderItems_StationOrders_StationOrderId",
                         column: x => x.StationOrderId,
                         principalTable: "StationOrders",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OrderItemStatusChanges",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    OrderItemId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    ChangedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrderItemStatusChanges", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OrderItemStatusChanges_OrderItems_OrderItemId",
-                        column: x => x.OrderItemId,
-                        principalTable: "OrderItems",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -384,9 +365,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderItems_ProductionStatus",
+                name: "IX_OrderItems_FulfilledAtUtc",
                 table: "OrderItems",
-                column: "ProductionStatus");
+                column: "FulfilledAtUtc");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_SettledAtUtc",
@@ -397,11 +378,6 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "IX_OrderItems_StationOrderId",
                 table: "OrderItems",
                 column: "StationOrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrderItemStatusChanges_OrderItemId",
-                table: "OrderItemStatusChanges",
-                column: "OrderItemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_ClientOrderId",
@@ -475,7 +451,7 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "ItemStationAssignments");
 
             migrationBuilder.DropTable(
-                name: "OrderItemStatusChanges");
+                name: "OrderItems");
 
             migrationBuilder.DropTable(
                 name: "StaffMembers");
@@ -484,13 +460,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                 name: "CatalogItems");
 
             migrationBuilder.DropTable(
-                name: "OrderItems");
+                name: "StationOrders");
 
             migrationBuilder.DropTable(
                 name: "CatalogCategories");
-
-            migrationBuilder.DropTable(
-                name: "StationOrders");
 
             migrationBuilder.DropTable(
                 name: "Orders");

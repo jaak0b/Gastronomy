@@ -11,9 +11,9 @@ public sealed class NeverTest
   {
     Never never = new();
 
-    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<string>(ProductionStatus.Finished));
+    var thrown = Assert.Throws<InvalidOperationException>(() => never.OfType<string>(OrderStatus.Fulfilled));
 
-    Assert.That(thrown!.Message, Does.Contain(ProductionStatus.Finished.ToString()));
+    Assert.That(thrown!.Message, Does.Contain(OrderStatus.Fulfilled.ToString()));
   }
 
   [Test]

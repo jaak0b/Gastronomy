@@ -16,5 +16,7 @@ public sealed class StationOrder
 
   public required DeliveryMode DeliveryMode { get; set; }
 
+  public bool IsHiddenFromAsItComesQueue { get; set; }
+
   public List<OrderItem> Items { get; set; } = [];
 }

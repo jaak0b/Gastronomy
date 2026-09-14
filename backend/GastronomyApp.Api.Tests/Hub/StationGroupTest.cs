@@ -61,7 +61,7 @@ public sealed class StationGroupTest
   }
 
   [Test]
-  public async Task AdvanceItems_AtThatStation_TellsItsOwnTablet()
+  public async Task FulfillItems_AtThatStation_TellsItsOwnTablet()
   {
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -78,12 +78,12 @@ public sealed class StationGroupTest
 
     await tablet.StartAsync();
 
-    using (var advanced = await _context.SendAsAsync(_kitchenToken,
-                                                     HttpMethod.Post,
-                                                     "/api/station/items/status",
-                                                     new StationItemStatusBody(orderItemIds, "inProduction")))
+    using (var fulfilled = await _context.SendAsAsync(_kitchenToken,
+                                                      HttpMethod.Post,
+                                                      "/api/station/items/fulfill",
+                                                      new StationItemSelectionBody(orderItemIds)))
     {
-      Assert.That(advanced.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
@@ -92,7 +92,7 @@ public sealed class StationGroupTest
   }
 
   [Test]
-  public async Task AdvanceItems_AtThatStation_TellsTheWaiterPhonesThatTheOrderMovedOn()
+  public async Task FulfillItems_AtThatStation_TellsTheWaiterPhonesThatTheOrderMovedOn()
   {
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -114,19 +114,19 @@ public sealed class StationGroupTest
 
     await phone.StartAsync();
 
-    using (var advanced = await _context.SendAsAsync(_kitchenToken,
-                                                     HttpMethod.Post,
-                                                     "/api/station/items/status",
-                                                     new StationItemStatusBody(orderItemIds, "inProduction")))
+    using (var fulfilled = await _context.SendAsAsync(_kitchenToken,
+                                                      HttpMethod.Post,
+                                                      "/api/station/items/fulfill",
+                                                      new StationItemSelectionBody(orderItemIds)))
     {
-      Assert.That(advanced.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
     Assert.That(received,
                 Is.SameAs(heard.Task),
-                "The waiter who sent the order must learn that the station has started on it.");
+                "The waiter who sent the order must learn that the station has finished it.");
 
     Assert.That(await heard.Task, Is.EqualTo(orderId));
   }
@@ -139,7 +139,7 @@ public sealed class StationGroupTest
     return
     [
       .. body.RootElement
-             .GetProperty("slices")[0]
+             .GetProperty("orders")[0]
              .GetProperty("items")
              .EnumerateArray()
              .Select(item => item.GetProperty("orderItemId").GetGuid())

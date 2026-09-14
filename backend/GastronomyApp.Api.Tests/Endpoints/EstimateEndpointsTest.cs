@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -54,7 +53,7 @@ public sealed class EstimateEndpointsTest
   }
 
   [Test]
-  public async Task GetEstimates_ItemsAlreadyFinished_LeavesThemOutOfTheSum()
+  public async Task GetEstimates_FulfilledItems_LeavesThemOutOfTheSum()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -67,7 +66,7 @@ public sealed class EstimateEndpointsTest
 
       foreach (var item in items)
       {
-        item.ProductionStatus = ProductionStatus.Finished;
+        item.FulfilledAtUtc = DateTime.UtcNow;
       }
 
       await database.SaveChangesAsync();

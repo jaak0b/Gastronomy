@@ -93,7 +93,7 @@ product has hurt before:
   night cannot act on.
 - A message that exists in one language only.
 - A value computed in two places that can disagree, particularly prices, totals, sequence numbers,
-  routing decisions and production status.
+  routing decisions and an item's fulfillment.
 - A catch that swallows, a failure that reaches the user as a raw exception, and any state where the
   laptop and a phone disagree about what exists.
 

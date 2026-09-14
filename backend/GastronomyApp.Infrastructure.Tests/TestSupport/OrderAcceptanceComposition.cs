@@ -31,7 +31,6 @@ public sealed class OrderAcceptanceComposition
                                                    numberAllocator,
                                                    new(),
                                                    new(),
-                                                   new(),
                                                    new SystemClock());
 
     return new(dbContext, orderRepository, acceptanceService, logger);

@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -34,7 +33,7 @@ public sealed class OrderEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(body.RootElement.GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("status").GetString(), Is.EqualTo("waiting"));
+                      Assert.That(body.RootElement.GetProperty("status").GetString(), Is.EqualTo("open"));
                       Assert.That(body.RootElement.GetProperty("totalCents").GetInt32(), Is.EqualTo(700));
                       Assert.That(body.RootElement.GetProperty("stationOrders").GetArrayLength(), Is.EqualTo(1));
                     });
@@ -56,7 +55,7 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
-  public async Task PostOrder_FirstSubmission_LogsEveryItemAsWaitingFromTheStart()
+  public async Task PostOrder_FirstSubmission_LeavesEveryItemOpen()
   {
     using (var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -64,13 +63,8 @@ public sealed class OrderEndpointsTest
     }
 
     await using var database = _context.Factory.CreateContext();
-    List<OrderItemStatusChange> changes = await database.OrderItemStatusChanges.ToListAsync();
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(changes, Has.Count.EqualTo(2));
-                      Assert.That(changes.Select(change => change.Status), Is.All.EqualTo(ProductionStatus.Waiting));
-                    });
+    Assert.That(await database.OrderItems.CountAsync(item => item.FulfilledAtUtc == null), Is.EqualTo(2));
   }
 
   [Test]

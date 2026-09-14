@@ -44,7 +44,7 @@ public sealed class StationQueryHandler
   }
 }
 
-public sealed record QueuedItemRow(Guid StationId, ProductionStatus Status, int? ProductionMinutes);
+public sealed record QueuedItemRow(Guid StationId, int? ProductionMinutes);
 
 public sealed class StationsAtTheFestivalReader
 {
@@ -114,11 +114,9 @@ public sealed class StationEstimateHandler
                                           on slice.OrderId equals order.Id
                                         join catalogItem in _dbContext.CatalogItems.AsNoTracking()
                                           on item.CatalogItemId equals catalogItem.Id
-                                        where item.ProductionStatus != ProductionStatus.Finished
+                                        where item.FulfilledAtUtc == null
                                               && order.FestivalId == festival.Id
-                                        select new QueuedItemRow(slice.StationId,
-                                                                 item.ProductionStatus,
-                                                                 catalogItem.ProductionMinutes))
+                                        select new QueuedItemRow(slice.StationId, catalogItem.ProductionMinutes))
                                        .ToListAsync(cancellationToken);
 
     return Results.Ok(new StationEstimateListView([
@@ -131,7 +129,7 @@ public sealed class StationEstimateHandler
   {
     return _estimateCalculator.QueuedMinutesOf(queued
                                               .Where(row => row.StationId == stationId)
-                                              .Select(row => new QueuedWork(row.Status, row.ProductionMinutes)));
+                                              .Select(row => new QueuedWork(row.ProductionMinutes)));
   }
 }
 
@@ -144,38 +142,47 @@ public sealed class StationQueueReader
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    List<Guid> sliceIdsWithWorkLeft = await dbContext.OrderItems
-                                                     .AsNoTracking()
-                                                     .Where(item => item.ProductionStatus != ProductionStatus.Finished)
-                                                     .Select(item => item.StationOrderId)
-                                                     .Distinct()
-                                                     .ToListAsync(cancellationToken);
+    List<Guid> sliceIdsWithOpenItems = await dbContext.OrderItems
+                                                      .AsNoTracking()
+                                                      .Where(item => item.FulfilledAtUtc == null)
+                                                      .Select(item => item.StationOrderId)
+                                                      .Distinct()
+                                                      .ToListAsync(cancellationToken);
 
     List<StationOrder> slices = await (from slice in dbContext.StationOrders.AsNoTracking()
                                        join order in dbContext.Orders.AsNoTracking()
                                          on slice.OrderId equals order.Id
                                        where slice.StationId == stationId
                                              && order.FestivalId == festivalId
-                                             && sliceIdsWithWorkLeft.Contains(slice.Id)
+                                             && sliceIdsWithOpenItems.Contains(slice.Id)
                                        select slice)
                                       .ToListAsync(cancellationToken);
 
     return await DescribeAsync(dbContext, slices, cancellationToken);
   }
 
-  public async Task<IReadOnlyList<StationQueueSliceView>> DescribeSlicesAsync(GastronomyAppDbContext dbContext,
-                                                                              IReadOnlyCollection<Guid> stationOrderIds,
-                                                                              CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<StationQueueSliceView>> DescribeFulfilledAsync(GastronomyAppDbContext dbContext,
+                                                                                 Guid festivalId,
+                                                                                 Guid stationId,
+                                                                                 CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(dbContext);
-    ArgumentNullException.ThrowIfNull(stationOrderIds);
 
-    List<Guid> ids = [.. stationOrderIds];
+    List<Guid> sliceIdsWithFulfilledItems = await dbContext.OrderItems
+                                                           .AsNoTracking()
+                                                           .Where(item => item.FulfilledAtUtc != null)
+                                                           .Select(item => item.StationOrderId)
+                                                           .Distinct()
+                                                           .ToListAsync(cancellationToken);
 
-    List<StationOrder> slices = await dbContext.StationOrders
-                                               .AsNoTracking()
-                                               .Where(slice => ids.Contains(slice.Id))
-                                               .ToListAsync(cancellationToken);
+    List<StationOrder> slices = await (from slice in dbContext.StationOrders.AsNoTracking()
+                                       join order in dbContext.Orders.AsNoTracking()
+                                         on slice.OrderId equals order.Id
+                                       where slice.StationId == stationId
+                                             && order.FestivalId == festivalId
+                                             && sliceIdsWithFulfilledItems.Contains(slice.Id)
+                                       select slice)
+                                      .ToListAsync(cancellationToken);
 
     return await DescribeAsync(dbContext, slices, cancellationToken);
   }
@@ -203,21 +210,32 @@ public sealed class StationQueueReader
     [
       .. slices.Where(slice => orders.ContainsKey(slice.OrderId))
                .OrderBy(slice => slice.StationOrderNumber)
-               .Select(slice => new StationQueueSliceView(slice.Id,
-                                                          orders[slice.OrderId].GlobalOrderNumber,
-                                                          slice.StationOrderNumber,
-                                                          orders[slice.OrderId].TableName,
-                                                          orders[slice.OrderId].Note,
-                                                          slice.DeliveryMode,
-                                                          orders[slice.OrderId].CreatedAtUtc,
-                                                          [
-                                                            .. items.Where(item => item.StationOrderId == slice.Id)
-                                                                    .Select(item => new StationQueueItemView(item.Id,
-                                                                                                              item.ItemName,
-                                                                                                              item.Note,
-                                                                                                              item.ProductionStatus))
-                                                          ]))
+               .Select(slice => DescribeSlice(slice, orders[slice.OrderId], items))
     ];
+  }
+
+  private StationQueueSliceView DescribeSlice(StationOrder slice,
+                                              Order order,
+                                              IReadOnlyCollection<OrderItem> items)
+  {
+    List<OrderItem> itemsOfTheSlice = [.. items.Where(item => item.StationOrderId == slice.Id)];
+
+    return new(slice.Id,
+               order.GlobalOrderNumber,
+               slice.StationOrderNumber,
+               order.TableName,
+               order.Note,
+               slice.DeliveryMode,
+               order.CreatedAtUtc,
+               slice.IsHiddenFromAsItComesQueue,
+               itemsOfTheSlice.Count,
+               itemsOfTheSlice.Count(item => item.FulfilledAtUtc is not null),
+               [
+                 .. itemsOfTheSlice.Select(item => new StationQueueItemView(item.Id,
+                                                                            item.ItemName,
+                                                                            item.Note,
+                                                                            item.FulfilledAtUtc))
+               ]);
   }
 }
 
@@ -226,17 +244,19 @@ public sealed class StationQueueHandler
   private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly HubNotificationDispatcher _dispatcher;
+  private readonly OrderItemFulfillmentService _fulfillmentService;
   private readonly OrderReader _orderReader;
-  private readonly OrderItemProductionService _productionService;
   private readonly StationQueueReader _queueReader;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly RunningFestivalLookup _runningFestivalLookup;
   private readonly StationsAtTheFestivalReader _stationsReader;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
+  private readonly StationOrderVisibilityService _visibilityService;
 
   public StationQueueHandler(GastronomyAppDbContext dbContext,
                              StationQueueReader queueReader,
-                             OrderItemProductionService productionService,
+                             OrderItemFulfillmentService fulfillmentService,
+                             StationOrderVisibilityService visibilityService,
                              OrderReader orderReader,
                              HubNotificationDispatcher dispatcher,
                              ResultEnvelope resultEnvelope,
@@ -248,7 +268,8 @@ public sealed class StationQueueHandler
     _runningFestivalLookup = runningFestivalLookup;
     _stationsReader = stationsReader;
     _queueReader = queueReader;
-    _productionService = productionService;
+    _fulfillmentService = fulfillmentService;
+    _visibilityService = visibilityService;
     _orderReader = orderReader;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
@@ -259,60 +280,79 @@ public sealed class StationQueueHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    var station = await _dbContext.Stations
-                                  .AsNoTracking()
-                                  .FirstOrDefaultAsync(candidate => candidate.Id == caller.StationId, cancellationToken);
+    Result<StationAtFestival, IResult> access = await AccessOfAsync(caller, cancellationToken);
 
-    if (station is null)
+    if (!access.IsSuccess)
     {
-      return Results.Unauthorized();
+      return access.Failure;
     }
 
-    FestivalStanding standing = await StandingOfAsync(caller.StationId, cancellationToken);
+    return Results.Ok(await DescribeQueueAsync(access.Value.Station, access.Value.FestivalId, cancellationToken));
+  }
 
-    if (standing.Refusal is not null)
+  private async Task<StationQueueView> DescribeQueueAsync(Station station,
+                                                          Guid festivalId,
+                                                          CancellationToken cancellationToken)
+  {
+    IReadOnlyList<StationQueueSliceView> orders =
+      await _queueReader.DescribeUnfinishedAsync(_dbContext, festivalId, station.Id, cancellationToken);
+
+    IReadOnlyList<StationQueueSliceView> asItComes =
+    [
+      .. orders.Where(slice => slice.DeliveryMode == DeliveryMode.AsItComes && !slice.IsHiddenFromAsItComesQueue)
+    ];
+
+    return new(new(station.Id, station.Name), orders, asItComes);
+  }
+
+  public async Task<IResult> ListFulfilledAsync(StationDeviceCaller caller, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(caller);
+
+    Result<StationAtFestival, IResult> access = await AccessOfAsync(caller, cancellationToken);
+
+    if (!access.IsSuccess)
     {
-      return standing.Refusal;
+      return access.Failure;
     }
 
     IReadOnlyList<StationQueueSliceView> slices =
-      await _queueReader.DescribeUnfinishedAsync(_dbContext,
-                                                 standing.FestivalId,
-                                                 station.Id,
-                                                 cancellationToken);
+      await _queueReader.DescribeFulfilledAsync(_dbContext,
+                                                access.Value.FestivalId,
+                                                access.Value.Station.Id,
+                                                cancellationToken);
 
-    return Results.Ok(new StationQueueView(new(station.Id, station.Name), slices));
+    return Results.Ok(new StationFulfilledView(slices));
   }
 
-  public async Task<IResult> AdvanceAsync(StationItemStatusRequest request,
+  public async Task<IResult> FulfillAsync(StationItemSelectionRequest request,
                                           StationDeviceCaller caller,
                                           CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    FestivalStanding standing = await StandingOfAsync(caller.StationId, cancellationToken);
+    Result<StationAtFestival, IResult> access = await AccessOfAsync(caller, cancellationToken);
 
-    if (standing.Refusal is not null)
+    if (!access.IsSuccess)
     {
-      return standing.Refusal;
+      return access.Failure;
     }
 
     List<Guid> selectedIds = [.. request.OrderItemIds ?? []];
 
-    Result<ProductionStatusChangeResult, ProductionStatusFailure> outcome =
+    Result<FulfillmentResult, FulfillmentFailure> outcome =
       await _transactionRunner.RunAsync(_dbContext,
                                         async transactionCancellationToken =>
                                         {
-                                          var change = await ApplyAsync(request.Status,
-                                                                        selectedIds,
-                                                                        caller.StationId,
-                                                                        transactionCancellationToken);
+                                          var fulfillment = await ApplyFulfillmentAsync(selectedIds,
+                                                                                        caller.StationId,
+                                                                                        transactionCancellationToken);
 
-                                          return new TransactionOutcome<Result<ProductionStatusChangeResult, ProductionStatusFailure>>
+                                          return new TransactionOutcome<Result<FulfillmentResult, FulfillmentFailure>>
                                                  {
-                                                   Value = change,
-                                                   ShouldCommit = change.IsSuccess
+                                                   Value = fulfillment,
+                                                   ShouldCommit = fulfillment.IsSuccess
                                                  };
                                         },
                                         cancellationToken);
@@ -323,23 +363,164 @@ public sealed class StationQueueHandler
     }
 
     List<Guid> affectedSliceIds = [.. outcome.Value.ChangedItems
-                                          .Concat(outcome.Value.AlreadyAtTheTargetStatus)
+                                          .Concat(outcome.Value.AlreadyFulfilled)
                                           .Select(item => item.StationOrderId)
                                           .Distinct()];
-
-    IReadOnlyList<StationQueueSliceView> slices =
-      await _queueReader.DescribeSlicesAsync(_dbContext, affectedSliceIds, cancellationToken);
 
     await _dispatcher.PushStationOrdersChangedAsync(caller.StationId, cancellationToken);
     await PushOrderStatusOfAffectedOrdersAsync(affectedSliceIds, cancellationToken);
 
-    return Results.Ok(new StationItemStatusView(SharedTableNameOf(slices), slices));
+    return Results.Ok(await DescribeQueueAsync(access.Value.Station, access.Value.FestivalId, cancellationToken));
   }
 
-  private async Task<Result<ProductionStatusChangeResult, ProductionStatusFailure>> ApplyAsync(ProductionStatus targetStatus,
-                                                                                               IReadOnlyList<Guid> selectedIds,
-                                                                                               Guid stationId,
-                                                                                               CancellationToken cancellationToken)
+  public async Task<IResult> UnfulfillAsync(StationItemSelectionRequest request,
+                                            StationDeviceCaller caller,
+                                            CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(caller);
+
+    Result<StationAtFestival, IResult> access = await AccessOfAsync(caller, cancellationToken);
+
+    if (!access.IsSuccess)
+    {
+      return access.Failure;
+    }
+
+    List<Guid> selectedIds = [.. request.OrderItemIds ?? []];
+
+    Result<FulfillmentResult, FulfillmentFailure> outcome =
+      await _transactionRunner.RunAsync(_dbContext,
+                                        async transactionCancellationToken =>
+                                        {
+                                          var unfulfillment = await ApplyUnfulfillmentAsync(selectedIds,
+                                                                                            caller.StationId,
+                                                                                            transactionCancellationToken);
+
+                                          return new TransactionOutcome<Result<FulfillmentResult, FulfillmentFailure>>
+                                                 {
+                                                   Value = unfulfillment,
+                                                   ShouldCommit = unfulfillment.IsSuccess
+                                                 };
+                                        },
+                                        cancellationToken);
+
+    if (!outcome.IsSuccess)
+    {
+      return Refuse(outcome.Failure);
+    }
+
+    List<Guid> affectedSliceIds = [.. outcome.Value.ChangedItems
+                                          .Select(item => item.StationOrderId)
+                                          .Distinct()];
+
+    await _dispatcher.PushStationOrdersChangedAsync(caller.StationId, cancellationToken);
+    await PushOrderStatusOfAffectedOrdersAsync(affectedSliceIds, cancellationToken);
+
+    return Results.Ok(await DescribeQueueAsync(access.Value.Station, access.Value.FestivalId, cancellationToken));
+  }
+
+  public async Task<IResult> HideAsync(Guid stationOrderId,
+                                       StationDeviceCaller caller,
+                                       CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(caller);
+
+    Result<StationAtFestival, IResult> access = await AccessOfAsync(caller, cancellationToken);
+
+    if (!access.IsSuccess)
+    {
+      return access.Failure;
+    }
+
+    var slice = await _dbContext.StationOrders
+                                .FirstOrDefaultAsync(candidate => candidate.Id == stationOrderId
+                                                                  && candidate.StationId == caller.StationId
+                                                                  && candidate.FestivalId == access.Value.FestivalId,
+                                                     cancellationToken);
+
+    if (slice is null)
+    {
+      return _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
+                                     "UnprocessableEntity",
+                                     "station.orderNotAtThisStation");
+    }
+
+    Result<StationOrder, StationOrderVisibilityFailure> hidden = _visibilityService.HideFromAsItComesQueue(slice);
+
+    if (!hidden.IsSuccess)
+    {
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                     "CannotHideTogetherOrder",
+                                     "station.changeNotSaved");
+    }
+
+    await _dbContext.SaveChangesAsync(cancellationToken);
+
+    await _dispatcher.PushStationOrdersChangedAsync(caller.StationId, cancellationToken);
+
+    return Results.Ok(await DescribeQueueAsync(access.Value.Station, access.Value.FestivalId, cancellationToken));
+  }
+
+  private async Task<Result<StationAtFestival, IResult>> AccessOfAsync(StationDeviceCaller caller,
+                                                                       CancellationToken cancellationToken)
+  {
+    var station = await _dbContext.Stations
+                                  .AsNoTracking()
+                                  .FirstOrDefaultAsync(candidate => candidate.Id == caller.StationId, cancellationToken);
+
+    if (station is null)
+    {
+      return Result<StationAtFestival, IResult>.Failed(Results.Unauthorized());
+    }
+
+    FestivalStanding standing = await StandingOfAsync(caller.StationId, cancellationToken);
+
+    if (standing.Refusal is not null)
+    {
+      return Result<StationAtFestival, IResult>.Failed(standing.Refusal);
+    }
+
+    return Result<StationAtFestival, IResult>.Success(new(station, standing.FestivalId));
+  }
+
+  private async Task<Result<FulfillmentResult, FulfillmentFailure>> ApplyFulfillmentAsync(IReadOnlyList<Guid> selectedIds,
+                                                                                           Guid stationId,
+                                                                                           CancellationToken cancellationToken)
+  {
+    List<OrderItem> itemsAtThisStation = await ItemsAtThisStationAsync(selectedIds, stationId, cancellationToken);
+
+    Result<FulfillmentResult, FulfillmentFailure> fulfillment =
+      _fulfillmentService.Fulfill(new() { OrderItemIds = selectedIds }, itemsAtThisStation, _clock.UtcNow);
+
+    if (fulfillment.IsSuccess)
+    {
+      await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    return fulfillment;
+  }
+
+  private async Task<Result<FulfillmentResult, FulfillmentFailure>> ApplyUnfulfillmentAsync(IReadOnlyList<Guid> selectedIds,
+                                                                                             Guid stationId,
+                                                                                             CancellationToken cancellationToken)
+  {
+    List<OrderItem> itemsAtThisStation = await ItemsAtThisStationAsync(selectedIds, stationId, cancellationToken);
+
+    Result<FulfillmentResult, FulfillmentFailure> unfulfillment =
+      _fulfillmentService.Unfulfill(new() { OrderItemIds = selectedIds }, itemsAtThisStation);
+
+    if (unfulfillment.IsSuccess)
+    {
+      await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    return unfulfillment;
+  }
+
+  private async Task<List<OrderItem>> ItemsAtThisStationAsync(IReadOnlyList<Guid> selectedIds,
+                                                              Guid stationId,
+                                                              CancellationToken cancellationToken)
   {
     List<Guid> sliceIdsOfThisStation = await _dbContext.StationOrders
                                                        .AsNoTracking()
@@ -347,22 +528,10 @@ public sealed class StationQueueHandler
                                                        .Select(slice => slice.Id)
                                                        .ToListAsync(cancellationToken);
 
-    List<OrderItem> itemsAtThisStation = await _dbContext.OrderItems
-                                                         .Where(item => selectedIds.Contains(item.Id)
-                                                                        && sliceIdsOfThisStation.Contains(item.StationOrderId))
-                                                         .ToListAsync(cancellationToken);
-
-    Result<ProductionStatusChangeResult, ProductionStatusFailure> change =
-      _productionService.Advance(new() { OrderItemIds = selectedIds, TargetStatus = targetStatus },
-                                 itemsAtThisStation,
-                                 _clock.UtcNow);
-
-    if (change.IsSuccess)
-    {
-      await _dbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    return change;
+    return await _dbContext.OrderItems
+                           .Where(item => selectedIds.Contains(item.Id)
+                                          && sliceIdsOfThisStation.Contains(item.StationOrderId))
+                           .ToListAsync(cancellationToken);
   }
 
   private async Task PushOrderStatusOfAffectedOrdersAsync(IReadOnlyCollection<Guid> stationOrderIds,
@@ -386,13 +555,6 @@ public sealed class StationQueueHandler
         await _dispatcher.OnOrderStatusChangedAsync(orderId, _orderReader.StatusOf(loaded), cancellationToken);
       }
     }
-  }
-
-  private string? SharedTableNameOf(IReadOnlyCollection<StationQueueSliceView> slices)
-  {
-    List<string> tableNames = [.. slices.Select(slice => slice.TableName).Distinct(StringComparer.Ordinal)];
-
-    return tableNames.Count == 1 ? tableNames[0] : null;
   }
 
   private async Task<FestivalStanding> StandingOfAsync(Guid stationId, CancellationToken cancellationToken)
@@ -421,25 +583,27 @@ public sealed class StationQueueHandler
     return new(festival.Id, null);
   }
 
-  private IResult Refuse(ProductionStatusFailure failure)
+  private IResult Refuse(FulfillmentFailure failure)
   {
     return failure.Reason switch
            {
-             ProductionStatusFailureReason.NoItemsSelected =>
+             FulfillmentFailureReason.NoItemsSelected =>
                _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
                                       "ValidationFailed",
                                       "station.noItemsSelected"),
-             ProductionStatusFailureReason.UnknownOrderItemId =>
+             FulfillmentFailureReason.UnknownOrderItemId =>
                _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                       "UnprocessableEntity",
                                       "station.itemNotAtThisStation"),
-             ProductionStatusFailureReason.TransitionNotAllowed =>
+             FulfillmentFailureReason.ItemNotFulfilled =>
                _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                      "ProductionStatusAlreadyPassed",
-                                      "station.statusAlreadyPassed"),
+                                      "ItemNotFulfilled",
+                                      "station.changeNotSaved"),
              _ => new Never().OfType<IResult>(failure.Reason)
            };
   }
+
+  private sealed record StationAtFestival(Station Station, Guid FestivalId);
 }
 
 public sealed record FestivalStanding(Guid FestivalId, IResult? Refusal);

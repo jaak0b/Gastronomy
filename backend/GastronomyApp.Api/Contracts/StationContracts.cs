@@ -10,7 +10,7 @@ public sealed record StationQueueItemView(
   Guid OrderItemId,
   string ItemName,
   string? Note,
-  ProductionStatus ProductionStatus);
+  DateTime? FulfilledAtUtc);
 
 public sealed record StationQueueSliceView(
   Guid StationOrderId,
@@ -20,22 +20,22 @@ public sealed record StationQueueSliceView(
   string? Note,
   DeliveryMode DeliveryMode,
   DateTime CreatedAtUtc,
+  bool IsHiddenFromAsItComesQueue,
+  int ItemCount,
+  int FulfilledItemCount,
   IReadOnlyList<StationQueueItemView> Items);
 
 public sealed record StationQueueView(
   StationSummaryView Station,
-  IReadOnlyList<StationQueueSliceView> Slices);
+  IReadOnlyList<StationQueueSliceView> Orders,
+  IReadOnlyList<StationQueueSliceView> AsItComes);
 
-public sealed record StationItemStatusRequest
+public sealed record StationFulfilledView(IReadOnlyList<StationQueueSliceView> Slices);
+
+public sealed record StationItemSelectionRequest
 {
   public required IReadOnlyList<Guid>? OrderItemIds { get; init; }
-
-  public required ProductionStatus Status { get; init; }
 }
-
-public sealed record StationItemStatusView(
-  string? TableName,
-  IReadOnlyList<StationQueueSliceView> Slices);
 
 public sealed record StationEstimateView(Guid StationId, int QueuedMinutes);
 

@@ -229,7 +229,7 @@ public sealed class AdminEndpointsTest
   }
 
   [Test]
-  public async Task GetAdminOrders_AfterAnOrderWasPlaced_ListsItAsWaiting()
+  public async Task GetAdminOrders_AfterAnOrderWasPlaced_ListsItAsOpen()
   {
     using (var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -243,7 +243,7 @@ public sealed class AdminEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(orders[0].GetProperty("status").GetString(), Is.EqualTo("waiting"));
+                      Assert.That(orders[0].GetProperty("status").GetString(), Is.EqualTo("open"));
                       Assert.That(orders[0].GetProperty("stationOrders")[0].GetProperty("deliveryMode").GetString(),
                                   Is.EqualTo("together"));
                     });

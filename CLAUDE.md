@@ -19,11 +19,11 @@ Flow:
    Before sending, they choose per production location whether that slice is to be produced
    together or handed out item by item as each is ready. That choice is fixed once sent.
 2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
-   location has one tablet, enrolled like a phone, whose station page lists that location's slices in
-   two columns: slices to be produced together, and single items to be handed out as ready.
-3. Staff mark each item as waiting, being prepared, or ready. When something is ready the tablet shows
-   the table name so it can be written on the tray, and whichever server passes by delivers it. Ready
-   is the final state; nobody touches a phone at the table.
+   location has one tablet, enrolled like a phone. Its station page shows two columns: every order
+   that still has open items, and the orders that go out as they are ready. A fully done order leaves
+   both columns and appears in the done view.
+3. Staff select the items they hand out, one or several at a time, and mark them done after a
+   confirmation that repeats the table name. A mistaken tap can be put back from the done view.
    Each catalog item may carry a production time in minutes. The phone shows the server an estimate
    per item and per slice, computed from the station's current queue plus the item's own time.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
@@ -84,14 +84,14 @@ This shapes almost every design decision, so it is stated once here and assumed 
 Numbered for unambiguous reference; do not cite rule numbers in shipped source or UI text.
 
 1. **Lost orders are the defect this product exists to prevent.** Any change that touches ordering,
-   routing, the station page, or production status must state what happens when the step fails. A
+   routing, the station page, or an item's fulfillment must state what happens when the step fails. A
    silently dropped order is the worst outcome in the system, and a silently duplicated one is the
    second worst. Every slice carries a global order number and a per-location sequence number so a
    gap is visible in the station's list without anyone touching software.
 
 2. **No silently swallowed errors.** A `catch` must surface the error, rethrow, or return a value the
    caller can act on. Empty catch blocks are forbidden. Problems a user can fix (WiFi dropped, unknown
-   table, an item already marked ready) are returned as user-worded messages in their language, never dropped
+   table, an item that was already marked done) are returned as user-worded messages in their language, never dropped
    and never surfaced as a raw exception or stack trace.
 
    **A check the interface already enforces is a guard against a broken program, not advice to a
@@ -142,7 +142,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 6. **Extend the concept's existing home; never bolt a duplicate beside a symptom.** Before adding or
    fixing logic, find the module that already owns the concept (search for the concept, not just the
    symptom site) and extend it. Never compute a value the codebase already derives elsewhere: if a
-   figure (a price total, a routing decision, a sequence number, an item's production status) is produced in two
+   figure (a price total, a routing decision, a sequence number, an item's fulfillment) is produced in two
    places, unify on the single source. A concern shared across flows lives in a shared module wired
    into all consumers, never patched into one flow. **Interim solutions are forbidden in all cases:**
    deferred fixes are forgotten and the interim state becomes permanent, so the correct structure is
@@ -290,18 +290,22 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     is the wanted behaviour and is never treated as a failure; improvising past a broken contract is
     the failure, because it produces two halves that each look finished and do not meet.
 
-## The production model
+## The fulfillment model
 
 - **Delivery mode** is chosen per station slice on the review screen before sending: together (the
   default) or as it is ready. It is fixed once the order is sent and no screen may change it later.
-- **Production status** lives on the order item: waiting, being prepared, ready. Ready is final.
-  Transitions only move forward. Every change appends a row to the status change log, which exists to
-  measure how long each step took and is never read to decide the current state.
+- **An item is open or done.** Done is `OrderItem.FulfilledAtUtc`, set when the station hands the item
+  out and cleared again when a mistaken tap is put back. There is no in-between production state and
+  no status log.
+- **The station page shows two columns**: every order with open items, and the as-it-comes orders the
+  employee has not hidden from that column. A fully done order leaves both and appears in the done
+  view. The hide decision lives on the slice as `StationOrder.IsHiddenFromAsItComesQueue` and only
+  removes the order from the second column.
 - **Estimates** are computed, never stored. The backend reports per station the minutes still queued
-  (unfinished items' production minutes, missing values count as zero); the phone adds the item's own
-  minutes. A together slice is ready when its slowest item is ready.
-- **Nobody is notified** when an item is ready. The tablet shows the table name, and whichever server
-  passes the station takes the tray. That is deliberate.
+  (open items' production minutes, missing values count as zero); the phone adds the item's own
+  minutes. A together slice is done when its last item is done.
+- **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
+  name, and whichever server passes the station takes the tray. That is deliberate.
 
 19. **The product is in development, so stale data is not a problem to solve.** Breaking the
     database, and breaking whatever a phone has in its storage, is acceptable and wanted. Nothing is

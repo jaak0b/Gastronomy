@@ -45,15 +45,47 @@ public static class StationEndpoints
                            return await handler.ListQueueAsync(caller, cancellationToken);
                          });
 
-    stationTablet.MapPost("/items/status",
-                          async (StationItemStatusRequest request,
+    stationTablet.MapGet("/orders/fulfilled",
+                         async (HttpContext httpContext,
+                                CallerIdentity callerIdentity,
+                                StationQueueHandler handler,
+                                CancellationToken cancellationToken) =>
+                         {
+                           var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
+                           return await handler.ListFulfilledAsync(caller, cancellationToken);
+                         });
+
+    stationTablet.MapPost("/items/fulfill",
+                          async (StationItemSelectionRequest request,
                                  HttpContext httpContext,
                                  CallerIdentity callerIdentity,
                                  StationQueueHandler handler,
                                  CancellationToken cancellationToken) =>
                           {
                             var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
-                            return await handler.AdvanceAsync(request, caller, cancellationToken);
+                            return await handler.FulfillAsync(request, caller, cancellationToken);
+                          });
+
+    stationTablet.MapPost("/items/unfulfill",
+                          async (StationItemSelectionRequest request,
+                                 HttpContext httpContext,
+                                 CallerIdentity callerIdentity,
+                                 StationQueueHandler handler,
+                                 CancellationToken cancellationToken) =>
+                          {
+                            var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
+                            return await handler.UnfulfillAsync(request, caller, cancellationToken);
+                          });
+
+    stationTablet.MapPost("/orders/{stationOrderId:guid}/hide",
+                          async (Guid stationOrderId,
+                                 HttpContext httpContext,
+                                 CallerIdentity callerIdentity,
+                                 StationQueueHandler handler,
+                                 CancellationToken cancellationToken) =>
+                          {
+                            var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
+                            return await handler.HideAsync(stationOrderId, caller, cancellationToken);
                           });
 
     return routes;

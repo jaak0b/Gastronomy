@@ -46,7 +46,6 @@ public sealed class OrderAcceptanceServiceTest
                    _numberAllocator,
                    new(),
                    new(),
-                   new(),
                    _clock);
   }
 
@@ -436,29 +435,16 @@ public sealed class OrderAcceptanceServiceTest
 
     var order = result.Value.Order;
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(order.CreatedAtUtc, Is.EqualTo(_now));
-                      Assert.That(ItemsOf(order).SelectMany(item => item.StatusChanges).Select(change => change.ChangedAtUtc),
-                                  Is.All.EqualTo(_now));
-                    });
+    Assert.That(order.CreatedAtUtc, Is.EqualTo(_now));
   }
 
   [Test]
-  public async Task AcceptAsync_ValidRequest_StartsEveryItemWaitingWithOneLogRow()
+  public async Task AcceptAsync_ValidRequest_LeavesEveryItemOpen()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
                                                                                               CancellationToken.None);
 
-    var order = result.Value.Order;
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(ItemsOf(order).Select(item => item.ProductionStatus), Is.All.EqualTo(ProductionStatus.Waiting));
-                      Assert.That(ItemsOf(order).Select(item => item.StatusChanges.Count), Is.All.EqualTo(1));
-                      Assert.That(ItemsOf(order).SelectMany(item => item.StatusChanges).Select(change => change.Status),
-                                  Is.All.EqualTo(ProductionStatus.Waiting));
-                    });
+    Assert.That(ItemsOf(result.Value.Order).Select(item => item.FulfilledAtUtc), Is.All.Null);
   }
 
   [Test]

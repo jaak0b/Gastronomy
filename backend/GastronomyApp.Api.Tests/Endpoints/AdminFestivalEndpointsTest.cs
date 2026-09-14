@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -528,7 +527,7 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
-  public async Task DeleteFestivalStation_AStationWhoseSliceIsAlreadyFinished_IsStillRefused()
+  public async Task DeleteFestivalStation_AStationWhoseSliceIsAlreadyFulfilled_IsStillRefused()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
@@ -537,8 +536,8 @@ public sealed class AdminFestivalEndpointsTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      await database.OrderItems.ExecuteUpdateAsync(item => item.SetProperty(entry => entry.ProductionStatus,
-                                                                            ProductionStatus.Finished));
+      await database.OrderItems.ExecuteUpdateAsync(item => item.SetProperty(entry => entry.FulfilledAtUtc,
+                                                                            DateTime.UtcNow));
     }
 
     using var response =

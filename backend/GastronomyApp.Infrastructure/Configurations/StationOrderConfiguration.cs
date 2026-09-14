@@ -15,6 +15,7 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
     builder.Property(stationOrder => stationOrder.StationId).IsRequired();
     builder.Property(stationOrder => stationOrder.StationOrderNumber).IsRequired();
     builder.Property(stationOrder => stationOrder.DeliveryMode).IsRequired();
+    builder.Property(stationOrder => stationOrder.IsHiddenFromAsItComesQueue).IsRequired();
     builder.HasIndex(stationOrder => new { stationOrder.OrderId, stationOrder.StationId }).IsUnique();
     builder.HasIndex(stationOrder => new
                                      {

@@ -30,8 +30,6 @@ public sealed class GastronomyAppDbContext : DbContext
 
   public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
-  public DbSet<OrderItemStatusChange> OrderItemStatusChanges => Set<OrderItemStatusChange>();
-
   public DbSet<Festival> Festivals => Set<Festival>();
 
   public DbSet<FestivalStation> FestivalStations => Set<FestivalStation>();
