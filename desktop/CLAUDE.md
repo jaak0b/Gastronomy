@@ -82,7 +82,7 @@ it immediately and instead applies it at the next quit. It never restarts the pr
    metadata.
 
 10. **The window carries the same colour meanings as the web app.** The palette lives in
-    `Themes/Colors.axaml` and the accent in `App.axaml`, never as a raw hex in a view: blue
+    `Themes/Colors.axaml` and the accent in `App.axaml`, never as a raw hex in a view: neutral
     `Primary` for the action that moves work forward, red `Danger` for anything destructive, green
     `StatusRunning` for a healthy server, red `StatusDown` for a failure, amber `StatusWarning` for a
     warning, grey `StatusStarting` while the answer is still out. Green, amber and red are status

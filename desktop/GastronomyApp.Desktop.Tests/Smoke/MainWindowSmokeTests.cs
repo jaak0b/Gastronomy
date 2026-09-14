@@ -214,7 +214,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(RenderedColours.LabelForegroundOf(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
-                      Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#2F6FDB")));
+                      Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#1F2937")));
                     });
   }
 
