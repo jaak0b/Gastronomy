@@ -8,6 +8,8 @@ type LocaleTree = { [key: string]: string | LocaleTree }
 
 const PLURAL_KEYS = [
   'catalog.basketSummary',
+  'station.statsTogether',
+  'station.statsAsItComes',
   'admin.overview.itemsWithoutStation',
   'admin.itemsWouldHaveNoStation',
   'admin.stationHasUnfinishedItems',

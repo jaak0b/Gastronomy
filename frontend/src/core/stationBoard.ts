@@ -1,113 +1,20 @@
 import type { ApiErrorBody } from './apiError'
-import type { ProductionStatus, StationSlice, StationSliceItem } from './apiTypes'
+import type { DeliveryMode, StationSlice, StationSliceItem } from './apiTypes'
 import { assertNever } from './assertNever'
-
-export type ProductionAdvance = 'inProduction' | 'finished'
-
-export interface SingleItemCard {
-  stationOrderId: string
-  globalOrderNumber: number
-  stationOrderNumber: number
-  tableName: string
-  note: string | null
-  createdAtUtc: string
-  item: StationSliceItem
-}
-
-export interface StationBoard {
-  together: StationSlice[]
-  single: SingleItemCard[]
-}
-
-export interface SliceAdvance {
-  orderItemIds: string[]
-  status: ProductionAdvance
-}
 
 export type StationFailure =
   | { kind: 'unreachable' }
   | { kind: 'error'; status: number; body: ApiErrorBody | null; raw: unknown }
 
-export function nextProductionStatus(status: ProductionStatus): ProductionAdvance | null {
-  switch (status) {
-    case 'waiting':
-      return 'inProduction'
-    case 'inProduction':
-      return 'finished'
-    case 'finished':
-      return null
-    default:
-      return assertNever(status)
-  }
+export interface ItemUnits {
+  itemName: string
+  units: number
 }
 
-function cardsOf(slice: StationSlice): SingleItemCard[] {
-  return slice.items
-    .filter((item) => item.productionStatus !== 'finished')
-    .map((item) => ({
-      stationOrderId: slice.stationOrderId,
-      globalOrderNumber: slice.globalOrderNumber,
-      stationOrderNumber: slice.stationOrderNumber,
-      tableName: slice.tableName,
-      note: slice.note,
-      createdAtUtc: slice.createdAtUtc,
-      item,
-    }))
-}
-
-export function splitSlices(slices: readonly StationSlice[]): StationBoard {
-  const together: StationSlice[] = []
-  const single: SingleItemCard[] = []
-  for (const slice of slices) {
-    switch (slice.deliveryMode) {
-      case 'together':
-        together.push(slice)
-        break
-      case 'asItComes':
-        single.push(...cardsOf(slice))
-        break
-      default:
-        assertNever(slice.deliveryMode)
-    }
-  }
-  return { together, single }
-}
-
-function isFullyReady(slice: StationSlice): boolean {
-  return slice.items.every((item) => item.productionStatus === 'finished')
-}
-
-export function mergeSlices(
-  board: readonly StationSlice[],
-  answered: readonly StationSlice[],
-): StationSlice[] {
-  const byId = new Map(board.map((slice) => [slice.stationOrderId, slice]))
-  for (const slice of answered) {
-    if (isFullyReady(slice)) {
-      byId.delete(slice.stationOrderId)
-      continue
-    }
-    byId.set(slice.stationOrderId, slice)
-  }
-  return [...byId.values()].sort((left, right) => left.stationOrderNumber - right.stationOrderNumber)
-}
-
-function idsWith(slice: StationSlice, status: ProductionStatus): string[] {
-  return slice.items
-    .filter((item) => item.productionStatus === status)
-    .map((item) => item.orderItemId)
-}
-
-export function sliceAdvance(slice: StationSlice): SliceAdvance | null {
-  const waiting = idsWith(slice, 'waiting')
-  if (waiting.length > 0) {
-    return { orderItemIds: waiting, status: 'inProduction' }
-  }
-  const inProduction = idsWith(slice, 'inProduction')
-  if (inProduction.length > 0) {
-    return { orderItemIds: inProduction, status: 'finished' }
-  }
-  return null
+export interface StationStats {
+  togetherOrders: number
+  asItComesOrders: number
+  openUnits: ItemUnits[]
 }
 
 export function stationFailureKey(failure: StationFailure): string {
@@ -119,4 +26,92 @@ export function stationFailureKey(failure: StationFailure): string {
     default:
       return assertNever(failure)
   }
+}
+
+export function deliveryModeKey(deliveryMode: DeliveryMode): string {
+  switch (deliveryMode) {
+    case 'together':
+      return 'station.deliveryTogether'
+    case 'asItComes':
+      return 'station.deliveryAsItComes'
+    default:
+      return assertNever(deliveryMode)
+  }
+}
+
+export function isFulfilled(item: StationSliceItem): boolean {
+  return item.fulfilledAtUtc !== null
+}
+
+export function openItemsOf(slice: StationSlice): StationSliceItem[] {
+  return slice.items.filter((item) => !isFulfilled(item))
+}
+
+function compareItemNames(left: string, right: string): number {
+  if (left < right) {
+    return -1
+  }
+  return left > right ? 1 : 0
+}
+
+export function itemUnits(items: readonly StationSliceItem[]): ItemUnits[] {
+  const unitsByName = new Map<string, number>()
+  for (const item of items) {
+    unitsByName.set(item.itemName, (unitsByName.get(item.itemName) ?? 0) + 1)
+  }
+  return [...unitsByName.entries()]
+    .map(([itemName, units]) => ({ itemName, units }))
+    .sort((left, right) => compareItemNames(left.itemName, right.itemName))
+}
+
+export function selectedUnits(
+  slices: readonly StationSlice[],
+  selectedItemIds: readonly string[],
+): ItemUnits[] {
+  const selected = new Set(selectedItemIds)
+  return itemUnits(
+    slices.flatMap((slice) => openItemsOf(slice)).filter((item) => selected.has(item.orderItemId)),
+  )
+}
+
+export function selectedOpenItemIds(
+  slice: StationSlice,
+  selectedItemIds: readonly string[],
+): string[] {
+  const selected = new Set(selectedItemIds)
+  return openItemsOf(slice)
+    .filter((item) => selected.has(item.orderItemId))
+    .map((item) => item.orderItemId)
+}
+
+export function stationStats(orders: readonly StationSlice[]): StationStats {
+  let togetherOrders = 0
+  let asItComesOrders = 0
+  for (const slice of orders) {
+    switch (slice.deliveryMode) {
+      case 'together':
+        togetherOrders += 1
+        break
+      case 'asItComes':
+        asItComesOrders += 1
+        break
+      default:
+        assertNever(slice.deliveryMode)
+    }
+  }
+  return {
+    togetherOrders,
+    asItComesOrders,
+    openUnits: itemUnits(orders.flatMap((slice) => openItemsOf(slice))),
+  }
+}
+
+export function retainOpenItemIds(
+  selectedItemIds: readonly string[],
+  orders: readonly StationSlice[],
+): string[] {
+  const open = new Set(
+    orders.flatMap((slice) => openItemsOf(slice)).map((item) => item.orderItemId),
+  )
+  return selectedItemIds.filter((orderItemId) => open.has(orderItemId))
 }

@@ -40,8 +40,6 @@ export interface Catalog {
 
 export type DeliveryMode = 'together' | 'asItComes'
 
-export type ProductionStatus = 'waiting' | 'inProduction' | 'finished'
-
 export type DeviceKind = 'staffMember' | 'station'
 
 export interface DraftLine {
@@ -189,7 +187,7 @@ export interface StationSliceItem {
   orderItemId: string
   itemName: string
   note: string | null
-  productionStatus: ProductionStatus
+  fulfilledAtUtc: string | null
 }
 
 export interface StationSlice {
@@ -200,15 +198,18 @@ export interface StationSlice {
   note: string | null
   deliveryMode: DeliveryMode
   createdAtUtc: string
+  isHiddenFromAsItComesQueue: boolean
+  itemCount: number
+  fulfilledItemCount: number
   items: StationSliceItem[]
 }
 
 export interface StationOrdersResponse {
   station: StationIdentity
-  slices: StationSlice[]
+  orders: StationSlice[]
+  asItComes: StationSlice[]
 }
 
-export interface StationItemStatusResponse {
-  tableName: string | null
+export interface StationFulfilledResponse {
   slices: StationSlice[]
 }

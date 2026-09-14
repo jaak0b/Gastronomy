@@ -2,42 +2,49 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
 import type {
+  StationFulfilledResponse,
   StationIdentity,
-  StationItemStatusResponse,
   StationOrdersResponse,
   StationSlice,
 } from '../core/apiTypes'
-import { assertNever } from '../core/assertNever'
-import {
-  mergeSlices,
-  splitSlices,
-  stationFailureKey,
-  type ProductionAdvance,
-} from '../core/stationBoard'
+import { retainOpenItemIds, stationFailureKey } from '../core/stationBoard'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
 export const useStationStore = defineStore('station', () => {
   const station = ref<StationIdentity | null>(null)
-  const slices = ref<StationSlice[]>([])
+  const orders = ref<StationSlice[]>([])
+  const asItComes = ref<StationSlice[]>([])
+  const fulfilled = ref<StationSlice[]>([])
+  const selectedItemIds = ref<string[]>([])
   const hasLoaded = ref(false)
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
   const failureKey = ref<string | null>(null)
-  const readyTableName = ref<string | null>(null)
   const isWorking = ref(false)
+  const isShowingFulfilled = ref(false)
+  const fulfilledHasLoaded = ref(false)
+  const fulfilledLoadFailed = ref(false)
 
-  const board = computed(() => splitSlices(slices.value))
+  const hasWork = computed(() => hasLoaded.value && !loadFailed.value && orders.value.length > 0)
   const hasNothingToPrepare = computed(
+    () => hasLoaded.value && !loadFailed.value && orders.value.length === 0,
+  )
+  const hasNothingDone = computed(
     () =>
-      hasLoaded.value
-      && !loadFailed.value
-      && board.value.together.length === 0
-      && board.value.single.length === 0,
+      fulfilledHasLoaded.value && !fulfilledLoadFailed.value && fulfilled.value.length === 0,
   )
 
   function deviceToken(): string | null {
     return useSessionStore().deviceToken
+  }
+
+  function applyQueue(data: StationOrdersResponse): void {
+    station.value = data.station
+    orders.value = data.orders
+    asItComes.value = data.asItComes
+    selectedItemIds.value = retainOpenItemIds(selectedItemIds.value, data.orders)
+    hasLoaded.value = true
   }
 
   async function load(): Promise<void> {
@@ -55,22 +62,54 @@ export const useStationStore = defineStore('station', () => {
     }
     loadFailed.value = false
     loadFailureKey.value = null
-    station.value = result.data.station
-    slices.value = result.data.slices
-    hasLoaded.value = true
+    applyQueue(result.data)
   }
 
-  function dismissReadyNotice(): void {
-    readyTableName.value = null
+  async function loadFulfilled(): Promise<void> {
+    if (deviceToken() === null) {
+      return
+    }
+    const result = await request<StationFulfilledResponse>('/api/station/orders/fulfilled', {
+      token: deviceToken(),
+    })
+    if (result.kind !== 'ok') {
+      fulfilledLoadFailed.value = true
+      return
+    }
+    fulfilledLoadFailed.value = false
+    fulfilled.value = result.data.slices
+    fulfilledHasLoaded.value = true
   }
 
-  async function advance(orderItemIds: string[], status: ProductionAdvance): Promise<void> {
+  async function refresh(): Promise<void> {
+    await load()
+    if (isShowingFulfilled.value) {
+      await loadFulfilled()
+    }
+  }
+
+  async function openFulfilled(): Promise<void> {
+    isShowingFulfilled.value = true
+    await loadFulfilled()
+  }
+
+  function closeFulfilled(): void {
+    isShowingFulfilled.value = false
+  }
+
+  function toggleItemSelection(orderItemId: string): void {
     failureKey.value = null
-    readyTableName.value = null
+    selectedItemIds.value = selectedItemIds.value.includes(orderItemId)
+      ? selectedItemIds.value.filter((selected) => selected !== orderItemId)
+      : [...selectedItemIds.value, orderItemId]
+  }
+
+  async function fulfill(orderItemIds: string[]): Promise<void> {
+    failureKey.value = null
     isWorking.value = true
-    const result = await request<StationItemStatusResponse>('/api/station/items/status', {
+    const result = await request<StationOrdersResponse>('/api/station/items/fulfill', {
       method: 'POST',
-      body: { orderItemIds, status },
+      body: { orderItemIds },
       token: deviceToken(),
     })
     isWorking.value = false
@@ -78,27 +117,55 @@ export const useStationStore = defineStore('station', () => {
       failureKey.value = stationFailureKey(result)
       return
     }
-    slices.value = mergeSlices(slices.value, result.data.slices)
-    switch (status) {
-      case 'finished':
-        readyTableName.value = result.data.tableName ?? null
-        return
-      case 'inProduction':
-        return
-      default:
-        assertNever(status)
+    applyQueue(result.data)
+  }
+
+  async function unfulfill(orderItemId: string): Promise<void> {
+    failureKey.value = null
+    isWorking.value = true
+    const result = await request<StationOrdersResponse>('/api/station/items/unfulfill', {
+      method: 'POST',
+      body: { orderItemIds: [orderItemId] },
+      token: deviceToken(),
+    })
+    isWorking.value = false
+    if (result.kind !== 'ok') {
+      failureKey.value = stationFailureKey(result)
+      return
     }
+    applyQueue(result.data)
+    if (isShowingFulfilled.value) {
+      await loadFulfilled()
+    }
+  }
+
+  async function hide(stationOrderId: string): Promise<void> {
+    failureKey.value = null
+    isWorking.value = true
+    const result = await request<StationOrdersResponse>(
+      `/api/station/orders/${stationOrderId}/hide`,
+      {
+        method: 'POST',
+        token: deviceToken(),
+      },
+    )
+    isWorking.value = false
+    if (result.kind !== 'ok') {
+      failureKey.value = stationFailureKey(result)
+      return
+    }
+    applyQueue(result.data)
   }
 
   function listen(): () => void {
     const connection = useConnectionStore()
     const releases = [
-      connection.registerRefetch(load),
+      connection.registerRefetch(refresh),
       connection.onEvent<{ stationId: string }>('StationOrdersChanged', () => {
-        void load()
+        void refresh()
       }),
       connection.onEvent<unknown>('StationsChanged', () => {
-        void load()
+        void refresh()
       }),
     ]
     return () => {
@@ -110,17 +177,29 @@ export const useStationStore = defineStore('station', () => {
 
   return {
     station,
-    slices,
-    board,
-    hasNothingToPrepare,
+    orders,
+    asItComes,
+    fulfilled,
+    selectedItemIds,
+    hasLoaded,
     loadFailed,
     loadFailureKey,
     failureKey,
-    readyTableName,
     isWorking,
+    isShowingFulfilled,
+    fulfilledHasLoaded,
+    fulfilledLoadFailed,
+    hasWork,
+    hasNothingToPrepare,
+    hasNothingDone,
     load,
-    advance,
-    dismissReadyNotice,
+    loadFulfilled,
+    openFulfilled,
+    closeFulfilled,
+    toggleItemSelection,
+    fulfill,
+    unfulfill,
+    hide,
     listen,
   }
 })

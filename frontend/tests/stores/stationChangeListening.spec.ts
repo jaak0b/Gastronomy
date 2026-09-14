@@ -17,8 +17,18 @@ function stubTheLaptop(): string[] {
     'fetch',
     vi.fn(async (url: string) => {
       urls.push(url)
+      if (url === '/api/station/orders/fulfilled') {
+        return new Response(JSON.stringify({ slices: [] }), { status: 200 })
+      }
       return new Response(
-        JSON.stringify({ categories: [], items: [], stations: [], station: KITCHEN, slices: [] }),
+        JSON.stringify({
+          categories: [],
+          items: [],
+          stations: [],
+          station: KITCHEN,
+          orders: [],
+          asItComes: [],
+        }),
         { status: 200 },
       )
     }),
@@ -76,5 +86,55 @@ describe('a production location the admin renamed or switched off', () => {
     await letTheReloadFinish()
 
     expect(urls).toEqual([])
+  })
+})
+
+describe('a change to the orders at a station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    forgetHubEvents()
+    useSessionStore().deviceToken = 'token-here'
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('makes the tablet at that station load its queue again', async () => {
+    const urls = stubTheLaptop()
+    useStationStore().listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    await letTheReloadFinish()
+
+    expect(urls).toEqual(['/api/station/orders'])
+  })
+
+  it('loads the done list too while it is open', async () => {
+    const urls = stubTheLaptop()
+    const station = useStationStore()
+    station.listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    await station.openFulfilled()
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    await letTheReloadFinish()
+
+    expect(urls).toEqual(['/api/station/orders', '/api/station/orders/fulfilled'])
+  })
+
+  it('leaves the done list alone while the queue is on screen', async () => {
+    const urls = stubTheLaptop()
+    useStationStore().listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged', { stationId: KITCHEN.id })
+    await letTheReloadFinish()
+
+    expect(urls).toEqual(['/api/station/orders'])
   })
 })

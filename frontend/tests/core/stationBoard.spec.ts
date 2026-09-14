@@ -1,18 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import {
-  mergeSlices,
-  nextProductionStatus,
-  sliceAdvance,
-  splitSlices,
+  deliveryModeKey,
+  itemUnits,
+  openItemsOf,
+  retainOpenItemIds,
+  selectedOpenItemIds,
+  selectedUnits,
   stationFailureKey,
+  stationStats,
 } from '../../src/core/stationBoard'
 import type { StationSlice, StationSliceItem } from '../../src/core/apiTypes'
 
-function sliceItem(orderItemId: string, status: StationSliceItem['productionStatus']): StationSliceItem {
-  return { orderItemId, itemName: 'Bratwurst', note: null, productionStatus: status }
+function sliceItem(
+  orderItemId: string,
+  itemName = 'Bratwurst',
+  fulfilledAtUtc: string | null = null,
+): StationSliceItem {
+  return { orderItemId, itemName, note: null, fulfilledAtUtc }
 }
 
-function slice(overrides: Partial<StationSlice>): StationSlice {
+function slice(overrides: Partial<StationSlice> = {}): StationSlice {
   return {
     stationOrderId: 'slice-1',
     globalOrderNumber: 137,
@@ -21,127 +28,134 @@ function slice(overrides: Partial<StationSlice>): StationSlice {
     note: null,
     deliveryMode: 'together',
     createdAtUtc: '2026-09-05T18:00:00Z',
-    items: [sliceItem('a', 'waiting')],
+    isHiddenFromAsItComesQueue: false,
+    itemCount: 1,
+    fulfilledItemCount: 0,
+    items: [sliceItem('a')],
     ...overrides,
   }
 }
 
-describe('nextProductionStatus', () => {
-  it('moves a waiting item into preparation', () => {
-    expect(nextProductionStatus('waiting')).toBe('inProduction')
+describe('the words a station tablet uses for a delivery mode', () => {
+  it('names the mode that goes out together', () => {
+    expect(deliveryModeKey('together')).toBe('station.deliveryTogether')
   })
 
-  it('moves an item in preparation to ready', () => {
-    expect(nextProductionStatus('inProduction')).toBe('finished')
-  })
-
-  it('has nowhere to go from ready', () => {
-    expect(nextProductionStatus('finished')).toBeNull()
+  it('names the mode that goes out as it is ready', () => {
+    expect(deliveryModeKey('asItComes')).toBe('station.deliveryAsItComes')
   })
 })
 
-describe('mergeSlices', () => {
-  const first = slice({ stationOrderId: 'slice-1', stationOrderNumber: 11 })
-  const second = slice({ stationOrderId: 'slice-2', stationOrderNumber: 12 })
-  const third = slice({ stationOrderId: 'slice-3', stationOrderNumber: 13 })
-
-  it('leaves the orders the answer did not mention exactly where they were', () => {
-    const answered = slice({
-      stationOrderId: 'slice-2',
-      stationOrderNumber: 12,
-      items: [sliceItem('a', 'inProduction')],
-    })
-
-    const merged = mergeSlices([first, second, third], [answered])
-
-    expect(merged.map((entry) => entry.stationOrderId)).toEqual(['slice-1', 'slice-2', 'slice-3'])
-    expect(merged[1].items[0].productionStatus).toBe('inProduction')
+describe('picking the open items out of a slice', () => {
+  const order = slice({
+    items: [
+      sliceItem('a', 'Bratwurst'),
+      sliceItem('b', 'Pommes', '2026-09-05T18:10:00Z'),
+      sliceItem('c', 'Wasser'),
+    ],
   })
 
-  it('drops an order once every one of its items is ready', () => {
-    const answered = slice({
-      stationOrderId: 'slice-2',
-      stationOrderNumber: 12,
-      items: [sliceItem('a', 'finished')],
-    })
-
-    const merged = mergeSlices([first, second, third], [answered])
-
-    expect(merged.map((entry) => entry.stationOrderId)).toEqual(['slice-1', 'slice-3'])
-  })
-
-  it('takes in an order the board had not seen yet and keeps the numbers in order', () => {
-    const answered = slice({
-      stationOrderId: 'slice-2',
-      stationOrderNumber: 12,
-      items: [sliceItem('a', 'waiting')],
-    })
-
-    const merged = mergeSlices([third, first], [answered])
-
-    expect(merged.map((entry) => entry.stationOrderNumber)).toEqual([11, 12, 13])
+  it('lists only the items nobody has handed out yet', () => {
+    expect(openItemsOf(order).map((item) => item.orderItemId)).toEqual(['a', 'c'])
   })
 })
 
-describe('splitSlices', () => {
-  it('keeps a slice that goes out together as one card', () => {
-    const board = splitSlices([slice({ items: [sliceItem('a', 'waiting'), sliceItem('b', 'finished')] })])
+describe('counting units of the same item', () => {
+  it('adds up how many units of each name are in the list', () => {
+    const items = [
+      sliceItem('a', 'Bratwurst'),
+      sliceItem('b', 'Wasser'),
+      sliceItem('c', 'Bratwurst'),
+      sliceItem('d', 'Wasser'),
+      sliceItem('e', 'Bratwurst'),
+    ]
 
-    expect(board.together).toHaveLength(1)
-    expect(board.together[0].items.map((item) => item.orderItemId)).toEqual(['a', 'b'])
-    expect(board.single).toEqual([])
+    expect(itemUnits(items)).toEqual([
+      { itemName: 'Bratwurst', units: 3 },
+      { itemName: 'Wasser', units: 2 },
+    ])
   })
 
-  it('turns every unfinished item of an as-it-comes slice into a card of its own', () => {
-    const board = splitSlices([
+  it('counts nothing when there is nothing', () => {
+    expect(itemUnits([])).toEqual([])
+  })
+})
+
+describe('grouping what an employee selected', () => {
+  const orders = [
+    slice({
+      stationOrderId: 'slice-1',
+      items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes')],
+    }),
+    slice({
+      stationOrderId: 'slice-2',
+      items: [
+        sliceItem('c', 'Wasser'),
+        sliceItem('d', 'Bratwurst', '2026-09-05T18:20:00Z'),
+      ],
+    }),
+  ]
+
+  it('keeps only the selected open items and groups them by name', () => {
+    expect(selectedUnits(orders, ['a', 'c'])).toEqual([
+      { itemName: 'Bratwurst', units: 1 },
+      { itemName: 'Wasser', units: 1 },
+    ])
+  })
+
+  it('ignores a selected id that is done or gone', () => {
+    expect(selectedUnits(orders, ['d', 'gone'])).toEqual([])
+  })
+
+  it('names the selected open items of one slice', () => {
+    expect(selectedOpenItemIds(orders[1], ['c', 'd', 'gone'])).toEqual(['c'])
+  })
+})
+
+describe('the statistics above the queue', () => {
+  it('counts the orders by delivery mode and the open units by item name', () => {
+    const orders = [
       slice({
-        deliveryMode: 'asItComes',
-        items: [sliceItem('a', 'waiting'), sliceItem('b', 'inProduction'), sliceItem('c', 'finished')],
+        stationOrderId: 'slice-1',
+        items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes')],
       }),
-    ])
+      slice({
+        stationOrderId: 'slice-2',
+        deliveryMode: 'asItComes',
+        items: [
+          sliceItem('c', 'Bratwurst'),
+          sliceItem('d', 'Wasser', '2026-09-05T18:20:00Z'),
+        ],
+      }),
+      slice({
+        stationOrderId: 'slice-3',
+        deliveryMode: 'asItComes',
+        isHiddenFromAsItComesQueue: true,
+        items: [sliceItem('e', 'Wasser')],
+      }),
+    ]
 
-    expect(board.together).toEqual([])
-    expect(board.single.map((card) => card.item.orderItemId)).toEqual(['a', 'b'])
-    expect(board.single[0].globalOrderNumber).toBe(137)
-    expect(board.single[0].stationOrderNumber).toBe(12)
-    expect(board.single[0].tableName).toBe('Tisch 3')
-  })
-
-  it('keeps the order the laptop sent, so a gap in the numbers stays visible', () => {
-    const board = splitSlices([
-      slice({ stationOrderId: 'slice-12', stationOrderNumber: 12 }),
-      slice({ stationOrderId: 'slice-14', stationOrderNumber: 14 }),
-    ])
-
-    expect(board.together.map((card) => card.stationOrderNumber)).toEqual([12, 14])
+    expect(stationStats(orders)).toEqual({
+      togetherOrders: 1,
+      asItComesOrders: 2,
+      openUnits: [
+        { itemName: 'Bratwurst', units: 2 },
+        { itemName: 'Pommes', units: 1 },
+        { itemName: 'Wasser', units: 1 },
+      ],
+    })
   })
 })
 
-describe('sliceAdvance, the control that moves a whole order at once', () => {
-  it('starts every waiting item when nothing has been started yet', () => {
-    const advance = sliceAdvance(slice({ items: [sliceItem('a', 'waiting'), sliceItem('b', 'waiting')] }))
+describe('a selection after a reload', () => {
+  it('drops the ids whose item is no longer open in the queue', () => {
+    const orders = [
+      slice({
+        items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes', '2026-09-05T18:30:00Z')],
+      }),
+    ]
 
-    expect(advance).toEqual({ orderItemIds: ['a', 'b'], status: 'inProduction' })
-  })
-
-  it('starts only the items still waiting when some are already being prepared', () => {
-    const advance = sliceAdvance(
-      slice({ items: [sliceItem('a', 'inProduction'), sliceItem('b', 'waiting')] }),
-    )
-
-    expect(advance).toEqual({ orderItemIds: ['b'], status: 'inProduction' })
-  })
-
-  it('marks everything ready once every item is being prepared', () => {
-    const advance = sliceAdvance(
-      slice({ items: [sliceItem('a', 'inProduction'), sliceItem('b', 'inProduction'), sliceItem('c', 'finished')] }),
-    )
-
-    expect(advance).toEqual({ orderItemIds: ['a', 'b'], status: 'finished' })
-  })
-
-  it('offers nothing once every item is ready', () => {
-    expect(sliceAdvance(slice({ items: [sliceItem('a', 'finished')] }))).toBeNull()
+    expect(retainOpenItemIds(['a', 'b', 'gone'], orders)).toEqual(['a'])
   })
 })
 
@@ -156,14 +170,14 @@ describe('stationFailureKey, what the tablet says when a change did not go throu
         kind: 'error',
         status: 409,
         body: {
-          code: 'Conflict',
-          messageKey: 'station.statusAlreadyPassed',
+          code: 'ItemNotFulfilled',
+          messageKey: 'station.changeNotSaved',
           parameters: {},
           details: null,
         },
         raw: null,
       }),
-    ).toBe('station.statusAlreadyPassed')
+    ).toBe('station.changeNotSaved')
   })
 
   it('falls back to a plain failure when the laptop named nothing', () => {

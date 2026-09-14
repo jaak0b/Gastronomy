@@ -23,8 +23,8 @@ Three audiences in one build:
    and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
    and submission identity are plain TypeScript, so they are testable without mounting anything.
 
-2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order state, a
-   production status, a delivery mode, a device kind) must handle every member explicitly and end in
+2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order status, a
+   delivery mode, a device kind) must handle every member explicitly and end in
    `assertNever`. Never
    write an `else`, or a trailing `if`, that assumes whatever is left: it silently absorbs union members
    added later, turning a compile error into a runtime crash or, worse, a wrong but plausible result.

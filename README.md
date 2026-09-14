@@ -9,7 +9,7 @@
 
 A self-hosted ordering system for volunteer fire department festivals. It replaces the paper order slip.
 
-A waiter takes the order at the table on their own phone: items, quantities, table name, and the running total as an adding aid. The laptop in the tent runs the whole system, including the database and the web app. Each production location has a tablet that shows its part of the order, where staff mark items as waiting, being prepared or ready. A ready item shows the table name, so whoever passes the station takes it out. Open tables can be settled later from the phone, with the amount the guest actually paid.
+A waiter takes the order at the table on their own phone: items, quantities, table name, and the running total as an adding aid. The laptop in the tent runs the whole system, including the database and the web app. Each production location has a tablet that shows its part of the order in two columns: everything still open, and the orders that go out as they are ready. Staff tick off the items they hand out, one or several at a time, and confirm against the table name shown again in the dialog. A mistaken tap can be put back. Open tables can be settled later from the phone, with the amount the guest actually paid.
 
 The site runs on the local WiFi without internet. Phones and tablets enrol by scanning a QR code from the laptop, so there is nothing to install on them and no usernames or passwords. No money moves through the app: it shows prices to help add up and records what a table has paid.
 
