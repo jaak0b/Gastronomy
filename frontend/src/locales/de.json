@@ -49,7 +49,7 @@
     "basketEmpty": "Noch nichts ausgewählt",
     "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
     "toReview": "Weiter zur Übersicht",
-    "itemSoldOut": "Fragen Sie den Gast, ob er etwas anderes möchte. {name} ist gerade ausverkauft.",
+    "itemSoldOut": "{name} ist gerade ausverkauft.",
     "lineNoLongerOnTheMenu": "Nicht mehr auf der Karte.",
     "lineStationNoLongerPreparesIt": "Diese Ausgabestelle bereitet den Artikel nicht mehr zu.",
     "productionMinutesOutOfRange": "Tragen Sie ganze Minuten von 0 bis 600 ein."
