@@ -170,14 +170,23 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
    `no-ai-slop` governs the prose itself.
 
-   **Every message the user reads has one shape: what is wrong, then what to do.** One short clause
-   naming the thing on their screen in their own words, then one imperative sentence with the single
-   next action. Nothing after that: no third sentence, no reassurance, no account of what the program
-   did internally. A message may name only a control that exists on the screen where the message
-   appears, so check that before writing it. Write each language for itself; a sentence translated
-   word for word from the other one reads as machine-written even when every word is correct. Read it
-   aloud before you ship it, and if you would not say it to a colleague across a counter, write it
-   again.
+  **Every message the user reads has one shape: what is wrong, then what to do.** One short clause
+  naming the thing on their screen in their own words, then one imperative sentence with the single
+  next action. Nothing after that: no third sentence, no reassurance, no account of what the program
+  did internally. A message may name only a control that exists on the screen where the message
+  appears, so check that before writing it. Write each language for itself; a sentence translated
+  word for word from the other one reads as machine-written even when every word is correct. Read it
+  aloud before you ship it, and if you would not say it to a colleague across a counter, write it
+  again.
+
+  **A sentence belongs on a screen only if it changes what the reader does.** Before adding a hint,
+  a caption or an explanatory paragraph, name the decision or action it changes. If you cannot, it
+  does not ship. Restating what the screen already shows, explaining how the program works, and
+  facts nobody holding the device can act on are the filler that makes software read as
+  machine-written, and a screen is not the place for them. Empty states, failure messages and
+  confirmations of a destructive action stay, because each one names a next step or a cost. A
+  reviewer lists any added line that cannot answer "what does the reader do differently because of
+  this" as a finding.
 
 10. **Never use the em-dash character**, and never a hyphen as a substitute for it. Rewrite with a
     colon, parentheses, a comma, or two sentences. Hyphens only where grammar requires them (compound
