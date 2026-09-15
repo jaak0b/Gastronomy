@@ -438,7 +438,7 @@ describe('the stations of this festival', () => {
 
     await vi.waitFor(() =>
       expect(page.get('.festival-station-row .refusal').text()).toBe(
-        'Ausgabestellen mit aufgegebenen Bestellungen können nicht entfernt werden.',
+        'Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.',
       ),
     )
   })
