@@ -23,6 +23,8 @@ A must-do never lives inside a descriptive paragraph. It gets its own line, visu
 
 Verb-first imperative ("Scan at 600 dpi."), rationale as a trailing clause or second short sentence only when the rule would otherwise look arbitrary. Reasons never precede or bury the instruction. Optional tips can drop the reason entirely.
 
+A refusal or a status line is not an instruction. It states the rule as a plain fact and stops: "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden." Add an instruction only where the reader has a control on that screen and something to do with it.
+
 ## 5. Length ceilings
 
 Helper text: at most two to three short sentences (per the repo's rule 7, and NN/g caps microcopy below three sentences). Average sentence under ~20 words. One action per sentence. If a block needs more, it has more than one job: split it across the points of action, or cut.
@@ -40,6 +42,6 @@ Progressive disclosure (a labeled expander or tooltip) is only for depth some us
 - Could code enforce this instead? If yes, do that and delete the text.
 - Is any rule stated more than once at different strengths? Collapse.
 - Is every mandatory constraint on its own line at the point of action?
-- Does every sentence start with the action, one action per sentence?
+- Does every instruction start with the action, and does every refusal state the rule as a plain fact?
 - Is any block over three sentences? Split or cut.
 - Would a reader who skims ONLY the first sentence of each block still succeed?

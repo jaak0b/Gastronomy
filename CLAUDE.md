@@ -170,14 +170,15 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    whether it is accurate. The frontend's `writing-ui-guidance` skill governs structure and placement;
    `no-ai-slop` governs the prose itself.
 
-  **Every message the user reads has one shape: what is wrong, then what to do.** One short clause
-  naming the thing on their screen in their own words, then one imperative sentence with the single
-  next action. Nothing after that: no third sentence, no reassurance, no account of what the program
-  did internally. A message may name only a control that exists on the screen where the message
-  appears, so check that before writing it. Write each language for itself; a sentence translated
-  word for word from the other one reads as machine-written even when every word is correct. Read it
-  aloud before you ship it, and if you would not say it to a colleague across a counter, write it
-  again.
+  **Write the plain fact in one sentence, the way you would say it across a counter.** A refusal, a
+  status or a rule states its condition and what follows, and stops: "Solange ein Fest aktiv ist,
+  kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden." Add an instruction
+  only where the reader has a control on that screen and something to do with it, and keep it
+  equally plain. Never a formula, never a second sentence of reassurance, never an account of what
+  the program did internally. Name only controls that exist on the screen where the sentence
+  appears. Write each language for itself; a sentence translated word for word from the other one
+  reads as machine-written even when every word is correct. Read it aloud before you ship it, and if
+  you would not say it to a colleague across a counter, write it again.
 
   **A sentence belongs on a screen only if it changes what the reader does.** Before adding a hint,
   a caption or an explanatory paragraph, name the decision or action it changes. If you cannot, it
