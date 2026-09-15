@@ -84,9 +84,13 @@ function followTheBrowser(): void {
 }
 
 function rebuildTheDoorWhenTheAnchorComesBack(event: PageTransitionEvent): void {
-  if (event.persisted && thisDocumentIsTheAnchor) {
+  if (theDoorNeedsRebuildingWhenShown(event.persisted)) {
     window.location.assign(theDoorChainAddress())
   }
+}
+
+export function theDoorNeedsRebuildingWhenShown(persisted: boolean): boolean {
+  return persisted && thisDocumentIsTheAnchor
 }
 
 export function keepTheDeviceBehindTheDoor(): void {
@@ -109,6 +113,7 @@ export function navigate(path: string): void {
 }
 
 export function startOverAt(path: string): void {
+  sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, 'yes')
   sessionStorage.setItem(THE_DOOR_TARGET_KEY, path)
   sessionStorage.setItem(THE_DOOR_ARRIVAL_KEY, 'yes')
   window.location.replace(path)

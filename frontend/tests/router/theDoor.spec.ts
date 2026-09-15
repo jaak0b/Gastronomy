@@ -102,6 +102,14 @@ describe('the shell boot script', () => {
     expect(navigated).toEqual([])
     expect(storage.size).toBe(0)
   })
+
+  it('does not mistake a path that merely starts like the admin for the admin', () => {
+    const storage: TheStorage = new Map([['theDoorAnchor', 'yes']])
+
+    const { navigated } = runTheBoot('/administrator', storage)
+
+    expect(navigated).toEqual(['/door.html?n=10&v=build-a'])
+  })
 })
 
 describe('the start button', () => {
@@ -129,6 +137,13 @@ describe('the start button', () => {
     const { needsTheDoorOpened } = await import('../../src/router')
 
     expect(needsTheDoorOpened()).toBe(false)
+  })
+
+  it('is still asked for on a path that merely starts like the admin', async () => {
+    window.history.replaceState({}, '', '/administrator')
+    const { needsTheDoorOpened } = await import('../../src/router')
+
+    expect(needsTheDoorOpened()).toBe(true)
   })
 
   it('marks this screen as the anchor and remembers it as the back target', async () => {
@@ -168,16 +183,59 @@ describe('the door page', () => {
     expect(assigned).toEqual(['/'])
   })
 
-  it('uses the same storage keys the boot script wrote', async () => {
+  it('agrees with the open button and the boot script on the storage keys', async () => {
+    vi.resetModules()
+    sessionStorage.clear()
+    window.history.replaceState({}, '', '/')
+    const { openTheDoor } = await import('../../src/router')
+
+    openTheDoor()
     const storage: TheStorage = new Map()
-    runTheBoot('/', storage)
+    for (let index = 0; index < sessionStorage.length; index += 1) {
+      const key = sessionStorage.key(index)!
+      storage.set(key, sessionStorage.getItem(key)!)
+    }
 
-    const { assigned, handlers } = runTheDoor('?n=1', storage)
+    const { navigated } = runTheBoot('/', storage)
+    expect(navigated).toHaveLength(1)
 
+    const { assigned, handlers } = runTheDoor('?n=1&v=build-a', storage)
     await withAFakedTick(() => handlers.get('pageshow')!())
-
     expect(assigned).toEqual(['/'])
-    expect(storage.get('arrivedThroughTheDoor')).toBe('yes')
+
+    const { navigated: theBootAfterTheDoor } = runTheBoot('/', storage)
+    expect(theBootAfterTheDoor).toEqual([])
+    expect(storage.has('arrivedThroughTheDoor')).toBe(false)
+  })
+})
+
+describe('a browser that comes back to the anchor', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    sessionStorage.clear()
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('rebuilds the doors when the browser restores the anchor', async () => {
+    const { openTheDoor, theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+
+    openTheDoor()
+
+    expect(theDoorNeedsRebuildingWhenShown(true)).toBe(true)
+  })
+
+  it('leaves the first show of the screen alone', async () => {
+    const { openTheDoor, theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+
+    openTheDoor()
+
+    expect(theDoorNeedsRebuildingWhenShown(false)).toBe(false)
+  })
+
+  it('has nothing to rebuild in a document that never opened the doors', async () => {
+    const { theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+
+    expect(theDoorNeedsRebuildingWhenShown(true)).toBe(false)
   })
 })
 
@@ -246,12 +304,12 @@ describe('a device that arrived through the door', () => {
   })
 
   it('moves the back target with a fresh start, so it cannot land on the screen before', async () => {
-    const { startOverAt, THE_DOOR_TARGET_KEY, THE_DOOR_ARRIVAL_KEY } = await import(
-      '../../src/router'
-    )
+    const { startOverAt, THE_DOOR_ANCHOR_KEY, THE_DOOR_TARGET_KEY, THE_DOOR_ARRIVAL_KEY } =
+      await import('../../src/router')
 
     startOverAt('/')
 
+    expect(sessionStorage.getItem(THE_DOOR_ANCHOR_KEY)).toBe('yes')
     expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
     expect(sessionStorage.getItem(THE_DOOR_ARRIVAL_KEY)).toBe('yes')
   })
