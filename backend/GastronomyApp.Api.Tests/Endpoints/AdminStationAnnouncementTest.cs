@@ -119,6 +119,7 @@ public sealed class AdminStationAnnouncementTest
                announcer,
                services.GetRequiredService<OrderableItems>(),
                services.GetRequiredService<ResultEnvelope>(),
+               services.GetRequiredService<RunningFestivalLookup>(),
                services.GetRequiredService<IClock>());
   }
 }

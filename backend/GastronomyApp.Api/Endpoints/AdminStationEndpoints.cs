@@ -123,6 +123,7 @@ public sealed class AdminStationHandler
   private readonly OutstandingInvitationLookup _invitationLookup;
   private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
 
   public AdminStationHandler(GastronomyAppDbContext dbContext,
                              OutstandingInvitationLookup invitationLookup,
@@ -130,6 +131,7 @@ public sealed class AdminStationHandler
                              StationChangeAnnouncer announcer,
                              OrderableItems orderableItems,
                              ResultEnvelope resultEnvelope,
+                             RunningFestivalLookup runningFestivalLookup,
                              IClock clock)
   {
     _dbContext = dbContext;
@@ -138,6 +140,7 @@ public sealed class AdminStationHandler
     _deviceRevoker = deviceRevoker;
     _announcer = announcer;
     _resultEnvelope = resultEnvelope;
+    _runningFestivalLookup = runningFestivalLookup;
     _clock = clock;
   }
 
@@ -265,14 +268,16 @@ public sealed class AdminStationHandler
       return Results.NotFound();
     }
 
-    var unfinishedItemCount = await UnfinishedItemCountAsync(stationId, cancellationToken);
+    var runningFestival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var unfinishedItemCount = runningFestival is null
+                                ? 0
+                                : await UnfinishedItemCountAsync(runningFestival.Id, stationId, cancellationToken);
 
     if (unfinishedItemCount > 0)
     {
       return _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                     "StationHasUnfinishedItems",
-                                    "admin.stationHasUnfinishedItems",
-                                    new Dictionary<string, string> { ["count"] = unfinishedItemCount.ToString() });
+                                    "admin.stationHasUnfinishedItems");
     }
 
     IReadOnlyList<Guid> strandedItemIds =
@@ -342,18 +347,14 @@ public sealed class AdminStationHandler
     station.EnrolmentInvitationId = null;
   }
 
-  private async Task<int> UnfinishedItemCountAsync(Guid stationId, CancellationToken cancellationToken)
+  private async Task<int> UnfinishedItemCountAsync(Guid festivalId,
+                                                   Guid stationId,
+                                                   CancellationToken cancellationToken)
   {
-    List<Guid> stationOrderIds = await _dbContext.StationOrders
-                                                 .AsNoTracking()
-                                                 .Where(stationOrder => stationOrder.StationId == stationId)
-                                                 .Select(stationOrder => stationOrder.Id)
-                                                 .ToListAsync(cancellationToken);
-
-    return await _dbContext.OrderItems
+    return await _dbContext.StationOrders
                            .AsNoTracking()
-                           .CountAsync(item => stationOrderIds.Contains(item.StationOrderId)
-                                               && item.FulfilledAtUtc == null,
-                                       cancellationToken);
+                           .Where(slice => slice.FestivalId == festivalId && slice.StationId == stationId)
+                           .SelectMany(slice => slice.Items)
+                           .CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
   }
 }

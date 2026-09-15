@@ -233,7 +233,7 @@
     "itemCategoryUnknown": "Choose a category before you save.",
     "itemNeedsAStation": "Choose at least one station for the item.",
     "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
-    "stationHasUnfinishedItems": "This station still has one unfinished order and cannot be switched off yet. Finish that order and try again afterwards. | This station still has unfinished orders and cannot be switched off yet. Finish the orders and try again afterwards.",
+    "stationHasUnfinishedItems": "A station with open orders cannot be switched off while the festival runs.",
     "stationNameMissing": "Give the station a name before you save it.",
     "actionFailed": "That did not work. Try again, and reload the page if it still does not work.",
     "deactivate": "Deactivate",
@@ -243,7 +243,7 @@
     "festivalPeriodInvalid": "The end has to come after the start. Set the end to a later time.",
     "festivalOverlaps": "The festival {name} overlaps this period. Move the start or the end.",
     "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
-    "stationHasOrdersAtTheFestival": "Stations with placed orders cannot be removed.",
+    "stationHasOrdersAtTheFestival": "A station with open orders cannot be removed while the festival runs.",
     "festivals": {
       "title": "Festivals",
       "new": "New festival",

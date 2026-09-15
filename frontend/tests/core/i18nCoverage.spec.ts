@@ -10,7 +10,6 @@ const PLURAL_KEYS = [
   'catalog.basketSummary',
   'admin.overview.itemsWithoutStation',
   'admin.itemsWouldHaveNoStation',
-  'admin.stationHasUnfinishedItems',
   'admin.festivals.stationCount',
   'admin.festivals.menuItemCount',
   'admin.festivals.orderCount',

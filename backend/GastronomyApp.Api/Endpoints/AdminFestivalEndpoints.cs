@@ -714,20 +714,26 @@ public sealed class AdminFestivalStationHandler
   private const int FirstNumber = 1;
 
   private readonly StationChangeAnnouncer _announcer;
+  private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly FestivalSchedule _schedule;
   private readonly ImmediateTransactionRunner _transactionRunner = new();
 
   public AdminFestivalStationHandler(GastronomyAppDbContext dbContext,
                                      StationChangeAnnouncer announcer,
                                      OrderableItems orderableItems,
-                                     ResultEnvelope resultEnvelope)
+                                     ResultEnvelope resultEnvelope,
+                                     FestivalSchedule schedule,
+                                     IClock clock)
   {
     _dbContext = dbContext;
     _announcer = announcer;
     _orderableItems = orderableItems;
     _resultEnvelope = resultEnvelope;
+    _schedule = schedule;
+    _clock = clock;
   }
 
   public async Task<IResult> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
@@ -822,23 +828,31 @@ public sealed class AdminFestivalStationHandler
       return new(Results.NotFound(), false);
     }
 
-    var sliceCount = await _dbContext.StationOrders
-                                     .AsNoTracking()
-                                     .Join(_dbContext.Orders.AsNoTracking(),
-                                           slice => slice.OrderId,
-                                           order => order.Id,
-                                           (slice, order) => new { Slice = slice, Order = order })
-                                     .Where(joined => joined.Slice.StationId == stationId
-                                                      && joined.Order.FestivalId == festivalId)
-                                     .Select(joined => joined.Slice.Id)
-                                     .CountAsync(cancellationToken);
+    var festival = await _dbContext.Festivals
+                                   .AsNoTracking()
+                                   .FirstOrDefaultAsync(candidate => candidate.Id == festivalId, cancellationToken);
 
-    if (sliceCount > 0)
+    if (festival is null)
     {
-      return new(_resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                        "StationHasOrdersAtTheFestival",
-                                        "admin.stationHasOrdersAtTheFestival"),
-                 false);
+      return new(Results.NotFound(), false);
+    }
+
+    if (_schedule.IsRunning(festival, _clock.UtcNow))
+    {
+      var openItemCount = await _dbContext.StationOrders
+                                          .AsNoTracking()
+                                          .Where(slice => slice.StationId == stationId
+                                                          && slice.FestivalId == festivalId)
+                                          .SelectMany(slice => slice.Items)
+                                          .CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
+
+      if (openItemCount > 0)
+      {
+        return new(_resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                           "StationHasOrdersAtTheFestival",
+                                           "admin.stationHasOrdersAtTheFestival"),
+                   false);
+      }
     }
 
     IReadOnlyList<Guid> strandedItemIds =

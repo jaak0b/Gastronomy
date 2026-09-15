@@ -527,17 +527,11 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
-  public async Task DeleteFestivalStation_AStationWhoseSliceIsAlreadyFulfilled_IsStillRefused()
+  public async Task DeleteFestivalStation_WhileTheFestivalRunsAndAnItemIsStillOpen_IsRefused()
   {
     using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    await using (var database = _context.Factory.CreateContext())
-    {
-      await database.OrderItems.ExecuteUpdateAsync(item => item.SetProperty(entry => entry.FulfilledAtUtc,
-                                                                            DateTime.UtcNow));
     }
 
     using var response =
@@ -553,6 +547,67 @@ public sealed class AdminFestivalEndpointsTest
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
                                   Is.EqualTo("admin.stationHasOrdersAtTheFestival"));
                     });
+  }
+
+  [Test]
+  public async Task DeleteFestivalStation_WhenEveryItemIsAlreadyFulfilled_TakesItOffTheFestival()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await using (var database = _context.Factory.CreateContext())
+    {
+      await database.OrderItems.ExecuteUpdateAsync(item => item.SetProperty(entry => entry.FulfilledAtUtc,
+                                                                            DateTime.UtcNow));
+    }
+
+    await AssignTheBratwurstToTheBarAsync();
+
+    using var response =
+      await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}");
+
+    Assert.That(response.StatusCode,
+                Is.EqualTo(HttpStatusCode.NoContent),
+                $"A running festival with nothing left to make must let the station go. Body: {await response.Content.ReadAsStringAsync()}");
+  }
+
+  [Test]
+  public async Task DeleteFestivalStation_FromAFestivalThatEnded_IsAllowedEvenWithOpenOrders()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await AssignTheBratwurstToTheBarAsync();
+
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var festival = await database.Festivals.SingleAsync(candidate => candidate.Id == _context.World.FestivalId);
+      festival.EndsAtUtc = DateTime.UtcNow.AddMinutes(-1);
+      await database.SaveChangesAsync();
+    }
+
+    using var response =
+      await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}");
+
+    Assert.That(response.StatusCode,
+                Is.EqualTo(HttpStatusCode.NoContent),
+                $"A festival that ended must let the station go even with open orders. Body: {await response.Content.ReadAsStringAsync()}");
+  }
+
+  private async Task AssignTheBratwurstToTheBarAsync()
+  {
+    using var response = await _context.Client
+                                      .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                      new
+                                                      {
+                                                        priceCents = 350,
+                                                        stationIds = new[] { _context.World.BarStationId }
+                                                      });
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
 
   [Test]

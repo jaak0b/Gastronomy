@@ -233,7 +233,7 @@
     "itemCategoryUnknown": "Wählen Sie eine Kategorie aus, bevor Sie speichern.",
     "itemNeedsAStation": "Wählen Sie mindestens eine Ausgabestelle für den Artikel.",
     "itemCategoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
-    "stationHasUnfinishedItems": "Diese Ausgabestelle hat noch eine unfertige Bestellung und kann jetzt nicht abgeschaltet werden. Arbeiten Sie sie ab und versuchen Sie es danach erneut. | Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.",
+    "stationHasUnfinishedItems": "Eine Ausgabestelle mit offenen Bestellungen kann während des Festes nicht abgeschaltet werden.",
     "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
     "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
     "deactivate": "Deaktivieren",
@@ -243,7 +243,7 @@
     "festivalPeriodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
     "festivalOverlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
     "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
-    "stationHasOrdersAtTheFestival": "Ausgabestellen mit aufgegebenen Bestellungen können nicht entfernt werden.",
+    "stationHasOrdersAtTheFestival": "Eine Ausgabestelle mit offenen Bestellungen kann während des Festes nicht entfernt werden.",
     "festivals": {
       "title": "Feste",
       "new": "Neues Fest",
