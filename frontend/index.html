@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GastronomyApp</title>
+    <script>
+      (function () {
+        var path = window.location.pathname.toLowerCase()
+        if (path === '/admin' || path.indexOf('/admin/') === 0) {
+          return
+        }
+        var address = window.location.pathname + window.location.search + window.location.hash
+        for (var copy = 0; copy < 20; copy += 1) {
+          window.history.pushState(null, '', address)
+        }
+        window.theBackGuardPadIsPlanted = true
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

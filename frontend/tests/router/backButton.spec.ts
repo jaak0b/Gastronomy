@@ -135,7 +135,21 @@ describe('the back button of the phone the server holds', () => {
     expect(window.location.pathname).toBe('/')
   })
 
-  it('keeps the browser history to one screen entry however much the waiter taps around', async () => {
+  it('stays put when a whole burst of back presses arrives at once', async () => {
+    window.history.pushState({}, '', '/')
+    const { currentRoute, keepTheDeviceInsideTheApp } = await import('../../src/router')
+    const { THE_BACK_GUARD_PAD_SIZE } = await import('../../src/theBackGuardPad')
+    keepTheDeviceInsideTheApp()
+
+    const popped = nextPopstate()
+    window.history.go(-THE_BACK_GUARD_PAD_SIZE)
+    await popped
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+    expect(window.location.pathname).toBe('/')
+  })
+
+  it('does not grow the browser history however much the waiter taps around', async () => {
     window.history.pushState({}, '', '/')
     const { currentRoute, keepTheDeviceInsideTheApp, navigate } = await import('../../src/router')
     keepTheDeviceInsideTheApp()

@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { assertNever } from '../core/assertNever'
 import { resolveRoute, type AppRoute } from '../core/route'
+import { plantTheBackGuardPad } from '../theBackGuardPad'
 
 export { ADMIN_SECTIONS, resolveRoute } from '../core/route'
 export type { AdminSection, AppRoute } from '../core/route'
@@ -49,7 +50,7 @@ function followTheBrowserBackButton(): void {
   } else {
     goOneScreenBack()
   }
-  window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
+  window.history.pushState(null, '', theAddressOfTheScreen)
 }
 
 function goOneScreenBack(): void {
@@ -70,7 +71,7 @@ function goOneScreenBack(): void {
 
 function keepTheGuardAfterTheBrowserRestoredThePage(event: PageTransitionEvent): void {
   if (event.persisted && theDeviceIsKeptInsideTheApp) {
-    window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
+    window.history.pushState(null, '', theAddressOfTheScreen)
   }
 }
 
@@ -81,16 +82,15 @@ export function keepTheDeviceInsideTheApp(): void {
   }
   theDeviceIsKeptInsideTheApp = true
   theAddressOfTheScreen = currentAddress()
-  window.history.replaceState({ theApp: true }, '', currentAddress())
-  window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
+  plantTheBackGuardPad()
 }
 
 export function navigate(path: string): void {
   closeTheStepInsideTheScreen()
   if (theDeviceIsKeptInsideTheApp) {
-    window.history.replaceState({ theApp: true }, '', path)
+    window.history.replaceState(null, '', path)
   } else {
-    window.history.pushState({ theApp: true }, '', path)
+    window.history.pushState(null, '', path)
   }
   currentRoute.value = resolveRoute(path)
   theAddressOfTheScreen = currentAddress()

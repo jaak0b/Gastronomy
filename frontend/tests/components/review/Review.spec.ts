@@ -150,7 +150,7 @@ describe('sending the order from the review screen', () => {
     await sendFromTheStrip(review, '.send')
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
-    expect(replaceState).toHaveBeenCalledWith(expect.anything(), '', '/')
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/')
     replaceState.mockRestore()
   })
 
