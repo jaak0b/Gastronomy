@@ -40,12 +40,12 @@ const unitSummary = computed(() =>
 </script>
 
 <template>
-  <fieldset class="station-fulfilled mb-4 bg-surface" :style="{ borderColor: modeColour }">
-    <legend class="slice-legend d-flex flex-wrap align-baseline ga-2">
+  <div class="station-fulfilled mb-4 bg-surface" :style="{ borderColor: modeColour }">
+    <div class="slice-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
       <span class="slice-heading text-body-2 text-medium-emphasis">{{ orderReference }}</span>
       <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
-    </legend>
+    </div>
     <div class="slice-mode-row d-flex flex-wrap align-baseline ga-2 mb-1">
       <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
         {{ deliveryText }}
@@ -80,7 +80,7 @@ const unitSummary = computed(() =>
         {{ t('station.putBack') }}
       </v-btn>
     </div>
-  </fieldset>
+  </div>
 </template>
 
 <style scoped>

@@ -8,21 +8,18 @@
   min-width: 0;
   min-inline-size: 0;
   max-width: 100%;
-  padding: 0 0.75rem 0.75rem;
+  padding: 0.75rem;
 }
 
-.slice-legend {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
+.slice-head {
   min-width: 0;
 }
 
-.slice-legend > span {
+.slice-head > span {
   min-width: 0;
 }
 
-.slice-legend .table-name {
+.slice-head .table-name {
   overflow-wrap: anywhere;
 }
 
