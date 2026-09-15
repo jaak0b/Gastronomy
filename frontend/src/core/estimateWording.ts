@@ -1,26 +1,44 @@
+import type { AppLanguage } from './apiTypes'
 import type { EstimateRange } from './estimates'
+import { formatMinutes } from './productionMinutes'
 
 export type EstimateWording = (key: string, values: Record<string, string | number>) => string
 
-export function estimateText(minutes: number | null, t: EstimateWording): string | null {
+export function estimateText(
+  minutes: number | null,
+  t: EstimateWording,
+  language: AppLanguage,
+): string | null {
   if (minutes === null) {
     return null
   }
-  return t('estimates.inMinutes', { count: minutes })
+  return t('estimates.inMinutes', { count: formatMinutes(minutes, language) })
 }
 
-export function estimateRangeText(range: EstimateRange | null, t: EstimateWording): string | null {
+export function estimateRangeText(
+  range: EstimateRange | null,
+  t: EstimateWording,
+  language: AppLanguage,
+): string | null {
   if (range === null) {
     return null
   }
   if (range.min === range.max) {
-    return t('estimates.inMinutes', { count: range.min })
+    return t('estimates.inMinutes', { count: formatMinutes(range.min, language) })
   }
-  return t('estimates.inMinuteRange', { min: range.min, max: range.max })
+  return t('estimates.inMinuteRange', {
+    min: formatMinutes(range.min, language),
+    max: formatMinutes(range.max, language),
+  })
 }
 
-export function withEstimate(line: string, minutes: number | null, t: EstimateWording): string {
-  const estimate = estimateText(minutes, t)
+export function withEstimate(
+  line: string,
+  minutes: number | null,
+  t: EstimateWording,
+  language: AppLanguage,
+): string {
+  const estimate = estimateText(minutes, t, language)
   return estimate === null ? line : t('estimates.withEstimate', { line, estimate })
 }
 
@@ -28,7 +46,8 @@ export function withRangeEstimate(
   line: string,
   range: EstimateRange | null,
   t: EstimateWording,
+  language: AppLanguage,
 ): string {
-  const estimate = estimateRangeText(range, t)
+  const estimate = estimateRangeText(range, t, language)
   return estimate === null ? line : t('estimates.withEstimate', { line, estimate })
 }

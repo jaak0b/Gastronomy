@@ -67,8 +67,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProductionMinutes")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("ProductionMinutes")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");

@@ -44,7 +44,7 @@ public sealed class StationQueryHandler
   }
 }
 
-public sealed record QueuedItemRow(Guid StationId, int? ProductionMinutes, bool IsQueueIndependent);
+public sealed record QueuedItemRow(Guid StationId, double? ProductionMinutes, bool IsQueueIndependent);
 
 public sealed class StationsAtTheFestivalReader
 {
@@ -144,7 +144,7 @@ public sealed class StationEstimateHandler
                                                   ]));
   }
 
-  private int QueuedMinutesOf(IReadOnlyCollection<QueuedItemRow> queued, Guid stationId)
+  private double QueuedMinutesOf(IReadOnlyCollection<QueuedItemRow> queued, Guid stationId)
   {
     return _estimateCalculator.QueuedMinutesOf(queued
                                               .Where(row => row.StationId == stationId)

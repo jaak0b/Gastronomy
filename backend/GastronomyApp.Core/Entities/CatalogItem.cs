@@ -12,7 +12,7 @@ public sealed class CatalogItem
 
   public required bool IsActive { get; set; }
 
-  public int? ProductionMinutes { get; set; }
+  public double? ProductionMinutes { get; set; }
 
   public bool IsQueueIndependent { get; set; }
 }

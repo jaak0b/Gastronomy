@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { CatalogItem } from '../../core/apiTypes'
+import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
 import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
 
 const props = defineProps<{
   item: CatalogItem
+  language: AppLanguage
   stationNameFor: (stationId: string) => string
   estimateFor: (stationId: string) => number | null
   currentStationId: string | null
@@ -56,7 +57,7 @@ function choose(stationId: string): void {
           block
           @click="choose(stationId)"
         >
-          {{ withEstimate(stationNameFor(stationId), estimateFor(stationId), t) }}
+          {{ withEstimate(stationNameFor(stationId), estimateFor(stationId), t, language) }}
           <span v-if="stationId === currentStationId" class="station-current text-medium-emphasis">
             {{ t('line.currentStation') }}
           </span>

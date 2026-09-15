@@ -56,7 +56,7 @@
     "itemSoldOut": "{name} ist gerade ausverkauft.",
     "lineNoLongerOnTheMenu": "Nicht mehr auf der Karte.",
     "lineStationNoLongerPreparesIt": "Diese Ausgabestelle bereitet den Artikel nicht mehr zu.",
-    "productionMinutesOutOfRange": "Tragen Sie ganze Minuten von 0 bis 600 ein."
+    "productionMinutesOutOfRange": "Tragen Sie Minuten von 0 bis 600 ein."
   },
   "estimates": {
     "inMinutes": "~{count} Min.",
@@ -169,7 +169,7 @@
       "price": "Preis in Euro",
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
       "productionMinutes": "Zubereitungszeit in Minuten",
-      "productionMinutesInvalid": "Tragen Sie ganze Minuten von 0 bis 600 ein.",
+      "productionMinutesInvalid": "Tragen Sie Minuten von 0 bis 600 ein.",
       "prepareIndependently": "Wird unabhängig von anderen Artikeln zubereitet",
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",

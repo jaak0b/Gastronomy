@@ -22,6 +22,22 @@ public sealed class ProductionEstimateCalculatorTest
   }
 
   [Test]
+  public void QueuedMinutesOf_HalfMinutes_SumsTheHalves()
+  {
+    var minutes = _calculator.QueuedMinutesOf([new(1.5, false), new(2.5, false)]);
+
+    Assert.That(minutes, Is.EqualTo(4));
+  }
+
+  [Test]
+  public void QueuedMinutesOf_FractionsThatCarryBinaryDust_ReachesTheWireWithOneDecimalPlace()
+  {
+    var minutes = _calculator.QueuedMinutesOf([new(0.1, false), new(0.2, false)]);
+
+    Assert.That(minutes, Is.EqualTo(0.3));
+  }
+
+  [Test]
   public void QueuedMinutesOf_WorkWithoutAStatedMinuteCount_CountsAsZero()
   {
     var minutes = _calculator.QueuedMinutesOf([new(null, false), new(3, false)]);
@@ -35,6 +51,14 @@ public sealed class ProductionEstimateCalculatorTest
     var minutes = _calculator.QueuedMinutesOf([new(5, false), new(7, true)]);
 
     Assert.That(minutes, Is.EqualTo(5));
+  }
+
+  [Test]
+  public void QueuedMinutesOf_HalfMinutesThatArePreparedIndependently_StayOutOfTheQueue()
+  {
+    var minutes = _calculator.QueuedMinutesOf([new(1.5, false), new(2.5, true)]);
+
+    Assert.That(minutes, Is.EqualTo(1.5));
   }
 
   [Test]

@@ -74,7 +74,7 @@ describe('the preparation time field', () => {
     knownCategories()
   })
 
-  it('asks for whole minutes', () => {
+  it('names the field for the preparation time', () => {
     const form = mountForm()
 
     expect(form.get('.production-minutes-field label').text()).toBe('Zubereitungszeit in Minuten')
@@ -85,6 +85,14 @@ describe('the preparation time field', () => {
 
     expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe(
       '15',
+    )
+  })
+
+  it('shows half a minute the way German writes it', () => {
+    const form = mountForm({ ...BRATWURST, productionMinutes: 1.5 })
+
+    expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe(
+      '1,5',
     )
   })
 
@@ -103,6 +111,24 @@ describe('the preparation time field', () => {
     expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 20 })
   })
 
+  it('sends half a minute written with a comma, the way German writes it', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.production-minutes-field input').setValue('1,5')
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 1.5 })
+  })
+
+  it('sends half a minute written with a dot, the way English writes it', async () => {
+    const form = mountForm(BRATWURST)
+
+    await form.get('.production-minutes-field input').setValue('1.5')
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 1.5 })
+  })
+
   it('sends no preparation time when the field is left empty', async () => {
     const form = mountForm(BRATWURST)
 
@@ -119,7 +145,7 @@ describe('the preparation time field', () => {
     await form.get('form').trigger('submit')
 
     expect(form.get('.production-minutes-field .v-messages').text()).toBe(
-      'Tragen Sie ganze Minuten von 0 bis 600 ein.',
+      'Tragen Sie Minuten von 0 bis 600 ein.',
     )
     expect(form.emitted('save')).toBeUndefined()
   })

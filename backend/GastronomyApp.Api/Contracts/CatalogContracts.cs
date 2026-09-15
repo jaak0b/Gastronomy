@@ -9,7 +9,7 @@ public sealed record CatalogItemView(
   int PriceCents,
   int SortOrder,
   bool IsAvailable,
-  int? ProductionMinutes,
+  double? ProductionMinutes,
   bool IsQueueIndependent,
   IReadOnlyList<Guid> StationIds);
 

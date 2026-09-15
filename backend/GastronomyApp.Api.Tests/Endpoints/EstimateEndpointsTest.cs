@@ -34,7 +34,7 @@ public sealed class EstimateEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("queuedMinutes").GetInt32()),
+                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("queuedMinutes").GetDouble()),
                                   Is.All.Zero);
                     });
   }
@@ -126,12 +126,32 @@ public sealed class EstimateEndpointsTest
                     });
   }
 
-  private int QueuedMinutesOf(JsonElement stations, Guid stationId)
+  [Test]
+  public async Task GetEstimates_HalfMinutesInTheQueue_ReportsTheFraction()
+  {
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var bratwurst = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BratwurstItemId);
+      bratwurst.ProductionMinutes = 1.5;
+      await database.SaveChangesAsync();
+    }
+
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    var stations = await ReadEstimatesAsync();
+
+    Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.EqualTo(3));
+  }
+
+  private double QueuedMinutesOf(JsonElement stations, Guid stationId)
   {
     return stations.EnumerateArray()
                    .Single(station => station.GetProperty("stationId").GetGuid() == stationId)
                    .GetProperty("queuedMinutes")
-                   .GetInt32();
+                   .GetDouble();
   }
 
   private async Task<JsonElement> ReadEstimatesAsync()

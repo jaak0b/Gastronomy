@@ -31,7 +31,7 @@ const stations = computed(() =>
 )
 
 function deliveryTextOf(station: StationDelivery): string {
-  return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t)
+  return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, props.language)
 }
 
 const confirmLabel = computed(() =>

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import type { AppLanguage } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
 import {
   formatProductionMinutes,
@@ -22,13 +23,15 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const categories = useAdminCategoriesStore()
 const name = ref(props.item?.name ?? '')
 const categoryId = ref<string | null>(props.item?.categoryId ?? null)
 const categoryIsMissing = ref(false)
 const isCreatingCategory = ref(false)
-const productionMinutesText = ref(formatProductionMinutes(props.item?.productionMinutes ?? null))
+const productionMinutesText = ref(
+  formatProductionMinutes(props.item?.productionMinutes ?? null, locale.value as AppLanguage),
+)
 const productionMinutesAreUnreadable = ref(false)
 const isQueueIndependent = ref(props.item?.isQueueIndependent ?? false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
@@ -121,7 +124,7 @@ function save(): void {
           v-model="productionMinutesText"
           class="production-minutes-field mb-2"
           :label="t('admin.items.productionMinutes')"
-          inputmode="numeric"
+          inputmode="decimal"
           :error="productionMinutesAreUnreadable"
           :error-messages="
             productionMinutesAreUnreadable ? [t('admin.items.productionMinutesInvalid')] : []

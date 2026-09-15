@@ -76,7 +76,31 @@ public sealed class CatalogProductionMinutesTest
   }
 
   [Test]
-  public async Task PutItem_ADuration_ReachesBothTheAdminListAndTheOrderingCatalog()
+  public async Task PostItem_ADurationFinerThanOneDecimalPlace_IsRefused()
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
+                                                              new
+                                                              {
+                                                                name = "Pommes",
+                                                                categoryId = _context.World.FoodCategoryId,
+                                                                priceCents = 250,
+                                                                sortOrder = 3,
+                                                                stationIds = new[] { _context.World.KitchenStationId },
+                                                                productionMinutes = 1.25
+                                                              });
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                    });
+  }
+
+  [Test]
+  public async Task PutItem_ADurationOfOneAndAHalfMinutes_ReachesBothTheAdminListAndTheOrderingCatalog()
   {
     using (var saved = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BratwurstItemId}",
                                                             new
@@ -86,7 +110,7 @@ public sealed class CatalogProductionMinutesTest
                                                               priceCents = 350,
                                                               sortOrder = 1,
                                                               stationIds = new[] { _context.World.KitchenStationId },
-                                                              productionMinutes = 7
+                                                              productionMinutes = 1.5
                                                             }))
     {
       Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -108,8 +132,8 @@ public sealed class CatalogProductionMinutesTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(adminItem.GetProperty("productionMinutes").GetInt32(), Is.EqualTo(7));
-                      Assert.That(catalogItem.GetProperty("productionMinutes").GetInt32(), Is.EqualTo(7));
+                      Assert.That(adminItem.GetProperty("productionMinutes").GetDouble(), Is.EqualTo(1.5));
+                      Assert.That(catalogItem.GetProperty("productionMinutes").GetDouble(), Is.EqualTo(1.5));
                     });
   }
 

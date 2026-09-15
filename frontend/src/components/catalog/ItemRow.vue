@@ -47,7 +47,12 @@ const isSoldOut = computed(() => {
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
 
 const nameWithEstimate = computed(() =>
-  withRangeEstimate(props.item.name, isSoldOut.value ? null : props.estimateRange, t),
+  withRangeEstimate(
+    props.item.name,
+    isSoldOut.value ? null : props.estimateRange,
+    t,
+    props.language,
+  ),
 )
 
 const groups = computed(() => groupPositions(props.positions))

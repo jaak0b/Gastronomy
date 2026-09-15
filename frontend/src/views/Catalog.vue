@@ -294,6 +294,7 @@ function chooseStation(stationId: string, note: string | null): void {
       <LineStationSheet
         v-if="itemBehindTheStationChoice !== null"
         :item="itemBehindTheStationChoice"
+        :language="session.language"
         :station-name-for="catalog.stationName"
         :estimate-for="estimateForTheStationChoice"
         :current-station-id="currentStationId"

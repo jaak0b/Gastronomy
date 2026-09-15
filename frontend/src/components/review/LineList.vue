@@ -77,7 +77,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       variant="outlined"
     >
       <v-card-title v-if="part.stationId !== null" class="station-name text-subtitle-1">
-        {{ withEstimate(t('review.goesTo', { name: part.stationName }), part.stationMinutes, t) }}
+        {{ withEstimate(t('review.goesTo', { name: part.stationName }), part.stationMinutes, t, language) }}
       </v-card-title>
       <v-divider v-if="part.stationId !== null" />
       <div

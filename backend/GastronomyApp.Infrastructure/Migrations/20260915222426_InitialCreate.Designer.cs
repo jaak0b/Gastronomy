@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    [Migration("20260915220102_InitialCreate")]
+    [Migration("20260915222426_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -70,8 +70,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProductionMinutes")
-                        .HasColumnType("INTEGER");
+                    b.Property<double?>("ProductionMinutes")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");

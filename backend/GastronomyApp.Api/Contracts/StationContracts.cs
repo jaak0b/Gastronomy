@@ -37,6 +37,6 @@ public sealed record StationItemSelectionRequest
   public required IReadOnlyList<Guid>? OrderItemIds { get; init; }
 }
 
-public sealed record StationEstimateView(Guid StationId, int QueuedMinutes);
+public sealed record StationEstimateView(Guid StationId, double QueuedMinutes);
 
 public sealed record StationEstimateListView(IReadOnlyList<StationEstimateView> Stations);

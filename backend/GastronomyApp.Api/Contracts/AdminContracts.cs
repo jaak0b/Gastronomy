@@ -55,7 +55,7 @@ public sealed record AdminItemView(
   Guid CategoryId,
   int SortOrder,
   bool IsActive,
-  int? ProductionMinutes,
+  double? ProductionMinutes,
   bool IsQueueIndependent,
   AdminItemAtFestivalView? AtTheFestival);
 
@@ -69,7 +69,7 @@ public sealed record SaveItemRequest
 
   public required int SortOrder { get; init; }
 
-  public int? ProductionMinutes { get; init; }
+  public double? ProductionMinutes { get; init; }
 
   public bool IsQueueIndependent { get; init; }
 }

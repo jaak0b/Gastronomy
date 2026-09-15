@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Endpoints;
 
@@ -47,20 +48,23 @@ public static class AdminItemEndpoints
 
 public sealed class AdminItemHandler
 {
-  private const int ShortestProductionMinutes = 0;
-  private const int LongestProductionMinutes = 600;
+  private const double ShortestProductionMinutes = 0;
+  private const double LongestProductionMinutes = 600;
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogWriteTransaction _writeTransaction;
+  private readonly ILogger<AdminItemHandler> _logger;
 
   public AdminItemHandler(GastronomyAppDbContext dbContext,
                           CatalogWriteTransaction writeTransaction,
-                          ResultEnvelope resultEnvelope)
+                          ResultEnvelope resultEnvelope,
+                          ILogger<AdminItemHandler> logger)
   {
     _dbContext = dbContext;
     _writeTransaction = writeTransaction;
     _resultEnvelope = resultEnvelope;
+    _logger = logger;
   }
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
@@ -294,11 +298,27 @@ public sealed class AdminItemHandler
                                     "admin.itemNameMissing");
     }
 
-    if (request.ProductionMinutes is < ShortestProductionMinutes or > LongestProductionMinutes)
+    if (request.ProductionMinutes is { } minutes)
     {
-      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                    "ValidationFailed",
-                                    "catalog.productionMinutesOutOfRange");
+      if (minutes is < ShortestProductionMinutes or > LongestProductionMinutes)
+      {
+        _logger.LogWarning("An item was refused because its preparation time {ProductionMinutes} is outside the 0 to 600 minutes the item form accepts, so this call did not come from that screen.",
+                           minutes);
+
+        return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+                                      "ValidationFailed",
+                                      "catalog.productionMinutesOutOfRange");
+      }
+
+      if (Math.Round(minutes, 1) != minutes)
+      {
+        _logger.LogWarning("An item was refused because its preparation time {ProductionMinutes} has more than one decimal place, which the item form never produces, so this call did not come from that screen.",
+                           minutes);
+
+        return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
+                                      "ValidationFailed",
+                                      "catalog.productionMinutesOutOfRange");
+      }
     }
 
     return null;
