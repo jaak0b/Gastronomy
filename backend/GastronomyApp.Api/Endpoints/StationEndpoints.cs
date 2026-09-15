@@ -101,13 +101,20 @@ public sealed class StationShellResponder
     _environment = environment;
   }
 
-  public IResult Respond()
+  public IResult Respond(HttpContext httpContext)
   {
+    ArgumentNullException.ThrowIfNull(httpContext);
+
     var shellPath = Path.Combine(_environment.WebRootPath ?? string.Empty, "index.html");
 
-    return File.Exists(shellPath)
-             ? Results.File(shellPath, "text/html")
-             : Results.NotFound();
+    if (!File.Exists(shellPath))
+    {
+      return Results.NotFound();
+    }
+
+    httpContext.Response.Headers.CacheControl = "no-cache";
+
+    return Results.File(shellPath, "text/html");
   }
 }
 
@@ -133,6 +140,6 @@ public sealed class ClientRouteFallbackResponder
       return Results.NotFound();
     }
 
-    return _shellResponder.Respond();
+    return _shellResponder.Respond(httpContext);
   }
 }

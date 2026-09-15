@@ -15,7 +15,16 @@ public sealed class ApiPipeline
 
     app.UseMiddleware<InfrastructureExceptionMiddleware>();
     app.UseDefaultFiles();
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+                       {
+                         OnPrepareResponse = staticFileResponse =>
+                         {
+                           if (staticFileResponse.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                           {
+                             staticFileResponse.Context.Response.Headers.CacheControl = "no-cache";
+                           }
+                         },
+                       });
     app.UseMiddleware<LoopbackAdminAuthorizationMiddleware>();
     app.UseAuthentication();
     app.UseAuthorization();

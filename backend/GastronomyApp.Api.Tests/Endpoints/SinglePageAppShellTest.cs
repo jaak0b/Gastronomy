@@ -33,6 +33,7 @@ public sealed class SinglePageAppShellTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("text/html"));
+                      Assert.That(response.Headers.CacheControl?.NoCache, Is.True);
                     });
   }
 
