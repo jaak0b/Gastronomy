@@ -62,6 +62,7 @@ describe('isTheAdminScreen, the one screen that keeps a normal back button', () 
   })
 
   it('keeps the guard on every screen a device is shown', () => {
+    expect(isTheAdminScreen('doorGate')).toBe(false)
     expect(isTheAdminScreen('enrolQr')).toBe(false)
     expect(isTheAdminScreen('welcome')).toBe(false)
     expect(isTheAdminScreen('startingUp')).toBe(false)

@@ -17,6 +17,7 @@ export function screenTitle(
       return t('app.title.waiter')
     case 'admin':
       return t('app.title.admin')
+    case 'doorGate':
     case 'enrolQr':
     case 'welcome':
     case 'startingUp':

@@ -95,6 +95,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+beforeEach(() => {
+  sessionStorage.setItem('theDoorAnchor', 'yes')
+})
+
 describe('a waiter who sends an order from a phone that was set up again while they were away', () => {
   it('is asked to set the phone up again instead of being told the laptop was not reached', async () => {
     const order = await aPhoneOnTheSummaryWithAnOrderOnIt()

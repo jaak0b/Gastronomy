@@ -15,8 +15,9 @@
           sessionStorage.removeItem('arrivedThroughTheDoor')
           return
         }
-        sessionStorage.setItem('theDoorTarget', window.location.pathname + window.location.search + window.location.hash)
-        window.location.replace('/door.html?n=10&v=' + encodeURIComponent(document.lastModified || ''))
+        if (sessionStorage.getItem('theDoorAnchor') === 'yes') {
+          window.location.assign('/door.html?n=10&v=' + encodeURIComponent(document.lastModified || ''))
+        }
       })()
     </script>
   </head>

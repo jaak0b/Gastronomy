@@ -19,6 +19,7 @@ describe('a phone that is not enrolled', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 

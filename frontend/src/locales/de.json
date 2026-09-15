@@ -325,6 +325,10 @@
     "couldNotStart": "Der Laptop hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
     "tryAgain": "Noch einmal versuchen"
   },
+  "doorGate": {
+    "hint": "Tippen Sie auf Öffnen, um fortzufahren.",
+    "open": "Öffnen"
+  },
   "welcome": {
     "title": "Dieses Gerät ist noch nicht eingerichtet."
   },

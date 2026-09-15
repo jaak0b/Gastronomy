@@ -63,6 +63,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
       ),
     )
     currentRoute.value = { name: 'admin', section: 'festivals', festivalId: null }
+    window.history.replaceState({}, '', '/admin/festivals')
   })
 
   it('renders the admin shell without a device token', async () => {
@@ -90,6 +91,7 @@ describe('the screen a device lands on', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {

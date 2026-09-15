@@ -325,6 +325,10 @@
     "couldNotStart": "The laptop did not answer properly. Try again.",
     "tryAgain": "Try again"
   },
+  "doorGate": {
+    "hint": "Tap Open to continue.",
+    "open": "Open"
+  },
   "welcome": {
     "title": "This device is not set up yet."
   },

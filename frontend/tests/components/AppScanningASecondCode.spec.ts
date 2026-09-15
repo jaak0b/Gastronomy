@@ -85,6 +85,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+beforeEach(() => {
+  sessionStorage.setItem('theDoorAnchor', 'yes')
+})
+
 describe('a browser that is already set up and scans a second QR code', () => {
   it('starts the app over, so the live connection is not left on the device it just gave up', async () => {
     await aTabletThatScansAWaiterCode()

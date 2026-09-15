@@ -38,13 +38,13 @@ function runTheDoor(search: string, storage: TheStorage) {
 }
 
 function runTheBoot(pathname: string, storage: TheStorage) {
-  const replaced: string[] = []
+  const navigated: string[] = []
   const theWindow = {
     location: {
       pathname,
       search: '',
       hash: '',
-      replace: (url: string) => replaced.push(url),
+      assign: (url: string) => navigated.push(url),
     },
   }
   const theDocument = { lastModified: 'build-a' }
@@ -54,7 +54,7 @@ function runTheBoot(pathname: string, storage: TheStorage) {
     theSessionStorageOver(storage),
     theDocument,
   )
-  return { replaced }
+  return { navigated }
 }
 
 async function withAFakedTick(run: () => void): Promise<void> {
@@ -65,31 +65,79 @@ async function withAFakedTick(run: () => void): Promise<void> {
 }
 
 describe('the shell boot script', () => {
-  it('takes a page that was opened directly to the door chain', () => {
+  it('waits for the start button on a tab where the doors were never opened', () => {
     const storage: TheStorage = new Map()
 
-    const { replaced } = runTheBoot('/', storage)
+    const { navigated } = runTheBoot('/', storage)
 
-    expect(replaced).toEqual(['/door.html?n=10&v=build-a'])
-    expect(storage.get('theDoorTarget')).toBe('/')
+    expect(navigated).toEqual([])
+    expect(storage.size).toBe(0)
+  })
+
+  it('sends an already opened tab back through the doors when it is loaded again', () => {
+    const storage: TheStorage = new Map([['theDoorAnchor', 'yes']])
+
+    const { navigated } = runTheBoot('/', storage)
+
+    expect(navigated).toEqual(['/door.html?n=10&v=build-a'])
   })
 
   it('stays put when the door just handed the app over', () => {
-    const storage: TheStorage = new Map([['arrivedThroughTheDoor', 'yes']])
+    const storage: TheStorage = new Map([
+      ['theDoorAnchor', 'yes'],
+      ['arrivedThroughTheDoor', 'yes'],
+    ])
 
-    const { replaced } = runTheBoot('/', storage)
+    const { navigated } = runTheBoot('/', storage)
 
-    expect(replaced).toEqual([])
-    expect(storage.size).toBe(0)
+    expect(navigated).toEqual([])
+    expect(storage.has('arrivedThroughTheDoor')).toBe(false)
   })
 
   it('leaves the admin alone', () => {
     const storage: TheStorage = new Map()
 
-    const { replaced } = runTheBoot('/admin/items', storage)
+    const { navigated } = runTheBoot('/admin/items', storage)
 
-    expect(replaced).toEqual([])
+    expect(navigated).toEqual([])
     expect(storage.size).toBe(0)
+  })
+})
+
+describe('the start button', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    sessionStorage.clear()
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('is asked for on a tab where the doors were never opened', async () => {
+    const { needsTheDoorOpened } = await import('../../src/router')
+
+    expect(needsTheDoorOpened()).toBe(true)
+  })
+
+  it('is not asked for again once the tab was opened', async () => {
+    const { needsTheDoorOpened, THE_DOOR_ANCHOR_KEY } = await import('../../src/router')
+    sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, 'yes')
+
+    expect(needsTheDoorOpened()).toBe(false)
+  })
+
+  it('is never asked for on the admin', async () => {
+    window.history.replaceState({}, '', '/admin/items')
+    const { needsTheDoorOpened } = await import('../../src/router')
+
+    expect(needsTheDoorOpened()).toBe(false)
+  })
+
+  it('marks this screen as the anchor and remembers it as the back target', async () => {
+    const { openTheDoor, THE_DOOR_ANCHOR_KEY, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+
+    openTheDoor()
+
+    expect(sessionStorage.getItem(THE_DOOR_ANCHOR_KEY)).toBe('yes')
+    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
   })
 })
 

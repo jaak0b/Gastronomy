@@ -39,6 +39,7 @@ describe('where a notice sits on the screen', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
     document.body.innerHTML = ''
     stubTheLaptop()
   })

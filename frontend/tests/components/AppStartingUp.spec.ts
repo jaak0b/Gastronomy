@@ -85,6 +85,7 @@ function aDeviceThatWasSetUpEarlier() {
 beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
+  sessionStorage.setItem('theDoorAnchor', 'yes')
   document.body.innerHTML = ''
 })
 

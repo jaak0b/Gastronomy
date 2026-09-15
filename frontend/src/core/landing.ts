@@ -3,6 +3,7 @@ import type { AppRoute } from './route'
 import { assertNever } from './assertNever'
 
 export type ScreenName =
+  | 'doorGate'
   | 'enrolQr'
   | 'welcome'
   | 'startingUp'
@@ -84,6 +85,7 @@ export function isTheAdminScreen(screen: ScreenName): boolean {
   switch (screen) {
     case 'admin':
       return true
+    case 'doorGate':
     case 'enrolQr':
     case 'welcome':
     case 'startingUp':
