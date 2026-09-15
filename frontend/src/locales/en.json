@@ -169,7 +169,6 @@
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
       "productionMinutes": "Preparation time in minutes",
-      "productionMinutesInvalid": "Enter minutes from 0 to 600.",
       "prepareIndependently": "Is prepared independently of other articles",
       "activate": "Activate the item",
       "deactivateTitle": "Deactivate this item?",

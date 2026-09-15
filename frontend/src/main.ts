@@ -24,6 +24,7 @@ export const vuetify = createVuetify({
   defaults: {
     VBtn: { size: 'large', variant: 'flat' },
     VTextField: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
+    VNumberInput: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
     VSelect: { variant: 'outlined', density: 'comfortable', hideDetails: 'auto' },
     VCheckbox: { density: 'comfortable', hideDetails: 'auto' },
   },

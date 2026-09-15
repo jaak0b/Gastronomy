@@ -2,12 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AppLanguage } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
-import {
-  formatProductionMinutes,
-  parseProductionMinutes,
-} from '../../../core/productionMinutes'
+import { LONGEST_PRODUCTION_MINUTES } from '../../../core/productionMinutes'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,
@@ -29,10 +25,7 @@ const name = ref(props.item?.name ?? '')
 const categoryId = ref<string | null>(props.item?.categoryId ?? null)
 const categoryIsMissing = ref(false)
 const isCreatingCategory = ref(false)
-const productionMinutesText = ref(
-  formatProductionMinutes(props.item?.productionMinutes ?? null, locale.value as AppLanguage),
-)
-const productionMinutesAreUnreadable = ref(false)
+const productionMinutes = ref<number | null>(props.item?.productionMinutes ?? null)
 const isQueueIndependent = ref(props.item?.isQueueIndependent ?? false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
 
@@ -45,6 +38,10 @@ const offeredCategories = computed(() =>
     (category) => category.isActive || category.categoryId === props.item?.categoryId,
   ),
 )
+
+const decimalSeparator = computed(() => (locale.value === 'de' ? ',' : '.'))
+
+const nameIsMissing = computed(() => name.value.trim().length === 0)
 
 const categoryRefusal = ref<AdminErrorMessage | null>(null)
 const categoryRefusalText = useRefusalText(categoryRefusal)
@@ -76,11 +73,9 @@ async function createCategory(draft: AdminCategoryDraft): Promise<void> {
 }
 
 function save(): void {
-  const minutes = parseProductionMinutes(productionMinutesText.value)
-  productionMinutesAreUnreadable.value = minutes.kind === 'invalid'
   const chosenCategoryId = categoryId.value
   categoryIsMissing.value = chosenCategoryId === null
-  if (minutes.kind === 'invalid' || chosenCategoryId === null) {
+  if (chosenCategoryId === null) {
     return
   }
   emit('save', {
@@ -88,9 +83,18 @@ function save(): void {
     name: name.value,
     categoryId: chosenCategoryId,
     sortOrder: sortOrder.value,
-    productionMinutes: minutes.minutes,
+    productionMinutes: productionMinutes.value,
     isQueueIndependent: isQueueIndependent.value,
   })
+}
+
+function commitThePreparationTime(event: KeyboardEvent): void {
+  const field = event.target as HTMLElement
+  field.blur()
+  if (nameIsMissing.value) {
+    return
+  }
+  save()
 }
 </script>
 
@@ -120,15 +124,17 @@ function save(): void {
             {{ t('admin.categories.new') }}
           </v-btn>
         </div>
-        <v-text-field
-          v-model="productionMinutesText"
+        <v-number-input
+          v-model="productionMinutes"
           class="production-minutes-field mb-2"
           :label="t('admin.items.productionMinutes')"
-          inputmode="decimal"
-          :error="productionMinutesAreUnreadable"
-          :error-messages="
-            productionMinutesAreUnreadable ? [t('admin.items.productionMinutesInvalid')] : []
-          "
+          :min="0"
+          :max="LONGEST_PRODUCTION_MINUTES"
+          :precision="1"
+          :min-fraction-digits="0"
+          :decimal-separator="decimalSeparator"
+          control-variant="hidden"
+          @keydown.enter.prevent="commitThePreparationTime"
         />
         <v-checkbox
           v-model="isQueueIndependent"
@@ -144,7 +150,7 @@ function save(): void {
           class="save-item"
           type="submit"
           color="primary"
-          :disabled="name.trim().length === 0"
+          :disabled="nameIsMissing"
         >
           {{ t('admin.save') }}
         </v-btn>

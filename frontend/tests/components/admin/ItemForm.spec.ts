@@ -39,8 +39,8 @@ const BRATWURST: AdminItem = {
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: ['station-kueche'] },
 }
 
-function mountForm(item: AdminItem | null = null) {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
+function mountForm(item: AdminItem | null = null, locale: 'de' | 'en' = 'de') {
+  const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(ItemForm, {
     props: { item, errorText: null },
     global: { plugins: [i18n] },
@@ -96,6 +96,14 @@ describe('the preparation time field', () => {
     )
   })
 
+  it('shows half a minute the way English writes it', () => {
+    const form = mountForm({ ...BRATWURST, productionMinutes: 1.5 }, 'en')
+
+    expect((form.get('.production-minutes-field input').element as HTMLInputElement).value).toBe(
+      '1.5',
+    )
+  })
+
   it('stays empty for an item that is handed over right away', () => {
     const form = mountForm({ ...BRATWURST, productionMinutes: null })
 
@@ -121,7 +129,7 @@ describe('the preparation time field', () => {
   })
 
   it('sends half a minute written with a dot, the way English writes it', async () => {
-    const form = mountForm(BRATWURST)
+    const form = mountForm(BRATWURST, 'en')
 
     await form.get('.production-minutes-field input').setValue('1.5')
     await form.get('form').trigger('submit')
@@ -138,15 +146,27 @@ describe('the preparation time field', () => {
     expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: null })
   })
 
-  it('says what it accepts rather than saving a time it could not read', async () => {
+  it('saves the highest allowed time when more is typed and Enter is pressed', async () => {
     const form = mountForm(BRATWURST)
+    const field = form.get('.production-minutes-field input')
+    const input = field.element as HTMLInputElement
+    input.focus()
 
-    await form.get('.production-minutes-field input').setValue('601')
-    await form.get('form').trigger('submit')
+    await field.setValue('601')
+    await field.trigger('keydown', { key: 'Enter' })
 
-    expect(form.get('.production-minutes-field .v-messages').text()).toBe(
-      'Tragen Sie Minuten von 0 bis 600 ein.',
-    )
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ productionMinutes: 600 })
+  })
+
+  it('does not save on Enter while the name is missing', async () => {
+    const form = mountForm(BRATWURST)
+    const field = form.get('.production-minutes-field input')
+    ;(field.element as HTMLInputElement).focus()
+
+    await form.get('.item-name-field input').setValue('')
+    await field.setValue('10')
+    await field.trigger('keydown', { key: 'Enter' })
+
     expect(form.emitted('save')).toBeUndefined()
   })
 })
