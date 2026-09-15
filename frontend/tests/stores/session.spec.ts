@@ -36,10 +36,10 @@ describe('the language a phone starts in', () => {
     expect(useSessionStore().language).toBe('en')
   })
 
-  it('falls back to German for any other browser language', () => {
+  it('falls back to English for any other browser language', () => {
     withBrowserLanguage('fr-FR')
 
-    expect(useSessionStore().language).toBe('de')
+    expect(useSessionStore().language).toBe('en')
   })
 
   it('prefers the language stored on the device over the browser', () => {
