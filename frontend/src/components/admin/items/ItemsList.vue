@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
 import type { AdminCategory } from '../../../core/apiTypes'
+import { assertNever } from '../../../core/assertNever'
 import { groupByCategory } from '../../../core/grouping'
 import { letteringColourOn } from '../../../core/letteringColour'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,
+  type CategoryMoveDirection,
 } from '../../../stores/admin/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
@@ -25,6 +29,8 @@ const askingAboutId = ref<string | null>(null)
 const askingAboutCategoryId = ref<string | null>(null)
 const renamedCategory = ref<AdminCategory | null>(null)
 const isCreatingCategory = ref(false)
+const itemRefusal = ref<AdminErrorMessage | null>(null)
+const categoryRefusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
 const shownItems = computed(() =>
@@ -41,24 +47,45 @@ const groups = computed(() =>
   ),
 )
 
-const itemRefusal = useRefusalText([() => items.errorMessage])
-const categoryRefusal = useRefusalText([() => categories.errorMessage])
-const refusal = computed(() => itemRefusal.value ?? categoryRefusal.value)
+const itemRefusalText = useRefusalText(itemRefusal)
+const categoryRefusalText = useRefusalText(categoryRefusal)
 const isCategoryDialogOpen = computed(
   () => isCreatingCategory.value || renamedCategory.value !== null,
 )
 
+function noteItem(result: AdminActionResult<unknown>): void {
+  const message = refusalFrom(result)
+  if (message !== null) {
+    itemRefusal.value = message
+  }
+}
+
+function noteCategory(result: AdminActionResult<unknown>): void {
+  const message = refusalFrom(result)
+  if (message !== null) {
+    categoryRefusal.value = message
+  }
+}
+
 async function save(item: AdminItemDraft): Promise<void> {
+  itemRefusal.value = null
   const saved = await items.save(item)
-  if (saved) {
-    editingId.value = null
-    isCreating.value = false
+  switch (saved.kind) {
+    case 'ok':
+      editingId.value = null
+      isCreating.value = false
+      return
+    case 'failed':
+      itemRefusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
   }
 }
 
 function forgetRefusals(): void {
-  items.forgetError()
-  categories.forgetError()
+  itemRefusal.value = null
+  categoryRefusal.value = null
 }
 
 function toggleEditing(itemId: string): void {
@@ -80,8 +107,19 @@ async function deactivate(): Promise<void> {
   const itemId = askingAboutId.value
   askingAboutId.value = null
   if (itemId !== null) {
-    await items.setActive(itemId, false)
+    itemRefusal.value = null
+    noteItem(await items.setActive(itemId, false))
   }
+}
+
+async function reactivate(itemId: string): Promise<void> {
+  itemRefusal.value = null
+  noteItem(await items.setActive(itemId, true))
+}
+
+async function moveCategory(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
+  categoryRefusal.value = null
+  noteCategory(await categories.move(categoryId, direction))
 }
 
 function startCreatingCategory(): void {
@@ -103,21 +141,35 @@ function stopEditingCategory(): void {
 }
 
 async function saveCategory(draft: AdminCategoryDraft): Promise<void> {
+  categoryRefusal.value = null
   const category = renamedCategory.value
   const saved =
     category === null
-      ? (await categories.create(draft)) !== null
+      ? await categories.create(draft)
       : await categories.save({ categoryId: category.categoryId, ...draft })
-  if (saved) {
-    stopEditingCategory()
+  switch (saved.kind) {
+    case 'ok':
+      stopEditingCategory()
+      return
+    case 'failed':
+      categoryRefusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
   }
+}
+
+async function activateCategory(categoryId: string): Promise<void> {
+  categoryRefusal.value = null
+  noteCategory(await categories.setActive(categoryId, true))
 }
 
 async function deactivateCategory(): Promise<void> {
   const categoryId = askingAboutCategoryId.value
   askingAboutCategoryId.value = null
   if (categoryId !== null) {
-    await categories.setActive(categoryId, false)
+    categoryRefusal.value = null
+    noteCategory(await categories.setActive(categoryId, false))
   }
 }
 
@@ -132,8 +184,6 @@ function listenToTheLaptop(): () => void {
 
 onMounted(async () => {
   stopListening = listenToTheLaptop()
-  items.forgetError()
-  categories.forgetError()
   await categories.load()
   await items.load()
 })
@@ -149,12 +199,20 @@ onUnmounted(() => {
     <h1 class="text-h5 mb-4">{{ t('admin.items.title') }}</h1>
 
     <v-alert
-      v-if="refusal !== null && editingId === null && !isCreating && !isCategoryDialogOpen"
+      v-if="itemRefusalText !== null && editingId === null && !isCreating"
       class="refusal mb-4"
       type="warning"
       variant="tonal"
     >
-      {{ refusal }}
+      {{ itemRefusalText }}
+    </v-alert>
+    <v-alert
+      v-if="categoryRefusalText !== null && !isCategoryDialogOpen"
+      class="refusal mb-4"
+      type="warning"
+      variant="tonal"
+    >
+      {{ categoryRefusalText }}
     </v-alert>
     <v-alert
       v-if="items.loadFailed || categories.loadFailed"
@@ -198,14 +256,14 @@ onUnmounted(() => {
           icon="mdi-arrow-up"
           variant="text"
           :aria-label="t('admin.categories.moveUp')"
-          @click="categories.move(group.category.categoryId, 'up')"
+          @click="moveCategory(group.category.categoryId, 'up')"
         />
         <v-btn
           class="move-category-down"
           icon="mdi-arrow-down"
           variant="text"
           :aria-label="t('admin.categories.moveDown')"
-          @click="categories.move(group.category.categoryId, 'down')"
+          @click="moveCategory(group.category.categoryId, 'down')"
         />
         <v-btn
           v-if="group.category.isActive"
@@ -220,7 +278,7 @@ onUnmounted(() => {
           v-else
           class="activate-category"
           variant="text"
-          @click="categories.setActive(group.category.categoryId, true)"
+          @click="activateCategory(group.category.categoryId)"
         >
           {{ t('admin.categories.activate') }}
         </v-btn>
@@ -248,7 +306,7 @@ onUnmounted(() => {
             v-else
             class="reactivate"
             variant="text"
-            @click="items.setActive(item.itemId, true)"
+            @click="reactivate(item.itemId)"
           >
             {{ t('admin.items.activate') }}
           </v-btn>
@@ -257,7 +315,7 @@ onUnmounted(() => {
           <ItemForm
             v-if="editingId === item.itemId"
             :item="item"
-            :error-text="itemRefusal"
+            :error-text="itemRefusalText"
             @save="save"
           />
         </v-expand-transition>
@@ -278,7 +336,7 @@ onUnmounted(() => {
 
     <NewItemDialog
       v-if="isCreating"
-      :error-text="itemRefusal"
+      :error-text="itemRefusalText"
       @save="save"
       @cancel="stopCreating"
     />
@@ -286,7 +344,7 @@ onUnmounted(() => {
       v-if="isCategoryDialogOpen"
       :key="renamedCategory?.categoryId ?? 'new'"
       :category="renamedCategory"
-      :error-text="categoryRefusal"
+      :error-text="categoryRefusalText"
       @save="saveCategory"
       @cancel="stopEditingCategory"
     />

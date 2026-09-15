@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listFrom, request } from '../../api/client'
-import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import { adminErrorMessage } from '../../core/adminErrorMessage'
+import {
+  adminFailed,
+  adminOk,
+  type AdminActionResult,
+} from '../../core/adminActionResult'
 import type { AdminCategory } from '../../core/apiTypes'
 import { useConnectionStore } from '../connection'
 
@@ -15,8 +20,7 @@ export type CategoryMoveDirection = 'up' | 'down'
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   const categories = ref<AdminCategory[]>([])
   const loadFailed = ref(false)
-  const errorMessage = ref<AdminErrorMessage | null>(null)
-  let latestMove: Promise<void> = Promise.resolve()
+  let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
 
   async function load(): Promise<void> {
     loadFailed.value = false
@@ -33,73 +37,73 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     categories.value = rows
   }
 
-  async function create(draft: AdminCategoryDraft): Promise<AdminCategory | null> {
-    errorMessage.value = null
+  async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
     const result = await request<AdminCategory>('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
     })
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return null
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     categories.value = [...categories.value, result.data]
-    return result.data
+    return adminOk(result.data)
   }
 
-  async function save(category: AdminCategoryDraft & { categoryId: string }): Promise<boolean> {
-    errorMessage.value = null
+  async function save(
+    category: AdminCategoryDraft & { categoryId: string },
+  ): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/categories/${category.categoryId}`, {
       method: 'PUT',
       body: { name: category.name, colourHex: category.colourHex },
     })
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return false
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     await load()
-    return true
+    return adminOk(null)
   }
 
-  async function move(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
+  async function move(
+    categoryId: string,
+    direction: CategoryMoveDirection,
+  ): Promise<AdminActionResult<null>> {
     latestMove = latestMove.then(() => sendMove(categoryId, direction))
-    await latestMove
+    return await latestMove
   }
 
-  async function sendMove(categoryId: string, direction: CategoryMoveDirection): Promise<void> {
-    errorMessage.value = null
+  async function sendMove(
+    categoryId: string,
+    direction: CategoryMoveDirection,
+  ): Promise<AdminActionResult<null>> {
     const result = await request<unknown>(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',
       body: { direction },
     })
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     const rows = listFrom<AdminCategory>(result.data, 'categories')
     if (rows === null) {
-      errorMessage.value = adminErrorMessage(null)
       await load()
-      return
+      return adminFailed(adminErrorMessage(null))
     }
     categories.value = rows
+    return adminOk(null)
   }
 
-  async function setActive(categoryId: string, isActive: boolean): Promise<void> {
-    errorMessage.value = null
+  async function setActive(
+    categoryId: string,
+    isActive: boolean,
+  ): Promise<AdminActionResult<null>> {
     const action = isActive ? 'activate' : 'deactivate'
     const result = await request(`/api/admin/categories/${categoryId}/${action}`, {
       method: 'POST',
     })
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     await load()
-  }
-
-  function forgetError(): void {
-    errorMessage.value = null
+    return adminOk(null)
   }
 
   function listen(): () => void {
@@ -109,13 +113,11 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   return {
     categories,
     loadFailed,
-    errorMessage,
     load,
     create,
     save,
     move,
     setActive,
-    forgetError,
     listen,
   }
 })

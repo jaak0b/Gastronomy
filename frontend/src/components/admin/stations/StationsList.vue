@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
@@ -15,49 +18,69 @@ const editingId = ref<string | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
+const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   stations.stations.filter((station) => showsDeactivated.value || station.isActive),
 )
 
-const refusalText = useRefusalText([() => enrolment.errorMessage, () => stations.errorMessage])
+const refusalText = useRefusalText(refusal)
 
-function inviteStation(stationId: string): void {
-  void enrolment.createInvitation({ kind: 'station', stationId })
+function note(result: AdminActionResult<unknown>): void {
+  const message = refusalFrom(result)
+  if (message !== null) {
+    refusal.value = message
+  }
+}
+
+async function inviteStation(stationId: string): Promise<void> {
+  refusal.value = null
+  note(await enrolment.createInvitation({ kind: 'station', stationId }))
 }
 
 function toggleEditing(stationId: string): void {
   editingId.value = editingId.value === stationId ? null : stationId
-  stations.forgetError()
+  refusal.value = null
 }
 
 function startCreating(): void {
   isCreating.value = true
-  stations.forgetError()
+  refusal.value = null
 }
 
 async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
-  const wasSaved = await stations.save(value)
-  if (!wasSaved) {
-    return
+  refusal.value = null
+  const saved = await stations.save(value)
+  switch (saved.kind) {
+    case 'ok':
+      editingId.value = null
+      isCreating.value = false
+      return
+    case 'failed':
+      refusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
   }
-  editingId.value = null
-  isCreating.value = false
 }
 
 async function deactivate(): Promise<void> {
   const stationId = askingAboutId.value
   askingAboutId.value = null
   if (stationId !== null) {
-    await stations.setActive(stationId, false)
+    refusal.value = null
+    note(await stations.setActive(stationId, false))
   }
+}
+
+async function reactivate(stationId: string): Promise<void> {
+  refusal.value = null
+  note(await stations.setActive(stationId, true))
 }
 
 onMounted(async () => {
   stopListening = stations.listen()
-  stations.forgetError()
-  enrolment.forgetError()
   await stations.load()
 })
 
@@ -121,7 +144,7 @@ onUnmounted(() => {
           v-else
           class="reactivate"
           variant="text"
-          @click="stations.setActive(station.stationId, true)"
+          @click="reactivate(station.stationId)"
         >
           {{ t('admin.stations.activate') }}
         </v-btn>

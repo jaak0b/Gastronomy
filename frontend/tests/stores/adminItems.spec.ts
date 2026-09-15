@@ -45,9 +45,12 @@ describe('an item the laptop would not save', () => {
     refuseWith(500, {})
     const items = useAdminItemsStore()
 
-    await items.save(AN_ITEM)
+    const result = await items.save(AN_ITEM)
 
-    expect(items.errorMessage?.key).toBe('admin.actionFailed')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('keeps the reason the laptop named', async () => {
@@ -59,18 +62,24 @@ describe('an item the laptop would not save', () => {
     })
     const items = useAdminItemsStore()
 
-    await items.save(AN_ITEM)
+    const result = await items.save(AN_ITEM)
 
-    expect(items.errorMessage?.key).toBe('admin.itemNameMissing')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.itemNameMissing', parameters: {}, count: null },
+    })
   })
 
   it('says the action did not work when the laptop cannot be reached at all', async () => {
     dropTheConnection()
     const items = useAdminItemsStore()
 
-    await items.save(AN_ITEM)
+    const result = await items.save(AN_ITEM)
 
-    expect(items.errorMessage?.key).toBe('admin.actionFailed')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 })
 
@@ -87,18 +96,24 @@ describe('an item the laptop would not switch on or off', () => {
     refuseWith(500, {})
     const items = useAdminItemsStore()
 
-    await items.setActive('item-1', false)
+    const result = await items.setActive('item-1', false)
 
-    expect(items.errorMessage?.key).toBe('admin.actionFailed')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('says the action did not work when the laptop cannot be reached at all', async () => {
     dropTheConnection()
     const items = useAdminItemsStore()
 
-    await items.setActive('item-1', false)
+    const result = await items.setActive('item-1', false)
 
-    expect(items.errorMessage?.key).toBe('admin.actionFailed')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('keeps the reason the laptop named', async () => {
@@ -110,8 +125,11 @@ describe('an item the laptop would not switch on or off', () => {
     })
     const items = useAdminItemsStore()
 
-    await items.setActive('item-1', true)
+    const result = await items.setActive('item-1', true)
 
-    expect(items.errorMessage?.key).toBe('admin.itemCategoryIsOff')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.itemCategoryIsOff', parameters: {}, count: null },
+    })
   })
 })

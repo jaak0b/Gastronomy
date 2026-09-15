@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import { useAdminStaffStore } from '../../../stores/admin/staff'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
@@ -14,37 +17,60 @@ const renamingId = ref<string | null>(null)
 const newName = ref('')
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
+const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
 const shown = computed(() =>
   staff.staffMembers.filter((staffMember) => showsDeactivated.value || staffMember.isActive),
 )
 
-const refusalText = useRefusalText([() => enrolment.errorMessage, () => staff.errorMessage])
+const refusalText = useRefusalText(refusal)
 
-function inviteStaffMember(staffMemberId: string): void {
-  void enrolment.createInvitation({ kind: 'staffMember', staffMemberId })
+function note(result: AdminActionResult<unknown>): void {
+  const message = refusalFrom(result)
+  if (message !== null) {
+    refusal.value = message
+  }
 }
 
-function inviteSomebodyNew(): void {
-  void enrolment.createInvitation({ kind: 'somebodyNew' })
+async function inviteStaffMember(staffMemberId: string): Promise<void> {
+  refusal.value = null
+  note(await enrolment.createInvitation({ kind: 'staffMember', staffMemberId }))
+}
+
+async function inviteSomebodyNew(): Promise<void> {
+  refusal.value = null
+  note(await enrolment.createInvitation({ kind: 'somebodyNew' }))
 }
 
 async function deactivate(): Promise<void> {
   const staffMemberId = askingAboutId.value
   askingAboutId.value = null
   if (staffMemberId !== null) {
-    await staff.setActive(staffMemberId, false)
+    refusal.value = null
+    note(await staff.setActive(staffMemberId, false))
   }
 }
 
+async function reactivate(staffMemberId: string): Promise<void> {
+  refusal.value = null
+  note(await staff.setActive(staffMemberId, true))
+}
+
 async function rename(id: string): Promise<void> {
+  refusal.value = null
   const renamed = await staff.rename(id, newName.value.trim())
-  if (!renamed) {
-    return
+  switch (renamed.kind) {
+    case 'ok':
+      renamingId.value = null
+      newName.value = ''
+      return
+    case 'failed':
+      refusal.value = renamed.message
+      return
+    default:
+      assertNever(renamed)
   }
-  renamingId.value = null
-  newName.value = ''
 }
 
 onMounted(async () => {
@@ -133,7 +159,7 @@ onUnmounted(() => {
           v-else
           class="reactivate"
           variant="text"
-          @click="staff.setActive(staffMember.staffMemberId, true)"
+          @click="reactivate(staffMember.staffMemberId)"
         >
           {{ t('admin.staff.activate') }}
         </v-btn>

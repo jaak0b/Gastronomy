@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../api/client'
 import { fetchInvitationQr } from '../../api/invitationQr'
-import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import { adminErrorMessage } from '../../core/adminErrorMessage'
+import { adminFailed, adminOk, type AdminActionResult } from '../../core/adminActionResult'
 import type { DeviceKind, Invitation } from '../../core/apiTypes'
 import type { InvitationQr } from '../../core/invitationQr'
 import { assertNever } from '../../core/assertNever'
@@ -35,7 +36,6 @@ function bodyFor(owner: InvitationOwner): Record<string, string> {
 export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const invitation = ref<Invitation | null>(null)
   const invitationQr = ref<InvitationQr>({ kind: 'loading' })
-  const errorMessage = ref<AdminErrorMessage | null>(null)
   const enrolled = ref<EnrolledDevice | null>(null)
 
   function enrolledNameOf(wanted: DeviceKind): string | null {
@@ -56,30 +56,25 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const enrolledStaffMemberName = computed(() => enrolledNameOf('staffMember'))
   const enrolledStationName = computed(() => enrolledNameOf('station'))
 
-  async function createInvitation(owner: InvitationOwner): Promise<void> {
+  async function createInvitation(owner: InvitationOwner): Promise<AdminActionResult<null>> {
     enrolled.value = null
-    errorMessage.value = null
     invitationQr.value = { kind: 'loading' }
     const result = await request<Invitation>('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: bodyFor(owner),
     })
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
       closeInvitation()
-      return
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     invitation.value = result.data
     invitationQr.value = await fetchInvitationQr(result.data.invitationId)
+    return adminOk(null)
   }
 
   function closeInvitation(): void {
     invitation.value = null
     invitationQr.value = { kind: 'loading' }
-  }
-
-  function forgetError(): void {
-    errorMessage.value = null
   }
 
   function dismissEnrolled(): void {
@@ -98,13 +93,11 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   return {
     invitation,
     invitationQr,
-    errorMessage,
     enrolled,
     enrolledStaffMemberName,
     enrolledStationName,
     createInvitation,
     closeInvitation,
-    forgetError,
     dismissEnrolled,
     listen,
   }

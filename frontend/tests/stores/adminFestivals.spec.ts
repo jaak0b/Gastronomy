@@ -173,21 +173,29 @@ describe('setting a festival up', () => {
       endsAtUtc: '2026-07-19T02:00:00.000Z',
     })
 
-    expect(wasCreated).toBe(false)
-    expect(festivals.errorMessage?.key).toBe('admin.festivalOverlaps')
-    expect(festivals.errorMessage?.parameters).toEqual({ name: 'Sommerfest' })
+    expect(wasCreated).toEqual({
+      kind: 'failed',
+      message: {
+        key: 'admin.festivalOverlaps',
+        parameters: { name: 'Sommerfest' },
+        count: null,
+      },
+    })
   })
 
   it('says the action did not work when the laptop named no reason', async () => {
     laptopRefuses(500, {})
     const festivals = useAdminFestivalsStore()
 
-    await festivals.save('fest-1', {
+    const wasSaved = await festivals.save('fest-1', {
       name: 'Sommerfest',
       startsAtUtc: '2026-07-18T10:00:00.000Z',
       endsAtUtc: '2026-07-19T02:00:00.000Z',
     })
 
-    expect(festivals.errorMessage?.key).toBe('admin.actionFailed')
+    expect(wasSaved).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 })

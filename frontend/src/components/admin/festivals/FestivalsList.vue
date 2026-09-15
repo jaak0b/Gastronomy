@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../router'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import { formatFestivalMoment } from '../../../core/festivalTimes'
 import {
   useAdminFestivalsStore,
@@ -18,9 +20,10 @@ const showsHidden = ref(false)
 const isCreating = ref(false)
 const copiedFestival = ref<AdminFestival | null>(null)
 const hiddenFestival = ref<AdminFestival | null>(null)
+const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
-const refusalText = useRefusalText([() => festivals.errorMessage])
+const refusalText = useRefusalText(refusal)
 
 const shown = computed(() =>
   festivals.festivals.filter((festival) => showsHidden.value || !festival.isHidden),
@@ -33,7 +36,7 @@ function moment(value: string): string {
 function closeTheForms(): void {
   isCreating.value = false
   copiedFestival.value = null
-  festivals.forgetError()
+  refusal.value = null
 }
 
 function startCreating(): void {
@@ -51,23 +54,69 @@ function open(festival: AdminFestival): void {
 }
 
 async function create(draft: FestivalDraft): Promise<void> {
-  if (await festivals.create(draft)) {
-    closeTheForms()
+  refusal.value = null
+  const created = await festivals.create(draft)
+  switch (created.kind) {
+    case 'ok':
+      closeTheForms()
+      return
+    case 'failed':
+      refusal.value = created.message
+      return
+    default:
+      assertNever(created)
   }
 }
 
 async function copy(draft: FestivalDraft): Promise<void> {
   const festival = copiedFestival.value
-  if (festival !== null && (await festivals.copy(festival.festivalId, draft))) {
-    closeTheForms()
+  if (festival === null) {
+    return
+  }
+  refusal.value = null
+  const copied = await festivals.copy(festival.festivalId, draft)
+  switch (copied.kind) {
+    case 'ok':
+      closeTheForms()
+      return
+    case 'failed':
+      refusal.value = copied.message
+      return
+    default:
+      assertNever(copied)
   }
 }
 
 async function hide(): Promise<void> {
   const festival = hiddenFestival.value
   hiddenFestival.value = null
-  if (festival !== null) {
-    await festivals.hide(festival.festivalId)
+  if (festival === null) {
+    return
+  }
+  refusal.value = null
+  const hidden = await festivals.hide(festival.festivalId)
+  switch (hidden.kind) {
+    case 'ok':
+      return
+    case 'failed':
+      refusal.value = hidden.message
+      return
+    default:
+      assertNever(hidden)
+  }
+}
+
+async function show(festivalId: string): Promise<void> {
+  refusal.value = null
+  const shownFestival = await festivals.show(festivalId)
+  switch (shownFestival.kind) {
+    case 'ok':
+      return
+    case 'failed':
+      refusal.value = shownFestival.message
+      return
+    default:
+      assertNever(shownFestival)
   }
 }
 
@@ -137,7 +186,7 @@ onUnmounted(() => {
               v-if="festival.isHidden"
               class="show"
               variant="text"
-              @click="festivals.show(festival.festivalId)"
+              @click="show(festival.festivalId)"
             >
               {{ t('admin.festivals.show') }}
             </v-btn>

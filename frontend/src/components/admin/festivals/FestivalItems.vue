@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import { adminMessage, type AdminErrorMessage } from '../../../core/adminErrorMessage'
 import type { AppLanguage } from '../../../core/apiTypes'
+import { assertNever } from '../../../core/assertNever'
 import { groupByCategory } from '../../../core/grouping'
 import { letteringColourOn } from '../../../core/letteringColour'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
@@ -47,8 +49,9 @@ const chosenItemId = ref<string | null>(null)
 const itemToPlace = ref<AdminItem | null>(null)
 const isCreating = ref(false)
 const removedItem = ref<AdminItem | null>(null)
+const createRefusal = ref<AdminErrorMessage | null>(null)
 
-const refusalText = useRefusalText([() => items.errorMessage])
+const createRefusalText = useRefusalText(createRefusal)
 
 const festivalStations = computed(() =>
   stations.stations.filter((station) => station.isAtTheFestival && station.isActive),
@@ -173,14 +176,15 @@ function refuse(
   }
 }
 
-function moveTheStoreRefusalOnto(itemId: string): void {
-  const message = items.errorMessage
-  const row = rows.value.get(itemId)
-  if (message === null || row === undefined) {
+function showRowRefusal(itemId: string, result: AdminActionResult<unknown>): void {
+  const message = refusalFrom(result)
+  if (message === null) {
     return
   }
-  row.refusal = message
-  items.forgetError()
+  const row = rows.value.get(itemId)
+  if (row !== undefined) {
+    row.refusal = message
+  }
 }
 
 function rowRefusalText(itemId: string): string | null {
@@ -248,18 +252,22 @@ async function sendUntilTheLaptopHasTheRow(itemId: string, row: ItemRow): Promis
       stationIds: [...onItsWay.stationIds],
     })
     row.laptopAnswers += 1
-    if (placed) {
-      row.sentPriceText = onItsWay.priceText
-      row.sentStationIds = [...onItsWay.stationIds]
-      row.onItsWay = null
-      row.refusal = null
-      continue
+    switch (placed.kind) {
+      case 'ok':
+        row.sentPriceText = onItsWay.priceText
+        row.sentStationIds = [...onItsWay.stationIds]
+        row.onItsWay = null
+        row.refusal = null
+        break
+      case 'failed':
+        row.refusal = placed.message
+        row.priceText = row.sentPriceText
+        row.stationIds = [...row.sentStationIds]
+        row.onItsWay = null
+        return
+      default:
+        assertNever(placed)
     }
-    moveTheStoreRefusalOnto(itemId)
-    row.priceText = row.sentPriceText
-    row.stationIds = [...row.sentStationIds]
-    row.onItsWay = null
-    return
   }
 }
 
@@ -290,18 +298,14 @@ async function setSoldOut(item: AdminItem, isSoldOut: boolean): Promise<void> {
   if (row !== undefined) {
     row.laptopAnswers += 1
   }
-  if (!accepted) {
-    moveTheStoreRefusalOnto(item.itemId)
-  }
+  showRowRefusal(item.itemId, accepted)
 }
 
 function startPlacing(item: AdminItem): void {
-  items.forgetError()
   itemToPlace.value = item
 }
 
 function stopPlacing(): void {
-  items.forgetError()
   itemToPlace.value = null
 }
 
@@ -315,24 +319,32 @@ function add(): void {
 }
 
 function startCreating(): void {
-  items.forgetError()
+  createRefusal.value = null
   isCreating.value = true
 }
 
 function stopCreating(): void {
-  items.forgetError()
+  createRefusal.value = null
   isCreating.value = false
 }
 
 async function create(draft: AdminItemDraft): Promise<void> {
-  const itemId = await items.create(draft)
-  if (itemId === null) {
-    return
-  }
-  isCreating.value = false
-  const created = items.items.find((item) => item.itemId === itemId)
-  if (created !== undefined) {
-    startPlacing(created)
+  createRefusal.value = null
+  const created = await items.create(draft)
+  switch (created.kind) {
+    case 'ok': {
+      isCreating.value = false
+      const item = items.items.find((listed) => listed.itemId === created.value)
+      if (item !== undefined) {
+        startPlacing(item)
+      }
+      return
+    }
+    case 'failed':
+      createRefusal.value = created.message
+      return
+    default:
+      assertNever(created)
   }
 }
 
@@ -347,15 +359,8 @@ async function remove(): Promise<void> {
     row.refusal = null
   }
   const accepted = await items.removeFromTheFestival(props.festivalId, item.itemId)
-  if (!accepted) {
-    moveTheStoreRefusalOnto(item.itemId)
-  }
+  showRowRefusal(item.itemId, accepted)
 }
-
-onMounted(() => {
-  items.forgetError()
-  categories.forgetError()
-})
 </script>
 
 <template>
@@ -480,12 +485,12 @@ onMounted(() => {
             </v-btn>
           </div>
           <v-alert
-            v-if="refusalText !== null && !isCreating"
+            v-if="createRefusalText !== null && !isCreating"
             class="refusal mt-3"
             type="warning"
             variant="tonal"
           >
-            {{ refusalText }}
+            {{ createRefusalText }}
           </v-alert>
         </template>
       </div>
@@ -496,7 +501,7 @@ onMounted(() => {
         <v-card-title class="new-item-title">{{ t('admin.items.new') }}</v-card-title>
         <ItemForm
           :item="null"
-          :error-text="refusalText"
+          :error-text="createRefusalText"
           is-cancellable
           @save="create"
           @cancel="stopCreating"

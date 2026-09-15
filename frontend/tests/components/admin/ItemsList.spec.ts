@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
+import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
 import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
 import FestivalItems from '../../../src/components/admin/festivals/FestivalItems.vue'
@@ -109,6 +110,7 @@ interface Laptop {
   categories?: unknown
   stations?: unknown
   refusal?: { status: number; body: unknown }
+  itemRefusal?: { status: number; body: unknown }
 }
 
 function stubLaptop(laptop: Laptop = {}): Call[] {
@@ -140,6 +142,11 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
         return new Response(JSON.stringify(ONE_FESTIVAL), { status: 200 })
       }
       if (url.includes('/api/admin/items')) {
+        if (method !== 'GET' && laptop.itemRefusal !== undefined) {
+          return new Response(JSON.stringify(laptop.itemRefusal.body), {
+            status: laptop.itemRefusal.status,
+          })
+        }
         return new Response(JSON.stringify(laptop.items ?? ONE_ITEM), { status: 200 })
       }
       return new Response(JSON.stringify(laptop.stations ?? ONE_STATION), { status: 200 })
@@ -598,6 +605,100 @@ describe('adding an item', () => {
     await list.findComponent(NewItemDialog).vm.$emit('cancel')
     await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
 
+    expect(list.find('.admin-items .refusal').exists()).toBe(false)
+  })
+})
+
+describe('a refusal beside an open item form', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows why the laptop kept the category while the item is being edited', async () => {
+    stubLaptop({
+      refusal: {
+        status: 409,
+        body: {
+          code: 'Conflict',
+          messageKey: 'admin.categoryHasActiveItems',
+          parameters: {},
+          details: null,
+        },
+      },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await list.get('.edit').trigger('click')
+    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
+
+    await list.get('.move-category-up').trigger('click')
+
+    await vi.waitFor(() =>
+      expect(list.get('.admin-items .refusal').text()).toContain(
+        'Diese Kategorie hat noch eingeschaltete Artikel.',
+      ),
+    )
+  })
+
+  it('shows why the laptop refused an item action while no form or dialog is open', async () => {
+    stubLaptop({
+      itemRefusal: {
+        status: 409,
+        body: {
+          code: 'Conflict',
+          messageKey: 'admin.actionFailed',
+          parameters: {},
+          details: null,
+        },
+      },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await pressInDialog('.confirm')
+
+    await vi.waitFor(() =>
+      expect(list.get('.admin-items .refusal').text()).toContain('Das hat nicht geklappt.'),
+    )
+  })
+
+  it('leaves an item refusal to the open item form rather than the page', async () => {
+    stubLaptop({
+      itemRefusal: {
+        status: 409,
+        body: {
+          code: 'Conflict',
+          messageKey: 'admin.actionFailed',
+          parameters: {},
+          details: null,
+        },
+      },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await list.get('.edit').trigger('click')
+    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
+
+    await list.findComponent(ItemForm).vm.$emit('save', {
+      itemId: ITEM_ID,
+      name: 'Bratwurst',
+      categoryId: FOOD_ID,
+      sortOrder: 1,
+      productionMinutes: null,
+    })
+
+    await vi.waitFor(() =>
+      expect(list.findComponent(ItemForm).props('errorText')).toContain('Das hat nicht geklappt.'),
+    )
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
   })
 })

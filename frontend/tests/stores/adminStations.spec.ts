@@ -105,19 +105,22 @@ describe('a station the laptop would not save', () => {
       sortOrder: 1,
     })
 
-    expect(wasSaved).toBe(false)
+    expect(wasSaved.kind).toBe('failed')
   })
 
   it('holds the reason the laptop gave', async () => {
     refuseTheSave()
     const stations = useAdminStationsStore()
 
-    await stations.save({ stationId: BACKEND_STATION.stationId, name: '   ', sortOrder: 1 })
+    const wasSaved = await stations.save({
+      stationId: BACKEND_STATION.stationId,
+      name: '   ',
+      sortOrder: 1,
+    })
 
-    expect(stations.errorMessage).toEqual({
-      key: 'admin.stationNameMissing',
-      parameters: {},
-      count: null,
+    expect(wasSaved).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.stationNameMissing', parameters: {}, count: null },
     })
   })
 })

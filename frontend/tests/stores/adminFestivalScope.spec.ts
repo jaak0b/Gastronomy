@@ -168,10 +168,16 @@ describe('a station at a festival', () => {
     )
     const stations = useAdminStationsStore()
 
-    await stations.removeFromTheFestival(FESTIVAL_ID, 'station-kueche')
+    const result = await stations.removeFromTheFestival(FESTIVAL_ID, 'station-kueche')
 
-    expect(stations.errorMessage?.key).toBe('admin.stationHasOrdersAtTheFestival')
-    expect(stations.errorMessage?.count).toBe(3)
+    expect(result).toEqual({
+      kind: 'failed',
+      message: {
+        key: 'admin.stationHasOrdersAtTheFestival',
+        parameters: { count: '3' },
+        count: 3,
+      },
+    })
   })
 
   it('is created and handed back with its id, so it can be added straight away', async () => {
@@ -184,8 +190,8 @@ describe('a station at a festival', () => {
       ),
     )
 
-    const stationId = await useAdminStationsStore().create({ name: 'Theke', sortOrder: 1 })
+    const created = await useAdminStationsStore().create({ name: 'Theke', sortOrder: 1 })
 
-    expect(stationId).toBe('station-new')
+    expect(created).toEqual({ kind: 'ok', value: 'station-new' })
   })
 })

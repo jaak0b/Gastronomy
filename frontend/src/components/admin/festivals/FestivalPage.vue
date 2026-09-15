@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../router'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../../core/festivalTimes'
 import { useAdminCategoriesStore } from '../../../stores/admin/categories'
 import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
@@ -23,10 +25,11 @@ const startsAt = ref('')
 const endsAt = ref('')
 const refusedField = ref<'name' | 'period' | null>(null)
 const sent = ref({ name: '', startsAtUtc: '', endsAtUtc: '' })
+const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
 const festival = computed(() => festivals.festivalWithId(props.festivalId))
-const refusalText = useRefusalText([() => festivals.errorMessage])
+const refusalText = useRefusalText(refusal)
 
 watch(
   festival,
@@ -74,8 +77,22 @@ async function saveTheFields(): Promise<void> {
     return
   }
   refusedField.value = null
+  refusal.value = null
   sent.value = { name: name.value, startsAtUtc, endsAtUtc }
-  await festivals.save(props.festivalId, { name: name.value, startsAtUtc, endsAtUtc })
+  const saved = await festivals.save(props.festivalId, {
+    name: name.value,
+    startsAtUtc,
+    endsAtUtc,
+  })
+  switch (saved.kind) {
+    case 'ok':
+      return
+    case 'failed':
+      refusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
+  }
 }
 
 function listenToTheLaptop(): () => void {

@@ -123,7 +123,7 @@ describe('a new category', () => {
 
     const created = await categories.create({ name: 'Getränke', colourHex: '#C62828' })
 
-    expect(created?.categoryId).toBe(DRINKS.categoryId)
+    expect(created).toEqual({ kind: 'ok', value: DRINKS })
   })
 
   it('takes the created category from the answer instead of reading the whole list again', async () => {
@@ -152,17 +152,22 @@ describe('a new category', () => {
 
     const created = await categories.create({ name: 'Getränke', colourHex: '#C62828' })
 
-    expect(created).toBeNull()
-    expect(categories.errorMessage?.key).toBe('admin.categoryNameTaken')
+    expect(created).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.categoryNameTaken', parameters: {}, count: null },
+    })
   })
 
   it('says the action did not work when the laptop named no reason', async () => {
     answerWith(() => ({}), 500)
     const categories = useAdminCategoriesStore()
 
-    await categories.create({ name: 'Getränke', colourHex: '#C62828' })
+    const created = await categories.create({ name: 'Getränke', colourHex: '#C62828' })
 
-    expect(categories.errorMessage?.key).toBe('admin.actionFailed')
+    expect(created).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('stays in the list even when the list cannot be read again afterwards', async () => {
@@ -229,18 +234,10 @@ describe('renaming and recolouring a category', () => {
       colourHex: '#C62828',
     })
 
-    expect(saved).toBe(false)
-    expect(categories.errorMessage?.key).toBe('admin.categoryNameTaken')
-  })
-
-  it('is forgotten again once the admin closes the refusal', async () => {
-    answerWith(() => ({}), 500)
-    const categories = useAdminCategoriesStore()
-
-    await categories.save({ categoryId: DRINKS.categoryId, name: '', colourHex: '#C62828' })
-    categories.forgetError()
-
-    expect(categories.errorMessage).toBeNull()
+    expect(saved).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.categoryNameTaken', parameters: {}, count: null },
+    })
   })
 })
 
@@ -292,9 +289,12 @@ describe('moving a category', () => {
     )
     const categories = useAdminCategoriesStore()
 
-    await categories.move(FOOD.categoryId, 'down')
+    const result = await categories.move(FOOD.categoryId, 'down')
 
-    expect(categories.errorMessage?.key).toBe('admin.actionFailed')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.actionFailed', parameters: {}, count: null },
+    })
   })
 
   it('waits for one move to be answered before it sends the next', async () => {
@@ -378,8 +378,11 @@ describe('switching a category off', () => {
     )
     const categories = useAdminCategoriesStore()
 
-    await categories.setActive(DRINKS.categoryId, false)
+    const result = await categories.setActive(DRINKS.categoryId, false)
 
-    expect(categories.errorMessage?.key).toBe('admin.categoryHasActiveItems')
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.categoryHasActiveItems', parameters: {}, count: null },
+    })
   })
 })

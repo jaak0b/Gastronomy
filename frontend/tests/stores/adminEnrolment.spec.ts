@@ -213,12 +213,14 @@ describe('creating an invitation from the admin screen', () => {
     )
     const enrolment = useAdminEnrolmentStore()
 
-    await enrolment.createInvitation({ kind: 'staffMember', staffMemberId: STAFF_MEMBER_ID })
+    const result = await enrolment.createInvitation({
+      kind: 'staffMember',
+      staffMemberId: STAFF_MEMBER_ID,
+    })
 
-    expect(enrolment.errorMessage).toEqual({
-      key: 'enrolment.atMostOneOwner',
-      parameters: {},
-      count: null,
+    expect(result).toEqual({
+      kind: 'failed',
+      message: { key: 'enrolment.atMostOneOwner', parameters: {}, count: null },
     })
   })
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
 import type { AppLanguage } from '../../../core/apiTypes'
+import { assertNever } from '../../../core/assertNever'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import { useAdminItemsStore, type AdminItem } from '../../../stores/admin/items'
 import type { AdminStation } from '../../../stores/admin/stations'
@@ -24,8 +26,9 @@ const selectedStationIds = ref<string[]>([...(props.item.atTheFestival?.stationI
 const priceRefused = ref(false)
 const stationRefused = ref(false)
 const isSending = ref(false)
+const refusal = ref<AdminErrorMessage | null>(null)
 
-const refusalText = useRefusalText([() => items.errorMessage])
+const refusalText = useRefusalText(refusal)
 
 const stationErrorText = computed(() =>
   stationRefused.value ? t('admin.festival.itemNeedsAStation', { item: props.item.name }) : null,
@@ -49,13 +52,21 @@ async function place(): Promise<void> {
     return
   }
   isSending.value = true
+  refusal.value = null
   const placed = await items.putAtTheFestival(props.festivalId, props.item.itemId, {
     priceCents,
     stationIds: [...selectedStationIds.value],
   })
   isSending.value = false
-  if (placed) {
-    emit('placed')
+  switch (placed.kind) {
+    case 'ok':
+      emit('placed')
+      return
+    case 'failed':
+      refusal.value = placed.message
+      return
+    default:
+      assertNever(placed)
   }
 }
 </script>

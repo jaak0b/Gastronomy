@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { listFrom, request, type ApiResult } from '../../api/client'
-import { adminErrorMessage, type AdminErrorMessage } from '../../core/adminErrorMessage'
+import { adminErrorMessage } from '../../core/adminErrorMessage'
+import {
+  adminFailed,
+  adminOk,
+  type AdminActionResult,
+} from '../../core/adminActionResult'
 import { useConnectionStore } from '../connection'
 
 export interface AdminFestival {
@@ -25,7 +30,6 @@ export interface FestivalDraft {
 export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   const festivals = ref<AdminFestival[]>([])
   const loadFailed = ref(false)
-  const errorMessage = ref<AdminErrorMessage | null>(null)
 
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestival | null>(
@@ -55,17 +59,15 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return { name: draft.name, startsAtUtc: draft.startsAtUtc, endsAtUtc: draft.endsAtUtc }
   }
 
-  async function reportAndReload(result: ApiResult<unknown>): Promise<boolean> {
+  async function reportAndReload(result: ApiResult<unknown>): Promise<AdminActionResult<null>> {
     if (result.kind !== 'ok') {
-      errorMessage.value = adminErrorMessage(result.kind === 'error' ? result.body : null)
-      return false
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     await load()
-    return true
+    return adminOk(null)
   }
 
-  async function create(draft: FestivalDraft): Promise<boolean> {
-    errorMessage.value = null
+  async function create(draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request('/api/admin/festivals', {
       method: 'POST',
       body: bodyOf(draft),
@@ -73,8 +75,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return reportAndReload(result)
   }
 
-  async function save(festivalId: string, draft: FestivalDraft): Promise<boolean> {
-    errorMessage.value = null
+  async function save(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}`, {
       method: 'PUT',
       body: bodyOf(draft),
@@ -82,8 +83,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return reportAndReload(result)
   }
 
-  async function copy(festivalId: string, draft: FestivalDraft): Promise<boolean> {
-    errorMessage.value = null
+  async function copy(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}/copy`, {
       method: 'POST',
       body: bodyOf(draft),
@@ -91,14 +91,12 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return reportAndReload(result)
   }
 
-  async function hide(festivalId: string): Promise<boolean> {
-    errorMessage.value = null
+  async function hide(festivalId: string): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}/hide`, { method: 'POST' })
     return reportAndReload(result)
   }
 
-  async function show(festivalId: string): Promise<boolean> {
-    errorMessage.value = null
+  async function show(festivalId: string): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}/show`, { method: 'POST' })
     return reportAndReload(result)
   }
@@ -107,16 +105,11 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     return useConnectionStore().registerRefetch(load)
   }
 
-  function forgetError(): void {
-    errorMessage.value = null
-  }
-
   return {
     festivals,
     shownFestivals,
     runningFestival,
     loadFailed,
-    errorMessage,
     festivalWithId,
     load,
     create,
@@ -124,7 +117,6 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     copy,
     hide,
     show,
-    forgetError,
     listen,
   }
 })

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import {
   formatProductionMinutes,
   parseProductionMinutes,
@@ -40,25 +42,33 @@ const offeredCategories = computed(() =>
   ),
 )
 
-const categoryRefusal = useRefusalText([() => categories.errorMessage])
+const categoryRefusal = ref<AdminErrorMessage | null>(null)
+const categoryRefusalText = useRefusalText(categoryRefusal)
 
 function startCreatingCategory(): void {
-  categories.forgetError()
+  categoryRefusal.value = null
   isCreatingCategory.value = true
 }
 
 function stopCreatingCategory(): void {
-  categories.forgetError()
+  categoryRefusal.value = null
   isCreatingCategory.value = false
 }
 
 async function createCategory(draft: AdminCategoryDraft): Promise<void> {
+  categoryRefusal.value = null
   const created = await categories.create(draft)
-  if (created === null) {
-    return
+  switch (created.kind) {
+    case 'ok':
+      categoryId.value = created.value.categoryId
+      isCreatingCategory.value = false
+      return
+    case 'failed':
+      categoryRefusal.value = created.message
+      return
+    default:
+      assertNever(created)
   }
-  categoryId.value = created.categoryId
-  isCreatingCategory.value = false
 }
 
 function save(): void {
@@ -136,7 +146,7 @@ function save(): void {
     <CategoryDialog
       v-if="isCreatingCategory"
       :category="null"
-      :error-text="categoryRefusal"
+      :error-text="categoryRefusalText"
       @save="createCategory"
       @cancel="stopCreatingCategory"
     />

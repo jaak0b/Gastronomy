@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import { assertNever } from '../../../core/assertNever'
 import {
   useAdminStationsStore,
   type AdminStation,
@@ -18,8 +20,9 @@ const chosenStationId = ref<string | null>(null)
 const isCreating = ref(false)
 const removedStation = ref<AdminStation | null>(null)
 const refusedStationId = ref<string | null>(null)
+const refusal = ref<AdminErrorMessage | null>(null)
 
-const refusalText = useRefusalText([() => stations.errorMessage])
+const refusalText = useRefusalText(refusal)
 
 const atTheFestival = computed(() =>
   stations.stations.filter((station) => station.isAtTheFestival),
@@ -34,29 +37,45 @@ async function add(): Promise<void> {
     return
   }
   refusedStationId.value = null
-  if (await stations.addToTheFestival(props.festivalId, stationId)) {
-    chosenStationId.value = null
+  refusal.value = null
+  const added = await stations.addToTheFestival(props.festivalId, stationId)
+  switch (added.kind) {
+    case 'ok':
+      chosenStationId.value = null
+      return
+    case 'failed':
+      refusal.value = added.message
+      return
+    default:
+      assertNever(added)
   }
 }
 
 function startCreating(): void {
-  stations.forgetError()
+  refusal.value = null
   refusedStationId.value = null
   isCreating.value = true
 }
 
 function stopCreating(): void {
-  stations.forgetError()
+  refusal.value = null
   isCreating.value = false
 }
 
 async function create(draft: StationDraft): Promise<void> {
-  const stationId = await stations.create(draft)
-  if (stationId === null) {
-    return
+  refusal.value = null
+  const created = await stations.create(draft)
+  switch (created.kind) {
+    case 'ok':
+      isCreating.value = false
+      chosenStationId.value = created.value
+      return
+    case 'failed':
+      refusal.value = created.message
+      return
+    default:
+      assertNever(created)
   }
-  isCreating.value = false
-  chosenStationId.value = stationId
 }
 
 async function remove(): Promise<void> {
@@ -66,12 +85,18 @@ async function remove(): Promise<void> {
     return
   }
   refusedStationId.value = station.stationId
-  await stations.removeFromTheFestival(props.festivalId, station.stationId)
+  refusal.value = null
+  const removed = await stations.removeFromTheFestival(props.festivalId, station.stationId)
+  switch (removed.kind) {
+    case 'ok':
+      return
+    case 'failed':
+      refusal.value = removed.message
+      return
+    default:
+      assertNever(removed)
+  }
 }
-
-onMounted(() => {
-  stations.forgetError()
-})
 </script>
 
 <template>
