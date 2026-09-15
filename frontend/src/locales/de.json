@@ -1,4 +1,10 @@
 {
+  "app": {
+    "title": {
+      "waiter": "Bestellen",
+      "admin": "Verwaltung"
+    }
+  },
   "enrol": {
     "title": "Dieses Telefon einrichten",
     "nameLabel": "Ihr Name",
@@ -286,6 +292,8 @@
     "asItComesHeading": "Einzellieferungen",
     "statsTogetherChip": "Gemeinsam {count}",
     "statsAsItComesChip": "Einzeln {count}",
+    "overview": "Übersicht",
+    "overviewHeading": "Offen an dieser Ausgabestelle",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
@@ -301,6 +309,8 @@
     "orderNote": "Hinweis zur Bestellung: {note}",
     "doneCounter": "{fulfilled} / {total} erledigt",
     "done": "Erledigen",
+    "groupedView": "Gruppiert",
+    "listView": "Liste",
     "putBack": "Zurücklegen",
     "hideHere": "Hier ausblenden",
     "showDone": "Erledigte anzeigen",
@@ -310,6 +320,7 @@
     "confirmDoneTitle": "Diese Positionen erledigen?",
     "tableIs": "Tisch {name}",
     "cancel": "Abbrechen",
+    "close": "Schließen",
     "noFestivalIsRunning": "Kein Fest aktiv",
     "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
   },

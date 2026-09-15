@@ -1,4 +1,10 @@
 {
+  "app": {
+    "title": {
+      "waiter": "Ordering",
+      "admin": "Administration"
+    }
+  },
   "enrol": {
     "title": "Set up this phone",
     "nameLabel": "Your name",
@@ -286,6 +292,8 @@
     "asItComesHeading": "Individual deliveries",
     "statsTogetherChip": "Together {count}",
     "statsAsItComesChip": "Individual {count}",
+    "overview": "Overview",
+    "overviewHeading": "Open at this station",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",
@@ -301,6 +309,8 @@
     "orderNote": "Note for the order: {note}",
     "doneCounter": "{fulfilled} / {total} done",
     "done": "Done",
+    "groupedView": "Grouped",
+    "listView": "List",
     "putBack": "Put back",
     "hideHere": "Hide here",
     "showDone": "Show done orders",
@@ -310,6 +320,7 @@
     "confirmDoneTitle": "Mark these items as done?",
     "tableIs": "Table {name}",
     "cancel": "Cancel",
+    "close": "Close",
     "noFestivalIsRunning": "No festival active",
     "notPartOfTheFestival": "This station is not part of the festival that is running."
   },

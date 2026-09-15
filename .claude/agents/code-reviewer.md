@@ -94,6 +94,9 @@ product has hurt before:
 - A message that exists in one language only.
 - A value computed in two places that can disagree, particularly prices, totals, sequence numbers,
   routing decisions and an item's fulfillment.
+- A grouping, collapse, summary or count that drops an item's note anywhere a person reads what to
+  make or hand out. Two units of one article are different work when their notes differ, and a
+  production count is not exempt because a note can change how the article is made.
 - A catch that swallows, a failure that reaches the user as a raw exception, and any state where the
   laptop and a phone disagree about what exists.
 

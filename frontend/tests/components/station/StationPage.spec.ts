@@ -47,6 +47,23 @@ const AS_IT_COMES_SLICE = {
   ],
 }
 
+const NOTED_SLICE = {
+  stationOrderId: 'slice-3',
+  globalOrderNumber: 140,
+  stationOrderNumber: 16,
+  tableName: '5',
+  note: null,
+  deliveryMode: 'together',
+  createdAtUtc: '2026-09-05T18:07:00Z',
+  isHiddenFromAsItComesQueue: false,
+  itemCount: 2,
+  fulfilledItemCount: 0,
+  items: [
+    { orderItemId: 'f', itemName: 'Frankfurter', note: 'Mit Ketchup', fulfilledAtUtc: null },
+    { orderItemId: 'g', itemName: 'Frankfurter', note: 'Ohne Ketchup', fulfilledAtUtc: null },
+  ],
+}
+
 const DONE_SLICE = {
   ...TOGETHER_SLICE,
   itemCount: 3,
@@ -55,6 +72,26 @@ const DONE_SLICE = {
     { orderItemId: 'a', itemName: 'Bratwurst', note: null, fulfilledAtUtc: '2026-09-05T19:00:00Z' },
     { orderItemId: 'b', itemName: 'Pommes', note: null, fulfilledAtUtc: null },
     { orderItemId: 'c', itemName: 'Bratwurst', note: null, fulfilledAtUtc: '2026-09-05T18:10:00Z' },
+  ],
+}
+
+const DONE_NOTED_SLICE = {
+  ...NOTED_SLICE,
+  itemCount: 2,
+  fulfilledItemCount: 2,
+  items: [
+    {
+      orderItemId: 'f',
+      itemName: 'Frankfurter',
+      note: 'Mit Ketchup',
+      fulfilledAtUtc: '2026-09-05T19:00:00Z',
+    },
+    {
+      orderItemId: 'g',
+      itemName: 'Frankfurter',
+      note: 'Ohne Ketchup',
+      fulfilledAtUtc: '2026-09-05T19:01:00Z',
+    },
   ],
 }
 
@@ -154,16 +191,6 @@ describe('the screen at a station', () => {
     expect(page.get('.stat-as-it-comes').text()).toBe('Einzeln 1')
   })
 
-  it('counts the open units per item name at the top', async () => {
-    const page = await mountPage()
-
-    expect(page.findAll('.stat-item').map((entry) => entry.text())).toEqual([
-      '1 x Bier',
-      '2 x Bratwurst',
-      '1 x Pommes',
-    ])
-  })
-
   it('puts every order in the left column and only the as-it-comes ones in the right', async () => {
     const page = await mountPage()
 
@@ -201,15 +228,6 @@ describe('the screen at a station', () => {
     )
   })
 
-  it('summarises the open units of a card on one line', async () => {
-    const page = await mountPage()
-
-    expect(page.findAll('.orders-column .unit-summary').map((entry) => entry.text())).toEqual([
-      '1 x Bratwurst · 1 x Pommes',
-      '1 x Bier · 1 x Bratwurst',
-    ])
-  })
-
   it('shows the note that belongs to the whole order', async () => {
     const page = await mountPage()
 
@@ -233,7 +251,125 @@ describe('the screen at a station', () => {
     expect(items).toHaveLength(2)
     expect(items[0].get('.item-name').text()).toBe('Bratwurst')
     expect(items[0].get('.item-note').text()).toBe('Hinweis: ohne Senf')
+    expect(items[0].find('.item-note-icon').exists()).toBe(true)
     expect(items[1].get('.item-name').text()).toBe('Pommes')
+    expect(items[1].find('.item-note').exists()).toBe(false)
+  })
+})
+
+describe('switching a card between the list and the grouped view', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('groups the open items by name and note and brings the list back', async () => {
+    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    const page = await mountPage()
+    const card = page.findAll('.orders-column .station-slice')[0]
+
+    expect(card.get('.grouped-toggle').text()).toBe('Gruppiert')
+
+    await card.get('.grouped-toggle').trigger('click')
+
+    expect(card.get('.grouped-toggle').text()).toBe('Liste')
+    expect(card.findAll('.grouped-line').map((line) => line.text())).toEqual([
+      '1 x Frankfurter · Hinweis: Mit Ketchup',
+      '1 x Frankfurter · Hinweis: Ohne Ketchup',
+    ])
+    expect(card.findAll('.station-item')).toHaveLength(0)
+    expect(card.find('.card-actions').exists()).toBe(false)
+
+    await card.get('.grouped-toggle').trigger('click')
+
+    expect(card.get('.grouped-toggle').text()).toBe('Gruppiert')
+    expect(card.findAll('.station-item')).toHaveLength(2)
+    expect(card.find('.card-actions').exists()).toBe(true)
+  })
+})
+
+describe('the overview board on the station screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    stubTheLaptop()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('opens from the header with every open article and closes again', async () => {
+    const page = await mountPage()
+
+    await page.get('.show-overview').trigger('click')
+    await flushPromises()
+
+    expect(textsOf('.station-open-board .stat-together')).toEqual(['Gemeinsam 1'])
+    expect(textsOf('.station-open-board .stat-as-it-comes')).toEqual(['Einzeln 1'])
+    expect(textsOf('.station-open-board .unit')).toEqual([
+      '1 x Bier',
+      '1 x Bratwurst',
+      '1 x Bratwurst · Hinweis: ohne Senf',
+      '1 x Pommes',
+    ])
+
+    ;(document.querySelector('.station-open-board .close') as HTMLElement).click()
+    await flushPromises()
+
+    expect(document.querySelector('.station-open-board')).toBeNull()
+    expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
+  })
+
+  it('shows two rows when two of the same article carry different notes', async () => {
+    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    const page = await mountPage()
+
+    await page.get('.show-overview').trigger('click')
+    await flushPromises()
+
+    expect(textsOf('.station-open-board .unit')).toEqual([
+      '1 x Frankfurter · Hinweis: Mit Ketchup',
+      '1 x Frankfurter · Hinweis: Ohne Ketchup',
+    ])
+  })
+
+  it('shows the load warning inside the board when the queue never loaded', async () => {
+    stubTheLaptop({
+      orders: () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+    const page = await mountPage()
+
+    await page.get('.show-overview').trigger('click')
+    await flushPromises()
+
+    expect(textsOf('.station-open-board .board-failed')).toEqual([
+      'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+    ])
+  })
+
+  it('shows a refused action inside the board', async () => {
+    stubTheLaptop({
+      hide: () => refused('UnprocessableEntity', 'station.orderNotAtThisStation'),
+    })
+    const page = await mountPage()
+
+    await page.get('.as-it-comes-column .hide').trigger('click')
+    await flushPromises()
+    await page.get('.show-overview').trigger('click')
+    await flushPromises()
+
+    expect(textsOf('.station-open-board .board-failed')).toEqual([
+      'Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut.',
+    ])
   })
 })
 
@@ -285,13 +421,32 @@ describe('marking selected items as done from a card', () => {
     await flushPromises()
 
     expect(textsOf('.station-done-dialog .row-table')).toEqual(['Tisch 3'])
-    expect(textsOf('.station-done-dialog .unit')).toEqual(['1 x Bratwurst', '1 x Pommes'])
+    expect(textsOf('.station-done-dialog .unit')).toEqual([
+      '1 x Bratwurst · Hinweis: ohne Senf',
+      '1 x Pommes',
+    ])
     expect(document.querySelector('.station-done-dialog .confirm')?.textContent?.trim()).toBe(
       'Erledigen',
     )
     expect(document.querySelector('.station-done-dialog .cancel')?.textContent?.trim()).toBe(
       'Abbrechen',
     )
+  })
+
+  it('asks again with one line per note, so two different frankfurters are not merged', async () => {
+    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    const page = await mountPage()
+    const card = page.findAll('.orders-column .station-slice')[0]
+
+    await card.findAll('.station-item')[0].trigger('click')
+    await card.findAll('.station-item')[1].trigger('click')
+    await card.get('.fulfill').trigger('click')
+    await flushPromises()
+
+    expect(textsOf('.station-done-dialog .unit')).toEqual([
+      '1 x Frankfurter · Hinweis: Mit Ketchup',
+      '1 x Frankfurter · Hinweis: Ohne Ketchup',
+    ])
   })
 
   it('keeps the selection when the employee backs out of the question', async () => {
@@ -443,6 +598,17 @@ describe('the done view', () => {
     await flushPromises()
 
     expect(page.get('.station-fulfilled .unit-summary').text()).toBe('2 x Bratwurst · 1 x Pommes')
+  })
+
+  it('keeps two different notes apart in the summary line', async () => {
+    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_NOTED_SLICE] }) })
+    const page = await mountPage()
+    await page.get('.show-done').trigger('click')
+    await flushPromises()
+
+    expect(page.get('.station-fulfilled .unit-summary').text()).toBe(
+      '1 x Frankfurter · Hinweis: Mit Ketchup · 1 x Frankfurter · Hinweis: Ohne Ketchup',
+    )
   })
 
   it('offers a put back control on a done item only and posts it', async () => {

@@ -316,6 +316,13 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     somewhere real, and it binds the main agent, every subagent and every reviewer: a finding whose
     only victim is data from a previous build is not a defect and must not be reported as one.
 
+20. **An item's note is part of the item.** Whenever order items are grouped, collapsed, summarised or
+    counted for anyone to read or act on, the note travels with the group: the line carries the article
+    and its note together. Two units of one article are different work when their notes differ, and a
+    count the kitchen plans production from is not exempt, because a note can change how the article
+    is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
+    Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
+
 ## Verification bar
 
 Backend and frontend tests green for what you touched, with real output quoted. See each folder's

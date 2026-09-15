@@ -6,7 +6,7 @@ import {
   deliveryModeColour,
   selectedUnits,
   stationStats,
-  type ItemUnits,
+  type ItemLine,
 } from '../core/stationBoard'
 import { useStationStore } from '../stores/station'
 import { useSessionStore } from '../stores/session'
@@ -14,6 +14,7 @@ import LanguageSwitch from '../components/LanguageSwitch.vue'
 import StationSliceCard from '../components/station/StationSliceCard.vue'
 import StationFulfilledCard from '../components/station/StationFulfilledCard.vue'
 import StationDoneDialog from '../components/station/StationDoneDialog.vue'
+import StationOpenBoard from '../components/station/StationOpenBoard.vue'
 
 const { t } = useI18n()
 const station = useStationStore()
@@ -23,11 +24,19 @@ let stopListening: (() => void) | null = null
 const stats = computed(() => stationStats(station.orders))
 const doneSlice = ref<StationSlice | null>(null)
 const doneItemIds = ref<string[]>([])
-const doneUnits = computed<ItemUnits[]>(() =>
+const isShowingOverview = ref(false)
+const doneUnits = computed<ItemLine[]>(() =>
   doneSlice.value === null ? [] : selectedUnits([doneSlice.value], doneItemIds.value),
 )
 
 const stationName = computed(() => station.station?.name ?? session.station?.name ?? '')
+
+const failureText = computed<string | null>(() => {
+  if (station.loadFailed) {
+    return t(station.loadFailureKey ?? 'station.loadFailed')
+  }
+  return station.failureKey === null ? null : t(station.failureKey)
+})
 
 onMounted(async () => {
   stopListening = station.listen()
@@ -54,17 +63,47 @@ async function confirmDone(): Promise<void> {
   closeDone()
   await station.fulfill(orderItemIds)
 }
+
+function openOverview(): void {
+  isShowingOverview.value = true
+}
+
+function closeOverview(): void {
+  isShowingOverview.value = false
+}
 </script>
 
 <template>
   <v-container fluid class="station-page">
-    <header class="station-header d-flex align-center ga-4 mb-4">
-      <h1 class="station-name text-h4 flex-grow-1">{{ stationName }}</h1>
+    <header class="station-header d-flex align-center ga-3 mb-4">
+      <h1 class="station-name text-h5">{{ stationName }}</h1>
+      <template v-if="station.hasWork">
+        <v-chip
+          class="stat-together"
+          :color="deliveryModeColour('together')"
+          variant="flat"
+          size="small"
+        >
+          {{ t('station.statsTogetherChip', { count: stats.togetherOrders }) }}
+        </v-chip>
+        <v-chip
+          class="stat-as-it-comes"
+          :color="deliveryModeColour('asItComes')"
+          variant="flat"
+          size="small"
+        >
+          {{ t('station.statsAsItComesChip', { count: stats.asItComesOrders }) }}
+        </v-chip>
+      </template>
+      <v-spacer />
       <LanguageSwitch
         :language="session.language"
         label-key="station.language"
         @select="session.setLanguage"
       />
+      <v-btn class="show-overview" variant="outlined" size="large" @click="openOverview">
+        {{ t('station.overview') }}
+      </v-btn>
       <v-btn
         v-if="!station.isShowingFulfilled"
         class="show-done"
@@ -87,6 +126,15 @@ async function confirmDone(): Promise<void> {
     >
       {{ t(station.failureKey) }}
     </v-alert>
+
+    <StationOpenBoard
+      v-if="isShowingOverview"
+      :together-count="stats.togetherOrders"
+      :as-it-comes-count="stats.asItComesOrders"
+      :lines="stats.openLines"
+      :failure-text="failureText"
+      @close="closeOverview"
+    />
 
     <template v-if="station.isShowingFulfilled">
       <div class="done-head d-flex align-center ga-3 mb-4">
@@ -116,36 +164,6 @@ async function confirmDone(): Promise<void> {
     </template>
 
     <template v-else>
-      <section v-if="station.hasWork" class="station-stats mb-3">
-        <div class="stat-chips d-flex flex-wrap ga-2">
-          <v-chip
-            class="stat-together"
-            :color="deliveryModeColour('together')"
-            variant="flat"
-            size="large"
-          >
-            {{ t('station.statsTogetherChip', { count: stats.togetherOrders }) }}
-          </v-chip>
-          <v-chip
-            class="stat-as-it-comes"
-            :color="deliveryModeColour('asItComes')"
-            variant="flat"
-            size="large"
-          >
-            {{ t('station.statsAsItComesChip', { count: stats.asItComesOrders }) }}
-          </v-chip>
-          <v-chip
-            v-for="unit in stats.openUnits"
-            :key="unit.itemName"
-            class="stat-item"
-            variant="tonal"
-            size="large"
-          >
-            {{ t('station.itemUnits', { count: unit.units, item: unit.itemName }) }}
-          </v-chip>
-        </div>
-      </section>
-
       <v-row>
         <v-col cols="12" md="6" class="orders-column">
           <h2 class="orders-heading text-h6 mb-2">{{ t('station.ordersHeading') }}</h2>
@@ -183,9 +201,20 @@ async function confirmDone(): Promise<void> {
     <StationDoneDialog
       v-if="doneSlice !== null"
       :table-name="doneSlice.tableName"
-      :units="doneUnits"
+      :lines="doneUnits"
       @confirmed="confirmDone"
       @cancelled="closeDone"
     />
   </v-container>
 </template>
+
+<style scoped>
+.station-header {
+  flex-wrap: wrap;
+}
+
+.station-header .station-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+</style>

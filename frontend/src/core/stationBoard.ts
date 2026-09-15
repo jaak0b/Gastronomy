@@ -1,20 +1,22 @@
 import type { ApiErrorBody } from './apiError'
 import type { DeliveryMode, StationSlice, StationSliceItem } from './apiTypes'
 import { assertNever } from './assertNever'
+import { collapseLines } from './collapse'
 
 export type StationFailure =
   | { kind: 'unreachable' }
   | { kind: 'error'; status: number; body: ApiErrorBody | null; raw: unknown }
 
-export interface ItemUnits {
+export interface ItemLine {
   itemName: string
+  note: string | null
   units: number
 }
 
 export interface StationStats {
   togetherOrders: number
   asItComesOrders: number
-  openUnits: ItemUnits[]
+  openLines: ItemLine[]
 }
 
 export function stationFailureKey(failure: StationFailure): string {
@@ -65,22 +67,43 @@ function compareItemNames(left: string, right: string): number {
   return left > right ? 1 : 0
 }
 
-export function itemUnits(items: readonly StationSliceItem[]): ItemUnits[] {
-  const unitsByName = new Map<string, number>()
-  for (const item of items) {
-    unitsByName.set(item.itemName, (unitsByName.get(item.itemName) ?? 0) + 1)
+function compareLines(left: ItemLine, right: ItemLine): number {
+  const byName = compareItemNames(left.itemName, right.itemName)
+  return byName !== 0 ? byName : compareItemNames(left.note ?? '', right.note ?? '')
+}
+
+export function itemLines(items: readonly StationSliceItem[]): ItemLine[] {
+  return collapseLines(
+    items,
+    (item) => item.itemName,
+    (item) => item.note,
+  )
+    .map(({ line, quantity }) => ({ itemName: line.itemName, note: line.note, units: quantity }))
+    .sort(compareLines)
+}
+
+export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {
+  return [...lines].sort(
+    (left, right) => right.units - left.units || compareItemNames(left.itemName, right.itemName),
+  )
+}
+
+export type StationLineWording = (key: string, values?: Record<string, string | number>) => string
+
+export function itemLineText(line: ItemLine, t: StationLineWording): string {
+  const counted = t('station.itemUnits', { count: line.units, item: line.itemName })
+  if (line.note === null) {
+    return counted
   }
-  return [...unitsByName.entries()]
-    .map(([itemName, units]) => ({ itemName, units }))
-    .sort((left, right) => compareItemNames(left.itemName, right.itemName))
+  return counted + t('station.unitSeparator') + t('station.note', { note: line.note })
 }
 
 export function selectedUnits(
   slices: readonly StationSlice[],
   selectedItemIds: readonly string[],
-): ItemUnits[] {
+): ItemLine[] {
   const selected = new Set(selectedItemIds)
-  return itemUnits(
+  return itemLines(
     slices.flatMap((slice) => openItemsOf(slice)).filter((item) => selected.has(item.orderItemId)),
   )
 }
@@ -113,7 +136,7 @@ export function stationStats(orders: readonly StationSlice[]): StationStats {
   return {
     togetherOrders,
     asItComesOrders,
-    openUnits: itemUnits(orders.flatMap((slice) => openItemsOf(slice))),
+    openLines: linesByCount(itemLines(orders.flatMap((slice) => openItemsOf(slice)))),
   }
 }
 

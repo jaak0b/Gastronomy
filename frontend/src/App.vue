@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { currentRoute } from './router'
 import { bindLocaleToSession } from './localeBinding'
+import { screenTitle } from './core/appTitle'
 import { screenFor, type ScreenName } from './core/landing'
 import { useSessionStore } from './stores/session'
+import { useStationStore } from './stores/station'
 import { useCatalogStore } from './stores/catalog'
 import { useConnectionStore } from './stores/connection'
 import { useEstimatesStore } from './stores/estimates'
@@ -19,13 +22,28 @@ import StationPage from './views/StationPage.vue'
 import AdminShell from './views/admin/AdminShell.vue'
 
 const session = useSessionStore()
+const station = useStationStore()
 const catalog = useCatalogStore()
 const connection = useConnectionStore()
 const estimates = useEstimatesStore()
 
+const { t } = useI18n()
+
 bindLocaleToSession()
 
 const screen = computed<ScreenName>(() => screenFor(session.deviceSession, currentRoute.value))
+
+const stationName = computed(() => station.station?.name ?? session.station?.name ?? null)
+
+const title = computed(() => screenTitle(screen.value, stationName.value, t))
+
+watch(
+  title,
+  (next) => {
+    document.title = next
+  },
+  { immediate: true },
+)
 
 const isAWaiterScreen = computed(
   () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',

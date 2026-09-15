@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { ItemUnits } from '../../core/stationBoard'
+import { itemLineText, type ItemLine } from '../../core/stationBoard'
 
-defineProps<{ tableName: string; units: ItemUnits[] }>()
+defineProps<{ tableName: string; lines: ItemLine[] }>()
 const emit = defineEmits<{ confirmed: []; cancelled: [] }>()
 
 const { t } = useI18n()
+
+function lineText(line: ItemLine): string {
+  return itemLineText(line, t)
+}
 </script>
 
 <template>
@@ -17,8 +21,8 @@ const { t } = useI18n()
           <span class="label">{{ t('station.tableIs', { name: tableName }) }}</span>
         </div>
         <ul class="units">
-          <li v-for="unit in units" :key="unit.itemName" class="unit">
-            {{ t('station.itemUnits', { count: unit.units, item: unit.itemName }) }}
+          <li v-for="(line, position) in lines" :key="position" class="unit">
+            {{ lineText(line) }}
           </li>
         </ul>
       </v-card-text>

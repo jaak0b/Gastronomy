@@ -7,7 +7,9 @@ vi.mock('@microsoft/signalr', async () => (await import('./../support/hubConnect
 const { navigate } = await import('../../src/router')
 const App = (await import('../../src/App.vue')).default
 const { testPlugins } = await import('../support/plugins')
-const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY } = await import('../../src/stores/session')
+const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY, useSessionStore } = await import(
+  '../../src/stores/session'
+)
 
 const CATALOG = {
   categories: [
@@ -117,6 +119,15 @@ describe('a device that starts while the laptop has not said yet whose device it
 
     expect(tablet.find('.catalog').exists()).toBe(false)
   })
+
+  it('carries the app name in the browser tab until the laptop says whose device it is', () => {
+    aLaptopThatKnowsThisDeviceAs('station')
+    document.title = 'leftover'
+
+    aDeviceThatWasSetUpEarlier()
+
+    expect(document.title).toBe('GastronomyApp')
+  })
 })
 
 describe('a device once the laptop has said whose device it is', () => {
@@ -145,6 +156,29 @@ describe('a device once the laptop has said whose device it is', () => {
     await flushPromises()
 
     expect(urls).not.toContain('/api/catalog')
+  })
+
+  it('names the tab after the station the tablet works at', async () => {
+    aLaptopThatKnowsThisDeviceAs('station')
+
+    aDeviceThatWasSetUpEarlier()
+    await flushPromises()
+
+    expect(document.title).toBe('Küche')
+  })
+
+  it('names the ordering tab in the language the phone is set to', async () => {
+    aLaptopThatKnowsThisDeviceAs('staffMember')
+
+    aDeviceThatWasSetUpEarlier()
+    await flushPromises()
+
+    expect(document.title).toBe('Bestellen')
+
+    useSessionStore().setLanguage('en')
+    await flushPromises()
+
+    expect(document.title).toBe('Ordering')
   })
 })
 

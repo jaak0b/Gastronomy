@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   deliveryModeColour,
   deliveryModeKey,
-  itemUnits,
+  itemLineText,
+  itemLines,
+  linesByCount,
   openItemsOf,
   retainOpenItemIds,
   selectedOpenItemIds,
@@ -16,8 +18,9 @@ function sliceItem(
   orderItemId: string,
   itemName = 'Bratwurst',
   fulfilledAtUtc: string | null = null,
+  note: string | null = null,
 ): StationSliceItem {
-  return { orderItemId, itemName, note: null, fulfilledAtUtc }
+  return { orderItemId, itemName, note, fulfilledAtUtc }
 }
 
 function slice(overrides: Partial<StationSlice> = {}): StationSlice {
@@ -69,27 +72,6 @@ describe('picking the open items out of a slice', () => {
   })
 })
 
-describe('counting units of the same item', () => {
-  it('adds up how many units of each name are in the list', () => {
-    const items = [
-      sliceItem('a', 'Bratwurst'),
-      sliceItem('b', 'Wasser'),
-      sliceItem('c', 'Bratwurst'),
-      sliceItem('d', 'Wasser'),
-      sliceItem('e', 'Bratwurst'),
-    ]
-
-    expect(itemUnits(items)).toEqual([
-      { itemName: 'Bratwurst', units: 3 },
-      { itemName: 'Wasser', units: 2 },
-    ])
-  })
-
-  it('counts nothing when there is nothing', () => {
-    expect(itemUnits([])).toEqual([])
-  })
-})
-
 describe('grouping what an employee selected', () => {
   const orders = [
     slice({
@@ -105,10 +87,26 @@ describe('grouping what an employee selected', () => {
     }),
   ]
 
-  it('keeps only the selected open items and groups them by name', () => {
+  it('keeps only the selected open items and groups them by name and note', () => {
     expect(selectedUnits(orders, ['a', 'c'])).toEqual([
-      { itemName: 'Bratwurst', units: 1 },
-      { itemName: 'Wasser', units: 1 },
+      { itemName: 'Bratwurst', note: null, units: 1 },
+      { itemName: 'Wasser', note: null, units: 1 },
+    ])
+  })
+
+  it('keeps two units of the same article apart when their notes differ', () => {
+    const noted = [
+      slice({
+        items: [
+          sliceItem('a', 'Frankfurter', null, 'Mit Ketchup'),
+          sliceItem('b', 'Frankfurter', null, 'Ohne Ketchup'),
+        ],
+      }),
+    ]
+
+    expect(selectedUnits(noted, ['a', 'b'])).toEqual([
+      { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 1 },
+      { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 1 },
     ])
   })
 
@@ -121,36 +119,93 @@ describe('grouping what an employee selected', () => {
   })
 })
 
+describe('grouping the open items of one card', () => {
+  it('keeps units with the same name and note together and separates different notes', () => {
+    const items = [
+      sliceItem('a', 'Frankfurter', null, 'Mit Ketchup'),
+      sliceItem('b', 'Frankfurter', null, 'Mit Ketchup'),
+      sliceItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
+      sliceItem('d', 'Bier'),
+    ]
+
+    expect(itemLines(items)).toEqual([
+      { itemName: 'Bier', note: null, units: 1 },
+      { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 2 },
+      { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 1 },
+    ])
+  })
+})
+
+describe('the open articles of the overview board', () => {
+  it('puts the largest count first and breaks ties by name', () => {
+    expect(
+      linesByCount([
+        { itemName: 'Wasser', note: null, units: 1 },
+        { itemName: 'Frankfurter', note: null, units: 3 },
+        { itemName: 'Bier', note: null, units: 3 },
+        { itemName: 'Bratwurst', note: null, units: 2 },
+      ]),
+    ).toEqual([
+      { itemName: 'Bier', note: null, units: 3 },
+      { itemName: 'Frankfurter', note: null, units: 3 },
+      { itemName: 'Bratwurst', note: null, units: 2 },
+      { itemName: 'Wasser', note: null, units: 1 },
+    ])
+  })
+})
+
+describe('the words on one grouped line', () => {
+  const words = (key: string, values?: Record<string, string | number>): string =>
+    values === undefined ? `[${key}]` : `[${key} ${Object.values(values).join(' ')}]`
+
+  it('names only the units when the article carries no note', () => {
+    expect(itemLineText({ itemName: 'Frankfurter', note: null, units: 2 }, words)).toBe(
+      '[station.itemUnits 2 Frankfurter]',
+    )
+  })
+
+  it('keeps the note beside the units when the article carries one', () => {
+    expect(itemLineText({ itemName: 'Frankfurter', note: 'Mit Ketchup', units: 2 }, words)).toBe(
+      '[station.itemUnits 2 Frankfurter][station.unitSeparator][station.note Mit Ketchup]',
+    )
+  })
+})
+
 describe('the statistics above the queue', () => {
-  it('counts the orders by delivery mode and the open units by item name', () => {
+  it('counts the orders by delivery mode and keeps the open lines apart by note', () => {
     const orders = [
       slice({
         stationOrderId: 'slice-1',
-        items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes')],
+        items: [
+          sliceItem('a', 'Bratwurst'),
+          sliceItem('b', 'Pommes'),
+          sliceItem('c', 'Bratwurst', null, 'Ohne Senf'),
+        ],
       }),
       slice({
         stationOrderId: 'slice-2',
         deliveryMode: 'asItComes',
         items: [
-          sliceItem('c', 'Bratwurst'),
-          sliceItem('d', 'Wasser', '2026-09-05T18:20:00Z'),
+          sliceItem('d', 'Bratwurst'),
+          sliceItem('e', 'Wasser', '2026-09-05T18:20:00Z'),
         ],
       }),
       slice({
         stationOrderId: 'slice-3',
         deliveryMode: 'asItComes',
         isHiddenFromAsItComesQueue: true,
-        items: [sliceItem('e', 'Wasser')],
+        items: [sliceItem('f', 'Wasser')],
       }),
     ]
 
     expect(stationStats(orders)).toEqual({
       togetherOrders: 1,
       asItComesOrders: 2,
-      openUnits: [
-        { itemName: 'Bratwurst', units: 2 },
-        { itemName: 'Pommes', units: 1 },
-        { itemName: 'Wasser', units: 1 },
+      openLines: [
+        { itemName: 'Bratwurst', note: null, units: 2 },
+        { itemName: 'Bratwurst', note: 'Ohne Senf', units: 1 },
+        { itemName: 'Pommes', note: null, units: 1 },
+        { itemName: 'Wasser', note: null, units: 1 },
       ],
     })
   })

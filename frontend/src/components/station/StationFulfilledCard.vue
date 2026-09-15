@@ -6,7 +6,8 @@ import {
   deliveryModeColour,
   deliveryModeKey,
   isFulfilled,
-  itemUnits,
+  itemLineText,
+  itemLines,
 } from '../../core/stationBoard'
 
 const props = defineProps<{ slice: StationSlice; isWorking: boolean }>()
@@ -31,17 +32,17 @@ const doneCounter = computed(() =>
   }),
 )
 const unitSummary = computed(() =>
-  itemUnits(props.slice.items)
-    .map((unit) => t('station.itemUnits', { count: unit.units, item: unit.itemName }))
+  itemLines(props.slice.items)
+    .map((line) => itemLineText(line, t))
     .join(t('station.unitSeparator')),
 )
 </script>
 
 <template>
   <v-card class="station-fulfilled mb-4" :style="{ borderColor: modeColour }" variant="outlined">
-    <v-card-text>
+    <v-card-text class="pa-3">
       <div class="slice-head d-flex align-baseline ga-2">
-        <span class="table-name text-h4">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
+        <span class="table-name text-h5">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
         <span class="slice-heading text-body-1 text-medium-emphasis">{{ orderReference }}</span>
         <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
       </div>
@@ -58,11 +59,11 @@ const unitSummary = computed(() =>
       <div
         v-for="item in slice.items"
         :key="item.orderItemId"
-        class="station-item d-flex align-center ga-3 py-2"
+        class="station-item d-flex align-center ga-3"
         :class="{ fulfilled: isFulfilled(item) }"
       >
         <v-icon v-if="isFulfilled(item)" class="item-tick" icon="mdi-check" />
-        <div class="flex-grow-1">
+        <div class="item-text flex-grow-1">
           <div class="item-name text-body-1">{{ item.itemName }}</div>
           <div v-if="item.note !== null" class="item-note text-body-2">
             {{ t('station.note', { note: item.note }) }}
@@ -87,6 +88,28 @@ const unitSummary = computed(() =>
 .station-fulfilled {
   border-width: 3px;
   border-style: solid;
+}
+
+.slice-head {
+  flex-wrap: wrap;
+}
+
+.slice-head > span {
+  min-width: 0;
+}
+
+.slice-head .table-name {
+  overflow-wrap: anywhere;
+}
+
+.station-item {
+  min-height: 3rem;
+  padding-block: 0.375rem;
+}
+
+.station-item .item-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .station-item.fulfilled .item-name {
