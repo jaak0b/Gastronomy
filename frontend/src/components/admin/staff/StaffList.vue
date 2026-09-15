@@ -117,7 +117,6 @@ onUnmounted(() => {
           maxlength="40"
           :label="t('admin.staff.rename')"
         />
-        <p class="help text-medium-emphasis">{{ t('admin.staff.renameHelp') }}</p>
         <v-btn class="save-name" color="primary" @click="rename(staffMember.staffMemberId)">
           {{ t('admin.save') }}
         </v-btn>

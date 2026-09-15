@@ -182,7 +182,6 @@
       "noPhone": "No phone set up",
       "newCode": "Set the phone up again",
       "rename": "Change the name",
-      "renameHelp": "The new name is used from the next order onwards.",
       "activate": "Put the waiter back on the list",
       "deactivateTitle": "Take this waiter off the list?",
       "deactivateBody": "The waiter's phone is signed out.",
