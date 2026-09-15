@@ -108,15 +108,46 @@ describe('the screen a device lands on', () => {
     currentRoute.value = { name: 'stations' }
   })
 
-  it('keeps a station tablet on the station screen', async () => {
+  it('keeps a station tablet on the station screen, even when back is pressed', async () => {
+    window.history.replaceState({}, '', '/the-page-the-tablet-was-on-before')
+    window.history.pushState({}, '', '/stations')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const payload = url.startsWith('/api/session')
+          ? {
+              deviceId: 'device-1',
+              deviceKind: 'station',
+              staffMember: null,
+              station: { id: 's-1', name: 'Küche' },
+              language: 'de',
+            }
+          : {
+              stations: [],
+              slices: [],
+              orders: [],
+              items: [],
+              station: { id: 's-1', name: 'Küche' },
+            }
+        return new Response(JSON.stringify(payload), { status: 200 })
+      }),
+    )
     const { useSessionStore } = await import('../../src/stores/session')
-    const session = useSessionStore()
-    session.deviceToken = 'a-token'
-    session.deviceKind = 'station'
+    useSessionStore().deviceToken = 'a-token'
 
     const app = mountApp()
 
     await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
+
+    const popped = new Promise((resolve) => {
+      window.addEventListener('popstate', () => resolve(undefined), { once: true })
+    })
+    window.history.back()
+    await popped
+    await app.vm.$nextTick()
+
+    expect(window.location.pathname).toBe('/stations')
+    expect(app.find('.station-page').exists()).toBe(true)
   })
 
   it('sends a waiter phone that opens the station address back to the item list', async () => {

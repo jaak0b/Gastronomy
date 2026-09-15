@@ -1,41 +1,10 @@
 import { ref, type Ref } from 'vue'
-import { assertNever } from '../core/assertNever'
 import { resolveRoute, type AppRoute } from '../core/route'
 
 export { ADMIN_SECTIONS, resolveRoute } from '../core/route'
 export type { AdminSection, AppRoute } from '../core/route'
 
 export const currentRoute: Ref<AppRoute> = ref(resolveRoute(window.location.pathname))
-
-function isAServerScreen(route: AppRoute): boolean {
-  switch (route.name) {
-    case 'home':
-    case 'review':
-    case 'openItems':
-      return true
-    case 'enrolQr':
-    case 'stations':
-    case 'admin':
-      return false
-    default:
-      return assertNever(route)
-  }
-}
-
-function isTheFirstServerScreen(route: AppRoute): boolean {
-  switch (route.name) {
-    case 'home':
-      return true
-    case 'review':
-    case 'openItems':
-    case 'enrolQr':
-    case 'stations':
-    case 'admin':
-      return false
-    default:
-      return assertNever(route)
-  }
-}
 
 let closeTheOpenStep: (() => void) | null = null
 
@@ -49,56 +18,70 @@ export function closeTheStepInsideTheScreen(): void {
   close?.()
 }
 
-function repeatCurrentHistoryEntry(): void {
-  const address = window.location.pathname + window.location.search + window.location.hash
-  window.history.pushState({}, '', address)
+function currentAddress(): string {
+  return window.location.pathname + window.location.search + window.location.hash
 }
 
-function keepAWayBackInsideTheApp(route: AppRoute): void {
-  if (isAServerScreen(route)) {
-    repeatCurrentHistoryEntry()
+let theAddressOfTheScreen = currentAddress()
+
+let theDeviceIsKeptInsideTheApp = false
+
+let theRouterIsListening = false
+
+export function startRouter(): void {
+  if (theRouterIsListening) {
+    return
+  }
+  theRouterIsListening = true
+  window.addEventListener('popstate', followTheBrowserBackButton)
+  window.addEventListener('pageshow', keepTheGuardAfterTheBrowserRestoredThePage)
+}
+
+function followTheBrowserBackButton(): void {
+  if (theDeviceIsKeptInsideTheApp && closeTheOpenStep !== null) {
+    closeTheStepInsideTheScreen()
+    window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
+    return
+  }
+  const landed = window.history.state as { floor?: boolean } | null
+  if (theDeviceIsKeptInsideTheApp && (landed === null || landed.floor === true)) {
+    window.history.pushState({ theApp: true }, '', currentAddress())
+    return
+  }
+  currentRoute.value = resolveRoute(window.location.pathname)
+  theAddressOfTheScreen = currentAddress()
+}
+
+function keepTheGuardAfterTheBrowserRestoredThePage(event: PageTransitionEvent): void {
+  if (event.persisted && theDeviceIsKeptInsideTheApp) {
+    window.history.pushState({ theApp: true }, '', currentAddress())
   }
 }
 
-function keepAWayBackOnTheFirstServerScreen(route: AppRoute): void {
-  if (isTheFirstServerScreen(route)) {
-    repeatCurrentHistoryEntry()
+export function keepTheDeviceInsideTheApp(): void {
+  startRouter()
+  if (theDeviceIsKeptInsideTheApp) {
+    return
   }
+  theDeviceIsKeptInsideTheApp = true
+  theAddressOfTheScreen = currentAddress()
+  window.history.replaceState({ theApp: true, floor: true }, '', currentAddress())
+  window.history.pushState({ theApp: true }, '', currentAddress())
 }
 
 export function navigate(path: string): void {
   closeTheStepInsideTheScreen()
-  window.history.pushState({}, '', path)
+  window.history.pushState({ theApp: true }, '', path)
   currentRoute.value = resolveRoute(path)
-  keepAWayBackOnTheFirstServerScreen(currentRoute.value)
+  theAddressOfTheScreen = currentAddress()
 }
 
 export function replace(path: string): void {
-  window.history.replaceState({}, '', path)
+  window.history.replaceState({ theApp: true }, '', path)
   currentRoute.value = resolveRoute(path)
-  keepAWayBackAsSoonAsTheScreenIsTouched()
+  theAddressOfTheScreen = currentAddress()
 }
 
 export function startOverAt(path: string): void {
   window.location.replace(path)
-}
-
-function keepAWayBackAsSoonAsTheScreenIsTouched(): void {
-  function armOnFirstTouch(): void {
-    window.removeEventListener('pointerdown', armOnFirstTouch)
-    window.removeEventListener('keydown', armOnFirstTouch)
-    keepAWayBackInsideTheApp(currentRoute.value)
-  }
-
-  window.addEventListener('pointerdown', armOnFirstTouch)
-  window.addEventListener('keydown', armOnFirstTouch)
-}
-
-export function startRouter(): void {
-  keepAWayBackAsSoonAsTheScreenIsTouched()
-  window.addEventListener('popstate', () => {
-    currentRoute.value = resolveRoute(window.location.pathname)
-    closeTheStepInsideTheScreen()
-    keepAWayBackOnTheFirstServerScreen(currentRoute.value)
-  })
 }

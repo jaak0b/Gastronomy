@@ -6,7 +6,7 @@ import { formatPrice } from '../core/totals'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
-import { navigate } from '../router'
+import { navigate, replace } from '../router'
 import DockedStrip from '../components/DockedStrip.vue'
 import LineList from '../components/review/LineList.vue'
 import SendFailurePanel from '../components/review/SendFailurePanel.vue'
@@ -52,20 +52,20 @@ async function sendAsConfirmed(): Promise<void> {
 async function send(settleOnSend: boolean): Promise<void> {
   await order.send(settleOnSend)
   if (order.sendState === 'accepted') {
-    navigate('/')
+    replace('/')
   }
 }
 
 async function sendAgain(): Promise<void> {
   await order.sendAgain()
   if (order.sendState === 'accepted') {
-    navigate('/')
+    replace('/')
   }
 }
 
 function startTheNextOrder(): void {
   order.startNextOrderAfterWritingItDown()
-  navigate('/')
+  replace('/')
 }
 
 function backToItems(): void {

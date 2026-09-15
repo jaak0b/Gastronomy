@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screenFor } from '../../src/core/landing'
+import { isAnEnrolledDeviceScreen, screenFor } from '../../src/core/landing'
 
 const aStationTablet = { state: 'setUp', deviceKind: 'station' } as const
 const aWaiterPhone = { state: 'setUp', deviceKind: 'staffMember' } as const
@@ -53,6 +53,22 @@ describe('screenFor, the screen a device lands on', () => {
   it('opens the admin for whoever asks for it', () => {
     expect(screenFor(aDeviceThatIsNotSetUp, { name: 'admin', section: 'overview', festivalId: null })).toBe('admin')
     expect(screenFor(aStationTablet, { name: 'admin', section: 'items', festivalId: null })).toBe('admin')
+  })
+})
+
+describe('isAnEnrolledDeviceScreen, the screens that keep a device inside the app', () => {
+  it('keeps the screens a device that is set up can show', () => {
+    expect(isAnEnrolledDeviceScreen('station')).toBe(true)
+    expect(isAnEnrolledDeviceScreen('catalog')).toBe(true)
+    expect(isAnEnrolledDeviceScreen('review')).toBe(true)
+    expect(isAnEnrolledDeviceScreen('openItems')).toBe(true)
+  })
+
+  it('leaves the enrolment, the welcome, the starting and the admin screens alone', () => {
+    expect(isAnEnrolledDeviceScreen('enrolQr')).toBe(false)
+    expect(isAnEnrolledDeviceScreen('welcome')).toBe(false)
+    expect(isAnEnrolledDeviceScreen('startingUp')).toBe(false)
+    expect(isAnEnrolledDeviceScreen('admin')).toBe(false)
   })
 })
 

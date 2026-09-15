@@ -140,6 +140,18 @@ describe('sending the order from the review screen', () => {
     expect(currentRoute.value).toEqual({ name: 'home' })
   })
 
+  it('leaves no way back to the summary once the order has been sent', async () => {
+    const order = prepareOrder()
+    const replaceState = vi.spyOn(window.history, 'replaceState')
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await sendFromTheStrip(review, '.send')
+    await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
+
+    expect(replaceState).toHaveBeenCalledWith(expect.anything(), '', '/')
+    replaceState.mockRestore()
+  })
+
   it('lets the next order be sent while the arrival notice of the last one is still up', async () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })

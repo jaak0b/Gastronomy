@@ -79,3 +79,20 @@ export function screenFor(session: DeviceSession, route: AppRoute): ScreenName {
       return assertNever(route)
   }
 }
+
+export function isAnEnrolledDeviceScreen(screen: ScreenName): boolean {
+  switch (screen) {
+    case 'station':
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+      return true
+    case 'enrolQr':
+    case 'welcome':
+    case 'startingUp':
+    case 'admin':
+      return false
+    default:
+      return assertNever(screen)
+  }
+}
