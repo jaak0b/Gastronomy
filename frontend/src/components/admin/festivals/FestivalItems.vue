@@ -114,7 +114,11 @@ function laptopAnswersAbout(itemId: string): number {
 }
 
 function isBeingEdited(row: ItemRow): boolean {
-  return row.onItsWay !== null || !matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
+  return (
+    row.onItsWay !== null
+    || row.refusal !== null
+    || !matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
+  )
 }
 
 watch(

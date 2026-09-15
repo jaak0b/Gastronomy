@@ -1018,6 +1018,21 @@ describe('an item change the laptop refuses', () => {
     expect((page.findAll('.price-field input')[1].element as HTMLInputElement).value).toBe('5,00')
   })
 
+  it('keeps a refusal on its row when the laptop reloads the item list afterwards', async () => {
+    stubLaptop({ refusal: REFUSED_PUT })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.price-field input').exists()).toBe(true))
+    await page.get('.price-field input').setValue('4,50')
+    await page.get('.price-field input').trigger('blur')
+    await vi.waitFor(() => expect(page.find('.festival-item-row .refusal').exists()).toBe(true))
+
+    await useConnectionStore().refetchAll()
+    await vi.waitFor(() => expect(page.find('.festival-item-row .refusal').exists()).toBe(true))
+
+    expect(page.get('.festival-item-row .refusal').text()).toBe(REFUSAL_TEXT)
+  })
+
   it('keeps the placement dialog open and says why the laptop refused', async () => {
     stubLaptop({ refusal: REFUSED_PUT })
 
