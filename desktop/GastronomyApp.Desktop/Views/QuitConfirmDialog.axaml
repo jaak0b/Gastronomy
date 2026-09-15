@@ -11,7 +11,6 @@
         Title="{Binding Title}">
 
     <StackPanel Margin="24" Spacing="18">
-        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
             <Button Name="CancelButton" Content="{Binding CancelLabel}" IsDefault="True" />
