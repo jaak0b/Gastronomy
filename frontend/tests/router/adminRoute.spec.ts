@@ -53,6 +53,7 @@ describe('the admin opened on the laptop, where no phone was ever set up', () =>
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
     vi.stubGlobal(
       'fetch',
       vi.fn(

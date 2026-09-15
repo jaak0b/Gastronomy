@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isTheAdminScreen, screenFor } from '../../src/core/landing'
+import { screenFor } from '../../src/core/landing'
 
 const aStationTablet = { state: 'setUp', deviceKind: 'station' } as const
 const aWaiterPhone = { state: 'setUp', deviceKind: 'staffMember' } as const
@@ -53,23 +53,6 @@ describe('screenFor, the screen a device lands on', () => {
   it('opens the admin for whoever asks for it', () => {
     expect(screenFor(aDeviceThatIsNotSetUp, { name: 'admin', section: 'overview', festivalId: null })).toBe('admin')
     expect(screenFor(aStationTablet, { name: 'admin', section: 'items', festivalId: null })).toBe('admin')
-  })
-})
-
-describe('isTheAdminScreen, the one screen that keeps a normal back button', () => {
-  it('leaves the admin alone', () => {
-    expect(isTheAdminScreen('admin')).toBe(true)
-  })
-
-  it('keeps the guard on every screen a device is shown', () => {
-    expect(isTheAdminScreen('doorGate')).toBe(false)
-    expect(isTheAdminScreen('enrolQr')).toBe(false)
-    expect(isTheAdminScreen('welcome')).toBe(false)
-    expect(isTheAdminScreen('startingUp')).toBe(false)
-    expect(isTheAdminScreen('station')).toBe(false)
-    expect(isTheAdminScreen('catalog')).toBe(false)
-    expect(isTheAdminScreen('review')).toBe(false)
-    expect(isTheAdminScreen('openItems')).toBe(false)
   })
 })
 

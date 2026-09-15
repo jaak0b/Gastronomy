@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { currentRoute, keepTheDeviceBehindTheDoor, needsTheDoorOpened } from './router'
 import { bindLocaleToSession } from './localeBinding'
 import { screenTitle } from './core/appTitle'
-import { isTheAdminScreen, screenFor, type ScreenName } from './core/landing'
+import { screenFor, type ScreenName } from './core/landing'
 import { useSessionStore } from './stores/session'
 import { useStationStore } from './stores/station'
 import { useCatalogStore } from './stores/catalog'
@@ -42,7 +42,7 @@ const screen = computed<ScreenName>(() => {
 watch(
   screen,
   (shown) => {
-    if (shown === 'doorGate' || isTheAdminScreen(shown)) {
+    if (shown === 'doorGate') {
       return
     }
     keepTheDeviceBehindTheDoor()

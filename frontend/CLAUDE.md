@@ -108,8 +108,8 @@ Three audiences in one build:
   pages built, and every back press skips the chain and lands on the anchor, which rebuilds it and
   returns the device to the app. Never build the chain at load, never remove the start screen, and
   never let a tab that sits behind the doors grow its history, which is what `navigate` doing
-  `replaceState` there preserves. The admin is exempt, and the address of the chain carries the
-  page's last-modified stamp so a cached door from an older build can never be used.
+  `replaceState` there preserves. The address of the chain carries the page's last-modified stamp so
+  a cached door from an older build can never be used.
 - **No feature may require a service worker**, a secure context, or an installed PWA.
 
 ## Testing

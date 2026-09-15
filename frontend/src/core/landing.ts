@@ -80,21 +80,3 @@ export function screenFor(session: DeviceSession, route: AppRoute): ScreenName {
       return assertNever(route)
   }
 }
-
-export function isTheAdminScreen(screen: ScreenName): boolean {
-  switch (screen) {
-    case 'admin':
-      return true
-    case 'doorGate':
-    case 'enrolQr':
-    case 'welcome':
-    case 'startingUp':
-    case 'station':
-    case 'catalog':
-    case 'review':
-    case 'openItems':
-      return false
-    default:
-      return assertNever(screen)
-  }
-}

@@ -93,23 +93,6 @@ describe('the shell boot script', () => {
     expect(navigated).toEqual([])
     expect(storage.has('arrivedThroughTheDoor')).toBe(false)
   })
-
-  it('leaves the admin alone', () => {
-    const storage: TheStorage = new Map()
-
-    const { navigated } = runTheBoot('/admin/items', storage)
-
-    expect(navigated).toEqual([])
-    expect(storage.size).toBe(0)
-  })
-
-  it('does not mistake a path that merely starts like the admin for the admin', () => {
-    const storage: TheStorage = new Map([['theDoorAnchor', 'yes']])
-
-    const { navigated } = runTheBoot('/administrator', storage)
-
-    expect(navigated).toEqual(['/door.html?n=10&v=build-a'])
-  })
 })
 
 describe('the start button', () => {
@@ -132,21 +115,7 @@ describe('the start button', () => {
     expect(needsTheDoorOpened()).toBe(false)
   })
 
-  it('is never asked for on the admin', async () => {
-    window.history.replaceState({}, '', '/admin/items')
-    const { needsTheDoorOpened } = await import('../../src/router')
-
-    expect(needsTheDoorOpened()).toBe(false)
-  })
-
-  it('is still asked for on a path that merely starts like the admin', async () => {
-    window.history.replaceState({}, '', '/administrator')
-    const { needsTheDoorOpened } = await import('../../src/router')
-
-    expect(needsTheDoorOpened()).toBe(true)
-  })
-
-  it('marks this screen as the anchor and remembers it as the back target', async () => {
+  it('is marked with a target the boot script can use', async () => {
     const { openTheDoor, THE_DOOR_ANCHOR_KEY, THE_DOOR_TARGET_KEY } = await import('../../src/router')
 
     openTheDoor()
@@ -315,14 +284,14 @@ describe('a device that arrived through the door', () => {
   })
 })
 
-describe('the admin on the laptop', () => {
+describe('a tab where the doors were never opened', () => {
   beforeEach(() => {
     vi.resetModules()
     sessionStorage.clear()
     window.history.replaceState({}, '', thePageBefore)
   })
 
-  it('keeps the browser step between its sections', async () => {
+  it('keeps the browser step between its screens', async () => {
     window.history.pushState({}, '', '/admin/overview')
     const { currentRoute, navigate, startRouter } = await import('../../src/router')
     startRouter()

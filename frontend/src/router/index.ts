@@ -36,9 +36,6 @@ function theDoorChainAddress(): string {
 }
 
 export function needsTheDoorOpened(): boolean {
-  if (resolveRoute(window.location.pathname).name === 'admin') {
-    return false
-  }
   return sessionStorage.getItem(THE_DOOR_ANCHOR_KEY) !== 'yes'
 }
 
