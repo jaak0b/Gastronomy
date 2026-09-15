@@ -139,7 +139,7 @@ async function remove(): Promise<void> {
           </div>
         </div>
 
-        <div class="add-station-line d-flex align-center flex-wrap ga-3">
+        <div class="add-station-line d-flex align-center flex-wrap ga-3 mt-6">
           <v-autocomplete
             v-model="chosenStationId"
             class="station-search flex-grow-1"

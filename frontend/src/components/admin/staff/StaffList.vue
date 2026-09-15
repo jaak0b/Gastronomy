@@ -86,7 +86,16 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-staff">
-    <h1 class="text-h5 mb-2">{{ t('admin.staff.title') }}</h1>
+    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+      <h1 class="text-h5">{{ t('admin.staff.title') }}</h1>
+      <v-checkbox
+        v-model="showsDeactivated"
+        class="show-deactivated"
+        density="compact"
+        hide-details
+        :label="t('admin.showDeactivated')"
+      />
+    </div>
 
     <v-alert
       v-if="enrolment.enrolledStaffMemberName !== null"
@@ -102,12 +111,6 @@ onUnmounted(() => {
     <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-
-    <v-checkbox
-      v-model="showsDeactivated"
-      class="show-deactivated"
-      :label="t('admin.showDeactivated')"
-    />
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
       <v-card-text v-if="renamingId === staffMember.staffMemberId">
@@ -174,7 +177,7 @@ onUnmounted(() => {
       </v-expand-transition>
     </v-card>
 
-    <v-btn class="new-staff-member" color="primary" @click="inviteSomebodyNew">
+    <v-btn class="new-staff-member mt-6" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.new') }}
     </v-btn>
 

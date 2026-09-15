@@ -196,7 +196,16 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-items">
-    <h1 class="text-h5 mb-4">{{ t('admin.items.title') }}</h1>
+    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+      <h1 class="text-h5">{{ t('admin.items.title') }}</h1>
+      <v-checkbox
+        v-model="showsDeactivated"
+        class="show-deactivated"
+        density="compact"
+        hide-details
+        :label="t('admin.showDeactivated')"
+      />
+    </div>
 
     <v-alert
       v-if="itemRefusalText !== null && editingId === null && !isCreating"
@@ -222,12 +231,6 @@ onUnmounted(() => {
     >
       {{ t('admin.loadFailed') }}
     </v-alert>
-
-    <v-checkbox
-      v-model="showsDeactivated"
-      class="show-deactivated"
-      :label="t('admin.showDeactivated')"
-    />
 
     <section v-for="group in groups" :key="group.category.categoryId" class="category-section">
       <div class="category-heading d-flex align-center ga-2 py-2">
@@ -322,7 +325,7 @@ onUnmounted(() => {
       </v-card>
     </section>
 
-    <div class="d-flex ga-2">
+    <div class="d-flex ga-2 mt-6">
       <v-btn class="new-item" color="primary" @click="startCreating">
         {{ t('admin.items.new') }}
       </v-btn>

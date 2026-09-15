@@ -218,7 +218,7 @@ onUnmounted(() => {
       </div>
     </v-card>
 
-    <v-btn class="new-festival" color="primary" @click="startCreating">
+    <v-btn class="new-festival mt-6" color="primary" @click="startCreating">
       {{ t('admin.festivals.new') }}
     </v-btn>
 
