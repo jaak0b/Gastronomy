@@ -233,6 +233,32 @@ public sealed class EnrolmentEndpointsTest
                     });
   }
 
+  [TestCase("de-AT", "de")]
+  [TestCase("de", "de")]
+  [TestCase("en-US", "en")]
+  [TestCase("fr-FR", "en")]
+  [TestCase("", "en")]
+  public async Task PostRedeem_TheBrowserLanguage_BecomesTheDeviceLanguage(string acceptLanguage,
+                                                                           string expectedLanguage)
+  {
+    var invitation = await CreateInvitationAsync();
+
+    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem")
+                        {
+                          Content = JsonContent.Create(new RedeemBody(invitation.QrCodeValue, null, "NUnit")),
+                        };
+    request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
+
+    using var response = await _factory.Client.SendAsync(request);
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo(expectedLanguage));
+                    });
+  }
+
   private Task<HttpResponseMessage> RedeemAsync(string? code,
                                                 string? name = null,
                                                 string? previousDeviceToken = null)

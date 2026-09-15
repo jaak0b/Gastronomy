@@ -253,8 +253,8 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                   .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                   .FirstOrDefault(string.Empty);
 
-    return firstTag.StartsWith(EnglishLanguage, StringComparison.OrdinalIgnoreCase)
-             ? EnglishLanguage
-             : GermanLanguage;
+    return firstTag.StartsWith(GermanLanguage, StringComparison.OrdinalIgnoreCase)
+             ? GermanLanguage
+             : EnglishLanguage;
   }
 }

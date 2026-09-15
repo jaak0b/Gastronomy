@@ -4,7 +4,7 @@ export const LANGUAGE_STORAGE_KEY = 'language'
 
 export function browserLanguage(): AppLanguage {
   const preferred = navigator.language ?? ''
-  return preferred.toLowerCase().startsWith('en') ? 'en' : 'de'
+  return preferred.toLowerCase().startsWith('de') ? 'de' : 'en'
 }
 
 export function initialLanguage(): AppLanguage {
