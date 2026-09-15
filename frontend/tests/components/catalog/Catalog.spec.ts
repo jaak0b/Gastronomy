@@ -24,6 +24,7 @@ const CATALOG: CatalogData = {
       isAvailable: true,
       stationIds: ['station-kueche'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
     {
       id: 'item-wasser',
@@ -34,6 +35,7 @@ const CATALOG: CatalogData = {
       isAvailable: true,
       stationIds: ['station-bar'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
   ],
   stations: [
@@ -418,6 +420,7 @@ const CATALOG_WITH_A_STATION_CHOICE: CatalogData = {
       isAvailable: true,
       stationIds: ['station-kueche', 'station-bar'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
   ],
 }
@@ -560,6 +563,7 @@ const CATALOG_WITH_TIMED_ITEMS: CatalogData = {
       isAvailable: true,
       stationIds: ['station-kueche', 'station-bar'],
       productionMinutes: 10,
+      isQueueIndependent: false,
     },
   ],
 }

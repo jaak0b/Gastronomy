@@ -170,6 +170,7 @@
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
       "productionMinutes": "Zubereitungszeit in Minuten",
       "productionMinutesInvalid": "Tragen Sie ganze Minuten von 0 bis 600 ein.",
+      "prepareIndependently": "Unabhängig von anderen Artikeln zubereiten",
       "activate": "Artikel aktivieren",
       "deactivateTitle": "Artikel deaktivieren?",
       "deactivateConfirm": "Artikel deaktivieren"

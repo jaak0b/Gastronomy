@@ -17,6 +17,7 @@ function bratwurst(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationName: 'Küche',
     candidateStationIds: ['station-kueche'],
     productionMinutes: 28,
+    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,

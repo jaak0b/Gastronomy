@@ -30,6 +30,7 @@ const categoryIsMissing = ref(false)
 const isCreatingCategory = ref(false)
 const productionMinutesText = ref(formatProductionMinutes(props.item?.productionMinutes ?? null))
 const productionMinutesAreUnreadable = ref(false)
+const isQueueIndependent = ref(props.item?.isQueueIndependent ?? false)
 const sortOrder = ref(props.item?.sortOrder ?? 1)
 
 watch(categoryId, () => {
@@ -85,6 +86,7 @@ function save(): void {
     categoryId: chosenCategoryId,
     sortOrder: sortOrder.value,
     productionMinutes: minutes.minutes,
+    isQueueIndependent: isQueueIndependent.value,
   })
 }
 </script>
@@ -124,6 +126,11 @@ function save(): void {
           :error-messages="
             productionMinutesAreUnreadable ? [t('admin.items.productionMinutesInvalid')] : []
           "
+        />
+        <v-checkbox
+          v-model="isQueueIndependent"
+          class="queue-independent-checkbox"
+          :label="t('admin.items.prepareIndependently')"
         />
         <v-alert v-if="errorText !== null" class="error" type="error" variant="tonal">
           {{ errorText }}

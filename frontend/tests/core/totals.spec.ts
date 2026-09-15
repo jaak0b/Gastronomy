@@ -10,6 +10,7 @@ function basketLine(unitPriceCents: number | null): BasketLineView {
     note: null,
     stationId: null,
     candidateStationIds: ['station-1'],
+    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
   }

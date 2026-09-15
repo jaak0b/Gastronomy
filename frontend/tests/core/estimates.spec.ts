@@ -28,6 +28,7 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationName: 'Küche',
     candidateStationIds: ['station-kueche'],
     productionMinutes: 8,
+    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,
@@ -35,7 +36,11 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
   }
 }
 
-function item(stationIds: string[], productionMinutes: number | null): CatalogItem {
+function item(
+  stationIds: string[],
+  productionMinutes: number | null,
+  isQueueIndependent = false,
+): CatalogItem {
   return {
     id: 'item-1',
     name: 'Bratwurst',
@@ -45,6 +50,7 @@ function item(stationIds: string[], productionMinutes: number | null): CatalogIt
     isAvailable: true,
     stationIds,
     productionMinutes,
+    isQueueIndependent,
   }
 }
 
@@ -110,12 +116,89 @@ describe('stationEstimateAfterAdding, what one station button promises', () => {
     })
 
     expect(
-      stationEstimateAfterAdding(PICKER_QUEUES, [alreadyThere], 'station-grill', 10),
+      stationEstimateAfterAdding(PICKER_QUEUES, [alreadyThere], 'station-grill', 10, false),
     ).toBe(62)
   })
 
   it('counts every portion that moves to the station', () => {
-    expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-grill', 10, 2)).toBe(70)
+    expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-grill', 10, false, 2)).toBe(70)
+  })
+
+  it('counts an independent candidate once no matter how many units join', () => {
+    expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-grill', 10, true, 3)).toBe(10)
+  })
+})
+
+describe('a line that is prepared independently of the queue', () => {
+  it('ignores the queue and counts its own time once across its units', () => {
+    const lines = [
+      line({ isQueueIndependent: true, productionMinutes: 8 }),
+      line({ isQueueIndependent: true, productionMinutes: 8 }),
+    ]
+
+    expect(stationReadyInMinutes(QUEUES, lines, 'station-kueche')).toBe(8)
+  })
+
+  it('takes the longest of the independent lines', () => {
+    const lines = [
+      line({ isQueueIndependent: true, productionMinutes: 8 }),
+      line({
+        catalogItemId: 'item-pommes',
+        name: 'Pommes',
+        isQueueIndependent: true,
+        productionMinutes: 21,
+      }),
+    ]
+
+    expect(stationReadyInMinutes(QUEUES, lines, 'station-kueche')).toBe(21)
+  })
+
+  it('lets a long independent line outlast the shared lane', () => {
+    const lines = [
+      line({ productionMinutes: 2 }),
+      line({
+        catalogItemId: 'item-pommes',
+        name: 'Pommes',
+        isQueueIndependent: true,
+        productionMinutes: 30,
+      }),
+    ]
+
+    expect(stationReadyInMinutes(QUEUES, lines, 'station-kueche')).toBe(30)
+  })
+
+  it('lets the shared lane outlast a short independent line', () => {
+    const lines = [
+      line({ productionMinutes: 8 }),
+      line({
+        catalogItemId: 'item-pommes',
+        name: 'Pommes',
+        isQueueIndependent: true,
+        productionMinutes: 5,
+      }),
+    ]
+
+    expect(stationReadyInMinutes(QUEUES, lines, 'station-kueche')).toBe(20)
+  })
+
+  it('names nothing when an independent line has no time and nothing is queued', () => {
+    expect(
+      stationReadyInMinutes(
+        [],
+        [line({ isQueueIndependent: true, productionMinutes: null })],
+        'station-kueche',
+      ),
+    ).toBeNull()
+  })
+
+  it('keeps an explicit zero as a stated time, not as nothing', () => {
+    expect(
+      stationReadyInMinutes(
+        QUEUES,
+        [line({ isQueueIndependent: true, productionMinutes: 0 })],
+        'station-kueche',
+      ),
+    ).toBe(0)
   })
 })
 
@@ -159,5 +242,11 @@ describe('pickerEstimateRange, what the item list shows before a station is chos
 
   it('names nothing for an item no station prepares', () => {
     expect(pickerEstimateRange(item([], 10), PICKER_QUEUES, [])).toBeNull()
+  })
+
+  it('promises the independent time once, without the queue', () => {
+    expect(
+      pickerEstimateRange(item(['station-kueche', 'station-grill'], 10, true), PICKER_QUEUES, []),
+    ).toEqual({ min: 10, max: 10 })
   })
 })

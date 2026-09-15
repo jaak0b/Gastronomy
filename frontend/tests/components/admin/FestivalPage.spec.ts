@@ -61,6 +61,7 @@ const SAUSAGE = {
   sortOrder: 1,
   isActive: true,
   productionMinutes: null,
+  isQueueIndependent: false,
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [KITCHEN_ID] },
 }
 
@@ -81,6 +82,7 @@ const BEER = {
   sortOrder: 2,
   isActive: true,
   productionMinutes: null,
+  isQueueIndependent: false,
   atTheFestival: null,
 }
 

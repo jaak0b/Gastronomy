@@ -101,6 +101,7 @@ public sealed class AdminItemHandler
                                                 item.SortOrder,
                                                 item.IsActive,
                                                 item.ProductionMinutes,
+                                                item.IsQueueIndependent,
                                                 AtTheFestivalOf(item.Id, menuRows, assignments)))
     ];
 
@@ -180,7 +181,8 @@ public sealed class AdminItemHandler
                                  CategoryId = request.CategoryId!.Value,
                                  SortOrder = request.SortOrder,
                                  IsActive = true,
-                                 ProductionMinutes = request.ProductionMinutes
+                                 ProductionMinutes = request.ProductionMinutes,
+                                 IsQueueIndependent = request.IsQueueIndependent
                                });
 
     await _dbContext.SaveChangesAsync(cancellationToken);
@@ -212,6 +214,7 @@ public sealed class AdminItemHandler
     item.CategoryId = request.CategoryId!.Value;
     item.SortOrder = request.SortOrder;
     item.ProductionMinutes = request.ProductionMinutes;
+    item.IsQueueIndependent = request.IsQueueIndependent;
 
     await _dbContext.SaveChangesAsync(cancellationToken);
 

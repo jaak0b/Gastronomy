@@ -105,7 +105,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                     CategoryId = table.Column<Guid>(type: "TEXT", nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ProductionMinutes = table.Column<int>(type: "INTEGER", nullable: true)
+                    ProductionMinutes = table.Column<int>(type: "INTEGER", nullable: true),
+                    IsQueueIndependent = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {

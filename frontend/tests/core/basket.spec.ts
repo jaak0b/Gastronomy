@@ -23,6 +23,7 @@ function catalog(): Catalog {
         sortOrder: 1,
         isAvailable: true,
         stationIds: ['station-kueche'],
+        isQueueIndependent: false,
       },
       {
         id: 'item-bier',
@@ -32,6 +33,7 @@ function catalog(): Catalog {
         sortOrder: 2,
         isAvailable: false,
         stationIds: ['station-theke-innen', 'station-theke-aussen'],
+        isQueueIndependent: false,
       },
     ],
     stations: [
@@ -68,6 +70,7 @@ describe('buildBasketView', () => {
         stationId: null,
         stationName: 'Kueche',
         candidateStationIds: ['station-kueche'],
+        isQueueIndependent: false,
         isSoldOut: false,
         isNoLongerOnTheMenu: false,
         isNoLongerPreparedAtItsStation: false,

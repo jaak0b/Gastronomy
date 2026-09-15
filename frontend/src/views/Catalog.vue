@@ -175,6 +175,7 @@ function estimateForTheStationChoice(stationId: string): number | null {
     linesStaying,
     stationId,
     productionMinutes,
+    item.isQueueIndependent,
     unitsAtTheStation,
   )
 }

@@ -23,6 +23,7 @@ export interface AdminItem {
   sortOrder: number
   isActive: boolean
   productionMinutes: number | null
+  isQueueIndependent: boolean
   atTheFestival: AdminItemAtFestival | null
 }
 
@@ -32,6 +33,7 @@ export interface AdminItemDraft {
   categoryId: string
   sortOrder: number
   productionMinutes: number | null
+  isQueueIndependent: boolean
 }
 
 export interface FestivalPlacement {
@@ -96,6 +98,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
       categoryId: item.categoryId,
       sortOrder: item.sortOrder,
       productionMinutes: item.productionMinutes,
+      isQueueIndependent: item.isQueueIndependent,
     }
   }
 

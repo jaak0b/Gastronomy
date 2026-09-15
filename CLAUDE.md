@@ -24,8 +24,10 @@ Flow:
    both columns and appears in the done view.
 3. Staff select the items they hand out, one or several at a time, and mark them done after a
    confirmation that repeats the table name. A mistaken tap can be put back from the done view.
-   Each catalog item may carry a production time in minutes. The phone shows the server an estimate
-   per item and per slice, computed from the station's current queue plus the item's own time.
+   Each catalog item may carry a production time in minutes, and an article can be marked as
+   prepared independently of its station's queue. The phone shows the server an estimate per item
+   and per slice, computed from the station's current queue plus the item's own time, except for an
+   independent article, which shows its own time alone.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
    table's items later. Settling always names the amount the table actually paid: the full price in
    one tap, or any other amount the server types, which needs a typed reason whenever it falls short.
@@ -311,9 +313,10 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
   employee has not hidden from that column. A fully done order leaves both and appears in the done
   view. The hide decision lives on the slice as `StationOrder.IsHiddenFromAsItComesQueue` and only
   removes the order from the second column.
-- **Estimates** are computed, never stored. The backend reports per station the minutes still queued
-  (open items' production minutes, missing values count as zero); the phone adds the item's own
-  minutes. A together slice is done when its last item is done.
+- **Estimates** are computed, never stored. The backend reports per station the minutes still queued,
+  counted from open items' production minutes (missing values count as zero) and excluding articles
+  that are prepared independently of the queue. The phone adds the item's own minutes, and for an
+  independent article it shows that time alone. A together slice is done when its last item is done.
 - **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
   name, and whichever server passes the station takes the tray. That is deliberate.
 

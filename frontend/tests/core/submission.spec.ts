@@ -103,6 +103,7 @@ describe('buildSubmitRequest', () => {
           isAvailable: true,
           stationIds: ['station-2'],
           productionMinutes: null,
+          isQueueIndependent: false,
         },
       ],
       stations: [{ id: 'station-2', name: 'Kueche', sortOrder: 1 }],

@@ -12,6 +12,7 @@ function item(stationIds: string[]): CatalogItem {
     sortOrder: 0,
     isAvailable: true,
     stationIds,
+    isQueueIndependent: false,
   }
 }
 

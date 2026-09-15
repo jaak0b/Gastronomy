@@ -35,6 +35,7 @@ const BRATWURST: AdminItem = {
   sortOrder: 1,
   isActive: true,
   productionMinutes: 15,
+  isQueueIndependent: false,
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: ['station-kueche'] },
 }
 
@@ -121,6 +122,26 @@ describe('the preparation time field', () => {
       'Tragen Sie ganze Minuten von 0 bis 600 ein.',
     )
     expect(form.emitted('save')).toBeUndefined()
+  })
+})
+
+describe('the independent preparation choice', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    stubTheLaptop()
+    knownCategories()
+  })
+
+  it('shows the choice of an item and saves it', async () => {
+    const form = mountForm({ ...BRATWURST, isQueueIndependent: true })
+
+    expect(
+      (form.get('.queue-independent-checkbox input').element as HTMLInputElement).checked,
+    ).toBe(true)
+
+    await form.get('form').trigger('submit')
+
+    expect(form.emitted('save')?.[0]?.[0]).toMatchObject({ isQueueIndependent: true })
   })
 })
 

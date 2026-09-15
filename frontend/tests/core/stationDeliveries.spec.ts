@@ -18,6 +18,7 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationName: 'Küche',
     candidateStationIds: ['station-kueche'],
     productionMinutes: 8,
+    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,

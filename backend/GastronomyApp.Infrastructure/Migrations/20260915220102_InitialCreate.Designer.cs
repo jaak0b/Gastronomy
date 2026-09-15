@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    [Migration("20260914170119_InitialCreate")]
+    [Migration("20260915220102_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -61,6 +61,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsQueueIndependent")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")

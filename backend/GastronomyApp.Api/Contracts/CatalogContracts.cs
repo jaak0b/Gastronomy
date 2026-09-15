@@ -10,6 +10,7 @@ public sealed record CatalogItemView(
   int SortOrder,
   bool IsAvailable,
   int? ProductionMinutes,
+  bool IsQueueIndependent,
   IReadOnlyList<Guid> StationIds);
 
 public sealed record CatalogStationView(Guid Id, string Name, int SortOrder);

@@ -44,7 +44,7 @@ public sealed class StationQueryHandler
   }
 }
 
-public sealed record QueuedItemRow(Guid StationId, int? ProductionMinutes);
+public sealed record QueuedItemRow(Guid StationId, int? ProductionMinutes, bool IsQueueIndependent);
 
 public sealed class StationsAtTheFestivalReader
 {
@@ -134,7 +134,8 @@ public sealed class StationEstimateHandler
                                                  .Where(joined => joined.Item.FulfilledAtUtc == null
                                                                   && joined.Order.FestivalId == festival.Id)
                                                  .Select(joined => new QueuedItemRow(joined.Slice.StationId,
-                                                                                     joined.CatalogItem.ProductionMinutes))
+                                                                                     joined.CatalogItem.ProductionMinutes,
+                                                                                     joined.CatalogItem.IsQueueIndependent))
                                                  .ToListAsync(cancellationToken);
 
     return Results.Ok(new StationEstimateListView([
@@ -147,7 +148,8 @@ public sealed class StationEstimateHandler
   {
     return _estimateCalculator.QueuedMinutesOf(queued
                                               .Where(row => row.StationId == stationId)
-                                              .Select(row => new QueuedWork(row.ProductionMinutes)));
+                                              .Select(row => new QueuedWork(row.ProductionMinutes,
+                                                                             row.IsQueueIndependent)));
   }
 }
 

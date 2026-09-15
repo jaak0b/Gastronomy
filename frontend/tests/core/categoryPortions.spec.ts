@@ -15,6 +15,7 @@ function item(id: string, name: string, categoryId: string): CatalogItem {
     isAvailable: true,
     stationIds: ['station-1'],
     productionMinutes: null,
+    isQueueIndependent: false,
   }
 }
 

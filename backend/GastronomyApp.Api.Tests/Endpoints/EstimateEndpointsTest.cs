@@ -95,6 +95,37 @@ public sealed class EstimateEndpointsTest
     Assert.That(QueuedMinutesOf(stations, _context.World.BarStationId), Is.Zero);
   }
 
+  [Test]
+  public async Task GetEstimates_OneItemIsPreparedIndependently_LeavesItOutWhileTheQueuedOneIsCounted()
+  {
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+      beer.ProductionMinutes = 4;
+      beer.IsQueueIndependent = true;
+      await database.SaveChangesAsync();
+    }
+
+    OrderBody both = new(Guid.NewGuid(),
+                         "Tisch 12",
+                         null,
+                         [new(_context.World.BratwurstItemId, 350, null, null),
+                          new(_context.World.BeerItemId, 300, null, null)]);
+
+    using (var placed = await _context.PostOrderAsync(both))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    var stations = await ReadEstimatesAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.EqualTo(4));
+                      Assert.That(QueuedMinutesOf(stations, _context.World.BarStationId), Is.Zero);
+                    });
+  }
+
   private int QueuedMinutesOf(JsonElement stations, Guid stationId)
   {
     return stations.EnumerateArray()

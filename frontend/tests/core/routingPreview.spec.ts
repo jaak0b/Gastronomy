@@ -17,6 +17,7 @@ function item(stationIds: string[]): CatalogItem {
     isAvailable: true,
     stationIds,
     productionMinutes: null,
+    isQueueIndependent: false,
   }
 }
 

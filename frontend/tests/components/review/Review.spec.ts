@@ -17,6 +17,7 @@ const WASSER = {
   isAvailable: true,
   stationIds: ['station-bar'],
   productionMinutes: 0,
+  isQueueIndependent: false,
 }
 
 function prepareOrder() {

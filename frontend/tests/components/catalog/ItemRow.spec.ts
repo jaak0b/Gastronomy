@@ -18,6 +18,7 @@ function item(isAvailable: boolean): CatalogItem {
     sortOrder: 1,
     isAvailable,
     stationIds: ['station-bar'],
+    isQueueIndependent: false,
   }
 }
 

@@ -56,6 +56,7 @@ public sealed record AdminItemView(
   int SortOrder,
   bool IsActive,
   int? ProductionMinutes,
+  bool IsQueueIndependent,
   AdminItemAtFestivalView? AtTheFestival);
 
 public sealed record AdminItemListView(IReadOnlyList<AdminItemView> Items);
@@ -69,6 +70,8 @@ public sealed record SaveItemRequest
   public required int SortOrder { get; init; }
 
   public int? ProductionMinutes { get; init; }
+
+  public bool IsQueueIndependent { get; init; }
 }
 
 public sealed record SaveFestivalItemRequest

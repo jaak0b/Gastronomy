@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Services;
 
-public sealed record QueuedWork(int? ProductionMinutes);
+public sealed record QueuedWork(int? ProductionMinutes, bool IsQueueIndependent);
 
 public sealed class ProductionEstimateCalculator
 {
@@ -8,6 +8,7 @@ public sealed class ProductionEstimateCalculator
   {
     ArgumentNullException.ThrowIfNull(work);
 
-    return work.Sum(item => item.ProductionMinutes ?? 0);
+    return work.Where(item => !item.IsQueueIndependent)
+               .Sum(item => item.ProductionMinutes ?? 0);
   }
 }

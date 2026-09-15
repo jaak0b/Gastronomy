@@ -10,6 +10,7 @@ export interface EstimableLine {
   stationId: string | null
   candidateStationIds: readonly string[]
   productionMinutes: number | null
+  isQueueIndependent: boolean
 }
 
 export function queuedMinutesAt(
@@ -19,12 +20,31 @@ export function queuedMinutesAt(
   return estimates.find((estimate) => estimate.stationId === stationId)?.queuedMinutes ?? 0
 }
 
-function minutesAtTheStation(lines: readonly EstimableLine[], stationId: string): number {
-  return lines.reduce(
-    (total, line) =>
-      routedStationId(line) === stationId ? total + (line.productionMinutes ?? 0) : total,
-    0,
-  )
+function lanesAt(queuedMinutes: number, lines: readonly EstimableLine[]) {
+  const flagged = lines.filter((line) => line.isQueueIndependent)
+  const unflagged = lines.filter((line) => !line.isQueueIndependent)
+  const sharesTheQueue = unflagged.length > 0 || flagged.length === 0
+  return {
+    unflaggedLane:
+      (sharesTheQueue ? queuedMinutes : 0) +
+      unflagged.reduce((total, line) => total + (line.productionMinutes ?? 0), 0),
+    flaggedLane: flagged.reduce(
+      (longest, line) => Math.max(longest, line.productionMinutes ?? 0),
+      0,
+    ),
+  }
+}
+
+function estimateOfLanes(
+  queuedMinutes: number,
+  lines: readonly EstimableLine[],
+): number | null {
+  const lanes = lanesAt(queuedMinutes, lines)
+  const estimate = Math.max(lanes.unflaggedLane, lanes.flaggedLane)
+  if (estimate === 0 && lines.every((line) => line.productionMinutes === null)) {
+    return null
+  }
+  return estimate
 }
 
 export function stationReadyInMinutes(
@@ -32,12 +52,8 @@ export function stationReadyInMinutes(
   lines: readonly EstimableLine[],
   stationId: string,
 ): number | null {
-  const queuedMinutes = queuedMinutesAt(estimates, stationId)
   const linesAtTheStation = lines.filter((line) => routedStationId(line) === stationId)
-  if (queuedMinutes === 0 && linesAtTheStation.every((line) => line.productionMinutes === null)) {
-    return null
-  }
-  return queuedMinutes + minutesAtTheStation(linesAtTheStation, stationId)
+  return estimateOfLanes(queuedMinutesAt(estimates, stationId), linesAtTheStation)
 }
 
 export function stationEstimateAfterAdding(
@@ -45,13 +61,17 @@ export function stationEstimateAfterAdding(
   lines: readonly EstimableLine[],
   stationId: string,
   productionMinutes: number,
+  isQueueIndependent: boolean,
   units: number = 1,
 ): number {
-  return (
-    queuedMinutesAt(estimates, stationId) +
-    minutesAtTheStation(lines, stationId) +
-    productionMinutes * units
-  )
+  const linesAtTheStation = lines.filter((line) => routedStationId(line) === stationId)
+  const added: EstimableLine = {
+    stationId,
+    candidateStationIds: [stationId],
+    productionMinutes: isQueueIndependent ? productionMinutes : productionMinutes * units,
+    isQueueIndependent,
+  }
+  return estimateOfLanes(queuedMinutesAt(estimates, stationId), [...linesAtTheStation, added]) ?? 0
 }
 
 export function pickerEstimateRange(
@@ -64,7 +84,13 @@ export function pickerEstimateRange(
     return null
   }
   const perStation = item.stationIds.map((stationId) =>
-    stationEstimateAfterAdding(estimates, lines, stationId, productionMinutes),
+    stationEstimateAfterAdding(
+      estimates,
+      lines,
+      stationId,
+      productionMinutes,
+      item.isQueueIndependent,
+    ),
   )
   if (perStation.length === 0) {
     return null

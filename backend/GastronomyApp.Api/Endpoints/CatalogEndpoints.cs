@@ -120,6 +120,7 @@ public sealed class CatalogReader
                                                     row.Item.SortOrder,
                                                     row.IsAvailable,
                                                     row.Item.ProductionMinutes,
+                                                    row.Item.IsQueueIndependent,
                                                     [
                                                       .. assignments
                                                         .Where(assignment =>

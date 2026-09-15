@@ -631,6 +631,7 @@ describe('what an order costs while the item list changes underneath it', () => 
           isAvailable: true,
           stationIds: ['station-bar'],
           productionMinutes: null,
+          isQueueIndependent: false,
         },
       ],
       stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
@@ -1070,6 +1071,7 @@ describe('the station name a line is given when it is added', () => {
           isAvailable: true,
           stationIds: ['station-theke-innen'],
           productionMinutes: null,
+          isQueueIndependent: false,
         },
         {
           id: 'item-bier',
@@ -1080,6 +1082,7 @@ describe('the station name a line is given when it is added', () => {
           isAvailable: true,
           stationIds: ['station-theke-innen', 'station-theke-aussen'],
           productionMinutes: null,
+          isQueueIndependent: false,
         },
       ],
       stations: [

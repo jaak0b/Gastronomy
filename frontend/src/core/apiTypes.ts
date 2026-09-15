@@ -7,6 +7,7 @@ export interface CatalogItem {
   isAvailable: boolean
   stationIds: string[]
   productionMinutes: number | null
+  isQueueIndependent: boolean
 }
 
 export interface CatalogCategory {

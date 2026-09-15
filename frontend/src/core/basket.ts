@@ -11,6 +11,7 @@ export interface BasketLineView {
   stationName: string
   candidateStationIds: string[]
   productionMinutes: number | null
+  isQueueIndependent: boolean
   isSoldOut: boolean
   isNoLongerOnTheMenu: boolean
   isNoLongerPreparedAtItsStation: boolean
@@ -49,6 +50,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         stationName: nameOfTheStationTheLineGoesTo(catalog, line, []),
         candidateStationIds: [],
         productionMinutes: null,
+        isQueueIndependent: false,
         isSoldOut: false,
         isNoLongerOnTheMenu: true,
         isNoLongerPreparedAtItsStation: false,
@@ -64,6 +66,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       stationName: nameOfTheStationTheLineGoesTo(catalog, line, candidateStationIds),
       candidateStationIds,
       productionMinutes: item.productionMinutes,
+      isQueueIndependent: item.isQueueIndependent,
       isSoldOut: !item.isAvailable,
       isNoLongerOnTheMenu: false,
       isNoLongerPreparedAtItsStation: !stationStillPreparesIt({

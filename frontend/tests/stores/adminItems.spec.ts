@@ -7,6 +7,7 @@ const AN_ITEM = {
   categoryId: 'category-speisen',
   sortOrder: 1,
   productionMinutes: null,
+  isQueueIndependent: false,
 }
 
 function refuseWith(status: number, body: unknown) {
