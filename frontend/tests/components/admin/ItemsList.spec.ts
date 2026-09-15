@@ -4,6 +4,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
 import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
+import FestivalItems from '../../../src/components/admin/festivals/FestivalItems.vue'
+import { useAdminStationsStore } from '../../../src/stores/admin/stations'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const ITEM_ID = '22222222-2222-2222-2222-222222222222'
@@ -600,3 +602,91 @@ describe('adding an item', () => {
   })
 })
 
+describe('a refusal the admin has walked away from', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function stubTheLaptop(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const method = init?.method ?? 'GET'
+        if (method !== 'GET') {
+          return new Response(
+            JSON.stringify({
+              code: 'Conflict',
+              messageKey: 'admin.actionFailed',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          )
+        }
+        if (url.startsWith('/api/admin/categories')) {
+          return new Response(JSON.stringify(TWO_CATEGORIES), { status: 200 })
+        }
+        if (url.startsWith('/api/admin/stations')) {
+          return new Response(JSON.stringify(ONE_STATION), { status: 200 })
+        }
+        return new Response(JSON.stringify(ONE_ITEM), { status: 200 })
+      }),
+    )
+  }
+
+  function mountFestivalItems() {
+    return mount(FestivalItems, {
+      props: { festivalId: FESTIVAL_ID },
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+  }
+
+  it('does not follow the admin from the item list to a festival', async () => {
+    stubTheLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('.admin-items .refusal').exists()).toBe(true))
+    list.unmount()
+
+    await useAdminStationsStore().load()
+    const festival = mountFestivalItems()
+    await vi.waitFor(() => expect(festival.find('.festival-item-row').exists()).toBe(true))
+
+    expect(festival.find('.festival-items .refusal').exists()).toBe(false)
+  })
+
+  it('does not follow the admin from a festival to the item list', async () => {
+    stubTheLaptop()
+
+    await useAdminStationsStore().load()
+    const festival = mountFestivalItems()
+    await vi.waitFor(() => expect(festival.find('.new-item').exists()).toBe(true))
+    await festival.get('.new-item').trigger('click')
+    await vi.waitFor(() => expect(festival.findComponent({ name: 'ItemForm' }).exists()).toBe(true))
+    festival.findComponent({ name: 'ItemForm' }).vm.$emit('save', {
+      name: 'Pommes',
+      categoryId: FOOD_ID,
+      sortOrder: 1,
+      productionMinutes: null,
+    })
+    await vi.waitFor(() =>
+      expect(festival.findComponent({ name: 'ItemForm' }).props('errorText')).not.toBeNull(),
+    )
+    festival.unmount()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
+
+    expect(list.find('.admin-items .refusal').exists()).toBe(false)
+  })
+})

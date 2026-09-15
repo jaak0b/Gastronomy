@@ -78,6 +78,10 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     invitationQr.value = { kind: 'loading' }
   }
 
+  function forgetError(): void {
+    errorMessage.value = null
+  }
+
   function dismissEnrolled(): void {
     enrolled.value = null
   }
@@ -100,6 +104,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     enrolledStationName,
     createInvitation,
     closeInvitation,
+    forgetError,
     dismissEnrolled,
     listen,
   }

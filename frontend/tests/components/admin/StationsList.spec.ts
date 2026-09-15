@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import FestivalPage from '../../../src/components/admin/festivals/FestivalPage.vue'
 import StationsList from '../../../src/components/admin/stations/StationsList.vue'
 import { useConnectionStore } from '../../../src/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
@@ -546,5 +547,142 @@ describe('the length of a station name', () => {
     await list.get('.edit').trigger('click')
 
     expect(list.get('.station-name-field input').attributes('maxlength')).toBe('40')
+  })
+})
+
+describe('a refusal the admin has walked away from', () => {
+  const FESTIVAL_ID = 'fest-1'
+
+  const FESTIVAL = {
+    festivalId: FESTIVAL_ID,
+    name: 'Sommerfest',
+    startsAtUtc: '2026-07-18T10:00:00Z',
+    endsAtUtc: '2026-07-19T02:00:00Z',
+    isHidden: false,
+    isRunning: true,
+    stationCount: 1,
+    menuItemCount: 0,
+    orderCount: 0,
+  }
+
+  const STATION_AT_THE_FESTIVAL = {
+    stationId: STATION_ID,
+    name: 'Küche',
+    sortOrder: 1,
+    isActive: true,
+    hasDevice: true,
+    isAtTheFestival: true,
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  function stubTheLaptop(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const method = init?.method ?? 'GET'
+        if (method !== 'GET') {
+          return new Response(
+            JSON.stringify({
+              code: 'Conflict',
+              messageKey: 'admin.stationHasOrdersAtTheFestival',
+              parameters: { count: '3' },
+              details: null,
+            }),
+            { status: 409 },
+          )
+        }
+        if (url.startsWith('/api/admin/festivals')) {
+          return new Response(JSON.stringify({ festivals: [FESTIVAL] }), { status: 200 })
+        }
+        if (url.startsWith('/api/admin/categories')) {
+          return new Response(JSON.stringify({ categories: [] }), { status: 200 })
+        }
+        if (url.startsWith('/api/admin/items')) {
+          return new Response(JSON.stringify({ items: [] }), { status: 200 })
+        }
+        return new Response(JSON.stringify({ stations: [STATION_AT_THE_FESTIVAL] }), {
+          status: 200,
+        })
+      }),
+    )
+  }
+
+  function mountFestivalPage() {
+    return mount(FestivalPage, {
+      props: { festivalId: FESTIVAL_ID },
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+  }
+
+  it('does not follow the admin from a festival page to the stations page', async () => {
+    stubTheLaptop()
+
+    const festival = mountFestivalPage()
+    await vi.waitFor(() => expect(festival.find('.remove-station').exists()).toBe(true))
+    await festival.get('.remove-station').trigger('click')
+    await pressInDialog('.confirm')
+    await vi.waitFor(() =>
+      expect(festival.find('.festival-station-row .refusal').exists()).toBe(true),
+    )
+
+    festival.unmount()
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+
+    expect(list.find('.refusal').exists()).toBe(false)
+  })
+
+  it('does not follow the admin from the stations page to a festival page', async () => {
+    stubTheLaptop()
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.deactivate').trigger('click')
+    await pressInDialog('.confirm')
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+
+    list.unmount()
+    const festival = mountFestivalPage()
+    await vi.waitFor(() => expect(festival.find('.festival-station-row').exists()).toBe(true))
+
+    expect(festival.find('.festival-stations .refusal').exists()).toBe(false)
+  })
+
+  it('does not keep a refused device setup when the admin leaves and returns', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/invitations')) {
+          return new Response(
+            JSON.stringify({
+              code: 'Conflict',
+              messageKey: 'enrolment.atMostOneOwner',
+              parameters: {},
+              details: null,
+            }),
+            { status: 409 },
+          )
+        }
+        return new Response(JSON.stringify({ stations: [STATION_AT_THE_FESTIVAL] }), {
+          status: 200,
+        })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.set-up-device').trigger('click')
+    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+
+    list.unmount()
+    const again = mountList()
+    await vi.waitFor(() => expect(again.find('.station-row').exists()).toBe(true))
+
+    expect(again.find('.refusal').exists()).toBe(false)
   })
 })

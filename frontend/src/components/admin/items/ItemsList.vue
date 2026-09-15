@@ -132,6 +132,8 @@ function listenToTheLaptop(): () => void {
 
 onMounted(async () => {
   stopListening = listenToTheLaptop()
+  items.forgetError()
+  categories.forgetError()
   await categories.load()
   await items.load()
 })

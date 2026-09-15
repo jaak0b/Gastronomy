@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   useAdminStationsStore,
@@ -68,6 +68,10 @@ async function remove(): Promise<void> {
   refusedStationId.value = station.stationId
   await stations.removeFromTheFestival(props.festivalId, station.stationId)
 }
+
+onMounted(() => {
+  stations.forgetError()
+})
 </script>
 
 <template>

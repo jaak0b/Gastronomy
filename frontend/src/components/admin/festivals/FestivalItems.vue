@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminMessage, type AdminErrorMessage } from '../../../core/adminErrorMessage'
 import type { AppLanguage } from '../../../core/apiTypes'
@@ -351,6 +351,11 @@ async function remove(): Promise<void> {
     moveTheStoreRefusalOnto(item.itemId)
   }
 }
+
+onMounted(() => {
+  items.forgetError()
+  categories.forgetError()
+})
 </script>
 
 <template>

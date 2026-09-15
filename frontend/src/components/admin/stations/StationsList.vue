@@ -56,6 +56,8 @@ async function deactivate(): Promise<void> {
 
 onMounted(async () => {
   stopListening = stations.listen()
+  stations.forgetError()
+  enrolment.forgetError()
   await stations.load()
 })
 
