@@ -224,8 +224,7 @@
       "deactivate": "Switch the category off",
       "deactivateTitle": "Switch this category off?",
       "deactivateConfirm": "Switch the category off",
-      "noneYet": "Click \"New category\". There is no category to choose yet.",
-      "sharedAcrossFestivals": "Renaming a category here renames it at every festival."
+      "noneYet": "Click \"New category\". There is no category to choose yet."
     },
     "itemNameMissing": "Give the item a name before you save it.",
     "categoryNameMissing": "Give the category a name before you save.",

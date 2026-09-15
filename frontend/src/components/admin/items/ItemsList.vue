@@ -322,9 +322,6 @@ onUnmounted(() => {
       </v-card>
     </section>
 
-    <p class="categories-shared text-medium-emphasis mt-6 mb-2">
-      {{ t('admin.categories.sharedAcrossFestivals') }}
-    </p>
     <div class="d-flex ga-2">
       <v-btn class="new-item" color="primary" @click="startCreating">
         {{ t('admin.items.new') }}
