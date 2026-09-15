@@ -438,7 +438,7 @@ describe('the stations of this festival', () => {
 
     await vi.waitFor(() =>
       expect(page.get('.festival-station-row .refusal').text()).toBe(
-        'Diese Ausgabestelle hat bei diesem Fest schon 3 Bestellungen bekommen. Schalten Sie sie ab, wenn dort niemand mehr arbeitet.',
+        'Ausgabestellen mit aufgegebenen Bestellungen können nicht entfernt werden.',
       ),
     )
   })
@@ -498,7 +498,7 @@ describe('the items of this festival', () => {
     ).toBe('Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.')
     expect(
       document.querySelector('.placement-dialog .station-select-error')?.textContent?.trim(),
-    ).toBe('Bier braucht mindestens eine Ausgabestelle. Wählen Sie mindestens eine aus.')
+    ).toBe('Bier braucht mindestens eine Ausgabestelle.')
     expect(writtenCalls(calls)).toEqual([])
   })
 
@@ -558,7 +558,7 @@ describe('the items of this festival', () => {
 
     await vi.waitFor(() =>
       expect(page.get('.festival-item-row .refusal').text()).toBe(
-        'Bratwurst braucht mindestens eine Ausgabestelle. Wählen Sie mindestens eine aus.',
+        'Bratwurst braucht mindestens eine Ausgabestelle.',
       ),
     )
     expect(boxes[0].props('modelValue')).toBe(true)

@@ -552,8 +552,6 @@ public sealed class AdminFestivalEndpointsTest
                                   Is.EqualTo("StationHasOrdersAtTheFestival"));
                       Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
                                   Is.EqualTo("admin.stationHasOrdersAtTheFestival"));
-                      Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(),
-                                  Is.EqualTo("1"));
                     });
   }
 

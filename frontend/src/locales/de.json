@@ -241,7 +241,7 @@
     "festivalPeriodInvalid": "Das Ende muss nach dem Beginn liegen. Tragen Sie beim Ende einen späteren Zeitpunkt ein.",
     "festivalOverlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
     "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
-    "stationHasOrdersAtTheFestival": "Diese Ausgabestelle hat bei diesem Fest schon {count} Bestellung bekommen. Schalten Sie sie ab, wenn dort niemand mehr arbeitet. | Diese Ausgabestelle hat bei diesem Fest schon {count} Bestellungen bekommen. Schalten Sie sie ab, wenn dort niemand mehr arbeitet.",
+    "stationHasOrdersAtTheFestival": "Ausgabestellen mit aufgegebenen Bestellungen können nicht entfernt werden.",
     "festivals": {
       "title": "Feste",
       "new": "Neues Fest",
@@ -278,7 +278,7 @@
       "removeItemBody": "Der Artikel wird nur von diesem Fest entfernt.",
       "needsAStationFirst": "Dieses Fest hat noch keine Ausgabestelle. Fügen Sie zuerst eine hinzu.",
       "chooseStation": "Ausgabestelle wählen",
-      "itemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle. Wählen Sie mindestens eine aus."
+      "itemNeedsAStation": "{item} braucht mindestens eine Ausgabestelle."
     }
   },
   "station": {

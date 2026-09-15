@@ -241,7 +241,7 @@
     "festivalPeriodInvalid": "The end has to come after the start. Set the end to a later time.",
     "festivalOverlaps": "The festival {name} overlaps this period. Move the start or the end.",
     "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
-    "stationHasOrdersAtTheFestival": "This station has already taken {count} order at this festival. Switch it off if nobody is working there any more. | This station has already taken {count} orders at this festival. Switch it off if nobody is working there any more.",
+    "stationHasOrdersAtTheFestival": "Stations with placed orders cannot be removed.",
     "festivals": {
       "title": "Festivals",
       "new": "New festival",
@@ -278,7 +278,7 @@
       "removeItemBody": "This removes the item from this festival only.",
       "needsAStationFirst": "This festival has no station yet. Add one first.",
       "chooseStation": "Choose a station",
-      "itemNeedsAStation": "{item} needs at least one station. Choose at least one."
+      "itemNeedsAStation": "{item} needs at least one station."
     }
   },
   "station": {

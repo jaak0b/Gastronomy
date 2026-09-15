@@ -837,8 +837,7 @@ public sealed class AdminFestivalStationHandler
     {
       return new(_resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                         "StationHasOrdersAtTheFestival",
-                                        "admin.stationHasOrdersAtTheFestival",
-                                        new Dictionary<string, string> { ["count"] = sliceCount.ToString() }),
+                                        "admin.stationHasOrdersAtTheFestival"),
                  false);
     }
 
