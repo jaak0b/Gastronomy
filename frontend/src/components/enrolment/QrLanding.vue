@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
 import { useSessionStore } from '../../stores/session'
-import { replace, startOverAt } from '../../router'
+import { navigate, startOverAt } from '../../router'
 import LanguageSwitch from '../LanguageSwitch.vue'
 
 const props = defineProps<{ code: string }>()
@@ -65,7 +65,7 @@ onMounted(async () => {
       class="carry-on mt-4"
       color="primary"
       block
-      @click="replace('/')"
+      @click="navigate('/')"
     >
       {{ t('enrol.carryOn') }}
     </v-btn>

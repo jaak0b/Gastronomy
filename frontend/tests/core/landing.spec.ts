@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAnEnrolledDeviceScreen, screenFor } from '../../src/core/landing'
+import { isTheAdminScreen, screenFor } from '../../src/core/landing'
 
 const aStationTablet = { state: 'setUp', deviceKind: 'station' } as const
 const aWaiterPhone = { state: 'setUp', deviceKind: 'staffMember' } as const
@@ -56,19 +56,19 @@ describe('screenFor, the screen a device lands on', () => {
   })
 })
 
-describe('isAnEnrolledDeviceScreen, the screens that keep a device inside the app', () => {
-  it('keeps the screens a device that is set up can show', () => {
-    expect(isAnEnrolledDeviceScreen('station')).toBe(true)
-    expect(isAnEnrolledDeviceScreen('catalog')).toBe(true)
-    expect(isAnEnrolledDeviceScreen('review')).toBe(true)
-    expect(isAnEnrolledDeviceScreen('openItems')).toBe(true)
+describe('isTheAdminScreen, the one screen that keeps a normal back button', () => {
+  it('leaves the admin alone', () => {
+    expect(isTheAdminScreen('admin')).toBe(true)
   })
 
-  it('leaves the enrolment, the welcome, the starting and the admin screens alone', () => {
-    expect(isAnEnrolledDeviceScreen('enrolQr')).toBe(false)
-    expect(isAnEnrolledDeviceScreen('welcome')).toBe(false)
-    expect(isAnEnrolledDeviceScreen('startingUp')).toBe(false)
-    expect(isAnEnrolledDeviceScreen('admin')).toBe(false)
+  it('keeps the guard on every screen a device is shown', () => {
+    expect(isTheAdminScreen('enrolQr')).toBe(false)
+    expect(isTheAdminScreen('welcome')).toBe(false)
+    expect(isTheAdminScreen('startingUp')).toBe(false)
+    expect(isTheAdminScreen('station')).toBe(false)
+    expect(isTheAdminScreen('catalog')).toBe(false)
+    expect(isTheAdminScreen('review')).toBe(false)
+    expect(isTheAdminScreen('openItems')).toBe(false)
   })
 })
 

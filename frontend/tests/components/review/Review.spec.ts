@@ -141,6 +141,8 @@ describe('sending the order from the review screen', () => {
   })
 
   it('leaves no way back to the summary once the order has been sent', async () => {
+    const { keepTheDeviceInsideTheApp } = await import('../../../src/router')
+    keepTheDeviceInsideTheApp()
     const order = prepareOrder()
     const replaceState = vi.spyOn(window.history, 'replaceState')
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })

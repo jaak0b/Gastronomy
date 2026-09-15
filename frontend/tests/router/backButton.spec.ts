@@ -14,6 +14,35 @@ async function pressBack(): Promise<void> {
   await popped
 }
 
+describe('the admin on the laptop, where the back button stays the browser one', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    window.history.replaceState({}, '', thePageThePhoneWasOnBefore)
+  })
+
+  it('lets the laptop leave the admin by going back', async () => {
+    window.history.pushState({}, '', '/admin/items')
+    const { startRouter } = await import('../../src/router')
+    startRouter()
+
+    await pressBack()
+
+    expect(window.location.pathname).toBe(thePageThePhoneWasOnBefore)
+  })
+
+  it('shows the admin section the browser landed on', async () => {
+    window.history.pushState({}, '', '/admin/overview')
+    const { currentRoute, navigate, startRouter } = await import('../../src/router')
+    startRouter()
+    navigate('/admin/items')
+
+    await pressBack()
+
+    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview', festivalId: null })
+    expect(window.location.pathname).toBe('/admin/overview')
+  })
+})
+
 describe('the back button of the phone the server holds', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -80,28 +109,6 @@ describe('the back button of the phone the server holds', () => {
     expect(window.location.pathname).toBe('/')
   })
 
-  it('lets the laptop leave the admin by going back', async () => {
-    window.history.pushState({}, '', '/admin/items')
-    const { startRouter } = await import('../../src/router')
-    startRouter()
-
-    await pressBack()
-
-    expect(window.location.pathname).toBe(thePageThePhoneWasOnBefore)
-  })
-
-  it('shows the admin section the browser landed on', async () => {
-    window.history.pushState({}, '', '/admin/overview')
-    const { currentRoute, navigate, startRouter } = await import('../../src/router')
-    startRouter()
-    navigate('/admin/items')
-
-    await pressBack()
-
-    expect(currentRoute.value).toEqual({ name: 'admin', section: 'overview', festivalId: null })
-    expect(window.location.pathname).toBe('/admin/overview')
-  })
-
   it('keeps the station tablet on its screen however often back is pressed', async () => {
     window.history.pushState({}, '', '/stations')
     const { currentRoute, keepTheDeviceInsideTheApp } = await import('../../src/router')
@@ -117,11 +124,30 @@ describe('the back button of the phone the server holds', () => {
 
   it('leaves no way back to the invitation address once the router replaces it', async () => {
     window.history.pushState({}, '', '/j/abc123')
-    const { currentRoute, keepTheDeviceInsideTheApp, replace } = await import('../../src/router')
+    const { currentRoute, keepTheDeviceInsideTheApp, navigate } = await import('../../src/router')
 
-    replace('/')
     keepTheDeviceInsideTheApp()
+    navigate('/')
     await pressBack()
+    await pressBack()
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
+    expect(window.location.pathname).toBe('/')
+  })
+
+  it('keeps the browser history to one screen entry however much the waiter taps around', async () => {
+    window.history.pushState({}, '', '/')
+    const { currentRoute, keepTheDeviceInsideTheApp, navigate } = await import('../../src/router')
+    keepTheDeviceInsideTheApp()
+    const entriesWithTheGuardInPlace = window.history.length
+
+    for (let tap = 0; tap < 60; tap++) {
+      navigate(tap % 2 === 0 ? '/review' : '/')
+    }
+    navigate('/')
+
+    expect(window.history.length).toBe(entriesWithTheGuardInPlace)
+
     await pressBack()
 
     expect(currentRoute.value).toEqual({ name: 'home' })

@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import { assertNever } from '../core/assertNever'
 import { resolveRoute, type AppRoute } from '../core/route'
 
 export { ADMIN_SECTIONS, resolveRoute } from '../core/route'
@@ -38,23 +39,38 @@ export function startRouter(): void {
 }
 
 function followTheBrowserBackButton(): void {
-  if (theDeviceIsKeptInsideTheApp && closeTheOpenStep !== null) {
+  if (!theDeviceIsKeptInsideTheApp) {
+    currentRoute.value = resolveRoute(window.location.pathname)
+    theAddressOfTheScreen = currentAddress()
+    return
+  }
+  if (closeTheOpenStep !== null) {
     closeTheStepInsideTheScreen()
-    window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
-    return
+  } else {
+    goOneScreenBack()
   }
-  const landed = window.history.state as { floor?: boolean } | null
-  if (theDeviceIsKeptInsideTheApp && (landed === null || landed.floor === true)) {
-    window.history.pushState({ theApp: true }, '', currentAddress())
-    return
+  window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
+}
+
+function goOneScreenBack(): void {
+  switch (currentRoute.value.name) {
+    case 'review':
+    case 'openItems':
+      navigate('/')
+      return
+    case 'home':
+    case 'stations':
+    case 'enrolQr':
+    case 'admin':
+      return
+    default:
+      return assertNever(currentRoute.value)
   }
-  currentRoute.value = resolveRoute(window.location.pathname)
-  theAddressOfTheScreen = currentAddress()
 }
 
 function keepTheGuardAfterTheBrowserRestoredThePage(event: PageTransitionEvent): void {
   if (event.persisted && theDeviceIsKeptInsideTheApp) {
-    window.history.pushState({ theApp: true }, '', currentAddress())
+    window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
   }
 }
 
@@ -65,19 +81,17 @@ export function keepTheDeviceInsideTheApp(): void {
   }
   theDeviceIsKeptInsideTheApp = true
   theAddressOfTheScreen = currentAddress()
-  window.history.replaceState({ theApp: true, floor: true }, '', currentAddress())
-  window.history.pushState({ theApp: true }, '', currentAddress())
+  window.history.replaceState({ theApp: true }, '', currentAddress())
+  window.history.pushState({ theApp: true }, '', theAddressOfTheScreen)
 }
 
 export function navigate(path: string): void {
   closeTheStepInsideTheScreen()
-  window.history.pushState({ theApp: true }, '', path)
-  currentRoute.value = resolveRoute(path)
-  theAddressOfTheScreen = currentAddress()
-}
-
-export function replace(path: string): void {
-  window.history.replaceState({ theApp: true }, '', path)
+  if (theDeviceIsKeptInsideTheApp) {
+    window.history.replaceState({ theApp: true }, '', path)
+  } else {
+    window.history.pushState({ theApp: true }, '', path)
+  }
   currentRoute.value = resolveRoute(path)
   theAddressOfTheScreen = currentAddress()
 }

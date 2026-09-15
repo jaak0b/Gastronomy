@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { currentRoute, keepTheDeviceInsideTheApp } from './router'
 import { bindLocaleToSession } from './localeBinding'
 import { screenTitle } from './core/appTitle'
-import { isAnEnrolledDeviceScreen, screenFor, type ScreenName } from './core/landing'
+import { isTheAdminScreen, screenFor, type ScreenName } from './core/landing'
 import { useSessionStore } from './stores/session'
 import { useStationStore } from './stores/station'
 import { useCatalogStore } from './stores/catalog'
@@ -36,7 +36,7 @@ const screen = computed<ScreenName>(() => screenFor(session.deviceSession, curre
 watch(
   screen,
   (shown) => {
-    if (isAnEnrolledDeviceScreen(shown)) {
+    if (!isTheAdminScreen(shown)) {
       keepTheDeviceInsideTheApp()
     }
   },

@@ -80,17 +80,17 @@ export function screenFor(session: DeviceSession, route: AppRoute): ScreenName {
   }
 }
 
-export function isAnEnrolledDeviceScreen(screen: ScreenName): boolean {
+export function isTheAdminScreen(screen: ScreenName): boolean {
   switch (screen) {
-    case 'station':
-    case 'catalog':
-    case 'review':
-    case 'openItems':
+    case 'admin':
       return true
     case 'enrolQr':
     case 'welcome':
     case 'startingUp':
-    case 'admin':
+    case 'station':
+    case 'catalog':
+    case 'review':
+    case 'openItems':
       return false
     default:
       return assertNever(screen)
