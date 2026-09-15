@@ -19,7 +19,7 @@ public sealed class ApiPipeline
                        {
                          OnPrepareResponse = staticFileResponse =>
                          {
-                           if (staticFileResponse.File.Name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+                           if (staticFileResponse.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
                            {
                              staticFileResponse.Context.Response.Headers.CacheControl = "no-cache";
                            }

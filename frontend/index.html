@@ -16,7 +16,9 @@
           return
         }
         sessionStorage.setItem('theDoorTarget', window.location.pathname + window.location.search + window.location.hash)
-        window.location.replace('/door.html?n=10')
+        var theBundle = document.querySelector('script[type="module"][src]')
+        var theBuild = theBundle ? theBundle.getAttribute('src') : ''
+        window.location.replace('/door.html?n=10&v=' + encodeURIComponent(theBuild))
       })()
     </script>
   </head>

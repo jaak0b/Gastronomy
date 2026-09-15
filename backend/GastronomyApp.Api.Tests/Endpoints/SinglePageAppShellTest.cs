@@ -46,7 +46,7 @@ public sealed class SinglePageAppShellTest
   }
 
   [Test]
-  public async Task Get_TheDoorPage_ServesItWithoutTheShellCacheRule()
+  public async Task Get_TheDoorPage_ServesItRevalidatedSoAStaleBuildCannotTrapTheHistory()
   {
     using var response = await _factory.Client.GetAsync("/door.html");
 
@@ -54,7 +54,7 @@ public sealed class SinglePageAppShellTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("text/html"));
-                      Assert.That(response.Headers.CacheControl?.NoCache, Is.Not.True);
+                      Assert.That(response.Headers.CacheControl?.NoCache, Is.True);
                     });
   }
 }

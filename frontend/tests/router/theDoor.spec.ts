@@ -47,8 +47,15 @@ function runTheBoot(pathname: string, storage: TheStorage) {
       replace: (url: string) => replaced.push(url),
     },
   }
+  const theDocument = {
+    querySelector: () => ({ getAttribute: () => '/assets/index-test.js' }),
+  }
   const script = theInlineScriptOf('index.html')
-  new Function('window', 'sessionStorage', script)(theWindow, theSessionStorageOver(storage))
+  new Function('window', 'sessionStorage', 'document', script)(
+    theWindow,
+    theSessionStorageOver(storage),
+    theDocument,
+  )
   return { replaced }
 }
 
@@ -65,7 +72,7 @@ describe('the shell boot script', () => {
 
     const { replaced } = runTheBoot('/', storage)
 
-    expect(replaced).toEqual(['/door.html?n=10'])
+    expect(replaced).toEqual(['/door.html?n=10&v=%2Fassets%2Findex-test.js'])
     expect(storage.get('theDoorTarget')).toBe('/')
   })
 
@@ -90,11 +97,11 @@ describe('the shell boot script', () => {
 
 describe('the door page', () => {
   it('sends a back press on to the next door', async () => {
-    const { assigned, handlers } = runTheDoor('?n=3', new Map())
+    const { assigned, handlers } = runTheDoor('?n=3&v=abc', new Map())
 
     await withAFakedTick(() => handlers.get('pageshow')!())
 
-    expect(assigned).toEqual(['/door.html?n=2'])
+    expect(assigned).toEqual(['/door.html?n=2&v=abc'])
   })
 
   it('hands a back press back to the app at the last step', async () => {
