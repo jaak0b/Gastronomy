@@ -225,7 +225,7 @@ describe('an invitation the laptop will not render a QR code for', () => {
     const panel = mountPanel({ kind: 'unreachable' })
 
     expect(panel.get('.qr-gone').text()).toBe(
-      'Laden Sie die Seite neu. Der Laptop hat den QR-Code nicht geliefert.',
+      'Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu.',
     )
   })
 })

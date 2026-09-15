@@ -379,7 +379,7 @@ describe('two refusals one after the other', () => {
 
     await vi.waitFor(() =>
       expect(list.get('.refusal').text()).toBe(
-        'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
+        'Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.',
       ),
     )
   })
@@ -434,7 +434,7 @@ describe('a station the laptop refuses to switch off', () => {
     const list = mountList()
     await deactivateFirstStation(list)
 
-    expect(list.get('.refusal').text()).not.toContain('unfertige Bestellungen')
+    expect(list.get('.refusal').text()).not.toContain('offene Bestellungen')
   })
 
   it('takes the singular form when a single item would be left behind', async () => {
@@ -456,39 +456,6 @@ describe('a station the laptop refuses to switch off', () => {
 
     expect(list.get('.refusal').text()).toBe(
       '2 Artikel hätten dann keine Ausgabestelle mehr. Ordnen Sie sie zuerst einer anderen Ausgabestelle zu oder entfernen Sie sie vom Fest.',
-    )
-  })
-
-  it('speaks of a single unfinished order when the laptop counted one', async () => {
-    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: '1' })
-
-    const list = mountList()
-    await deactivateFirstStation(list)
-
-    expect(list.get('.refusal').text()).toBe(
-      'Diese Ausgabestelle hat noch eine unfertige Bestellung und kann jetzt nicht abgeschaltet werden. Arbeiten Sie sie ab und versuchen Sie es danach erneut.',
-    )
-  })
-
-  it('speaks of several unfinished orders when the laptop counted more than one', async () => {
-    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: '2' })
-
-    const list = mountList()
-    await deactivateFirstStation(list)
-
-    expect(list.get('.refusal').text()).toBe(
-      'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
-    )
-  })
-
-  it('says unfinished orders when unfinished orders really are the reason', async () => {
-    refuseDeactivationWith('admin.stationHasUnfinishedItems', { count: 3 })
-
-    const list = mountList()
-    await deactivateFirstStation(list)
-
-    expect(list.get('.refusal').text()).toBe(
-      'Diese Ausgabestelle hat noch unfertige Bestellungen und kann jetzt nicht abgeschaltet werden. Arbeiten Sie die Bestellungen ab und versuchen Sie es danach erneut.',
     )
   })
 

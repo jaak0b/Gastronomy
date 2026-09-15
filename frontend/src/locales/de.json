@@ -131,16 +131,15 @@
     "amountPaidConfirm": "Abrechnen",
     "amountPaidCancel": "Abbrechen",
     "givenAwayHeading": "In den letzten 24 Stunden nicht kassiert: {amount}",
-    "givenAwayHelp": "Diese Positionen wurden verschenkt oder der Tisch hat weniger bezahlt, als sie kosten.",
     "givenAwayReason": "Grund: {reason}",
     "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Laptop die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Laptop die Bestellungen dazu nicht mehr findet.",
     "someWereAlreadySettled": "{count} Position aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück. | {count} Positionen aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück.",
-    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet. Die Liste auf anderen Telefonen kann noch veraltet sein.",
+    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet.",
     "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen hat nicht geklappt.",
     "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind."
   },
   "admin": {
-    "notOnLaptop": "Klicken Sie am Laptop im Fenster \"Bestellsystem\" auf \"Verwaltung öffnen\". Auf dem Telefon lässt sich die Verwaltung nicht öffnen.",
+    "notOnLaptop": "Die Verwaltung lässt sich nur am Laptop öffnen.",
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
@@ -202,9 +201,9 @@
       "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
       "qrAlt": "QR-Code zum Einrichten des Geräts",
       "qrAlreadyUsed": "Erstellen Sie einen neuen QR-Code. Dieser wurde schon von einem Gerät benutzt.",
-      "qrReplaced": "Verwenden Sie den neueren QR-Code. Dieser hier wurde ersetzt, als ein neuer erstellt wurde.",
+      "qrReplaced": "Erstellen Sie einen neuen QR-Code. Dieser hier gilt nicht mehr.",
       "qrUnavailable": "Erstellen Sie einen neuen QR-Code. Dieser lässt sich nicht mehr anzeigen.",
-      "qrUnreachable": "Laden Sie die Seite neu. Der Laptop hat den QR-Code nicht geliefert.",
+      "qrUnreachable": "Der QR-Code konnte nicht geladen werden. Laden Sie die Seite neu.",
       "newQrCode": "Neuen QR-Code erstellen"
     },
     "save": "Speichern",
@@ -315,7 +314,7 @@
     "confirmDoneTitle": "Diese Positionen erledigen?",
     "tableIs": "Tisch {name}",
     "cancel": "Abbrechen",
-    "noFestivalIsRunning": "Kein Fest aktiv",
+    "noFestivalIsRunning": "Es ist kein Fest aktiv.",
     "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
   },
   "startingUp": {
@@ -342,7 +341,7 @@
     "codeMissing": "Scannen Sie den QR-Code am Laptop noch einmal. Diese Seite wurde ohne Code geöffnet.",
     "staffMemberIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
     "stationIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet.",
-    "atMostOneOwner": "Wählen Sie entweder einen Kellner oder eine Ausgabestelle aus, nicht beides. Ein QR-Code gehört zu höchstens einem von beiden."
+    "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal."
   },
   "auth": {
     "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Laptop neu einrichten."

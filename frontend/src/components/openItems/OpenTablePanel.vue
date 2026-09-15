@@ -102,9 +102,6 @@ function setWholeTable(): void {
         <h2 class="given-away-heading text-subtitle-1 font-weight-medium">
           {{ t('openItems.givenAwayHeading', { amount: priceOf(table.givenAwayAmountCents) }) }}
         </h2>
-        <p class="given-away-help text-body-2 text-medium-emphasis">
-          {{ t('openItems.givenAwayHelp') }}
-        </p>
         <v-list class="given-away-lines" lines="two">
           <v-list-item
             v-for="item in table.givenAwayItems"

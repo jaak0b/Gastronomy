@@ -8,19 +8,19 @@ function mountNotice(locale: 'de' | 'en' = 'de') {
 }
 
 describe('the admin pages opened somewhere other than the laptop', () => {
-  it('sends the reader to the button in the program window, in German', () => {
+  it('names the laptop as the only place for the admin pages, in German', () => {
     const notice = mountNotice()
 
     expect(notice.get('.not-on-laptop').text()).toBe(
-      'Klicken Sie am Laptop im Fenster "Bestellsystem" auf "Verwaltung öffnen". Auf dem Telefon lässt sich die Verwaltung nicht öffnen.',
+      'Die Verwaltung lässt sich nur am Laptop öffnen.',
     )
   })
 
-  it('sends the reader to the button in the program window, in English', () => {
+  it('names the laptop as the only place for the admin pages, in English', () => {
     const notice = mountNotice('en')
 
     expect(notice.get('.not-on-laptop').text()).toBe(
-      'Press "Open the admin pages" in the Ordering system window on the laptop. The admin pages do not open on a phone.',
+      'The admin pages are only available on the laptop.',
     )
   })
 })

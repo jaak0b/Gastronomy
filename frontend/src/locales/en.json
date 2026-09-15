@@ -131,16 +131,15 @@
     "amountPaidConfirm": "Settle",
     "amountPaidCancel": "Cancel",
     "givenAwayHeading": "Not collected in the last 24 hours: {amount}",
-    "givenAwayHelp": "These items were given away, or the table paid less than they cost.",
     "givenAwayReason": "Reason: {reason}",
     "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the laptop can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the laptop can no longer find the orders they belong to.",
     "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Check whether you took money for it and give that money back to the guest. | Somebody else had already settled {count} items in your selection. Check whether you took money for them and give that money back to the guest.",
-    "otherPhonesWereNotTold": "The items are settled. The list on other phones may still be out of date.",
+    "otherPhonesWereNotTold": "The items are settled.",
     "settleFailed": "Try again. Settling did not work.",
     "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open."
   },
   "admin": {
-    "notOnLaptop": "Press \"Open the admin pages\" in the Ordering system window on the laptop. The admin pages do not open on a phone.",
+    "notOnLaptop": "The admin pages are only available on the laptop.",
     "overview": {
       "title": "Overview",
       "ready": "Everything is set up. You can now set up the phones and the tablets.",
@@ -202,9 +201,9 @@
       "forStation": "Scan this QR code with the camera of the tablet at {name}.",
       "qrAlt": "QR code for setting the device up",
       "qrAlreadyUsed": "Create a new QR code. This one has already been used by a device.",
-      "qrReplaced": "Use the newer QR code. This one was replaced when a newer one was created.",
+      "qrReplaced": "Create a new QR code. This one is no longer valid.",
       "qrUnavailable": "Create a new QR code. This one cannot be shown any more.",
-      "qrUnreachable": "Reload the page. The laptop did not deliver the QR code.",
+      "qrUnreachable": "The QR code could not be loaded. Reload the page.",
       "newQrCode": "Create a new QR code"
     },
     "save": "Save",
@@ -289,7 +288,7 @@
     "statsTogetherChip": "Together {count}",
     "statsAsItComesChip": "Individual {count}",
     "overview": "Overview",
-    "openArticlesHeading": "Open articles",
+    "openArticlesHeading": "Open items",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",
@@ -315,7 +314,7 @@
     "confirmDoneTitle": "Mark these items as done?",
     "tableIs": "Table {name}",
     "cancel": "Cancel",
-    "noFestivalIsRunning": "No festival active",
+    "noFestivalIsRunning": "No festival is active.",
     "notPartOfTheFestival": "This station is not part of the festival that is running."
   },
   "startingUp": {
@@ -342,7 +341,7 @@
     "codeMissing": "Scan the QR code on the laptop again. This page was opened without a code.",
     "staffMemberIsOffTheList": "Ask for a new QR code at the laptop. This waiter is no longer on the list.",
     "stationIsOffTheList": "Ask for a new QR code at the laptop. This station is switched off.",
-    "atMostOneOwner": "Choose either a waiter or a station, not both. A QR code belongs to at most one of the two."
+    "atMostOneOwner": "The QR code could not be created. Try again."
   },
   "auth": {
     "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the laptop."

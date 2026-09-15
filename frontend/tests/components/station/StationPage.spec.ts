@@ -742,7 +742,7 @@ describe('a station tablet the laptop turned away', () => {
 
     const page = await mountPage()
 
-    expect(page.get('.load-failed').text()).toBe('Kein Fest aktiv')
+    expect(page.get('.load-failed').text()).toBe('Es ist kein Fest aktiv.')
   })
 
   it('says the station does not belong to this festival', async () => {
