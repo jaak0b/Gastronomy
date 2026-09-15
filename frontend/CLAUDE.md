@@ -101,6 +101,15 @@ Three audiences in one build:
 - **A delivery mode is chosen once, before sending, and never afterwards.** The server picks, per
   station, whether that station hands its part of the order out together or as each item is ready.
   No screen may offer to change it after the order is sent.
+- **A device tab opens through the start screen, and the doors stay behind it.** Chromium and WebKit
+  skip history entries created by a page that navigated the user on without any interaction, so no
+  automatic back trap survives on its own. The start screen (`DoorGate.vue`) needs one tap: that
+  activation makes the screen the unskippable anchor. Only then is the chain of real `door.html`
+  pages built, and every back press skips the chain and lands on the anchor, which rebuilds it and
+  returns the device to the app. Never build the chain at load, never remove the start screen, and
+  never let a tab that sits behind the doors grow its history, which is what `navigate` doing
+  `replaceState` there preserves. The admin is exempt, and the address of the chain carries the
+  page's last-modified stamp so a cached door from an older build can never be used.
 - **No feature may require a service worker**, a secure context, or an installed PWA.
 
 ## Testing
