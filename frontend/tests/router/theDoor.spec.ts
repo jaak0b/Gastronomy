@@ -47,9 +47,7 @@ function runTheBoot(pathname: string, storage: TheStorage) {
       replace: (url: string) => replaced.push(url),
     },
   }
-  const theDocument = {
-    querySelector: () => ({ getAttribute: () => '/assets/index-test.js' }),
-  }
+  const theDocument = { lastModified: 'build-a' }
   const script = theInlineScriptOf('index.html')
   new Function('window', 'sessionStorage', 'document', script)(
     theWindow,
@@ -72,7 +70,7 @@ describe('the shell boot script', () => {
 
     const { replaced } = runTheBoot('/', storage)
 
-    expect(replaced).toEqual(['/door.html?n=10&v=%2Fassets%2Findex-test.js'])
+    expect(replaced).toEqual(['/door.html?n=10&v=build-a'])
     expect(storage.get('theDoorTarget')).toBe('/')
   })
 
