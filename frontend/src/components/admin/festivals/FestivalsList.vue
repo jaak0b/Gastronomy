@@ -133,7 +133,16 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-festivals">
-    <h1 class="text-h5 mb-4">{{ t('admin.festivals.title') }}</h1>
+    <div class="admin-heading d-flex align-center flex-wrap justify-space-between ga-2 mb-4">
+      <h1 class="text-h5">{{ t('admin.festivals.title') }}</h1>
+      <v-checkbox
+        v-model="showsHidden"
+        class="show-hidden"
+        density="compact"
+        hide-details
+        :label="t('admin.festivals.showHidden')"
+      />
+    </div>
 
     <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
       {{ refusalText }}
@@ -141,12 +150,6 @@ onUnmounted(() => {
     <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>
-
-    <v-checkbox
-      v-model="showsHidden"
-      class="show-hidden"
-      :label="t('admin.festivals.showHidden')"
-    />
 
     <p v-if="shown.length === 0" class="none-yet text-medium-emphasis mb-4">
       {{ t('admin.festivals.noneYet') }}
