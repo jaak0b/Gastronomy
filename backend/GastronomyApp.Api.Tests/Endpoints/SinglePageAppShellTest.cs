@@ -44,4 +44,17 @@ public sealed class SinglePageAppShellTest
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
+
+  [Test]
+  public async Task Get_TheDoorPage_ServesItWithoutTheShellCacheRule()
+  {
+    using var response = await _factory.Client.GetAsync("/door.html");
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("text/html"));
+                      Assert.That(response.Headers.CacheControl?.NoCache, Is.Not.True);
+                    });
+  }
 }

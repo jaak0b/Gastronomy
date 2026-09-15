@@ -13,49 +13,13 @@ async function mountTheApp() {
   return mount(App, { global: { plugins: [i18n] } })
 }
 
-async function pressBack(): Promise<void> {
-  const popped = new Promise((resolve) => {
-    window.addEventListener('popstate', () => resolve(undefined), { once: true })
-  })
-  window.history.back()
-  await popped
-}
-
-const theScreenTheDeviceCameFrom = '/the-page-the-device-came-from'
-
-describe('the back button on a device that shows the app', () => {
+describe('the app puts a device behind the door as soon as its screen is on display', () => {
   beforeEach(() => {
     vi.resetModules()
     setActivePinia(createPinia())
     localStorage.clear()
-    window.history.replaceState({}, '', theScreenTheDeviceCameFrom)
-  })
-
-  it('keeps the invitation screen in place when a phone presses back', async () => {
-    window.history.pushState({}, '', '/j/abc123')
-
-    const app = await mountTheApp()
-    await app.vm.$nextTick()
-
-    await pressBack()
-    await app.vm.$nextTick()
-
-    expect(window.location.pathname).toBe('/j/abc123')
-  })
-
-  it('keeps the welcome screen in place when back is pressed', async () => {
-    window.history.pushState({}, '', '/')
-
-    const app = await mountTheApp()
-    await app.vm.$nextTick()
-
-    await pressBack()
-    await app.vm.$nextTick()
-
-    expect(window.location.pathname).toBe('/')
-  })
-
-  it('keeps a station tablet on the station screen when back is pressed', async () => {
+    sessionStorage.clear()
+    window.history.replaceState({}, '', '/the-page-the-device-came-from')
     window.history.pushState({}, '', '/stations')
     vi.stubGlobal(
       'fetch',
@@ -78,16 +42,21 @@ describe('the back button on a device that shows the app', () => {
         return new Response(JSON.stringify(payload), { status: 200 })
       }),
     )
+  })
+
+  it('stops growing the history once the station screen is on display', async () => {
     const { useSessionStore } = await import('../../src/stores/session')
     useSessionStore().deviceToken = 'a-token'
 
     const app = await mountTheApp()
     await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
 
-    await pressBack()
-    await app.vm.$nextTick()
+    const { navigate, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+    const entries = window.history.length
 
-    expect(window.location.pathname).toBe('/stations')
-    expect(app.find('.station-page').exists()).toBe(true)
+    navigate('/open-items')
+
+    expect(window.history.length).toBe(entries)
+    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
   })
 })

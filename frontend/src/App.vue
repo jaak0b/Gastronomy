@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { currentRoute, keepTheDeviceInsideTheApp } from './router'
+import { currentRoute, keepTheDeviceBehindTheDoor } from './router'
 import { bindLocaleToSession } from './localeBinding'
 import { screenTitle } from './core/appTitle'
 import { isTheAdminScreen, screenFor, type ScreenName } from './core/landing'
@@ -37,7 +37,7 @@ watch(
   screen,
   (shown) => {
     if (!isTheAdminScreen(shown)) {
-      keepTheDeviceInsideTheApp()
+      keepTheDeviceBehindTheDoor()
     }
   },
   { immediate: true },

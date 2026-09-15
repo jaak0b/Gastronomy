@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>GastronomyApp</title>
+    <script>
+      window.addEventListener('pageshow', function () {
+        setTimeout(function () {
+          var target = sessionStorage.getItem('theDoorTarget') || '/'
+          var remaining = Number(new URLSearchParams(window.location.search).get('n') || '0')
+          if (remaining > 1) {
+            window.location.assign('/door.html?n=' + (remaining - 1))
+            return
+          }
+          sessionStorage.setItem('arrivedThroughTheDoor', 'yes')
+          window.location.assign(target)
+        }, 0)
+      })
+    </script>
+  </head>
+  <body></body>
+</html>

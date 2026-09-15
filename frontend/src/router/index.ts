@@ -1,10 +1,12 @@
 import { ref, type Ref } from 'vue'
 import { assertNever } from '../core/assertNever'
 import { resolveRoute, type AppRoute } from '../core/route'
-import { plantTheBackGuardPad } from '../theBackGuardPad'
 
 export { ADMIN_SECTIONS, resolveRoute } from '../core/route'
 export type { AdminSection, AppRoute } from '../core/route'
+
+export const THE_DOOR_TARGET_KEY = 'theDoorTarget'
+export const THE_DOOR_ARRIVAL_KEY = 'arrivedThroughTheDoor'
 
 export const currentRoute: Ref<AppRoute> = ref(resolveRoute(window.location.pathname))
 
@@ -20,82 +22,66 @@ export function closeTheStepInsideTheScreen(): void {
   close?.()
 }
 
+let theDeviceIsBehindADoor = false
+
 function currentAddress(): string {
   return window.location.pathname + window.location.search + window.location.hash
 }
 
-let theAddressOfTheScreen = currentAddress()
-
-let theDeviceIsKeptInsideTheApp = false
-
-let theRouterIsListening = false
-
-export function startRouter(): void {
-  if (theRouterIsListening) {
-    return
-  }
-  theRouterIsListening = true
-  window.addEventListener('popstate', followTheBrowserBackButton)
-  window.addEventListener('pageshow', keepTheGuardAfterTheBrowserRestoredThePage)
-}
-
-function followTheBrowserBackButton(): void {
-  if (!theDeviceIsKeptInsideTheApp) {
-    currentRoute.value = resolveRoute(window.location.pathname)
-    theAddressOfTheScreen = currentAddress()
-    return
-  }
-  if (closeTheOpenStep !== null) {
-    closeTheStepInsideTheScreen()
-  } else {
-    goOneScreenBack()
-  }
-  window.history.pushState(null, '', theAddressOfTheScreen)
-}
-
-function goOneScreenBack(): void {
-  switch (currentRoute.value.name) {
+function theDoorTargetFor(route: AppRoute): string {
+  switch (route.name) {
+    case 'home':
     case 'review':
     case 'openItems':
-      navigate('/')
-      return
-    case 'home':
+      return '/'
     case 'stations':
+      return '/stations'
     case 'enrolQr':
     case 'admin':
-      return
+      return currentAddress()
     default:
-      return assertNever(currentRoute.value)
+      return assertNever(route)
   }
 }
 
-function keepTheGuardAfterTheBrowserRestoredThePage(event: PageTransitionEvent): void {
-  if (event.persisted && theDeviceIsKeptInsideTheApp) {
-    window.history.pushState(null, '', theAddressOfTheScreen)
-  }
-}
-
-export function keepTheDeviceInsideTheApp(): void {
-  startRouter()
-  if (theDeviceIsKeptInsideTheApp) {
+function rememberTheDoorTarget(route: AppRoute): void {
+  if (!theDeviceIsBehindADoor) {
     return
   }
-  theDeviceIsKeptInsideTheApp = true
-  theAddressOfTheScreen = currentAddress()
-  plantTheBackGuardPad()
+  sessionStorage.setItem(THE_DOOR_TARGET_KEY, theDoorTargetFor(route))
+}
+
+export function startRouter(): void {
+  window.addEventListener('popstate', followTheBrowser)
+}
+
+function followTheBrowser(): void {
+  currentRoute.value = resolveRoute(window.location.pathname)
+  rememberTheDoorTarget(currentRoute.value)
+  closeTheStepInsideTheScreen()
+}
+
+export function keepTheDeviceBehindTheDoor(): void {
+  if (theDeviceIsBehindADoor) {
+    return
+  }
+  theDeviceIsBehindADoor = true
+  rememberTheDoorTarget(currentRoute.value)
 }
 
 export function navigate(path: string): void {
   closeTheStepInsideTheScreen()
-  if (theDeviceIsKeptInsideTheApp) {
+  if (theDeviceIsBehindADoor) {
     window.history.replaceState(null, '', path)
   } else {
     window.history.pushState(null, '', path)
   }
   currentRoute.value = resolveRoute(path)
-  theAddressOfTheScreen = currentAddress()
+  rememberTheDoorTarget(currentRoute.value)
 }
 
 export function startOverAt(path: string): void {
+  sessionStorage.setItem(THE_DOOR_TARGET_KEY, path)
+  sessionStorage.setItem(THE_DOOR_ARRIVAL_KEY, 'yes')
   window.location.replace(path)
 }
