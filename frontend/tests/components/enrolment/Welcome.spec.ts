@@ -11,6 +11,11 @@ function mountWelcome(locale: 'de' | 'en' = 'de') {
   return mount(Welcome, { global: { plugins: [i18n] } })
 }
 
+async function openTheOptions(welcome: ReturnType<typeof mountWelcome>): Promise<void> {
+  await welcome.get('.language-switch .v-field').trigger('mousedown')
+  await vi.waitFor(() => expect(document.querySelector('.option-en')).not.toBeNull())
+}
+
 describe('the screen a device lands on with no code', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -41,6 +46,7 @@ describe('the language switch before a phone is set up', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    document.body.innerHTML = ''
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
@@ -51,17 +57,19 @@ describe('the language switch before a phone is set up', () => {
   })
 
   it('remembers the choice on the device itself', async () => {
+    localStorage.setItem('language', 'de')
     const welcome = mountWelcome()
-
-    await welcome.get('.option-en').trigger('click')
+    await openTheOptions(welcome)
+    ;(document.querySelector('.option-en') as HTMLElement).click()
 
     expect(localStorage.getItem('language')).toBe('en')
   })
 
   it('asks the laptop for nothing, because this phone has no device of its own yet', async () => {
+    localStorage.setItem('language', 'de')
     const welcome = mountWelcome()
-
-    await welcome.get('.option-en').trigger('click')
+    await openTheOptions(welcome)
+    ;(document.querySelector('.option-en') as HTMLElement).click()
 
     expect(fetch).not.toHaveBeenCalled()
   })

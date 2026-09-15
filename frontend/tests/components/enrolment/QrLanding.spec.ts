@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { defineComponent } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import QrLanding from '../../../src/components/enrolment/QrLanding.vue'
+import { bindLocaleToSession } from '../../../src/localeBinding'
 import { TOKEN_STORAGE_KEY } from '../../../src/stores/session'
 import { navigate, startOverAt } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
@@ -42,6 +44,22 @@ function refuseEveryConnection() {
 function mountLanding() {
   return mount(QrLanding, {
     props: { code: 'abc123' },
+    global: { plugins: testPlugins() },
+    attachTo: document.body,
+  })
+}
+
+const QrLandingFollowingTheLanguage = defineComponent({
+  components: { QrLanding },
+  setup() {
+    bindLocaleToSession()
+  },
+  template: '<QrLanding code="abc123" />',
+})
+
+function mountLandingFollowingTheChosenLanguage() {
+  localStorage.setItem('language', 'de')
+  return mount(QrLandingFollowingTheLanguage, {
     global: { plugins: testPlugins() },
     attachTo: document.body,
   })
@@ -184,5 +202,30 @@ describe('the length of the name a waiter types while enrolling', () => {
     await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
 
     expect(landing.get('.name-field input').attributes('maxlength')).toBe('40')
+  })
+})
+
+describe('the language picker on the QR landing', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/j/abc123')
+  })
+
+  it('writes the enrolment screen in the language the reader chooses', async () => {
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+
+    const landing = mountLandingFollowingTheChosenLanguage()
+    await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
+
+    expect(landing.get('h1').text()).toBe('Dieses Telefon einrichten')
+
+    await landing.get('.language-switch .v-field').trigger('mousedown')
+    await vi.waitFor(() => expect(document.querySelector('.option-en')).not.toBeNull())
+    ;(document.querySelector('.option-en') as HTMLElement).click()
+    await flushPromises()
+
+    expect(landing.get('h1').text()).toBe('Set up this phone')
   })
 })

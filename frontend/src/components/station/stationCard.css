@@ -1,0 +1,36 @@
+.station-slice,
+.station-fulfilled {
+  border-width: 3px;
+  border-style: solid;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  margin: 0;
+  min-width: 0;
+  min-inline-size: 0;
+  max-width: 100%;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.slice-legend {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.slice-legend > span {
+  min-width: 0;
+}
+
+.slice-legend .table-name {
+  overflow-wrap: anywhere;
+}
+
+.slice-mode-row {
+  min-width: 0;
+}
+
+.slice-mode-row .delivery-mode {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

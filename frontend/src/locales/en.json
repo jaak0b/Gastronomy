@@ -31,9 +31,7 @@
   "settings": {
     "title": "Settings",
     "person": "You are serving as {name}.",
-    "language": "Language",
-    "languageGerman": "German",
-    "languageEnglish": "English"
+    "language": "Language"
   },
   "catalog": {
     "addNote": "Note",
@@ -293,7 +291,7 @@
     "statsTogetherChip": "Together {count}",
     "statsAsItComesChip": "Individual {count}",
     "overview": "Overview",
-    "overviewHeading": "Open at this station",
+    "openArticlesHeading": "Open articles",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",
@@ -303,7 +301,6 @@
     "orderNotAtThisStation": "This order is not at this station. Reload the page and try again.",
     "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
     "noItemsSelected": "Tap an item.",
-    "language": "Language",
     "order": "Order {order} · No. {sequence}",
     "note": "Note: {note}",
     "orderNote": "Note for the order: {note}",
@@ -314,13 +311,12 @@
     "putBack": "Put back",
     "hideHere": "Hide here",
     "showDone": "Show done orders",
-    "backToQueue": "Back to the queue",
+    "backToOrders": "Back to the orders",
     "doneHeading": "Done orders",
     "nothingDone": "No order is done yet.",
     "confirmDoneTitle": "Mark these items as done?",
     "tableIs": "Table {name}",
     "cancel": "Cancel",
-    "close": "Close",
     "noFestivalIsRunning": "No festival active",
     "notPartOfTheFestival": "This station is not part of the festival that is running."
   },
@@ -333,6 +329,7 @@
     "title": "This device is not set up yet."
   },
   "language": {
+    "label": "Language",
     "german": "Deutsch",
     "english": "English"
   },

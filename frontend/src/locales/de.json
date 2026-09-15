@@ -31,9 +31,7 @@
   "settings": {
     "title": "Einstellungen",
     "person": "Sie bedienen als {name}.",
-    "language": "Sprache",
-    "languageGerman": "Deutsch",
-    "languageEnglish": "Englisch"
+    "language": "Sprache"
   },
   "catalog": {
     "addNote": "Hinweis",
@@ -293,7 +291,7 @@
     "statsTogetherChip": "Gemeinsam {count}",
     "statsAsItComesChip": "Einzeln {count}",
     "overview": "Übersicht",
-    "overviewHeading": "Offen an dieser Ausgabestelle",
+    "openArticlesHeading": "Offene Artikel",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
     "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
@@ -303,7 +301,6 @@
     "orderNotAtThisStation": "Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut.",
     "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
     "noItemsSelected": "Tippen Sie eine Position an.",
-    "language": "Sprache",
     "order": "Bestellung {order} · Nr. {sequence}",
     "note": "Hinweis: {note}",
     "orderNote": "Hinweis zur Bestellung: {note}",
@@ -314,13 +311,12 @@
     "putBack": "Zurücklegen",
     "hideHere": "Hier ausblenden",
     "showDone": "Erledigte anzeigen",
-    "backToQueue": "Zurück zur Warteschlange",
+    "backToOrders": "Zurück zu den Bestellungen",
     "doneHeading": "Erledigte Bestellungen",
     "nothingDone": "Es ist noch keine Bestellung erledigt.",
     "confirmDoneTitle": "Diese Positionen erledigen?",
     "tableIs": "Tisch {name}",
     "cancel": "Abbrechen",
-    "close": "Schließen",
     "noFestivalIsRunning": "Kein Fest aktiv",
     "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
   },
@@ -333,6 +329,7 @@
     "title": "Dieses Gerät ist noch nicht eingerichtet."
   },
   "language": {
+    "label": "Sprache",
     "german": "Deutsch",
     "english": "English"
   },

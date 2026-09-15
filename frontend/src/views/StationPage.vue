@@ -2,12 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationSlice } from '../core/apiTypes'
-import {
-  deliveryModeColour,
-  selectedUnits,
-  stationStats,
-  type ItemLine,
-} from '../core/stationBoard'
+import { selectedUnits, stationStats, type ItemLine } from '../core/stationBoard'
 import { useStationStore } from '../stores/station'
 import { useSessionStore } from '../stores/session'
 import LanguageSwitch from '../components/LanguageSwitch.vue'
@@ -77,49 +72,28 @@ function closeOverview(): void {
   <v-container fluid class="station-page">
     <header class="station-header d-flex align-center ga-3 mb-4">
       <h1 class="station-name text-h5">{{ stationName }}</h1>
-      <template v-if="station.hasWork">
-        <v-chip
-          class="stat-together"
-          :color="deliveryModeColour('together')"
-          variant="flat"
-          size="small"
-        >
-          {{ t('station.statsTogetherChip', { count: stats.togetherOrders }) }}
-        </v-chip>
-        <v-chip
-          class="stat-as-it-comes"
-          :color="deliveryModeColour('asItComes')"
-          variant="flat"
-          size="small"
-        >
-          {{ t('station.statsAsItComesChip', { count: stats.asItComesOrders }) }}
-        </v-chip>
-      </template>
       <v-spacer />
-      <LanguageSwitch
-        :language="session.language"
-        label-key="station.language"
-        @select="session.setLanguage"
-      />
-      <v-btn class="show-overview" variant="outlined" size="large" @click="openOverview">
-        {{ t('station.overview') }}
-      </v-btn>
-      <v-btn
-        v-if="!station.isShowingFulfilled"
-        class="show-done"
-        variant="outlined"
-        size="large"
-        @click="station.openFulfilled"
-      >
-        {{ t('station.showDone') }}
-      </v-btn>
+      <LanguageSwitch :language="session.language" @select="session.setLanguage" />
+      <template v-if="!isShowingOverview && !station.isShowingFulfilled">
+        <v-btn class="show-overview" variant="outlined" size="large" @click="openOverview">
+          {{ t('station.overview') }}
+        </v-btn>
+        <v-btn class="show-done" variant="outlined" size="large" @click="station.openFulfilled">
+          {{ t('station.showDone') }}
+        </v-btn>
+      </template>
     </header>
 
-    <v-alert v-if="station.loadFailed" class="load-failed mb-4" type="warning" variant="tonal">
+    <v-alert
+      v-if="!isShowingOverview && station.loadFailed"
+      class="load-failed mb-4"
+      type="warning"
+      variant="tonal"
+    >
       {{ t(station.loadFailureKey ?? 'station.loadFailed') }}
     </v-alert>
     <v-alert
-      v-if="station.failureKey !== null"
+      v-if="!isShowingOverview && station.failureKey !== null"
       class="action-failed mb-4"
       type="warning"
       variant="tonal"
@@ -136,11 +110,16 @@ function closeOverview(): void {
       @close="closeOverview"
     />
 
-    <template v-if="station.isShowingFulfilled">
+    <template v-else-if="station.isShowingFulfilled">
       <div class="done-head d-flex align-center ga-3 mb-4">
         <h2 class="done-heading text-h5 flex-grow-1">{{ t('station.doneHeading') }}</h2>
-        <v-btn class="back-to-queue" variant="outlined" size="large" @click="station.closeFulfilled">
-          {{ t('station.backToQueue') }}
+        <v-btn
+          class="back-to-orders"
+          variant="outlined"
+          size="large"
+          @click="station.closeFulfilled"
+        >
+          {{ t('station.backToOrders') }}
         </v-btn>
       </div>
       <v-alert

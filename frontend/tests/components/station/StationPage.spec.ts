@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import StationPage from '../../../src/views/StationPage.vue'
+import { bindLocaleToSession } from '../../../src/localeBinding'
 import { useSessionStore } from '../../../src/stores/session'
 import { testPlugins } from '../../support/plugins'
 
@@ -162,6 +164,27 @@ async function mountPage(): Promise<VueWrapper> {
   return page
 }
 
+const StationPageFollowingTheLanguage = defineComponent({
+  components: { StationPage },
+  setup() {
+    bindLocaleToSession()
+  },
+  template: '<StationPage />',
+})
+
+async function mountPageFollowingTheChosenLanguage(): Promise<VueWrapper> {
+  localStorage.setItem('language', 'de')
+  const session = useSessionStore()
+  session.deviceToken = 'token-here'
+  session.deviceKind = 'station'
+  const page = mount(StationPageFollowingTheLanguage, {
+    global: { plugins: testPlugins() },
+    attachTo: document.body,
+  })
+  await flushPromises()
+  return page
+}
+
 function textsOf(selector: string): string[] {
   return [...document.querySelectorAll(selector)].map((element) => element.textContent?.trim() ?? '')
 }
@@ -184,11 +207,17 @@ describe('the screen at a station', () => {
     expect(page.get('.station-name').text()).toBe('Küche')
   })
 
-  it('counts the orders by delivery mode at the top', async () => {
-    const page = await mountPage()
+  it('writes the page in the language the header picker chooses', async () => {
+    const page = await mountPageFollowingTheChosenLanguage()
 
-    expect(page.get('.stat-together').text()).toBe('Gemeinsam 1')
-    expect(page.get('.stat-as-it-comes').text()).toBe('Einzeln 1')
+    expect(page.get('.orders-heading').text()).toBe('Alle Bestellungen')
+
+    await page.get('.language-switch .v-field').trigger('mousedown')
+    await vi.waitFor(() => expect(document.querySelector('.option-en')).not.toBeNull())
+    ;(document.querySelector('.option-en') as HTMLElement).click()
+    await flushPromises()
+
+    expect(page.get('.orders-heading').text()).toBe('All orders')
   })
 
   it('puts every order in the left column and only the as-it-comes ones in the right', async () => {
@@ -320,7 +349,7 @@ describe('the overview board on the station screen', () => {
       '1 x Pommes',
     ])
 
-    ;(document.querySelector('.station-open-board .close') as HTMLElement).click()
+    ;(document.querySelector('.station-open-board .back-to-orders') as HTMLElement).click()
     await flushPromises()
 
     expect(document.querySelector('.station-open-board')).toBeNull()
@@ -574,7 +603,7 @@ describe('the done view', () => {
 
     expect(page.get('.done-heading').text()).toBe('Erledigte Bestellungen')
     expect(page.findAll('.station-fulfilled')).toHaveLength(1)
-    expect(page.get('.back-to-queue').text()).toBe('Zurück zur Warteschlange')
+    expect(page.get('.back-to-orders').text()).toBe('Zurück zu den Bestellungen')
   })
 
   it('shows every item and ticks the done ones', async () => {
@@ -629,13 +658,30 @@ describe('the done view', () => {
     expect(posts).toEqual([{ url: '/api/station/items/unfulfill', body: { orderItemIds: ['a'] } }])
   })
 
+  it('states the reason when the laptop did not put an item back', async () => {
+    stubTheLaptop({
+      fulfilled: () => ok({ slices: [DONE_SLICE] }),
+      unfulfill: () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
+    })
+    const page = await mountPage()
+    await page.get('.show-done').trigger('click')
+    await flushPromises()
+
+    await page.get('.station-fulfilled .put-back').trigger('click')
+    await flushPromises()
+
+    expect(page.get('.action-failed').text()).toBe(
+      'Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
+    )
+  })
+
   it('goes back to the queue', async () => {
     stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
     await flushPromises()
 
-    await page.get('.back-to-queue').trigger('click')
+    await page.get('.back-to-orders').trigger('click')
     await flushPromises()
 
     expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)

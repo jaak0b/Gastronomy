@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useSessionStore } from '../../stores/session'
+import LanguageSwitch from '../LanguageSwitch.vue'
 
 const { t } = useI18n()
 const session = useSessionStore()
@@ -17,12 +18,11 @@ defineEmits<{ close: [] }>()
           {{ t('settings.person', { name: session.staffMember.name }) }}
         </p>
         <div class="text-subtitle-2 mt-4">{{ t('settings.language') }}</div>
-        <v-btn class="language-de me-2" variant="tonal" @click="session.setLanguage('de')">
-          {{ t('settings.languageGerman') }}
-        </v-btn>
-        <v-btn class="language-en" variant="tonal" @click="session.setLanguage('en')">
-          {{ t('settings.languageEnglish') }}
-        </v-btn>
+        <LanguageSwitch
+          class="mt-2"
+          :language="session.language"
+          @select="session.setLanguage"
+        />
       </v-card-text>
       <v-card-actions>
         <v-btn class="close" variant="text" @click="$emit('close')">{{ t('review.back') }}</v-btn>

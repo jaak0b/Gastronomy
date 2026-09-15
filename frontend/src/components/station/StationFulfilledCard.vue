@@ -9,6 +9,7 @@ import {
   itemLineText,
   itemLines,
 } from '../../core/stationBoard'
+import './stationCard.css'
 
 const props = defineProps<{ slice: StationSlice; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
@@ -39,69 +40,50 @@ const unitSummary = computed(() =>
 </script>
 
 <template>
-  <v-card class="station-fulfilled mb-4" :style="{ borderColor: modeColour }" variant="outlined">
-    <v-card-text class="pa-3">
-      <div class="slice-head d-flex align-baseline ga-2">
-        <span class="table-name text-h5">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
-        <span class="slice-heading text-body-1 text-medium-emphasis">{{ orderReference }}</span>
-        <span class="done-counter text-body-1 ms-auto">{{ doneCounter }}</span>
-      </div>
-      <div class="slice-meta d-flex flex-wrap align-baseline ga-2 mt-1">
-        <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
-          {{ deliveryText }}
-        </span>
-        <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
-      </div>
-      <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
-        {{ t('station.orderNote', { note: slice.note }) }}
-      </p>
-      <v-divider class="my-2" />
-      <div
-        v-for="item in slice.items"
-        :key="item.orderItemId"
-        class="station-item d-flex align-center ga-3"
-        :class="{ fulfilled: isFulfilled(item) }"
-      >
-        <v-icon v-if="isFulfilled(item)" class="item-tick" icon="mdi-check" />
-        <div class="item-text flex-grow-1">
-          <div class="item-name text-body-1">{{ item.itemName }}</div>
-          <div v-if="item.note !== null" class="item-note text-body-2">
-            {{ t('station.note', { note: item.note }) }}
-          </div>
+  <fieldset class="station-fulfilled mb-4 bg-surface" :style="{ borderColor: modeColour }">
+    <legend class="slice-legend d-flex flex-wrap align-baseline ga-2">
+      <span class="table-name text-h5">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
+      <span class="slice-heading text-body-2 text-medium-emphasis">{{ orderReference }}</span>
+      <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
+    </legend>
+    <div class="slice-mode-row d-flex flex-wrap align-baseline ga-2 mb-1">
+      <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
+        {{ deliveryText }}
+      </span>
+      <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
+    </div>
+    <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
+      {{ t('station.orderNote', { note: slice.note }) }}
+    </p>
+    <v-divider class="my-2" />
+    <div
+      v-for="item in slice.items"
+      :key="item.orderItemId"
+      class="station-item d-flex align-center ga-3"
+      :class="{ fulfilled: isFulfilled(item) }"
+    >
+      <v-icon v-if="isFulfilled(item)" class="item-tick" icon="mdi-check" />
+      <div class="item-text flex-grow-1">
+        <div class="item-name text-body-1">{{ item.itemName }}</div>
+        <div v-if="item.note !== null" class="item-note text-body-2">
+          {{ t('station.note', { note: item.note }) }}
         </div>
-        <v-btn
-          v-if="isFulfilled(item)"
-          class="put-back"
-          variant="outlined"
-          size="large"
-          :disabled="isWorking"
-          @click="emit('putBack', item.orderItemId)"
-        >
-          {{ t('station.putBack') }}
-        </v-btn>
       </div>
-    </v-card-text>
-  </v-card>
+      <v-btn
+        v-if="isFulfilled(item)"
+        class="put-back"
+        variant="outlined"
+        size="large"
+        :disabled="isWorking"
+        @click="emit('putBack', item.orderItemId)"
+      >
+        {{ t('station.putBack') }}
+      </v-btn>
+    </div>
+  </fieldset>
 </template>
 
 <style scoped>
-.station-fulfilled {
-  border-width: 3px;
-  border-style: solid;
-}
-
-.slice-head {
-  flex-wrap: wrap;
-}
-
-.slice-head > span {
-  min-width: 0;
-}
-
-.slice-head .table-name {
-  overflow-wrap: anywhere;
-}
-
 .station-item {
   min-height: 3rem;
   padding-block: 0.375rem;

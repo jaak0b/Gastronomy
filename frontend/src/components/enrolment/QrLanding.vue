@@ -43,11 +43,7 @@ onMounted(async () => {
 
 <template>
   <v-container v-if="asksForAName" class="enrolment">
-    <LanguageSwitch
-      :language="session.language"
-      label-key="settings.language"
-      @select="session.setLanguage"
-    />
+    <LanguageSwitch :language="session.language" @select="session.setLanguage" />
     <h1 class="text-h4 mt-4">{{ t('enrol.title') }}</h1>
     <v-alert v-if="draftIsHeld" class="order-held mt-2" type="info" variant="tonal">
       {{ t('enrol.orderHeld') }}

@@ -26,8 +26,8 @@ describe('the overview board at a station', () => {
   it('names the heading and the two mode counts', () => {
     board([])
 
-    expect(document.querySelector('.station-open-board .title')?.textContent?.trim()).toBe(
-      'Offen an dieser Ausgabestelle',
+    expect(document.querySelector('.station-open-board .board-heading')?.textContent?.trim()).toBe(
+      'Offene Artikel',
     )
     expect(textsOf('.station-open-board .stat-together')).toEqual(['Gemeinsam 2'])
     expect(textsOf('.station-open-board .stat-as-it-comes')).toEqual(['Einzeln 3'])
@@ -64,12 +64,12 @@ describe('the overview board at a station', () => {
     expect(textsOf('.station-open-board .unit')).toEqual(['2 x Bier', '1 x Bratwurst'])
   })
 
-  it('closes on the close button', async () => {
+  it('goes back to the orders on the back button', async () => {
     const page = board([])
 
-    expect(textsOf('.station-open-board .close')).toEqual(['Schließen'])
+    expect(textsOf('.station-open-board .back-to-orders')).toEqual(['Zurück zu den Bestellungen'])
 
-    ;(document.querySelector('.station-open-board .close') as HTMLElement).click()
+    ;(document.querySelector('.station-open-board .back-to-orders') as HTMLElement).click()
     await page.vm.$nextTick()
 
     expect(page.emitted('close')).toEqual([[]])

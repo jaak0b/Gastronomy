@@ -17,7 +17,6 @@ export const useStationStore = defineStore('station', () => {
   const asItComes = ref<StationSlice[]>([])
   const fulfilled = ref<StationSlice[]>([])
   const selectedItemIds = ref<string[]>([])
-  const hasLoaded = ref(false)
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
   const failureKey = ref<string | null>(null)
@@ -26,7 +25,6 @@ export const useStationStore = defineStore('station', () => {
   const fulfilledHasLoaded = ref(false)
   const fulfilledLoadFailed = ref(false)
 
-  const hasWork = computed(() => hasLoaded.value && !loadFailed.value && orders.value.length > 0)
   const hasNothingDone = computed(
     () =>
       fulfilledHasLoaded.value && !fulfilledLoadFailed.value && fulfilled.value.length === 0,
@@ -41,7 +39,6 @@ export const useStationStore = defineStore('station', () => {
     orders.value = data.orders
     asItComes.value = data.asItComes
     selectedItemIds.value = retainOpenItemIds(selectedItemIds.value, data.orders)
-    hasLoaded.value = true
   }
 
   async function load(): Promise<void> {
@@ -181,7 +178,6 @@ export const useStationStore = defineStore('station', () => {
     asItComes,
     fulfilled,
     selectedItemIds,
-    hasLoaded,
     loadFailed,
     loadFailureKey,
     failureKey,
@@ -189,7 +185,6 @@ export const useStationStore = defineStore('station', () => {
     isShowingFulfilled,
     fulfilledHasLoaded,
     fulfilledLoadFailed,
-    hasWork,
     hasNothingDone,
     load,
     loadFulfilled,
