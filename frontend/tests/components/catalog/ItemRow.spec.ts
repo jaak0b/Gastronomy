@@ -1,13 +1,17 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ItemRow from '../../../src/components/catalog/ItemRow.vue'
+import { useKeyboardInset } from '../../../src/composables/useKeyboardInset'
 import type { CatalogItem } from '../../../src/core/apiTypes'
 import type { EstimateRange } from '../../../src/core/estimates'
 import type { ItemPosition } from '../../../src/core/itemPositions'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
+
+enableAutoUnmount(afterEach)
 
 function item(isAvailable: boolean): CatalogItem {
   return {
@@ -190,6 +194,124 @@ describe('writing a note', () => {
     expect(
       (document.querySelector('.note-dialog .note-confirm') as HTMLButtonElement).disabled,
     ).toBe(true)
+  })
+})
+
+describe('the note dialog on a phone whose keyboard covers the lower screen', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  it('keeps the dialog above the keyboard', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', theKeyboard(400))
+    const row = mountRow(true, [])
+
+    await row.get('.add-note').trigger('click')
+
+    const overlay = document.querySelector('.v-overlay--active') as HTMLElement
+    expect(overlay.style.height).toBe('calc(100% - 400px)')
+    expect(overlay.style.bottom).toBe('auto')
+  })
+})
+
+function theKeyboard(height: number, scale = 1) {
+  return {
+    height,
+    scale,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }
+}
+
+const InsetProbe = defineComponent({
+  setup() {
+    const inset = useKeyboardInset()
+    return () => h('div', { class: 'inset-probe' }, String(inset.value))
+  },
+})
+
+function mountTwoProbes() {
+  const firstIsThere = ref(true)
+  const secondIsThere = ref(true)
+  mount(
+    defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            firstIsThere.value ? h(InsetProbe) : null,
+            secondIsThere.value ? h(InsetProbe) : null,
+          ])
+      },
+    }),
+    { attachTo: document.body },
+  )
+  return { firstIsThere, secondIsThere }
+}
+
+describe('the keyboard inset every consumer shares', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  it('follows the visual viewport while the keyboard grows and shrinks', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    const keyboard = theKeyboard(400)
+    vi.stubGlobal('visualViewport', keyboard)
+    mount(InsetProbe, { attachTo: document.body })
+    await nextTick()
+
+    expect(document.querySelector('.inset-probe')?.textContent).toBe('400')
+
+    keyboard.height = 300
+    ;(keyboard.addEventListener.mock.calls[0][1] as () => void)()
+    await nextTick()
+
+    expect(document.querySelector('.inset-probe')?.textContent).toBe('500')
+  })
+
+  it('takes no room while the waiter is zoomed in', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', theKeyboard(400, 2))
+    mount(InsetProbe, { attachTo: document.body })
+    await nextTick()
+
+    expect(document.querySelector('.inset-probe')?.textContent).toBe('0')
+  })
+
+  it('takes no room when the browser holds no visual viewport', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', undefined)
+    mount(InsetProbe, { attachTo: document.body })
+    await nextTick()
+
+    expect(document.querySelector('.inset-probe')?.textContent).toBe('0')
+  })
+
+  it('listens once while any consumer is mounted and stops with the last', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    const keyboard = theKeyboard(400)
+    vi.stubGlobal('visualViewport', keyboard)
+    const probes = mountTwoProbes()
+
+    expect(keyboard.addEventListener).toHaveBeenCalledTimes(1)
+    expect(keyboard.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function))
+
+    probes.firstIsThere.value = false
+    await nextTick()
+
+    expect(keyboard.removeEventListener).not.toHaveBeenCalled()
+
+    probes.secondIsThere.value = false
+    await nextTick()
+
+    expect(keyboard.removeEventListener).toHaveBeenCalledTimes(1)
+    expect(keyboard.removeEventListener).toHaveBeenCalledWith(
+      'resize',
+      keyboard.addEventListener.mock.calls[0][1],
+    )
   })
 })
 

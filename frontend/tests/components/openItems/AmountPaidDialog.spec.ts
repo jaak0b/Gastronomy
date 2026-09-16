@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import AmountPaidDialog from '../../../src/components/openItems/AmountPaidDialog.vue'
 import type { AppLanguage } from '../../../src/core/apiTypes'
 import { testPlugins } from '../../support/plugins'
+
+enableAutoUnmount(afterEach)
 
 function mountDialog(language: AppLanguage = 'de', selectedTotalCents = 700) {
   return mount(AmountPaidDialog, {
@@ -161,5 +163,27 @@ describe('the dialog that asks what the table handed over', () => {
 
     expect(dialog.emitted('cancel')).toHaveLength(1)
     expect(dialog.emitted('confirm')).toBeUndefined()
+  })
+})
+
+describe('the dialog on a phone whose keyboard covers the lower screen', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  it('keeps the amount field and the actions above the keyboard', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', {
+      height: 400,
+      scale: 1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+    mountDialog('de')
+    await flushPromises()
+
+    const card = document.querySelector('.amount-paid-dialog .card') as HTMLElement
+    expect(card.style.paddingBottom).toBe('400px')
   })
 })

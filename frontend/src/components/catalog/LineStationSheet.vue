@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
 import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const props = defineProps<{
   item: CatalogItem
@@ -17,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{ choose: [stationId: string, note: string | null]; cancel: [] }>()
 
 const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
 const choices = candidateStations(props.item)
 const typedNote = ref('')
 const noteInput = ref<{ focus: () => void } | null>(null)
@@ -34,7 +36,7 @@ function choose(stationId: string): void {
 </script>
 
 <template>
-  <v-dialog :model-value="true" max-width="480" persistent>
+  <v-dialog :model-value="true" max-width="480" persistent scrollable :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
     <v-card class="line-station-sheet">
       <v-card-title class="station-where-title">{{ t('line.whereTitle', { item: item.name }) }}</v-card-title>
       <v-card-text v-if="withNote">

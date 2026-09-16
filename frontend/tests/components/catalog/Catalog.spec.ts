@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Catalog from '../../../src/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
@@ -8,6 +8,8 @@ import { useOrderStore } from '../../../src/stores/order'
 import type { Catalog as CatalogData, StationEstimate } from '../../../src/core/apiTypes'
 import { currentRoute, navigate } from '../../../src/router'
 import { testPlugins } from '../../support/plugins'
+
+enableAutoUnmount(afterEach)
 
 const CATALOG: CatalogData = {
   categories: [
@@ -444,6 +446,10 @@ describe('the question about which station is to make an item', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   function mountCatalogWithAStationChoice() {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
@@ -556,6 +562,24 @@ describe('the question about which station is to make an item', () => {
     expect(order.draft.lines).toHaveLength(1)
     expect(order.draft.lines[0].note).toBe('ohne Zucker')
     expect(order.draft.lines[0].stationId).toBe('station-kueche')
+  })
+
+  it('lifts the station sheet above the keyboard while its note is typed', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', {
+      height: 400,
+      scale: 1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+    const view = mountCatalogWithAStationChoice()
+
+    await askWhereTheCoffeeIsMade(view)
+
+    const overlay = document.querySelector('.v-overlay--active') as HTMLElement
+    expect(overlay.style.height).toBe('calc(100% - 400px)')
+    expect(overlay.style.bottom).toBe('auto')
+    expect(overlay.classList).toContain('v-dialog--scrollable')
   })
 })
 
@@ -825,5 +849,46 @@ describe('the items screen after the laptop refused an order', () => {
     mountCatalog()
 
     expect(currentRoute.value).toEqual({ name: 'home' })
+  })
+})
+
+describe('the ordering screen on a phone whose keyboard covers the lower screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('visualViewport', {
+      height: 400,
+      scale: 1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('lifts the tray with the table field and the order note above the keyboard', async () => {
+    const view = mountCatalog()
+    await view.vm.$nextTick()
+
+    expect((view.get('.catalog').element as HTMLElement).style.paddingBottom).toBe('400px')
+  })
+
+  it('leaves the tray where it is while the waiter is zoomed in', async () => {
+    vi.stubGlobal('visualViewport', {
+      height: 400,
+      scale: 2,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+    const view = mountCatalog()
+    await view.vm.$nextTick()
+
+    expect((view.get('.catalog').element as HTMLElement).style.paddingBottom).toBe('0px')
   })
 })

@@ -20,6 +20,7 @@ import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../stores/session'
 import { closeTheStepInsideTheScreen, navigate, openAStepInsideTheScreen } from '../router'
+import { useKeyboardInset } from '../composables/useKeyboardInset'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
 import LineStationSheet from '../components/catalog/LineStationSheet.vue'
@@ -27,6 +28,7 @@ import BasketBar from '../components/catalog/BasketBar.vue'
 import TableField from '../components/review/TableField.vue'
 
 const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
 const catalog = useCatalogStore()
 const estimates = useEstimatesStore()
 const openItems = useOpenItemsStore()
@@ -232,7 +234,7 @@ function chooseStation(stationId: string, note: string | null): void {
 </script>
 
 <template>
-  <v-container class="catalog">
+  <v-container class="catalog" :style="{ paddingBottom: `${keyboardInset}px` }">
     <template v-if="openCategory === null">
       <div class="category-grid my-2">
         <v-btn

@@ -12,6 +12,7 @@ globalThis.ResizeObserver = globalThis.ResizeObserver ?? (ResizeObserverStub as 
 if (window.visualViewport === undefined) {
   Object.defineProperty(window, 'visualViewport', {
     writable: true,
+    configurable: true,
     value: {
       width: 1024,
       height: 768,

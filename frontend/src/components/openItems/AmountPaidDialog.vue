@@ -9,6 +9,7 @@ import {
   type SettleNotice,
 } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 import SettleNoticeAlert from './SettleNotice.vue'
 
 const props = defineProps<{
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
 const typedAmount = ref(formatEuroInput(props.selectedTotalCents, props.language))
 const reason = ref('')
 
@@ -62,7 +64,7 @@ function confirm(): void {
 
 <template>
   <v-dialog class="amount-paid-dialog" model-value persistent fullscreen>
-    <v-card class="card d-flex flex-column">
+    <v-card class="card d-flex flex-column" :style="{ paddingBottom: `${keyboardInset}px` }">
       <v-card-title class="title">{{ t('openItems.amountPaidTitle') }}</v-card-title>
       <v-card-text class="body flex-grow-1">
         <p class="selected-total mb-4">

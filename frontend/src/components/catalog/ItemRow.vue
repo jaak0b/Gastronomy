@@ -9,6 +9,7 @@ import { withRangeEstimate } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 import { needsStationChoice } from '../../core/routingPreview'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const props = defineProps<{
   item: CatalogItem
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
 
 const isAsking = ref(false)
 const typedNote = ref('')
@@ -169,7 +171,7 @@ function mostRecentOf(group: PositionGroup): number {
       />
     </div>
 
-    <v-dialog v-model="isAsking" max-width="480">
+    <v-dialog v-model="isAsking" max-width="480" :style="{ height: `calc(100% - ${keyboardInset}px)`, bottom: 'auto' }">
       <v-card class="note-dialog">
         <v-card-title class="title">{{ t('catalog.noteTitle', { name: item.name }) }}</v-card-title>
         <v-card-text>
