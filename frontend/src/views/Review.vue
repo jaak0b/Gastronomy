@@ -182,6 +182,7 @@ function backToItems(): void {
   top: 0;
   z-index: 1;
   background: rgb(var(--v-theme-surface));
+  padding-inline-end: 1rem;
 }
 
 .table-name {
