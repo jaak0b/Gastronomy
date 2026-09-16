@@ -10,7 +10,6 @@ const props = defineProps<{ code: string }>()
 const { t } = useI18n()
 const session = useSessionStore()
 const name = ref('')
-const draftIsHeld = ref(session.heldDraftExists())
 const asksForAName = ref(false)
 
 const canContinue = computed(() => name.value.trim().length > 0)
@@ -45,9 +44,6 @@ onMounted(async () => {
   <v-container v-if="asksForAName" class="enrolment">
     <LanguageSwitch :language="session.language" @select="session.setLanguage" />
     <h1 class="text-h4 mt-4">{{ t('enrol.title') }}</h1>
-    <v-alert v-if="draftIsHeld" class="order-held mt-2" type="info" variant="tonal">
-      {{ t('enrol.orderHeld') }}
-    </v-alert>
     <NameField v-model="name" class="mt-4" />
     <v-btn class="continue mt-4" color="primary" block :disabled="!canContinue" @click="submit">
       {{ t('enrol.continue') }}

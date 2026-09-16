@@ -10,7 +10,6 @@ import type {
   StationIdentity,
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
-import { restoreDraft } from '../core/draftCart'
 import type { DeviceSession } from '../core/landing'
 import type { StartingUpFailure } from '../core/startingUp'
 import { useConnectionStore } from './connection'
@@ -43,10 +42,6 @@ export const useSessionStore = defineStore('session', () => {
     }
     return { state: 'setUp', deviceKind: deviceKind.value }
   })
-
-  function heldDraftExists(): boolean {
-    return restoreDraft().draft.lines.length > 0
-  }
 
   function storeToken(token: string, kind: DeviceKind, id: string): void {
     deviceToken.value = token
@@ -184,7 +179,6 @@ export const useSessionStore = defineStore('session', () => {
     language,
     redeemErrorKey,
     isEnrolled,
-    heldDraftExists,
     redeem,
     loadSession,
     setLanguage,

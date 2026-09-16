@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
 import {
-  clearDraft,
   restoreDraft,
   saveDraft,
   saveSendProgress,
@@ -47,53 +46,6 @@ describe('the language a phone starts in', () => {
     localStorage.setItem('language', 'en')
 
     expect(useSessionStore().language).toBe('en')
-  })
-})
-
-describe('the order a phone was holding when it was set up again', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-  })
-
-  it('is admitted while the order is still there', () => {
-    saveDraft({
-      tableName: 'Tisch 12',
-      note: null,
-      lines: [
-        {
-          catalogItemId: 'item-1',
-          note: null,
-          stationId: null,
-          name: 'Bratwurst',
-        },
-      ],
-      clientOrderId: null,
-    })
-
-    expect(useSessionStore().heldDraftExists()).toBe(true)
-  })
-
-  it('is no longer claimed once the order has been sent and cleared', () => {
-    saveDraft({
-      tableName: 'Tisch 12',
-      note: null,
-      lines: [
-        {
-          catalogItemId: 'item-1',
-          note: null,
-          stationId: null,
-          name: 'Bratwurst',
-        },
-      ],
-      clientOrderId: null,
-    })
-    const session = useSessionStore()
-    expect(session.heldDraftExists()).toBe(true)
-
-    clearDraft()
-
-    expect(session.heldDraftExists()).toBe(false)
   })
 })
 
@@ -227,7 +179,7 @@ describe('a phone the laptop does not know any more', () => {
   it('keeps the order the waiter had started, so it is still there after the phone is set up again', async () => {
     await anOrderRefusedBecauseTheTokenIsUnknown()
 
-    expect(useSessionStore().heldDraftExists()).toBe(true)
+    expect(restoreDraft().draft.lines.length).toBeGreaterThan(0)
   })
 
   it('keeps the identity of that order, so sending it again cannot place it twice', async () => {
