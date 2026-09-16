@@ -322,7 +322,7 @@ describe('building the order on the ordering screen', () => {
 
     expect(order.draft.lines.map((line) => line.note)).toEqual([null, 'ohne Eis'])
     expect(view.findAll('.item-row .count')[0].text()).toBe('1')
-    expect(view.get('.item-row .note-group .group-label').text()).toBe('ohne Eis')
+    expect(view.get('.item-row .note-group .group-note').text()).toBe('Hinweis: ohne Eis')
   })
 
   it('takes the most recently added portion off again', async () => {
@@ -629,8 +629,12 @@ describe('the waiting time on the ordering screen', () => {
     await openCategory(view, 0)
 
     expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
-      'Bratwurst (~10 Min.)',
-      'Kaffee (~10 - 60 Min.)',
+      'Bratwurst',
+      'Kaffee',
+    ])
+    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
+      '~10 Min.',
+      '~10 - 60 Min.',
     ])
   })
 
@@ -645,9 +649,9 @@ describe('the waiting time on the ordering screen', () => {
 
     await openCategory(view, 0)
 
-    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
-      'Bratwurst (~10 Min.)',
-      'Kaffee (~10 - 62 Min.)',
+    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
+      '~10 Min.',
+      '~10 - 62 Min.',
     ])
   })
 
@@ -726,9 +730,9 @@ describe('the waiting time on the ordering screen', () => {
 
     await openCategory(view, 0)
 
-    expect(view.findAll('.item-row .name').map((element) => element.text())).toEqual([
-      'Bratwurst (~10 Min.)',
-      'Kaffee (~10 - 60 Min.)',
+    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
+      '~10 Min.',
+      '~10 - 60 Min.',
     ])
   })
 

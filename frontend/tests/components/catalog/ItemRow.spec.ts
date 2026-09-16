@@ -322,8 +322,14 @@ describe('the portions that carry a note', () => {
     const groups = row.findAll('.note-group')
 
     expect(groups).toHaveLength(1)
-    expect(groups[0].get('.group-label').text()).toBe('ohne Eis')
+    expect(groups[0].get('.group-note').text()).toBe('Hinweis: ohne Eis')
     expect(groups[0].get('.group-count').text()).toBe('1')
+  })
+
+  it('labels the note in English too', () => {
+    const row = mountRowWithEstimate(null, 'en', true, [noted(0, 'no ice')])
+
+    expect(row.get('.group-note').text()).toBe('Note: no ice')
   })
 
   it('counts portions carrying the same note on one line', () => {
@@ -383,7 +389,7 @@ describe('the portions that carry a note', () => {
 
     const label = row.get('.note-group .group-label').text()
     expect(label).toContain('Ausgabestelle: Bar innen')
-    expect(label).toContain('ohne Eis')
+    expect(label).toContain('Hinweis: ohne Eis')
   })
 
   it('adds another portion to a station-only group', async () => {
@@ -447,55 +453,68 @@ function mountRowWithEstimate(
   range: EstimateRange | null,
   locale: 'de' | 'en' = 'de',
   isAvailable = true,
+  positions: ItemPosition[] = [],
 ) {
   const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions: [], language: locale, estimateRange: range },
+    props: { item: item(isAvailable), positions, language: locale, estimateRange: range },
     global: { plugins: [i18n] },
     attachTo: document.body,
   })
 }
 
 describe('the waiting time written on an item row', () => {
-  it('rides in the item name in German, short enough to leave the price its place', () => {
+  it('sits on the facts line under the name, separated from the price by a dot', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 })
 
-    expect(row.get('.name').text()).toBe('Wasser (~6 Min.)')
+    expect(row.get('.name').text()).toBe('Wasser')
+    expect(row.get('.facts').text()).toBe('2,00 € · ~6 Min.')
   })
 
-  it('stays just as short in English', () => {
+  it('keeps the facts line inside the add-one target, so one tap covers the whole block', () => {
+    const row = mountRowWithEstimate({ min: 6, max: 6 })
+
+    expect(row.get('.add').find('.facts').exists()).toBe(true)
+  })
+
+  it('writes just as short in English', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 }, 'en')
 
-    expect(row.get('.name').text()).toBe('Wasser (~6 min)')
+    expect(row.get('.name').text()).toBe('Wasser')
+    expect(row.get('.estimate').text()).toBe('~6 min')
   })
 
   it('says right away when there is nothing to wait for', () => {
     const row = mountRowWithEstimate({ min: 0, max: 0 })
 
-    expect(row.get('.name').text()).toBe('Wasser (~0 Min.)')
+    expect(row.get('.estimate').text()).toBe('~0 Min.')
   })
 
   it('names the span between the quickest and the slowest station', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 })
 
-    expect(row.get('.name').text()).toBe('Wasser (~10 - 62 Min.)')
+    expect(row.get('.estimate').text()).toBe('~10 - 62 Min.')
   })
 
   it('names the same span in English', () => {
     const row = mountRowWithEstimate({ min: 10, max: 62 }, 'en')
 
-    expect(row.get('.name').text()).toBe('Wasser (~10 - 62 min)')
+    expect(row.get('.estimate').text()).toBe('~10 - 62 min')
   })
 
-  it('names the item alone when it carries no time of its own', () => {
+  it('writes the price alone when the item carries no time of its own', () => {
     const row = mountRowWithEstimate(null)
 
     expect(row.get('.name').text()).toBe('Wasser')
+    expect(row.get('.facts').text()).toBe('2,00 €')
+    expect(row.find('.estimate').exists()).toBe(false)
   })
 
-  it('names a sold out item alone, because nobody can order it and wait for it', () => {
+  it('writes no time on a sold out item, because nobody can order it and wait for it', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 }, 'de', false)
 
     expect(row.get('.name').text()).toBe('Wasser')
+    expect(row.find('.estimate').exists()).toBe(false)
+    expect(row.get('.facts').text()).toBe('2,00 € · Ausverkauft')
   })
 })

@@ -41,13 +41,3 @@ export function withEstimate(
   const estimate = estimateText(minutes, t, language)
   return estimate === null ? line : t('estimates.withEstimate', { line, estimate })
 }
-
-export function withRangeEstimate(
-  line: string,
-  range: EstimateRange | null,
-  t: EstimateWording,
-  language: AppLanguage,
-): string {
-  const estimate = estimateRangeText(range, t, language)
-  return estimate === null ? line : t('estimates.withEstimate', { line, estimate })
-}

@@ -5,7 +5,7 @@ import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
 import { itemState } from '../../core/catalogItemState'
 import { assertNever } from '../../core/assertNever'
 import type { EstimateRange } from '../../core/estimates'
-import { withRangeEstimate } from '../../core/estimateWording'
+import { estimateRangeText } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
 import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 import { needsStationChoice } from '../../core/routingPreview'
@@ -48,13 +48,8 @@ const isSoldOut = computed(() => {
 
 const price = computed(() => formatPrice(props.item.priceCents, props.language))
 
-const nameWithEstimate = computed(() =>
-  withRangeEstimate(
-    props.item.name,
-    isSoldOut.value ? null : props.estimateRange,
-    t,
-    props.language,
-  ),
+const estimate = computed(() =>
+  isSoldOut.value ? null : estimateRangeText(props.estimateRange, t, props.language),
 )
 
 const groups = computed(() => groupPositions(props.positions))
@@ -115,15 +110,19 @@ function mostRecentOf(group: PositionGroup): number {
         @click="emit('removeOne', mostRecentOf(plainGroup))"
       />
       <span v-if="plainGroup !== null" class="count text-h6">{{ plainGroup.indexes.length }}</span>
-      <v-btn
-        class="add flex-grow-1"
-        variant="text"
-        :disabled="isSoldOut"
-        @click="emit('add')"
-      >
-        <span class="name text-body-1">{{ nameWithEstimate }}</span>
-        <span v-if="isSoldOut" class="sold-out text-caption">{{ t('catalog.soldOut') }}</span>
-        <span class="price text-body-1">{{ price }}</span>
+      <v-btn class="add flex-grow-1" variant="text" :disabled="isSoldOut" @click="emit('add')">
+        <span class="name text-body-1">{{ item.name }}</span>
+        <span class="facts text-body-2 text-medium-emphasis">
+          <span class="price">{{ price }}</span>
+          <template v-if="estimate !== null">
+            <span class="fact-separator">{{ t('catalog.factSeparator') }}</span>
+            <span class="estimate">{{ estimate }}</span>
+          </template>
+          <template v-if="isSoldOut">
+            <span class="fact-separator">{{ t('catalog.factSeparator') }}</span>
+            <span class="sold-out">{{ t('catalog.soldOut') }}</span>
+          </template>
+        </span>
       </v-btn>
       <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
         {{ t('catalog.addNote') }}
@@ -133,7 +132,7 @@ function mostRecentOf(group: PositionGroup): number {
     <div
       v-for="group in noteGroups"
       :key="group.indexes[0]"
-      class="note-group d-flex align-center ga-2 ps-6 pe-2 pb-2"
+      class="note-group d-flex align-center ga-2 pe-2 pb-2"
     >
       <v-btn
         class="group-remove"
@@ -157,7 +156,7 @@ function mostRecentOf(group: PositionGroup): number {
           class="group-note text-medium-emphasis"
           @click="correctTheNoteOf(group)"
         >
-          {{ group.note }}
+          {{ t('catalog.noteText', { note: group.note }) }}
         </button>
       </div>
       <v-btn
@@ -207,6 +206,8 @@ function mostRecentOf(group: PositionGroup): number {
 
 .item-line {
   min-width: 0;
+  min-height: 64px;
+  padding-block: 4px;
 }
 
 .remove-one,
@@ -217,25 +218,36 @@ function mostRecentOf(group: PositionGroup): number {
   border-radius: 8px;
 }
 
+.add-note {
+  padding-inline: 8px;
+}
+
 .add {
-  flex: 1 1 auto;
   min-width: 0;
   min-height: 64px;
   height: auto;
-  padding-block: 0.5rem;
+  padding-inline: 0;
 }
 
 .add :deep(.v-btn__content) {
   display: flex;
+  flex-direction: column;
   width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  height: 100%;
+  justify-content: center;
+  align-items: stretch;
   white-space: normal;
 }
 
+.facts {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding-inline: 0;
+  padding-bottom: 0;
+}
+
 .name {
-  flex: 1 1 auto;
   min-width: 0;
   text-align: start;
   overflow-wrap: anywhere;
@@ -251,6 +263,10 @@ function mostRecentOf(group: PositionGroup): number {
   min-width: 2ch;
   text-align: center;
   align-self: center;
+}
+
+.note-group {
+  padding-inline-start: 64px;
 }
 
 .group-station,

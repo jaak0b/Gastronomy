@@ -34,6 +34,7 @@
   },
   "catalog": {
     "addNote": "Hinweis",
+    "noteText": "Hinweis: {note}",
     "noteTitle": "Hinweis für {name}",
     "noteAdd": "Hinzufügen",
     "noteSave": "Übernehmen",
@@ -44,6 +45,7 @@
     "categoryWithCount": "{count} x {name}",
     "backToCategories": "Zurück zu den Kategorien",
     "soldOut": "Ausverkauft",
+    "factSeparator": " · ",
     "tableName": "Tisch",
     "tablePlaceholder": "Zum Beispiel: 12",
     "orderNote": "Bestellungshinweis",

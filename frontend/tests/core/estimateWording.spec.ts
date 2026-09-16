@@ -3,7 +3,6 @@ import {
   estimateRangeText,
   estimateText,
   withEstimate,
-  withRangeEstimate,
 } from '../../src/core/estimateWording'
 
 function wording(key: string, values: Record<string, string | number>): string {
@@ -67,21 +66,5 @@ describe('a line with the waiting time behind it', () => {
 
   it('leaves the line as it is when there is no time to promise', () => {
     expect(withEstimate('1 x Bratwurst', null, wording, 'de')).toBe('1 x Bratwurst')
-  })
-
-  it('writes one number behind the line when both stations agree', () => {
-    expect(withRangeEstimate('1 x Bratwurst', { min: 20, max: 20 }, wording, 'de')).toBe(
-      '1 x Bratwurst (~20 Min.)',
-    )
-  })
-
-  it('writes the span behind the line when the stations differ', () => {
-    expect(withRangeEstimate('1 x Bratwurst', { min: 10, max: 62 }, wording, 'de')).toBe(
-      '1 x Bratwurst (~10 - 62 Min.)',
-    )
-  })
-
-  it('leaves the line as it is when there is no range to promise', () => {
-    expect(withRangeEstimate('1 x Bratwurst', null, wording, 'de')).toBe('1 x Bratwurst')
   })
 })
