@@ -99,49 +99,61 @@ function commitThePreparationTime(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <v-card class="item-form mt-4">
+  <div class="item-form mt-4">
     <v-form @submit.prevent="save">
       <v-card-text>
-        <v-text-field
-          v-model="name"
-          class="item-name-field mb-4"
-          maxlength="200"
-          :label="t('admin.items.title')"
-        />
-        <div class="category-line d-flex align-center ga-2 mb-4">
-          <v-select
-            v-model="categoryId"
-            class="category-field flex-grow-1"
-            :label="t('admin.items.category')"
-            :items="offeredCategories"
-            item-title="name"
-            item-value="categoryId"
-            :no-data-text="t('admin.categories.noneYet')"
-            :error="categoryIsMissing"
-            :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
-          />
-          <v-btn class="new-category" variant="text" @click="startCreatingCategory">
-            {{ t('admin.categories.new') }}
-          </v-btn>
-        </div>
-        <v-number-input
-          v-model="productionMinutes"
-          class="production-minutes-field mb-2"
-          :label="t('admin.items.productionMinutes')"
-          :min="0"
-          :max="LONGEST_PRODUCTION_MINUTES"
-          :precision="1"
-          :min-fraction-digits="0"
-          :decimal-separator="decimalSeparator"
-          control-variant="hidden"
-          @keydown.enter.prevent="commitThePreparationTime"
-        />
-        <v-checkbox
-          v-model="isQueueIndependent"
-          class="queue-independent-checkbox"
-          :label="t('admin.items.prepareIndependently')"
-        />
-        <v-alert v-if="errorText !== null" class="error" type="error" variant="tonal">
+        <v-row align="center">
+          <v-col cols="12" md="8">
+            <v-text-field
+              v-model="name"
+              class="item-name-field"
+              maxlength="200"
+              :label="t('admin.items.title')"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <div class="category-line d-flex align-center ga-2">
+              <v-select
+                v-model="categoryId"
+                class="category-field flex-grow-1"
+                :label="t('admin.items.category')"
+                :items="offeredCategories"
+                item-title="name"
+                item-value="categoryId"
+                :no-data-text="t('admin.categories.noneYet')"
+                :error="categoryIsMissing"
+                :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
+              />
+              <v-btn class="new-category" variant="text" @click="startCreatingCategory">
+                {{ t('admin.categories.new') }}
+              </v-btn>
+            </div>
+          </v-col>
+        </v-row>
+        <v-row align="center">
+          <v-col cols="12" md="4">
+            <v-number-input
+              v-model="productionMinutes"
+              class="production-minutes-field"
+              :label="t('admin.items.productionMinutes')"
+              :min="0"
+              :max="LONGEST_PRODUCTION_MINUTES"
+              :precision="1"
+              :min-fraction-digits="0"
+              :decimal-separator="decimalSeparator"
+              control-variant="hidden"
+              @keydown.enter.prevent="commitThePreparationTime"
+            />
+          </v-col>
+          <v-col cols="12" md="8">
+            <v-checkbox
+              v-model="isQueueIndependent"
+              class="queue-independent-checkbox"
+              :label="t('admin.items.prepareIndependently')"
+            />
+          </v-col>
+        </v-row>
+        <v-alert v-if="errorText !== null" class="error mt-2" type="error" variant="tonal">
           {{ errorText }}
         </v-alert>
       </v-card-text>
@@ -166,5 +178,5 @@ function commitThePreparationTime(event: KeyboardEvent): void {
       @save="createCategory"
       @cancel="stopCreatingCategory"
     />
-  </v-card>
+  </div>
 </template>
