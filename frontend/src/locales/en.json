@@ -74,7 +74,6 @@
     "asItComes": "Individual delivery"
   },
   "review": {
-    "title": "Check the order",
     "line": "{count} x {item}",
     "tableIs": "Table: {name}",
     "goesTo": "Goes to {name}",

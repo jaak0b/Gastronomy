@@ -193,12 +193,21 @@ describe('sending the order from the review screen', () => {
     expect(review.find('.send-failure').exists()).toBe(true)
   })
 
-  it('names the table under the heading rather than in a box of its own', () => {
+  it('keeps the table and the total together in the compact heading', () => {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    expect(review.get('.table-name').text()).toBe('Tisch: Tisch 3')
-    expect(review.find('.table-shown').exists()).toBe(false)
+    expect(review.get('h1.table-name').text()).toBe('Tisch: Tisch 3')
+    expect(review.get('.order-total').text()).toContain('2.00')
+  })
+
+  it('takes the waiter back to the items from the back button beside the table', async () => {
+    prepareOrder()
+    const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    await review.get('.back').trigger('click')
+
+    expect(currentRoute.value).toEqual({ name: 'home' })
   })
 
   it('leaves the items open when the table wants to pay later', async () => {

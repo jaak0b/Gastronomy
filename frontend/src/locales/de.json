@@ -74,7 +74,6 @@
     "asItComes": "Einzellieferung"
   },
   "review": {
-    "title": "Bestellung prüfen",
     "line": "{count} x {item}",
     "tableIs": "Tisch: {name}",
     "goesTo": "Geht an {name}",

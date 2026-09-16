@@ -76,11 +76,19 @@ function backToItems(): void {
 
 <template>
   <v-container class="review">
-    <h1 class="text-h5">{{ t('review.title') }}</h1>
-    <div class="order-heading d-flex align-baseline mb-4">
-      <p class="table-name text-subtitle-1 text-medium-emphasis">
+    <div class="review-heading d-flex align-center mb-2">
+      <v-btn
+        class="back"
+        icon="mdi-arrow-left"
+        variant="text"
+        size="large"
+        :aria-label="t('review.back')"
+        :disabled="order.changesAreRefused"
+        @click="backToItems"
+      />
+      <h1 class="table-name text-subtitle-1 text-medium-emphasis">
         {{ t('review.tableIs', { name: order.draft.tableName }) }}
-      </p>
+      </h1>
       <span class="order-total text-h5">{{ total }}</span>
     </div>
     <v-alert v-if="estimates.loadFailed" class="estimates-failed mb-2" type="info" variant="tonal">
@@ -146,16 +154,6 @@ function backToItems(): void {
             {{ order.isSending ? t('review.sending') : t('review.send') }}
           </v-btn>
         </template>
-        <v-divider class="mt-5" />
-        <v-btn
-          class="back mt-4"
-          variant="outlined"
-          block
-          :disabled="order.changesAreRefused"
-          @click="backToItems"
-        >
-          {{ t('review.back') }}
-        </v-btn>
       </div>
     </DockedStrip>
     <ConfirmSendDialog
@@ -179,8 +177,11 @@ function backToItems(): void {
 </template>
 
 <style scoped>
-.order-heading {
-  gap: 1rem;
+.review-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(var(--v-theme-surface));
 }
 
 .table-name {

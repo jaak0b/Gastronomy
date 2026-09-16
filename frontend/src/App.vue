@@ -66,6 +66,8 @@ const isAWaiterScreen = computed(
   () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
 )
 
+const showsTheAppBar = computed(() => isAWaiterScreen.value && screen.value !== 'review')
+
 let areTheWaiterListenersInPlace = false
 
 async function followTheCatalog(): Promise<void> {
@@ -115,7 +117,7 @@ onMounted(async () => {
 
 <template>
   <v-app>
-    <AppHeader v-if="isAWaiterScreen" />
+    <AppHeader v-if="showsTheAppBar" />
     <v-main>
     <AppNotices v-if="isAWaiterScreen" />
     <DoorGate v-if="screen === 'doorGate'" />

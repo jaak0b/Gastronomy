@@ -70,10 +70,14 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
 
 <template>
   <div class="line-list">
+    <div v-if="orderNote !== null" class="order-note mb-3">
+      <span class="label text-body-2 text-medium-emphasis">{{ t('catalog.orderNote') }}</span>
+      <div class="text-body-1">{{ orderNote }}</div>
+    </div>
     <v-card
       v-for="part in parts"
       :key="part.stationId ?? part.stationName"
-      class="station-part mb-4"
+      class="station-part mb-3"
       variant="outlined"
     >
       <v-card-title v-if="part.stationId !== null" class="station-name text-subtitle-1">
@@ -83,7 +87,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       <div
         v-for="(entry, position) in part.entries"
         :key="position"
-        class="line px-4 py-3"
+        class="line px-4 py-2"
         :class="{ 'is-unavailable': lineCannotBeOrdered(entry.line) }"
       >
         <fieldset class="line-body">
@@ -120,13 +124,12 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       </div>
       <template v-if="part.stationId !== null">
         <v-divider />
-        <div class="delivery-choice px-4 py-3">
+        <div class="delivery-choice px-4 py-2">
           <v-btn-toggle
             class="delivery-modes"
             mandatory
             divided
             border
-            direction="vertical"
             :model-value="part.deliveryMode"
             @update:model-value="(mode: DeliveryMode) => choose(part.stationId as string, mode)"
           >
@@ -149,13 +152,6 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
           </v-btn-toggle>
         </div>
       </template>
-      <template v-if="orderNote !== null">
-        <v-divider />
-        <div class="order-note px-4 py-3">
-          <span class="label text-body-2 text-medium-emphasis">{{ t('catalog.orderNote') }}</span>
-          <div class="text-body-1">{{ orderNote }}</div>
-        </div>
-      </template>
     </v-card>
   </div>
 </template>
@@ -163,6 +159,10 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
 <style scoped>
 .line + .line {
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.station-name {
+  padding-block: 0.5rem;
 }
 
 .line-body {

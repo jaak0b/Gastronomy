@@ -126,7 +126,7 @@ describe('the part of the order each station will receive', () => {
     expect(list.findAll('.line')[1].get('.line-note').text()).toBe('mit Zitrone')
   })
 
-  it('repeats the note for the kitchen on every station card', () => {
+  it('writes the order note once, above the station cards', () => {
     const list = mountList(
       [
         line(),
@@ -139,13 +139,17 @@ describe('the part of the order each station will receive', () => {
       { orderNote: 'Bitte alles zusammen bringen.' },
     )
 
-    const notes = list.findAll('.station-part .order-note')
+    const notes = list.findAll('.order-note')
 
-    expect(notes).toHaveLength(2)
+    expect(notes).toHaveLength(1)
     expect(notes[0].text()).toContain('Bitte alles zusammen bringen.')
+    expect(
+      notes[0].element.compareDocumentPosition(list.get('.station-part').element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
-  it('leaves the note off the cards when nobody wrote one', () => {
+  it('leaves the note off the screen when nobody wrote one', () => {
     const list = mountList([line()])
 
     expect(list.find('.order-note').exists()).toBe(false)

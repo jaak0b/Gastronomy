@@ -58,3 +58,43 @@ describe('where a notice sits on the screen', () => {
     expect(notice.closest('.v-main')).not.toBeNull()
   })
 })
+
+describe('where the app bar stands', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    sessionStorage.setItem('theDoorAnchor', 'yes')
+    document.body.innerHTML = ''
+    stubTheLaptop()
+  })
+
+  async function mountAppAt(path: string) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    navigate(path)
+    const app = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
+    await flushPromises()
+    return app
+  }
+
+  it('keeps the bar over the catalogue', async () => {
+    const app = await mountAppAt('/')
+
+    expect(app.find('.app-header').exists()).toBe(true)
+  })
+
+  it('keeps the bar over the open items', async () => {
+    const app = await mountAppAt('/open-items')
+
+    expect(app.find('.app-header').exists()).toBe(true)
+  })
+
+  it('leaves the bar off the review, and still shows the notices there', async () => {
+    const app = await mountAppAt('/review')
+    const connection = useConnectionStore()
+    connection.state = 'offline'
+    await app.vm.$nextTick()
+
+    expect(app.find('.app-header').exists()).toBe(false)
+    expect(app.get('.connection').exists()).toBe(true)
+  })
+})
