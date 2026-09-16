@@ -216,6 +216,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
 .delivery-modes .v-btn :deep(.v-btn__content) {
   white-space: normal;
   line-height: 1.35;
+  text-align: center;
 }
 
 .delivery-modes .v-btn.delivery-together.v-btn--active {
