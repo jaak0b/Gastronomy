@@ -143,8 +143,8 @@
     "overview": {
       "title": "Overview",
       "ready": "Everything is set up. You can now set up the phones and the tablets.",
-      "missingStation": "Add at least one station to this festival, for example Kitchen and Bar.",
-      "missingCategory": "Create at least one category, for example Food and Drinks.",
+      "missingStation": "Add a station to this festival, for example Kitchen and Bar.",
+      "missingCategory": "Create a category, for example Food and Drinks.",
       "missingItems": "Add items to this festival and fill in their prices.",
       "itemsWithoutStation": "Give {count} item a station. Without one it cannot be ordered. | Give {count} items a station. Without one they cannot be ordered.",
       "stationWithoutTablet": "Set the tablet up for {name}. Without a tablet this station cannot see its orders.",
@@ -266,7 +266,8 @@
       "stationCount": "{count} station | {count} stations",
       "menuItemCount": "{count} item | {count} items",
       "orderCount": "{count} order | {count} orders",
-      "edit": "Edit the festival"
+      "edit": "Edit the festival",
+      "back": "Back"
     },
     "festival": {
       "addStation": "Add the station",

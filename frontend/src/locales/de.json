@@ -143,8 +143,8 @@
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
-      "missingStation": "Fügen Sie diesem Fest mindestens eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
-      "missingCategory": "Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.",
+      "missingStation": "Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.",
+      "missingCategory": "Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.",
       "missingItems": "Fügen Sie diesem Fest Artikel hinzu und tragen Sie die Preise ein.",
       "itemsWithoutStation": "Ordnen Sie {count} Artikel einer Ausgabestelle zu. Ohne Ausgabestelle kann er nicht bestellt werden. | Ordnen Sie {count} Artikeln eine Ausgabestelle zu. Ohne Ausgabestelle können sie nicht bestellt werden.",
       "stationWithoutTablet": "Richten Sie das Tablet für {name} ein. Ohne Tablet sieht diese Ausgabestelle ihre Bestellungen nicht.",
@@ -266,7 +266,8 @@
       "stationCount": "{count} Ausgabestelle | {count} Ausgabestellen",
       "menuItemCount": "{count} Artikel | {count} Artikel",
       "orderCount": "{count} Bestellung | {count} Bestellungen",
-      "edit": "Fest bearbeiten"
+      "edit": "Fest bearbeiten",
+      "back": "Zurück"
     },
     "festival": {
       "addStation": "Ausgabestelle hinzufügen",

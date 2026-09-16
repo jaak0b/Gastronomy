@@ -215,6 +215,20 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('leaving the festival page', () => {
+  it('offers the way back to the festivals', async () => {
+    stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.festival-name').exists()).toBe(true))
+    expect(page.get('.back-to-festivals').text()).toBe('Zurück')
+
+    await page.get('.back-to-festivals').trigger('click')
+
+    expect(window.location.pathname).toBe('/admin/festivals')
+  })
+})
+
 describe('the name and the dates at the top of the page', () => {
   it('carry what the laptop knows about this festival', async () => {
     stubLaptop()

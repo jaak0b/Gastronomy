@@ -142,6 +142,14 @@ onUnmounted(() => {
 
 <template>
   <v-container class="admin-festival">
+    <v-btn
+      class="back-to-festivals mb-2"
+      variant="text"
+      prepend-icon="mdi-arrow-left"
+      @click="navigate('/admin/festivals')"
+    >
+      {{ t('admin.festivals.back') }}
+    </v-btn>
     <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
       {{ t('admin.loadFailed') }}
     </v-alert>

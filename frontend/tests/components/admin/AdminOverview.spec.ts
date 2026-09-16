@@ -124,7 +124,7 @@ describe('the overview of the festival that is running', () => {
     await flushPromises()
 
     expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
-      'Fügen Sie diesem Fest mindestens eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.',
+      'Fügen Sie diesem Fest eine Ausgabestelle hinzu, zum Beispiel Küche und Theke.',
     )
   })
 
@@ -179,7 +179,7 @@ describe('the overview of the festival that is running', () => {
     await flushPromises()
 
     expect(overview.findAll('.readiness-row').map((row) => row.text())).toContain(
-      'Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.',
+      'Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.',
     )
   })
 
@@ -200,7 +200,7 @@ describe('the overview of the festival that is running', () => {
     await flushPromises()
 
     expect(overview.findAll('.readiness-row').map((row) => row.text())).not.toContain(
-      'Legen Sie mindestens eine Kategorie an, zum Beispiel Speisen und Getränke.',
+      'Legen Sie eine Kategorie an, zum Beispiel Speisen und Getränke.',
     )
   })
 
