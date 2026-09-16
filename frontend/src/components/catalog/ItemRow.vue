@@ -263,6 +263,7 @@ function mostRecentOf(group: PositionGroup): number {
   min-width: 2ch;
   text-align: center;
   align-self: center;
+  margin-inline-end: 0.5rem;
 }
 
 .note-group {
