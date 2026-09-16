@@ -175,9 +175,9 @@ describe('the list of festivals', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.new-festival').exists()).toBe(true))
     await list.get('.new-festival').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.festival-form')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
 
-    const form = document.querySelector('.festival-form') as HTMLElement
+    const form = document.querySelector('.form-dialog') as HTMLElement
     const fill = (selector: string, value: string): void => {
       const field = form.querySelector(selector) as HTMLInputElement
       field.value = value
@@ -187,9 +187,9 @@ describe('the list of festivals', () => {
     fill('.festival-start-field input', '2026-10-03T12:00')
     fill('.festival-end-field input', '2026-10-04T15:00')
     await vi.waitFor(() =>
-      expect((form.querySelector('.confirm') as HTMLButtonElement).disabled).toBe(false),
+      expect((form.querySelector('.form-save') as HTMLButtonElement).disabled).toBe(false),
     )
-    ;(form.querySelector('.confirm') as HTMLElement).click()
+    ;(form.querySelector('.form-save') as HTMLElement).click()
 
     await vi.waitFor(() => {
       const sent = calls.find((call) => call.method === 'POST')
@@ -208,10 +208,52 @@ describe('the list of festivals', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.copy').exists()).toBe(true))
     await list.get('.copy').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.festival-form')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
 
-    const form = document.querySelector('.festival-form') as HTMLElement
+    const form = document.querySelector('.form-dialog') as HTMLElement
     expect((form.querySelector('.festival-name-field input') as HTMLInputElement).value).toBe('')
     expect(calls.some((call) => call.method === 'POST')).toBe(false)
+  })
+
+  it('shows a refusal inside the dialog, not behind it as well', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if ((init?.method ?? 'GET') === 'POST') {
+          return new Response(
+            JSON.stringify({
+              code: 'ValidationFailed',
+              messageKey: 'admin.actionFailed',
+              parameters: {},
+              details: null,
+            }),
+            { status: 400 },
+          )
+        }
+        return new Response(JSON.stringify({ festivals: [] }), { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.new-festival').exists()).toBe(true))
+    await list.get('.new-festival').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+
+    const form = document.querySelector('.form-dialog') as HTMLElement
+    const fill = (selector: string, value: string): void => {
+      const field = form.querySelector(selector) as HTMLInputElement
+      field.value = value
+      field.dispatchEvent(new Event('input'))
+    }
+    fill('.festival-name-field input', 'Herbstfest')
+    fill('.festival-start-field input', '2026-10-03T12:00')
+    fill('.festival-end-field input', '2026-10-04T15:00')
+    await vi.waitFor(() =>
+      expect((form.querySelector('.form-save') as HTMLButtonElement).disabled).toBe(false),
+    )
+    ;(form.querySelector('.form-save') as HTMLElement).click()
+
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog .refusal')).not.toBeNull())
+    expect(list.find('.refusal').exists()).toBe(false)
   })
 })

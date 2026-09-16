@@ -7,6 +7,7 @@ import { assertNever } from '../../../core/assertNever'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import { useAdminItemsStore, type AdminItem } from '../../../stores/admin/items'
 import type { AdminStation } from '../../../stores/admin/stations'
+import FormDialog from '../FormDialog.vue'
 import { useRefusalText } from '../refusalText'
 import StationSelect from './StationSelect.vue'
 
@@ -72,44 +73,33 @@ async function place(): Promise<void> {
 </script>
 
 <template>
-  <v-dialog :model-value="true" max-width="560" persistent scrollable>
-    <v-card class="placement-dialog" role="dialog" aria-modal="true">
-      <v-card-title class="placement-title">
-        {{ t('admin.festival.addItem') }}: {{ item.name }}
-      </v-card-title>
-      <v-card-text>
-        <v-text-field
-          class="price-field"
-          density="compact"
-          inputmode="decimal"
-          hide-details="auto"
-          :model-value="priceText"
-          :label="t('admin.items.price')"
-          :error="priceRefused"
-          :error-messages="priceRefused ? [t('admin.items.priceInvalid')] : []"
-          @update:model-value="(typed: string) => typePrice(typed)"
-        />
-        <StationSelect
-          class="placement-stations"
-          :stations="stations"
-          :selected-station-ids="selectedStationIds"
-          :error-text="stationErrorText"
-          @select="chooseStations"
-        />
-        <v-alert v-if="refusalText !== null" class="refusal mt-3" type="warning" variant="tonal">
-          {{ refusalText }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn class="cancel" variant="text" :disabled="isSending" @click="emit('cancel')">
-          {{ t('admin.cancel') }}
-        </v-btn>
-        <v-btn class="place-item" color="primary" :disabled="isSending" @click="place">
-          {{ t('admin.festival.addItem') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <FormDialog
+    :title="`${t('admin.festival.addItem')}: ${item.name}`"
+    :error-text="refusalText"
+    :save-label="t('admin.festival.addItem')"
+    :busy="isSending"
+    @save="place"
+    @cancel="emit('cancel')"
+  >
+    <v-text-field
+      class="price-field"
+      density="compact"
+      inputmode="decimal"
+      hide-details="auto"
+      :model-value="priceText"
+      :label="t('admin.items.price')"
+      :error="priceRefused"
+      :error-messages="priceRefused ? [t('admin.items.priceInvalid')] : []"
+      @update:model-value="(typed: string) => typePrice(typed)"
+    />
+    <StationSelect
+      class="placement-stations"
+      :stations="stations"
+      :selected-station-ids="selectedStationIds"
+      :error-text="stationErrorText"
+      @select="chooseStations"
+    />
+  </FormDialog>
 </template>
 
 <style scoped>

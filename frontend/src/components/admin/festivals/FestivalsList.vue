@@ -12,7 +12,7 @@ import {
 } from '../../../stores/admin/festivals'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useRefusalText } from '../refusalText'
-import FestivalForm from './FestivalForm.vue'
+import FestivalDialog from './FestivalDialog.vue'
 
 const { t, locale } = useI18n()
 const festivals = useAdminFestivalsStore()
@@ -144,7 +144,12 @@ onUnmounted(() => {
       />
     </div>
 
-    <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
+    <v-alert
+      v-if="refusalText !== null && !isCreating && copiedFestival === null"
+      class="refusal mb-4"
+      type="warning"
+      variant="tonal"
+    >
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="festivals.loadFailed" class="error mb-4" type="error" variant="tonal">
@@ -225,7 +230,7 @@ onUnmounted(() => {
       {{ t('admin.festivals.new') }}
     </v-btn>
 
-    <FestivalForm
+    <FestivalDialog
       v-if="isCreating"
       :festival="null"
       :title="t('admin.festivals.new')"
@@ -234,7 +239,7 @@ onUnmounted(() => {
       @save="create"
       @cancel="closeTheForms"
     />
-    <FestivalForm
+    <FestivalDialog
       v-if="copiedFestival !== null"
       :key="copiedFestival.festivalId"
       :festival="null"

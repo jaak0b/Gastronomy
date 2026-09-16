@@ -154,6 +154,7 @@
     "stations": {
       "title": "Stations",
       "new": "New station",
+      "edit": "Edit the station",
       "noTablet": "No tablet set up",
       "setUpDevice": "Set up the tablet",
       "deactivate": "Switch this station off",
@@ -165,6 +166,7 @@
       "title": "Items",
       "soldOut": "Sold out",
       "new": "New item",
+      "edit": "Edit the item",
       "category": "Category",
       "price": "Price in euros",
       "priceInvalid": "Enter the price in euros, for example 3.50.",
@@ -177,6 +179,7 @@
     "staff": {
       "title": "Waiters",
       "new": "New waiter",
+      "name": "Name",
       "nameMissing": "Give the waiter a name before you save.",
       "noPhone": "No phone set up",
       "newCode": "Set the phone up again",

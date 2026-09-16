@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
-import ItemForm from '../../../src/components/admin/items/ItemForm.vue'
-import NewItemDialog from '../../../src/components/admin/items/NewItemDialog.vue'
+import ItemDialog from '../../../src/components/admin/items/ItemDialog.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
 import FestivalItems from '../../../src/components/admin/festivals/FestivalItems.vue'
 import { useAdminStationsStore } from '../../../src/stores/admin/stations'
@@ -423,11 +422,11 @@ describe('adding a category from the item list', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.new-category').exists()).toBe(true))
 
-    expect(document.querySelector('.category-dialog')).toBeNull()
+    expect(document.querySelector('.form-dialog')).toBeNull()
 
     await list.get('.new-category').trigger('click')
 
-    await vi.waitFor(() => expect(document.querySelector('.category-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
   })
 
   it('sends the name and the colour that were entered', async () => {
@@ -459,7 +458,7 @@ describe('adding a category from the item list', () => {
       .findComponent(CategoryDialog)
       .vm.$emit('save', { name: 'Nachtisch', colourHex: '#6D4C41' })
 
-    await vi.waitFor(() => expect(document.querySelector('.category-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
   })
 
   it('keeps the dialog open and says why when the laptop refuses the name', async () => {
@@ -574,11 +573,11 @@ describe('adding an item', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.new-item').exists()).toBe(true))
 
-    expect(document.querySelector('.new-item-dialog')).toBeNull()
+    expect(document.querySelector('.form-dialog')).toBeNull()
 
     await list.get('.new-item').trigger('click')
 
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
   })
 
   it('drops the refusal to switch a category off once the admin writes a new item', async () => {
@@ -601,9 +600,9 @@ describe('adding an item', () => {
     await vi.waitFor(() => expect(list.find('.admin-items .refusal').exists()).toBe(true))
 
     await list.get('.new-item').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
-    await list.findComponent(NewItemDialog).vm.$emit('cancel')
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).not.toBeNull())
+    await list.findComponent(ItemDialog).vm.$emit('cancel')
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
 
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
   })
@@ -636,7 +635,7 @@ describe('a refusal beside an open item form', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
     await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
+    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
 
     await list.get('.move-category-up').trigger('click')
 
@@ -686,9 +685,9 @@ describe('a refusal beside an open item form', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.item-row').exists()).toBe(true))
     await list.get('.edit').trigger('click')
-    await vi.waitFor(() => expect(list.find('.item-form').exists()).toBe(true))
+    await vi.waitFor(() => expect(document.querySelector('.item-name-field')).not.toBeNull())
 
-    await list.findComponent(ItemForm).vm.$emit('save', {
+    await list.findComponent(ItemDialog).vm.$emit('save', {
       itemId: ITEM_ID,
       name: 'Bratwurst',
       categoryId: FOOD_ID,
@@ -697,7 +696,7 @@ describe('a refusal beside an open item form', () => {
     })
 
     await vi.waitFor(() =>
-      expect(list.findComponent(ItemForm).props('errorText')).toContain('Das hat nicht geklappt.'),
+      expect(list.findComponent(ItemDialog).props('errorText')).toContain('Das hat nicht geklappt.'),
     )
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
   })
@@ -773,15 +772,15 @@ describe('a refusal the admin has walked away from', () => {
     const festival = mountFestivalItems()
     await vi.waitFor(() => expect(festival.find('.new-item').exists()).toBe(true))
     await festival.get('.new-item').trigger('click')
-    await vi.waitFor(() => expect(festival.findComponent({ name: 'ItemForm' }).exists()).toBe(true))
-    festival.findComponent({ name: 'ItemForm' }).vm.$emit('save', {
+    await vi.waitFor(() => expect(festival.findComponent({ name: 'ItemDialog' }).exists()).toBe(true))
+    festival.findComponent({ name: 'ItemDialog' }).vm.$emit('save', {
       name: 'Pommes',
       categoryId: FOOD_ID,
       sortOrder: 1,
       productionMinutes: null,
     })
     await vi.waitFor(() =>
-      expect(festival.findComponent({ name: 'ItemForm' }).props('errorText')).not.toBeNull(),
+      expect(festival.findComponent({ name: 'ItemDialog' }).props('errorText')).not.toBeNull(),
     )
     festival.unmount()
 

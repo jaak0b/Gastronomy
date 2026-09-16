@@ -4,17 +4,17 @@ import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
 import { assertNever } from '../../../core/assertNever'
-import { useAdminStationsStore } from '../../../stores/admin/stations'
+import { useAdminStationsStore, type AdminStation } from '../../../stores/admin/stations'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalText } from '../refusalText'
-import StationForm from './StationForm.vue'
+import StationDialog from './StationDialog.vue'
 
 const { t } = useI18n()
 const stations = useAdminStationsStore()
 const enrolment = useAdminEnrolmentStore()
-const editingId = ref<string | null>(null)
+const editingStation = ref<AdminStation | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
@@ -26,6 +26,9 @@ const shown = computed(() =>
 )
 
 const refusalText = useRefusalText(refusal)
+const isStationDialogOpen = computed(
+  () => isCreating.value || editingStation.value !== null,
+)
 
 function note(result: AdminActionResult<unknown>): void {
   const message = refusalFrom(result)
@@ -39,8 +42,13 @@ async function inviteStation(stationId: string): Promise<void> {
   note(await enrolment.createInvitation({ kind: 'station', stationId }))
 }
 
-function toggleEditing(stationId: string): void {
-  editingId.value = editingId.value === stationId ? null : stationId
+function startEditing(station: AdminStation): void {
+  editingStation.value = station
+  refusal.value = null
+}
+
+function stopEditing(): void {
+  editingStation.value = null
   refusal.value = null
 }
 
@@ -49,12 +57,17 @@ function startCreating(): void {
   refusal.value = null
 }
 
+function stopCreating(): void {
+  isCreating.value = false
+  refusal.value = null
+}
+
 async function save(value: Parameters<typeof stations.save>[0]): Promise<void> {
   refusal.value = null
   const saved = await stations.save(value)
   switch (saved.kind) {
     case 'ok':
-      editingId.value = null
+      editingStation.value = null
       isCreating.value = false
       return
     case 'failed':
@@ -111,7 +124,12 @@ onUnmounted(() => {
     >
       {{ t('admin.enrol.doneStation', { name: enrolment.enrolledStationName }) }}
     </v-alert>
-    <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
+    <v-alert
+      v-if="refusalText !== null && !isStationDialogOpen"
+      class="refusal mb-4"
+      type="warning"
+      variant="tonal"
+    >
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="stations.loadFailed" class="error" type="error" variant="tonal">
@@ -131,7 +149,7 @@ onUnmounted(() => {
         <v-btn class="set-up-device" variant="text" @click="inviteStation(station.stationId)">
           {{ t('admin.stations.setUpDevice') }}
         </v-btn>
-        <v-btn class="edit" variant="text" @click="toggleEditing(station.stationId)">
+        <v-btn class="edit" variant="text" @click="startEditing(station)">
           {{ t('admin.edit') }}
         </v-btn>
         <v-btn
@@ -153,9 +171,6 @@ onUnmounted(() => {
         </v-btn>
       </div>
       <v-expand-transition>
-        <StationForm v-if="editingId === station.stationId" :station="station" @save="save" />
-      </v-expand-transition>
-      <v-expand-transition>
         <InvitationPanel
           v-if="enrolment.invitation?.station?.id === station.stationId"
           :invitation="enrolment.invitation"
@@ -170,9 +185,20 @@ onUnmounted(() => {
       {{ t('admin.stations.new') }}
     </v-btn>
 
-    <v-card v-if="isCreating" class="station-row mb-2">
-      <StationForm :station="null" @save="save" />
-    </v-card>
+    <StationDialog
+      v-if="editingStation !== null"
+      :station="editingStation"
+      :error-text="refusalText"
+      @save="save"
+      @cancel="stopEditing"
+    />
+    <StationDialog
+      v-if="isCreating"
+      :station="null"
+      :error-text="refusalText"
+      @save="save"
+      @cancel="stopCreating"
+    />
 
     <ConfirmDialog
       v-if="askingAboutId !== null"

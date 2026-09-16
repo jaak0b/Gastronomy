@@ -4,17 +4,17 @@ import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
 import { assertNever } from '../../../core/assertNever'
-import { useAdminStaffStore } from '../../../stores/admin/staff'
+import { useAdminStaffStore, type AdminStaffMember } from '../../../stores/admin/staff'
 import { useAdminEnrolmentStore } from '../../../stores/admin/enrolment'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import InvitationPanel from '../enrolment/InvitationPanel.vue'
 import { useRefusalText } from '../refusalText'
+import StaffRenameDialog from './StaffRenameDialog.vue'
 
 const { t } = useI18n()
 const staff = useAdminStaffStore()
 const enrolment = useAdminEnrolmentStore()
-const renamingId = ref<string | null>(null)
-const newName = ref('')
+const renamingStaffMember = ref<AdminStaffMember | null>(null)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const refusal = ref<AdminErrorMessage | null>(null)
@@ -57,13 +57,16 @@ async function reactivate(staffMemberId: string): Promise<void> {
   note(await staff.setActive(staffMemberId, true))
 }
 
-async function rename(id: string): Promise<void> {
+async function rename(name: string): Promise<void> {
+  const staffMember = renamingStaffMember.value
+  if (staffMember === null) {
+    return
+  }
   refusal.value = null
-  const renamed = await staff.rename(id, newName.value.trim())
+  const renamed = await staff.rename(staffMember.staffMemberId, name)
   switch (renamed.kind) {
     case 'ok':
-      renamingId.value = null
-      newName.value = ''
+      renamingStaffMember.value = null
       return
     case 'failed':
       refusal.value = renamed.message
@@ -71,6 +74,16 @@ async function rename(id: string): Promise<void> {
     default:
       assertNever(renamed)
   }
+}
+
+function startRenaming(staffMember: AdminStaffMember): void {
+  renamingStaffMember.value = staffMember
+  refusal.value = null
+}
+
+function stopRenaming(): void {
+  renamingStaffMember.value = null
+  refusal.value = null
 }
 
 onMounted(async () => {
@@ -105,7 +118,12 @@ onUnmounted(() => {
     >
       {{ t('admin.enrol.done', { name: enrolment.enrolledStaffMemberName }) }}
     </v-alert>
-    <v-alert v-if="refusalText !== null" class="refusal mb-4" type="warning" variant="tonal">
+    <v-alert
+      v-if="refusalText !== null && renamingStaffMember === null"
+      class="refusal mb-4"
+      type="warning"
+      variant="tonal"
+    >
       {{ refusalText }}
     </v-alert>
     <v-alert v-if="staff.loadFailed" class="error" type="error" variant="tonal">
@@ -113,17 +131,6 @@ onUnmounted(() => {
     </v-alert>
 
     <v-card v-for="staffMember in shown" :key="staffMember.staffMemberId" class="staff-row mb-3">
-      <v-card-text v-if="renamingId === staffMember.staffMemberId">
-        <v-text-field
-          v-model="newName"
-          class="rename-field"
-          maxlength="40"
-          :label="t('admin.staff.rename')"
-        />
-        <v-btn class="save-name" color="primary" @click="rename(staffMember.staffMemberId)">
-          {{ t('admin.save') }}
-        </v-btn>
-      </v-card-text>
       <v-card-actions class="staff-row-line">
         <span class="name text-h6 ms-2 me-2">{{ staffMember.name }}</span>
         <v-chip v-if="!staffMember.isActive" class="deactivated me-2" size="small" color="grey">
@@ -138,12 +145,7 @@ onUnmounted(() => {
         <v-btn
           class="rename"
           variant="text"
-          @click="
-            () => {
-              renamingId = staffMember.staffMemberId
-              newName = staffMember.name
-            }
-          "
+          @click="startRenaming(staffMember)"
         >
           {{ t('admin.staff.rename') }}
         </v-btn>
@@ -180,6 +182,14 @@ onUnmounted(() => {
     <v-btn class="new-staff-member mt-6" color="primary" @click="inviteSomebodyNew">
       {{ t('admin.staff.new') }}
     </v-btn>
+
+    <StaffRenameDialog
+      v-if="renamingStaffMember !== null"
+      :staff-member="renamingStaffMember"
+      :error-text="refusalText"
+      @save="rename"
+      @cancel="stopRenaming"
+    />
 
     <ConfirmDialog
       v-if="askingAboutId !== null"

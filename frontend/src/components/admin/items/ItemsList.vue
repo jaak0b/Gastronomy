@@ -12,17 +12,20 @@ import {
   type AdminCategoryDraft,
   type CategoryMoveDirection,
 } from '../../../stores/admin/categories'
-import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
+import {
+  useAdminItemsStore,
+  type AdminItem,
+  type AdminItemDraft,
+} from '../../../stores/admin/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useRefusalText } from '../refusalText'
-import ItemForm from './ItemForm.vue'
-import NewItemDialog from './NewItemDialog.vue'
+import ItemDialog from './ItemDialog.vue'
 
 const { t } = useI18n()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
-const editingId = ref<string | null>(null)
+const editingItem = ref<AdminItem | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
@@ -52,6 +55,7 @@ const categoryRefusalText = useRefusalText(categoryRefusal)
 const isCategoryDialogOpen = computed(
   () => isCreatingCategory.value || renamedCategory.value !== null,
 )
+const isItemDialogOpen = computed(() => isCreating.value || editingItem.value !== null)
 
 function noteItem(result: AdminActionResult<unknown>): void {
   const message = refusalFrom(result)
@@ -72,7 +76,7 @@ async function save(item: AdminItemDraft): Promise<void> {
   const saved = await items.save(item)
   switch (saved.kind) {
     case 'ok':
-      editingId.value = null
+      editingItem.value = null
       isCreating.value = false
       return
     case 'failed':
@@ -88,8 +92,13 @@ function forgetRefusals(): void {
   categoryRefusal.value = null
 }
 
-function toggleEditing(itemId: string): void {
-  editingId.value = editingId.value === itemId ? null : itemId
+function startEditing(item: AdminItem): void {
+  editingItem.value = item
+  forgetRefusals()
+}
+
+function stopEditing(): void {
+  editingItem.value = null
   forgetRefusals()
 }
 
@@ -208,7 +217,7 @@ onUnmounted(() => {
     </div>
 
     <v-alert
-      v-if="itemRefusalText !== null && editingId === null && !isCreating"
+      v-if="itemRefusalText !== null && !isItemDialogOpen"
       class="refusal mb-4"
       type="warning"
       variant="tonal"
@@ -293,7 +302,7 @@ onUnmounted(() => {
             {{ t('admin.deactivated') }}
           </v-chip>
           <v-spacer />
-          <v-btn class="edit" variant="text" @click="toggleEditing(item.itemId)">
+          <v-btn class="edit" variant="text" @click="startEditing(item)">
             {{ t('admin.edit') }}
           </v-btn>
           <v-btn
@@ -314,14 +323,6 @@ onUnmounted(() => {
             {{ t('admin.items.activate') }}
           </v-btn>
         </div>
-        <v-expand-transition>
-          <ItemForm
-            v-if="editingId === item.itemId"
-            :item="item"
-            :error-text="itemRefusalText"
-            @save="save"
-          />
-        </v-expand-transition>
       </v-card>
     </section>
 
@@ -334,8 +335,16 @@ onUnmounted(() => {
       </v-btn>
     </div>
 
-    <NewItemDialog
+    <ItemDialog
+      v-if="editingItem !== null"
+      :item="editingItem"
+      :error-text="itemRefusalText"
+      @save="save"
+      @cancel="stopEditing"
+    />
+    <ItemDialog
       v-if="isCreating"
+      :item="null"
       :error-text="itemRefusalText"
       @save="save"
       @cancel="stopCreating"

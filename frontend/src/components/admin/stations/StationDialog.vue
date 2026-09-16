@@ -2,10 +2,12 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminStation } from '../../../stores/admin/stations'
+import FormDialog from '../FormDialog.vue'
 
-const props = defineProps<{ station: AdminStation | null }>()
+const props = defineProps<{ station: AdminStation | null; errorText: string | null }>()
 const emit = defineEmits<{
   save: [value: { stationId?: string; name: string; sortOrder: number }]
+  cancel: []
 }>()
 
 const { t } = useI18n()
@@ -22,15 +24,18 @@ function save(): void {
 </script>
 
 <template>
-  <v-form class="station-form pa-4" @submit.prevent="save">
+  <FormDialog
+    :title="station === null ? t('admin.stations.new') : t('admin.stations.edit')"
+    :error-text="errorText"
+    :save-disabled="name.trim().length === 0"
+    @save="save"
+    @cancel="emit('cancel')"
+  >
     <v-text-field
       v-model="name"
-      class="station-name-field mb-4"
+      class="station-name-field"
       maxlength="40"
       :label="t('admin.stations.title')"
     />
-    <v-btn type="submit" color="primary" :disabled="name.trim().length === 0">
-      {{ t('admin.save') }}
-    </v-btn>
-  </v-form>
+  </FormDialog>
 </template>

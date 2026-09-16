@@ -176,7 +176,9 @@ function writtenCalls(calls: Call[]): Call[] {
 async function openPlacementDialog(page: VueWrapper): Promise<void> {
   await page.findAllComponents(VAutocomplete)[1].setValue(BEER_ID)
   await page.get('.add-item').trigger('click')
-  await vi.waitFor(() => expect(document.querySelector('.placement-dialog')).not.toBeNull())
+  await vi.waitFor(() =>
+    expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Bier'),
+  )
 }
 
 async function openRowStations(page: VueWrapper, rowIndex = 0): Promise<VueWrapper[]> {
@@ -187,7 +189,7 @@ async function openRowStations(page: VueWrapper, rowIndex = 0): Promise<VueWrapp
 }
 
 async function openDialogStations(page: VueWrapper): Promise<VueWrapper[]> {
-  inDialog('.placement-dialog .station-select').click()
+  inDialog('.form-dialog .station-select').click()
   const select = page.findComponent(FestivalPlacementDialog).findComponent(StationSelect)
   await vi.waitFor(() => expect(select.findAllComponents(VCheckbox).length).toBeGreaterThan(0))
   return select.findAllComponents(VCheckbox)
@@ -366,15 +368,15 @@ describe('the stations of this festival', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.new-station').exists()).toBe(true))
     await page.get('.new-station').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.station-form')).not.toBeNull())
-    writeInto('.station-form .station-name-field input', 'Zelt')
+    await vi.waitFor(() => expect(document.querySelector('.station-name-field')).not.toBeNull())
+    writeInto('.station-name-field input', 'Zelt')
     await vi.waitFor(() =>
-      expect((inDialog('.station-form button') as HTMLButtonElement).disabled).toBe(false),
+      expect((inDialog('.form-save') as HTMLButtonElement).disabled).toBe(false),
     )
-    inDialog('.station-form button').click()
+    inDialog('.form-save').click()
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.new-station-dialog')).toBeNull(),
+      expect(document.querySelector('.form-dialog')).toBeNull(),
     )
     expect(writtenCalls(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
       'POST /api/admin/stations',
@@ -479,7 +481,7 @@ describe('the items of this festival', () => {
     await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
     await openPlacementDialog(page)
 
-    expect(document.querySelector('.placement-title')?.textContent).toContain('Bier')
+    expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Bier')
     expect(page.findAll('.festival-item-row').length).toBe(1)
     expect(writtenCalls(calls)).toEqual([])
     expect(page.findAllComponents(VAutocomplete)[1].props('modelValue')).toBeNull()
@@ -492,14 +494,14 @@ describe('the items of this festival', () => {
     await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
     await openPlacementDialog(page)
 
-    inDialog('.placement-dialog .place-item').click()
+    inDialog('.form-dialog .form-save').click()
     await page.vm.$nextTick()
 
     expect(
-      document.querySelector('.placement-dialog .price-field .v-messages__message')?.textContent,
+      document.querySelector('.form-dialog .price-field .v-messages__message')?.textContent,
     ).toBe('Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.')
     expect(
-      document.querySelector('.placement-dialog .station-select-error')?.textContent?.trim(),
+      document.querySelector('.form-dialog .station-select-error')?.textContent?.trim(),
     ).toBe('Bier braucht mindestens eine Ausgabestelle.')
     expect(writtenCalls(calls)).toEqual([])
   })
@@ -527,17 +529,17 @@ describe('the items of this festival', () => {
     await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
     await openPlacementDialog(page)
 
-    writeInto('.placement-dialog .price-field input', '4,20')
+    writeInto('.form-dialog .price-field input', '4,20')
     const boxes = await openDialogStations(page)
     await boxes[0].setValue(true)
-    inDialog('.placement-dialog .place-item').click()
+    inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() => {
       const sent = writtenCalls(calls).find((call) => call.method === 'PUT')
       expect(sent?.url).toBe(`/api/admin/festivals/${FESTIVAL_ID}/items/${BEER_ID}`)
       expect(sent?.body).toEqual({ priceCents: 420, stationIds: [KITCHEN_ID] })
     })
-    await vi.waitFor(() => expect(document.querySelector('.placement-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
     await vi.waitFor(() => expect(page.findAll('.festival-item-row').length).toBe(2))
     expect(page.findAll('.festival-item-row .name').map((row) => row.text())).toEqual([
       'Bier',
@@ -755,17 +757,21 @@ describe('the items of this festival', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.new-item').exists()).toBe(true))
     await page.get('.new-item').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).not.toBeNull())
-    await page.findComponent({ name: 'ItemForm' }).vm.$emit('save', {
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .item-name-field')).not.toBeNull(),
+    )
+    await page.findComponent({ name: 'ItemDialog' }).vm.$emit('save', {
       name: 'Pommes',
       categoryId: FOOD_ID,
       sortOrder: 1,
       productionMinutes: null,
     })
 
-    await vi.waitFor(() => expect(document.querySelector('.new-item-dialog')).toBeNull())
-    await vi.waitFor(() => expect(document.querySelector('.placement-dialog')).not.toBeNull())
-    expect(document.querySelector('.placement-title')?.textContent).toContain('Pommes')
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog .item-name-field')).toBeNull())
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .price-field')).not.toBeNull(),
+    )
+    expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Pommes')
     expect(writtenCalls(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
       'POST /api/admin/items',
     ])
@@ -787,17 +793,17 @@ describe('the items of this festival', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
     await openPlacementDialog(page)
-    writeInto('.placement-dialog .price-field input', '4,20')
+    writeInto('.form-dialog .price-field input', '4,20')
     const boxes = await openDialogStations(page)
     await boxes[0].setValue(true)
-    inDialog('.placement-dialog .place-item').click()
+    inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() =>
-      expect((inDialog('.placement-dialog .cancel') as HTMLButtonElement).disabled).toBe(true),
+      expect((inDialog('.form-dialog .form-cancel') as HTMLButtonElement).disabled).toBe(true),
     )
 
     releaseTheAnswer()
-    await vi.waitFor(() => expect(document.querySelector('.placement-dialog')).toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
   })
 
   it('says the items could not be loaded when the laptop cannot answer', async () => {
@@ -1041,14 +1047,14 @@ describe('an item change the laptop refuses', () => {
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.item-search').exists()).toBe(true))
     await openPlacementDialog(page)
-    writeInto('.placement-dialog .price-field input', '4,20')
+    writeInto('.form-dialog .price-field input', '4,20')
     const boxes = await openDialogStations(page)
     await boxes[0].setValue(true)
-    inDialog('.placement-dialog .place-item').click()
+    inDialog('.form-dialog .form-save').click()
 
     await vi.waitFor(() =>
-      expect(inDialog('.placement-dialog .refusal').textContent?.trim()).toBe(REFUSAL_TEXT),
+      expect(inDialog('.form-dialog .refusal').textContent?.trim()).toBe(REFUSAL_TEXT),
     )
-    expect(document.querySelector('.placement-dialog')).not.toBeNull()
+    expect(document.querySelector('.form-dialog')).not.toBeNull()
   })
 })

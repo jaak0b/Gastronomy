@@ -315,11 +315,15 @@ describe('two refusals one after the other', () => {
     await list.get('.new-code').trigger('click')
     await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
     await list.get('.rename').trigger('click')
-    await list.get('.rename-field input').setValue('Anna B')
-    await list.get('.save-name').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.staff-name-field')).not.toBeNull())
+    const input = document.querySelector('.staff-name-field input') as HTMLInputElement
+    input.value = 'Anna B'
+    input.dispatchEvent(new Event('input'))
+    await list.vm.$nextTick()
+    ;(document.querySelector('.form-save') as HTMLElement).click()
 
     await vi.waitFor(() =>
-      expect(list.get('.refusal').text()).toBe(
+      expect(document.querySelector('.form-dialog .refusal')?.textContent?.trim()).toBe(
         'Geben Sie dem Kellner einen Namen, bevor Sie speichern.',
       ),
     )
@@ -420,7 +424,12 @@ describe('the length of a waiter name the admin types', () => {
     const list = mountList()
     await firstStaffMember(list)
     await list.get('.rename').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.staff-name-field')).not.toBeNull())
 
-    expect(list.get('.rename-field input').attributes('maxlength')).toBe('40')
+    expect(
+      (document.querySelector('.staff-name-field input') as HTMLInputElement).getAttribute(
+        'maxlength',
+      ),
+    ).toBe('40')
   })
 })

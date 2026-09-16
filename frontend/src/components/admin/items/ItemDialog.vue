@@ -10,12 +10,12 @@ import {
 } from '../../../stores/admin/categories'
 import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
+import FormDialog from '../FormDialog.vue'
 import { useRefusalText } from '../refusalText'
 
 const props = defineProps<{
   item: AdminItem | null
   errorText: string | null
-  isCancellable?: boolean
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()
 
@@ -73,6 +73,9 @@ async function createCategory(draft: AdminCategoryDraft): Promise<void> {
 }
 
 function save(): void {
+  if (nameIsMissing.value) {
+    return
+  }
   const chosenCategoryId = categoryId.value
   categoryIsMissing.value = chosenCategoryId === null
   if (chosenCategoryId === null) {
@@ -91,92 +94,63 @@ function save(): void {
 function commitThePreparationTime(event: KeyboardEvent): void {
   const field = event.target as HTMLElement
   field.blur()
-  if (nameIsMissing.value) {
-    return
-  }
   save()
 }
 </script>
 
 <template>
-  <div class="item-form mt-4">
-    <v-form @submit.prevent="save">
-      <v-card-text>
-        <v-row align="center">
-          <v-col cols="12" md="8">
-            <v-text-field
-              v-model="name"
-              class="item-name-field"
-              maxlength="200"
-              :label="t('admin.items.title')"
-            />
-          </v-col>
-          <v-col cols="12" md="4">
-            <div class="category-line d-flex align-center ga-2">
-              <v-select
-                v-model="categoryId"
-                class="category-field flex-grow-1"
-                :label="t('admin.items.category')"
-                :items="offeredCategories"
-                item-title="name"
-                item-value="categoryId"
-                :no-data-text="t('admin.categories.noneYet')"
-                :error="categoryIsMissing"
-                :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
-              />
-              <v-btn class="new-category" variant="text" @click="startCreatingCategory">
-                {{ t('admin.categories.new') }}
-              </v-btn>
-            </div>
-          </v-col>
-        </v-row>
-        <v-row align="center">
-          <v-col cols="12" md="4">
-            <v-number-input
-              v-model="productionMinutes"
-              class="production-minutes-field"
-              :label="t('admin.items.productionMinutes')"
-              :min="0"
-              :max="LONGEST_PRODUCTION_MINUTES"
-              :precision="1"
-              :min-fraction-digits="0"
-              :decimal-separator="decimalSeparator"
-              control-variant="hidden"
-              @keydown.enter.prevent="commitThePreparationTime"
-            />
-          </v-col>
-          <v-col cols="12" md="8">
-            <v-checkbox
-              v-model="isQueueIndependent"
-              class="queue-independent-checkbox"
-              :label="t('admin.items.prepareIndependently')"
-            />
-          </v-col>
-        </v-row>
-        <v-alert v-if="errorText !== null" class="error mt-2" type="error" variant="tonal">
-          {{ errorText }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn
-          class="save-item"
-          type="submit"
-          color="primary"
-          :disabled="nameIsMissing"
-        >
-          {{ t('admin.save') }}
-        </v-btn>
-        <v-btn v-if="props.isCancellable" class="cancel" variant="text" @click="emit('cancel')">
-          {{ t('admin.cancel') }}
-        </v-btn>
-      </v-card-actions>
-    </v-form>
-    <CategoryDialog
-      v-if="isCreatingCategory"
-      :category="null"
-      :error-text="categoryRefusalText"
-      @save="createCategory"
-      @cancel="stopCreatingCategory"
+  <FormDialog
+    :title="item === null ? t('admin.items.new') : t('admin.items.edit')"
+    :error-text="errorText"
+    :save-disabled="nameIsMissing"
+    @save="save"
+    @cancel="emit('cancel')"
+  >
+    <v-text-field
+      v-model="name"
+      class="item-name-field mb-4"
+      maxlength="200"
+      :label="t('admin.items.title')"
     />
-  </div>
+    <div class="category-line d-flex align-center ga-2 mb-4">
+      <v-select
+        v-model="categoryId"
+        class="category-field flex-grow-1"
+        :label="t('admin.items.category')"
+        :items="offeredCategories"
+        item-title="name"
+        item-value="categoryId"
+        :no-data-text="t('admin.categories.noneYet')"
+        :error="categoryIsMissing"
+        :error-messages="categoryIsMissing ? [t('admin.itemCategoryUnknown')] : []"
+      />
+      <v-btn class="new-category" variant="text" @click="startCreatingCategory">
+        {{ t('admin.categories.new') }}
+      </v-btn>
+    </div>
+    <v-number-input
+      v-model="productionMinutes"
+      class="production-minutes-field mb-2"
+      :label="t('admin.items.productionMinutes')"
+      :min="0"
+      :max="LONGEST_PRODUCTION_MINUTES"
+      :precision="1"
+      :min-fraction-digits="0"
+      :decimal-separator="decimalSeparator"
+      control-variant="hidden"
+      @keydown.enter.prevent="commitThePreparationTime"
+    />
+    <v-checkbox
+      v-model="isQueueIndependent"
+      class="queue-independent-checkbox"
+      :label="t('admin.items.prepareIndependently')"
+    />
+  </FormDialog>
+  <CategoryDialog
+    v-if="isCreatingCategory"
+    :category="null"
+    :error-text="categoryRefusalText"
+    @save="createCategory"
+    @cancel="stopCreatingCategory"
+  />
 </template>

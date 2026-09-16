@@ -308,9 +308,13 @@ describe('a rename the laptop refuses', () => {
   async function renameFirstStation(list: ReturnType<typeof mountList>) {
     await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.edit').trigger('click')
-    await list.get('.station-form input').setValue('Küche hinten')
-    await list.get('.station-form').trigger('submit')
-    await vi.waitFor(() => expect(list.find('.refusal').exists()).toBe(true))
+    await vi.waitFor(() => expect(document.querySelector('.station-name-field')).not.toBeNull())
+    const input = document.querySelector('.station-name-field input') as HTMLInputElement
+    input.value = 'Küche hinten'
+    input.dispatchEvent(new Event('input'))
+    await list.vm.$nextTick()
+    ;(document.querySelector('.form-save') as HTMLElement).click()
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog .refusal')).not.toBeNull())
   }
 
   it('says why the new name was not taken', async () => {
@@ -319,7 +323,7 @@ describe('a rename the laptop refuses', () => {
     const list = mountList()
     await renameFirstStation(list)
 
-    expect(list.get('.refusal').text()).toBe(
+    expect(document.querySelector('.form-dialog .refusal')?.textContent?.trim()).toBe(
       'Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.',
     )
   })
@@ -330,7 +334,9 @@ describe('a rename the laptop refuses', () => {
     const list = mountList()
     await renameFirstStation(list)
 
-    expect((list.get('.station-form input').element as HTMLInputElement).value).toBe('Küche hinten')
+    expect((document.querySelector('.station-name-field input') as HTMLInputElement).value).toBe(
+      'Küche hinten',
+    )
   })
 })
 
@@ -512,8 +518,13 @@ describe('the length of a station name', () => {
     const list = mountList()
     await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
     await list.get('.edit').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.station-name-field')).not.toBeNull())
 
-    expect(list.get('.station-name-field input').attributes('maxlength')).toBe('40')
+    expect(
+      (document.querySelector('.station-name-field input') as HTMLInputElement).getAttribute(
+        'maxlength',
+      ),
+    ).toBe('40')
   })
 })
 

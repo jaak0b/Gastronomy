@@ -10,7 +10,7 @@ import {
 } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useRefusalText } from '../refusalText'
-import StationForm from '../stations/StationForm.vue'
+import StationDialog from '../stations/StationDialog.vue'
 
 const props = defineProps<{ festivalId: string }>()
 
@@ -175,21 +175,13 @@ async function remove(): Promise<void> {
       </div>
     </v-card>
 
-    <v-dialog v-if="isCreating" :model-value="true" max-width="560" persistent scrollable>
-      <v-card class="new-station-dialog" role="dialog" aria-modal="true">
-        <v-card-title class="new-station-title">{{ t('admin.stations.new') }}</v-card-title>
-        <StationForm :station="null" @save="create" />
-        <v-alert v-if="refusalText !== null" class="error mx-4 mb-4" type="error" variant="tonal">
-          {{ refusalText }}
-        </v-alert>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn class="cancel" variant="text" @click="stopCreating">
-            {{ t('admin.cancel') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <StationDialog
+      v-if="isCreating"
+      :station="null"
+      :error-text="refusalText"
+      @save="create"
+      @cancel="stopCreating"
+    />
 
     <ConfirmDialog
       v-if="removedStation !== null"

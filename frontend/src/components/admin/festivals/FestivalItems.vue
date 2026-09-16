@@ -16,7 +16,7 @@ import {
 } from '../../../stores/admin/items'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
-import ItemForm from '../items/ItemForm.vue'
+import ItemDialog from '../items/ItemDialog.vue'
 import { refusalMessageText, useRefusalText } from '../refusalText'
 import FestivalPlacementDialog from './FestivalPlacementDialog.vue'
 import StationSelect from './StationSelect.vue'
@@ -500,18 +500,13 @@ async function remove(): Promise<void> {
       </div>
     </v-card>
 
-    <v-dialog v-if="isCreating" :model-value="true" max-width="560" persistent scrollable>
-      <v-card class="new-item-dialog" role="dialog" aria-modal="true">
-        <v-card-title class="new-item-title">{{ t('admin.items.new') }}</v-card-title>
-        <ItemForm
-          :item="null"
-          :error-text="createRefusalText"
-          is-cancellable
-          @save="create"
-          @cancel="stopCreating"
-        />
-      </v-card>
-    </v-dialog>
+    <ItemDialog
+      v-if="isCreating"
+      :item="null"
+      :error-text="createRefusalText"
+      @save="create"
+      @cancel="stopCreating"
+    />
 
     <FestivalPlacementDialog
       v-if="itemToPlace !== null"

@@ -154,6 +154,7 @@
     "stations": {
       "title": "Ausgabestellen",
       "new": "Neue Ausgabestelle",
+      "edit": "Ausgabestelle bearbeiten",
       "noTablet": "Kein Tablet eingerichtet",
       "setUpDevice": "Tablet einrichten",
       "deactivate": "Ausgabestelle abschalten",
@@ -165,6 +166,7 @@
       "title": "Artikel",
       "soldOut": "Ausverkauft",
       "new": "Neuer Artikel",
+      "edit": "Artikel bearbeiten",
       "category": "Kategorie",
       "price": "Preis in Euro",
       "priceInvalid": "Tragen Sie den Preis in Euro ein, zum Beispiel 3,50.",
@@ -177,6 +179,7 @@
     "staff": {
       "title": "Kellner",
       "new": "Neuer Kellner",
+      "name": "Name",
       "nameMissing": "Geben Sie dem Kellner einen Namen, bevor Sie speichern.",
       "noPhone": "Kein Telefon eingerichtet",
       "newCode": "Telefon neu einrichten",
