@@ -226,7 +226,7 @@ function mostRecentOf(group: PositionGroup): number {
   min-width: 0;
   min-height: 64px;
   height: auto;
-  padding-inline: 0;
+  padding-inline: 0.5rem 0;
 }
 
 .add :deep(.v-btn__content) {
@@ -263,7 +263,6 @@ function mostRecentOf(group: PositionGroup): number {
   min-width: 2ch;
   text-align: center;
   align-self: center;
-  margin-inline-end: 0.5rem;
 }
 
 .note-group {
