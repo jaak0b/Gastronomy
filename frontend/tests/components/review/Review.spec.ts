@@ -201,9 +201,12 @@ describe('sending the order from the review screen', () => {
     expect(review.get('.order-total').text()).toContain('2.00')
   })
 
-  it('takes the waiter back to the items from the back button beside the table', async () => {
+  it('takes the waiter back to the items from the back button at the bottom of the strip', async () => {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
+
+    expect(review.get('.back').text()).toBe('Zurück')
+    expect(review.get('.back').element.closest('.docked-strip')).not.toBeNull()
 
     await review.get('.back').trigger('click')
 

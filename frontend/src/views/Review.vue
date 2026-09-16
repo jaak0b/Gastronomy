@@ -77,15 +77,6 @@ function backToItems(): void {
 <template>
   <v-container class="review">
     <div class="review-heading d-flex align-center mb-2">
-      <v-btn
-        class="back"
-        icon="mdi-arrow-left"
-        variant="text"
-        size="large"
-        :aria-label="t('review.back')"
-        :disabled="order.changesAreRefused"
-        @click="backToItems"
-      />
       <h1 class="table-name text-subtitle-1 text-medium-emphasis">
         {{ t('review.tableIs', { name: order.draft.tableName }) }}
       </h1>
@@ -154,6 +145,15 @@ function backToItems(): void {
             {{ order.isSending ? t('review.sending') : t('review.send') }}
           </v-btn>
         </template>
+        <v-btn
+          class="back mt-2"
+          variant="text"
+          block
+          :disabled="order.changesAreRefused"
+          @click="backToItems"
+        >
+          {{ t('review.back') }}
+        </v-btn>
       </div>
     </DockedStrip>
     <ConfirmSendDialog
@@ -177,12 +177,24 @@ function backToItems(): void {
 </template>
 
 <style scoped>
+.review {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: 0;
+}
+
+.review-footer {
+  margin-top: auto;
+}
+
 .review-heading {
   position: sticky;
   top: 0;
   z-index: 1;
   background: rgb(var(--v-theme-surface));
-  padding-inline-end: 1rem;
+  padding-inline: 1rem;
 }
 
 .table-name {

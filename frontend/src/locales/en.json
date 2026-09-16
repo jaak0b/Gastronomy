@@ -81,7 +81,7 @@
     "sendAndSettle": "Send the order and settle it",
     "sending": "Sending",
     "sent": "Order {number} has arrived.",
-    "back": "Back to the items",
+    "back": "Back",
     "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
     "sendFailed": "The computer could not be reached. Tap \"Send again\".",
     "sendFailedDatabase": "The computer could not save the order. Send it again.",

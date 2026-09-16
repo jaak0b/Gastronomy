@@ -81,7 +81,7 @@
     "sendAndSettle": "Bestellung senden und abrechnen",
     "sending": "Wird gesendet",
     "sent": "Bestellung {number} ist angekommen.",
-    "back": "Zurück zur Auswahl",
+    "back": "Zurück",
     "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
     "sendFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Erneut senden\".",
     "sendFailedDatabase": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
