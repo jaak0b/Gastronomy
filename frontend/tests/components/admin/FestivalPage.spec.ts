@@ -850,7 +850,7 @@ describe('an item change the laptop refuses', () => {
   }
 
   const REFUSAL_TEXT =
-    'Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.'
+    'Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.'
 
   it('puts the station selection back where the laptop has it and says why', async () => {
     stubLaptop({

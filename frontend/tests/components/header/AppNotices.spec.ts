@@ -23,7 +23,7 @@ describe('the notices above the screen', () => {
     connection.state = 'offline'
     await notices.vm.$nextTick()
 
-    expect(notices.get('.connection').text()).toBe('Keine Verbindung zum Laptop.')
+    expect(notices.get('.connection').text()).toBe('Keine Verbindung zum Rechner.')
   })
 
   it('says nothing at all once the laptop answers', async () => {

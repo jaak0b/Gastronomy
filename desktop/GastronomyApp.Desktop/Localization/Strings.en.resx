@@ -97,7 +97,7 @@
     <value>Click "Repair the setup". Nothing can be written into the folder {path}. Windows asks you once while it happens.</value>
   </data>
     <data name="desktop.error.noNetwork" xml:space="preserve">
-    <value>Connect the laptop to the WiFi the phones are on. The laptop is not on any network at the moment.</value>
+    <value>Connect the computer to the WiFi the phones are on. The computer is not on any network at the moment.</value>
   </data>
     <data name="desktop.error.startFailed" xml:space="preserve">
     <value>The server could not be started. Quit the program and start it again. If that does not help, click "Repair the setup".</value>
@@ -127,13 +127,13 @@
     <value>Confirm the question Windows asks. The program allows access from the network and creates its data folder.</value>
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
-    <value>The program runs anyway. If the phones cannot reach the laptop later, click "Repair the setup".</value>
+    <value>The program runs anyway. If the phones cannot reach the computer later, click "Repair the setup".</value>
   </data>
     <data name="desktop.firstRun.setupFailed" xml:space="preserve">
-    <value>The setup could not be completed, although you confirmed the question Windows asked. The program runs anyway. If the phones cannot reach the laptop, or if orders cannot be saved, click "Repair the setup".</value>
+    <value>The setup could not be completed, although you confirmed the question Windows asked. The program runs anyway. If the phones cannot reach the computer, or if orders cannot be saved, click "Repair the setup".</value>
   </data>
     <data name="desktop.settings.repairFailed" xml:space="preserve">
-    <value>The setup could not be completed, although you confirmed the question Windows asked. Click "Repair the setup" once more. If that does not help, click "Open the data folder" and give the newest file in the folder "logs" to somebody who knows this laptop.</value>
+    <value>The setup could not be completed, although you confirmed the question Windows asked. Click "Repair the setup" once more. If that does not help, click "Open the data folder" and give the newest file in the folder "logs" to somebody who knows this computer.</value>
   </data>
     <data name="desktop.settings.repairDone" xml:space="preserve">
     <value>The setup was repaired. Start the program again so the change takes effect.</value>
@@ -142,10 +142,10 @@
     <value>Everybody has to set their phone up again, because the server address has changed.</value>
   </data>
     <data name="desktop.error.noPortAvailable" xml:space="preserve">
-    <value>Another program on this laptop is blocking the connection. Restart the laptop and open the program again.</value>
+    <value>Another program on this computer is blocking the connection. Restart the computer and open the program again.</value>
   </data>
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
-    <value>Look on the task bar for a window of this program. If there is none, restart the laptop and open the program again.</value>
+    <value>Look on the task bar for a window of this program. If there is none, restart the computer and open the program again.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
     <value>{version}</value>

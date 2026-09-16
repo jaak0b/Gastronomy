@@ -139,7 +139,7 @@ describe('landing on a QR code link', () => {
 
     await vi.waitFor(() => expect(landing.find('.error').exists()).toBe(true))
     expect(landing.get('.error').text()).toBe(
-      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal.',
+      'Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal.',
     )
   })
 

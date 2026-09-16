@@ -191,7 +191,7 @@ describe('a device that cannot reach the laptop while it starts', () => {
     await flushPromises()
 
     expect(tablet.find('.starting-up-message').text()).toBe(
-      'Der Laptop antwortet nicht. Versuchen Sie es noch einmal.',
+      'Der Rechner antwortet nicht. Versuchen Sie es noch einmal.',
     )
   })
 
@@ -219,7 +219,7 @@ describe('a device the laptop cannot answer for while it starts', () => {
     await flushPromises()
 
     expect(tablet.find('.starting-up-message').text()).toBe(
-      'Der Laptop hat nicht richtig geantwortet. Versuchen Sie es noch einmal.',
+      'Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.',
     )
   })
 })

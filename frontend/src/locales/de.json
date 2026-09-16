@@ -10,19 +10,19 @@
     "nameLabel": "Ihr Name",
     "continue": "Weiter",
     "error": {
-      "codeUsed": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
-      "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Laptop nicht."
+      "codeUsed": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code gilt nicht mehr.",
+      "noConnection": "Prüfen Sie, ob Sie im WLAN des Festes sind. Dieses Telefon erreicht den Rechner nicht."
     },
     "carryOn": "Mit diesem Telefon weiterarbeiten"
   },
   "enrolCode": {
     "error": {
-      "wrong": "Lesen Sie die sechs Ziffern noch einmal vom Laptop ab. Dieser Code stimmt nicht.",
-      "retired": "Lassen Sie sich am Laptop einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen."
+      "wrong": "Lesen Sie die sechs Ziffern noch einmal vom Rechner ab. Dieser Code stimmt nicht.",
+      "retired": "Lassen Sie sich am Rechner einen neuen QR-Code geben. Dieser Code wurde zu oft falsch eingegeben und wird nicht mehr angenommen."
     }
   },
   "header": {
-    "reconnecting": "Keine Verbindung zum Laptop.",
+    "reconnecting": "Keine Verbindung zum Rechner.",
     "backOnline": "Die Verbindung ist wieder da.",
     "settings": "Einstellungen",
     "openItems": "Offene Posten"
@@ -84,8 +84,8 @@
     "sent": "Bestellung {number} ist angekommen.",
     "back": "Zurück zur Auswahl",
     "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
-    "sendFailed": "Der Laptop war nicht erreichbar. Tippen Sie auf \"Erneut senden\".",
-    "sendFailedDatabase": "Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
+    "sendFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Erneut senden\".",
+    "sendFailedDatabase": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
     "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\".",
     "retry": "Erneut senden",
     "confirmSendTitle": "Bestellung senden?",
@@ -94,7 +94,7 @@
     "confirmSendStation": "{name}:",
     "confirmSendCancel": "Abbrechen",
     "sendFailedTwiceTitle": "Die Bestellung wurde nicht gesendet",
-    "sendFailedTwiceUnknown": "Der Laptop hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.",
+    "sendFailedTwiceUnknown": "Der Rechner hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.",
     "sendFailedTwiceWriteItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet.",
     "sendFailedTwiceWrittenDown": "Bestellung ist aufgeschrieben",
     "sendFailedTwiceTryAgain": "Noch einmal versuchen",
@@ -108,13 +108,13 @@
     "settlementNoItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
     "settlementTooManyItemsSelected": "Rechnen Sie den Tisch in mehreren Schritten ab. Auf einmal sind es zu viele Positionen.",
     "settlementCannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
-    "settlementUnknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Laptop nicht mehr, deshalb wurde nichts abgerechnet."
+    "settlementUnknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Rechner nicht mehr, deshalb wurde nichts abgerechnet."
   },
   "openItems": {
     "title": "Offene Posten",
     "empty": "Es ist nichts offen. Alle Tische sind abgerechnet.",
     "reload": "Liste neu laden",
-    "loadFailed": "Tippen Sie auf \"Liste neu laden\". Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
+    "loadFailed": "Tippen Sie auf \"Liste neu laden\". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
     "tableOpen": "Offen: {amount}",
     "tableIs": "Tisch {name}",
     "wholeTable": "Ganzen Tisch auswählen",
@@ -131,14 +131,14 @@
     "amountPaidCancel": "Abbrechen",
     "givenAwayHeading": "In den letzten 24 Stunden nicht kassiert: {amount}",
     "givenAwayReason": "Grund: {reason}",
-    "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Laptop die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Laptop die Bestellungen dazu nicht mehr findet.",
+    "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Rechner die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.",
     "someWereAlreadySettled": "{count} Position aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück. | {count} Positionen aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück.",
     "otherPhonesWereNotTold": "Die Positionen sind abgerechnet.",
-    "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen hat nicht geklappt.",
+    "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
     "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind."
   },
   "admin": {
-    "notOnLaptop": "Die Verwaltung lässt sich nur am Laptop öffnen.",
+    "notOnLaptop": "Die Verwaltung lässt sich nur am Rechner öffnen.",
     "overview": {
       "title": "Übersicht",
       "ready": "Alles ist eingerichtet. Sie können jetzt die Telefone und die Tablets einrichten.",
@@ -197,7 +197,7 @@
       "expired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
       "copyUrl": "Adresse kopieren",
       "copied": "Adresse kopiert",
-      "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren funktioniert auf dieser Seite nicht.",
+      "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.",
       "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
       "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
       "forStation": "Scannen Sie diesen QR-Code mit der Kamera des Tablets an der Ausgabestelle {name}.",
@@ -236,7 +236,7 @@
     "itemCategoryIsOff": "Diese Kategorie ist abgeschaltet. Schalten Sie zuerst die Kategorie ein.",
     "stationHasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
     "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
-    "actionFailed": "Das hat nicht geklappt. Versuchen Sie es noch einmal, und laden Sie die Seite neu, wenn es wieder nicht klappt.",
+    "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.",
     "deactivate": "Deaktivieren",
     "deactivated": "Deaktiviert",
     "showDeactivated": "Deaktivierte anzeigen",
@@ -294,9 +294,9 @@
     "openArticlesHeading": "Offene Artikel",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
-    "loadFailed": "Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
+    "loadFailed": "Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.",
     "actionFailed": "Versuchen Sie es noch einmal. Die Änderung wurde nicht gespeichert.",
-    "actionNotReached": "Tippen Sie noch einmal. Der Laptop war nicht erreichbar, deshalb wurde nichts geändert.",
+    "actionNotReached": "Tippen Sie noch einmal. Der Rechner war nicht erreichbar, deshalb wurde nichts geändert.",
     "changeNotSaved": "Die Bestellung konnte nicht aktualisiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
     "orderNotAtThisStation": "Diese Bestellung gehört nicht zu dieser Ausgabestelle. Laden Sie die Seite neu und versuchen Sie es erneut.",
     "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
@@ -321,8 +321,8 @@
     "notPartOfTheFestival": "Diese Ausgabestelle gehört nicht zum laufenden Fest."
   },
   "startingUp": {
-    "laptopNotReached": "Der Laptop antwortet nicht. Versuchen Sie es noch einmal.",
-    "couldNotStart": "Der Laptop hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
+    "laptopNotReached": "Der Rechner antwortet nicht. Versuchen Sie es noch einmal.",
+    "couldNotStart": "Der Rechner hat nicht richtig geantwortet. Versuchen Sie es noch einmal.",
     "tryAgain": "Noch einmal versuchen"
   },
   "doorGate": {
@@ -339,18 +339,18 @@
   },
   "enrolment": {
     "nameMissing": "Tragen Sie Ihren Namen ein, damit die Küche weiß, wer die Bestellung aufgenommen hat.",
-    "codeUnknown": "Diesen Code kennt der Laptop nicht. Lassen Sie sich am Laptop einen neuen Code zeigen.",
-    "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Laptop einen neuen Code zeigen.",
-    "codeMissing": "Scannen Sie den QR-Code am Laptop noch einmal. Diese Seite wurde ohne Code geöffnet.",
-    "staffMemberIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
-    "stationIsOffTheList": "Lassen Sie sich am Laptop einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet.",
+    "codeUnknown": "Diesen Code kennt der Rechner nicht. Lassen Sie sich am Rechner einen neuen Code zeigen.",
+    "codeNoLongerValid": "Dieser Code gilt nicht mehr. Lassen Sie sich am Rechner einen neuen Code zeigen.",
+    "codeMissing": "Scannen Sie den QR-Code am Rechner noch einmal. Diese Seite wurde ohne Code geöffnet.",
+    "staffMemberIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Dieser Kellner steht nicht mehr in der Liste.",
+    "stationIsOffTheList": "Lassen Sie sich am Rechner einen neuen QR-Code zeigen. Diese Ausgabestelle ist abgeschaltet.",
     "atMostOneOwner": "Der QR-Code konnte nicht erstellt werden. Versuchen Sie es noch einmal."
   },
   "auth": {
-    "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Laptop neu einrichten."
+    "wrongDeviceKind": "Dieses Gerät ist für diesen Bildschirm nicht eingerichtet. Lassen Sie es am Rechner neu einrichten."
   },
   "session": {
     "unsupportedLanguage": "Diese Sprache gibt es im Programm nicht. Wählen Sie Deutsch oder Englisch.",
-    "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Laptop bekommt gerade zu viele Anfragen auf einmal."
+    "tooManyRequests": "Warten Sie einen Moment und versuchen Sie es dann noch einmal. Der Rechner bekommt gerade zu viele Anfragen auf einmal."
   }
 }

@@ -308,7 +308,7 @@ describe('the screen that shows what the tables still owe', () => {
     const screen = await mountScreen()
 
     expect(screen.get('.list-incomplete').text()).toBe(
-      'Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt 2 Positionen nicht, weil der Laptop die Bestellungen dazu nicht mehr findet.',
+      'Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt 2 Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.',
     )
   })
 
@@ -544,7 +544,7 @@ describe('settling what the table actually handed over', () => {
     expect(fieldIn('.amount-field').value).toBe('2,00')
     expect(fieldIn('.reason-field').value).toBe('Stammgast')
     expect(document.querySelector('.amount-paid-dialog')?.textContent).toContain(
-      'Das Abrechnen hat nicht geklappt.',
+      'Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.',
     )
   })
 })

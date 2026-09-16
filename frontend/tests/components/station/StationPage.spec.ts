@@ -381,7 +381,7 @@ describe('the overview board on the station screen', () => {
     await flushPromises()
 
     expect(textsOf('.station-open-board .board-failed')).toEqual([
-      'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
     ])
   })
 
@@ -719,7 +719,7 @@ describe('a station tablet that has lost contact with the laptop', () => {
     const page = await mountPage()
 
     expect(page.get('.load-failed').text()).toBe(
-      'Laden Sie die Seite neu. Der Laptop war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+      'Laden Sie die Seite neu. Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
     )
   })
 })

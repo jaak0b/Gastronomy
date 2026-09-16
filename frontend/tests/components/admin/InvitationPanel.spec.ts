@@ -98,7 +98,7 @@ describe('the copy button beside the address', () => {
     await panel.get('.copy-url').trigger('click')
 
     expect(panel.get('.copy-unavailable').text()).toBe(
-      'Tippen Sie die Adresse oben von Hand ab. Das Kopieren funktioniert auf dieser Seite nicht.',
+      'Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.',
     )
   })
 
@@ -111,7 +111,7 @@ describe('the copy button beside the address', () => {
     await panel.get('.copy-url').trigger('click')
 
     expect(panel.get('.copy-unavailable').text()).toBe(
-      'Type the address above by hand. Copying does not work on this page.',
+      'Type the address above by hand. Copying is not available on this page.',
     )
   })
 })

@@ -12,7 +12,7 @@ describe('the admin pages opened somewhere other than the laptop', () => {
     const notice = mountNotice()
 
     expect(notice.get('.not-on-laptop').text()).toBe(
-      'Die Verwaltung lässt sich nur am Laptop öffnen.',
+      'Die Verwaltung lässt sich nur am Rechner öffnen.',
     )
   })
 
@@ -20,7 +20,7 @@ describe('the admin pages opened somewhere other than the laptop', () => {
     const notice = mountNotice('en')
 
     expect(notice.get('.not-on-laptop').text()).toBe(
-      'The admin pages are only available on the laptop.',
+      'The admin pages are only available on the computer.',
     )
   })
 })

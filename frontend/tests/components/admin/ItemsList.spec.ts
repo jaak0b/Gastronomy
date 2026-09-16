@@ -665,7 +665,7 @@ describe('a refusal beside an open item form', () => {
     await pressInDialog('.confirm')
 
     await vi.waitFor(() =>
-      expect(list.get('.admin-items .refusal').text()).toContain('Das hat nicht geklappt.'),
+      expect(list.get('.admin-items .refusal').text()).toContain('Die Aktion ist fehlgeschlagen.'),
     )
   })
 
@@ -696,7 +696,7 @@ describe('a refusal beside an open item form', () => {
     })
 
     await vi.waitFor(() =>
-      expect(list.findComponent(ItemDialog).props('errorText')).toContain('Das hat nicht geklappt.'),
+      expect(list.findComponent(ItemDialog).props('errorText')).toContain('Die Aktion ist fehlgeschlagen.'),
     )
     expect(list.find('.admin-items .refusal').exists()).toBe(false)
   })

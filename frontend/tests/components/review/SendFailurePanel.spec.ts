@@ -15,7 +15,7 @@ describe('SendFailurePanel', () => {
     const panel = mountPanel({ key: 'review.sendFailed' })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Der Laptop war nicht erreichbar. Tippen Sie auf "Erneut senden".',
+      'Der Rechner war nicht erreichbar. Tippen Sie auf "Erneut senden".',
     )
   })
 
@@ -23,7 +23,7 @@ describe('SendFailurePanel', () => {
     const panel = mountPanel({ key: 'review.sendFailedDatabase' })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
+      'Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
     )
   })
 })

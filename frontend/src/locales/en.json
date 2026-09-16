@@ -10,19 +10,19 @@
     "nameLabel": "Your name",
     "continue": "Continue",
     "error": {
-      "codeUsed": "Ask at the laptop for a new QR code. This code is no longer valid.",
-      "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the laptop."
+      "codeUsed": "Ask at the computer for a new QR code. This code is no longer valid.",
+      "noConnection": "Check that you are on the festival WiFi. This phone cannot reach the computer."
     },
     "carryOn": "Carry on with this phone"
   },
   "enrolCode": {
     "error": {
-      "wrong": "Read the six digits from the laptop again. This code is not correct.",
-      "retired": "Ask at the laptop for a new QR code. This code was entered wrongly too often and is not accepted any more."
+      "wrong": "Read the six digits from the computer again. This code is not correct.",
+      "retired": "Ask at the computer for a new QR code. This code was entered wrongly too often and is not accepted any more."
     }
   },
   "header": {
-    "reconnecting": "No connection to the laptop.",
+    "reconnecting": "No connection to the computer.",
     "backOnline": "The connection is back.",
     "settings": "Settings",
     "openItems": "Open items"
@@ -84,8 +84,8 @@
     "sent": "Order {number} has arrived.",
     "back": "Back to the items",
     "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
-    "sendFailed": "The laptop could not be reached. Tap \"Send again\".",
-    "sendFailedDatabase": "The laptop could not save the order. Send it again.",
+    "sendFailed": "The computer could not be reached. Tap \"Send again\".",
+    "sendFailedDatabase": "The computer could not save the order. Send it again.",
     "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\".",
     "retry": "Send again",
     "confirmSendTitle": "Send the order?",
@@ -94,7 +94,7 @@
     "confirmSendStation": "{name}:",
     "confirmSendCancel": "Cancel",
     "sendFailedTwiceTitle": "The order was not sent",
-    "sendFailedTwiceUnknown": "The laptop did not answer either time. The order may have arrived anyway.",
+    "sendFailedTwiceUnknown": "The computer did not answer either time. The order may have arrived anyway.",
     "sendFailedTwiceWriteItDown": "Write the order on a slip of paper and check the tablet at the station.",
     "sendFailedTwiceWrittenDown": "The order is written down",
     "sendFailedTwiceTryAgain": "Try again",
@@ -108,13 +108,13 @@
     "settlementNoItemsSelected": "Choose the items you want to settle first.",
     "settlementTooManyItemsSelected": "Settle the table in several steps. This is too many items at once.",
     "settlementCannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
-    "settlementUnknownItem": "Reload the list. The laptop no longer knows one of the selected items, so nothing was settled."
+    "settlementUnknownItem": "Reload the list. The computer no longer knows one of the selected items, so nothing was settled."
   },
   "openItems": {
     "title": "Open items",
     "empty": "Nothing is open. Every table is settled.",
     "reload": "Reload the list",
-    "loadFailed": "Tap \"Reload the list\". The laptop could not be reached, so this list may be out of date.",
+    "loadFailed": "Tap \"Reload the list\". The computer could not be reached, so this list may be out of date.",
     "tableOpen": "Open: {amount}",
     "tableIs": "Table {name}",
     "wholeTable": "Select the whole table",
@@ -131,14 +131,14 @@
     "amountPaidCancel": "Cancel",
     "givenAwayHeading": "Not collected in the last 24 hours: {amount}",
     "givenAwayReason": "Reason: {reason}",
-    "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the laptop can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the laptop can no longer find the orders they belong to.",
+    "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the computer can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the computer can no longer find the orders they belong to.",
     "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Check whether you took money for it and give that money back to the guest. | Somebody else had already settled {count} items in your selection. Check whether you took money for them and give that money back to the guest.",
     "otherPhonesWereNotTold": "The items are settled.",
-    "settleFailed": "Try again. Settling did not work.",
+    "settleFailed": "Try again. Settling failed.",
     "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open."
   },
   "admin": {
-    "notOnLaptop": "The admin pages are only available on the laptop.",
+    "notOnLaptop": "The admin pages are only available on the computer.",
     "overview": {
       "title": "Overview",
       "ready": "Everything is set up. You can now set up the phones and the tablets.",
@@ -197,7 +197,7 @@
       "expired": "Create a new QR code. This one was not scanned for five minutes.",
       "copyUrl": "Copy the address",
       "copied": "Address copied",
-      "copyUnavailable": "Type the address above by hand. Copying does not work on this page.",
+      "copyUnavailable": "Type the address above by hand. Copying is not available on this page.",
       "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
       "forStation": "Scan this QR code with the camera of the tablet at {name}.",
@@ -236,7 +236,7 @@
     "itemCategoryIsOff": "This category is switched off. Switch the category on first.",
     "stationHasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
     "stationNameMissing": "Give the station a name before you save it.",
-    "actionFailed": "That did not work. Try again, and reload the page if it still does not work.",
+    "actionFailed": "The action failed. Try again, otherwise reload the page.",
     "deactivate": "Deactivate",
     "deactivated": "Deactivated",
     "showDeactivated": "Show deactivated entries",
@@ -294,9 +294,9 @@
     "openArticlesHeading": "Open items",
     "itemUnits": "{count} x {item}",
     "unitSeparator": " · ",
-    "loadFailed": "Reload the page. The laptop could not be reached, so this list may be out of date.",
+    "loadFailed": "Reload the page. The computer could not be reached, so this list may be out of date.",
     "actionFailed": "Try again. The change was not saved.",
-    "actionNotReached": "Tap again. The laptop could not be reached, so nothing was changed.",
+    "actionNotReached": "Tap again. The computer could not be reached, so nothing was changed.",
     "changeNotSaved": "The order could not be updated. Reload the page and try again.",
     "orderNotAtThisStation": "This order is not at this station. Reload the page and try again.",
     "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
@@ -321,8 +321,8 @@
     "notPartOfTheFestival": "This station is not part of the festival that is running."
   },
   "startingUp": {
-    "laptopNotReached": "The laptop is not answering. Try again.",
-    "couldNotStart": "The laptop did not answer properly. Try again.",
+    "laptopNotReached": "The computer is not answering. Try again.",
+    "couldNotStart": "The computer did not answer properly. Try again.",
     "tryAgain": "Try again"
   },
   "doorGate": {
@@ -339,18 +339,18 @@
   },
   "enrolment": {
     "nameMissing": "Enter your name so the kitchen knows who took the order.",
-    "codeUnknown": "The laptop does not know this code. Ask for a new code at the laptop.",
-    "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the laptop.",
-    "codeMissing": "Scan the QR code on the laptop again. This page was opened without a code.",
-    "staffMemberIsOffTheList": "Ask for a new QR code at the laptop. This waiter is no longer on the list.",
-    "stationIsOffTheList": "Ask for a new QR code at the laptop. This station is switched off.",
+    "codeUnknown": "The computer does not know this code. Ask for a new code at the computer.",
+    "codeNoLongerValid": "This code is no longer valid. Ask for a new code at the computer.",
+    "codeMissing": "Scan the QR code on the computer again. This page was opened without a code.",
+    "staffMemberIsOffTheList": "Ask for a new QR code at the computer. This waiter is no longer on the list.",
+    "stationIsOffTheList": "Ask for a new QR code at the computer. This station is switched off.",
     "atMostOneOwner": "The QR code could not be created. Try again."
   },
   "auth": {
-    "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the laptop."
+    "wrongDeviceKind": "This device is not set up for this screen. Have it set up again at the computer."
   },
   "session": {
     "unsupportedLanguage": "The program does not have that language. Choose German or English.",
-    "tooManyRequests": "Wait a moment and try again. The laptop is getting too many requests at once."
+    "tooManyRequests": "Wait a moment and try again. The computer is getting too many requests at once."
   }
 }

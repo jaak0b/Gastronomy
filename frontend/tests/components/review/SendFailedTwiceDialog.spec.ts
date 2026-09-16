@@ -26,7 +26,7 @@ describe('the dialog after a second failed send, in German', () => {
     mountDialog()
 
     expect(textOf('.send-failed-twice-dialog .what-happened')).toBe(
-      'Der Laptop hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.',
+      'Der Rechner hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.',
     )
   })
 
@@ -57,7 +57,7 @@ describe('the dialog after a second failed send, in English', () => {
     mountDialog('en')
 
     expect(textOf('.send-failed-twice-dialog .what-happened')).toBe(
-      'The laptop did not answer either time. The order may have arrived anyway.',
+      'The computer did not answer either time. The order may have arrived anyway.',
     )
   })
 

@@ -97,7 +97,7 @@
     <value>Klicken Sie auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
   </data>
     <data name="desktop.error.noNetwork" xml:space="preserve">
-    <value>Verbinden Sie den Laptop mit dem WLAN, in dem auch die Telefone sind. Der Laptop ist zurzeit in keinem Netzwerk.</value>
+    <value>Verbinden Sie den Rechner mit dem WLAN, in dem auch die Telefone sind. Der Rechner ist zurzeit in keinem Netzwerk.</value>
   </data>
     <data name="desktop.error.startFailed" xml:space="preserve">
     <value>Der Server konnte nicht gestartet werden. Beenden Sie das Programm und starten Sie es neu. Hilft das nicht, klicken Sie auf "Einrichtung reparieren".</value>
@@ -127,13 +127,13 @@
     <value>Bestätigen Sie die Nachfrage von Windows. Das Programm gibt dabei den Zugriff aus dem Netzwerk frei und legt seinen Datenordner an.</value>
   </data>
     <data name="desktop.firstRun.declined" xml:space="preserve">
-    <value>Das Programm läuft auch so. Wenn die Telefone den Laptop später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
+    <value>Das Programm läuft auch so. Wenn die Telefone den Rechner später nicht erreichen, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
     <data name="desktop.firstRun.setupFailed" xml:space="preserve">
-    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Das Programm läuft trotzdem. Wenn die Telefone den Laptop nicht erreichen oder Bestellungen nicht gespeichert werden können, klicken Sie auf "Einrichtung reparieren".</value>
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Das Programm läuft trotzdem. Wenn die Telefone den Rechner nicht erreichen oder Bestellungen nicht gespeichert werden können, klicken Sie auf "Einrichtung reparieren".</value>
   </data>
     <data name="desktop.settings.repairFailed" xml:space="preserve">
-    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Klicken Sie noch einmal auf "Einrichtung reparieren". Hilft das nicht, klicken Sie auf "Datenordner öffnen" und geben Sie die neueste Datei im Ordner "logs" jemandem, der sich mit dem Laptop auskennt.</value>
+    <value>Die Einrichtung konnte nicht abgeschlossen werden, obwohl Sie die Nachfrage von Windows bestätigt haben. Klicken Sie noch einmal auf "Einrichtung reparieren". Hilft das nicht, klicken Sie auf "Datenordner öffnen" und geben Sie die neueste Datei im Ordner "logs" jemandem, der sich mit dem Rechner auskennt.</value>
   </data>
     <data name="desktop.settings.repairDone" xml:space="preserve">
     <value>Die Einrichtung wurde repariert. Starten Sie das Programm noch einmal, damit die Änderung wirkt.</value>
@@ -142,10 +142,10 @@
     <value>Alle müssen ihr Telefon noch einmal einrichten, da sich die Serveradresse geändert hat.</value>
   </data>
     <data name="desktop.error.noPortAvailable" xml:space="preserve">
-    <value>Ein anderes Programm auf diesem Laptop blockiert die Verbindung. Starten Sie den Laptop neu und öffnen Sie das Programm noch einmal.</value>
+    <value>Ein anderes Programm auf diesem Rechner blockiert die Verbindung. Starten Sie den Rechner neu und öffnen Sie das Programm noch einmal.</value>
   </data>
     <data name="desktop.error.instanceCheckFailed" xml:space="preserve">
-    <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Laptop neu und öffnen Sie das Programm noch einmal.</value>
+    <value>Sehen Sie in der Taskleiste nach, ob ein Fenster dieses Programms schon offen ist. Wenn nicht, starten Sie den Rechner neu und öffnen Sie das Programm noch einmal.</value>
   </data>
     <data name="desktop.version" xml:space="preserve">
     <value>{version}</value>

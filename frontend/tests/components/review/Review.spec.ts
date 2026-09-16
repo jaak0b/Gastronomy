@@ -637,7 +637,7 @@ describe('an order the laptop answered but could not save', () => {
     const review = await reviewAfterTheAnswer()
 
     expect(review.get('.send-failure .failure-message').text()).toBe(
-      'Der Laptop konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
+      'Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.',
     )
   })
 
