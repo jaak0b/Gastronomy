@@ -247,25 +247,27 @@ function chooseStation(stationId: string, note: string | null): void {
           {{ labelFor(category) }}
         </v-btn>
       </div>
-      <TableField
-        ref="tableField"
-        v-model="tableName"
-        :is-missing="isTableMissing"
-        :known-table-names="openItems.knownTableNames"
-      />
-      <v-textarea
-        class="order-note"
-        maxlength="200"
-        :label="t('catalog.orderNote')"
-        :model-value="order.draft.note ?? ''"
-        @update:model-value="order.setNote($event || null)"
-      />
-      <BasketBar
-        :item-count="order.itemCount"
-        :total-cents="order.totalCents"
-        :language="session.language"
-        @review="goToTheSummary"
-      />
+      <DockedStrip class="order-tray">
+        <TableField
+          ref="tableField"
+          v-model="tableName"
+          :is-missing="isTableMissing"
+          :known-table-names="openItems.knownTableNames"
+        />
+        <v-textarea
+          class="order-note"
+          maxlength="200"
+          :label="t('catalog.orderNote')"
+          :model-value="order.draft.note ?? ''"
+          @update:model-value="order.setNote($event || null)"
+        />
+        <BasketBar
+          :item-count="order.itemCount"
+          :total-cents="order.totalCents"
+          :language="session.language"
+          @review="goToTheSummary"
+        />
+      </DockedStrip>
     </template>
     <template v-else>
       <h2
@@ -340,6 +342,15 @@ function chooseStation(stationId: string, note: string | null): void {
 }
 
 .catalog {
-  padding-bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--v-layout-top, 0px));
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
+  padding-bottom: 0;
+}
+
+.order-tray,
+.back-strip {
+  margin-top: auto;
 }
 </style>

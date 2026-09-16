@@ -104,6 +104,16 @@ describe('the categories on the ordering screen', () => {
     expect(view.get('.to-review').element.closest('.docked-strip')).not.toBeNull()
   })
 
+  it('keeps the table, the note and the summary together in one tray at the bottom', () => {
+    const view = mountCatalog()
+
+    const tray = view.get('.order-tray')
+    expect(tray.classes()).toContain('docked-strip')
+    expect(tray.find('.table-field').exists()).toBe(true)
+    expect(tray.find('.order-note').exists()).toBe(true)
+    expect(tray.find('.to-review').exists()).toBe(true)
+  })
+
   it('keeps the order the laptop gives the categories in', () => {
     const catalog = useCatalogStore()
     catalog.catalog = { ...CATALOG, categories: [...CATALOG.categories].reverse() }
