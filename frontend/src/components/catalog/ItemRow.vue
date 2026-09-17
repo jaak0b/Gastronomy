@@ -134,6 +134,15 @@ function mostRecentOf(group: PositionGroup): number {
       :key="group.indexes[0]"
       class="note-group d-flex align-center ga-2"
     >
+      <v-btn
+        class="group-remove"
+        icon="mdi-minus"
+        variant="text"
+        size="small"
+        :aria-label="t('catalog.removeOne', { name: item.name })"
+        @click="emit('removeOne', mostRecentOf(group))"
+      />
+      <span class="group-count text-body-2">{{ group.indexes.length }}</span>
       <div class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column">
         <button
           v-if="group.stationName !== null"
@@ -150,15 +159,6 @@ function mostRecentOf(group: PositionGroup): number {
           {{ t('catalog.noteText', { note: group.note }) }}
         </button>
       </div>
-      <span class="group-count text-body-2">{{ group.indexes.length }}</span>
-      <v-btn
-        class="group-remove"
-        icon="mdi-minus"
-        variant="text"
-        size="small"
-        :aria-label="t('catalog.removeOne', { name: item.name })"
-        @click="emit('removeOne', mostRecentOf(group))"
-      />
       <v-btn
         class="group-add"
         icon="mdi-plus"
