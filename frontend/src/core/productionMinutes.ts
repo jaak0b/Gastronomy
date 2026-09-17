@@ -3,13 +3,17 @@ import { assertNever } from './assertNever'
 
 export const LONGEST_PRODUCTION_MINUTES = 600
 
+export function wholeMinutes(minutes: number): number {
+  return Math.ceil(minutes)
+}
+
 export function formatMinutes(minutes: number, language: AppLanguage): string {
-  const rounded = Math.round(minutes * 10) / 10
+  const whole = wholeMinutes(minutes)
   switch (language) {
     case 'de':
-      return String(rounded).replace('.', ',')
+      return new Intl.NumberFormat('de', { maximumFractionDigits: 0 }).format(whole)
     case 'en':
-      return String(rounded)
+      return new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format(whole)
     default:
       return assertNever(language)
   }

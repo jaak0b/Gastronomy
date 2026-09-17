@@ -1,6 +1,6 @@
 import type { AppLanguage } from './apiTypes'
 import type { EstimateRange } from './estimates'
-import { formatMinutes } from './productionMinutes'
+import { formatMinutes, wholeMinutes } from './productionMinutes'
 
 export type EstimateWording = (key: string, values: Record<string, string | number>) => string
 
@@ -23,7 +23,7 @@ export function estimateRangeText(
   if (range === null) {
     return null
   }
-  if (range.min === range.max) {
+  if (wholeMinutes(range.min) === wholeMinutes(range.max)) {
     return t('estimates.inMinutes', { count: formatMinutes(range.min, language) })
   }
   return t('estimates.inMinuteRange', {

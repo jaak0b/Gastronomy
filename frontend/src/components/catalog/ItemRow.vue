@@ -114,14 +114,8 @@ function mostRecentOf(group: PositionGroup): number {
         <span class="name text-body-1">{{ item.name }}</span>
         <span class="facts text-body-2 text-medium-emphasis">
           <span class="price">{{ price }}</span>
-          <template v-if="estimate !== null">
-            <span class="fact-separator">{{ t('catalog.factSeparator') }}</span>
-            <span class="estimate">{{ estimate }}</span>
-          </template>
-          <template v-if="isSoldOut">
-            <span class="fact-separator">{{ t('catalog.factSeparator') }}</span>
-            <span class="sold-out">{{ t('catalog.soldOut') }}</span>
-          </template>
+          <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
+          <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
         </span>
       </v-btn>
       <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
@@ -241,6 +235,7 @@ function mostRecentOf(group: PositionGroup): number {
 
 .facts {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
   white-space: nowrap;
   padding-inline: 0;

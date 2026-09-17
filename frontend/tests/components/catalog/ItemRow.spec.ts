@@ -464,11 +464,12 @@ function mountRowWithEstimate(
 }
 
 describe('the waiting time written on an item row', () => {
-  it('sits on the facts line under the name, separated from the price by a dot', () => {
+  it('sits on the facts line under the name, beside the price', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 })
 
     expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.facts').text()).toBe('2,00 € · ~6 Min.')
+    expect(row.get('.facts .price').text()).toBe('2,00 €')
+    expect(row.get('.facts .estimate').text()).toBe('~6 Min.')
   })
 
   it('keeps the facts line inside the add-one target, so one tap covers the whole block', () => {
@@ -506,7 +507,7 @@ describe('the waiting time written on an item row', () => {
     const row = mountRowWithEstimate(null)
 
     expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.facts').text()).toBe('2,00 €')
+    expect(row.get('.facts .price').text()).toBe('2,00 €')
     expect(row.find('.estimate').exists()).toBe(false)
   })
 
@@ -515,6 +516,7 @@ describe('the waiting time written on an item row', () => {
 
     expect(row.get('.name').text()).toBe('Wasser')
     expect(row.find('.estimate').exists()).toBe(false)
-    expect(row.get('.facts').text()).toBe('2,00 € · Ausverkauft')
+    expect(row.get('.facts .price').text()).toBe('2,00 €')
+    expect(row.get('.facts .sold-out').text()).toBe('Ausverkauft')
   })
 })

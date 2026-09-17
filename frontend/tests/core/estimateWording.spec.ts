@@ -20,12 +20,12 @@ describe('the waiting time on its own', () => {
     expect(estimateText(20, wording, 'de')).toBe('~20 Min.')
   })
 
-  it('names half a minute the way German writes it', () => {
-    expect(estimateText(1.5, wording, 'de')).toBe('~1,5 Min.')
+  it('rounds half a minute up to a whole one', () => {
+    expect(estimateText(1.5, wording, 'de')).toBe('~2 Min.')
   })
 
-  it('names half a minute the way English writes it', () => {
-    expect(estimateText(1.5, wording, 'en')).toBe('~1.5 Min.')
+  it('rounds half a minute up to a whole one in English too', () => {
+    expect(estimateText(1.5, wording, 'en')).toBe('~2 Min.')
   })
 
   it('names nothing when there is no time to promise', () => {
@@ -46,12 +46,16 @@ describe('the waiting time behind a station', () => {
     expect(estimateRangeText({ min: 10, max: 62 }, wording, 'de')).toBe('~10 - 62 Min.')
   })
 
-  it('writes both ends of the span the way German writes them', () => {
-    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'de')).toBe('~1,5 - 2,5 Min.')
+  it('rounds both ends of the span up to whole minutes', () => {
+    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'de')).toBe('~2 - 3 Min.')
   })
 
-  it('writes both ends of the span the way English writes them', () => {
-    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'en')).toBe('~1.5 - 2.5 Min.')
+  it('rounds both ends of the span up to whole minutes in English too', () => {
+    expect(estimateRangeText({ min: 1.5, max: 2.5 }, wording, 'en')).toBe('~2 - 3 Min.')
+  })
+
+  it('names one number when both ends round up to the same minute', () => {
+    expect(estimateRangeText({ min: 2.1, max: 2.4 }, wording, 'de')).toBe('~3 Min.')
   })
 
   it('names nothing when there is no time to promise', () => {
