@@ -1,3 +1,8 @@
+html,
+body {
+  touch-action: manipulation;
+}
+
 .v-btn--disabled,
 .v-btn--disabled:hover {
   opacity: 1;
