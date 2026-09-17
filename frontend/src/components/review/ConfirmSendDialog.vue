@@ -12,6 +12,7 @@ import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice } from '../../core/totals'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 import AmountPaidFields from '../AmountPaidFields.vue'
 
 const props = defineProps<{
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
 
 const amount = computed(() => formatPrice(props.totalCents, props.language))
 
@@ -72,9 +74,9 @@ function confirm(): void {
 
 <template>
   <v-dialog class="confirm-send-dialog" model-value persistent fullscreen>
-    <v-card class="card d-flex flex-column">
+    <v-card class="card d-flex flex-column" :style="{ paddingBottom: `${keyboardInset}px` }">
       <v-card-title class="title">{{ t('review.confirmSendTitle') }}</v-card-title>
-      <v-card-text class="body flex-grow-1">
+      <v-card-text class="body flex-grow-1 d-flex flex-column">
         <div class="row row-table">
           <span class="label">{{ t('review.confirmSendTable') }}</span>
           <span class="value">{{ tableName }}</span>
@@ -89,28 +91,30 @@ function confirm(): void {
           </span>
           <span class="value">{{ deliveryTextOf(station) }}</span>
         </div>
-        <v-btn-toggle
-          class="settlement-choice mt-4"
-          mandatory
-          divided
-          border
-          :model-value="choice"
-          @update:model-value="(chosen: SettlementChoice) => (choice = chosen)"
-        >
-          <v-btn class="settle-later" value="settleLater" size="large">
-            {{ t('review.settleLater') }}
-          </v-btn>
-          <v-btn class="settle-now" value="settleNow" size="large">
-            {{ t('review.settleNow') }}
-          </v-btn>
-        </v-btn-toggle>
-        <AmountPaidFields
-          v-if="isSettling"
-          ref="settlementFields"
-          class="settlement-fields mt-3"
-          :total-cents="totalCents"
-          :language="language"
-        />
+        <div class="choices">
+          <v-btn-toggle
+            class="settlement-choice"
+            mandatory
+            divided
+            border
+            :model-value="choice"
+            @update:model-value="(chosen: SettlementChoice) => (choice = chosen)"
+          >
+            <v-btn class="settle-later" value="settleLater" size="large">
+              {{ t('review.settleLater') }}
+            </v-btn>
+            <v-btn class="settle-now" value="settleNow" size="large">
+              {{ t('review.settleNow') }}
+            </v-btn>
+          </v-btn-toggle>
+          <AmountPaidFields
+            v-if="isSettling"
+            ref="settlementFields"
+            class="settlement-fields mt-3"
+            :total-cents="totalCents"
+            :language="language"
+          />
+        </div>
       </v-card-text>
       <v-card-actions class="actions flex-column align-stretch">
         <v-btn
@@ -171,6 +175,11 @@ function confirm(): void {
   text-overflow: clip;
   line-height: 1.35;
   padding-block: 1rem;
+}
+
+.choices {
+  margin-top: auto;
+  padding-top: 1.5rem;
 }
 
 .settlement-choice.v-btn-group {
