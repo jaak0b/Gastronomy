@@ -246,8 +246,8 @@ describe('the screen at a station', () => {
     const page = await mountPage()
 
     expect(page.findAll('.orders-column .delivery-mode').map((entry) => entry.text())).toEqual([
-      'Gemeinsame Lieferung',
-      'Einzellieferung',
+      'Gemeinsam',
+      'Einzeln',
     ])
     expect(page.findAll('.orders-column .station-slice')[0].attributes('style')).toContain(
       'var(--v-theme-together)',

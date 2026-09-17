@@ -196,9 +196,10 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
   padding-inline-start: 0.75rem;
 }
 
-.delivery-modes {
+.delivery-modes.v-btn-group {
   display: flex;
   width: 100%;
+  height: auto;
 }
 
 .delivery-modes .v-btn {

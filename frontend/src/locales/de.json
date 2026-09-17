@@ -71,8 +71,8 @@
     "cancel": "Abbrechen"
   },
   "delivery": {
-    "together": "Gemeinsame Lieferung",
-    "asItComes": "Einzellieferung"
+    "together": "Gemeinsam",
+    "asItComes": "Einzeln"
   },
   "review": {
     "line": "{count} x {item}",

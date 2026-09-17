@@ -71,8 +71,8 @@
     "cancel": "Cancel"
   },
   "delivery": {
-    "together": "Combined delivery",
-    "asItComes": "Individual delivery"
+    "together": "Combined",
+    "asItComes": "Individual"
   },
   "review": {
     "line": "{count} x {item}",

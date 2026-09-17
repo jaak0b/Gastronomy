@@ -101,7 +101,7 @@ describe('the question before an order goes out, in German', () => {
 
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Gemeinsame Lieferung (~40 Min.)',
+      'Gemeinsam (~40 Min.)',
     ])
   })
 
@@ -114,14 +114,14 @@ describe('the question before an order goes out, in German', () => {
     })
 
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Gemeinsame Lieferung (~68 Min.)',
+      'Gemeinsam (~68 Min.)',
     ])
   })
 
   it('names no time for a station that hands its part out item by item', () => {
     mountDialog({ deliveryModes: { 'station-kueche': 'asItComes' } })
 
-    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual(['Einzellieferung'])
+    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual(['Einzeln'])
   })
 
   it('gives each station of a split order a line, and only the collected one a time', () => {
@@ -129,8 +129,8 @@ describe('the question before an order goes out, in German', () => {
 
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:', 'Theke innen:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Gemeinsame Lieferung (~40 Min.)',
-      'Einzellieferung',
+      'Gemeinsam (~40 Min.)',
+      'Einzeln',
     ])
   })
 
@@ -177,7 +177,7 @@ describe('the question before an order goes out, in English', () => {
 
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Combined delivery (~40 min)',
+      'Combined (~40 min)',
     ])
   })
 
@@ -191,7 +191,7 @@ describe('the question before an order goes out, in English', () => {
     })
 
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Combined delivery (~68 min)',
+      'Combined (~68 min)',
     ])
   })
 
@@ -200,8 +200,8 @@ describe('the question before an order goes out, in English', () => {
 
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:', 'Theke innen:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Combined delivery (~40 min)',
-      'Individual delivery',
+      'Combined (~40 min)',
+      'Individual',
     ])
   })
 

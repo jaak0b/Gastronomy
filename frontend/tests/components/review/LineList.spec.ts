@@ -175,8 +175,8 @@ describe('choosing how a station hands its part of the order out', () => {
       estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
     })
 
-    expect(list.get('.delivery-together').text()).toBe('Gemeinsame Lieferung')
-    expect(list.get('.delivery-as-it-comes').text()).toBe('Einzellieferung')
+    expect(list.get('.delivery-together').text()).toBe('Gemeinsam')
+    expect(list.get('.delivery-as-it-comes').text()).toBe('Einzeln')
   })
 
   it('names both ways in English', () => {
@@ -185,8 +185,8 @@ describe('choosing how a station hands its part of the order out', () => {
       language: 'en',
     })
 
-    expect(list.get('.delivery-together').text()).toBe('Combined delivery')
-    expect(list.get('.delivery-as-it-comes').text()).toBe('Individual delivery')
+    expect(list.get('.delivery-together').text()).toBe('Combined')
+    expect(list.get('.delivery-as-it-comes').text()).toBe('Individual')
   })
 
   it('holds the choice shut once the order has been sent and the send failed', () => {
