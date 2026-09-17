@@ -2,6 +2,7 @@ import type {
   Catalog,
   DraftLine,
   DraftOrder,
+  OrderSettlementRequest,
   OrderSubmitRequest,
   StationDeliveryMode,
 } from './apiTypes'
@@ -44,7 +45,7 @@ function priceOnTheMenu(catalog: Catalog, line: DraftLine): number {
 export function buildSubmitRequest(
   draft: DraftOrder,
   catalog: Catalog,
-  settleOnSend: boolean,
+  settlement: OrderSettlementRequest | null,
   deliveryModes: readonly StationDeliveryMode[],
 ): OrderSubmitRequest {
   const clientOrderId = draft.clientOrderId
@@ -55,7 +56,7 @@ export function buildSubmitRequest(
     clientOrderId,
     tableName: draft.tableName,
     note: draft.note,
-    settleOnSend,
+    settlement,
     items: draft.lines.map((line) => ({
       catalogItemId: line.catalogItemId,
       unitPriceCents: priceOnTheMenu(catalog, line),

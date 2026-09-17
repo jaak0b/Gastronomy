@@ -123,7 +123,7 @@ describe('buildSubmitRequest', () => {
   it('sends the table, the note and every item with the price the phone showed', () => {
     const ready = draftWithABratwurst('ohne Zwiebeln')
 
-    const request = buildSubmitRequest(ready, catalog(), false, [
+    const request = buildSubmitRequest(ready, catalog(), null, [
       { stationId: 'station-2', deliveryMode: 'together' },
     ])
 
@@ -131,7 +131,7 @@ describe('buildSubmitRequest', () => {
       clientOrderId: ready.clientOrderId,
       tableName: 'Tisch 12',
       note: null,
-      settleOnSend: false,
+      settlement: null,
       items: [
         {
           catalogItemId: 'item-1',
@@ -147,7 +147,7 @@ describe('buildSubmitRequest', () => {
   it('takes the price from the item list the laptop pushed out, not from the line', () => {
     const ready = draftWithABratwurst()
 
-    const request = buildSubmitRequest(ready, catalog(420), false, [])
+    const request = buildSubmitRequest(ready, catalog(420), null, [])
 
     expect(request.items[0].unitPriceCents).toBe(420)
   })
@@ -155,7 +155,7 @@ describe('buildSubmitRequest', () => {
   it('sends the delivery choice the server made for each station', () => {
     const ready = draftWithABratwurst()
 
-    const request = buildSubmitRequest(ready, catalog(), false, [
+    const request = buildSubmitRequest(ready, catalog(), null, [
       { stationId: 'station-2', deliveryMode: 'asItComes' },
     ])
 
@@ -167,7 +167,7 @@ describe('buildSubmitRequest', () => {
   it('sends no item name, because the laptop keeps the name from its own catalog', () => {
     const ready = draftWithABratwurst(null, null)
 
-    const request = buildSubmitRequest(ready, catalog(), false, [])
+    const request = buildSubmitRequest(ready, catalog(), null, [])
 
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
@@ -177,15 +177,20 @@ describe('buildSubmitRequest', () => {
     ])
   })
 
-  it('tells the laptop that the guest paid on the spot', () => {
+  it('tells the laptop what the table paid and why it paid less', () => {
     const ready = draftWithABratwurst(null, null)
 
-    const request = buildSubmitRequest(ready, catalog(), true, [])
+    const request = buildSubmitRequest(
+      ready,
+      catalog(),
+      { amountPaidCents: 300, paymentNotice: 'Stammgast' },
+      [],
+    )
 
-    expect(request.settleOnSend).toBe(true)
+    expect(request.settlement).toEqual({ amountPaidCents: 300, paymentNotice: 'Stammgast' })
   })
 
   it('refuses to build a request for a draft that never got a submission id', () => {
-    expect(() => buildSubmitRequest(emptyDraft(), catalog(), false, [])).toThrow()
+    expect(() => buildSubmitRequest(emptyDraft(), catalog(), null, [])).toThrow()
   })
 })

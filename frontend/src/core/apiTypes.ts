@@ -72,11 +72,16 @@ export interface StationDeliveryMode {
   deliveryMode: DeliveryMode
 }
 
+export interface OrderSettlementRequest {
+  amountPaidCents: number
+  paymentNotice: string | null
+}
+
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableName: string
   note: string | null
-  settleOnSend: boolean
+  settlement: OrderSettlementRequest | null
   items: OrderSubmitItem[]
   deliveryModes: StationDeliveryMode[]
 }

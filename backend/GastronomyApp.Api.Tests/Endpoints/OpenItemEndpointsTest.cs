@@ -25,7 +25,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_AnOrderSentWithoutSettling_ListsTheTableWithWhatItStillOwes()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    await PlaceOrderAsync("Tisch 12");
 
     var body = await ReadOpenItemsAsync();
     var tables = body.RootElement.GetProperty("tables");
@@ -42,7 +42,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_AnOrderSentAndSettled_LeavesTheTableOut()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: true);
+    await PlaceOrderAsync("Tisch 12", new OrderSettlementBody(700));
 
     var body = await ReadOpenItemsAsync();
 
@@ -52,7 +52,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetTableNames_AnOrderSentAndSettled_StillOffersTheNameForTheNextOrder()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: true);
+    await PlaceOrderAsync("Tisch 12", new OrderSettlementBody(700));
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items/table-names");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -66,7 +66,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_ATableWhereEverythingWasGivenAway_StillNamesTheTableWithTheReason()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var given = await _context.SendAsync(HttpMethod.Post,
                                                "/api/open-items/settle",
@@ -92,7 +92,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_ATableThatPaidTheFullAmount_ShowsNothingAsGivenAway()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var settled = await _context.SendAsync(HttpMethod.Post,
                                                  "/api/open-items/settle",
@@ -109,7 +109,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_NothingBroken_ReportsThatNoItemIsMissingFromTheList()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    await PlaceOrderAsync("Tisch 12");
 
     var body = await ReadOpenItemsAsync();
 
@@ -119,7 +119,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostOrder_SentAndSettled_ChargesTheDisplayedPriceOnEveryItem()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: true);
+    await PlaceOrderAsync("Tisch 12", new OrderSettlementBody(700));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -136,7 +136,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostOrder_SentAndSettled_RecordsTheSendingWaiterAsTheOneWhoCollectedTheMoney()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: true);
+    await PlaceOrderAsync("Tisch 12", new OrderSettlementBody(700));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -148,7 +148,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostOrder_SentWithoutSettling_LeavesTheCollectingWaiterUnwritten()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    await PlaceOrderAsync("Tisch 12");
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -159,7 +159,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_TheItemsOfATable_RecordsTheWaiterWhoCollectedTheMoney()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -179,7 +179,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_NothingAtAllWithAReason_RecordsTheWaiterWhoGaveTheItemsAway()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -199,7 +199,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_TheFullAmount_ChargesEveryItemItsOwnPriceAndClearsTheTable()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -224,7 +224,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_APartOfWhatTheTableOwes_SplitsTheAmountAcrossTheItemsAndClearsThem()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -251,7 +251,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_WithoutAnAmount_IsRefusedWithWordingThePhoneCanShow()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -272,7 +272,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_ANegativeAmount_IsRefusedWithWordingThePhoneCanShow()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -293,7 +293,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_TheSameSelectionASecondTime_SettlesNothingFurther()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var first = await _context.SendAsync(HttpMethod.Post,
                                                "/api/open-items/settle",
@@ -316,7 +316,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_NothingAtAllWithAReason_ChargesNothingAndKeepsTheDisplayedPrice()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -337,7 +337,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_LessThanTheTableOwesWithoutAReason_IsRefusedWithWordingThePhoneCanShow()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -358,7 +358,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_AnItemThatWasAlreadyGivenAway_KeepsTheReasonThatWasTypedFirst()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var first = await _context.SendAsync(HttpMethod.Post,
                                                "/api/open-items/settle",
@@ -381,7 +381,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_ASelectionHoldingAnItemTheLaptopDoesNotKnow_SettlesNothingAtAll()
   {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -402,8 +402,8 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostSettle_ASelectionSpanningTwoTables_SettlesNothingAtAll()
   {
-    IReadOnlyList<Guid> twelve = await PlaceOrderAsync("Tisch 12", settleOnSend: false);
-    IReadOnlyList<Guid> three = await PlaceOrderAsync("Tisch 3", settleOnSend: false);
+    IReadOnlyList<Guid> twelve = await PlaceOrderAsync("Tisch 12");
+    IReadOnlyList<Guid> three = await PlaceOrderAsync("Tisch 3");
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
@@ -426,8 +426,8 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_TwoTablesWithSomethingOpen_KeepsEachTableApart()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
-    await PlaceOrderAsync("Tisch 3", settleOnSend: false);
+    await PlaceOrderAsync("Tisch 12");
+    await PlaceOrderAsync("Tisch 3");
 
     var body = await ReadOpenItemsAsync();
 
@@ -440,7 +440,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_AnItemWhoseOrderCannotBeFound_SaysHowManyItemsTheListIsMissing()
   {
-    await PlaceOrderAsync("Tisch 12", settleOnSend: false);
+    await PlaceOrderAsync("Tisch 12");
     await AddAnItemWithoutAnOrderAsync();
 
     var body = await ReadOpenItemsAsync();
@@ -491,7 +491,7 @@ public sealed class OpenItemEndpointsTest
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
   }
 
-  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(string tableName, bool settleOnSend)
+  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(string tableName, OrderSettlementBody? settlement = null)
   {
     OrderBody order = new(Guid.NewGuid(),
                           tableName,
@@ -500,7 +500,7 @@ public sealed class OpenItemEndpointsTest
                             new(_context.World.BratwurstItemId, 350, null, null),
                             new(_context.World.BratwurstItemId, 350, null, null)
                           ],
-                          settleOnSend);
+                          settlement);
 
     using var response = await _context.PostOrderAsync(order);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

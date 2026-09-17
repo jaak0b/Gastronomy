@@ -430,7 +430,7 @@ describe('the record of what became of a send', () => {
     expect(restoreSendProgress()).toEqual({
       state: 'idle',
       attempts: 0,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -440,7 +440,7 @@ describe('the record of what became of a send', () => {
     const stored = {
       state: 'failed',
       attempts: 2,
-      settleOnSend: true,
+      settlement: { amountPaidCents: 500, paymentNotice: 'Stammgast' },
       anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailedDatabase' },
     } as const
@@ -454,12 +454,16 @@ describe('the record of what became of a send', () => {
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settleOnSend: false,
+      settlement: { amountPaidCents: 500, paymentNotice: null },
       anAttemptWentUnanswered: false,
       failure: null,
     })
 
     expect(restoreSendProgress().state).toBe('sending')
+    expect(restoreSendProgress().settlement).toEqual({
+      amountPaidCents: 500,
+      paymentNotice: null,
+    })
   })
 
   it('falls back to an untouched order when the record cannot be read at all', () => {
@@ -468,7 +472,7 @@ describe('the record of what became of a send', () => {
     expect(restoreSendProgress()).toEqual({
       state: 'idle',
       attempts: 0,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -478,7 +482,7 @@ describe('the record of what became of a send', () => {
     saveSendProgress({
       state: 'failed',
       attempts: 2,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: true,
       failure: null,
     })

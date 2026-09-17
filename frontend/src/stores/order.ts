@@ -5,6 +5,7 @@ import type {
   DeliveryMode,
   DraftLine,
   DraftOrder,
+  OrderSettlementRequest,
   OrderSubmitResponse,
 } from '../core/apiTypes'
 import {
@@ -87,7 +88,9 @@ export const useOrderStore = defineStore('order', () => {
   const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
   const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
   const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
-  const settledOnSend = ref(progressWhenTheAppLoaded.settleOnSend)
+  const settlementOnSend = ref<OrderSettlementRequest | null>(
+    progressWhenTheAppLoaded.settlement,
+  )
   const anAttemptWentUnanswered = ref(progressWhenTheAppLoaded.anAttemptWentUnanswered)
   const acceptedOrderNumber = ref<number | null>(null)
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
@@ -98,7 +101,7 @@ export const useOrderStore = defineStore('order', () => {
     return {
       state: sendState.value,
       attempts: attemptsMade.value,
-      settleOnSend: settledOnSend.value,
+      settlement: settlementOnSend.value,
       anAttemptWentUnanswered: anAttemptWentUnanswered.value,
       failure: failure.value,
     }
@@ -227,16 +230,16 @@ export const useOrderStore = defineStore('order', () => {
   function putTheSendBackTo(progress: SendProgress): void {
     sendState.value = progress.state
     attemptsMade.value = progress.attempts
-    settledOnSend.value = progress.settleOnSend
+    settlementOnSend.value = progress.settlement
     anAttemptWentUnanswered.value = progress.anAttemptWentUnanswered
     failure.value = progress.failure
     rememberWhatBecameOfTheSend()
   }
 
-  async function send(settleOnSend: boolean): Promise<void> {
+  async function send(settlement: OrderSettlementRequest | null): Promise<void> {
     const session = useSessionStore()
     const sendBeforeThisAttempt = whatTheSendHasComeTo()
-    settledOnSend.value = settleOnSend
+    settlementOnSend.value = settlement
     attemptsMade.value += 1
     failure.value = null
     sendState.value = 'sending'
@@ -246,7 +249,7 @@ export const useOrderStore = defineStore('order', () => {
       body: buildSubmitRequest(
         draft.value,
         catalogStore.catalog,
-        settleOnSend,
+        settlement,
         deliveryModesOf(slices.value, draft.value.deliveryModes),
       ),
       token: session.deviceToken,
@@ -284,7 +287,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   async function sendAgain(): Promise<void> {
-    await send(settledOnSend.value)
+    await send(settlementOnSend.value)
   }
 
   return {
@@ -294,7 +297,7 @@ export const useOrderStore = defineStore('order', () => {
     failure,
     attemptsMade,
     acceptedOrderNumber,
-    settledOnSend,
+    settlementOnSend,
     basketLines,
     slices,
     itemCount,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { OrderSettlementRequest } from '../core/apiTypes'
 import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../core/totals'
 import { useEstimatesStore } from '../stores/estimates'
@@ -31,26 +32,19 @@ const canSend = computed(
     !order.isSending,
 )
 
-const settleOnSendAwaitingConfirmation = ref<boolean | null>(null)
+const sendSheetIsOpen = ref(false)
 
-function askWhetherToSend(settleOnSend: boolean): void {
-  settleOnSendAwaitingConfirmation.value = settleOnSend
+function openTheSendSheet(): void {
+  sendSheetIsOpen.value = true
 }
 
 function keepTheOrderOnTheScreen(): void {
-  settleOnSendAwaitingConfirmation.value = null
+  sendSheetIsOpen.value = false
 }
 
-async function sendAsConfirmed(): Promise<void> {
-  const settleOnSend = settleOnSendAwaitingConfirmation.value
-  settleOnSendAwaitingConfirmation.value = null
-  if (settleOnSend !== null) {
-    await send(settleOnSend)
-  }
-}
-
-async function send(settleOnSend: boolean): Promise<void> {
-  await order.send(settleOnSend)
+async function sendAsConfirmed(settlement: OrderSettlementRequest | null): Promise<void> {
+  sendSheetIsOpen.value = false
+  await order.send(settlement)
   if (order.sendState === 'accepted') {
     navigate('/')
   }
@@ -124,25 +118,14 @@ function backToItems(): void {
         </v-btn>
         <template v-else>
           <v-btn
-            class="send-and-settle mt-2"
+            class="continue mt-2"
             color="primary"
             block
             size="x-large"
             :disabled="!canSend"
-            @click="askWhetherToSend(true)"
+            @click="openTheSendSheet"
           >
-            {{ order.isSending ? t('review.sending') : t('review.sendAndSettle') }}
-          </v-btn>
-          <v-btn
-            class="send mt-2"
-            color="primary"
-            variant="outlined"
-            block
-            size="x-large"
-            :disabled="!canSend"
-            @click="askWhetherToSend(false)"
-          >
-            {{ order.isSending ? t('review.sending') : t('review.send') }}
+            {{ t('review.continue') }}
           </v-btn>
         </template>
         <v-btn
@@ -157,8 +140,7 @@ function backToItems(): void {
       </div>
     </DockedStrip>
     <ConfirmSendDialog
-      v-if="settleOnSendAwaitingConfirmation !== null"
-      :settle-on-send="settleOnSendAwaitingConfirmation"
+      v-if="sendSheetIsOpen"
       :table-name="order.draft.tableName"
       :total-cents="order.totalCents"
       :language="session.language"

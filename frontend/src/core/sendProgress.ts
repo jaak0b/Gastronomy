@@ -1,4 +1,5 @@
 import { assertNever } from './assertNever'
+import type { OrderSettlementRequest } from './apiTypes'
 import { messageForAnInterruptedSend, type SendFailureMessage } from './sendFailure'
 
 export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted'] as const
@@ -10,7 +11,7 @@ const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 export interface SendProgress {
   state: SendState
   attempts: number
-  settleOnSend: boolean
+  settlement: OrderSettlementRequest | null
   anAttemptWentUnanswered: boolean
   failure: SendFailureMessage | null
 }
@@ -19,7 +20,7 @@ export function noSendProgress(): SendProgress {
   return {
     state: 'idle',
     attempts: 0,
-    settleOnSend: false,
+    settlement: null,
     anAttemptWentUnanswered: false,
     failure: null,
   }

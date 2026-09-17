@@ -9,12 +9,14 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 
 public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
 
+public sealed record OrderSettlementBody(int AmountPaidCents, string? PaymentNotice = null);
+
 public sealed record OrderBody(
   Guid ClientOrderId,
   string TableName,
   string? Note,
   IReadOnlyList<OrderItemBody> Items,
-  bool SettleOnSend = false);
+  OrderSettlementBody? Settlement = null);
 
 public sealed record SettleItemsBody(
   IReadOnlyList<Guid> OrderItemIds,

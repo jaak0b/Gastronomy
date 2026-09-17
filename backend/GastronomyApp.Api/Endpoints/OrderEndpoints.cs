@@ -75,7 +75,13 @@ public sealed class OrderPlacementHandler
                                                  StaffMemberId = caller.StaffMemberId,
                                                  TableName = request.TableName ?? string.Empty,
                                                  Note = request.Note,
-                                                 SettleOnSend = request.SettleOnSend,
+                                                 Settlement = request.Settlement is null
+                                                                ? null
+                                                                : new OrderSettlementTerms
+                                                                  {
+                                                                    AmountPaidCents = request.Settlement.AmountPaidCents,
+                                                                    PaymentNotice = request.Settlement.PaymentNotice
+                                                                  },
                                                  Items =
                                                  [
                                                    .. (request.Items ?? []).Select(item => new OrderAcceptanceItemRequest
@@ -107,6 +113,14 @@ public sealed class OrderPlacementHandler
                       caller.StaffMemberId,
                       acceptance.Failure.Reason,
                       acceptance.Failure.OffendingCatalogItemId);
+
+      if (acceptance.Failure.SettlementFailureReason is { } settlementFailureReason)
+      {
+        _log.LogWarning("The settlement of the order {ClientOrderId} from staff member {StaffMemberId} was refused because {SettlementFailureReason}.",
+                        request.ClientOrderId,
+                        caller.StaffMemberId,
+                        settlementFailureReason);
+      }
 
       return _resultEnvelope.ToResult(_resultEnvelope.Describe(acceptance.Failure));
     }

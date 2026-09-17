@@ -127,7 +127,7 @@ public sealed class OrderAcceptanceServiceTest
 
   private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items,
                                              string tableName = "Tisch 12",
-                                             bool settleOnSend = false,
+                                             OrderSettlementTerms? settlement = null,
                                              IReadOnlyList<StationDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
@@ -136,7 +136,7 @@ public sealed class OrderAcceptanceServiceTest
              StaffMemberId = _staffMemberId,
              TableName = tableName,
              Note = null,
-             SettleOnSend = settleOnSend,
+             Settlement = settlement,
              Items = items,
              DeliveryModes = deliveryModes ?? []
            };
@@ -448,6 +448,92 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
+  public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId, unitPriceCents: 350), ItemFor(_beerId, unitPriceCents: 400)],
+                                             settlement: new() { AmountPaidCents = 750 }),
+                                 CancellationToken.None);
+
+    List<OrderItem> items = ItemsOf(result.Value.Order);
+    var bratwurstLine = items.Single(item => item.CatalogItemId == _bratwurstId);
+    var beerLine = items.Single(item => item.CatalogItemId == _beerId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(bratwurstLine.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(beerLine.ChargedPriceCents, Is.EqualTo(400));
+                      Assert.That(items.Select(item => item.SettledAtUtc), Is.All.EqualTo(_now));
+                      Assert.That(items.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_staffMemberId));
+                      Assert.That(items.Select(item => item.PaymentNotice), Is.All.Null);
+                      Assert.That(items.Select(item => item.FulfilledAtUtc), Is.All.Null);
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_bratwurstId)],
+                                             settlement: new() { AmountPaidCents = 500 }),
+                                 CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.SettlementCannotBeProcessed));
+                      Assert.That(result.Failure.SettlementFailureReason, Is.EqualTo(SettlementFailureReason.PaymentNoticeMissing));
+                    });
+    A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task AcceptAsync_SettlementBelowTheTotalWithANotice_SplitsTheAmountByTheExistingRule()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await _service.AcceptAsync(RequestWith([
+                                               ItemFor(_bratwurstId, unitPriceCents: 333),
+                                               ItemFor(_bratwurstId, unitPriceCents: 333),
+                                               ItemFor(_bratwurstId, unitPriceCents: 333)
+                                             ],
+                                             settlement: new()
+                                                         {
+                                                           AmountPaidCents = 500,
+                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                         }),
+                                 CancellationToken.None);
+
+    List<OrderItem> items = ItemsOf(result.Value.Order);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(items.Select(item => item.ChargedPriceCents), Is.EqualTo(new[] { 167, 167, 166 }));
+                      Assert.That(items.Sum(item => item.ChargedPriceCents), Is.EqualTo(500));
+                      Assert.That(items.Select(item => item.PaymentNotice), Is.All.EqualTo("Der Tisch zahlt den Rest spaeter"));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_NoSettlement_LeavesEveryItemUnsettled()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+                                                                                              CancellationToken.None);
+
+    List<OrderItem> items = ItemsOf(result.Value.Order);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(items.Select(item => item.SettledAtUtc), Is.All.Null);
+                      Assert.That(items.Select(item => item.ChargedPriceCents), Is.All.Null);
+                      Assert.That(items.Select(item => item.SettledByStaffMemberId), Is.All.Null);
+                      Assert.That(items.Select(item => item.PaymentNotice), Is.All.Null);
+                    });
+  }
+
+  [Test]
   public async Task AcceptAsync_NoDeliveryModeNamed_SendsEverySliceTogether()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
@@ -516,6 +602,8 @@ public sealed class OrderAcceptanceServiceTest
                     OrderValidationFailureReason.ItemHasNoStation =>
                       RequestWith([ItemFor(ItemWithNoActiveStationId())]),
                     OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
+                    OrderValidationFailureReason.SettlementCannotBeProcessed =>
+                      RequestWith([ItemFor(_bratwurstId)], settlement: new() { AmountPaidCents = 1 }),
                     _ => throw new InvalidOperationException($"No scenario covers {scenario}")
                   };
 

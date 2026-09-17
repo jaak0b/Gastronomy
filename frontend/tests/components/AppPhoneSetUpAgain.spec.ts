@@ -103,7 +103,7 @@ describe('a waiter who sends an order from a phone that was set up again while t
   it('is asked to set the phone up again instead of being told the laptop was not reached', async () => {
     const order = await aPhoneOnTheSummaryWithAnOrderOnIt()
 
-    await order.send(false)
+    await order.send(null)
     await flushPromises()
 
     expect(phone?.find('.welcome').exists()).toBe(true)
@@ -112,7 +112,7 @@ describe('a waiter who sends an order from a phone that was set up again while t
   it('still has the order on the phone, so it comes back once the new code is scanned', async () => {
     const order = await aPhoneOnTheSummaryWithAnOrderOnIt()
 
-    await order.send(false)
+    await order.send(null)
     await flushPromises()
 
     expect(restoreDraft().draft.lines).toHaveLength(1)
@@ -122,7 +122,7 @@ describe('a waiter who sends an order from a phone that was set up again while t
     const order = await aPhoneOnTheSummaryWithAnOrderOnIt()
     const identity = order.draft.clientOrderId
 
-    await order.send(false)
+    await order.send(null)
     await flushPromises()
 
     expect(restoreDraft().draft.clientOrderId).toBe(identity)
@@ -148,7 +148,7 @@ describe('a phone whose waiter was set up again while the phone was switched off
 describe('a phone that is set up again after the laptop refused the order it was sent', () => {
   async function aPhoneBackOnItsOrderAfterANewCodeWasScanned() {
     const order = await aPhoneOnTheSummaryWithAnOrderOnIt()
-    await order.send(false)
+    await order.send(null)
     await flushPromises()
 
     await useSessionStore().redeem({ code: '123456' })
@@ -184,7 +184,7 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })

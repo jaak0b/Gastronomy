@@ -121,7 +121,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -133,7 +133,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -145,7 +145,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -157,7 +157,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 2,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: null,
     })
@@ -165,23 +165,23 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     expect(loaded.attempts).toBe(2)
   })
 
-  it('keeps the choice the waiter made about paying, so a retry cannot swap it', () => {
+  it('keeps the settlement the waiter confirmed, so a retry cannot swap it', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settleOnSend: true,
+      settlement: { amountPaidCents: 1200, paymentNotice: 'Stammgast' },
       anAttemptWentUnanswered: false,
       failure: null,
     })
 
-    expect(loaded.settleOnSend).toBe(true)
+    expect(loaded.settlement).toEqual({ amountPaidCents: 1200, paymentNotice: 'Stammgast' })
   })
 
   it('leaves a send that had already failed exactly as it was', () => {
     const failed = {
       state: 'failed',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailedDatabase' },
     } as const
@@ -193,7 +193,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const refused = {
       state: 'rejected',
       attempts: 0,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: false,
       failure: { key: 'order.unknownItem' },
     } as const
@@ -210,7 +210,7 @@ describe('the send progress a freshly loaded page can honestly report', () => {
       progressAfterALoad({
         state: 'accepted',
         attempts: 0,
-        settleOnSend: true,
+        settlement: { amountPaidCents: 700, paymentNotice: null },
         anAttemptWentUnanswered: false,
         failure: null,
       }),

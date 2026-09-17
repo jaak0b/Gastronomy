@@ -20,6 +20,13 @@ public sealed record OrderDeliveryModeRequest
   public required DeliveryMode DeliveryMode { get; init; }
 }
 
+public sealed record OrderSettlementRequest
+{
+  public required int AmountPaidCents { get; init; }
+
+  public string? PaymentNotice { get; init; }
+}
+
 public sealed record PlaceOrderRequest
 {
   public required Guid ClientOrderId { get; init; }
@@ -28,7 +35,7 @@ public sealed record PlaceOrderRequest
 
   public string? Note { get; init; }
 
-  public bool SettleOnSend { get; init; }
+  public OrderSettlementRequest? Settlement { get; init; }
 
   public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
 

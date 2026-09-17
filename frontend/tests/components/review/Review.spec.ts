@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/views/Review.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
@@ -40,6 +40,21 @@ function prepareOrder() {
   return order
 }
 
+async function openTheSendSheet(review: VueWrapper): Promise<void> {
+  await review.get('.continue').trigger('click')
+  await vi.waitFor(() =>
+    expect(document.querySelector('.confirm-send-dialog .confirm')).not.toBeNull(),
+  )
+}
+
+async function chooseToSettleNow(): Promise<void> {
+  await vi.waitFor(() =>
+    expect(document.querySelector('.confirm-send-dialog .settle-now')).not.toBeNull(),
+  )
+  ;(document.querySelector('.confirm-send-dialog .settle-now') as HTMLElement).click()
+  await flushPromises()
+}
+
 async function confirmTheSend(review: VueWrapper): Promise<void> {
   await vi.waitFor(() =>
     expect(document.querySelector('.confirm-send-dialog .confirm')).not.toBeNull(),
@@ -48,8 +63,11 @@ async function confirmTheSend(review: VueWrapper): Promise<void> {
   await review.vm.$nextTick()
 }
 
-async function sendFromTheStrip(review: VueWrapper, button: string): Promise<void> {
-  await review.get(button).trigger('click')
+async function sendFromTheStrip(review: VueWrapper, settleNow = false): Promise<void> {
+  await openTheSendSheet(review)
+  if (settleNow) {
+    await chooseToSettleNow()
+  }
   await confirmTheSend(review)
 }
 
@@ -135,7 +153,7 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     expect(currentRoute.value).toEqual({ name: 'home' })
@@ -144,7 +162,7 @@ describe('sending the order from the review screen', () => {
   it('lets the next order be sent while the arrival notice of the last one is still up', async () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     prepareOrder()
@@ -153,7 +171,7 @@ describe('sending the order from the review screen', () => {
       attachTo: document.body,
     })
 
-    expect(nextReview.get('.send').attributes('disabled')).toBeUndefined()
+    expect(nextReview.get('.continue').attributes('disabled')).toBeUndefined()
   })
 
   it('keeps a refused order on the summary, with everything the server typed still there', async () => {
@@ -166,7 +184,7 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     expect(currentRoute.value).toEqual({ name: 'review' })
@@ -185,11 +203,10 @@ describe('sending the order from the review screen', () => {
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
-    expect(review.find('.send').exists()).toBe(false)
-    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.find('.continue').exists()).toBe(false)
     expect(review.find('.send-failure').exists()).toBe(true)
   })
 
@@ -217,25 +234,25 @@ describe('sending the order from the review screen', () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settleOnSend).toBe(false)
+    expect(sent.settlement).toBeNull()
   })
 
   it('settles every item at once when the guest pays on the spot', async () => {
     const order = prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
-    await sendFromTheStrip(review, '.send-and-settle')
+    await sendFromTheStrip(review, true)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settleOnSend).toBe(true)
+    expect(sent.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
   })
 
-  it('retries with the same choice the server made, so a retry cannot change who paid', async () => {
+  it('retries with the same settlement the server confirmed, so a retry cannot change who paid', async () => {
     const order = prepareOrder()
     vi.stubGlobal(
       'fetch',
@@ -244,14 +261,14 @@ describe('sending the order from the review screen', () => {
       }),
     )
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review, '.send-and-settle')
+    await sendFromTheStrip(review, true)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
 
     await review.get('.send-again').trigger('click')
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
     const retried = JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)
-    expect(retried.settleOnSend).toBe(true)
+    expect(retried.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
   })
 
   it('keeps the total and the send button within reach while the lines scroll', () => {
@@ -261,8 +278,7 @@ describe('sending the order from the review screen', () => {
     const footer = review.get('.review-footer')
 
     expect(footer.classes()).toContain('docked-strip')
-    expect(footer.find('.send').exists()).toBe(true)
-    expect(footer.find('.send-and-settle').exists()).toBe(true)
+    expect(footer.find('.continue').exists()).toBe(true)
   })
 })
 
@@ -301,8 +317,7 @@ describe('an order holding something that cannot be ordered', () => {
     soldOutOrder()
     const review = mountReview()
 
-    expect(review.find('.send').exists()).toBe(false)
-    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.find('.continue').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
@@ -310,17 +325,15 @@ describe('an order holding something that cannot be ordered', () => {
     orderWithAVanishedItem()
     const review = mountReview()
 
-    expect(review.find('.send').exists()).toBe(false)
-    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.find('.continue').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
-  it('leaves both ways of sending open while the whole order can be ordered', () => {
+  it('leaves the way to send open while the whole order can be ordered', () => {
     prepareOrder()
     const review = mountReview()
 
-    expect(review.get('.send').attributes('disabled')).toBeUndefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
+    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
   })
 
   it('offers one button that takes the sold-out item off as well', async () => {
@@ -347,8 +360,7 @@ describe('an order holding something that cannot be ordered', () => {
 
     await review.get('.drop-lines-that-cannot-be-ordered').trigger('click')
 
-    expect(review.get('.send').attributes('disabled')).toBeUndefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
+    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
   })
 })
 
@@ -372,7 +384,7 @@ describe('an order the laptop did not confirm', () => {
 
   async function reviewAfterAFailedSend(order: ReturnType<typeof useOrderStore>) {
     const review = mountReview()
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('failed'))
     return review
   }
@@ -414,7 +426,7 @@ describe('an order the laptop did not confirm', () => {
     expect(review.get('.line-name').text()).toBe('1 x Wasser')
     expect(review.get('.order-total').text()).toContain('2.00')
   })
-  it('offers the retry in the docked strip, where the send buttons stood', async () => {
+  it('offers the retry in the docked strip, where the send action stands', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
@@ -519,7 +531,7 @@ describe('an order that is still on its way to the laptop', () => {
   async function reviewOfAnOrderOnItsWay() {
     prepareOrder()
     const review = mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     return review
   }
 
@@ -539,7 +551,7 @@ describe('an order that is still on its way to the laptop', () => {
     const review = await reviewOfAnOrderOnItsWay()
 
     expect(review.get('.send-again').text()).toBe('Wird gesendet')
-    expect(review.find('.send').exists()).toBe(false)
+    expect(review.find('.continue').exists()).toBe(false)
   })
 })
 
@@ -578,7 +590,7 @@ describe('an order the laptop refused with a reason', () => {
   }
 
   async function reviewAfterARefusal(order: ReturnType<typeof useOrderStore>) {
-    await order.send(false)
+    await order.send(null)
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
@@ -610,10 +622,10 @@ describe('an order the laptop refused with a reason', () => {
     ).toBeUndefined()
   })
 
-  it('leaves the two ways of sending in the strip, because this is not a retry into the dark', async () => {
+  it('leaves the way to send in the strip, because this is not a retry into the dark', async () => {
     const review = await reviewAfterARefusal(prepareOrder())
 
-    expect(review.get('.review-footer .send-and-settle').exists()).toBe(true)
+    expect(review.get('.review-footer .continue').exists()).toBe(true)
     expect(review.find('.send-again').exists()).toBe(false)
   })
 
@@ -641,7 +653,7 @@ describe('an order the laptop answered but could not save', () => {
 
   async function reviewAfterTheAnswer() {
     const order = prepareOrder()
-    await order.send(false)
+    await order.send(null)
     return mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
@@ -653,11 +665,10 @@ describe('an order the laptop answered but could not save', () => {
     )
   })
 
-  it('leaves both ways of sending in the strip, because the answer said no order was created', async () => {
+  it('leaves the way to send in the strip, because the answer said no order was created', async () => {
     const review = await reviewAfterTheAnswer()
 
-    expect(review.get('.review-footer .send-and-settle').exists()).toBe(true)
-    expect(review.get('.review-footer .send').exists()).toBe(true)
+    expect(review.get('.review-footer .continue').exists()).toBe(true)
     expect(review.find('.send-again').exists()).toBe(false)
   })
 
@@ -669,7 +680,7 @@ describe('an order the laptop answered but could not save', () => {
 
   it('never covers the screen with the paper dialog, because the laptop answered', async () => {
     const order = prepareOrder()
-    await order.send(false)
+    await order.send(null)
     mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await order.sendAgain()
@@ -709,8 +720,7 @@ describe('an order holding a line the admin moved to another station', () => {
     orderWhoseStationWasTakenOff()
     const review = mountReview()
 
-    expect(review.find('.send').exists()).toBe(false)
-    expect(review.find('.send-and-settle').exists()).toBe(false)
+    expect(review.find('.continue').exists()).toBe(false)
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
@@ -759,7 +769,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailed' },
     })
@@ -841,40 +851,40 @@ describe('the question the waiter answers before an order goes out', () => {
     const order = prepareOrder()
     const review = mountReview()
 
-    await review.get('.send-and-settle').trigger('click')
+    await review.get('.continue').trigger('click')
 
     expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
     expect(order.sendState).toBe('idle')
     expect(document.querySelector('.confirm-send-dialog')).not.toBeNull()
   })
 
-  it('settles the table only once the waiter has confirmed it', async () => {
+  it('settles the table with the amount the waiter confirmed', async () => {
     const order = prepareOrder()
     const review = mountReview()
 
-    await sendFromTheStrip(review, '.send-and-settle')
+    await sendFromTheStrip(review, true)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settleOnSend).toBe(true)
+    expect(sent.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
   })
 
   it('leaves the table open only once the waiter has confirmed it', async () => {
     const order = prepareOrder()
     const review = mountReview()
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settleOnSend).toBe(false)
+    expect(sent.settlement).toBeNull()
   })
 
   it('names the table, the amount and what the station will do in the question', async () => {
     prepareOrder()
     const review = mountReview()
 
-    await review.get('.send').trigger('click')
+    await review.get('.continue').trigger('click')
     await vi.waitFor(() =>
       expect(document.querySelector('.confirm-send-dialog .row-table')).not.toBeNull(),
     )
@@ -890,7 +900,7 @@ describe('the question the waiter answers before an order goes out', () => {
   it('hands the order back untouched when the waiter backs out', async () => {
     const order = prepareOrder()
     const review = mountReview()
-    await review.get('.send-and-settle').trigger('click')
+    await review.get('.continue').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
 
     ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
@@ -899,22 +909,22 @@ describe('the question the waiter answers before an order goes out', () => {
     expect(vi.mocked(fetch).mock.calls).toHaveLength(0)
     expect(order.sendState).toBe('idle')
     expect(order.basketLines).toHaveLength(1)
-    expect(review.get('.send').attributes('disabled')).toBeUndefined()
-    expect(review.get('.send-and-settle').attributes('disabled')).toBeUndefined()
+    expect(review.get('.continue').attributes('disabled')).toBeUndefined()
   })
 
   it('asks again after a cancelled send, with the choice made afresh', async () => {
     const order = prepareOrder()
     const review = mountReview()
-    await review.get('.send-and-settle').trigger('click')
+    await review.get('.continue').trigger('click')
     await vi.waitFor(() => expect(document.querySelector('.confirm-send-dialog')).not.toBeNull())
+    await chooseToSettleNow()
     ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
     await review.vm.$nextTick()
 
-    await sendFromTheStrip(review, '.send')
+    await sendFromTheStrip(review)
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settleOnSend).toBe(false)
+    expect(sent.settlement).toBeNull()
   })
 })

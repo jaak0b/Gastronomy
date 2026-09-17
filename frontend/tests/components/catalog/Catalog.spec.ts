@@ -788,11 +788,11 @@ describe('the items screen while an order is frozen on the laptop', () => {
       name: 'Wasser',
     })
     order.setTable('Tisch 5')
-    await order.send(false)
+    await order.send(null)
     return order
   }
 
-  it('sends the waiter to the summary, where the failure and both ways out are', async () => {
+  it('sends the waiter to the summary, where the failure and the retry are', async () => {
     await anOrderThatCouldNotBeSent()
 
     mountCatalog()
@@ -848,7 +848,7 @@ describe('the items screen after the laptop refused an order', () => {
       name: 'Wasser',
     })
     order.setTable('Tisch 5')
-    await order.send(false)
+    await order.send(null)
 
     mountCatalog()
 

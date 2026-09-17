@@ -1,4 +1,9 @@
-import type { DeliveryMode, DraftLine, DraftOrder } from './apiTypes'
+import type {
+  DeliveryMode,
+  DraftLine,
+  DraftOrder,
+  OrderSettlementRequest,
+} from './apiTypes'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 
@@ -138,19 +143,39 @@ function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   return { key: candidate.key }
 }
 
+function toSettlementRequest(value: unknown): OrderSettlementRequest | null | undefined {
+  if (value === null) {
+    return null
+  }
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  const candidate = value as Record<string, unknown>
+  const amountPaidCents = candidate.amountPaidCents
+  const paymentNotice = candidate.paymentNotice
+  if (typeof amountPaidCents !== 'number') {
+    return undefined
+  }
+  if (paymentNotice !== null && typeof paymentNotice !== 'string') {
+    return undefined
+  }
+  return { amountPaidCents, paymentNotice }
+}
+
 function toSendProgress(value: unknown): SendProgress | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null
   }
   const candidate = value as Record<string, unknown>
   const state = SEND_STATES.find((known) => known === candidate.state)
-  if (state === undefined || typeof candidate.attempts !== 'number') {
+  const settlement = toSettlementRequest(candidate.settlement)
+  if (state === undefined || typeof candidate.attempts !== 'number' || settlement === undefined) {
     return null
   }
   return {
     state,
     attempts: candidate.attempts,
-    settleOnSend: candidate.settleOnSend === true,
+    settlement,
     anAttemptWentUnanswered: candidate.anAttemptWentUnanswered === true,
     failure: toSendFailureMessage(candidate.failure),
   }
@@ -174,7 +199,7 @@ export function saveSendProgress(progress: SendProgress): void {
     JSON.stringify({
       state: progress.state,
       attempts: progress.attempts,
-      settleOnSend: progress.settleOnSend,
+      settlement: progress.settlement,
       anAttemptWentUnanswered: progress.anAttemptWentUnanswered,
       failure: progress.failure === null ? null : { key: progress.failure.key },
     }),

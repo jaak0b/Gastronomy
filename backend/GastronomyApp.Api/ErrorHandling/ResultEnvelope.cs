@@ -29,6 +29,8 @@ public sealed class ResultEnvelope
                Unprocessable(CannotBeProcessedKey, null),
              OrderValidationFailureReason.OrderNumberCouldNotBeAllocated =>
                Unprocessable(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.SettlementCannotBeProcessed =>
+               Validation(SettlementCannotBeProcessedKey),
              OrderValidationFailureReason.UnknownCatalogItemId =>
                Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationNotAssignedToItem =>

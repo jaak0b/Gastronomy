@@ -14,6 +14,8 @@ public sealed record OrderValidationFailure
   public required OrderValidationFailureReason Reason { get; init; }
 
   public Guid? OffendingCatalogItemId { get; init; }
+
+  public SettlementFailureReason? SettlementFailureReason { get; init; }
 }
 
 public enum OrderValidationFailureReason
@@ -26,5 +28,6 @@ public enum OrderValidationFailureReason
   ItemHasNoStation,
   PriceOutOfRange,
   NoRunningFestival,
-  OrderNumberCouldNotBeAllocated
+  OrderNumberCouldNotBeAllocated,
+  SettlementCannotBeProcessed
 }

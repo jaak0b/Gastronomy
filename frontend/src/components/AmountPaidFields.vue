@@ -1,0 +1,77 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { AppLanguage, OrderSettlementRequest } from '../core/apiTypes'
+import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../core/money'
+import { canTheAmountBeSettled, isPaymentNoticeNeeded } from '../core/openItems'
+
+const props = defineProps<{
+  totalCents: number
+  language: AppLanguage
+}>()
+
+const { t } = useI18n()
+const typedAmount = ref(formatEuroInput(props.totalCents, props.language))
+const reason = ref('')
+
+const amountPaidCents = computed(() => parseEuroInput(typedAmount.value))
+const reasonIsNeeded = computed(
+  () =>
+    amountPaidCents.value !== null
+    && isPaymentNoticeNeeded(amountPaidCents.value, props.totalCents),
+)
+const settlement = computed<OrderSettlementRequest | null>(() => {
+  const paid = amountPaidCents.value
+  if (paid === null || !canTheAmountBeSettled(paid, reason.value, props.totalCents)) {
+    return null
+  }
+  return {
+    amountPaidCents: paid,
+    paymentNotice: reasonIsNeeded.value ? reason.value.trim() : null,
+  }
+})
+
+function keepWhatCanStillBecomeAnAmount(typed: string): void {
+  if (canBeTypedIntoAEuroField(typed)) {
+    typedAmount.value = typed
+  }
+}
+
+function undoARefusedKeystroke(event: Event): void {
+  const field = event.target as HTMLInputElement
+  if (canBeTypedIntoAEuroField(field.value)) {
+    return
+  }
+  field.value = typedAmount.value
+}
+
+defineExpose({ settlement })
+</script>
+
+<template>
+  <div class="amount-paid-fields">
+    <v-text-field
+      class="amount-field"
+      inputmode="decimal"
+      :label="t('openItems.amountPaidField')"
+      :model-value="typedAmount"
+      @update:model-value="keepWhatCanStillBecomeAnAmount"
+      @input="undoARefusedKeystroke"
+    />
+    <v-text-field
+      v-if="reasonIsNeeded"
+      v-model="reason"
+      class="reason-field"
+      maxlength="200"
+      :label="t('openItems.amountPaidReason')"
+      :placeholder="t('openItems.reasonPlaceholder')"
+      persistent-placeholder
+    />
+  </div>
+</template>
+
+<style scoped>
+.amount-field {
+  margin-block-end: 1.25rem;
+}
+</style>

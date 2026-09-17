@@ -1,4 +1,5 @@
 ﻿using FakeItEasy;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
@@ -184,7 +185,100 @@ public sealed class OrderAcceptanceTransactionTest
      .MustHaveHappened(4, Times.Exactly);
   }
 
-  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded, Guid clientOrderId)
+  [Test]
+  public async Task AcceptAsync_ASentAndSettledOrder_StoresTheChargesWithTheOrder()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { AmountPaidCents = 700 }),
+                                    TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItem> storedItems = await fixture.DbContext.OrderItems
+                                                         .ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(result.Value.WasAlreadyAccepted, Is.False);
+                      Assert.That(storedItems, Has.Count.EqualTo(2));
+                      Assert.That(storedItems.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
+                      Assert.That(storedItems.Select(item => item.SettledAtUtc), Is.All.EqualTo(result.Value.Order.CreatedAtUtc));
+                      Assert.That(storedItems.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(seeded.StaffMemberId));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_ASettlementBelowTheTotalWithoutANotice_RollsBackTheOrderAndItsNumbers()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { AmountPaidCents = 500 }),
+                                    TestContext.CurrentContext.CancellationToken);
+
+    using var verificationContext = fixture.CreateContext();
+    var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
+    var itemCount = await verificationContext.OrderItems.CountAsync(TestContext.CurrentContext.CancellationToken);
+    var nextOrderNumber = await verificationContext.Festivals
+                                                   .Select(festival => festival.NextOrderNumber)
+                                                   .SingleAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.SettlementCannotBeProcessed));
+                      Assert.That(orderCount, Is.Zero);
+                      Assert.That(itemCount, Is.Zero);
+                      Assert.That(nextOrderNumber, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task AcceptAsync_ReplayingASettledClientOrderId_ReturnsTheStoredOrderWithoutWritingOrNumberingAnythingAgain()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
+    var clientOrderId = Guid.NewGuid();
+    OrderSettlementTerms settlement = new() { AmountPaidCents = 700 };
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> first =
+      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, settlement),
+                                    TestContext.CurrentContext.CancellationToken);
+    fixture.DbContext.ChangeTracker.Clear();
+    Result<OrderAcceptanceResult, OrderValidationFailure> second =
+      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, settlement),
+                                    TestContext.CurrentContext.CancellationToken);
+
+    using var verificationContext = fixture.CreateContext();
+    List<OrderItem> storedItems = await verificationContext.OrderItems
+                                                           .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
+    var nextOrderNumber = await verificationContext.Festivals
+                                                   .Select(festival => festival.NextOrderNumber)
+                                                   .SingleAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(second.IsSuccess, Is.True);
+                      Assert.That(second.Value.WasAlreadyAccepted, Is.True);
+                      Assert.That(second.Value.Order.Id, Is.EqualTo(first.Value.Order.Id));
+                      Assert.That(orderCount, Is.EqualTo(1));
+                      Assert.That(storedItems, Has.Count.EqualTo(2));
+                      Assert.That(storedItems.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
+                      Assert.That(storedItems.Select(item => item.SettledAtUtc), Is.All.Not.Null);
+                      Assert.That(nextOrderNumber, Is.EqualTo(2));
+                    });
+  }
+
+  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded,
+                                              Guid clientOrderId,
+                                              OrderSettlementTerms? settlement = null)
   {
     return new()
            {
@@ -192,7 +286,7 @@ public sealed class OrderAcceptanceTransactionTest
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Note = null,
-             SettleOnSend = false,
+             Settlement = settlement,
              Items =
              [
                new()

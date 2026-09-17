@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, DeliveryMode, StationEstimate } from '../../core/apiTypes'
+import type {
+  AppLanguage,
+  DeliveryMode,
+  OrderSettlementRequest,
+  StationEstimate,
+} from '../../core/apiTypes'
 import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice } from '../../core/totals'
+import AmountPaidFields from '../AmountPaidFields.vue'
 
 const props = defineProps<{
-  settleOnSend: boolean
   tableName: string
   totalCents: number
   language: AppLanguage
@@ -18,7 +23,10 @@ const props = defineProps<{
   deliveryModeFor: (stationId: string) => DeliveryMode
 }>()
 
-const emit = defineEmits<{ confirmed: []; cancelled: [] }>()
+const emit = defineEmits<{
+  confirmed: [settlement: OrderSettlementRequest | null]
+  cancelled: []
+}>()
 
 const { t } = useI18n()
 
@@ -34,9 +42,32 @@ function deliveryTextOf(station: StationDelivery): string {
   return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, props.language)
 }
 
+type SettlementChoice = 'settleLater' | 'settleNow'
+
+const choice = ref<SettlementChoice>('settleLater')
+const settlementFields = ref<InstanceType<typeof AmountPaidFields> | null>(null)
+
+const isSettling = computed(() => choice.value === 'settleNow')
 const confirmLabel = computed(() =>
-  props.settleOnSend ? t('review.sendAndSettle') : t('review.send'),
+  isSettling.value ? t('review.sendAndSettle') : t('review.send'),
 )
+const canConfirm = computed(
+  () =>
+    !isSettling.value
+    || (settlementFields.value !== null && settlementFields.value.settlement !== null),
+)
+
+function confirm(): void {
+  if (!isSettling.value) {
+    emit('confirmed', null)
+    return
+  }
+  const settlement = settlementFields.value?.settlement
+  if (settlement === null || settlement === undefined) {
+    return
+  }
+  emit('confirmed', settlement)
+}
 </script>
 
 <template>
@@ -58,6 +89,28 @@ const confirmLabel = computed(() =>
           </span>
           <span class="value">{{ deliveryTextOf(station) }}</span>
         </div>
+        <v-btn-toggle
+          class="settlement-choice mt-4"
+          mandatory
+          divided
+          border
+          :model-value="choice"
+          @update:model-value="(chosen: SettlementChoice) => (choice = chosen)"
+        >
+          <v-btn class="settle-later" value="settleLater" size="large">
+            {{ t('review.settleLater') }}
+          </v-btn>
+          <v-btn class="settle-now" value="settleNow" size="large">
+            {{ t('review.settleNow') }}
+          </v-btn>
+        </v-btn-toggle>
+        <AmountPaidFields
+          v-if="isSettling"
+          ref="settlementFields"
+          class="settlement-fields mt-3"
+          :total-cents="totalCents"
+          :language="language"
+        />
       </v-card-text>
       <v-card-actions class="actions flex-column align-stretch">
         <v-btn
@@ -65,7 +118,8 @@ const confirmLabel = computed(() =>
           color="primary"
           variant="flat"
           size="large"
-          @click="emit('confirmed')"
+          :disabled="!canConfirm"
+          @click="confirm"
         >
           {{ confirmLabel }}
         </v-btn>
@@ -117,6 +171,32 @@ const confirmLabel = computed(() =>
   text-overflow: clip;
   line-height: 1.35;
   padding-block: 1rem;
+}
+
+.settlement-choice.v-btn-group {
+  display: flex;
+  width: 100%;
+  height: auto;
+}
+
+.settlement-choice .v-btn {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 3.5rem;
+  padding-block: 0.75rem;
+  font-size: 1.0625rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.settlement-choice .v-btn :deep(.v-btn__content) {
+  display: block;
+  flex: 1 1 auto;
+  white-space: normal;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .actions {

@@ -153,4 +153,31 @@ public sealed class OrderEndpointsTest
                       Assert.That(placed.RootElement.GetProperty("totalCents").GetInt32(), Is.EqualTo(798));
                     });
   }
+
+  [Test]
+  public async Task PostOrder_SettlementBelowTheTotalWithoutANotice_IsRefusedWithWordingThePhoneCanShow()
+  {
+    OrderBody body = new(Guid.NewGuid(),
+                         "Tisch 12",
+                         null,
+                         [new(_context.World.BratwurstItemId, 350, null, null)],
+                         new OrderSettlementBody(100));
+
+    using var response = await _context.PostOrderAsync(body);
+    var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var orderCount = await database.Orders.CountAsync();
+    var itemCount = await database.OrderItems.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(orderCount, Is.Zero);
+                      Assert.That(itemCount, Is.Zero);
+                    });
+  }
 }

@@ -15,6 +15,6 @@ describe('an answer of a kind the phone has no handler for', () => {
   it('is refused loudly instead of leaving the order on its way for the rest of the evening', async () => {
     const order = useOrderStore()
 
-    await expect(order.send(false)).rejects.toThrow()
+    await expect(order.send(null)).rejects.toThrow()
   })
 })

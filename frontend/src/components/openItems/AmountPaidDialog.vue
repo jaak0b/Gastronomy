@@ -2,14 +2,10 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AppLanguage } from '../../core/apiTypes'
-import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../core/money'
-import {
-  canTheAmountBeSettled,
-  isPaymentNoticeNeeded,
-  type SettleNotice,
-} from '../../core/openItems'
+import type { SettleNotice } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
+import AmountPaidFields from '../AmountPaidFields.vue'
 import SettleNoticeAlert from './SettleNotice.vue'
 
 const props = defineProps<{
@@ -25,40 +21,19 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const keyboardInset = useKeyboardInset()
-const typedAmount = ref(formatEuroInput(props.selectedTotalCents, props.language))
-const reason = ref('')
+const amountFields = ref<InstanceType<typeof AmountPaidFields> | null>(null)
 
 const selectedTotal = computed(() => formatPrice(props.selectedTotalCents, props.language))
-const amountPaidCents = computed(() => parseEuroInput(typedAmount.value))
-const reasonIsNeeded = computed(
-  () =>
-    amountPaidCents.value !== null
-    && isPaymentNoticeNeeded(amountPaidCents.value, props.selectedTotalCents),
+const canConfirm = computed(
+  () => amountFields.value !== null && amountFields.value.settlement !== null,
 )
-const canConfirm = computed(() =>
-  canTheAmountBeSettled(amountPaidCents.value, reason.value, props.selectedTotalCents),
-)
-
-function keepWhatCanStillBecomeAnAmount(typed: string): void {
-  if (canBeTypedIntoAEuroField(typed)) {
-    typedAmount.value = typed
-  }
-}
-
-function undoARefusedKeystroke(event: Event): void {
-  const field = event.target as HTMLInputElement
-  if (canBeTypedIntoAEuroField(field.value)) {
-    return
-  }
-  field.value = typedAmount.value
-}
 
 function confirm(): void {
-  const paid = amountPaidCents.value
-  if (paid === null || !canConfirm.value) {
+  const settlement = amountFields.value?.settlement
+  if (settlement === null || settlement === undefined) {
     return
   }
-  emit('confirm', paid, reasonIsNeeded.value ? reason.value.trim() : null)
+  emit('confirm', settlement.amountPaidCents, settlement.paymentNotice)
 }
 </script>
 
@@ -70,22 +45,10 @@ function confirm(): void {
         <p class="selected-total mb-4">
           {{ t('openItems.selected', { amount: selectedTotal }) }}
         </p>
-        <v-text-field
-          class="amount-field"
-          inputmode="decimal"
-          :label="t('openItems.amountPaidField')"
-          :model-value="typedAmount"
-          @update:model-value="keepWhatCanStillBecomeAnAmount"
-          @input="undoARefusedKeystroke"
-        />
-        <v-text-field
-          v-if="reasonIsNeeded"
-          v-model="reason"
-          class="reason-field"
-          maxlength="200"
-          :label="t('openItems.amountPaidReason')"
-          :placeholder="t('openItems.reasonPlaceholder')"
-          persistent-placeholder
+        <AmountPaidFields
+          ref="amountFields"
+          :total-cents="selectedTotalCents"
+          :language="language"
         />
         <SettleNoticeAlert v-if="notice !== null" class="mt-2" :notice="notice" :closable="false" />
       </v-card-text>
@@ -127,10 +90,6 @@ function confirm(): void {
 
 .selected-total {
   font-weight: 600;
-}
-
-.amount-field {
-  margin-block-end: 1.25rem;
 }
 
 .title {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import ConfirmSendDialog from '../../../src/components/review/ConfirmSendDialog.vue'
 import type { BasketLineView } from '../../../src/core/basket'
 import type { DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
@@ -37,7 +37,6 @@ function bier(): BasketLineView {
 }
 
 interface DialogOptions {
-  settleOnSend?: boolean
   locale?: 'de' | 'en'
   lines?: BasketLineView[]
   deliveryModes?: Record<string, DeliveryMode>
@@ -54,7 +53,6 @@ function mountDialog(options: DialogOptions = {}) {
   const chosen = options.deliveryModes ?? {}
   return mount(ConfirmSendDialog, {
     props: {
-      settleOnSend: options.settleOnSend ?? true,
       tableName: '4',
       totalCents: 6600,
       language: locale,
@@ -73,6 +71,26 @@ function textOf(selector: string): string {
 
 function textsOf(selector: string): string[] {
   return [...document.querySelectorAll(selector)].map((element) => element.textContent?.trim() ?? '')
+}
+
+function confirmButton(): HTMLButtonElement {
+  return document.querySelector('.confirm-send-dialog .confirm') as HTMLButtonElement
+}
+
+function amountFieldIn(): HTMLInputElement {
+  return document.querySelector('.confirm-send-dialog .amount-field input') as HTMLInputElement
+}
+
+async function chooseToSettleNow(): Promise<void> {
+  ;(document.querySelector('.confirm-send-dialog .settle-now') as HTMLElement).click()
+  await flushPromises()
+}
+
+async function typeIn(selector: string, typed: string): Promise<void> {
+  const field = document.querySelector(`.confirm-send-dialog ${selector} input`) as HTMLInputElement
+  field.value = typed
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+  await flushPromises()
 }
 
 describe('the question before an order goes out, in German', () => {
@@ -134,14 +152,27 @@ describe('the question before an order goes out, in German', () => {
     ])
   })
 
-  it('carries the same words on the confirming button that the waiter just tapped', () => {
-    mountDialog({ settleOnSend: true })
+  it('offers sending the order open first and settling it as the other choice', () => {
+    mountDialog()
 
-    expect(textOf('.confirm-send-dialog .confirm')).toBe('Bestellung senden und abrechnen')
+    expect(textOf('.confirm-send-dialog .settle-later')).toBe('Später abrechnen')
+    expect(textOf('.confirm-send-dialog .settle-now')).toBe('Jetzt abrechnen')
+  })
 
-    mountDialog({ settleOnSend: false })
+  it('sends the order open and asks for no amount until the waiter picks settling', () => {
+    mountDialog()
 
     expect(textOf('.confirm-send-dialog .confirm')).toBe('Bestellung senden')
+    expect(document.querySelector('.confirm-send-dialog .amount-field')).toBeNull()
+  })
+
+  it('turns the confirming button into a settlement and asks for the amount once settling is picked', async () => {
+    mountDialog()
+
+    await chooseToSettleNow()
+
+    expect(textOf('.confirm-send-dialog .confirm')).toBe('Bestellung senden und abrechnen')
+    expect(amountFieldIn().value).toBe('66,00')
   })
 
   it('offers the way out beside it', () => {
@@ -205,14 +236,27 @@ describe('the question before an order goes out, in English', () => {
     ])
   })
 
-  it('carries the same words on the confirming button that the waiter just tapped', () => {
-    mountDialog({ settleOnSend: true, locale: 'en' })
+  it('offers sending the order open first and settling it as the other choice', () => {
+    mountDialog({ locale: 'en' })
 
-    expect(textOf('.confirm-send-dialog .confirm')).toBe('Send the order and settle it')
+    expect(textOf('.confirm-send-dialog .settle-later')).toBe('Settle later')
+    expect(textOf('.confirm-send-dialog .settle-now')).toBe('Settle now')
+  })
 
-    mountDialog({ settleOnSend: false, locale: 'en' })
+  it('sends the order open and asks for no amount until the waiter picks settling', () => {
+    mountDialog({ locale: 'en' })
 
     expect(textOf('.confirm-send-dialog .confirm')).toBe('Send the order')
+    expect(document.querySelector('.confirm-send-dialog .amount-field')).toBeNull()
+  })
+
+  it('turns the confirming button into a settlement and asks for the amount once settling is picked', async () => {
+    mountDialog({ locale: 'en' })
+
+    await chooseToSettleNow()
+
+    expect(textOf('.confirm-send-dialog .confirm')).toBe('Send the order and settle it')
+    expect(amountFieldIn().value).toBe('66.00')
   })
 
   it('offers the way out beside it', () => {
@@ -223,21 +267,67 @@ describe('the question before an order goes out, in English', () => {
 })
 
 describe('answering the question', () => {
-  it('sends the order once when the waiter confirms it', async () => {
+  it('sends the order open once when the waiter confirms it', async () => {
     const dialog = mountDialog()
 
-    ;(document.querySelector('.confirm-send-dialog .confirm') as HTMLElement).click()
-    await dialog.vm.$nextTick()
+    confirmButton().click()
+    await flushPromises()
 
-    expect(dialog.emitted('confirmed')).toHaveLength(1)
+    expect(dialog.emitted('confirmed')).toEqual([[null]])
     expect(dialog.emitted('cancelled')).toBeUndefined()
   })
 
+  it('hands the full amount over as a settlement when the waiter picks settling and pays the whole price', async () => {
+    const dialog = mountDialog()
+    await chooseToSettleNow()
+
+    confirmButton().click()
+    await flushPromises()
+
+    expect(dialog.emitted('confirmed')).toEqual([
+      [{ amountPaidCents: 6600, paymentNotice: null }],
+    ])
+  })
+
+  it('asks for the reason and keeps the confirm shut until a short amount carries one', async () => {
+    const dialog = mountDialog()
+    await chooseToSettleNow()
+    await typeIn('.amount-field', '20,00')
+
+    expect(document.querySelector('.confirm-send-dialog .reason-field')).not.toBeNull()
+    confirmButton().click()
+    await flushPromises()
+
+    expect(confirmButton().hasAttribute('disabled')).toBe(true)
+    expect(dialog.emitted('confirmed')).toBeUndefined()
+
+    await typeIn('.reason-field', 'Stammgast')
+    confirmButton().click()
+    await flushPromises()
+
+    expect(dialog.emitted('confirmed')).toEqual([
+      [{ amountPaidCents: 2000, paymentNotice: 'Stammgast' }],
+    ])
+  })
+
+  it('leaves the reason out when the guest rounded up', async () => {
+    const dialog = mountDialog()
+    await chooseToSettleNow()
+    await typeIn('.amount-field', '80,00')
+
+    confirmButton().click()
+    await flushPromises()
+
+    expect(dialog.emitted('confirmed')).toEqual([
+      [{ amountPaidCents: 8000, paymentNotice: null }],
+    ])
+  })
+
   it('asks for nothing to happen when the waiter backs out', async () => {
-    const dialog = mountDialog({ settleOnSend: false })
+    const dialog = mountDialog()
 
     ;(document.querySelector('.confirm-send-dialog .cancel') as HTMLElement).click()
-    await dialog.vm.$nextTick()
+    await flushPromises()
 
     expect(dialog.emitted('cancelled')).toHaveLength(1)
     expect(dialog.emitted('confirmed')).toBeUndefined()

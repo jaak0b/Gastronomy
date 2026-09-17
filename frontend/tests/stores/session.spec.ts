@@ -211,7 +211,7 @@ describe('a phone that is signed out while a reason stands on the order screen',
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      settleOnSend: false,
+      settlement: null,
       anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailed' },
     })

@@ -23,6 +23,13 @@ public sealed record StationDeliveryModeRequest
   public required DeliveryMode DeliveryMode { get; init; }
 }
 
+public sealed record OrderSettlementTerms
+{
+  public required int AmountPaidCents { get; init; }
+
+  public string? PaymentNotice { get; init; }
+}
+
 public sealed record OrderAcceptanceRequest
 {
   public required Guid ClientOrderId { get; init; }
@@ -33,7 +40,7 @@ public sealed record OrderAcceptanceRequest
 
   public string? Note { get; init; }
 
-  public required bool SettleOnSend { get; init; }
+  public OrderSettlementTerms? Settlement { get; init; }
 
   public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
 
@@ -142,12 +149,22 @@ public sealed class OrderAcceptanceService
                         });
     }
 
-    var order = await BuildOrderAsync(request, festival.Id, resolvedItems, cancellationToken);
-    await _orderRepository.AddAsync(order, cancellationToken);
+    var builtOrder = await BuildOrderAsync(request, festival.Id, resolvedItems, cancellationToken);
+
+    if (request.Settlement is { } settlementTerms)
+    {
+      var settlementFailure = SettleAtAcceptance(settlementTerms, request.StaffMemberId, builtOrder);
+      if (settlementFailure is not null)
+      {
+        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(settlementFailure);
+      }
+    }
+
+    await _orderRepository.AddAsync(builtOrder.Order, cancellationToken);
 
     return Result<OrderAcceptanceResult, OrderValidationFailure>.Success(new()
                                                                          {
-                                                                           Order = order,
+                                                                           Order = builtOrder.Order,
                                                                            WasAlreadyAccepted = false
                                                                          });
   }
@@ -190,10 +207,41 @@ public sealed class OrderAcceptanceService
            };
   }
 
-  private async Task<Order> BuildOrderAsync(OrderAcceptanceRequest request,
-                                            Guid festivalId,
-                                            IReadOnlyCollection<ResolvedItem> resolvedItems,
-                                            CancellationToken cancellationToken)
+  private OrderValidationFailure? SettleAtAcceptance(OrderSettlementTerms terms,
+                                                     Guid staffMemberId,
+                                                     BuiltOrder builtOrder)
+  {
+    Result<SettlementResult, SettlementFailure> settlement =
+      _settlementService.Settle(new()
+                                {
+                                  OrderItemIds = [.. builtOrder.Items.Select(item => item.Id)],
+                                  AmountPaidCents = terms.AmountPaidCents,
+                                  SettledByStaffMemberId = staffMemberId,
+                                  PaymentNotice = terms.PaymentNotice
+                                },
+                                [.. builtOrder.Items.Select(item => new SettlementCandidate
+                                                                    {
+                                                                      Item = item,
+                                                                      TableName = builtOrder.Order.TableName
+                                                                    })],
+                                builtOrder.Order.CreatedAtUtc);
+
+    if (settlement.IsSuccess)
+    {
+      return null;
+    }
+
+    return new()
+           {
+             Reason = OrderValidationFailureReason.SettlementCannotBeProcessed,
+             SettlementFailureReason = settlement.Failure.Reason
+           };
+  }
+
+  private async Task<BuiltOrder> BuildOrderAsync(OrderAcceptanceRequest request,
+                                                 Guid festivalId,
+                                                 IReadOnlyCollection<ResolvedItem> resolvedItems,
+                                                 CancellationToken cancellationToken)
   {
     var createdAtUtc = _clock.UtcNow;
     var globalOrderNumber =
@@ -215,6 +263,8 @@ public sealed class OrderAcceptanceService
     Dictionary<Guid, DeliveryMode> deliveryModesByStationId = request.DeliveryModes
                                                                     .GroupBy(mode => mode.StationId)
                                                                     .ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
+
+    List<OrderItem> createdItems = [];
 
     foreach (var resolvedItem in resolvedItems)
     {
@@ -252,19 +302,15 @@ public sealed class OrderAcceptanceService
                               Note = resolvedItem.Request.Note
                             };
 
-      if (request.SettleOnSend)
-      {
-        _settlementService.MarkSettled(orderItem,
-                                       orderItem.UnitPriceCents,
-                                       null,
-                                       request.StaffMemberId,
-                                       createdAtUtc);
-      }
-
       stationOrder.Items.Add(orderItem);
+      createdItems.Add(orderItem);
     }
 
-    return order;
+    return new()
+           {
+             Order = order,
+             Items = createdItems
+           };
   }
 
   private sealed record ResolvedItem
@@ -274,5 +320,12 @@ public sealed class OrderAcceptanceService
     public required CatalogItem CatalogItem { get; init; }
 
     public required RoutingDecision Decision { get; init; }
+  }
+
+  private sealed record BuiltOrder
+  {
+    public required Order Order { get; init; }
+
+    public required IReadOnlyList<OrderItem> Items { get; init; }
   }
 }
