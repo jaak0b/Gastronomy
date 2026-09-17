@@ -99,44 +99,41 @@ function mostRecentOf(group: PositionGroup): number {
 
 <template>
   <div class="item-row" :class="{ 'is-sold-out': isSoldOut }">
-    <div class="item-line d-flex align-center">
-      <v-btn
-        v-if="plainGroup !== null"
-        class="remove-one"
-        icon="mdi-minus"
-        variant="text"
-        size="large"
-        :aria-label="t('catalog.removeOne', { name: item.name })"
-        @click="emit('removeOne', mostRecentOf(plainGroup))"
-      />
-      <span v-if="plainGroup !== null" class="count text-h6">{{ plainGroup.indexes.length }}</span>
-      <v-btn class="add flex-grow-1" variant="text" :disabled="isSoldOut" @click="emit('add')">
-        <span class="name text-body-1">{{ item.name }}</span>
-        <span class="facts text-body-2 text-medium-emphasis">
-          <span class="price">{{ price }}</span>
-          <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
-          <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
-        </span>
-      </v-btn>
-      <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
-        {{ t('catalog.addNote') }}
-      </v-btn>
+    <div class="item-line d-flex align-start">
+      <div class="lead d-flex align-center">
+        <v-btn
+          v-if="plainGroup !== null"
+          class="remove-one"
+          icon="mdi-minus"
+          variant="text"
+          size="large"
+          :aria-label="t('catalog.removeOne', { name: item.name })"
+          @click="emit('removeOne', mostRecentOf(plainGroup))"
+        />
+        <span v-if="plainGroup !== null" class="count text-h6">{{ plainGroup.indexes.length }}</span>
+      </div>
+      <div class="item-body flex-grow-1">
+        <div class="item-head d-flex align-start">
+          <v-btn class="add flex-grow-1" variant="text" :disabled="isSoldOut" @click="emit('add')">
+            <span class="name text-body-1">{{ item.name }}</span>
+            <span class="facts text-body-2 text-medium-emphasis">
+              <span class="price">{{ price }}</span>
+              <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
+              <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
+            </span>
+          </v-btn>
+          <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
+            {{ t('catalog.addNote') }}
+          </v-btn>
+        </div>
+      </div>
     </div>
 
     <div
       v-for="group in noteGroups"
       :key="group.indexes[0]"
-      class="note-group d-flex align-center ga-2 pe-2 pb-2"
+      class="note-group d-flex align-center ga-2"
     >
-      <v-btn
-        class="group-remove"
-        icon="mdi-minus"
-        variant="text"
-        size="small"
-        :aria-label="t('catalog.removeOne', { name: item.name })"
-        @click="emit('removeOne', mostRecentOf(group))"
-      />
-      <span class="group-count text-body-1">{{ group.indexes.length }}</span>
       <div class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column">
         <button
           v-if="group.stationName !== null"
@@ -153,6 +150,15 @@ function mostRecentOf(group: PositionGroup): number {
           {{ t('catalog.noteText', { note: group.note }) }}
         </button>
       </div>
+      <span class="group-count text-body-2">{{ group.indexes.length }}</span>
+      <v-btn
+        class="group-remove"
+        icon="mdi-minus"
+        variant="text"
+        size="small"
+        :aria-label="t('catalog.removeOne', { name: item.name })"
+        @click="emit('removeOne', mostRecentOf(group))"
+      />
       <v-btn
         class="group-add"
         icon="mdi-plus"
@@ -204,16 +210,35 @@ function mostRecentOf(group: PositionGroup): number {
   padding-block: 4px;
 }
 
-.remove-one,
-.add-note {
-  align-self: stretch;
+.lead {
+  min-height: 64px;
   flex: 0 0 auto;
-  height: auto;
+}
+
+.remove-one {
+  flex: 0 0 auto;
   border-radius: 8px;
 }
 
 .add-note {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 64px;
+  border-radius: 8px;
   padding-inline: 8px;
+}
+
+.item-body {
+  min-width: 0;
+}
+
+.group-label {
+  min-width: 0;
+}
+
+.item-head {
+  min-width: 0;
 }
 
 .add {
@@ -261,7 +286,10 @@ function mostRecentOf(group: PositionGroup): number {
 }
 
 .note-group {
-  padding-inline-start: 64px;
+  min-height: 2.25rem;
+  padding-block: 2px;
+  padding-inline-start: 1.5rem;
+  padding-inline-end: 0.5rem;
 }
 
 .group-station,
@@ -270,7 +298,7 @@ function mostRecentOf(group: PositionGroup): number {
   border: none;
   color: inherit;
   text-align: start;
-  padding-block: 6px;
-  min-height: 2.5rem;
+  padding-block: 4px;
+  min-height: 2.25rem;
 }
 </style>
