@@ -109,7 +109,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationsAtTheFestivalReader>();
     services.AddScoped<RunningFestivalLookup>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddScoped<StationQueryHandler>();
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();
 

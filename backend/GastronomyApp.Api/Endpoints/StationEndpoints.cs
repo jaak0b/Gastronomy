@@ -12,15 +12,6 @@ public static class StationEndpoints
 {
   public static IEndpointRouteBuilder MapStationEndpoints(this IEndpointRouteBuilder routes)
   {
-    var stations = routes.MapGroup("/api/stations")
-                         .RequireAuthorization()
-                         .RequireStaffDevice()
-                         .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
-
-    stations.MapGet(string.Empty,
-                    async (StationQueryHandler handler,
-                           CancellationToken cancellationToken) => await handler.ListStationsAsync(cancellationToken));
-
     var estimates = routes.MapGroup("/api/estimates")
                           .RequireAuthorization()
                           .RequireStaffDevice()

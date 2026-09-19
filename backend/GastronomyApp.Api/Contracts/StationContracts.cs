@@ -2,10 +2,6 @@ using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record StationView(Guid StationId, string Name, int SortOrder);
-
-public sealed record StationListView(IReadOnlyList<StationView> Stations);
-
 public sealed record StationQueueItemView(
   Guid OrderItemId,
   string ItemName,

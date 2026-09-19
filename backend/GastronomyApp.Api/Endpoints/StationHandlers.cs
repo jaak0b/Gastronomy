@@ -13,37 +13,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public sealed class StationQueryHandler
-{
-  private readonly GastronomyAppDbContext _dbContext;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
-  private readonly StationsAtTheFestivalReader _stationsReader;
-
-  public StationQueryHandler(GastronomyAppDbContext dbContext,
-                             RunningFestivalLookup runningFestivalLookup,
-                             StationsAtTheFestivalReader stationsReader)
-  {
-    _dbContext = dbContext;
-    _runningFestivalLookup = runningFestivalLookup;
-    _stationsReader = stationsReader;
-  }
-
-  public async Task<IResult> ListStationsAsync(CancellationToken cancellationToken)
-  {
-    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
-
-    IReadOnlyList<Station> stations = festival is null
-                                        ? []
-                                        : await _stationsReader.ReadAsync(_dbContext, festival.Id, cancellationToken);
-
-    return Results.Ok(new StationListView([
-                                            .. stations.Select(station => new StationView(station.Id,
-                                                                                           station.Name,
-                                                                                           station.SortOrder))
-                                          ]));
-  }
-}
-
 public sealed record QueuedItemRow(Guid StationId, double? ProductionMinutes, bool IsQueueIndependent);
 
 public sealed class StationsAtTheFestivalReader

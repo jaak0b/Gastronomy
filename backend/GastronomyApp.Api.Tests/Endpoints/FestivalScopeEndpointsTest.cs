@@ -77,21 +77,6 @@ public sealed class FestivalScopeEndpointsTest
   }
 
   [Test]
-  public async Task GetStations_NoFestivalIsRunning_AnswersWithAnEmptyList()
-  {
-    await LetTheFestivalEndAsync();
-
-    using var response = await _context.SendAsync(HttpMethod.Get, "/api/stations");
-    var body = await BodyOfAsync(response);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(0));
-                    });
-  }
-
-  [Test]
   public async Task GetEstimates_NoFestivalIsRunning_AnswersWithAnEmptyList()
   {
     await LetTheFestivalEndAsync();
