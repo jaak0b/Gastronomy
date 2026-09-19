@@ -27,8 +27,6 @@ public static class AdminOrderEndpoints
 
 public sealed class AdminOrderHandler
 {
-  private const int DefaultLimit = 200;
-
   private readonly GastronomyAppDbContext _dbContext;
   private readonly OrderReader _orderReader;
 
@@ -60,7 +58,6 @@ public sealed class AdminOrderHandler
 
     List<Order> orders = await query
                               .OrderByDescending(order => order.CreatedAtUtc)
-                              .Take(DefaultLimit)
                               .ToListAsync(cancellationToken);
 
     List<OrderListEntryView> entries = [];

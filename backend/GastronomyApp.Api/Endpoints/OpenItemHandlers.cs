@@ -25,8 +25,6 @@ public sealed record OpenItemOwnerLookup(
 
 public sealed class OpenItemsReader
 {
-  private const int TableNamesFromTheMostRecentOrders = 200;
-
   private readonly IClock _clock;
   private readonly TimeSpan _givenAwayLookback = TimeSpan.FromHours(24);
   private readonly ILogger<OpenItemsReader> _logger;
@@ -99,17 +97,15 @@ public sealed class OpenItemsReader
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    List<string> recentlyUsed = await dbContext.Orders
-                                               .AsNoTracking()
-                                               .Where(order => order.FestivalId == festivalId)
-                                               .OrderByDescending(order => order.GlobalOrderNumber)
-                                               .Select(order => order.TableName)
-                                               .Take(TableNamesFromTheMostRecentOrders)
-                                               .ToListAsync(cancellationToken);
+    List<string> usedNames = await dbContext.Orders
+                                            .AsNoTracking()
+                                            .Where(order => order.FestivalId == festivalId)
+                                            .Select(order => order.TableName)
+                                            .ToListAsync(cancellationToken);
 
     return new([
-                 .. recentlyUsed.Distinct(StringComparer.Ordinal)
-                                .OrderBy(tableName => tableName, StringComparer.Ordinal)
+                 .. usedNames.Distinct(StringComparer.Ordinal)
+                             .OrderBy(tableName => tableName, StringComparer.Ordinal)
                ]);
   }
 
