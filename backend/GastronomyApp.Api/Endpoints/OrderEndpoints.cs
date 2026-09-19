@@ -75,13 +75,6 @@ public sealed class OrderPlacementHandler
                                                  StaffMemberId = caller.StaffMemberId,
                                                  TableName = request.TableName ?? string.Empty,
                                                  Note = request.Note,
-                                                 Settlement = request.Settlement is null
-                                                                ? null
-                                                                : new OrderSettlementTerms
-                                                                  {
-                                                                    AmountPaidCents = request.Settlement.AmountPaidCents,
-                                                                    PaymentNotice = request.Settlement.PaymentNotice
-                                                                  },
                                                  Items =
                                                  [
                                                    .. (request.Items ?? []).Select(item => new OrderAcceptanceItemRequest
@@ -89,7 +82,14 @@ public sealed class OrderPlacementHandler
                                                                                              CatalogItemId = item.CatalogItemId,
                                                                                              UnitPriceCents = item.UnitPriceCents,
                                                                                              Note = item.Note,
-                                                                                             StationId = item.StationId
+                                                                                             StationId = item.StationId,
+                                                                                             Settlement = item.Settlement is null
+                                                                                                            ? null
+                                                                                                            : new OrderSettlementLineTerms
+                                                                                                              {
+                                                                                                                PaidPriceCents = item.Settlement.PaidPriceCents,
+                                                                                                                PaymentNotice = item.Settlement.PaymentNotice
+                                                                                                              }
                                                                                            })
                                                  ],
                                                  DeliveryModes =

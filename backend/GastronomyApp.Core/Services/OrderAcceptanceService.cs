@@ -14,6 +14,8 @@ public sealed record OrderAcceptanceItemRequest
   public string? Note { get; init; }
 
   public Guid? StationId { get; init; }
+
+  public OrderSettlementLineTerms? Settlement { get; init; }
 }
 
 public sealed record StationDeliveryModeRequest
@@ -23,9 +25,9 @@ public sealed record StationDeliveryModeRequest
   public required DeliveryMode DeliveryMode { get; init; }
 }
 
-public sealed record OrderSettlementTerms
+public sealed record OrderSettlementLineTerms
 {
-  public required int AmountPaidCents { get; init; }
+  public required int? PaidPriceCents { get; init; }
 
   public string? PaymentNotice { get; init; }
 }
@@ -39,8 +41,6 @@ public sealed record OrderAcceptanceRequest
   public required string TableName { get; init; }
 
   public string? Note { get; init; }
-
-  public OrderSettlementTerms? Settlement { get; init; }
 
   public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
 
@@ -163,13 +163,10 @@ public sealed class OrderAcceptanceService
 
     var builtOrder = await BuildOrderAsync(request, festival.Id, resolvedItems, cancellationToken);
 
-    if (request.Settlement is { } settlementTerms)
+    var settlementFailure = SettleAtAcceptance(request.StaffMemberId, builtOrder);
+    if (settlementFailure is not null)
     {
-      var settlementFailure = SettleAtAcceptance(settlementTerms, request.StaffMemberId, builtOrder);
-      if (settlementFailure is not null)
-      {
-        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(settlementFailure);
-      }
+      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(settlementFailure);
     }
 
     await _orderRepository.AddAsync(builtOrder.Order, cancellationToken);
@@ -219,21 +216,34 @@ public sealed class OrderAcceptanceService
            };
   }
 
-  private OrderValidationFailure? SettleAtAcceptance(OrderSettlementTerms terms,
-                                                     Guid staffMemberId,
-                                                     BuiltOrder builtOrder)
+  private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, BuiltOrder builtOrder)
   {
+    List<SettlementLine> lines =
+    [
+      .. builtOrder.Items
+                .Where(item => item.Settlement is not null)
+                .Select(item => new SettlementLine
+                                {
+                                  OrderItemId = item.OrderItem.Id,
+                                  PaidPriceCents = item.Settlement!.PaidPriceCents,
+                                  PaymentNotice = item.Settlement!.PaymentNotice
+                                })
+    ];
+
+    if (lines.Count == 0)
+    {
+      return null;
+    }
+
     Result<SettlementResult, SettlementFailure> settlement =
       _settlementService.Settle(new()
                                 {
-                                  OrderItemIds = [.. builtOrder.Items.Select(item => item.Id)],
-                                  AmountPaidCents = terms.AmountPaidCents,
-                                  SettledByStaffMemberId = staffMemberId,
-                                  PaymentNotice = terms.PaymentNotice
+                                  Lines = lines,
+                                  SettledByStaffMemberId = staffMemberId
                                 },
                                 [.. builtOrder.Items.Select(item => new SettlementCandidate
                                                                     {
-                                                                      Item = item,
+                                                                      Item = item.OrderItem,
                                                                       TableName = builtOrder.Order.TableName
                                                                     })],
                                 builtOrder.Order.CreatedAtUtc);
@@ -276,7 +286,7 @@ public sealed class OrderAcceptanceService
                                                                     .GroupBy(mode => mode.StationId)
                                                                     .ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 
-    List<OrderItem> createdItems = [];
+    List<BuiltOrderItem> createdItems = [];
 
     foreach (var resolvedItem in resolvedItems)
     {
@@ -315,7 +325,11 @@ public sealed class OrderAcceptanceService
                             };
 
       stationOrder.Items.Add(orderItem);
-      createdItems.Add(orderItem);
+      createdItems.Add(new()
+                       {
+                         OrderItem = orderItem,
+                         Settlement = resolvedItem.Request.Settlement
+                       });
     }
 
     return new()
@@ -334,10 +348,17 @@ public sealed class OrderAcceptanceService
     public required RoutingDecision Decision { get; init; }
   }
 
+  private sealed record BuiltOrderItem
+  {
+    public required OrderItem OrderItem { get; init; }
+
+    public required OrderSettlementLineTerms? Settlement { get; init; }
+  }
+
   private sealed record BuiltOrder
   {
     public required Order Order { get; init; }
 
-    public required IReadOnlyList<OrderItem> Items { get; init; }
+    public required IReadOnlyList<BuiltOrderItem> Items { get; init; }
   }
 }

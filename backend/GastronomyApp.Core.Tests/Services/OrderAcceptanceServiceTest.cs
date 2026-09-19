@@ -129,7 +129,6 @@ public sealed class OrderAcceptanceServiceTest
 
   private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items,
                                              string tableName = "Tisch 12",
-                                             OrderSettlementTerms? settlement = null,
                                              IReadOnlyList<StationDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
@@ -138,7 +137,6 @@ public sealed class OrderAcceptanceServiceTest
              StaffMemberId = _staffMemberId,
              TableName = tableName,
              Note = null,
-             Settlement = settlement,
              Items = items,
              DeliveryModes = deliveryModes ?? []
            };
@@ -146,14 +144,16 @@ public sealed class OrderAcceptanceServiceTest
 
   private OrderAcceptanceItemRequest ItemFor(Guid catalogItemId,
                                              Guid? stationId = null,
-                                             int unitPriceCents = 350)
+                                             int unitPriceCents = 350,
+                                             OrderSettlementLineTerms? settlement = null)
   {
     return new()
            {
              CatalogItemId = catalogItemId,
              UnitPriceCents = unitPriceCents,
              Note = null,
-             StationId = stationId
+             StationId = stationId,
+             Settlement = settlement
            };
   }
 
@@ -478,8 +478,10 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId, unitPriceCents: 350), ItemFor(_beerId, unitPriceCents: 400)],
-                                             settlement: new() { AmountPaidCents = 750 }),
+      await _service.AcceptAsync(RequestWith([
+                                               ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                               ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
+                                             ]),
                                  CancellationToken.None);
 
     List<OrderItem> items = ItemsOf(result.Value.Order);
@@ -499,11 +501,40 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
+  public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
+  {
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await _service.AcceptAsync(RequestWith([
+                                               ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                               ItemFor(_beerId, unitPriceCents: 400)
+                                             ]),
+                                 CancellationToken.None);
+
+    List<OrderItem> items = ItemsOf(result.Value.Order);
+    var settledLine = items.Single(item => item.CatalogItemId == _bratwurstId);
+    var openLine = items.Single(item => item.CatalogItemId == _beerId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(settledLine.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(settledLine.SettledAtUtc, Is.EqualTo(_now));
+                      Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(_staffMemberId));
+                      Assert.That(openLine.ChargedPriceCents, Is.Null);
+                      Assert.That(openLine.SettledAtUtc, Is.Null);
+                      Assert.That(openLine.SettledByStaffMemberId, Is.Null);
+                      Assert.That(openLine.PaymentNotice, Is.Null);
+                    });
+  }
+
+  [Test]
   public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_bratwurstId)],
-                                             settlement: new() { AmountPaidCents = 500 }),
+      await _service.AcceptAsync(RequestWith([
+                                               ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
+                                               ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
+                                             ]),
                                  CancellationToken.None);
 
     Assert.Multiple(() =>
@@ -516,19 +547,32 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_SettlementBelowTheTotalWithANotice_SplitsTheAmountByTheExistingRule()
+  public async Task AcceptAsync_SettlementSendingOnePricePerLine_StoresExactlyThePricesThePhoneSent()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
       await _service.AcceptAsync(RequestWith([
-                                               ItemFor(_bratwurstId, unitPriceCents: 333),
-                                               ItemFor(_bratwurstId, unitPriceCents: 333),
-                                               ItemFor(_bratwurstId, unitPriceCents: 333)
-                                             ],
-                                             settlement: new()
-                                                         {
-                                                           AmountPaidCents = 500,
-                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                         }),
+                                               ItemFor(_bratwurstId,
+                                                       unitPriceCents: 333,
+                                                       settlement: new()
+                                                                   {
+                                                                     PaidPriceCents = 167,
+                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                   }),
+                                               ItemFor(_bratwurstId,
+                                                       unitPriceCents: 333,
+                                                       settlement: new()
+                                                                   {
+                                                                     PaidPriceCents = 167,
+                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                   }),
+                                               ItemFor(_bratwurstId,
+                                                       unitPriceCents: 333,
+                                                       settlement: new()
+                                                                   {
+                                                                     PaidPriceCents = 166,
+                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                   })
+                                             ]),
                                  CancellationToken.None);
 
     List<OrderItem> items = ItemsOf(result.Value.Order);
@@ -537,7 +581,6 @@ public sealed class OrderAcceptanceServiceTest
                     {
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(items.Select(item => item.ChargedPriceCents), Is.EqualTo(new[] { 167, 167, 166 }));
-                      Assert.That(items.Sum(item => item.ChargedPriceCents), Is.EqualTo(500));
                       Assert.That(items.Select(item => item.PaymentNotice), Is.All.EqualTo("Der Tisch zahlt den Rest spaeter"));
                     });
   }
@@ -632,7 +675,7 @@ public sealed class OrderAcceptanceServiceTest
                       RequestWith([ItemFor(SoldOutItemId())]),
                     OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
                     OrderValidationFailureReason.SettlementCannotBeProcessed =>
-                      RequestWith([ItemFor(_bratwurstId)], settlement: new() { AmountPaidCents = 1 }),
+                      RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
                     _ => throw new InvalidOperationException($"No scenario covers {scenario}")
                   };
 

@@ -2,26 +2,30 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Infrastructure;
 using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record OrderItemBody(Guid CatalogItemId, int UnitPriceCents, string? Note, Guid? StationId);
+public sealed record OrderItemSettlementBody(int? PaidPriceCents, string? PaymentNotice = null);
 
-public sealed record OrderSettlementBody(int AmountPaidCents, string? PaymentNotice = null);
+public sealed record OrderItemBody(
+  Guid CatalogItemId,
+  int UnitPriceCents,
+  string? Note,
+  Guid? StationId,
+  OrderItemSettlementBody? Settlement = null);
 
 public sealed record OrderBody(
   Guid ClientOrderId,
   string TableName,
   string? Note,
-  IReadOnlyList<OrderItemBody> Items,
-  OrderSettlementBody? Settlement = null);
+  IReadOnlyList<OrderItemBody> Items);
 
-public sealed record SettleItemsBody(
-  IReadOnlyList<Guid> OrderItemIds,
-  int? AmountPaidCents,
-  string? PaymentNotice = null);
+public sealed record SettleLineBody(Guid OrderItemId, int? PaidPriceCents, string? PaymentNotice = null);
+
+public sealed record SettleItemsBody(IReadOnlyList<SettleLineBody> Lines);
 
 public sealed class OrderTestContext : IAsyncDisposable
 {
@@ -105,6 +109,30 @@ public sealed class OrderTestContext : IAsyncDisposable
                             .IssueAsync(new(DeviceOwnerKind.Station, stationId),
                                         "de",
                                         "NUnit tablet",
+                                        CancellationToken.None);
+
+    return issued.PlaintextToken;
+  }
+
+  public async Task<string> IssueSecondStaffTokenAsync(string name)
+  {
+    using var scope = Factory.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+    var staffMemberId = Guid.NewGuid();
+
+    database.StaffMembers.Add(new()
+                              {
+                                Id = staffMemberId,
+                                Name = name,
+                                IsActive = true,
+                                CreatedAtUtc = DateTime.UtcNow
+                              });
+    await database.SaveChangesAsync();
+
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
+                            .IssueAsync(new(DeviceOwnerKind.StaffMember, staffMemberId),
+                                        "de",
+                                        "NUnit second phone",
                                         CancellationToken.None);
 
     return issued.PlaintextToken;

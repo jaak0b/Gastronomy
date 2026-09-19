@@ -131,13 +131,13 @@ describe('buildSubmitRequest', () => {
       clientOrderId: ready.clientOrderId,
       tableName: 'Tisch 12',
       note: null,
-      settlement: null,
       items: [
         {
           catalogItemId: 'item-1',
           unitPriceCents: 350,
           note: 'ohne Zwiebeln',
           stationId: 'station-2',
+          settlement: null,
         },
       ],
       deliveryModes: [{ stationId: 'station-2', deliveryMode: 'together' }],
@@ -172,12 +172,13 @@ describe('buildSubmitRequest', () => {
     expect(Object.keys(request.items[0]).sort()).toEqual([
       'catalogItemId',
       'note',
+      'settlement',
       'stationId',
       'unitPriceCents',
     ])
   })
 
-  it('tells the laptop what the table paid and why it paid less', () => {
+  it('tells the laptop what the table paid and why it paid less, one paid price per line', () => {
     const ready = draftWithABratwurst(null, null)
 
     const request = buildSubmitRequest(
@@ -187,7 +188,51 @@ describe('buildSubmitRequest', () => {
       [],
     )
 
-    expect(request.settlement).toEqual({ amountPaidCents: 300, paymentNotice: 'Stammgast' })
+    expect(request.items[0].settlement).toEqual({
+      paidPriceCents: 300,
+      paymentNotice: 'Stammgast',
+    })
+  })
+
+  it('gives every item its own share of what the table paid', () => {
+    const twoItems: Catalog = {
+      ...catalog(),
+      items: [
+        ...catalog().items,
+        {
+          id: 'item-2',
+          name: 'Bier',
+          categoryId: 'category-essen',
+          priceCents: 150,
+          sortOrder: 2,
+          isAvailable: true,
+          stationIds: ['station-2'],
+          productionMinutes: null,
+          isQueueIndependent: false,
+        },
+      ],
+    }
+    const withTwoLines = ensureClientOrderId(
+      addLine(draftWithABratwurst(), {
+        catalogItemId: 'item-2',
+        note: null,
+        stationId: 'station-2',
+        name: 'Bier',
+      }),
+    )
+
+    const request = buildSubmitRequest(
+      withTwoLines,
+      twoItems,
+      { amountPaidCents: 300, paymentNotice: null },
+      [],
+    )
+
+    expect(request.items.map((item) => item.unitPriceCents)).toEqual([350, 150])
+    expect(request.items.map((item) => item.settlement)).toEqual([
+      { paidPriceCents: 210, paymentNotice: null },
+      { paidPriceCents: 90, paymentNotice: null },
+    ])
   })
 
   it('refuses to build a request for a draft that never got a submission id', () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, OrderSettlementRequest } from '../core/apiTypes'
+import type { AppLanguage, ConfirmedSettlement } from '../core/apiTypes'
 import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../core/money'
 import { canTheAmountBeSettled, isPaymentNoticeNeeded } from '../core/openItems'
 
@@ -20,7 +20,7 @@ const reasonIsNeeded = computed(
     amountPaidCents.value !== null
     && isPaymentNoticeNeeded(amountPaidCents.value, props.totalCents),
 )
-const settlement = computed<OrderSettlementRequest | null>(() => {
+const settlement = computed<ConfirmedSettlement | null>(() => {
   const paid = amountPaidCents.value
   if (paid === null || !canTheAmountBeSettled(paid, reason.value, props.totalCents)) {
     return null

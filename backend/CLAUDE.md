@@ -99,9 +99,11 @@ to one festival.
   also carries whether it has been settled:
   `SettledAtUtc` is the paid flag (null means still open, so a flag and a timestamp can never
   disagree), `ChargedPriceCents` is what was actually collected, and `PaymentNotice` is the reason
-  typed when less than the displayed price was collected. A settled item is never settled again, so a
-  double tap cannot double count. What a table still owes and what was given away are derived from
-  these on every read, never stored.
+  typed when less than the displayed price was collected. The phone sends one price per line and the
+  laptop stores exactly that price; it never distributes an amount across items. A line another owner
+  already settled is never touched, while the owner who settled it may send it again and overwrites
+  the price and the reason, keeping the time and the collector. What a table still owes and what was
+  given away are derived from these on every read, never stored.
 - **Device**: one phone or one tablet. It is owned 1:1 by exactly one `StaffMember` or one `Station`,
   and the owner points at it (`StaffMember.DeviceId`, `Station.DeviceId`), so an owner holds at most
   one device and at most one outstanding enrolment invitation. Setting a device up again deletes the

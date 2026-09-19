@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
 import type {
+  ConfirmedSettlement,
   DeliveryMode,
   DraftLine,
   DraftOrder,
-  OrderSettlementRequest,
   OrderSubmitResponse,
 } from '../core/apiTypes'
 import {
@@ -88,7 +88,7 @@ export const useOrderStore = defineStore('order', () => {
   const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
   const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
   const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
-  const settlementOnSend = ref<OrderSettlementRequest | null>(
+  const settlementOnSend = ref<ConfirmedSettlement | null>(
     progressWhenTheAppLoaded.settlement,
   )
   const anAttemptWentUnanswered = ref(progressWhenTheAppLoaded.anAttemptWentUnanswered)
@@ -236,7 +236,7 @@ export const useOrderStore = defineStore('order', () => {
     rememberWhatBecameOfTheSend()
   }
 
-  async function send(settlement: OrderSettlementRequest | null): Promise<void> {
+  async function send(settlement: ConfirmedSettlement | null): Promise<void> {
     const session = useSessionStore()
     const sendBeforeThisAttempt = whatTheSendHasComeTo()
     settlementOnSend.value = settlement

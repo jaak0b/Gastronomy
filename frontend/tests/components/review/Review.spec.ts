@@ -238,7 +238,7 @@ describe('sending the order from the review screen', () => {
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toBeNull()
+    expect(sent.items[0].settlement).toBeNull()
   })
 
   it('settles every item at once when the guest pays on the spot', async () => {
@@ -249,7 +249,7 @@ describe('sending the order from the review screen', () => {
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
+    expect(sent.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
   })
 
   it('retries with the same settlement the server confirmed, so a retry cannot change who paid', async () => {
@@ -268,7 +268,7 @@ describe('sending the order from the review screen', () => {
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
     const retried = JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)
-    expect(retried.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
+    expect(retried.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
   })
 
   it('keeps the total and the send button within reach while the lines scroll', () => {
@@ -919,7 +919,7 @@ describe('the question the waiter answers before an order goes out', () => {
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
+    expect(sent.items[0].settlement).toEqual({ paidPriceCents: 200, paymentNotice: null })
   })
 
   it('leaves the table open only once the waiter has confirmed it', async () => {
@@ -930,7 +930,7 @@ describe('the question the waiter answers before an order goes out', () => {
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toBeNull()
+    expect(sent.items[0].settlement).toBeNull()
   })
 
   it('names the table, the amount and what the station will do in the question', async () => {
@@ -978,6 +978,6 @@ describe('the question the waiter answers before an order goes out', () => {
     await vi.waitFor(() => expect(order.sendState).toBe('accepted'))
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toBeNull()
+    expect(sent.items[0].settlement).toBeNull()
   })
 })

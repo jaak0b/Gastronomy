@@ -55,6 +55,8 @@ public sealed class ResultEnvelope
                Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.AmountPaidNegative =>
                Validation(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.DuplicateOrderItemId =>
+               Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.SelectionSpansSeveralTables =>
                Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.NoRunningFestival =>

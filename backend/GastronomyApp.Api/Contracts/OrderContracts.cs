@@ -11,6 +11,8 @@ public sealed record OrderItemRequest
   public string? Note { get; init; }
 
   public Guid? StationId { get; init; }
+
+  public OrderSettlementLineRequest? Settlement { get; init; }
 }
 
 public sealed record OrderDeliveryModeRequest
@@ -20,9 +22,9 @@ public sealed record OrderDeliveryModeRequest
   public required DeliveryMode DeliveryMode { get; init; }
 }
 
-public sealed record OrderSettlementRequest
+public sealed record OrderSettlementLineRequest
 {
-  public required int AmountPaidCents { get; init; }
+  public required int? PaidPriceCents { get; init; }
 
   public string? PaymentNotice { get; init; }
 }
@@ -34,8 +36,6 @@ public sealed record PlaceOrderRequest
   public required string? TableName { get; init; }
 
   public string? Note { get; init; }
-
-  public OrderSettlementRequest? Settlement { get; init; }
 
   public required IReadOnlyList<OrderItemRequest>? Items { get; init; }
 

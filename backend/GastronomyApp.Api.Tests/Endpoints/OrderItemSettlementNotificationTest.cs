@@ -40,7 +40,14 @@ public sealed class OrderItemSettlementNotificationTest
     using var scope = _context.Factory.Services.CreateScope();
 
     var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider)
-                   .SettleAsync(new() { OrderItemIds = itemIds, AmountPaidCents = 700, PaymentNotice = null },
+                   .SettleAsync(new()
+                                {
+                                  Lines =
+                                  [
+                                    new() { OrderItemId = itemIds[0], PaidPriceCents = 350 },
+                                    new() { OrderItemId = itemIds[1], PaidPriceCents = 350 }
+                                  ]
+                                },
                                 new(_context.World.StaffMemberId, _context.DeviceId, "de"),
                                 CancellationToken.None);
 
@@ -52,6 +59,8 @@ public sealed class OrderItemSettlementNotificationTest
                     {
                       Assert.That(view.OtherPhonesWereTold, Is.False);
                       Assert.That(view.SettledOrderItemIds, Has.Count.EqualTo(2));
+                      Assert.That(view.ReappliedOrderItemIds, Is.Empty);
+                      Assert.That(view.AlreadySettledByOthersOrderItemIds, Is.Empty);
                       Assert.That(stored.Select(item => item.SettledAtUtc), Is.All.Not.Null);
                       Assert.That(stored.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
                     });

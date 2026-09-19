@@ -333,14 +333,6 @@ public sealed class OrderItemSettlementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    if (request.AmountPaidCents is not { } amountPaidCents)
-    {
-      SettlementFailure amountIsMissing = new() { Reason = SettlementFailureReason.AmountPaidMissing };
-      WarnAboutASettlementTheScreenCannotProduce(amountIsMissing, caller.StaffMemberId, request.AmountPaidCents);
-
-      return _resultEnvelope.ToResult(_resultEnvelope.Describe(amountIsMissing));
-    }
-
     if (await _runningFestivalLookup.FindAsync(cancellationToken) is null)
     {
       SettlementFailure noFestivalIsRunning = new() { Reason = SettlementFailureReason.NoRunningFestival };
@@ -351,13 +343,19 @@ public sealed class OrderItemSettlementHandler
     }
 
     return await ApplyAsync(new()
-                      {
-                        OrderItemIds = request.OrderItemIds ?? [],
-                        AmountPaidCents = amountPaidCents,
-                        SettledByStaffMemberId = caller.StaffMemberId,
-                        PaymentNotice = request.PaymentNotice
-                      },
-                      cancellationToken);
+                            {
+                              Lines =
+                              [
+                                .. (request.Lines ?? []).Select(line => new SettlementLine
+                                                                        {
+                                                                          OrderItemId = line.OrderItemId,
+                                                                          PaidPriceCents = line.PaidPriceCents,
+                                                                          PaymentNotice = line.PaymentNotice
+                                                                        })
+                              ],
+                              SettledByStaffMemberId = caller.StaffMemberId
+                            },
+                            cancellationToken);
   }
 
   private async Task<IResult> ApplyAsync(SettlementRequest request, CancellationToken cancellationToken)
@@ -393,20 +391,22 @@ public sealed class OrderItemSettlementHandler
 
     if (!settlement.IsSuccess)
     {
-      WarnAboutASettlementTheScreenCannotProduce(settlement.Failure,
-                                                request.SettledByStaffMemberId,
-                                                request.AmountPaidCents);
+      WarnAboutASettlementTheScreenCannotProduce(settlement.Failure, request.SettledByStaffMemberId);
 
       return _resultEnvelope.ToResult(_resultEnvelope.Describe(settlement.Failure));
     }
 
     List<Guid> settledIds = [.. settlement.Value.NewlySettled.Select(item => item.Id)];
-    List<Guid> alreadySettledIds = [.. settlement.Value.AlreadySettledBeforehand.Select(item => item.Id)];
+    List<Guid> reappliedIds = [.. settlement.Value.Reapplied.Select(item => item.Id)];
+    List<Guid> alreadySettledByOthersIds = [.. settlement.Value.AlreadySettledByOthers.Select(item => item.Id)];
 
     var otherPhonesWereTold = settledIds.Count == 0
                               || await TellTheOtherPhonesWithoutFailingTheSettlementAsync(settledIds, cancellationToken);
 
-    return Results.Ok(new SettlementView(settledIds, alreadySettledIds, otherPhonesWereTold));
+    return Results.Ok(new SettlementView(settledIds,
+                                         reappliedIds,
+                                         alreadySettledByOthersIds,
+                                         otherPhonesWereTold));
   }
 
   private async Task<IReadOnlyCollection<SettlementCandidate>> CandidatesOfAsync(
@@ -424,16 +424,19 @@ public sealed class OrderItemSettlementHandler
   }
 
   private void WarnAboutASettlementTheScreenCannotProduce(SettlementFailure failure,
-                                                          Guid staffMemberId,
-                                                          int? amountPaidCents)
+                                                          Guid staffMemberId)
   {
     if (failure.Reason is SettlementFailureReason.AmountPaidMissing
-                          or SettlementFailureReason.AmountPaidNegative)
+                          or SettlementFailureReason.AmountPaidNegative
+                          or SettlementFailureReason.DuplicateOrderItemId
+                          or SettlementFailureReason.NoItemsSelected
+                          or SettlementFailureReason.UnknownOrderItemId
+                          or SettlementFailureReason.PaymentNoticeMissing)
     {
-      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The amount the phone sent was {AmountPaidCents}, and the open items screen cannot produce that, so nothing was settled.",
+      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The order item it names is {OrderItemId}, and the open items screen cannot produce that, so nothing was settled.",
                          staffMemberId,
                          failure.Reason,
-                         amountPaidCents);
+                         failure.OffendingOrderItemId);
       return;
     }
 

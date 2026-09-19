@@ -1,13 +1,14 @@
 import type {
   Catalog,
+  ConfirmedSettlement,
   DraftLine,
   DraftOrder,
-  OrderSettlementRequest,
   OrderSubmitRequest,
   StationDeliveryMode,
 } from './apiTypes'
 import { findCatalogItem } from './basket'
 import { saveDraft } from './draftCart'
+import { splitSettlement } from './settlementSplit'
 
 const VERSION_FOUR_MASK = 0x0f
 const VERSION_FOUR_BITS = 0x40
@@ -45,23 +46,31 @@ function priceOnTheMenu(catalog: Catalog, line: DraftLine): number {
 export function buildSubmitRequest(
   draft: DraftOrder,
   catalog: Catalog,
-  settlement: OrderSettlementRequest | null,
+  settlement: ConfirmedSettlement | null,
   deliveryModes: readonly StationDeliveryMode[],
 ): OrderSubmitRequest {
   const clientOrderId = draft.clientOrderId
   if (clientOrderId === null) {
     throw new Error('A draft without a clientOrderId must not be submitted')
   }
+  const pricedLines = draft.lines.map((line) => ({
+    line,
+    unitPriceCents: priceOnTheMenu(catalog, line),
+  }))
+  const settlementLines =
+    settlement === null
+      ? []
+      : splitSettlement(settlement.amountPaidCents, pricedLines, settlement.paymentNotice ?? '')
   return {
     clientOrderId,
     tableName: draft.tableName,
     note: draft.note,
-    settlement,
-    items: draft.lines.map((line) => ({
+    items: pricedLines.map(({ line, unitPriceCents }, index) => ({
       catalogItemId: line.catalogItemId,
-      unitPriceCents: priceOnTheMenu(catalog, line),
+      unitPriceCents,
       note: line.note,
       stationId: line.stationId,
+      settlement: settlementLines[index] ?? null,
     })),
     deliveryModes: [...deliveryModes],
   }

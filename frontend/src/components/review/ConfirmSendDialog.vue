@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
   AppLanguage,
+  ConfirmedSettlement,
   DeliveryMode,
-  OrderSettlementRequest,
   StationEstimate,
 } from '../../core/apiTypes'
 import type { BasketLineView } from '../../core/basket'
@@ -25,7 +25,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  confirmed: [settlement: OrderSettlementRequest | null]
+  confirmed: [settlement: ConfirmedSettlement | null]
   cancelled: []
 }>()
 

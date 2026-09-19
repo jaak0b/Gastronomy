@@ -193,7 +193,10 @@ public sealed class OrderAcceptanceTransactionTest
     var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { AmountPaidCents = 700 }),
+      await transaction.AcceptAsync(BuildRequest(seeded,
+                                                 Guid.NewGuid(),
+                                                 new() { PaidPriceCents = 350 },
+                                                 new() { PaidPriceCents = 350 }),
                                     TestContext.CurrentContext.CancellationToken);
 
     List<OrderItem> storedItems = await fixture.DbContext.OrderItems
@@ -206,7 +209,37 @@ public sealed class OrderAcceptanceTransactionTest
                       Assert.That(storedItems, Has.Count.EqualTo(2));
                       Assert.That(storedItems.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
                       Assert.That(storedItems.Select(item => item.SettledAtUtc), Is.All.EqualTo(result.Value.Order.CreatedAtUtc));
-                      Assert.That(storedItems.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(seeded.StaffMemberId));
+                       Assert.That(storedItems.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(seeded.StaffMemberId));
+                     });
+  }
+
+  [Test]
+  public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await transaction.AcceptAsync(BuildRequest(seeded,
+                                                 Guid.NewGuid(),
+                                                 new() { PaidPriceCents = 350 }),
+                                    TestContext.CurrentContext.CancellationToken);
+
+    List<OrderItem> storedItems = await fixture.DbContext.OrderItems
+                                                         .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    var settledLine = storedItems.Single(item => item.CatalogItemId == seeded.SausageItemId);
+    var openLine = storedItems.Single(item => item.CatalogItemId == seeded.LemonadeItemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.True);
+                      Assert.That(settledLine.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(settledLine.SettledAtUtc, Is.EqualTo(result.Value.Order.CreatedAtUtc));
+                      Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(seeded.StaffMemberId));
+                      Assert.That(openLine.ChargedPriceCents, Is.Null);
+                      Assert.That(openLine.SettledAtUtc, Is.Null);
+                      Assert.That(openLine.SettledByStaffMemberId, Is.Null);
                     });
   }
 
@@ -218,7 +251,10 @@ public sealed class OrderAcceptanceTransactionTest
     var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await transaction.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { AmountPaidCents = 500 }),
+      await transaction.AcceptAsync(BuildRequest(seeded,
+                                                 Guid.NewGuid(),
+                                                 new() { PaidPriceCents = 250 },
+                                                 new() { PaidPriceCents = 250 }),
                                     TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
@@ -245,14 +281,15 @@ public sealed class OrderAcceptanceTransactionTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var transaction = new OrderAcceptanceComposition().Create(fixture.DbContext);
     var clientOrderId = Guid.NewGuid();
-    OrderSettlementTerms settlement = new() { AmountPaidCents = 700 };
+    OrderSettlementLineTerms sausageSettlement = new() { PaidPriceCents = 350 };
+    OrderSettlementLineTerms lemonadeSettlement = new() { PaidPriceCents = 350 };
 
     Result<OrderAcceptanceResult, OrderValidationFailure> first =
-      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, settlement),
+      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement),
                                     TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
     Result<OrderAcceptanceResult, OrderValidationFailure> second =
-      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, settlement),
+      await transaction.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement),
                                     TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
@@ -278,7 +315,8 @@ public sealed class OrderAcceptanceTransactionTest
 
   private OrderAcceptanceRequest BuildRequest(SeededDomain seeded,
                                               Guid clientOrderId,
-                                              OrderSettlementTerms? settlement = null)
+                                              OrderSettlementLineTerms? sausageSettlement = null,
+                                              OrderSettlementLineTerms? lemonadeSettlement = null)
   {
     return new()
            {
@@ -286,18 +324,17 @@ public sealed class OrderAcceptanceTransactionTest
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Note = null,
-             Settlement = settlement,
              Items =
              [
                new()
                {
                  CatalogItemId = seeded.SausageItemId, Note = null,
-                 UnitPriceCents = 350
+                 UnitPriceCents = 350, Settlement = sausageSettlement
                },
                new()
                {
                  CatalogItemId = seeded.LemonadeItemId, Note = null,
-                 UnitPriceCents = 350
+                 UnitPriceCents = 350, Settlement = lemonadeSettlement
                }
              ]
            };

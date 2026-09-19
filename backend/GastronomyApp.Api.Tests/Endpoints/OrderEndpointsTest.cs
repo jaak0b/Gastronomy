@@ -200,13 +200,12 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
-  public async Task PostOrder_SettlementBelowTheTotalWithoutANotice_IsRefusedWithWordingThePhoneCanShow()
+  public async Task PostOrder_SettlementBelowTheItemPriceWithoutANotice_IsRefusedWithWordingThePhoneCanShow()
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
                          null,
-                         [new(_context.World.BratwurstItemId, 350, null, null)],
-                         new OrderSettlementBody(100));
+                         [new(_context.World.BratwurstItemId, 350, null, null, new(100))]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -223,6 +222,61 @@ public sealed class OrderEndpointsTest
                                   Is.EqualTo("order.settlementCannotBeProcessed"));
                       Assert.That(orderCount, Is.Zero);
                       Assert.That(itemCount, Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task PostOrder_ItemsCarryingASettlement_StoreExactlyThePricesAndNoticesThePhoneSent()
+  {
+    OrderBody body = new(Guid.NewGuid(),
+                         "Tisch 12",
+                         null,
+                         [
+                           new(_context.World.BratwurstItemId, 350, null, null, new(200, "Stammgast")),
+                           new(_context.World.BeerItemId, 350, null, null, new(350))
+                         ]);
+
+    using var response = await _context.PostOrderAsync(body);
+
+    await using var database = _context.Factory.CreateContext();
+    var bratwurst = await database.OrderItems.SingleAsync(item => item.CatalogItemId == _context.World.BratwurstItemId);
+    var beer = await database.OrderItems.SingleAsync(item => item.CatalogItemId == _context.World.BeerItemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(200));
+                      Assert.That(bratwurst.PaymentNotice, Is.EqualTo("Stammgast"));
+                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(beer.PaymentNotice, Is.Null);
+                    });
+  }
+
+  [Test]
+  public async Task PostOrder_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
+  {
+    OrderBody body = new(Guid.NewGuid(),
+                         "Tisch 12",
+                         null,
+                         [
+                           new(_context.World.BratwurstItemId, 350, null, null, new(350)),
+                           new(_context.World.BratwurstItemId, 350, null, null)
+                         ]);
+
+    using var response = await _context.PostOrderAsync(body);
+
+    await using var database = _context.Factory.CreateContext();
+    List<OrderItem> stored = await database.OrderItems.ToListAsync();
+    var settledLine = stored.Single(item => item.SettledAtUtc is not null);
+    var openLine = stored.Single(item => item.SettledAtUtc is null);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(settledLine.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(_context.World.StaffMemberId));
+                      Assert.That(openLine.ChargedPriceCents, Is.Null);
+                      Assert.That(openLine.SettledByStaffMemberId, Is.Null);
                     });
   }
 }

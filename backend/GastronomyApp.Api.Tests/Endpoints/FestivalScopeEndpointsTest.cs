@@ -191,7 +191,7 @@ public sealed class FestivalScopeEndpointsTest
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
-                                                  new SettleItemsBody(orderItemIds, 700));
+                                                  new SettleItemsBody([.. orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, 350))]));
 
     var body = await BodyOfAsync(response);
 

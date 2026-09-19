@@ -1,8 +1,8 @@
 import type {
+  ConfirmedSettlement,
   DeliveryMode,
   DraftLine,
   DraftOrder,
-  OrderSettlementRequest,
 } from './apiTypes'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
@@ -155,7 +155,7 @@ function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   return parameters === undefined ? { key: candidate.key } : { key: candidate.key, parameters }
 }
 
-function toSettlementRequest(value: unknown): OrderSettlementRequest | null | undefined {
+function toConfirmedSettlement(value: unknown): ConfirmedSettlement | null | undefined {
   if (value === null) {
     return null
   }
@@ -180,7 +180,7 @@ function toSendProgress(value: unknown): SendProgress | null {
   }
   const candidate = value as Record<string, unknown>
   const state = SEND_STATES.find((known) => known === candidate.state)
-  const settlement = toSettlementRequest(candidate.settlement)
+  const settlement = toConfirmedSettlement(candidate.settlement)
   if (state === undefined || typeof candidate.attempts !== 'number' || settlement === undefined) {
     return null
   }

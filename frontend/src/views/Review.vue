@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { OrderSettlementRequest } from '../core/apiTypes'
+import type { ConfirmedSettlement } from '../core/apiTypes'
 import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../core/totals'
 import { useEstimatesStore } from '../stores/estimates'
@@ -42,7 +42,7 @@ function keepTheOrderOnTheScreen(): void {
   sendSheetIsOpen.value = false
 }
 
-async function sendAsConfirmed(settlement: OrderSettlementRequest | null): Promise<void> {
+async function sendAsConfirmed(settlement: ConfirmedSettlement | null): Promise<void> {
   sendSheetIsOpen.value = false
   await order.send(settlement)
   if (order.sendState === 'accepted') {

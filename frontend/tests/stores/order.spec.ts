@@ -289,6 +289,24 @@ describe('the settlement an order goes out with', () => {
 
   it('carries the amount and the reason the waiter confirmed, not only the fact that it settled', async () => {
     answerWith(500)
+    const catalog = useCatalogStore()
+    catalog.catalog = {
+      categories: [],
+      items: [
+        {
+          id: 'item-wasser',
+          name: 'Wasser',
+          categoryId: 'category-getraenke',
+          priceCents: 800,
+          sortOrder: 1,
+          isAvailable: true,
+          stationIds: ['station-bar'],
+          productionMinutes: null,
+          isQueueIndependent: false,
+        },
+      ],
+      stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],
+    }
     const order = useOrderStore()
     order.addItem({
       catalogItemId: 'item-wasser',
@@ -301,7 +319,10 @@ describe('the settlement an order goes out with', () => {
     await order.send({ amountPaidCents: 500, paymentNotice: 'Stammgast' })
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toEqual({ amountPaidCents: 500, paymentNotice: 'Stammgast' })
+    expect(sent.items[0].settlement).toEqual({
+      paidPriceCents: 500,
+      paymentNotice: 'Stammgast',
+    })
   })
 })
 
@@ -551,7 +572,10 @@ describe('an order the page was still sending when it was loaded again', () => {
     await order.sendAgain()
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
-    expect(sent.settlement).toEqual({ amountPaidCents: 200, paymentNotice: null })
+    expect(sent.items[0].settlement).toEqual({
+      paidPriceCents: 200,
+      paymentNotice: null,
+    })
   })
 })
 

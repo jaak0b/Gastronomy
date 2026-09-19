@@ -44,7 +44,8 @@ const EMPTY_LIST = { tables: [], itemsWithoutAnOrderCount: 0 }
 
 const SETTLED = {
   settledOrderItemIds: ['item-1'],
-  alreadySettledOrderItemIds: [],
+  reappliedOrderItemIds: [],
+  alreadySettledByOthersOrderItemIds: [],
   otherPhonesWereTold: true,
 }
 
@@ -80,7 +81,9 @@ function jsonOf(payload: unknown, status = 200): () => Response {
 async function storeWithTheOpenList(replies: (() => Response)[]) {
   const calls = answerWith([jsonOf(OPEN_LIST), ...replies])
   localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
-  useSessionStore().deviceToken = 'token-here'
+  const session = useSessionStore()
+  session.deviceToken = 'token-here'
+  session.language = 'de'
   const openItems = useOpenItemsStore()
   await openItems.load()
   return { openItems, calls }
@@ -175,7 +178,9 @@ describe('settling what the waiter ticked', () => {
     expect(calls[1]).toEqual({
       url: '/api/open-items/settle',
       method: 'POST',
-      body: { orderItemIds: ['item-1'], amountPaidCents: 350, paymentNotice: null },
+      body: {
+        lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
+      },
     })
     expect(openItems.selectedItemIds).toEqual([])
     expect(openItems.notice).toBeNull()
@@ -191,30 +196,32 @@ describe('settling what the waiter ticked', () => {
       url: '/api/open-items/settle',
       method: 'POST',
       body: {
-        orderItemIds: ['item-1'],
-        amountPaidCents: 0,
-        paymentNotice: 'Essen fuer die Kapelle',
+        lines: [
+          { orderItemId: 'item-1', paidPriceCents: 0, paymentNotice: 'Essen fuer die Kapelle' },
+        ],
       },
     })
   })
 
-  it('names how many items another phone had already taken, even when the rest settled', async () => {
+  it('names the amount to hand back for the items another phone had already taken', async () => {
     const { openItems } = await storeWithTheOpenList([
       jsonOf({
         settledOrderItemIds: ['item-1'],
-        alreadySettledOrderItemIds: ['item-2', 'item-3'],
+        reappliedOrderItemIds: [],
+        alreadySettledByOthersOrderItemIds: ['item-2'],
         otherPhonesWereTold: true,
       }),
       jsonOf(EMPTY_LIST),
     ])
     openItems.toggleItem('item-1')
+    openItems.toggleItem('item-2')
 
-    await openItems.settle(350, null)
+    await openItems.settle(700, null)
 
     expect(openItems.notice).toEqual({
       key: 'openItems.someWereAlreadySettled',
-      parameters: { count: 2 },
-      count: 2,
+      parameters: { count: 1, amount: '3,50 €' },
+      count: 1,
     })
   })
 
@@ -222,7 +229,8 @@ describe('settling what the waiter ticked', () => {
     const { openItems } = await storeWithTheOpenList([
       jsonOf({
         settledOrderItemIds: ['item-1'],
-        alreadySettledOrderItemIds: [],
+        reappliedOrderItemIds: [],
+        alreadySettledByOthersOrderItemIds: [],
         otherPhonesWereTold: false,
       }),
       jsonOf(EMPTY_LIST),

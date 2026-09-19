@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../api/client'
 import type {
   OpenItemsResponse,
+  OpenItemsSettleLine,
   OpenTable,
   SettlementResponse,
   TableNamesResponse,
@@ -11,6 +12,7 @@ import { assertNever } from '../core/assertNever'
 import {
   noticeAfterSettling,
   selectedAmountCents,
+  selectedItems,
   withItemToggled,
   withWholeTable,
   withoutItemsThatAreGone,
@@ -18,6 +20,7 @@ import {
   type SettleOutcome,
 } from '../core/openItems'
 import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
+import { splitSettlement } from '../core/settlementSplit'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
@@ -105,11 +108,14 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     selectedItemIds.value = withWholeTable(selectedItemIds.value, tables.value, table, isWanted)
   }
 
-  async function accept(result: ApiResult<SettlementResponse>): Promise<SettleOutcome> {
+  async function accept(
+    result: ApiResult<SettlementResponse>,
+    sentLines: readonly OpenItemsSettleLine[],
+  ): Promise<SettleOutcome> {
     isSettling.value = false
     switch (result.kind) {
       case 'ok':
-        notice.value = noticeAfterSettling(result.data)
+        notice.value = noticeAfterSettling(result.data, sentLines, useSessionStore().language)
         selectedItemIds.value = []
         await load()
         return 'accepted'
@@ -134,13 +140,21 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     paymentNotice: string | null,
   ): Promise<SettleOutcome> {
     isSettling.value = true
+    const items = selectedItems(tables.value, selectedItemIds.value)
+    const split = splitSettlement(amountPaidCents, items, paymentNotice ?? '')
+    const lines = items.map((item, index) => ({
+      orderItemId: item.orderItemId,
+      paidPriceCents: split[index].paidPriceCents,
+      paymentNotice: split[index].paymentNotice,
+    }))
     return await accept(
       await request<SettlementResponse>('/api/open-items/settle', {
         method: 'POST',
-        body: { orderItemIds: [...selectedItemIds.value], amountPaidCents, paymentNotice },
+        body: { lines },
         token: deviceToken(),
         timeoutMs: SEND_TIMEOUT_MS,
       }),
+      lines,
     )
   }
 

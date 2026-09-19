@@ -21,301 +21,193 @@ public sealed class OrderItemSettlementServiceTest
   private OrderItemSettlementService _service = null!;
 
   [Test]
-  public void Settle_TheFullAmount_ChargesEveryItemItsOwnPrice()
+  public void Settle_OnePricePerLine_StoresExactlyThePricesThePhoneSent()
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 750), AtOneTable(bratwurst, beer), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(400));
-                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
-                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_now));
-                      Assert.That(bratwurst.PaymentNotice, Is.Null);
-                      Assert.That(beer.PaymentNotice, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_NothingAtAllWithAReason_ChargesEveryItemZeroAndKeepsTheDisplayedPrice()
-  {
-    var bratwurst = OpenItem(350);
-    var beer = OpenItem(400);
-
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 0, "  Essen fuer die Kapelle  "),
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 200, "Stammgast"), Line(beer, 150, "Stammgast")]),
                                      AtOneTable(bratwurst, beer),
                                      _now);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.Zero);
-                      Assert.That(beer.ChargedPriceCents, Is.Zero);
-                      Assert.That(bratwurst.UnitPriceCents, Is.EqualTo(350));
-                      Assert.That(beer.UnitPriceCents, Is.EqualTo(400));
-                      Assert.That(bratwurst.PaymentNotice, Is.EqualTo("Essen fuer die Kapelle"));
-                      Assert.That(beer.PaymentNotice, Is.EqualTo("Essen fuer die Kapelle"));
+                      Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(2));
+                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(200));
+                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(150));
+                      Assert.That(bratwurst.PaymentNotice, Is.EqualTo("Stammgast"));
+                      Assert.That(beer.PaymentNotice, Is.EqualTo("Stammgast"));
+                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
+                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_now));
+                      Assert.That(bratwurst.SettledByStaffMemberId, Is.EqualTo(_collectingWaiter));
+                      Assert.That(beer.SettledByStaffMemberId, Is.EqualTo(_collectingWaiter));
                     });
   }
 
   [Test]
-  public void Settle_APartOfTheAmount_SplitsItAcrossTheItemsByWhatEachOneCosts()
-  {
-    var cola = OpenItem(100);
-    var beer = OpenItem(200);
-    var bratwurst = OpenItem(300);
-
-    var settlement = _service.Settle(RequestFor([cola.Id, beer.Id, bratwurst.Id],
-                                                300,
-                                                "Der Tisch zahlt den Rest spaeter"),
-                                     AtOneTable(cola, beer, bratwurst),
-                                     _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(cola.ChargedPriceCents, Is.EqualTo(50));
-                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(100));
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(150));
-                    });
-  }
-
-  [Test]
-  public void Settle_AnAmountThatDoesNotDivideEvenly_HandsOutEveryRemainingCentInTheOrderTheItemsWereNamed()
-  {
-    var first = OpenItem(333);
-    var second = OpenItem(333);
-    var third = OpenItem(333);
-
-    var settlement = _service.Settle(RequestFor([first.Id, second.Id, third.Id],
-                                                500,
-                                                "Der Tisch zahlt den Rest spaeter"),
-                                     AtOneTable(first, second, third),
-                                     _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(first.ChargedPriceCents, Is.EqualTo(167));
-                      Assert.That(second.ChargedPriceCents, Is.EqualTo(167));
-                      Assert.That(third.ChargedPriceCents, Is.EqualTo(166));
-                      Assert.That(first.ChargedPriceCents + second.ChargedPriceCents + third.ChargedPriceCents,
-                                  Is.EqualTo(500));
-                    });
-  }
-
-  [Test]
-  public void Settle_ASelectionWhereEveryItemIsPricedAtZero_SplitsTheAmountEquallyAndHandsOutTheRemainder()
-  {
-    var first = OpenItem(0);
-    var second = OpenItem(0);
-    var third = OpenItem(0);
-
-    var settlement = _service.Settle(RequestFor([first.Id, second.Id, third.Id], 100),
-                                     AtOneTable(first, second, third),
-                                     _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(first.ChargedPriceCents, Is.EqualTo(34));
-                      Assert.That(second.ChargedPriceCents, Is.EqualTo(33));
-                      Assert.That(third.ChargedPriceCents, Is.EqualTo(33));
-                      Assert.That(first.ChargedPriceCents + second.ChargedPriceCents + third.ChargedPriceCents,
-                                  Is.EqualTo(100));
-                    });
-  }
-
-  [Test]
-  public void Settle_MoreThanTheItemsCost_ChargesTheWholeAmountAndNeedsNoReason()
+  public void Settle_MoreThanTheItemCosts_StoresTheSentPriceAsItIs()
   {
     var bratwurst = OpenItem(350);
-    var beer = OpenItem(350);
 
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 1000), AtOneTable(bratwurst, beer), _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 500)]), AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
                       Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(500));
-                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(500));
                       Assert.That(bratwurst.PaymentNotice, Is.Null);
                     });
   }
 
   [Test]
-  public void Settle_ANegativeAmount_IsRefusedAndNothingIsSettled()
+  public void Settle_AShortLineWithAReason_KeepsTheTrimmedReason()
   {
     var bratwurst = OpenItem(350);
 
-    var settlement = _service.Settle(RequestFor([bratwurst.Id], -1, "Ein Grund"), AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidNegative));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_LessThanTheItemsCostWithoutAReason_IsRefusedAndNothingIsSettled()
-  {
-    var bratwurst = OpenItem(350);
-    var beer = OpenItem(400);
-
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 700, "   "), AtOneTable(bratwurst, beer), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.PaymentNoticeMissing));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                      Assert.That(beer.SettledAtUtc, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_LessThanTheItemsCostWithAReason_SettlesTheItemsAndKeepsTheReason()
-  {
-    var bratwurst = OpenItem(350);
-    var beer = OpenItem(400);
-
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 700, "Der Tisch zahlt den Rest spaeter"),
-                                     AtOneTable(bratwurst, beer),
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")]),
+                                     AtOneTable(bratwurst),
                                      _now);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents + beer.ChargedPriceCents, Is.EqualTo(700));
+                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(150));
                       Assert.That(bratwurst.PaymentNotice, Is.EqualTo("Der Tisch zahlt den Rest spaeter"));
-                      Assert.That(beer.PaymentNotice, Is.EqualTo("Der Tisch zahlt den Rest spaeter"));
                     });
   }
 
   [Test]
-  public void Settle_AnAmountThatCoversTheStillOpenItemsBesideASettledOne_NeedsNoReason()
+  public void Settle_ALineTheCallerAlreadySettled_OverwritesThePriceAndTheReasonAndKeepsTimeAndCollector()
   {
-    var alreadyPaid = OpenItem(400);
-    _service.MarkSettled(alreadyPaid, 400, null, _anotherWaiter, _earlier);
-    var bratwurst = OpenItem(350);
+    var beer = OpenItem(400);
+    _service.MarkSettled(beer, 0, "Kapelle", _collectingWaiter, _earlier);
 
-    var settlement = _service.Settle(RequestFor([alreadyPaid.Id, bratwurst.Id], 350),
-                                     AtOneTable(alreadyPaid, bratwurst),
-                                     _now);
+    var settlement = _service.Settle(RequestFor([Line(beer, 400)]), AtOneTable(beer), _now);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(settlement.Value.NewlySettled, Is.Empty);
+                      Assert.That(settlement.Value.Reapplied, Has.Count.EqualTo(1));
+                      Assert.That(settlement.Value.AlreadySettledByOthers, Is.Empty);
+                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(400));
+                      Assert.That(beer.PaymentNotice, Is.Null);
+                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_earlier));
+                      Assert.That(beer.SettledByStaffMemberId, Is.EqualTo(_collectingWaiter));
                     });
   }
 
   [Test]
-  public void Settle_AnItemSomebodyElseAlreadySettled_GivesItNoShareAndLeavesTheFirstSettlementAsItWas()
+  public void Settle_ALineSomebodyElseAlreadySettled_IsNeverChangedAndIsReportedBack()
   {
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 0, "Kapelle", _anotherWaiter, _earlier);
+
+    var settlement = _service.Settle(RequestFor([Line(beer, 400)]), AtOneTable(beer), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.True);
+                      Assert.That(settlement.Value.NewlySettled, Is.Empty);
+                      Assert.That(settlement.Value.Reapplied, Is.Empty);
+                      Assert.That(settlement.Value.AlreadySettledByOthers, Has.Count.EqualTo(1));
+                      Assert.That(beer.ChargedPriceCents, Is.Zero);
+                      Assert.That(beer.PaymentNotice, Is.EqualTo("Kapelle"));
+                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_earlier));
+                      Assert.That(beer.SettledByStaffMemberId, Is.EqualTo(_anotherWaiter));
+                    });
+  }
+
+  [Test]
+  public void Settle_AnOpenLineBesideALineSomebodyElseAlreadySettled_SettlesOnlyTheOpenLine()
+  {
+    var beer = OpenItem(400);
+    _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
     var bratwurst = OpenItem(350);
 
-    var settlement = _service.Settle(RequestFor([beer.Id, bratwurst.Id], 350), AtOneTable(beer, bratwurst), _now);
+    var settlement = _service.Settle(RequestFor([Line(beer, 400), Line(bratwurst, 350)]),
+                                     AtOneTable(beer, bratwurst),
+                                     _now);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(settlement.IsSuccess, Is.True);
                       Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
-                      Assert.That(settlement.Value.AlreadySettledBeforehand, Has.Count.EqualTo(1));
-                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_earlier));
-                      Assert.That(beer.ChargedPriceCents, Is.Zero);
-                      Assert.That(beer.PaymentNotice, Is.EqualTo("Kapelle"));
+                      Assert.That(settlement.Value.NewlySettled[0], Is.SameAs(bratwurst));
+                      Assert.That(settlement.Value.AlreadySettledByOthers, Has.Count.EqualTo(1));
+                      Assert.That(settlement.Value.AlreadySettledByOthers[0], Is.SameAs(beer));
                       Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(beer.ChargedPriceCents, Is.EqualTo(400));
                     });
   }
 
   [Test]
-  public void Settle_TheItemsOfATable_RecordsTheWaiterWhoCollectedTheMoneyBesideTheTimeAndTheAmount()
+  public void Settle_ALineWithoutAPrice_IsRefusedAndNothingIsSettled()
   {
     var bratwurst = OpenItem(350);
 
-    _service.Settle(RequestFor([bratwurst.Id], 350), AtOneTable(bratwurst), _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, null)]), AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(bratwurst.SettledByStaffMemberId, Is.EqualTo(_collectingWaiter));
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidMissing));
+                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
                     });
   }
 
   [Test]
-  public void Settle_ItemsNobodySelected_LeavesTheirTimeAmountAndWaiterAllUnwritten()
+  public void Settle_ANegativePrice_IsRefusedAndNothingIsSettled()
+  {
+    var bratwurst = OpenItem(350);
+
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, -1, "Ein Grund")]), AtOneTable(bratwurst), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidNegative));
+                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_AShortLineWithoutAReason_IsRefusedAndNothingIsSettled()
+  {
+    var bratwurst = OpenItem(350);
+
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 300, "   ")]), AtOneTable(bratwurst), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.PaymentNoticeMissing));
+                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_ALaterLineThatFailsValidation_LeavesTheEarlierLineUntouched()
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    _service.Settle(RequestFor([bratwurst.Id], 350), AtOneTable(bratwurst, beer), _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 350), Line(beer, null)]),
+                                     AtOneTable(bratwurst, beer),
+                                     _now);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(beer.SettledAtUtc, Is.Null);
-                      Assert.That(beer.ChargedPriceCents, Is.Null);
-                      Assert.That(beer.SettledByStaffMemberId, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_WithoutNamingTheWaiter_IsRefusedAndNothingIsSettled()
-  {
-    var bratwurst = OpenItem(350);
-    SettlementRequest withoutAWaiter = new()
-                                       {
-                                         OrderItemIds = [bratwurst.Id],
-                                         AmountPaidCents = 350,
-                                         SettledByStaffMemberId = Guid.Empty
-                                       };
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(() => _service.Settle(withoutAWaiter, AtOneTable(bratwurst), _now),
-                                  Throws.ArgumentException);
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidMissing));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(bratwurst.ChargedPriceCents, Is.Null);
-                      Assert.That(bratwurst.SettledByStaffMemberId, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_NothingSelected_IsRefused()
-  {
-    var settlement = _service.Settle(RequestFor([], 0), AtOneTable(), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.NoItemsSelected));
-                    });
-  }
-
-  [Test]
-  public void Settle_ASelectionHoldingAnUnknownId_SettlesNoneOfTheSelection()
-  {
-    var bratwurst = OpenItem(350);
-    var unknownId = Guid.NewGuid();
-
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, unknownId], 350), AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.UnknownOrderItemId));
-                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(unknownId));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
   }
 
@@ -327,7 +219,7 @@ public sealed class OrderItemSettlementServiceTest
     IReadOnlyCollection<SettlementCandidate> twoTables =
       [.. At("Tisch 12", bratwurst), .. At("Tisch 3", beer)];
 
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, beer.Id], 750), twoTables, _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 350), Line(beer, 400)]), twoTables, _now);
 
     Assert.Multiple(() =>
                     {
@@ -342,36 +234,108 @@ public sealed class OrderItemSettlementServiceTest
   }
 
   [Test]
-  public void Settle_AnItemOfAnotherTableThatSomebodyElseAlreadySettled_SettlesTheTableThatIsStillOpen()
+  public void Settle_ASelectionSpanningTwoTablesWhereOneLineIsAlreadySettled_IsRefusedAsWell()
   {
+    var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
-    var bratwurst = OpenItem(350);
     IReadOnlyCollection<SettlementCandidate> twoTables =
-      [.. At("Tisch 3", beer), .. At("Tisch 12", bratwurst)];
+      [.. At("Tisch 12", bratwurst), .. At("Tisch 3", beer)];
 
-    var settlement = _service.Settle(RequestFor([beer.Id, bratwurst.Id], 350), twoTables, _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 350), Line(beer, 400)]), twoTables, _now);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
-                      Assert.That(beer.SettledAtUtc, Is.EqualTo(_earlier));
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason,
+                                  Is.EqualTo(SettlementFailureReason.SelectionSpansSeveralTables));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
                     });
   }
 
   [Test]
-  public void Settle_TheSameItemNamedTwiceInOneSelection_SettlesItOnce()
+  public void Settle_TheSameLineNamedTwice_IsRefusedAndNothingIsSettled()
   {
     var bratwurst = OpenItem(350);
 
-    var settlement = _service.Settle(RequestFor([bratwurst.Id, bratwurst.Id], 350), AtOneTable(bratwurst), _now);
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 350), Line(bratwurst, 350)]),
+                                     AtOneTable(bratwurst),
+                                     _now);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
-                      Assert.That(bratwurst.ChargedPriceCents, Is.EqualTo(350));
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.DuplicateOrderItemId));
+                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_ASelectionHoldingAnUnknownId_SettlesNoneOfTheSelection()
+  {
+    var bratwurst = OpenItem(350);
+    var unknownId = Guid.NewGuid();
+
+    var settlement = _service.Settle(RequestFor([Line(bratwurst, 350), Line(unknownId, 350)]),
+                                     AtOneTable(bratwurst),
+                                     _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.UnknownOrderItemId));
+                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(unknownId));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_NothingSelected_IsRefused()
+  {
+    var settlement = _service.Settle(RequestFor([]), AtOneTable(), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.NoItemsSelected));
+                    });
+  }
+
+  [Test]
+  public void Settle_WithoutNamingTheWaiter_IsRefusedAndNothingIsSettled()
+  {
+    var bratwurst = OpenItem(350);
+    SettlementRequest withoutAWaiter = new()
+                                       {
+                                         Lines = [Line(bratwurst, 350)],
+                                         SettledByStaffMemberId = Guid.Empty
+                                       };
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(() => _service.Settle(withoutAWaiter, AtOneTable(bratwurst), _now),
+                                  Throws.ArgumentException);
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
+                      Assert.That(bratwurst.SettledByStaffMemberId, Is.Null);
+                    });
+  }
+
+  [Test]
+  public void Settle_ItemsNobodySelected_LeavesTheirTimeAmountAndWaiterAllUnwritten()
+  {
+    var bratwurst = OpenItem(350);
+    var beer = OpenItem(400);
+
+    _service.Settle(RequestFor([Line(bratwurst, 350)]), AtOneTable(bratwurst, beer), _now);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(beer.SettledAtUtc, Is.Null);
+                      Assert.That(beer.ChargedPriceCents, Is.Null);
+                      Assert.That(beer.SettledByStaffMemberId, Is.Null);
                     });
   }
 
@@ -379,7 +343,7 @@ public sealed class OrderItemSettlementServiceTest
   public void WaivedAmountCentsOf_OneItemGivenAway_CountsTheDisplayedPriceOfThatItemAlone()
   {
     var beer = OpenItem(400);
-    _service.Settle(RequestFor([beer.Id], 0, "Kapelle"), AtOneTable(beer), _earlier);
+    _service.Settle(RequestFor([Line(beer, 0, "Kapelle")]), AtOneTable(beer), _earlier);
 
     Assert.That(_service.WaivedAmountCentsOf(beer), Is.EqualTo(400));
   }
@@ -394,7 +358,7 @@ public sealed class OrderItemSettlementServiceTest
   public void WaivedAmountCentsOf_AnItemTheTableOnlyPaidAPartOf_CountsWhatIsStillMissing()
   {
     var beer = OpenItem(400);
-    _service.Settle(RequestFor([beer.Id], 150, "Der Tisch zahlt den Rest spaeter"), AtOneTable(beer), _earlier);
+    _service.Settle(RequestFor([Line(beer, 150, "Der Tisch zahlt den Rest spaeter")]), AtOneTable(beer), _earlier);
 
     Assert.That(_service.WaivedAmountCentsOf(beer), Is.EqualTo(250));
   }
@@ -420,15 +384,31 @@ public sealed class OrderItemSettlementServiceTest
     Assert.That(_service.WaivedAmountCentsOf([beer, bratwurst]), Is.EqualTo(400));
   }
 
-  private SettlementRequest RequestFor(IReadOnlyList<Guid> orderItemIds,
-                                       int amountPaidCents,
-                                       string? paymentNotice = null)
+  private SettlementRequest RequestFor(IReadOnlyList<SettlementLine> lines)
   {
     return new()
            {
-             OrderItemIds = orderItemIds,
-             AmountPaidCents = amountPaidCents,
-             SettledByStaffMemberId = _collectingWaiter,
+             Lines = lines,
+             SettledByStaffMemberId = _collectingWaiter
+           };
+  }
+
+  private SettlementLine Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
+  {
+    return new()
+           {
+             OrderItemId = item.Id,
+             PaidPriceCents = paidPriceCents,
+             PaymentNotice = paymentNotice
+           };
+  }
+
+  private SettlementLine Line(Guid orderItemId, int? paidPriceCents, string? paymentNotice = null)
+  {
+    return new()
+           {
+             OrderItemId = orderItemId,
+             PaidPriceCents = paidPriceCents,
              PaymentNotice = paymentNotice
            };
   }

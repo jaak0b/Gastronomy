@@ -65,6 +65,7 @@ export interface OrderSubmitItem {
   unitPriceCents: number
   note: string | null
   stationId: string | null
+  settlement: OrderSettlementLine | null
 }
 
 export interface StationDeliveryMode {
@@ -72,16 +73,30 @@ export interface StationDeliveryMode {
   deliveryMode: DeliveryMode
 }
 
-export interface OrderSettlementRequest {
+export interface ConfirmedSettlement {
   amountPaidCents: number
   paymentNotice: string | null
+}
+
+export interface OrderSettlementLine {
+  paidPriceCents: number
+  paymentNotice: string | null
+}
+
+export interface OpenItemsSettleLine {
+  orderItemId: string
+  paidPriceCents: number
+  paymentNotice: string | null
+}
+
+export interface OpenItemsSettleRequest {
+  lines: OpenItemsSettleLine[]
 }
 
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableName: string
   note: string | null
-  settlement: OrderSettlementRequest | null
   items: OrderSubmitItem[]
   deliveryModes: StationDeliveryMode[]
 }
@@ -125,7 +140,8 @@ export interface TableNamesResponse {
 
 export interface SettlementResponse {
   settledOrderItemIds: string[]
-  alreadySettledOrderItemIds: string[]
+  reappliedOrderItemIds: string[]
+  alreadySettledByOthersOrderItemIds: string[]
   otherPhonesWereTold: boolean
 }
 

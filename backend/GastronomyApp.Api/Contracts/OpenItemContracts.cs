@@ -31,16 +31,22 @@ public sealed record OpenItemsView(
 
 public sealed record TableNamesView(IReadOnlyList<string> TableNames);
 
+public sealed record SettleLineRequest
+{
+  public required Guid OrderItemId { get; init; }
+
+  public required int? PaidPriceCents { get; init; }
+
+  public string? PaymentNotice { get; init; }
+}
+
 public sealed record SettleItemsRequest
 {
-  public required IReadOnlyList<Guid>? OrderItemIds { get; init; }
-
-  public required int? AmountPaidCents { get; init; }
-
-  public required string? PaymentNotice { get; init; }
+  public required IReadOnlyList<SettleLineRequest>? Lines { get; init; }
 }
 
 public sealed record SettlementView(
   IReadOnlyList<Guid> SettledOrderItemIds,
-  IReadOnlyList<Guid> AlreadySettledOrderItemIds,
+  IReadOnlyList<Guid> ReappliedOrderItemIds,
+  IReadOnlyList<Guid> AlreadySettledByOthersOrderItemIds,
   bool OtherPhonesWereTold);

@@ -1,4 +1,11 @@
-import type { OpenOrderItem, OpenTable, SettlementResponse } from './apiTypes'
+import type {
+  AppLanguage,
+  OpenItemsSettleLine,
+  OpenOrderItem,
+  OpenTable,
+  SettlementResponse,
+} from './apiTypes'
+import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 
@@ -19,13 +26,21 @@ export function selectedItemsOfTable(
   return table.items.filter((item) => selectedItemIds.includes(item.orderItemId))
 }
 
+export function selectedItems(
+  tables: readonly OpenTable[],
+  selectedItemIds: readonly string[],
+): OpenOrderItem[] {
+  return tables.flatMap((table) => selectedItemsOfTable(table, selectedItemIds))
+}
+
 export function selectedAmountCents(
   tables: readonly OpenTable[],
   selectedItemIds: readonly string[],
 ): number {
-  return tables
-    .flatMap((table) => selectedItemsOfTable(table, selectedItemIds))
-    .reduce((total, item) => total + item.unitPriceCents, 0)
+  return selectedItems(tables, selectedItemIds).reduce(
+    (total, item) => total + item.unitPriceCents,
+    0,
+  )
 }
 
 export function isTheWholeTableSelected(
@@ -122,13 +137,23 @@ export function canTheAmountBeSettled(
   )
 }
 
-export function noticeAfterSettling(settlement: SettlementResponse): SettleNotice | null {
-  const takenBySomebodyElse = settlement.alreadySettledOrderItemIds.length
-  if (takenBySomebodyElse > 0) {
+export function noticeAfterSettling(
+  settlement: SettlementResponse,
+  sentLines: readonly OpenItemsSettleLine[],
+  language: AppLanguage,
+): SettleNotice | null {
+  const takenBySomebodyElse = settlement.alreadySettledByOthersOrderItemIds
+  if (takenBySomebodyElse.length > 0) {
+    const toHandBack = sentLines
+      .filter((line) => takenBySomebodyElse.includes(line.orderItemId))
+      .reduce((total, line) => total + line.paidPriceCents, 0)
     return {
       key: 'openItems.someWereAlreadySettled',
-      parameters: { count: takenBySomebodyElse },
-      count: takenBySomebodyElse,
+      parameters: {
+        count: takenBySomebodyElse.length,
+        amount: formatPrice(toHandBack, language),
+      },
+      count: takenBySomebodyElse.length,
     }
   }
   if (!settlement.otherPhonesWereTold) {

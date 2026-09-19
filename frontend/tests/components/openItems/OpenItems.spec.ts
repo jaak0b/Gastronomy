@@ -63,7 +63,8 @@ const GIVEN_AWAY_LIST = {
 
 const SETTLED = {
   settledOrderItemIds: ['item-1'],
-  alreadySettledOrderItemIds: [],
+  reappliedOrderItemIds: [],
+  alreadySettledByOthersOrderItemIds: [],
   otherPhonesWereTold: true,
 }
 
@@ -242,9 +243,7 @@ describe('the screen that shows what the tables still owe', () => {
     await flushPromises()
 
     expect(bodies[0]).toEqual({
-      orderItemIds: ['item-1'],
-      amountPaidCents: 350,
-      paymentNotice: null,
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
     })
     expect(document.querySelector('.amount-paid-dialog')).toBeNull()
   })
@@ -320,21 +319,22 @@ describe('the screen that shows what the tables still owe', () => {
         new Response(
           JSON.stringify({
             settledOrderItemIds: ['item-1'],
-            alreadySettledOrderItemIds: ['item-2'],
+            reappliedOrderItemIds: [],
+            alreadySettledByOthersOrderItemIds: ['item-2'],
             otherPhonesWereTold: true,
           }),
           { status: 200 },
         ),
     )
     const openItems = useOpenItemsStore()
-    openItems.toggleItem('item-1')
+    openItems.setWholeTable(openItems.tables[0], true)
     await screen.vm.$nextTick()
 
     await screen.get('.settle').trigger('click')
     await flushPromises()
 
     expect(screen.get('.settle-notice').text()).toBe(
-      '1 Position aus Ihrer Auswahl hatte jemand anderes schon abgerechnet. Prüfen Sie, ob Sie dafür Geld genommen haben, und geben Sie es dem Gast zurück.',
+      'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast 3,50 € zurück.',
     )
   })
 
@@ -413,9 +413,7 @@ describe('settling what the table actually handed over', () => {
     await pressConfirm()
 
     expect(bodies[0]).toEqual({
-      orderItemIds: ['item-1'],
-      amountPaidCents: 200,
-      paymentNotice: 'Stammgast',
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 200, paymentNotice: 'Stammgast' }],
     })
   })
 
@@ -444,9 +442,7 @@ describe('settling what the table actually handed over', () => {
     await pressConfirm()
 
     expect(bodies[0]).toEqual({
-      orderItemIds: ['item-1'],
-      amountPaidCents: 0,
-      paymentNotice: 'Essen fuer die Kapelle',
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 0, paymentNotice: 'Essen fuer die Kapelle' }],
     })
   })
 
@@ -459,9 +455,7 @@ describe('settling what the table actually handed over', () => {
 
     expect(document.querySelector('.amount-paid-dialog .reason-field')).toBeNull()
     expect(bodies[0]).toEqual({
-      orderItemIds: ['item-1'],
-      amountPaidCents: 350,
-      paymentNotice: null,
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
     })
   })
 
@@ -474,9 +468,7 @@ describe('settling what the table actually handed over', () => {
     await pressConfirm()
 
     expect(bodies[0]).toEqual({
-      orderItemIds: ['item-1'],
-      amountPaidCents: 500,
-      paymentNotice: null,
+      lines: [{ orderItemId: 'item-1', paidPriceCents: 500, paymentNotice: null }],
     })
   })
 
