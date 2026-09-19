@@ -71,6 +71,15 @@ public sealed class AdminFestivalEndpointsTest
     return stationId;
   }
 
+  private async Task LetTheFestivalEndAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    await database.Festivals
+                  .Where(festival => festival.Id == _context.World.FestivalId)
+                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc,
+                                                                        DateTime.UtcNow.AddMinutes(-1)));
+  }
+
   [Test]
   public async Task GetFestivals_TheRawAnswer_CarriesBothMomentsWithATrailingZ()
   {
@@ -474,6 +483,8 @@ public sealed class AdminFestivalEndpointsTest
   [Test]
   public async Task DeleteFestivalItem_AnItemOnTheMenu_TakesItsAssignmentsWithIt()
   {
+    await LetTheFestivalEndAsync();
+
     using var response =
       await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}");
 
@@ -490,6 +501,35 @@ public sealed class AdminFestivalEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
                       Assert.That(menuRows, Is.EqualTo(0));
                       Assert.That(assignments, Is.EqualTo(0));
+                    });
+  }
+
+  [Test]
+  public async Task DeleteFestivalItem_WhileTheFestivalRuns_IsRefusedAndKeepsTheMenuIntact()
+  {
+    using var response =
+      await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}");
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var menuRows = await database.FestivalCatalogItems
+                                 .CountAsync(menuRow => menuRow.FestivalId == _context.World.FestivalId
+                                                        && menuRow.CatalogItemId == _context.World.BratwurstItemId);
+    var assignments = await database.ItemStationAssignments
+                                    .CountAsync(assignment => assignment.FestivalId == _context.World.FestivalId
+                                                              && assignment.CatalogItemId == _context.World.BratwurstItemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(body.RootElement.GetProperty("code").GetString(),
+                                  Is.EqualTo("ItemStaysOnTheMenuWhileTheFestivalRuns"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.itemStaysOnTheMenuWhileTheFestivalRuns"));
+                      Assert.That(menuRows, Is.EqualTo(1));
+                      Assert.That(assignments, Is.EqualTo(1));
                     });
   }
 

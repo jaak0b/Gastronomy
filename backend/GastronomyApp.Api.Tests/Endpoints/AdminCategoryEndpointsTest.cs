@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -23,6 +24,14 @@ public sealed class AdminCategoryEndpointsTest
   }
 
   private OrderTestContext _context = null!;
+
+  private async Task SwitchTheBeerOffAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+    beer.IsActive = false;
+    await database.SaveChangesAsync();
+  }
 
   [Test]
   public async Task GetCategories_SeededCatalog_ListsThemByTheirPosition()
@@ -331,9 +340,7 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostDeactivate_CategoryWhoseArticlesAreAllSwitchedOff_SwitchesItOff()
   {
     var categoryId = await _context.CategoryIdOfAsync("Getraenke");
-    using var itemResponse =
-      await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
-    Assert.That(itemResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
 
     using var response = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -349,9 +356,7 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostActivate_SwitchedOffCategory_SwitchesItOn()
   {
     var categoryId = await _context.CategoryIdOfAsync("Getraenke");
-    using var itemResponse =
-      await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
-    Assert.That(itemResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
     using var deactivated = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 

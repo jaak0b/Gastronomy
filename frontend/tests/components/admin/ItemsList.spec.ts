@@ -5,6 +5,7 @@ import ItemsList from '../../../src/components/admin/items/ItemsList.vue'
 import ItemDialog from '../../../src/components/admin/items/ItemDialog.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
 import FestivalItems from '../../../src/components/admin/festivals/FestivalItems.vue'
+import { useAdminFestivalsStore } from '../../../src/stores/admin/festivals'
 import { useAdminStationsStore } from '../../../src/stores/admin/stations'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
@@ -51,7 +52,7 @@ const ONE_FESTIVAL = {
       startsAtUtc: '2026-07-18T10:00:00Z',
       endsAtUtc: '2026-07-19T02:00:00Z',
       isHidden: false,
-      isRunning: true,
+      isRunning: false,
       stationCount: 1,
       menuItemCount: 1,
       orderCount: 0,
@@ -108,6 +109,7 @@ interface Laptop {
   items?: unknown
   categories?: unknown
   stations?: unknown
+  festivals?: unknown
   refusal?: { status: number; body: unknown }
   itemRefusal?: { status: number; body: unknown }
 }
@@ -138,7 +140,7 @@ function stubLaptop(laptop: Laptop = {}): Call[] {
         return new Response(JSON.stringify({}), { status: 200 })
       }
       if (url.includes('/api/admin/festivals')) {
-        return new Response(JSON.stringify(ONE_FESTIVAL), { status: 200 })
+        return new Response(JSON.stringify(laptop.festivals ?? ONE_FESTIVAL), { status: 200 })
       }
       if (url.includes('/api/admin/items')) {
         if (method !== 'GET' && laptop.itemRefusal !== undefined) {
@@ -234,6 +236,17 @@ describe('the item list', () => {
     expect(line.find('.name').exists()).toBe(true)
     expect(line.find('.edit').exists()).toBe(true)
     expect(line.find('.deactivate').exists()).toBe(true)
+  })
+
+  it('says the list could not be loaded when the festivals request fails', async () => {
+    stubLaptop({ festivals: { notTheFestivals: [] } })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.admin-items .error').exists()).toBe(true))
+
+    expect(list.get('.admin-items .error').text()).toContain(
+      'Laden Sie die Seite neu. Die Daten konnten nicht geladen werden.',
+    )
   })
 })
 
@@ -522,6 +535,112 @@ describe('deactivating an item', () => {
 
     await vi.waitFor(() => expect(urlsOf(calls)).toContain(`/api/admin/items/${ITEM_ID}/deactivate`))
   })
+
+  it('keeps the global deactivate disabled while the item is on the running festival', async () => {
+    const calls = stubLaptop({
+      festivals: { festivals: [{ ...ONE_FESTIVAL.festivals[0], isRunning: true }] },
+      items: {
+        items: [
+          { ...ONE_ITEM.items[0] },
+          {
+            ...ONE_ITEM.items[0],
+            itemId: 'aaaa1111-2222-4333-8444-555566667777',
+            name: 'Wasser',
+            atTheFestival: null,
+          },
+        ],
+      },
+    })
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.findAll('.deactivate').length).toBe(2))
+
+    const buttons = list.findAll('.deactivate')
+    const onTheMenu = buttons[0].element as HTMLButtonElement
+    const elsewhere = buttons[1].element as HTMLButtonElement
+    expect(onTheMenu.disabled).toBe(true)
+    expect(elsewhere.disabled).toBe(false)
+
+    const wrapper = list.findAll('.deactivate-wrapper')[0]
+    const tooltip = wrapper.findComponent({ name: 'VTooltip' })
+    expect(tooltip.exists()).toBe(true)
+    expect(tooltip.props('disabled')).toBe(false)
+
+    await wrapper.trigger('mouseenter')
+    await vi.waitFor(() => expect(document.querySelector('.v-overlay--active')).not.toBeNull())
+    expect(document.querySelector('.v-overlay__content')?.textContent).toContain(
+      'Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.',
+    )
+
+    onTheMenu.click()
+    await list.vm.$nextTick()
+
+    expect(document.querySelector('.confirm-dialog')).toBeNull()
+    expect(urlsOf(calls).some((url) => url.endsWith('/deactivate'))).toBe(false)
+  })
+})
+
+describe('the item list while the running festival changes', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('reads the item list of the festival that is now running', async () => {
+    const laptop: Laptop = {
+      festivals: { festivals: [{ ...ONE_FESTIVAL.festivals[0], isRunning: true }] },
+    }
+    const calls = stubLaptop(laptop)
+
+    mountList()
+    await vi.waitFor(() =>
+      expect(urlsOf(calls)).toContain(`/api/admin/items?festivalId=${FESTIVAL_ID}`),
+    )
+
+    const SECOND_FESTIVAL_ID = '77777777-7777-4777-8777-777777777777'
+    laptop.festivals = {
+      festivals: [
+        { ...ONE_FESTIVAL.festivals[0], isRunning: false },
+        {
+          ...ONE_FESTIVAL.festivals[0],
+          festivalId: SECOND_FESTIVAL_ID,
+          name: 'Herbstfest',
+          isRunning: true,
+        },
+      ],
+    }
+    calls.length = 0
+
+    await useAdminFestivalsStore().load()
+
+    await vi.waitFor(() =>
+      expect(urlsOf(calls)).toContain(`/api/admin/items?festivalId=${SECOND_FESTIVAL_ID}`),
+    )
+  })
+
+  it('reads the whole item list again when no festival is running', async () => {
+    const laptop: Laptop = {
+      festivals: { festivals: [{ ...ONE_FESTIVAL.festivals[0], isRunning: true }] },
+    }
+    const calls = stubLaptop(laptop)
+
+    mountList()
+    await vi.waitFor(() =>
+      expect(urlsOf(calls)).toContain(`/api/admin/items?festivalId=${FESTIVAL_ID}`),
+    )
+
+    laptop.festivals = { festivals: [{ ...ONE_FESTIVAL.festivals[0], isRunning: false }] }
+    calls.length = 0
+
+    await useAdminFestivalsStore().load()
+
+    await vi.waitFor(() => expect(urlsOf(calls)).toContain('/api/admin/items'))
+  })
 })
 
 describe('an item that is deactivated', () => {
@@ -742,7 +861,7 @@ describe('a refusal the admin has walked away from', () => {
 
   function mountFestivalItems() {
     return mount(FestivalItems, {
-      props: { festivalId: FESTIVAL_ID },
+      props: { festivalId: FESTIVAL_ID, isRunning: false },
       global: { plugins: testPlugins() },
       attachTo: document.body,
     })

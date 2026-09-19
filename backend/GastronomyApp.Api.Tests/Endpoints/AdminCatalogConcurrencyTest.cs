@@ -144,8 +144,10 @@ public sealed class AdminCatalogConcurrencyTest
 
   private async Task SwitchTheBeerOffAsync()
   {
-    using var response = await SendAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate");
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await using var database = _context.Factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+    beer.IsActive = false;
+    await database.SaveChangesAsync();
   }
 
   private async Task SwitchTheDrinksCategoryOnAsync(Guid categoryId)

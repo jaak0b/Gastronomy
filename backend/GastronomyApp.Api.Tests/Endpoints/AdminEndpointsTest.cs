@@ -23,6 +23,15 @@ public sealed class AdminEndpointsTest
 
   private OrderTestContext _context = null!;
 
+  private async Task LetTheFestivalEndAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    await database.Festivals
+                  .Where(festival => festival.Id == _context.World.FestivalId)
+                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc,
+                                                                        DateTime.UtcNow.AddMinutes(-1)));
+  }
+
   [Test]
   public async Task GetStations_LoopbackCaller_ListsEveryStationWithItsTabletState()
   {
@@ -191,6 +200,8 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task Activate_ItemTakenOffTheMenu_PutsItBackOnTheMenu()
   {
+    await LetTheFestivalEndAsync();
+
     using (var takenOff = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/deactivate",
                                                          null))
     {
@@ -206,6 +217,75 @@ public sealed class AdminEndpointsTest
     var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BratwurstItemId);
 
     Assert.That(item.IsActive, Is.True);
+  }
+
+  [Test]
+  public async Task DeactivateItem_OnTheMenuOfTheRunningFestival_IsRefusedAndLeavesItActive()
+  {
+    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BeerItemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(body.RootElement.GetProperty("code").GetString(),
+                                  Is.EqualTo("ItemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(item.IsActive, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task DeactivateItem_AfterTheFestivalEnded_SwitchesItOff()
+  {
+    await LetTheFestivalEndAsync();
+
+    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
+
+    await using var database = _context.Factory.CreateContext();
+    var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == _context.World.BeerItemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(item.IsActive, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task DeactivateItem_NotOnTheMenuOfTheRunningFestival_SwitchesItOff()
+  {
+    var itemId = Guid.NewGuid();
+
+    await using (var seeding = _context.Factory.CreateContext())
+    {
+      seeding.CatalogItems.Add(new()
+                               {
+                                 Id = itemId,
+                                 Name = "Pommes",
+                                 CategoryId = _context.World.FoodCategoryId,
+                                 SortOrder = 3,
+                                 IsActive = true
+                               });
+      await seeding.SaveChangesAsync();
+    }
+
+    using var response = await _context.Client.PostAsync($"/api/admin/items/{itemId}/deactivate", null);
+
+    await using var database = _context.Factory.CreateContext();
+    var item = await database.CatalogItems.FirstAsync(candidate => candidate.Id == itemId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(item.IsActive, Is.False);
+                    });
   }
 
   [Test]

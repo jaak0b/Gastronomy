@@ -55,7 +55,13 @@ public sealed class OrderableItemsTest
   [Test]
   public async Task GetCatalog_ArticleSwitchedBackOnAfterItsOnlyStationWasSwitchedOff_LeavesThatArticleOut()
   {
-    await PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/deactivate");
+    await using (var database = _context.Factory.CreateContext())
+    {
+      var bratwurst = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BratwurstItemId);
+      bratwurst.IsActive = false;
+      await database.SaveChangesAsync();
+    }
+
     await PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate");
     await PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/activate");
 

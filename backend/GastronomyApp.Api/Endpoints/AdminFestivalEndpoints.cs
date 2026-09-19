@@ -504,21 +504,27 @@ public sealed class AdminFestivalMenuHandler
   private const int LowestPriceCents = 0;
 
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly FestivalSchedule _schedule;
   private readonly OrderableItems _orderableItems;
+  private readonly IClock _clock;
   private readonly ILogger<AdminFestivalMenuHandler> _logger;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogWriteTransaction _writeTransaction;
 
   public AdminFestivalMenuHandler(GastronomyAppDbContext dbContext,
+                                  FestivalSchedule schedule,
                                   CatalogWriteTransaction writeTransaction,
                                   OrderableItems orderableItems,
                                   ResultEnvelope resultEnvelope,
+                                  IClock clock,
                                   ILogger<AdminFestivalMenuHandler> logger)
   {
     _dbContext = dbContext;
+    _schedule = schedule;
     _writeTransaction = writeTransaction;
     _orderableItems = orderableItems;
     _resultEnvelope = resultEnvelope;
+    _clock = clock;
     _logger = logger;
   }
 
@@ -667,6 +673,23 @@ public sealed class AdminFestivalMenuHandler
     if (menuRow is null)
     {
       return new(Results.NotFound(), false);
+    }
+
+    var festival = await _dbContext.Festivals
+                                   .AsNoTracking()
+                                   .FirstOrDefaultAsync(candidate => candidate.Id == festivalId, cancellationToken);
+
+    if (festival is null)
+    {
+      return new(Results.NotFound(), false);
+    }
+
+    if (_schedule.IsRunning(festival, _clock.UtcNow))
+    {
+      return new(_resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                         "ItemStaysOnTheMenuWhileTheFestivalRuns",
+                                         "admin.itemStaysOnTheMenuWhileTheFestivalRuns"),
+                 false);
     }
 
     List<ItemStationAssignment> assignments = await _dbContext.ItemStationAssignments

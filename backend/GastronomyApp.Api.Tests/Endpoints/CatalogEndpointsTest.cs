@@ -35,6 +35,14 @@ public sealed class CatalogEndpointsTest
   private SeededWorld _world = null!;
   private string _deviceToken = null!;
 
+  private async Task SwitchTheBeerOffAsync()
+  {
+    await using var database = _factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _world.BeerItemId);
+    beer.IsActive = false;
+    await database.SaveChangesAsync();
+  }
+
   [Test]
   public async Task GetCatalog_SeededCatalog_ReturnsTheShapeTheOrderingScreenNeeds()
   {
@@ -78,9 +86,7 @@ public sealed class CatalogEndpointsTest
   [Test]
   public async Task GetCatalog_SwitchedOffCategory_LeavesTheCategoryAndItsArticlesOut()
   {
-    using var deactivatedItem =
-      await _factory.Client.PostAsync($"/api/admin/items/{_world.BeerItemId}/deactivate", null);
-    Assert.That(deactivatedItem.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
 
     using var deactivatedCategory =
       await _factory.Client.PostAsync($"/api/admin/categories/{_world.DrinkCategoryId}/deactivate", null);
@@ -122,9 +128,7 @@ public sealed class CatalogEndpointsTest
   [Test]
   public async Task GetCatalog_CategoryWhoseArticlesAreAllSwitchedOff_LeavesTheCategoryOut()
   {
-    using var deactivated =
-      await _factory.Client.PostAsync($"/api/admin/items/{_world.BeerItemId}/deactivate", null);
-    Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
 
     var body = await GetCatalogAsync();
     var categories = body.RootElement.GetProperty("categories");

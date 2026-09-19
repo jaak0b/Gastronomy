@@ -720,8 +720,8 @@ describe('the items of this festival', () => {
     )
   })
 
-  it('asks before an item leaves this festival', async () => {
-    const calls = stubLaptop()
+  it('asks before an item leaves a festival that is not running', async () => {
+    const calls = stubLaptop({ festivals: [{ ...SUMMER, isRunning: false }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.remove-item').exists()).toBe(true))
@@ -732,6 +732,41 @@ describe('the items of this festival', () => {
       expect(calls.find((call) => call.method === 'DELETE')?.url).toBe(
         `/api/admin/festivals/${FESTIVAL_ID}/items/${SAUSAGE_ID}`,
       ),
+    )
+  })
+
+  it('keeps the item on the menu while the festival runs', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.remove-item').exists()).toBe(true))
+
+    const remove = page.get('.remove-item').element as HTMLButtonElement
+    expect(remove.disabled).toBe(true)
+    remove.click()
+    await page.vm.$nextTick()
+
+    expect(document.querySelector('.confirm-dialog')).toBeNull()
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false)
+  })
+
+  it('offers the reason on the button while the festival runs', async () => {
+    stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.remove-item-wrapper').exists()).toBe(true))
+
+    const wrapper = page.get('.remove-item-wrapper')
+    expect(getComputedStyle(wrapper.element).pointerEvents).not.toBe('none')
+
+    const tooltip = wrapper.findComponent({ name: 'VTooltip' })
+    expect(tooltip.exists()).toBe(true)
+    expect(tooltip.props('disabled')).toBe(false)
+
+    await wrapper.trigger('mouseenter')
+    await vi.waitFor(() => expect(document.querySelector('.v-overlay--active')).not.toBeNull())
+    expect(document.querySelector('.v-overlay__content')?.textContent).toContain(
+      'Ein Artikel kann von einem aktiven Fest nicht entfernt werden.',
     )
   })
 

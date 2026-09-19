@@ -102,7 +102,18 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   function listen(): () => void {
-    return useConnectionStore().registerRefetch(load)
+    const connection = useConnectionStore()
+    const releases = [
+      connection.registerRefetch(load),
+      connection.onEvent<unknown>('FestivalChanged', () => {
+        void load()
+      }),
+    ]
+    return () => {
+      for (const release of releases) {
+        release()
+      }
+    }
   }
 
   return {

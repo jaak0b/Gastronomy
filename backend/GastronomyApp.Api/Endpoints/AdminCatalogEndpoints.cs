@@ -52,16 +52,19 @@ public sealed class AdminItemHandler
   private const double LongestProductionMinutes = 600;
 
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly RunningFestivalLookup _runningFestivalLookup;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogWriteTransaction _writeTransaction;
   private readonly ILogger<AdminItemHandler> _logger;
 
   public AdminItemHandler(GastronomyAppDbContext dbContext,
+                          RunningFestivalLookup runningFestivalLookup,
                           CatalogWriteTransaction writeTransaction,
                           ResultEnvelope resultEnvelope,
                           ILogger<AdminItemHandler> logger)
   {
     _dbContext = dbContext;
+    _runningFestivalLookup = runningFestivalLookup;
     _writeTransaction = writeTransaction;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
@@ -256,6 +259,25 @@ public sealed class AdminItemHandler
     if (item is null)
     {
       return new(Results.NotFound(), false);
+    }
+
+    var runningFestival = await _runningFestivalLookup.FindAsync(cancellationToken);
+
+    if (runningFestival is not null)
+    {
+      var isOnTheRunningMenu = await _dbContext.FestivalCatalogItems
+                                               .AsNoTracking()
+                                               .AnyAsync(menuRow => menuRow.FestivalId == runningFestival.Id
+                                                                    && menuRow.CatalogItemId == itemId,
+                                                         cancellationToken);
+
+      if (isOnTheRunningMenu)
+      {
+        return new(_resultEnvelope.Problem(StatusCodes.Status409Conflict,
+                                           "ItemIsOnTheRunningFestivalsMenu",
+                                           "admin.itemIsOnTheRunningFestivalsMenu"),
+                   false);
+      }
     }
 
     item.IsActive = false;

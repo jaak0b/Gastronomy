@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
@@ -20,6 +21,14 @@ public sealed class AdminItemCategoryTest
   }
 
   private OrderTestContext _context = null!;
+
+  private async Task SwitchTheBeerOffAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+    beer.IsActive = false;
+    await database.SaveChangesAsync();
+  }
 
   [Test]
   public async Task GetItems_SeededCatalog_CarriesTheCategoryOfEveryArticle()
@@ -140,9 +149,7 @@ public sealed class AdminItemCategoryTest
   {
     var categoryId = await _context.CategoryIdOfAsync("Getraenke");
 
-    using var deactivatedItem =
-      await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
-    Assert.That(deactivatedItem.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
 
     using var deactivatedCategory =
       await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
@@ -164,9 +171,7 @@ public sealed class AdminItemCategoryTest
   public async Task PutItem_SwitchedOffArticleInASwitchedOffCategory_IsSaved()
   {
     var categoryId = await _context.CategoryIdOfAsync("Getraenke");
-    using var deactivatedItem =
-      await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/deactivate", null);
-    Assert.That(deactivatedItem.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    await SwitchTheBeerOffAsync();
     using var deactivatedCategory =
       await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     Assert.That(deactivatedCategory.StatusCode, Is.EqualTo(HttpStatusCode.OK));

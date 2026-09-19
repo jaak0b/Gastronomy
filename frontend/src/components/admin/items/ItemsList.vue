@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
@@ -12,6 +12,7 @@ import {
   type AdminCategoryDraft,
   type CategoryMoveDirection,
 } from '../../../stores/admin/categories'
+import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
 import {
   useAdminItemsStore,
   type AdminItem,
@@ -25,6 +26,7 @@ import ItemDialog from './ItemDialog.vue'
 const { t } = useI18n()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
+const festivals = useAdminFestivalsStore()
 const editingItem = ref<AdminItem | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
@@ -56,6 +58,15 @@ const isCategoryDialogOpen = computed(
   () => isCreatingCategory.value || renamedCategory.value !== null,
 )
 const isItemDialogOpen = computed(() => isCreating.value || editingItem.value !== null)
+
+function isOnTheRunningFestivalsMenu(item: AdminItem): boolean {
+  return festivals.runningFestival !== null && item.atTheFestival !== null
+}
+
+function readItemsForTheRunningFestival(): Promise<void> {
+  const festivalId = festivals.runningFestival?.festivalId ?? null
+  return festivalId === null ? items.load() : items.loadAtTheFestival(festivalId)
+}
 
 function noteItem(result: AdminActionResult<unknown>): void {
   const message = refusalFrom(result)
@@ -183,7 +194,7 @@ async function deactivateCategory(): Promise<void> {
 }
 
 function listenToTheLaptop(): () => void {
-  const releases = [categories.listen(), items.listen()]
+  const releases = [categories.listen(), items.listen(), festivals.listen()]
   return () => {
     for (const release of releases) {
       release()
@@ -191,10 +202,18 @@ function listenToTheLaptop(): () => void {
   }
 }
 
+watch(
+  () => festivals.runningFestival?.festivalId ?? null,
+  () => {
+    void readItemsForTheRunningFestival()
+  },
+)
+
 onMounted(async () => {
   stopListening = listenToTheLaptop()
   await categories.load()
-  await items.load()
+  await festivals.load()
+  await readItemsForTheRunningFestival()
 })
 
 onUnmounted(() => {
@@ -233,7 +252,7 @@ onUnmounted(() => {
       {{ categoryRefusalText }}
     </v-alert>
     <v-alert
-      v-if="items.loadFailed || categories.loadFailed"
+      v-if="items.loadFailed || categories.loadFailed || festivals.loadFailed"
       class="error"
       type="error"
       variant="tonal"
@@ -305,15 +324,24 @@ onUnmounted(() => {
           <v-btn class="edit" variant="text" @click="startEditing(item)">
             {{ t('admin.edit') }}
           </v-btn>
-          <v-btn
-            v-if="item.isActive"
-            class="deactivate"
-            icon="mdi-delete"
-            variant="text"
-            color="error"
-            :aria-label="t('admin.deactivate')"
-            @click="askingAboutId = item.itemId"
-          />
+          <span v-if="item.isActive" class="deactivate-wrapper">
+            <v-btn
+              class="deactivate"
+              icon="mdi-delete"
+              variant="text"
+              color="error"
+              :aria-label="t('admin.deactivate')"
+              :disabled="isOnTheRunningFestivalsMenu(item)"
+              @click="askingAboutId = item.itemId"
+            />
+            <v-tooltip
+              activator="parent"
+              location="top"
+              :disabled="!isOnTheRunningFestivalsMenu(item)"
+            >
+              {{ t('admin.itemIsOnTheRunningFestivalsMenu') }}
+            </v-tooltip>
+          </span>
           <v-btn
             v-else
             class="reactivate"
@@ -373,3 +401,9 @@ onUnmounted(() => {
     />
   </v-container>
 </template>
+
+<style scoped>
+.deactivate-wrapper {
+  display: inline-flex;
+}
+</style>

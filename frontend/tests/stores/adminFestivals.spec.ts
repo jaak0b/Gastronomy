@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { useConnectionStore } from '../../src/stores/connection'
 import { useAdminFestivalsStore } from '../../src/stores/admin/festivals'
+import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
+
+vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const SUMMER = {
   festivalId: 'fest-1',
@@ -197,5 +201,30 @@ describe('setting a festival up', () => {
       kind: 'failed',
       message: { key: 'admin.actionFailed', parameters: {}, count: null },
     })
+  })
+})
+
+describe('the running festival on the hub', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    forgetHubEvents()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  it('is read again when the laptop says the festival changed', async () => {
+    const calls = laptopLists([SUMMER])
+    const festivals = useAdminFestivalsStore()
+    festivals.listen()
+    await useConnectionStore().connect({})
+    calls.length = 0
+
+    fireHubEvent('FestivalChanged')
+
+    await vi.waitFor(() => expect(calls.map((call) => call.url)).toEqual(['/api/admin/festivals']))
   })
 })

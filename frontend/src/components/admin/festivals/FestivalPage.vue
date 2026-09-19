@@ -209,7 +209,7 @@ onUnmounted(() => {
       </v-card>
 
       <FestivalStations :festival-id="festivalId" />
-      <FestivalItems :festival-id="festivalId" />
+      <FestivalItems :festival-id="festivalId" :is-running="festival?.isRunning === true" />
     </template>
   </v-container>
 </template>

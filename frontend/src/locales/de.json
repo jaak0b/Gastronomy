@@ -248,6 +248,8 @@
     "festivalOverlaps": "Das Fest {name} überschneidet sich mit diesem Zeitraum. Verschieben Sie den Beginn oder das Ende.",
     "itemPriceOutOfRange": "Tragen Sie einen Preis zwischen 0,00 und 999,99 Euro ein.",
     "stationHasOrdersAtTheFestival": "Solange das Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht entfernt werden.",
+    "itemStaysOnTheMenuWhileTheFestivalRuns": "Ein Artikel kann von einem aktiven Fest nicht entfernt werden.",
+    "itemIsOnTheRunningFestivalsMenu": "Ein Artikel auf der Karte eines aktiven Festes kann nicht abgeschaltet werden.",
     "festivals": {
       "title": "Feste",
       "new": "Neues Fest",

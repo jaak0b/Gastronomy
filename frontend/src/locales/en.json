@@ -248,6 +248,8 @@
     "festivalOverlaps": "The festival {name} overlaps this period. Move the start or the end.",
     "itemPriceOutOfRange": "Enter a price between 0.00 and 999.99 euros.",
     "stationHasOrdersAtTheFestival": "While the festival is active, a station with open orders cannot be removed.",
+    "itemStaysOnTheMenuWhileTheFestivalRuns": "An item cannot be removed from an active festival.",
+    "itemIsOnTheRunningFestivalsMenu": "An item on an active festival's menu cannot be switched off.",
     "festivals": {
       "title": "Festivals",
       "new": "New festival",

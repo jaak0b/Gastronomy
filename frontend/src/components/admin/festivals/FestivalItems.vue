@@ -38,7 +38,7 @@ interface ItemRow {
 
 type PlacedItem = AdminItem & { atTheFestival: NonNullable<AdminItem['atTheFestival']> }
 
-const props = defineProps<{ festivalId: string }>()
+const props = defineProps<{ festivalId: string; isRunning: boolean }>()
 
 const { t, locale } = useI18n()
 const items = useAdminItemsStore()
@@ -448,9 +448,19 @@ async function remove(): Promise<void> {
                   :label="t('admin.items.soldOut')"
                   @update:model-value="(value: boolean | null) => setSoldOut(item, value === true)"
                 />
-                <v-btn class="remove-item" variant="text" @click="removedItem = item">
-                  {{ t('admin.festival.remove') }}
-                </v-btn>
+                <span class="remove-item-wrapper">
+                  <v-btn
+                    class="remove-item"
+                    variant="text"
+                    :disabled="isRunning"
+                    @click="removedItem = item"
+                  >
+                    {{ t('admin.festival.remove') }}
+                  </v-btn>
+                  <v-tooltip activator="parent" location="top" :disabled="!isRunning">
+                    {{ t('admin.itemStaysOnTheMenuWhileTheFestivalRuns') }}
+                  </v-tooltip>
+                </span>
               </div>
               <v-alert
                 v-if="rowRefusalText(item.itemId) !== null"
@@ -548,5 +558,9 @@ async function remove(): Promise<void> {
 
 .festival-item-row .station-select-field {
   flex: 0 1 auto;
+}
+
+.remove-item-wrapper {
+  display: inline-flex;
 }
 </style>
