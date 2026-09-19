@@ -326,10 +326,10 @@ describe('a line whose item is no longer on the menu', () => {
     expect(list.get('.line-name').text()).toBe('1 x Currywurst')
   })
 
-  it('says that the item is no longer on the menu', () => {
+  it('says that the item is sold out', () => {
     const list = mountList([line({ name: 'Currywurst', isNoLongerOnTheMenu: true })])
 
-    expect(list.get('.no-longer-on-the-menu').text()).toBe('Nicht mehr auf der Karte.')
+    expect(list.get('.sold-out').text()).toBe('Currywurst ist gerade ausverkauft.')
   })
 
   it('is greyed the same way a sold out line is', () => {

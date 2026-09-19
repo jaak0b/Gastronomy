@@ -132,6 +132,17 @@ export function clearDraft(): void {
   localStorage.removeItem(SEND_PROGRESS_STORAGE_KEY)
 }
 
+function toFailureParameters(value: unknown): Record<string, string | number> | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return undefined
+  }
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    (entry): entry is [string, string | number] =>
+      typeof entry[1] === 'string' || typeof entry[1] === 'number',
+  )
+  return entries.length === 0 ? undefined : Object.fromEntries(entries)
+}
+
 function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   if (typeof value !== 'object' || value === null) {
     return null
@@ -140,7 +151,8 @@ function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   if (typeof candidate.key !== 'string') {
     return null
   }
-  return { key: candidate.key }
+  const parameters = toFailureParameters(candidate.parameters)
+  return parameters === undefined ? { key: candidate.key } : { key: candidate.key, parameters }
 }
 
 function toSettlementRequest(value: unknown): OrderSettlementRequest | null | undefined {
@@ -201,7 +213,12 @@ export function saveSendProgress(progress: SendProgress): void {
       attempts: progress.attempts,
       settlement: progress.settlement,
       anAttemptWentUnanswered: progress.anAttemptWentUnanswered,
-      failure: progress.failure === null ? null : { key: progress.failure.key },
+      failure:
+        progress.failure === null
+          ? null
+          : progress.failure.parameters === undefined
+            ? { key: progress.failure.key }
+            : { key: progress.failure.key, parameters: progress.failure.parameters },
     }),
   )
 }

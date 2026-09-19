@@ -35,6 +35,8 @@ public sealed class OrderAcceptanceServiceTest
      .Returns(Task.FromResult(137));
     A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
      .Returns(Task.FromResult(42));
+    A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<FestivalCatalogItem?>(null));
 
     GivenCatalogItem(_bratwurstId, "Bratwurst", [_kitchenId]);
     GivenCatalogItem(_beerId, "Bier", [_barIndoorId]);
@@ -272,7 +274,7 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_DeactivatedItemReturnedByTheRepository_IsStillAccepted()
+  public async Task AcceptAsync_DeactivatedItemReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
   {
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(_bratwurstId, A<CancellationToken>._))
      .Returns(Task.FromResult<CatalogItem?>(new()
@@ -287,7 +289,32 @@ public sealed class OrderAcceptanceServiceTest
     Result<OrderAcceptanceResult, OrderValidationFailure> result =
       await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), CancellationToken.None);
 
-    Assert.That(result.IsSuccess, Is.True);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.ItemNotAvailable));
+                      Assert.That(result.Failure.OffendingCatalogItemId, Is.EqualTo(_bratwurstId));
+                      Assert.That(result.Failure.OffendingCatalogItemName, Is.EqualTo("Bratwurst"));
+                    });
+    AssertNothingWasAllocatedOrStored();
+  }
+
+  [Test]
+  public async Task AcceptAsync_SoldOutMenuRowReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
+  {
+    Guid soldOutItemId = SoldOutItemId();
+
+    Result<OrderAcceptanceResult, OrderValidationFailure> result =
+      await _service.AcceptAsync(RequestWith([ItemFor(soldOutItemId)]), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.IsSuccess, Is.False);
+                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.ItemNotAvailable));
+                      Assert.That(result.Failure.OffendingCatalogItemId, Is.EqualTo(soldOutItemId));
+                      Assert.That(result.Failure.OffendingCatalogItemName, Is.EqualTo("Bratwurst"));
+                    });
+    AssertNothingWasAllocatedOrStored();
   }
 
   [Test]
@@ -601,6 +628,8 @@ public sealed class OrderAcceptanceServiceTest
                       RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
                     OrderValidationFailureReason.ItemHasNoStation =>
                       RequestWith([ItemFor(ItemWithNoActiveStationId())]),
+                    OrderValidationFailureReason.ItemNotAvailable =>
+                      RequestWith([ItemFor(SoldOutItemId())]),
                     OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
                     OrderValidationFailureReason.SettlementCannotBeProcessed =>
                       RequestWith([ItemFor(_bratwurstId)], settlement: new() { AmountPaidCents = 1 }),
@@ -651,6 +680,21 @@ public sealed class OrderAcceptanceServiceTest
      .Returns(Task.FromResult<IReadOnlyCollection<Station>>([]));
 
     return _beerId;
+  }
+
+  private Guid SoldOutItemId()
+  {
+    A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
+     .Returns(Task.FromResult<FestivalCatalogItem?>(new()
+                                                    {
+                                                      Id = Guid.NewGuid(),
+                                                      FestivalId = _festivalId,
+                                                      CatalogItemId = _bratwurstId,
+                                                      PriceCents = 350,
+                                                      IsAvailable = false
+                                                    }));
+
+    return _bratwurstId;
   }
 
   [Test]

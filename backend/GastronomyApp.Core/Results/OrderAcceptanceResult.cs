@@ -15,6 +15,8 @@ public sealed record OrderValidationFailure
 
   public Guid? OffendingCatalogItemId { get; init; }
 
+  public string? OffendingCatalogItemName { get; init; }
+
   public SettlementFailureReason? SettlementFailureReason { get; init; }
 }
 
@@ -29,5 +31,6 @@ public enum OrderValidationFailureReason
   PriceOutOfRange,
   NoRunningFestival,
   OrderNumberCouldNotBeAllocated,
-  SettlementCannotBeProcessed
+  SettlementCannotBeProcessed,
+  ItemNotAvailable
 }

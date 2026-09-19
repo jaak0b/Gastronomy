@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useCatalogStore } from '../../src/stores/catalog'
 import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../src/stores/order'
+import { TOKEN_STORAGE_KEY } from '../../src/stores/session'
 import {
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,
@@ -810,6 +811,57 @@ describe('an order the laptop answered no to', () => {
   })
 })
 
+describe('an order the laptop refused because an item sold out', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks the catalogue for a fresh line without holding up the refusal', async () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    setActivePinia(createPinia())
+    const askedPaths: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((path: string) => {
+        askedPaths.push(path)
+        if (path === '/api/catalog') {
+          return new Promise<Response>(() => undefined)
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              code: 'UnprocessableEntity',
+              messageKey: 'catalog.itemSoldOut',
+              parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
+              details: null,
+            }),
+            { status: 422 },
+          ),
+        )
+      }),
+    )
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    })
+    order.setTable('Tisch 6')
+
+    await order.send(null)
+
+    expect(order.failure?.key).toBe('catalog.itemSoldOut')
+    expect(order.failure?.parameters).toEqual({ name: 'Wasser', catalogItemId: 'item-wasser' })
+    expect(askedPaths).toContain('/api/catalog')
+  })
+})
+
 describe('an order the laptop could not save', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -1005,13 +1057,17 @@ describe('an order the laptop refused with a reason after it had stayed silent o
     )
   }
 
-  function aReasonedRefusal(status: number, messageKey: string): () => Response {
+  function aReasonedRefusal(
+    status: number,
+    messageKey: string,
+    parameters: Record<string, string | number> = {},
+  ): () => Response {
     return () =>
       new Response(
         JSON.stringify({
           code: 'UnprocessableEntity',
           messageKey,
-          parameters: {},
+          parameters,
           details: null,
         }),
         { status },
@@ -1072,6 +1128,23 @@ describe('an order the laptop refused with a reason after it had stayed silent o
     const afterTheReload = useOrderStore()
 
     expect(afterTheReload.changesAreRefused).toBe(false)
+  })
+
+  it('keeps the words the refusal fills in after a reload, so its notice still names the item', async () => {
+    await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(422, 'catalog.itemSoldOut', {
+        name: 'Wasser',
+        catalogItemId: 'item-wasser',
+      }),
+    )
+
+    setActivePinia(createPinia())
+    const afterTheReload = useOrderStore()
+
+    expect(afterTheReload.failure).toEqual({
+      key: 'catalog.itemSoldOut',
+      parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
+    })
   })
 
   it('stays closed when a 400 arrives without the laptop wording', async () => {

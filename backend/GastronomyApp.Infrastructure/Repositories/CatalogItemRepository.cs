@@ -28,4 +28,14 @@ public sealed class CatalogItemRepository : ICatalogItemRepository
                                                 && assignment.CatalogItemId == catalogItemId)
                            .ToListAsync(cancellationToken);
   }
+
+  public async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId,
+                                                           Guid catalogItemId,
+                                                           CancellationToken cancellationToken)
+  {
+    return await _dbContext.FestivalCatalogItems
+                           .FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId
+                                                           && menuRow.CatalogItemId == catalogItemId,
+                                                cancellationToken);
+  }
 }

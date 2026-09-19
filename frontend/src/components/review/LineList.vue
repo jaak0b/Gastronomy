@@ -92,12 +92,9 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
       >
         <fieldset class="line-body">
           <legend
-            v-if="entry.line.isNoLongerOnTheMenu"
-            class="reason no-longer-on-the-menu text-body-2"
+            v-if="entry.line.isSoldOut || entry.line.isNoLongerOnTheMenu"
+            class="reason sold-out text-body-2"
           >
-            {{ t('catalog.lineNoLongerOnTheMenu') }}
-          </legend>
-          <legend v-else-if="entry.line.isSoldOut" class="reason sold-out text-body-2">
             {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
           </legend>
           <legend

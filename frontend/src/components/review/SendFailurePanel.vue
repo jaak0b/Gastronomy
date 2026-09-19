@@ -9,6 +9,6 @@ const { t } = useI18n()
 
 <template>
   <v-alert class="send-failure my-4" type="error" variant="tonal">
-    <p class="failure-message">{{ t(failure.key) }}</p>
+    <p class="failure-message">{{ t(failure.key, failure.parameters ?? {}) }}</p>
   </v-alert>
 </template>

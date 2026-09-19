@@ -124,6 +124,18 @@ public sealed class OrderAcceptanceService
                                                                             });
       }
 
+      var menuRow =
+        await _catalogItemRepository.FindMenuRowAsync(festival.Id, itemRequest.CatalogItemId, cancellationToken);
+      if (!catalogItem.IsActive || menuRow is { IsAvailable: false })
+      {
+        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
+                                                                            {
+                                                                              Reason = OrderValidationFailureReason.ItemNotAvailable,
+                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId,
+                                                                              OffendingCatalogItemName = catalogItem.Name
+                                                                            });
+      }
+
       IReadOnlyCollection<ItemStationAssignment> assignments =
         await _catalogItemRepository.FindAssignmentsAsync(festival.Id, itemRequest.CatalogItemId, cancellationToken);
 

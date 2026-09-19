@@ -117,19 +117,64 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
-  public async Task PostOrder_SoldOutItem_IsStillAccepted()
+  public async Task PostOrder_SoldOutItem_IsRefusedWithTheWordingThePhoneShows()
   {
-    await using (var database = _context.Factory.CreateContext())
+    await using (var seeding = _context.Factory.CreateContext())
     {
-      var item = await database.FestivalCatalogItems
-                               .FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId);
+      var item = await seeding.FestivalCatalogItems
+                              .FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId);
       item.IsAvailable = false;
-      await database.SaveChangesAsync();
+      await seeding.SaveChangesAsync();
     }
 
     using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+    var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    await using var database = _context.Factory.CreateContext();
+    var storedOrders = await database.Orders.CountAsync();
+    var storedItems = await database.OrderItems.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
+                                  Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
+                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(storedOrders, Is.Zero);
+                      Assert.That(storedItems, Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task PostOrder_AnItemSwitchedOffGlobally_IsRefusedWithTheWordingThePhoneShows()
+  {
+    await using (var seeding = _context.Factory.CreateContext())
+    {
+      var item = await seeding.CatalogItems
+                              .FirstAsync(catalogItem => catalogItem.Id == _context.World.BratwurstItemId);
+      item.IsActive = false;
+      await seeding.SaveChangesAsync();
+    }
+
+    using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+    var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var storedOrders = await database.Orders.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
+                                  Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
+                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(storedOrders, Is.Zero);
+                    });
   }
 
   [Test]

@@ -278,6 +278,7 @@ export const useOrderStore = defineStore('order', () => {
         }
         if (answerIsABusinessRefusal(result)) {
           anAttemptWentUnanswered.value = false
+          void catalogStore.load()
         }
         failure.value = messageForSendFailure(result)
         attemptsMade.value = sendBeforeThisAttempt.attempts

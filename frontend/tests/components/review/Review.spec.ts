@@ -602,6 +602,30 @@ describe('an order the laptop refused with a reason', () => {
     )
   })
 
+  it('names the sold-out item the refusal carries in its parameters', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'UnprocessableEntity',
+              messageKey: 'catalog.itemSoldOut',
+              parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
+              details: null,
+            }),
+            { status: 422 },
+          ),
+      ),
+    )
+
+    const review = await reviewAfterARefusal(prepareOrder())
+
+    expect(review.get('.send-failure .failure-message').text()).toBe(
+      'Wasser ist gerade ausverkauft.',
+    )
+  })
+
   it('opens the way back to the items again, because no order was created', async () => {
     const review = await reviewAfterARefusal(prepareOrder())
 

@@ -9,4 +9,8 @@ public interface ICatalogItemRepository
   public Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId,
                                                                                Guid catalogItemId,
                                                                                CancellationToken cancellationToken);
+
+  public Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId,
+                                                     Guid catalogItemId,
+                                                     CancellationToken cancellationToken);
 }

@@ -7,6 +7,7 @@ export type SendFailure =
 
 export interface SendFailureMessage {
   key: string
+  parameters?: Record<string, string | number>
 }
 
 function keyForStatus(status: number): string {
@@ -34,8 +35,12 @@ export function messageForSendFailure(failure: SendFailure): SendFailureMessage 
   switch (failure.kind) {
     case 'unreachable':
       return { key: 'review.sendFailed' }
-    case 'error':
-      return { key: keyForRejection(failure.status, failure.body) }
+    case 'error': {
+      const statedReason = keyForRejection(failure.status, failure.body)
+      return failure.body === null
+        ? { key: statedReason }
+        : { key: statedReason, parameters: failure.body.parameters }
+    }
     default:
       return assertNever(failure)
   }

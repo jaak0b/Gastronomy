@@ -35,6 +35,8 @@ public sealed class ResultEnvelope
                Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationNotAssignedToItem =>
                Unprocessable("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
+             OrderValidationFailureReason.ItemNotAvailable =>
+               UnprocessableWithParameters("catalog.itemSoldOut", SoldOutParameters(failure)),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
@@ -111,6 +113,11 @@ public sealed class ResultEnvelope
       parameters[parameterName] = offendingId.Value.ToString();
     }
 
+    return UnprocessableWithParameters(messageKey, parameters);
+  }
+
+  private ProblemDescription UnprocessableWithParameters(string messageKey, IReadOnlyDictionary<string, string> parameters)
+  {
     return new()
            {
              StatusCode = StatusCodes.Status422UnprocessableEntity,
@@ -121,5 +128,20 @@ public sealed class ResultEnvelope
                        Parameters = parameters
                      }
            };
+  }
+
+  private Dictionary<string, string> SoldOutParameters(OrderValidationFailure failure)
+  {
+    Dictionary<string, string> parameters = [];
+    if (failure.OffendingCatalogItemId is { } catalogItemId)
+    {
+      parameters["catalogItemId"] = catalogItemId.ToString();
+    }
+    if (failure.OffendingCatalogItemName is { } itemName)
+    {
+      parameters["name"] = itemName;
+    }
+
+    return parameters;
   }
 }

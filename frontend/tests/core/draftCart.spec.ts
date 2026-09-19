@@ -450,6 +450,23 @@ describe('the record of what became of a send', () => {
     expect(restoreSendProgress()).toEqual(stored)
   })
 
+  it('keeps the words a refusal fills in, so its notice still names the item after a reload', () => {
+    const stored = {
+      state: 'failed',
+      attempts: 2,
+      settlement: null,
+      anAttemptWentUnanswered: true,
+      failure: {
+        key: 'catalog.itemSoldOut',
+        parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
+      },
+    } as const
+
+    saveSendProgress(stored)
+
+    expect(restoreSendProgress().failure).toEqual(stored.failure)
+  })
+
   it('remembers a send that is still on its way, so a reload cannot make it look untouched', () => {
     saveSendProgress({
       state: 'sending',
