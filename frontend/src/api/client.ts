@@ -24,6 +24,14 @@ export function answerSaysTheDeviceIsNoLongerSetUp(result: ApiResult<unknown>): 
   return result.kind === 'error' && result.status === UNAUTHORISED
 }
 
+export function answerIsABusinessRefusal(result: ApiResult<unknown>): boolean {
+  return (
+    result.kind === 'error'
+    && (result.status === 400 || result.status === 422)
+    && result.body !== null
+  )
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const headers: Record<string, string> = {}
   if (options.body !== undefined) {

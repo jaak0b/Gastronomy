@@ -55,6 +55,15 @@ Three audiences in one build:
    laptop, so it is locked against every change until the waiter learns which it was. Never treat
    the two the same.
 
+   **A reasoned refusal after silence unlocks the order; everything else keeps it locked.** When a
+   retry comes back with a 400 or 422 carrying our error envelope, the laptop searched for the
+   submission id, found nothing, and refused by one of our own rules, so no order exists and the
+   waiter may fix what the refusal names, drop a line that cannot be ordered, and send again. A
+   401 takes the signed-out path as before. Every other answer, a 500, a 503, a 429, a lost
+   network, or anything without our envelope, leaves the order locked, because none of it proves
+   the first attempt did not arrive. The unlocks are an allowlist: the two statuses above with the
+   envelope, and nothing else.
+
    Any implementation that gives the phone a list, a timer that sends, or a rule for sending
    without a person pressing something has rebuilt the queue under another name and must be
    rejected in review. The client-generated submission id that makes retry safe against a lost

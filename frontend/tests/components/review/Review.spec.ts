@@ -818,6 +818,35 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     expect(order.draft.lines).toHaveLength(1)
     expect(review.get('.line-name').text()).toBe('1 x Wasser')
   })
+
+  function aLaptopThatRefusesWithAReason(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              code: 'UnprocessableEntity',
+              messageKey: 'order.stationNotAssignedToItem',
+              parameters: {},
+              details: null,
+            }),
+            { status: 422 },
+          ),
+      ),
+    )
+  }
+
+  it('hands the order back when the reason names something the waiter can fix', async () => {
+    aLaptopThatRefusesWithAReason()
+    const order = anOrderTheLaptopMayAlreadyHold()
+
+    const review = await reviewAfterTheRefusedRetry(order)
+
+    expect(order.changesAreRefused).toBe(false)
+    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
+    expect(review.get('.back').attributes('disabled')).toBeUndefined()
+  })
 })
 
 describe('the question the waiter answers before an order goes out', () => {

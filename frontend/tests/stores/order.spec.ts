@@ -966,6 +966,123 @@ describe('an order the laptop answered only after it had already stayed silent o
   })
 })
 
+describe('an order the laptop refused with a reason after it had stayed silent once', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  function waterLine() {
+    return {
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    }
+  }
+
+  function aLaptopThatSaysNothingAndThenAnswersWith(answer: () => Response) {
+    let attemptsSeen = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_path: string, init: RequestInit) => {
+        attemptsSeen += 1
+        if (attemptsSeen === 1) {
+          return new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => {
+              reject(new DOMException('The request was aborted', 'AbortError'))
+            })
+          })
+        }
+        return Promise.resolve(answer())
+      }),
+    )
+  }
+
+  function aReasonedRefusal(status: number, messageKey: string): () => Response {
+    return () =>
+      new Response(
+        JSON.stringify({
+          code: 'UnprocessableEntity',
+          messageKey,
+          parameters: {},
+          details: null,
+        }),
+        { status },
+      )
+  }
+
+  async function anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(answer: () => Response) {
+    aLaptopThatSaysNothingAndThenAnswersWith(answer)
+    const order = useOrderStore()
+    order.addItem(waterLine())
+    order.setTable('Tisch 3')
+    const firstAttempt = order.send(null)
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS)
+    await firstAttempt
+
+    await order.sendAgain()
+    return order
+  }
+
+  it('takes changes again, because the reason proves the laptop never took the order', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+    )
+
+    expect(order.changesAreRefused).toBe(false)
+  })
+
+  it('takes changes again for a 400 reason too', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(400, 'order.unknownItem'),
+    )
+
+    expect(order.changesAreRefused).toBe(false)
+  })
+
+  it('keeps the reason the laptop gave, so the waiter can put it right', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+    )
+
+    expect(order.failure?.key).toBe('order.stationNotAssignedToItem')
+  })
+
+  it('keeps the paper route away, because the waiter has something to fix', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+    )
+
+    expect(order.onlyPaperIsLeft).toBe(false)
+  })
+
+  it('stays open for changes after a reload, because the reason was written down', async () => {
+    await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+    )
+
+    setActivePinia(createPinia())
+    const afterTheReload = useOrderStore()
+
+    expect(afterTheReload.changesAreRefused).toBe(false)
+  })
+
+  it('stays closed when a 400 arrives without the laptop wording', async () => {
+    const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
+      () => new Response('{}', { status: 400 }),
+    )
+
+    expect(order.changesAreRefused).toBe(true)
+  })
+})
+
 describe('an order sent from a phone the laptop no longer knows', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

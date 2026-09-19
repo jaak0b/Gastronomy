@@ -338,13 +338,13 @@ describe('a line whose item is no longer on the menu', () => {
     expect(list.get('.line').classes()).toContain('is-unavailable')
   })
 
-  it('shows no price, because the laptop no longer names one and the total must match it', () => {
+  it('shows a dash for the price, because nobody knows it any more', () => {
     const list = mountList([
       line({ name: 'Currywurst', unitPriceCents: null, isNoLongerOnTheMenu: true }),
       line({ name: 'Currywurst', unitPriceCents: null, isNoLongerOnTheMenu: true }),
     ])
 
-    expect(list.find('.line .price').exists()).toBe(false)
+    expect(list.get('.line .price').text()).toBe('-')
   })
 
   it('falls back to a label when the draft predates the stored name', () => {

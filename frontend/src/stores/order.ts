@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
+import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
 import type {
   DeliveryMode,
   DraftLine,
@@ -275,6 +275,9 @@ export const useOrderStore = defineStore('order', () => {
         if (answerSaysTheDeviceIsNoLongerSetUp(result)) {
           putTheSendBackTo(sendBeforeThisAttempt)
           return
+        }
+        if (answerIsABusinessRefusal(result)) {
+          anAttemptWentUnanswered.value = false
         }
         failure.value = messageForSendFailure(result)
         attemptsMade.value = sendBeforeThisAttempt.attempts

@@ -78,6 +78,7 @@
     "line": "{count} x {item}",
     "tableIs": "Tisch: {name}",
     "goesTo": "Geht an {name}",
+    "unknownPrice": "-",
     "continue": "Weiter",
     "send": "Bestellung senden",
     "sendAndSettle": "Bestellung senden und abrechnen",

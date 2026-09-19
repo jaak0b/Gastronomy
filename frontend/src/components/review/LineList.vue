@@ -58,9 +58,9 @@ function deliveryTextOf(deliveryMode: DeliveryMode): string {
   return t(deliveryModeKey(deliveryMode))
 }
 
-function priceOf(entry: CollapsedLine<BasketLineView>): string | null {
+function priceOf(entry: CollapsedLine<BasketLineView>): string {
   const cents = collapsedTotalCents(entry)
-  return cents === null ? null : formatPrice(cents, props.language)
+  return cents === null ? t('review.unknownPrice') : formatPrice(cents, props.language)
 }
 
 function choose(stationId: string, deliveryMode: DeliveryMode): void {
@@ -110,7 +110,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
             <span class="line-name text-body-1 flex-grow-1">
               {{ countedNameOf(entry) }}
             </span>
-            <span v-if="priceOf(entry) !== null" class="price text-body-1">
+            <span class="price text-body-1">
               {{ priceOf(entry) }}
             </span>
           </div>

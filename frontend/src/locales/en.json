@@ -78,6 +78,7 @@
     "line": "{count} x {item}",
     "tableIs": "Table: {name}",
     "goesTo": "Goes to {name}",
+    "unknownPrice": "-",
     "continue": "Continue",
     "send": "Send the order",
     "sendAndSettle": "Send the order and settle it",
