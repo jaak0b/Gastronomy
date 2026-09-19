@@ -77,6 +77,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       connection.onEvent('OrderStatusChanged', () => {
         void load()
       }),
+      connection.onEvent('StationOrdersChanged', () => {
+        void load()
+      }),
       connection.onEvent('FestivalChanged', () => {
         void load()
       }),
