@@ -85,7 +85,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OpenItemsReader>();
     services.AddScoped<OpenItemQueryHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
-    services.AddSingleton<HealthReporter>();
     services.AddSingleton<OutstandingInvitationCache>();
     services.AddScoped<InvitationQrRenderer>();
     services.AddSingleton<LocalNetworkAddressProvider>();
