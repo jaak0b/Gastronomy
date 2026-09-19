@@ -376,36 +376,6 @@ public sealed class OrderItemSettlementServiceTest
   }
 
   [Test]
-  public void Settle_MoreRepeatedIdsThanTheLimitButFewDistinctOnes_SettlesWhatWasActuallySelected()
-  {
-    var bratwurst = OpenItem(350);
-    List<Guid> namedSixHundredTimes = [.. Enumerable.Repeat(bratwurst.Id, 600)];
-
-    var settlement = _service.Settle(RequestFor(namedSixHundredTimes, 350), AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
-                    });
-  }
-
-  [Test]
-  public void Settle_MoreDistinctIdsThanTheLimit_IsRefused()
-  {
-    List<Guid> tooMany = [.. Enumerable.Range(0, 501).Select(_ => Guid.NewGuid())];
-
-    var settlement = _service.Settle(RequestFor(tooMany, 0), AtOneTable(), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason,
-                                  Is.EqualTo(SettlementFailureReason.TooManyItemsSelected));
-                    });
-  }
-
-  [Test]
   public void WaivedAmountCentsOf_OneItemGivenAway_CountsTheDisplayedPriceOfThatItemAlone()
   {
     var beer = OpenItem(400);

@@ -24,8 +24,6 @@ public sealed record SettlementCandidate
 
 public sealed class OrderItemSettlementService
 {
-  private const int MaximumItemsInOneSettlement = 500;
-
   public Result<SettlementResult, SettlementFailure> Settle(SettlementRequest request,
                                                             IReadOnlyCollection<SettlementCandidate> knownItems,
                                                             DateTime settledAtUtc)
@@ -190,11 +188,6 @@ public sealed class OrderItemSettlementService
     if (selectedIds.Count == 0)
     {
       return new() { Reason = SettlementFailureReason.NoItemsSelected };
-    }
-
-    if (selectedIds.Count > MaximumItemsInOneSettlement)
-    {
-      return new() { Reason = SettlementFailureReason.TooManyItemsSelected };
     }
 
     if (request.AmountPaidCents < 0)

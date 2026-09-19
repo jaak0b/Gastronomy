@@ -110,7 +110,6 @@
     "stationNotAssignedToItem": "Diese Ausgabestelle bereitet den Artikel nicht zu. Nehmen Sie ihn von der Bestellung und fügen Sie ihn neu hinzu.",
     "unknownItem": "Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung.",
     "settlementNoItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
-    "settlementTooManyItemsSelected": "Rechnen Sie den Tisch in mehreren Schritten ab. Auf einmal sind es zu viele Positionen.",
     "settlementCannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",
     "settlementUnknownItem": "Laden Sie die Liste neu. Eine der ausgewählten Positionen kennt der Rechner nicht mehr, deshalb wurde nichts abgerechnet."
   },

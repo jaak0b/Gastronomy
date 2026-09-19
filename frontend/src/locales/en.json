@@ -110,7 +110,6 @@
     "stationNotAssignedToItem": "That station does not prepare this item. Take it off the order and add it again.",
     "unknownItem": "One item is no longer on the menu. Take it off the order.",
     "settlementNoItemsSelected": "Choose the items you want to settle first.",
-    "settlementTooManyItemsSelected": "Settle the table in several steps. This is too many items at once.",
     "settlementCannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",
     "settlementUnknownItem": "Reload the list. The computer no longer knows one of the selected items, so nothing was settled."
   },

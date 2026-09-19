@@ -5,7 +5,6 @@ namespace GastronomyApp.Core.Results;
 public enum SettlementFailureReason
 {
   NoItemsSelected,
-  TooManyItemsSelected,
   PaymentNoticeMissing,
   UnknownOrderItemId,
   AmountPaidMissing,

@@ -47,8 +47,6 @@ public sealed class ResultEnvelope
            {
              SettlementFailureReason.NoItemsSelected =>
                Validation("order.settlementNoItemsSelected"),
-             SettlementFailureReason.TooManyItemsSelected =>
-               Validation("order.settlementTooManyItemsSelected"),
              SettlementFailureReason.PaymentNoticeMissing =>
                Validation(SettlementCannotBeProcessedKey),
              SettlementFailureReason.UnknownOrderItemId =>
