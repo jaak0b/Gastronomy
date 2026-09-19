@@ -43,16 +43,6 @@ public sealed class OrderReader
                                        loaded.Items.Count(item => item.FulfilledAtUtc is not null));
   }
 
-  public OrderStatus StatusOfStationOrder(LoadedOrder loaded, Guid stationOrderId)
-  {
-    ArgumentNullException.ThrowIfNull(loaded);
-
-    List<OrderItem> itemsOfTheSlice = [.. loaded.Items.Where(item => item.StationOrderId == stationOrderId)];
-
-    return _statusCalculator.Calculate(itemsOfTheSlice.Count,
-                                       itemsOfTheSlice.Count(item => item.FulfilledAtUtc is not null));
-  }
-
   public int TotalCentsOf(LoadedOrder loaded)
   {
     ArgumentNullException.ThrowIfNull(loaded);
@@ -70,25 +60,6 @@ public sealed class OrderReader
                TotalCentsOf(loaded),
                loaded.Order.CreatedAtUtc,
                DescribeStationOrders(loaded));
-  }
-
-  public OrderListEntryView DescribeListEntry(LoadedOrder loaded)
-  {
-    ArgumentNullException.ThrowIfNull(loaded);
-
-    return new(loaded.Order.Id,
-               loaded.Order.GlobalOrderNumber,
-               loaded.Order.TableName,
-               TotalCentsOf(loaded),
-               StatusOf(loaded),
-               loaded.Order.CreatedAtUtc,
-               [
-                 .. loaded.StationOrders.Select(stationOrder => new OrderListStationOrderView(stationOrder.Id,
-                                                                                               NameOf(loaded, stationOrder.StationId),
-                                                                                               stationOrder.StationOrderNumber,
-                                                                                               stationOrder.DeliveryMode,
-                                                                                               StatusOfStationOrder(loaded, stationOrder.Id)))
-               ]);
   }
 
   public IReadOnlyList<StationOrderView> DescribeStationOrders(LoadedOrder loaded)

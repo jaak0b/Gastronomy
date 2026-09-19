@@ -307,27 +307,6 @@ public sealed class AdminEndpointsTest
 
     Assert.That(staffMember.IsActive, Is.True);
   }
-
-  [Test]
-  public async Task GetAdminOrders_AfterAnOrderWasPlaced_ListsItAsOpen()
-  {
-    using (var created = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    using var response = await _context.Client.GetAsync("/api/admin/orders");
-    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var orders = body.RootElement.GetProperty("orders");
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(orders[0].GetProperty("status").GetString(), Is.EqualTo("open"));
-                      Assert.That(orders[0].GetProperty("stationOrders")[0].GetProperty("deliveryMode").GetString(),
-                                  Is.EqualTo("together"));
-                    });
-  }
 }
 
 

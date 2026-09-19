@@ -102,7 +102,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
     services.AddScoped<AdminStaffMembersHandler>();
-    services.AddScoped<AdminOrderHandler>();
     services.AddScoped<AdminEnrolmentHandler>();
     services.AddScoped<EnrolmentRedemptionHandler>();
     services.AddSingleton<StationShellResponder>();

@@ -57,21 +57,3 @@ public sealed record PlacedOrderView(
   int TotalCents,
   DateTime CreatedAtUtc,
   IReadOnlyList<StationOrderView> StationOrders);
-
-public sealed record OrderListStationOrderView(
-  Guid StationOrderId,
-  string StationName,
-  int StationOrderNumber,
-  DeliveryMode DeliveryMode,
-  OrderStatus Status);
-
-public sealed record OrderListEntryView(
-  Guid OrderId,
-  int GlobalOrderNumber,
-  string TableName,
-  int TotalCents,
-  OrderStatus Status,
-  DateTime CreatedAtUtc,
-  IReadOnlyList<OrderListStationOrderView> StationOrders);
-
-public sealed record OrderListView(IReadOnlyList<OrderListEntryView> Orders);

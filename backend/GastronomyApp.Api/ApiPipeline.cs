@@ -43,7 +43,6 @@ public sealed class ApiPipeline
     app.MapAdminItemEndpoints();
     app.MapAdminStaffMembersEndpoints();
     app.MapAdminEnrolmentEndpoints();
-    app.MapAdminOrderEndpoints();
     app.MapAdminInvitationQrEndpoints();
     app.MapAdminFestivalEndpoints();
     app.MapFallback("/{*clientRoute:nonfile}",
