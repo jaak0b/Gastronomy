@@ -33,7 +33,7 @@ const { t } = useI18n()
           size="large"
           @click="emit('confirmed')"
         >
-          {{ t('station.done') }}
+          {{ t('station.prepared') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -84,7 +84,7 @@ const { t } = useI18n()
 }
 
 .actions .v-btn {
-  min-width: 0;
+  min-width: 8rem;
   height: auto;
   min-height: 3.5rem;
   padding-block: 0.75rem;

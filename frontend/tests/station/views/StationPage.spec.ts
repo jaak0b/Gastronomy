@@ -446,6 +446,7 @@ describe('marking selected items as done from a card', () => {
     const page = await mountPage()
     const card = page.findAll('.orders-column .station-order')[0]
 
+    expect(card.get('.fulfill').text()).toBe('Zubereiten')
     await card.findAll('.station-item')[0].trigger('click')
     await card.findAll('.station-item')[1].trigger('click')
     await card.get('.fulfill').trigger('click')
@@ -457,7 +458,7 @@ describe('marking selected items as done from a card', () => {
       '1 x Pommes',
     ])
     expect(document.querySelector('.station-done-dialog .confirm')?.textContent?.trim()).toBe(
-      'Erledigen',
+      'Zubereitet',
     )
     expect(document.querySelector('.station-done-dialog .cancel')?.textContent?.trim()).toBe(
       'Abbrechen',

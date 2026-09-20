@@ -111,7 +111,7 @@ function isSelected(orderItemId: string): boolean {
         :disabled="selectedHere.length === 0 || isWorking"
         @click="emit('fulfill', stationOrder, selectedHere)"
       >
-        {{ t('station.done') }}
+        {{ t('station.prepare') }}
       </v-btn>
       <v-btn
         v-if="showHide"
