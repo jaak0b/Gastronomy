@@ -57,20 +57,31 @@ describe('the waiting times the phone asks the laptop for', () => {
     expect(urls).toEqual(['/api/estimates'])
   })
 
-  it('says the times are missing rather than showing a wrong one', async () => {
+  it('drops the old times and reports it to the console when the laptop cannot answer', async () => {
+    let calls = 0
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
+        calls += 1
+        if (calls === 1) {
+          return new Response(
+            JSON.stringify({ stations: [{ stationId: 'station-kueche', queuedMinutes: 12 }] }),
+            { status: 200 },
+          )
+        }
         throw new TypeError('Failed to fetch')
       }),
     )
     enrolledPhone()
     const estimates = useEstimatesStore()
+    await estimates.load()
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await estimates.load()
 
-    expect(estimates.loadFailed).toBe(true)
     expect(estimates.stations).toEqual([])
+    expect(logged).toHaveBeenCalledOnce()
+    logged.mockRestore()
   })
 
   it('asks for nothing at all before the phone is set up', async () => {

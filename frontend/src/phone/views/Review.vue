@@ -70,15 +70,16 @@ function backToItems(): void {
 
 <template>
   <v-container class="review">
+    <SendFailurePanel
+      v-if="order.sendHasFailed && order.failure !== null"
+      :failure="order.failure"
+    />
     <div class="review-heading d-flex align-center mb-2">
       <h1 class="table-name text-subtitle-1 text-medium-emphasis">
         {{ t('review.tableIs', { name: order.draft.tableName }) }}
       </h1>
       <span class="order-total text-h5">{{ total }}</span>
     </div>
-    <v-alert v-if="estimates.loadFailed" class="estimates-failed mb-2" type="info" variant="tonal">
-      {{ t('estimates.loadFailed') }}
-    </v-alert>
     <LineList
       :lines="order.basketLines"
       :order-note="order.draft.note"
@@ -87,10 +88,6 @@ function backToItems(): void {
       :delivery-mode-for="order.deliveryModeAt"
       :changes-are-refused="order.changesAreRefused"
       @choose-delivery-mode="order.chooseDeliveryMode"
-    />
-    <SendFailurePanel
-      v-if="order.sendHasFailed && order.failure !== null"
-      :failure="order.failure"
     />
     <DockedStrip class="review-footer">
       <div class="pt-3 pb-4">

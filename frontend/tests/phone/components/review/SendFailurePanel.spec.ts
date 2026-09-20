@@ -8,11 +8,11 @@ function mountPanel(failure: { key: string }) {
 }
 
 describe('SendFailurePanel', () => {
-  it('tells the server the laptop was not reached and points at the retry', () => {
+  it('tells the server the order did not go out and points at the retry', () => {
     const panel = mountPanel({ key: 'review.sendFailed' })
 
     expect(panel.get('.failure-message').text()).toBe(
-      'Der Rechner war nicht erreichbar. Tippen Sie auf "Erneut senden".',
+      'Die Bestellung konnte nicht gesendet werden. Tippen Sie auf "Erneut senden".',
     )
   })
 

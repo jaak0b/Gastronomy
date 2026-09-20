@@ -395,6 +395,18 @@ describe('an order the laptop did not confirm', () => {
     catalog.catalog = { ...catalog.catalog, items: [{ ...WASSER, isAvailable: false }] }
   }
 
+  it('shows the failure above the table heading, so the waiter reads it first', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    const failure = review.get('.send-failure').element
+    const heading = review.get('.review-heading').element
+
+    expect(failure.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+  })
+
   it('offers no way to take the sold-out line off, because the laptop may hold the order as it was', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)

@@ -9,7 +9,6 @@ import { useSessionStore } from '../../shared/stores/session'
 
 export const useEstimatesStore = defineStore('estimates', () => {
   const stations = ref<StationEstimate[]>([])
-  const loadFailed = ref(false)
 
   const loadGate = createLatestRequestGate()
 
@@ -27,10 +26,10 @@ export const useEstimatesStore = defineStore('estimates', () => {
       return
     }
     if (result.kind !== 'ok') {
-      loadFailed.value = true
+      console.error('The waiting times could not be loaded.', result)
+      stations.value = []
       return
     }
-    loadFailed.value = false
     stations.value = result.data.stations
   }
 
@@ -61,5 +60,5 @@ export const useEstimatesStore = defineStore('estimates', () => {
     }
   }
 
-  return { stations, loadFailed, load, listen }
+  return { stations, load, listen }
 })

@@ -59,8 +59,7 @@
   "estimates": {
     "inMinutes": "~{count} Min.",
     "inMinuteRange": "~{min} - {max} Min.",
-    "withEstimate": "{line} ({estimate})",
-    "loadFailed": "Die Wartezeiten konnten nicht geladen werden. Die Bestellung lässt sich trotzdem senden."
+    "withEstimate": "{line} ({estimate})"
   },
   "line": {
     "whereTitle": "Ausgabestelle für {item}",
@@ -86,7 +85,7 @@
     "sent": "Bestellung {number} ist angekommen.",
     "back": "Zurück",
     "removeLinesThatCannotBeOrdered": "Nicht bestellbare Artikel entfernen",
-    "sendFailed": "Der Rechner war nicht erreichbar. Tippen Sie auf \"Erneut senden\".",
+    "sendFailed": "Die Bestellung konnte nicht gesendet werden. Tippen Sie auf \"Erneut senden\".",
     "sendFailedDatabase": "Der Rechner konnte die Bestellung nicht speichern. Senden Sie sie noch einmal.",
     "sendInterrupted": "Es ist nicht klar, ob die Bestellung angekommen ist. Tippen Sie auf \"Erneut senden\".",
     "retry": "Erneut senden",

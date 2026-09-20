@@ -59,8 +59,7 @@
   "estimates": {
     "inMinutes": "~{count} min",
     "inMinuteRange": "~{min} - {max} min",
-    "withEstimate": "{line} ({estimate})",
-    "loadFailed": "The waiting times could not be loaded. The order can still be sent."
+    "withEstimate": "{line} ({estimate})"
   },
   "line": {
     "whereTitle": "Station for {item}",
@@ -86,7 +85,7 @@
     "sent": "Order {number} has arrived.",
     "back": "Back",
     "removeLinesThatCannotBeOrdered": "Remove the items that cannot be ordered",
-    "sendFailed": "The computer could not be reached. Tap \"Send again\".",
+    "sendFailed": "Could not send the order. Tap \"Send again\".",
     "sendFailedDatabase": "The computer could not save the order. Send it again.",
     "sendInterrupted": "It is not clear whether the order arrived. Tap \"Send again\".",
     "retry": "Send again",

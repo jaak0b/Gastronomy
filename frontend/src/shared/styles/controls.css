@@ -3,6 +3,10 @@ body {
   touch-action: manipulation;
 }
 
+.v-alert {
+  flex: 0 0 auto;
+}
+
 .v-btn--disabled,
 .v-btn--disabled:hover {
   opacity: 1;

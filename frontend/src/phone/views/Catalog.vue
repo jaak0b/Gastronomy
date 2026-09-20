@@ -278,9 +278,6 @@ function chooseStation(stationId: string, note: string | null): void {
       >
         {{ openCategory.name }}
       </h2>
-      <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
-        {{ t('estimates.loadFailed') }}
-      </v-alert>
       <ItemGrid
         :items="itemsInTheOpenCategory"
         :language="session.language"
