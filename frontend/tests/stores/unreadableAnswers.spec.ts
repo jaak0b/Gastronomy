@@ -17,7 +17,6 @@ function aLaptopThatAnswersWith(aBody: unknown): void {
 const A_TABLE: OpenTable = {
   tableName: 'Tisch 5',
   openAmountCents: 200,
-  givenAwayAmountCents: 0,
   items: [
     {
       orderItemId: 'item-of-the-order',
@@ -29,7 +28,6 @@ const A_TABLE: OpenTable = {
       orderedAtUtc: '2026-09-20T18:00:00Z',
     },
   ],
-  givenAwayItems: [],
 }
 
 describe('an answer the phone cannot read', () => {

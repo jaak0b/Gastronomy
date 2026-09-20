@@ -61,43 +61,6 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
-  public async Task GetOpenItems_ATableWhereEverythingWasGivenAway_StillNamesTheTableWithTheReason()
-  {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
-
-    using var given = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
-    var body = await ReadOpenItemsAsync();
-    var table = body.RootElement.GetProperty("tables")[0];
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(given.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(table.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
-                      Assert.That(table.GetProperty("openAmountCents").GetInt32(), Is.Zero);
-                      Assert.That(table.GetProperty("items").GetArrayLength(), Is.Zero);
-                      Assert.That(table.GetProperty("givenAwayAmountCents").GetInt32(), Is.EqualTo(700));
-                      Assert.That(table.GetProperty("givenAwayItems").GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("paymentNotice").GetString(), Is.EqualTo("Essen fuer die Kapelle"));
-                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("waivedAmountCents").GetInt32(), Is.EqualTo(350));
-                    });
-  }
-
-  [Test]
-  public async Task GetOpenItems_ATableThatPaidTheFullAmount_ShowsNothingAsGivenAway()
-  {
-    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
-
-    using var settled = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
-    var body = await ReadOpenItemsAsync();
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("tables").GetArrayLength(), Is.Zero);
-                    });
-  }
-
-  [Test]
   public async Task GetOpenItems_NothingBroken_ReportsThatNoItemIsMissingFromTheList()
   {
     await PlaceOrderAsync("Tisch 12");
@@ -225,8 +188,7 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(stored.Single(item => item.Id == itemIds[0]).ChargedPriceCents, Is.EqualTo(100));
                       Assert.That(stored.Single(item => item.Id == itemIds[1]).ChargedPriceCents, Is.EqualTo(200));
                       Assert.That(stored.Select(item => item.UnitPriceCents), Is.All.EqualTo(350));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.Zero);
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("givenAwayAmountCents").GetInt32(), Is.EqualTo(400));
+                      Assert.That(open.RootElement.GetProperty("tables").GetArrayLength(), Is.Zero);
                     });
   }
 

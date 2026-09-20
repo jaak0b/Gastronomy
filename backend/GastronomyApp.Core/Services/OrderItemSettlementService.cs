@@ -125,23 +125,6 @@ public sealed class OrderItemSettlementService
     return items.Where(item => item.SettledAtUtc is null).Sum(item => item.UnitPriceCents);
   }
 
-  public int CalculateWaivedAmountCents(OrderItem item)
-  {
-    ArgumentNullException.ThrowIfNull(item);
-
-    if (item.SettledAtUtc is null)
-      return 0;
-
-    return item.UnitPriceCents - (item.ChargedPriceCents ?? item.UnitPriceCents);
-  }
-
-  public int SumWaivedAmountCents(IEnumerable<OrderItem> items)
-  {
-    ArgumentNullException.ThrowIfNull(items);
-
-    return items.Sum(CalculateWaivedAmountCents);
-  }
-
   public void MarkSettled(OrderItem item, int chargedPriceCents, string? paymentNotice, Guid settledByStaffMemberId, DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(item);

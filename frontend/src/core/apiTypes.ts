@@ -186,22 +186,10 @@ export interface OpenOrderItem {
   orderedAtUtc: string
 }
 
-export interface GivenAwayOrderItem {
-  orderItemId: string
-  orderId: string
-  globalOrderNumber: number
-  itemName: string
-  waivedAmountCents: number
-  paymentNotice: string | null
-  settledAtUtc: string
-}
-
 export interface OpenTable {
   tableName: string
   openAmountCents: number
-  givenAwayAmountCents: number
   items: OpenOrderItem[]
-  givenAwayItems: GivenAwayOrderItem[]
 }
 
 export interface OpenItemsResponse {

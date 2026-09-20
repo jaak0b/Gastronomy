@@ -97,32 +97,6 @@ function setWholeTable(): void {
           </v-list-item>
         </v-list>
       </template>
-      <section v-if="table.givenAwayItems.length > 0" class="given-away mt-2">
-        <v-divider class="mb-3" />
-        <h2 class="given-away-heading text-subtitle-1 font-weight-medium">
-          {{ t('openItems.givenAwayHeading', { amount: priceTextFor(table.givenAwayAmountCents) }) }}
-        </h2>
-        <v-list class="given-away-lines" lines="two">
-          <v-list-item
-            v-for="item in table.givenAwayItems"
-            :key="item.orderItemId"
-            class="given-away-line"
-          >
-            <v-list-item-title class="given-away-name">{{ item.itemName }}</v-list-item-title>
-            <v-list-item-subtitle class="given-away-origin">
-              {{ t('openItems.fromOrder', { number: item.globalOrderNumber }) }}
-            </v-list-item-subtitle>
-            <v-list-item-subtitle v-if="item.paymentNotice !== null" class="given-away-reason">
-              {{ t('openItems.givenAwayReason', { reason: item.paymentNotice }) }}
-            </v-list-item-subtitle>
-            <template #append>
-              <span class="given-away-price text-body-1">
-                {{ priceTextFor(item.waivedAmountCents) }}
-              </span>
-            </template>
-          </v-list-item>
-        </v-list>
-      </section>
     </v-expansion-panel-text>
   </v-expansion-panel>
 </template>
@@ -130,25 +104,20 @@ function setWholeTable(): void {
 <style scoped>
 .line-name,
 .line-origin,
-.line-note,
-.given-away-name,
-.given-away-origin,
-.given-away-reason {
+.line-note {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   overflow-wrap: anywhere;
 }
 
-.line-price,
-.given-away-price {
+.line-price {
   flex: 0 0 auto;
   white-space: nowrap;
   padding-inline-start: 0.75rem;
 }
 
-.open-line,
-.given-away-line {
+.open-line {
   min-height: 0;
   padding-block: 0.75rem;
 }

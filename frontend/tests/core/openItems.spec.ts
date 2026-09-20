@@ -20,8 +20,6 @@ function tableWith(tableName: string, prices: number[]): OpenTable {
   return {
     tableName,
     openAmountCents: prices.reduce((total, price) => total + price, 0),
-    givenAwayAmountCents: 0,
-    givenAwayItems: [],
     items: prices.map((unitPriceCents, position) => ({
       orderItemId: `${tableName}-${position}`,
       orderId: 'order-1',

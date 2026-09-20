@@ -1,7 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,22 +9,15 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class OpenItemRepository : IOpenItemRepository
 {
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly GivenAwayItemSpecification _givenAwaySpecification;
 
-  public OpenItemRepository(GastronomyAppDbContext dbContext, GivenAwayItemSpecification givenAwaySpecification)
+  public OpenItemRepository(GastronomyAppDbContext dbContext)
   {
     _dbContext = dbContext;
-    _givenAwaySpecification = givenAwaySpecification;
   }
 
   public async Task<IReadOnlyList<OrderItem>> FindOpenAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     return await ItemsAtFestival(festivalId).Where(item => item.SettledAtUtc == null).ToListAsync(cancellationToken);
-  }
-
-  public async Task<IReadOnlyList<OrderItem>> FindGivenAwayAtFestivalSinceAsync(Guid festivalId, DateTime settledFromUtc, CancellationToken cancellationToken)
-  {
-    return await ItemsAtFestival(festivalId).Where(_givenAwaySpecification.WasGivenAwaySince(settledFromUtc)).ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyList<OrderItem>> FindForSettlementAsync(IReadOnlyCollection<Guid> orderItemIds, CancellationToken cancellationToken)

@@ -73,7 +73,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<FestivalMoment>();
     services.AddSingleton<OrderStatusCalculator>();
     services.AddSingleton<OrderTotalCalculator>();
-    services.AddSingleton<GivenAwayItemSpecification>();
     services.AddSingleton<OrderItemFulfillmentService>();
     services.AddSingleton<StationOrderVisibilityService>();
     services.AddSingleton<ProductionEstimateCalculator>();

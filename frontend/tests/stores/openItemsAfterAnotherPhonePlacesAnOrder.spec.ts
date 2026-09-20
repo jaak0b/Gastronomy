@@ -14,8 +14,6 @@ const TISCH_SIEBEN_BEFORE = {
     {
       tableName: 'Tisch 7',
       openAmountCents: 350,
-      givenAwayAmountCents: 0,
-      givenAwayItems: [],
       items: [
         {
           orderItemId: 'item-1',
@@ -37,8 +35,6 @@ const TISCH_SIEBEN_AFTER_THE_SECOND_WAITER_SENT_TWO_BRATWURST = {
     {
       tableName: 'Tisch 7',
       openAmountCents: 950,
-      givenAwayAmountCents: 0,
-      givenAwayItems: [],
       items: [
         ...TISCH_SIEBEN_BEFORE.tables[0].items,
         {

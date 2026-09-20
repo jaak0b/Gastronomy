@@ -18,7 +18,6 @@ import type {
   CreatedItem,
   CreatedStation,
   EstimatesResponse,
-  GivenAwayOrderItem,
   Invitation,
   LanguageResponse,
   OpenItemsResponse,
@@ -179,22 +178,10 @@ const openOrderItemSchema: z.ZodType<OpenOrderItem> = z.object({
   orderedAtUtc: z.string(),
 })
 
-const givenAwayOrderItemSchema: z.ZodType<GivenAwayOrderItem> = z.object({
-  orderItemId: z.string(),
-  orderId: z.string(),
-  globalOrderNumber: z.number(),
-  itemName: z.string(),
-  waivedAmountCents: z.number(),
-  paymentNotice: z.string().nullable(),
-  settledAtUtc: z.string(),
-})
-
 const openTableSchema: z.ZodType<OpenTable> = z.object({
   tableName: z.string(),
   openAmountCents: z.number(),
-  givenAwayAmountCents: z.number(),
   items: z.array(openOrderItemSchema),
-  givenAwayItems: z.array(givenAwayOrderItemSchema),
 })
 
 export const openItemsResponseSchema: z.ZodType<OpenItemsResponse> = z.object({

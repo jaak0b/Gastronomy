@@ -19,19 +19,17 @@ public sealed class OpenItemsServiceTest
     A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(_owners));
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
-    _service = new(_repository, runningFestival, new(_repository, runningFestival, A.Fake<ITransactionRunner>(), _clock), _clock);
+    _service = new(_repository, runningFestival, new(_repository, runningFestival, A.Fake<ITransactionRunner>(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
   private readonly DateTime _orderedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
-  private readonly Guid _settlingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Dictionary<Guid, OrderItemOwner> _owners = [];
 
   private IClock _clock = null!;
@@ -70,28 +68,6 @@ public sealed class OpenItemsServiceTest
                                              }));
                       Assert.That(report.Tables[0].OpenAmountCents, Is.EqualTo(600));
                       Assert.That(report.Tables[1].OpenAmountCents, Is.EqualTo(400));
-                    });
-  }
-
-  [Test]
-  public async Task ReadAsync_AnItemTheTableDidNotPayInFull_ReportsWhatWasGivenAway()
-  {
-    var bier = At("Tisch 12", OpenItem("Bier", 400));
-    bier.SettledAtUtc = _now.AddMinutes(-10);
-    bier.SettledByStaffMemberId = _settlingWaiter;
-    bier.ChargedPriceCents = 150;
-    bier.PaymentNotice = "Kapelle";
-
-    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(_festivalId, A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bier]));
-
-    var report = await _service.ReadAsync(CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.Tables, Has.Count.EqualTo(1));
-                      Assert.That(report.Tables[0].GivenAwayAmountCents, Is.EqualTo(250));
-                      Assert.That(report.Tables[0].GivenAwayItems[0].WaivedAmountCents, Is.EqualTo(250));
-                      Assert.That(report.Tables[0].GivenAwayItems[0].PaymentNotice, Is.EqualTo("Kapelle"));
                     });
   }
 

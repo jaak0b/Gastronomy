@@ -11,8 +11,6 @@ const OPEN_LIST = {
     {
       tableName: '12',
       openAmountCents: 700,
-      givenAwayAmountCents: 0,
-      givenAwayItems: [],
       items: [
         {
           orderItemId: 'item-1',
@@ -38,29 +36,6 @@ const OPEN_LIST = {
   itemsWithoutAnOrderCount: 0,
 }
 
-const GIVEN_AWAY_LIST = {
-  tables: [
-    {
-      tableName: 'Tisch 5',
-      openAmountCents: 0,
-      givenAwayAmountCents: 400,
-      items: [],
-      givenAwayItems: [
-        {
-          orderItemId: 'item-9',
-          orderId: 'order-9',
-          globalOrderNumber: 140,
-          itemName: 'Bier',
-          waivedAmountCents: 400,
-          paymentNotice: 'Getraenk fuer die Kapelle',
-          settledAtUtc: '2026-09-05T19:00:00Z',
-        },
-      ],
-    },
-  ],
-  itemsWithoutAnOrderCount: 0,
-}
-
 const SETTLED = {
   settledOrderItemIds: ['item-1'],
   reappliedOrderItemIds: [],
@@ -75,8 +50,6 @@ const TWO_TABLES = {
     {
       tableName: '123',
       openAmountCents: 500,
-      givenAwayAmountCents: 0,
-      givenAwayItems: [],
       items: [
         {
           orderItemId: 'item-7',
@@ -336,23 +309,6 @@ describe('the screen that shows what the tables still owe', () => {
     expect(screen.get('.settle-notice').text()).toBe(
       'Jemand anderes hatte 1 Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast 3,50 € zurück.',
     )
-  })
-
-  it('keeps a table that only has items given away, so the record stays visible', async () => {
-    stubTheLaptopWith(
-      GIVEN_AWAY_LIST,
-      () => new Response(JSON.stringify(SETTLED), { status: 200 }),
-    )
-    const screen = await mountScreen()
-
-    await screen.get('.open-table .v-expansion-panel-title').trigger('click')
-    await flushPromises()
-
-    expect(screen.get('.given-away-heading').text()).toBe(
-      'In den letzten 24 Stunden nicht kassiert: 4,00 €',
-    )
-    expect(screen.get('.given-away-reason').text()).toBe('Grund: Getraenk fuer die Kapelle')
-    expect(screen.get('.given-away-price').text()).toBe('4,00 €')
   })
 })
 

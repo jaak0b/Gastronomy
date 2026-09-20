@@ -12,8 +12,6 @@ public sealed class OpenItemMapping : IRegister
 
     config.NewConfig<OpenOrderItem, OpenOrderItemView>();
 
-    config.NewConfig<GivenAwayOrderItem, GivenAwayOrderItemView>();
-
     config.NewConfig<OpenTable, OpenTableView>();
   }
 }

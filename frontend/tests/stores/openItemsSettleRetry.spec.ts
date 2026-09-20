@@ -10,8 +10,6 @@ const OPEN_LIST = {
     {
       tableName: 'Tisch 5',
       openAmountCents: 1200,
-      givenAwayAmountCents: 0,
-      givenAwayItems: [],
       items: [
         {
           orderItemId: 'item-1',

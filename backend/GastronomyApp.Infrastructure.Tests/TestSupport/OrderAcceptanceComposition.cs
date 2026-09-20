@@ -27,6 +27,6 @@ public sealed class OrderAcceptanceComposition
     FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), new SystemClock());
 
-    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, new(new OpenItemRepository(dbContext, new()), runningFestival, transactionRunner, new SystemClock()), transactionRunner, new SystemClock());
+    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, new(new OpenItemRepository(dbContext), runningFestival, transactionRunner, new SystemClock()), transactionRunner, new SystemClock());
   }
 }
