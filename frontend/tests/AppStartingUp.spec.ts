@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('@microsoft/signalr', async () => (await import('./../support/hubConnection')).signalrModuleFake())
+vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
-const { navigate } = await import('../../src/router')
-const App = (await import('../../src/App.vue')).default
-const { testPlugins } = await import('../support/plugins')
+const { navigate } = await import('../src/shared/router/router')
+const App = (await import('../src/App.vue')).default
+const { testPlugins } = await import('./support/plugins')
 const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY, useSessionStore } = await import(
-  '../../src/stores/session'
+  '../src/shared/stores/session'
 )
 
 const CATALOG = {

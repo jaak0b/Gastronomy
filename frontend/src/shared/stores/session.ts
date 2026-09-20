@@ -1,19 +1,19 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { onUnauthorisedAnswer, request, requestAction } from '../api/client'
-import { redeemResponseSchema, sessionInfoSchema } from '../core/apiSchemas'
+import { redeemResponseSchema, sessionInfoSchema } from '../api/apiSchemas'
 import type {
   AppLanguage,
   DeviceKind,
   StaffMember,
   StationIdentity,
-} from '../core/apiTypes'
+} from '../api/apiTypes'
 import { assertNever } from '../core/assertNever'
 import { deviceTokenIsWellFormed } from '../core/deviceToken'
 import type { DeviceSession } from '../core/landing'
 import type { StartingUpFailure } from '../core/startingUp'
 import { useConnectionStore } from './connection'
-import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../appLanguage'
+import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../core/deviceLanguage'
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
 export { LANGUAGE_STORAGE_KEY }
@@ -89,7 +89,7 @@ export const useSessionStore = defineStore('session', () => {
     })
   }
 
-  function errorKeyFor(status: number, messageKey: string | null): string {
+  function enrolmentRefusalKeyFor(status: number, messageKey: string | null): string {
     if (messageKey !== null) {
       return messageKey
     }
@@ -128,7 +128,7 @@ export const useSessionStore = defineStore('session', () => {
         redeemErrorKey.value = 'enrol.error.noConnection'
         return false
       case 'error':
-        redeemErrorKey.value = errorKeyFor(result.status, result.body?.messageKey ?? null)
+        redeemErrorKey.value = enrolmentRefusalKeyFor(result.status, result.body?.messageKey ?? null)
         return false
       default:
         return assertNever(result)

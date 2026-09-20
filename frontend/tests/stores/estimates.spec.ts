@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 import { useEstimatesStore } from '../../src/stores/estimates'
-import { useSessionStore } from '../../src/stores/session'
-import { useConnectionStore } from '../../src/stores/connection'
+import { useSessionStore } from '../../src/shared/stores/session'
+import { useConnectionStore } from '../../src/shared/stores/connection'
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 

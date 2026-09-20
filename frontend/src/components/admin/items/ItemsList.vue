@@ -3,10 +3,10 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AdminCategory, AdminItem } from '../../../core/apiTypes'
-import { assertNever } from '../../../core/assertNever'
-import { groupByCategory } from '../../../core/grouping'
-import { letteringColourOn } from '../../../core/letteringColour'
+import type { AdminCategory, AdminItem } from '../../../shared/api/apiTypes'
+import { assertNever } from '../../../shared/core/assertNever'
+import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
+import { letteringColourOn } from '../../../shared/core/letteringColour'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,
@@ -39,7 +39,7 @@ const shownItems = computed(() =>
 )
 
 const groups = computed(() =>
-  groupByCategory(
+  groupByCategorySortingItemsByName(
     categories.categories,
     shownItems.value,
     (category) => category.categoryId,

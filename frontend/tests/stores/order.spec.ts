@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { useCatalogStore } from '../../src/stores/catalog'
 import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../src/stores/order'
-import { TOKEN_STORAGE_KEY } from '../../src/stores/session'
+import { TOKEN_STORAGE_KEY } from '../../src/shared/stores/session'
 import {
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,

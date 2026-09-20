@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { browserLanguage, initialLanguage, LANGUAGE_STORAGE_KEY } from '../../src/appLanguage'
+import { browserLanguage, initialLanguage, LANGUAGE_STORAGE_KEY } from '../../../src/shared/core/deviceLanguage'
 
 function withTheBrowserLanguage(language: string): void {
   Object.defineProperty(window.navigator, 'language', { value: language, configurable: true })

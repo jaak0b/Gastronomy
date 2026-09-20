@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { screenTitle } from '../../src/core/appTitle'
-import type { ScreenName } from '../../src/core/landing'
+import { screenTitle } from '../../../src/shared/core/appTitle'
+import type { ScreenName } from '../../../src/shared/core/landing'
 
 const words = (key: string): string => key
 

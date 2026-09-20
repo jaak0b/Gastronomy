@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { CatalogCategory, CatalogItem } from '../core/apiTypes'
+import type { CatalogCategory, CatalogItem } from '../shared/api/apiTypes'
 import { lineCannotBeOrdered } from '../core/basket'
 import { itemState } from '../core/catalogItemState'
 import { countCategoryPortions } from '../core/categoryPortions'
@@ -11,15 +11,15 @@ import {
   stationEstimateAfterAdding,
   type EstimateRange,
 } from '../core/estimates'
-import { letteringColourOn } from '../core/letteringColour'
+import { letteringColourOn } from '../shared/core/letteringColour'
 import { needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOpenItemsStore } from '../stores/openItems'
 import { useOrderStore } from '../stores/order'
-import { useSessionStore } from '../stores/session'
-import { closeTheStepInsideTheScreen, navigate, openAStepInsideTheScreen } from '../router'
+import { useSessionStore } from '../shared/stores/session'
+import { closeOpenStep, navigate, registerOpenStepCloser } from '../shared/router/router'
 import { useKeyboardInset } from '../composables/useKeyboardInset'
 import DockedStrip from '../components/DockedStrip.vue'
 import ItemGrid from '../components/catalog/ItemGrid.vue'
@@ -54,7 +54,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  closeTheStepInsideTheScreen()
+  closeOpenStep()
 })
 
 const openCategory = computed<CatalogCategory | null>(
@@ -66,7 +66,7 @@ const openCategory = computed<CatalogCategory | null>(
 
 watch(openCategory, (category) => {
   if (category === null) {
-    closeTheStepInsideTheScreen()
+    closeOpenStep()
   }
 })
 
@@ -83,7 +83,7 @@ function closeTheOpenCategory(): void {
 
 function openTheCategory(category: CatalogCategory): void {
   tappedCategory.value = category.categoryId
-  openAStepInsideTheScreen(closeTheOpenCategory)
+  registerOpenStepCloser(closeTheOpenCategory)
 }
 
 const itemsInTheOpenCategory = computed(
@@ -314,7 +314,7 @@ function chooseStation(stationId: string, note: string | null): void {
             block
             size="x-large"
             variant="outlined"
-            @click="closeTheStepInsideTheScreen()"
+            @click="closeOpenStep()"
           >
             {{ t('catalog.backToCategories') }}
           </v-btn>

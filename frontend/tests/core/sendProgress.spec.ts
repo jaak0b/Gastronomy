@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { OrderSubmitRequest } from '../../src/core/apiTypes'
+import type { OrderSubmitRequest } from '../../src/shared/api/apiTypes'
 import {
   changesAreRefusedFor,
   noSendProgress,

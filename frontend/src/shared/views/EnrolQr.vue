@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import QrLanding from '../components/enrolment/QrLanding.vue'
-import { currentRoute } from '../router'
+import QrLanding from '../components/QrLanding.vue'
+import { currentRoute } from '../router/router'
 
 const code = computed(() => {
   const route = currentRoute.value

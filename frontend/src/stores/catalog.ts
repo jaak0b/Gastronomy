@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../api/client'
-import { catalogSchema } from '../core/apiSchemas'
-import type { Catalog, CatalogCategory, CatalogItem } from '../core/apiTypes'
+import { request } from '../shared/api/client'
+import { catalogSchema } from '../shared/api/apiSchemas'
+import type { Catalog, CatalogCategory, CatalogItem } from '../shared/api/apiTypes'
 import { findCatalogStation } from '../core/basket'
-import { groupByCategory, type CategoryGroup } from '../core/grouping'
-import { createLatestRequestGate } from '../core/latestRequestGate'
-import { useConnectionStore } from './connection'
+import { groupByCategorySortingItemsByName, type CategoryGroup } from '../shared/core/grouping'
+import { createLatestRequestGate } from '../shared/core/latestRequestGate'
+import { useConnectionStore } from '../shared/stores/connection'
 import { useOrderStore } from './order'
-import { useSessionStore } from './session'
+import { useSessionStore } from '../shared/stores/session'
 
 const EMPTY_CATALOG: Catalog = {
   festival: null,
@@ -24,7 +24,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   const loadGate = createLatestRequestGate()
 
   const groups = computed<CategoryGroup<CatalogCategory, CatalogItem>[]>(() =>
-    groupByCategory(
+    groupByCategorySortingItemsByName(
       catalog.value.categories,
       catalog.value.items,
       (category) => category.categoryId,
@@ -42,12 +42,12 @@ export const useCatalogStore = defineStore('catalog', () => {
     if (session.deviceToken === null) {
       return
     }
-    const token = loadGate.start()
+    const token = loadGate.startRequest()
     const result = await request('/api/catalog', {
       token: session.deviceToken,
       schema: catalogSchema,
     })
-    if (!loadGate.isCurrent(token)) {
+    if (!loadGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

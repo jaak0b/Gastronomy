@@ -1,4 +1,4 @@
-import type { CatalogItem, DraftLine, DraftOrder } from './apiTypes'
+import type { CatalogItem, DraftLine, DraftOrder } from '../shared/api/apiTypes'
 import { needsStationChoice } from './routingPreview'
 
 export interface ItemPosition {

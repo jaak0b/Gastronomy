@@ -59,4 +59,4 @@ const light: ThemeDefinition = {
 export const appTheme = {
   defaultTheme: 'system',
   themes: { light, dark },
-}
+} as const

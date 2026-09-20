@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCatalogStore } from '../../src/stores/catalog'
 import { useOrderStore } from '../../src/stores/order'
-import { TOKEN_STORAGE_KEY } from '../../src/stores/session'
+import { TOKEN_STORAGE_KEY } from '../../src/shared/stores/session'
 import { DRAFT_STORAGE_KEY, restoreDraft } from '../../src/core/draftCart'
 
 const BRATWURST = {

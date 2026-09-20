@@ -2,14 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('@microsoft/signalr', async () => (await import('./../support/hubConnection')).signalrModuleFake())
+vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection')).signalrModuleFake())
 
-const { navigate } = await import('../../src/router')
-const App = (await import('../../src/App.vue')).default
-const { testPlugins } = await import('../support/plugins')
-const { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY } = await import('../../src/core/draftCart')
-const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY } = await import('../../src/stores/session')
-const { useOrderStore } = await import('../../src/stores/order')
+const { navigate } = await import('../src/shared/router/router')
+const App = (await import('../src/App.vue')).default
+const { testPlugins } = await import('./support/plugins')
+const { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY } = await import('../src/core/draftCart')
+const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
+const { useOrderStore } = await import('../src/stores/order')
 
 let device: ReturnType<typeof mount> | null = null
 

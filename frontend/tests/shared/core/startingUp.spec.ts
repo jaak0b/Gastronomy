@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { startingUpMessageKey } from '../../src/core/startingUp'
+import { startingUpMessageKey } from '../../../src/shared/core/startingUp'
 
 describe('what the starting screen says', () => {
   it('says nothing while the laptop has not answered yet', () => {

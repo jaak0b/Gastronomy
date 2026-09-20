@@ -1,5 +1,5 @@
-import type { DeliveryMode, StationEstimate } from './apiTypes'
-import { assertNever } from './assertNever'
+import type { DeliveryMode, StationEstimate } from '../shared/api/apiTypes'
+import { assertNever } from '../shared/core/assertNever'
 import { lineCannotBeOrdered, type BasketLineView } from './basket'
 import { stationReadyInMinutes } from './estimates'
 import { buildStationOrders, DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES } from './stationOrders'

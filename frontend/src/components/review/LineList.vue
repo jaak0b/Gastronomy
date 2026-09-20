@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, DeliveryMode, StationEstimate } from '../../core/apiTypes'
+import type { AppLanguage, DeliveryMode, StationEstimate } from '../../shared/api/apiTypes'
 import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
-import { collapseLines, type CollapsedLine } from '../../core/collapse'
+import { mergeLinesWithSameArticleAndNote, type CollapsedLine } from '../../shared/core/collapse'
 import { countedName } from '../../core/countedName'
 import { withEstimate } from '../../core/estimateWording'
-import { deliveryModeKey } from '../../core/stationBoard'
+import { deliveryModeKey } from '../../shared/core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice, collapsedTotalCents } from '../../core/totals'
 
@@ -42,7 +42,7 @@ function readingOrder(
 const parts = computed<StationPart[]>(() =>
   stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map((delivery) => ({
     ...delivery,
-    entries: collapseLines(delivery.lines, (line) => line.name, (line) => line.note).sort(readingOrder),
+    entries: mergeLinesWithSameArticleAndNote(delivery.lines, (line) => line.name, (line) => line.note).sort(readingOrder),
   })),
 )
 

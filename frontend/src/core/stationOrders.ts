@@ -1,4 +1,4 @@
-import type { DeliveryMode, StationDeliveryMode } from './apiTypes'
+import type { DeliveryMode, StationDeliveryMode } from '../shared/api/apiTypes'
 import { routedStationId, type RoutableLine } from './routingPreview'
 
 export const DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES: DeliveryMode = 'together'

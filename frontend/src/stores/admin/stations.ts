@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request, requestAction, type ApiResult } from '../../api/client'
-import { adminStationsResponseSchema, createdStationSchema } from '../../core/apiSchemas'
+import { request, requestAction, type ApiResult } from '../../shared/api/client'
+import { adminStationsResponseSchema, createdStationSchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
-import type { AdminStation } from '../../core/apiTypes'
-import { assertNever } from '../../core/assertNever'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import type { AdminStation } from '../../shared/api/apiTypes'
+import { assertNever } from '../../shared/core/assertNever'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 import { useAdminEnrolmentStore } from './enrolment'
 
 export interface StationDraft {
@@ -29,9 +29,9 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   async function loadStationsFrom(path: string): Promise<void> {
     loadFailed.value = false
-    const token = stationsGate.start()
+    const token = stationsGate.startRequest()
     const result = await request(path, { schema: adminStationsResponseSchema })
-    if (!stationsGate.isCurrent(token)) {
+    if (!stationsGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

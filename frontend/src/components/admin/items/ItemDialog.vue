@@ -2,9 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AdminItem } from '../../../core/apiTypes'
-import { assertNever } from '../../../core/assertNever'
-import { LONGEST_PRODUCTION_MINUTES } from '../../../core/productionMinutes'
+import type { AdminItem } from '../../../shared/api/apiTypes'
+import { assertNever } from '../../../shared/core/assertNever'
+import { LONGEST_PRODUCTION_MINUTES } from '../../../shared/core/productionMinutes'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminStation } from '../../../core/apiTypes'
+import type { AdminStation } from '../../../shared/api/apiTypes'
 import FormDialog from '../FormDialog.vue'
 
 const props = defineProps<{ station: AdminStation | null; errorText: string | null }>()

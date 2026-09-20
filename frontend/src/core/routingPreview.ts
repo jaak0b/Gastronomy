@@ -1,4 +1,4 @@
-import type { CatalogItem } from './apiTypes'
+import type { CatalogItem } from '../shared/api/apiTypes'
 
 export interface RoutableLine {
   stationId: string | null

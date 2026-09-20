@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { stationDeliveries } from '../../src/core/stationDeliveries'
 import type { BasketLineView } from '../../src/core/basket'
-import type { DeliveryMode, StationEstimate } from '../../src/core/apiTypes'
+import type { DeliveryMode, StationEstimate } from '../../src/shared/api/apiTypes'
 
 const QUEUES: StationEstimate[] = [
   { stationId: 'station-kueche', queuedMinutes: 12 },

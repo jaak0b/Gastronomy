@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FestivalPage from '../../../src/components/admin/festivals/FestivalPage.vue'
 import StationsList from '../../../src/components/admin/stations/StationsList.vue'
-import { useConnectionStore } from '../../../src/stores/connection'
+import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STATION_ID = '11111111-1111-1111-1111-111111111111'

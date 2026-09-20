@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request, requestAction } from '../../api/client'
-import { adminCategoriesResponseSchema, adminCategorySchema } from '../../core/apiSchemas'
+import { request, requestAction } from '../../shared/api/client'
+import { adminCategoriesResponseSchema, adminCategorySchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
-import type { AdminCategory } from '../../core/apiTypes'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import type { AdminCategory } from '../../shared/api/apiTypes'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 
 export interface AdminCategoryDraft {
   name: string
@@ -28,11 +28,11 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
 
   async function load(): Promise<void> {
     loadFailed.value = false
-    const token = categoriesGate.start()
+    const token = categoriesGate.startRequest()
     const result = await request('/api/admin/categories', {
       schema: adminCategoriesResponseSchema,
     })
-    if (!categoriesGate.isCurrent(token)) {
+    if (!categoriesGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
@@ -43,7 +43,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   }
 
   async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
-    const token = categoriesGate.start()
+    const token = categoriesGate.startRequest()
     const result = await request('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
@@ -52,7 +52,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
-    if (categoriesGate.isCurrent(token)) {
+    if (categoriesGate.isNewestRequest(token)) {
       categories.value = [...categories.value, result.data]
     }
     return adminOk(result.data)
@@ -84,7 +84,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     categoryId: string,
     direction: CategoryMoveDirection,
   ): Promise<AdminActionResult<null>> {
-    const token = categoriesGate.start()
+    const token = categoriesGate.startRequest()
     const result = await request(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',
       body: { direction },
@@ -97,7 +97,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
-    if (categoriesGate.isCurrent(token)) {
+    if (categoriesGate.isNewestRequest(token)) {
       categories.value = result.data.categories
     }
     return adminOk(null)

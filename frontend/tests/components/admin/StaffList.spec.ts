@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import StaffList from '../../../src/components/admin/staff/StaffList.vue'
-import { useConnectionStore } from '../../../src/stores/connection'
+import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
 const STAFF_MEMBER_ID = '33333333-3333-3333-3333-333333333333'

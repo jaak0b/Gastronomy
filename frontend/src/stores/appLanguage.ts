@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request } from '../api/client'
-import { languageSchema } from '../core/apiSchemas'
-import type { AppLanguage } from '../core/apiTypes'
+import { request } from '../shared/api/client'
+import { languageSchema } from '../shared/api/apiSchemas'
+import type { AppLanguage } from '../shared/api/apiTypes'
 
 export const useAppLanguageStore = defineStore('appLanguage', () => {
   const language = ref<AppLanguage>('de')

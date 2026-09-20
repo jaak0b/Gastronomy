@@ -2,9 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NameField from './NameField.vue'
-import { useSessionStore } from '../../stores/session'
-import { navigate, startOverAt } from '../../router'
-import LanguageSwitch from '../LanguageSwitch.vue'
+import { useSessionStore } from '../stores/session'
+import { navigate, startOverAt } from '../router/router'
+import LanguageSwitch from './LanguageSwitch.vue'
 
 const props = defineProps<{ code: string }>()
 const { t } = useI18n()

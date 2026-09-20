@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationOrder } from '../../core/apiTypes'
+import type { StationOrder } from '../../shared/api/apiTypes'
 import {
-  deliveryModeColour,
+  deliveryModeColourToken,
   deliveryModeKey,
   isFulfilled,
   itemLineText,
   itemLines,
-} from '../../core/stationBoard'
+} from '../../shared/core/stationBoard'
 import './stationCard.css'
 
 const props = defineProps<{ stationOrder: StationOrder; isWorking: boolean }>()
@@ -18,7 +18,7 @@ const { t } = useI18n()
 
 const deliveryText = computed(() => t(deliveryModeKey(props.stationOrder.deliveryMode)))
 const modeColour = computed(
-  () => `rgb(var(--v-theme-${deliveryModeColour(props.stationOrder.deliveryMode)}))`,
+  () => `rgb(var(--v-theme-${deliveryModeColourToken(props.stationOrder.deliveryMode)}))`,
 )
 const orderReference = computed(() =>
   t('station.order', {

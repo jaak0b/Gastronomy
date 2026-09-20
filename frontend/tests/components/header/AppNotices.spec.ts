@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppNotices from '../../../src/components/header/AppNotices.vue'
-import { useConnectionStore } from '../../../src/stores/connection'
+import { useConnectionStore } from '../../../src/shared/stores/connection'
 import { useOrderStore } from '../../../src/stores/order'
 import { testPlugins } from '../../support/plugins'
 

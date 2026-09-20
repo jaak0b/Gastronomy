@@ -351,7 +351,7 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 22. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
     screen shows, the read takes a number from the request gate in
-    `frontend/src/core/latestRequestGate.ts` when it starts, and only the newest request may apply
+    `frontend/src/shared/core/latestRequestGate.ts` when it starts, and only the newest request may apply
     its answer, success or failure. An action's answer (an item marked done, a table settled) is
     always newer than a load already in flight, so a slow load can never put a handed-out item back
     on the screen or restore a list the action changed. Never answer this with a per-store special

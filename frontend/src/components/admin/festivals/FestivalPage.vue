@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { navigate } from '../../../router'
+import { navigate } from '../../../shared/router/router'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import { assertNever } from '../../../core/assertNever'
+import { assertNever } from '../../../shared/core/assertNever'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../../core/festivalTimes'
 import { useAdminCategoriesStore } from '../../../stores/admin/categories'
 import { useAdminFestivalsStore } from '../../../stores/admin/festivals'

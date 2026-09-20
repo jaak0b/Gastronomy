@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { OpenTable } from '../../src/core/apiTypes'
+import type { OpenTable } from '../../src/shared/api/apiTypes'
 
 const { useOpenItemsStore } = await import('../../src/stores/openItems')
 const { useOrderStore } = await import('../../src/stores/order')
-const { TOKEN_STORAGE_KEY, useSessionStore } = await import('../../src/stores/session')
+const { TOKEN_STORAGE_KEY, useSessionStore } = await import('../../src/shared/stores/session')
 const { useStationStore } = await import('../../src/stores/station')
 
 function aLaptopThatAnswersWith(aBody: unknown): void {

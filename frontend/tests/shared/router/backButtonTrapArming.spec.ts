@@ -1,17 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 
-vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
-
-async function mountTheApp() {
-  const App = (await import('../../src/App.vue')).default
-  const de = (await import('../../src/locales/de.json')).default
-  const en = (await import('../../src/locales/en.json')).default
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
-  return mount(App, { global: { plugins: [i18n] } })
-}
+vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
 describe('the app puts a device behind the door as soon as its screen is on display', () => {
   beforeEach(() => {
@@ -48,27 +38,28 @@ describe('the app puts a device behind the door as soon as its screen is on disp
   })
 
   it('stops growing the history once the station screen is on display', async () => {
-    const { useSessionStore } = await import('../../src/stores/session')
+    const { useSessionStore } = await import('../../../src/shared/stores/session')
     useSessionStore().deviceToken = 'a-token'
 
-    const app = await mountTheApp()
+    const app = await (await import('../../support/mountApp')).mountApp()
     await vi.waitFor(() => expect(app.find('.station-page').exists()).toBe(true))
 
-    const { navigate, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+    const { navigate } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY } = await import('../../../src/shared/router/backButtonTrap')
     const entries = window.history.length
 
     navigate('/open-items')
 
     expect(window.history.length).toBe(entries)
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
 
   it('asks for the start button on a tab where the doors were never opened', async () => {
     sessionStorage.clear()
-    const { useSessionStore } = await import('../../src/stores/session')
+    const { useSessionStore } = await import('../../../src/shared/stores/session')
     useSessionStore().deviceToken = 'a-token'
 
-    const app = await mountTheApp()
+    const app = await (await import('../../support/mountApp')).mountApp()
     await app.vm.$nextTick()
 
     expect(app.find('.door-gate').exists()).toBe(true)

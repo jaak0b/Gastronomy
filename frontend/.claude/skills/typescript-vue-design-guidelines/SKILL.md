@@ -166,7 +166,8 @@ Full rules: [references/architecture.md](references/architecture.md)
 - **Do** read reactive store properties through `storeToRefs()`, never by destructuring the store.
 - **Do** put business logic in actions, and **do not** let two stores read each other's state in their setup functions or loop through getters or actions; every `useXStore()` inside an action comes before the first `await`.
 - **Do** read the current route from the router module's one exported reactive value and navigate through its one exported function; **do not** touch `window.history` or `window.location` outside the router module, and **do** type a route as a discriminated union.
-- **Do** load each screen component lazily per surface with a dynamic import, never as an async component, and **do** keep the decision whether a navigation may happen in the router module, not in a screen; the back-button trap is its own module beside the router.
+- **Do** import every screen component up front, never through a dynamic import: the bundle is small, it is served from the laptop on site over the festival's own WiFi, and a chunk fetched later could fail at the moment a server taps a screen. That is the owner's decision, not a source rule.
+- **Do** keep the decision whether a navigation may happen in the router module, not in a screen; the back-button trap is its own module beside the router.
 - **Do** import only from layers strictly below your own, never sideways to another slice of the same layer and never upward; App and Shared segments import each other freely.
 - **Do** put a file under the surface it serves (`src/phone/`, `src/station/`, `src/admin/`) or under `src/shared/` when two or more surfaces use it; a surface imports only from `shared/` and itself, and `shared/` never imports from a surface.
 

@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/views/OpenItems.vue'
 import { useOpenItemsStore } from '../../../src/stores/openItems'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/stores/session'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 
 const OPEN_LIST = {

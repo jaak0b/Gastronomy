@@ -1,4 +1,4 @@
-import type { Catalog, CatalogItem, CatalogStation, DraftLine, DraftOrder } from './apiTypes'
+import type { Catalog, CatalogItem, CatalogStation, DraftLine, DraftOrder } from '../shared/api/apiTypes'
 import { candidateStations, routedStationId, stationStillPreparesIt } from './routingPreview'
 import { saveDraft } from './draftCart'
 

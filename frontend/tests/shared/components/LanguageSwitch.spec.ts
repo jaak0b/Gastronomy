@@ -1,15 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
-import LanguageSwitch from '../../src/components/LanguageSwitch.vue'
-import de from '../../src/locales/de.json'
-import en from '../../src/locales/en.json'
+import LanguageSwitch from '../../../src/shared/components/LanguageSwitch.vue'
+import { testPlugins } from '../../support/plugins'
 
 function mountSwitch(language: 'de' | 'en', locale: 'de' | 'en' = 'de') {
-  const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
   return mount(LanguageSwitch, {
     props: { language },
-    global: { plugins: [i18n] },
+    global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
 }

@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
-import Welcome from '../../../src/views/Welcome.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import Welcome from '../../../src/shared/views/Welcome.vue'
+import { testPlugins } from '../../support/plugins'
 
 function mountWelcome(locale: 'de' | 'en' = 'de') {
-  const i18n = createI18n({ legacy: false, locale, messages: { de, en } })
-  return mount(Welcome, { global: { plugins: [i18n] } })
+  return mount(Welcome, { global: { plugins: testPlugins(locale) } })
 }
 
 async function openTheOptions(welcome: ReturnType<typeof mountWelcome>): Promise<void> {

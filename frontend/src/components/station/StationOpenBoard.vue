@@ -2,11 +2,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  deliveryModeColour,
+  deliveryModeColourToken,
   itemLineText,
   linesByCount,
   type ItemLine,
-} from '../../core/stationBoard'
+} from '../../shared/core/stationBoard'
 
 const props = defineProps<{
   togetherCount: number
@@ -35,7 +35,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
     <div class="mode-counts d-flex flex-wrap ga-2">
       <v-chip
         class="stat-together"
-        :color="deliveryModeColour('together')"
+        :color="deliveryModeColourToken('together')"
         variant="flat"
         size="large"
       >
@@ -43,7 +43,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
       </v-chip>
       <v-chip
         class="stat-as-it-comes"
-        :color="deliveryModeColour('asItComes')"
+        :color="deliveryModeColourToken('asItComes')"
         variant="flat"
         size="large"
       >

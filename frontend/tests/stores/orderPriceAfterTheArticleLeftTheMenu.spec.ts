@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { Catalog } from '../../src/core/apiTypes'
+import type { Catalog } from '../../src/shared/api/apiTypes'
 import { saveDraft } from '../../src/core/draftCart'
 import { useCatalogStore } from '../../src/stores/catalog'
 import { useOrderStore } from '../../src/stores/order'

@@ -1,12 +1,11 @@
-import { watch } from 'vue'
+import { toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSessionStore } from './stores/session'
+import type { AppLanguage } from '../api/apiTypes'
 
-export function bindLocaleToSession(): void {
-  const session = useSessionStore()
+export function useLocaleBinding(language: MaybeRefOrGetter<AppLanguage>): void {
   const { locale } = useI18n()
   watch(
-    () => session.language,
+    () => toValue(language),
     (next) => {
       locale.value = next
     },

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
-import type { AdminCategory } from '../../../src/core/apiTypes'
+import type { AdminCategory } from '../../../src/shared/api/apiTypes'
 import { testPlugins } from '../../support/plugins'
 
 const DRINKS: AdminCategory = {

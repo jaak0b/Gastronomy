@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { navigate } from '../../../router'
+import { navigate } from '../../../shared/router/router'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AdminFestival } from '../../../core/apiTypes'
-import { assertNever } from '../../../core/assertNever'
+import type { AdminFestival } from '../../../shared/api/apiTypes'
+import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../core/festivalTimes'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../../stores/admin/festivals'
 import ConfirmDialog from '../ConfirmDialog.vue'

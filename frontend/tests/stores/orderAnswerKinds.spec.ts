@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useOrderStore } from '../../src/stores/order'
 
-vi.mock('../../src/api/client', () => ({
+vi.mock('../../src/shared/api/client', () => ({
   request: vi.fn(async () => ({ kind: 'anAnswerNobodyWroteAHandlerFor' })),
 }))
 

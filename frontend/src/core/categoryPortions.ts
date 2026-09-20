@@ -1,4 +1,4 @@
-import type { CatalogItem, DraftOrder } from './apiTypes'
+import type { CatalogItem, DraftOrder } from '../shared/api/apiTypes'
 import { countItemPortions } from './itemPositions'
 
 export function countCategoryPortions(

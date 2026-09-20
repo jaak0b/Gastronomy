@@ -1,5 +1,5 @@
-import type { ApiErrorBody } from './apiError'
-import { assertNever } from './assertNever'
+import type { ApiErrorBody } from '../shared/api/apiError'
+import { assertNever } from '../shared/core/assertNever'
 
 export type SendFailure =
   | { kind: 'unreachable' }

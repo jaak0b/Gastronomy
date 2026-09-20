@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 
-vi.mock('../../src/api/client', () => ({
+vi.mock('../../../src/shared/api/client', () => ({
   request: vi.fn(async () => ({ kind: 'anAnswerNobodyWroteAHandlerFor' })),
   onUnauthorisedAnswer: vi.fn(),
   answerSaysTheDeviceIsNoLongerSetUp: vi.fn(() => false),

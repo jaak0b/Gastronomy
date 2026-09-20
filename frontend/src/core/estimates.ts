@@ -1,4 +1,4 @@
-import type { CatalogItem, StationEstimate } from './apiTypes'
+import type { CatalogItem, StationEstimate } from '../shared/api/apiTypes'
 import { routedStationId } from './routingPreview'
 
 export interface EstimateRange {

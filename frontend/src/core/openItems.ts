@@ -4,7 +4,7 @@ import type {
   OpenOrderItem,
   OpenTable,
   SettlementResponse,
-} from './apiTypes'
+} from '../shared/api/apiTypes'
 import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'

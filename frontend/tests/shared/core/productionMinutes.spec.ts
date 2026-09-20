@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMinutes } from '../../src/core/productionMinutes'
+import { formatMinutes } from '../../../src/shared/core/productionMinutes'
 
 describe('formatMinutes, what a waiting time shows', () => {
   it('keeps a whole number as it is', () => {

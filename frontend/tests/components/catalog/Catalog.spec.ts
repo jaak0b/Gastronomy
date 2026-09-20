@@ -5,8 +5,8 @@ import Catalog from '../../../src/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
 import { useEstimatesStore } from '../../../src/stores/estimates'
 import { useOrderStore } from '../../../src/stores/order'
-import type { Catalog as CatalogData, StationEstimate } from '../../../src/core/apiTypes'
-import { currentRoute, navigate } from '../../../src/router'
+import type { Catalog as CatalogData, StationEstimate } from '../../../src/shared/api/apiTypes'
+import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 
 enableAutoUnmount(afterEach)

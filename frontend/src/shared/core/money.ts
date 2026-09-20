@@ -1,4 +1,4 @@
-import type { AppLanguage } from './apiTypes'
+import type { AppLanguage } from '../api/apiTypes'
 import { assertNever } from './assertNever'
 
 const EURO_INPUT = /^\d+(?:[.,]\d{1,2})?$/

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../router'
-import { assertNever } from '../../core/assertNever'
-import { requestAction } from '../../api/client'
+import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../shared/router/router'
+import { assertNever } from '../../shared/core/assertNever'
+import { requestAction } from '../../shared/api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import FestivalsList from '../../components/admin/festivals/FestivalsList.vue'
 import FestivalPage from '../../components/admin/festivals/FestivalPage.vue'
@@ -11,12 +11,15 @@ import StationsList from '../../components/admin/stations/StationsList.vue'
 import ItemsList from '../../components/admin/items/ItemsList.vue'
 import StaffList from '../../components/admin/staff/StaffList.vue'
 import NotOnLaptop from '../../components/admin/NotOnLaptop.vue'
-import { bindLocaleToLaptop } from '../../appLanguageBinding'
+import { useLocaleBinding } from '../../shared/composables/useLocaleBinding'
+import { useAppLanguageStore } from '../../stores/appLanguage'
 
 const { t } = useI18n()
+const appLanguage = useAppLanguageStore()
 const isReachable = ref(true)
 
-bindLocaleToLaptop()
+useLocaleBinding(() => appLanguage.language)
+void appLanguage.load()
 
 const section = computed<AdminSection>(() => {
   const route = currentRoute.value

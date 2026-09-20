@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collapseLines } from '../../src/core/collapse'
+import { mergeLinesWithSameArticleAndNote } from '../../../src/shared/core/collapse'
 
 interface Line {
   name: string
@@ -7,14 +7,14 @@ interface Line {
 }
 
 function collapse(...lines: Line[]) {
-  return collapseLines(
+  return mergeLinesWithSameArticleAndNote(
     lines,
     (line) => line.name,
     (line) => line.note,
   )
 }
 
-describe('collapseLines', () => {
+describe('mergeLinesWithSameArticleAndNote', () => {
   it('counts identical positions as one line', () => {
     const collapsed = collapse(
       { name: 'Bier', note: null },

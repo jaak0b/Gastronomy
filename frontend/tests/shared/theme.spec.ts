@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appTheme } from '../src/theme'
+import { appTheme } from '../../src/shared/theme'
 
 describe('the palette the whole app inherits', () => {
   it('lets the device decide between the two themes', () => {

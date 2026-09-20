@@ -4,10 +4,10 @@ import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
-const { useConnectionStore } = await import('../../src/stores/connection')
+const { useConnectionStore } = await import('../../src/shared/stores/connection')
 const { useCatalogStore } = await import('../../src/stores/catalog')
 const { useStationStore } = await import('../../src/stores/station')
-const { useSessionStore } = await import('../../src/stores/session')
+const { useSessionStore } = await import('../../src/shared/stores/session')
 
 const KITCHEN = { id: 'station-kueche', name: 'Kueche am Zelt' }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage } from '../../core/apiTypes'
+import type { AppLanguage } from '../../shared/api/apiTypes'
 import { formatPrice } from '../../core/totals'
 
 const props = defineProps<{ itemCount: number; totalCents: number; language: AppLanguage }>()

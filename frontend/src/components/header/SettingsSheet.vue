@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useSessionStore } from '../../stores/session'
-import LanguageSwitch from '../LanguageSwitch.vue'
+import { useSessionStore } from '../../shared/stores/session'
+import LanguageSwitch from '../../shared/components/LanguageSwitch.vue'
 
 const { t } = useI18n()
 const session = useSessionStore()

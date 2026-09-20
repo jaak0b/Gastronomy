@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminCategory } from '../../../core/apiTypes'
+import type { AdminCategory } from '../../../shared/api/apiTypes'
 import type { AdminCategoryDraft } from '../../../stores/admin/categories'
 import FormDialog from '../FormDialog.vue'
 

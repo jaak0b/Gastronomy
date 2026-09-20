@@ -3,11 +3,11 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import { adminMessage, type AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AdminItem, AppLanguage } from '../../../core/apiTypes'
-import { assertNever } from '../../../core/assertNever'
-import { groupByCategory } from '../../../core/grouping'
-import { letteringColourOn } from '../../../core/letteringColour'
-import { formatEuroInput, parseEuroInput } from '../../../core/money'
+import type { AdminItem, AppLanguage } from '../../../shared/api/apiTypes'
+import { assertNever } from '../../../shared/core/assertNever'
+import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
+import { letteringColourOn } from '../../../shared/core/letteringColour'
+import { formatEuroInput, parseEuroInput } from '../../../shared/core/money'
 import { useAdminCategoriesStore } from '../../../stores/admin/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
@@ -58,7 +58,7 @@ const itemsAtTheFestival = computed(() =>
 )
 
 const groups = computed(() =>
-  groupByCategory(
+  groupByCategorySortingItemsByName(
     categories.categories,
     itemsAtTheFestival.value,
     (category) => category.categoryId,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screenFor } from '../../src/core/landing'
+import { screenFor } from '../../../src/shared/core/landing'
 
 const aStationTablet = { state: 'setUp', deviceKind: 'station' } as const
 const aWaiterPhone = { state: 'setUp', deviceKind: 'staffMember' } as const

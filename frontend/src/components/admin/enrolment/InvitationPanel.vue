@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invitationQrView, type InvitationQr } from '../../../core/invitationQr'
-import type { Invitation } from '../../../core/apiTypes'
+import type { Invitation } from '../../../shared/api/apiTypes'
 
 const props = defineProps<{ invitation: Invitation; qr: InvitationQr }>()
 defineEmits<{ close: []; renew: [] }>()

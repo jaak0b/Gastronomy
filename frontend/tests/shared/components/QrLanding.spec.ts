@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import QrLanding from '../../../src/components/enrolment/QrLanding.vue'
-import { bindLocaleToSession } from '../../../src/localeBinding'
-import { TOKEN_STORAGE_KEY } from '../../../src/stores/session'
-import { navigate, startOverAt } from '../../../src/router'
+import QrLanding from '../../../src/shared/components/QrLanding.vue'
+import { useLocaleBinding } from '../../../src/shared/composables/useLocaleBinding'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
+import { navigate, startOverAt } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 
-vi.mock('../../../src/router', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../src/router')>()),
+vi.mock('../../../src/shared/router/router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../src/shared/router/router')>()),
   startOverAt: vi.fn(),
 }))
 
@@ -52,7 +52,8 @@ function mountLanding() {
 const QrLandingFollowingTheLanguage = defineComponent({
   components: { QrLanding },
   setup() {
-    bindLocaleToSession()
+    const session = useSessionStore()
+    useLocaleBinding(() => session.language)
   },
   template: '<QrLanding code="abc123" />',
 })

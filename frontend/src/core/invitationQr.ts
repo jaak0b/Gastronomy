@@ -1,4 +1,4 @@
-import { assertNever } from './assertNever'
+import { assertNever } from '../shared/core/assertNever'
 import type { AdminErrorMessage } from './adminErrorMessage'
 
 export type InvitationQr =

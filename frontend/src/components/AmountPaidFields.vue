@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, ConfirmedSettlement } from '../core/apiTypes'
-import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../core/money'
+import type { AppLanguage, ConfirmedSettlement } from '../shared/api/apiTypes'
+import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../shared/core/money'
 import { canTheAmountBeSettled, isPaymentNoticeNeeded } from '../core/openItems'
 
 const props = defineProps<{

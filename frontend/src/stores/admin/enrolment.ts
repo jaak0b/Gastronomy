@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../../api/client'
+import { request } from '../../shared/api/client'
 import { fetchInvitationQr } from '../../api/invitationQr'
-import { invitationSchema } from '../../core/apiSchemas'
+import { invitationSchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import { adminFailed, adminOk, type AdminActionResult } from '../../core/adminActionResult'
-import type { DeviceKind, Invitation } from '../../core/apiTypes'
+import type { DeviceKind, Invitation } from '../../shared/api/apiTypes'
 import type { InvitationQr } from '../../core/invitationQr'
-import { assertNever } from '../../core/assertNever'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import { assertNever } from '../../shared/core/assertNever'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 
 
 export type InvitationOwner =
@@ -61,7 +61,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const enrolledStationName = computed(() => enrolledNameFor('station'))
 
   async function createInvitation(owner: InvitationOwner): Promise<AdminActionResult<null>> {
-    const token = invitationGate.start()
+    const token = invitationGate.startRequest()
     enrolled.value = null
     invitationQr.value = { kind: 'loading' }
     const result = await request('/api/admin/enrolment/invitations', {
@@ -69,7 +69,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
       body: bodyFor(owner),
       schema: invitationSchema,
     })
-    if (!invitationGate.isCurrent(token)) {
+    if (!invitationGate.isNewestRequest(token)) {
       return adminOk(null)
     }
     if (result.kind !== 'ok') {
@@ -78,7 +78,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     }
     invitation.value = result.data
     const qr = await fetchInvitationQr(result.data.invitationId)
-    if (!invitationGate.isCurrent(token)) {
+    if (!invitationGate.isNewestRequest(token)) {
       return adminOk(null)
     }
     invitationQr.value = qr

@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 import { SEND_TIMEOUT_MS } from '../../src/core/sendTimeout'
-import { useConnectionStore } from '../../src/stores/connection'
+import { useConnectionStore } from '../../src/shared/stores/connection'
 import { useOpenItemsStore } from '../../src/stores/openItems'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/shared/stores/session'
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 

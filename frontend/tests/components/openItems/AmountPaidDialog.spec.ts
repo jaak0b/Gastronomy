@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import AmountPaidDialog from '../../../src/components/openItems/AmountPaidDialog.vue'
-import type { AppLanguage } from '../../../src/core/apiTypes'
+import type { AppLanguage } from '../../../src/shared/api/apiTypes'
 import { testPlugins } from '../../support/plugins'
 
 enableAutoUnmount(afterEach)

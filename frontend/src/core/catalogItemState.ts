@@ -1,6 +1,6 @@
-import type { Catalog, CatalogItem } from './apiTypes'
+import type { Catalog, CatalogItem } from '../shared/api/apiTypes'
 import { findCatalogItem, type BasketLineView } from './basket'
-import { assertNever } from './assertNever'
+import { assertNever } from '../shared/core/assertNever'
 
 export type CatalogItemState = 'available' | 'soldOut'
 

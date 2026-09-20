@@ -1,19 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 
-vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
+vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
-const { currentRoute } = await import('../../src/router')
-const App = (await import('../../src/App.vue')).default
-const de = (await import('../../src/locales/de.json')).default
-const en = (await import('../../src/locales/en.json')).default
-
-function mountApp() {
-  const i18n = createI18n({ legacy: false, locale: 'de', messages: { de, en } })
-  return mount(App, { global: { plugins: [i18n] } })
-}
+const { currentRoute } = await import('../../../src/shared/router/router')
+const { mountApp } = await import('../../support/mountApp')
 
 describe('a phone that is not enrolled', () => {
   beforeEach(() => {
@@ -26,7 +17,7 @@ describe('a phone that is not enrolled', () => {
   it('is sent back to the welcome screen when it opens the review screen', async () => {
     currentRoute.value = { name: 'review' }
 
-    const app = mountApp()
+    const app = await mountApp()
     await vi.waitFor(() => expect(app.html().length).toBeGreaterThan(0))
 
     expect(app.find('.welcome').exists()).toBe(true)

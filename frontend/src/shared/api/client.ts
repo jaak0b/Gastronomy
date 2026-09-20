@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { isApiErrorBody, type ApiErrorBody } from '../core/apiError'
+import { isApiErrorBody, type ApiErrorBody } from './apiError'
 
 export type ApiResult<T> =
   | { kind: 'ok'; status: number; data: T }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useConnectionStore } from '../../src/stores/connection'
+import { useConnectionStore } from '../../src/shared/stores/connection'
 import { useAdminFestivalsStore } from '../../src/stores/admin/festivals'
 import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 

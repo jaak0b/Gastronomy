@@ -5,7 +5,7 @@ import type {
   DraftOrder,
   OrderSubmitRequest,
   StationDeliveryMode,
-} from './apiTypes'
+} from '../shared/api/apiTypes'
 import { findCatalogItem } from './basket'
 import { saveDraft } from './draftCart'
 import { splitSettlement } from './settlementSplit'

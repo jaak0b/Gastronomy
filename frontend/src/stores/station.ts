@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../api/client'
-import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../core/apiSchemas'
-import type { StationIdentity, StationOrder, StationOrdersResponse } from '../core/apiTypes'
-import { createLatestRequestGate } from '../core/latestRequestGate'
-import { retainOpenItemIds, stationFailureKey } from '../core/stationBoard'
-import { useConnectionStore } from './connection'
-import { useSessionStore } from './session'
+import { request } from '../shared/api/client'
+import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../shared/api/apiSchemas'
+import type { StationIdentity, StationOrder, StationOrdersResponse } from '../shared/api/apiTypes'
+import { createLatestRequestGate } from '../shared/core/latestRequestGate'
+import { retainOpenItemIds, stationFailureKey } from '../shared/core/stationBoard'
+import { useConnectionStore } from '../shared/stores/connection'
+import { useSessionStore } from '../shared/stores/session'
 
 export const useStationStore = defineStore('station', () => {
   const station = ref<StationIdentity | null>(null)
@@ -46,12 +46,12 @@ export const useStationStore = defineStore('station', () => {
     if (deviceToken() === null) {
       return
     }
-    const token = boardGate.start()
+    const token = boardGate.startRequest()
     const result = await request('/api/station/orders', {
       token: deviceToken(),
       schema: stationOrdersResponseSchema,
     })
-    if (!boardGate.isCurrent(token)) {
+    if (!boardGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
@@ -69,12 +69,12 @@ export const useStationStore = defineStore('station', () => {
     if (deviceToken() === null) {
       return
     }
-    const token = fulfilledGate.start()
+    const token = fulfilledGate.startRequest()
     const result = await request('/api/station/orders/fulfilled', {
       token: deviceToken(),
       schema: stationFulfilledResponseSchema,
     })
-    if (!fulfilledGate.isCurrent(token)) {
+    if (!fulfilledGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
@@ -112,7 +112,7 @@ export const useStationStore = defineStore('station', () => {
   async function fulfill(orderItemIds: string[]): Promise<void> {
     failureKey.value = null
     isWorking.value = true
-    const token = boardGate.start()
+    const token = boardGate.startRequest()
     newestActionToken = token
     const result = await request('/api/station/items/fulfill', {
       method: 'POST',
@@ -123,7 +123,7 @@ export const useStationStore = defineStore('station', () => {
     if (newestActionToken === token) {
       isWorking.value = false
     }
-    if (!boardGate.isCurrent(token)) {
+    if (!boardGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
@@ -136,7 +136,7 @@ export const useStationStore = defineStore('station', () => {
   async function unfulfill(orderItemId: string): Promise<void> {
     failureKey.value = null
     isWorking.value = true
-    const token = boardGate.start()
+    const token = boardGate.startRequest()
     newestActionToken = token
     const result = await request('/api/station/items/unfulfill', {
       method: 'POST',
@@ -147,7 +147,7 @@ export const useStationStore = defineStore('station', () => {
     if (newestActionToken === token) {
       isWorking.value = false
     }
-    if (!boardGate.isCurrent(token)) {
+    if (!boardGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
@@ -163,7 +163,7 @@ export const useStationStore = defineStore('station', () => {
   async function hide(stationOrderId: string): Promise<void> {
     failureKey.value = null
     isWorking.value = true
-    const token = boardGate.start()
+    const token = boardGate.startRequest()
     newestActionToken = token
     const result = await request(`/api/station/orders/${stationOrderId}/hide`, {
       method: 'POST',
@@ -173,7 +173,7 @@ export const useStationStore = defineStore('station', () => {
     if (newestActionToken === token) {
       isWorking.value = false
     }
-    if (!boardGate.isCurrent(token)) {
+    if (!boardGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

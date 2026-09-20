@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { onUnauthorisedAnswer, request, requestAction } from '../../src/api/client'
+import { onUnauthorisedAnswer, request, requestAction } from '../../../src/shared/api/client'
 
 const okAnswerSchema = z.object({ ok: z.boolean() })
 

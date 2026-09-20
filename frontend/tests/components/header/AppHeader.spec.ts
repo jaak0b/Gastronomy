@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../src/components/header/AppHeader.vue'
-import { currentRoute, navigate, openAStepInsideTheScreen } from '../../../src/router'
+import { currentRoute, navigate, registerOpenStepCloser } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 
 const AppBarStub = {
@@ -117,7 +117,7 @@ describe('the way to the ordering screen while a category is open on it', () => 
 
   it('closes the open category, so the tap is answered instead of doing nothing', async () => {
     let timesClosed = 0
-    openAStepInsideTheScreen(() => {
+    registerOpenStepCloser(() => {
       timesClosed += 1
     })
     const header = mountHeader()

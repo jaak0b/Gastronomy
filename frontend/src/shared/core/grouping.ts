@@ -3,7 +3,7 @@ export interface CategoryGroup<TCategory, TItem> {
   items: TItem[]
 }
 
-export function groupByCategory<TCategory, TItem>(
+export function groupByCategorySortingItemsByName<TCategory, TItem>(
   categories: readonly TCategory[],
   items: readonly TItem[],
   categoryIdOf: (category: TCategory) => string,

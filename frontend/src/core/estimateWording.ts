@@ -1,6 +1,6 @@
-import type { AppLanguage } from './apiTypes'
+import type { AppLanguage } from '../shared/api/apiTypes'
 import type { EstimateRange } from './estimates'
-import { formatMinutes, wholeMinutes } from './productionMinutes'
+import { formatMinutes, wholeMinutes } from '../shared/core/productionMinutes'
 
 export type EstimateWording = (key: string, values: Record<string, string | number>) => string
 

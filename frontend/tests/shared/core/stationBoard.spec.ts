@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  deliveryModeColour,
+  deliveryModeColourToken,
   deliveryModeKey,
   itemLineText,
   itemLines,
@@ -11,8 +11,8 @@ import {
   selectedUnits,
   stationFailureKey,
   stationStats,
-} from '../../src/core/stationBoard'
-import type { StationOrder, StationOrderItem } from '../../src/core/apiTypes'
+} from '../../../src/shared/core/stationBoard'
+import type { StationOrder, StationOrderItem } from '../../../src/shared/api/apiTypes'
 
 function stationOrderItem(
   orderItemId: string,
@@ -50,11 +50,11 @@ describe('the words a station tablet uses for a delivery mode', () => {
   })
 
   it('marks a card that hands the order out together', () => {
-    expect(deliveryModeColour('together')).toBe('together')
+    expect(deliveryModeColourToken('together')).toBe('together')
   })
 
   it('marks a card that hands each item out as it is ready', () => {
-    expect(deliveryModeColour('asItComes')).toBe('individual')
+    expect(deliveryModeColourToken('asItComes')).toBe('individual')
   })
 })
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { deliveryModeSchema } from './apiSchemas'
+import { deliveryModeSchema } from '../shared/api/apiSchemas'
 import type {
   DeliveryMode,
   DraftLine,
@@ -8,7 +8,7 @@ import type {
   OrderSubmitItem,
   OrderSubmitRequest,
   StationDeliveryMode,
-} from './apiTypes'
+} from '../shared/api/apiTypes'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 

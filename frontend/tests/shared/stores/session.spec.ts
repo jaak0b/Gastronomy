@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { TOKEN_STORAGE_KEY, useSessionStore } from '../../src/stores/session'
+import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import {
   restoreDraft,
   saveDraft,
   saveSendProgress,
-} from '../../src/core/draftCart'
-import { useOrderStore } from '../../src/stores/order'
-import { request } from '../../src/api/client'
+} from '../../../src/core/draftCart'
+import { useOrderStore } from '../../../src/stores/order'
+import { request } from '../../../src/shared/api/client'
 
 function withBrowserLanguage(language: string): void {
   vi.stubGlobal('navigator', { language, userAgent: 'test' })

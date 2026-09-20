@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, OpenTable } from '../../core/apiTypes'
+import type { AppLanguage, OpenTable } from '../../shared/api/apiTypes'
 import { isTheWholeTableSelected } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 

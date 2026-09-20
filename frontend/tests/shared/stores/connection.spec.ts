@@ -43,7 +43,7 @@ vi.mock('@microsoft/signalr', () => {
   return { HubConnectionBuilder, HubConnectionState: { Disconnected: 'Disconnected' } }
 })
 
-const { useConnectionStore, POLLING_INTERVAL_MS } = await import('../../src/stores/connection')
+const { useConnectionStore, POLLING_INTERVAL_MS } = await import('../../../src/shared/stores/connection')
 
 describe('the credential the hub is opened with', () => {
   beforeEach(() => {

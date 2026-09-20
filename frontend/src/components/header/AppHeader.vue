@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { assertNever } from '../../core/assertNever'
-import { currentRoute, navigate } from '../../router'
+import { assertNever } from '../../shared/core/assertNever'
+import { currentRoute, navigate } from '../../shared/router/router'
 import SettingsSheet from './SettingsSheet.vue'
 
 type Destination = 'catalog' | 'openItems' | 'none'

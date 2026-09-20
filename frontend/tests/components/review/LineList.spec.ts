@@ -4,10 +4,10 @@ import { createI18n } from 'vue-i18n'
 
 import LineList from '../../../src/components/review/LineList.vue'
 import type { BasketLineView } from '../../../src/core/basket'
-import type { AppLanguage, DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
+import type { AppLanguage, DeliveryMode, StationEstimate } from '../../../src/shared/api/apiTypes'
 import { routedStationId } from '../../../src/core/routingPreview'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import de from '../../../src/shared/i18n/de.json'
+import en from '../../../src/shared/i18n/en.json'
 
 const STATION_NAMES: Record<string, string> = {
   'station-theke-innen': 'Theke innen',

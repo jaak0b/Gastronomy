@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { itemLineText, type ItemLine } from '../../core/stationBoard'
+import { itemLineText, type ItemLine } from '../../shared/core/stationBoard'
 
 defineProps<{ tableName: string; lines: ItemLine[] }>()
 const emit = defineEmits<{ confirmed: []; cancelled: [] }>()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { OpenTable } from '../../src/core/apiTypes'
+import type { OpenTable } from '../../src/shared/api/apiTypes'
 import {
   canTheAmountBeSettled,
   isHeldBackByAnotherTable,

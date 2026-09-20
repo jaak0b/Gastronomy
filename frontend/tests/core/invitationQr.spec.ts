@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import de from '../../src/locales/de.json'
-import en from '../../src/locales/en.json'
+import de from '../../src/shared/i18n/de.json'
+import en from '../../src/shared/i18n/en.json'
 import { invitationQrView, QR_UNREACHABLE_KEY } from '../../src/core/invitationQr'
 
 describe('what the admin panel shows for an invitation QR code', () => {

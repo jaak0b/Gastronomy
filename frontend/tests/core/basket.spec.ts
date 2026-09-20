@@ -7,7 +7,7 @@ import {
 } from '../../src/core/basket'
 import { orderTotalCents } from '../../src/core/totals'
 import { DRAFT_STORAGE_KEY } from '../../src/core/draftCart'
-import type { Catalog, DraftOrder } from '../../src/core/apiTypes'
+import type { Catalog, DraftOrder } from '../../src/shared/api/apiTypes'
 
 function catalog(): Catalog {
   return {

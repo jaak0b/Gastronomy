@@ -1,5 +1,5 @@
-import de from '../locales/de.json'
-import type { ApiErrorBody } from './apiError'
+import de from '../shared/i18n/de.json'
+import type { ApiErrorBody } from '../shared/api/apiError'
 
 export interface AdminErrorMessage {
   key: string

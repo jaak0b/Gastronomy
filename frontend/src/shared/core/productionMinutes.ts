@@ -1,4 +1,4 @@
-import type { AppLanguage } from './apiTypes'
+import type { AppLanguage } from '../api/apiTypes'
 import { assertNever } from './assertNever'
 
 export const LONGEST_PRODUCTION_MINUTES = 600

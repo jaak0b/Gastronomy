@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { currentRoute, keepTheDeviceBehindTheDoor, needsTheDoorOpened } from './router'
-import { bindLocaleToSession } from './localeBinding'
-import { screenTitle } from './core/appTitle'
-import { screenFor, type ScreenName } from './core/landing'
-import { useSessionStore } from './stores/session'
+import { currentRoute } from './shared/router/router'
+import {
+  backButtonTrapNeedsBuilding,
+  markBackButtonTrapActive,
+} from './shared/router/backButtonTrap'
+import { useLocaleBinding } from './shared/composables/useLocaleBinding'
+import { screenTitle } from './shared/core/appTitle'
+import { isPhoneScreen, screenFor, type ScreenName } from './shared/core/landing'
+import { useSessionStore } from './shared/stores/session'
 import { useStationStore } from './stores/station'
 import { useCatalogStore } from './stores/catalog'
-import { useConnectionStore } from './stores/connection'
+import { useConnectionStore } from './shared/stores/connection'
 import { useEstimatesStore } from './stores/estimates'
 import AppHeader from './components/header/AppHeader.vue'
 import AppNotices from './components/header/AppNotices.vue'
-import EnrolQr from './views/EnrolQr.vue'
-import DoorGate from './views/DoorGate.vue'
-import Welcome from './views/Welcome.vue'
-import StartingUp from './views/StartingUp.vue'
+import EnrolQr from './shared/views/EnrolQr.vue'
+import DoorGate from './shared/views/DoorGate.vue'
+import Welcome from './shared/views/Welcome.vue'
+import StartingUp from './shared/views/StartingUp.vue'
 import Catalog from './views/Catalog.vue'
 import Review from './views/Review.vue'
 import OpenItems from './views/OpenItems.vue'
@@ -30,10 +34,10 @@ const estimates = useEstimatesStore()
 
 const { t } = useI18n()
 
-bindLocaleToSession()
+useLocaleBinding(() => session.language)
 
 const screen = computed<ScreenName>(() => {
-  if (needsTheDoorOpened()) {
+  if (backButtonTrapNeedsBuilding()) {
     return 'doorGate'
   }
   return screenFor(session.deviceSession, currentRoute.value)
@@ -45,7 +49,7 @@ watch(
     if (shown === 'doorGate') {
       return
     }
-    keepTheDeviceBehindTheDoor()
+    markBackButtonTrapActive(currentRoute.value)
   },
   { immediate: true },
 )
@@ -62,21 +66,19 @@ watch(
   { immediate: true },
 )
 
-const isAWaiterScreen = computed(
-  () => screen.value === 'catalog' || screen.value === 'review' || screen.value === 'openItems',
-)
+const isAWaiterScreen = computed(() => isPhoneScreen(screen.value))
 
 const showsTheAppBar = computed(() => isAWaiterScreen.value && screen.value !== 'review')
 
-let areTheWaiterListenersInPlace = false
+let catalogListenersStarted = false
 
-async function followTheCatalog(): Promise<void> {
-  if (!areTheWaiterListenersInPlace) {
-    areTheWaiterListenersInPlace = true
-    catalog.listen()
-    estimates.listen()
+function ensureCatalogListenersStarted(): void {
+  if (catalogListenersStarted) {
+    return
   }
-  await catalog.load()
+  catalogListenersStarted = true
+  catalog.listen()
+  estimates.listen()
 }
 
 watch(
@@ -91,7 +93,8 @@ watch(
 
 watch(isAWaiterScreen, async (isTheWaiterApp) => {
   if (isTheWaiterApp) {
-    await followTheCatalog()
+    ensureCatalogListenersStarted()
+    await catalog.load()
   }
 })
 
@@ -110,7 +113,8 @@ onMounted(async () => {
   }
   await connection.connect({ deviceToken: session.deviceToken })
   if (isAWaiterScreen.value) {
-    await followTheCatalog()
+    ensureCatalogListenersStarted()
+    await catalog.load()
   }
 })
 </script>

@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
-import { orderSubmitResponseSchema } from '../core/apiSchemas'
+import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../shared/api/client'
+import { orderSubmitResponseSchema } from '../shared/api/apiSchemas'
 import type {
   ConfirmedSettlement,
   DeliveryMode,
   DraftLine,
   DraftOrder,
   OrderSubmitRequest,
-} from '../core/apiTypes'
+} from '../shared/api/apiTypes'
 import {
   addLine,
   clearDraft,
@@ -34,7 +34,7 @@ import {
   type SendProgress,
   type SendState,
 } from '../core/sendProgress'
-import { assertNever } from '../core/assertNever'
+import { assertNever } from '../shared/core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
 import { buildStationDeliveryModes, buildStationOrders, chosenDeliveryMode } from '../core/stationOrders'
 import {
@@ -47,7 +47,7 @@ import { orderTotalCents } from '../core/totals'
 import { messageForSendFailure, type SendFailureMessage } from '../core/sendFailure'
 import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { useCatalogStore } from './catalog'
-import { useSessionStore } from './session'
+import { useSessionStore } from '../shared/stores/session'
 
 export const ARRIVAL_NOTICE_MS = 8000
 

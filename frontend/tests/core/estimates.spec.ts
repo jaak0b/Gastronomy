@@ -5,7 +5,7 @@ import {
   stationEstimateAfterAdding,
   stationReadyInMinutes,
 } from '../../src/core/estimates'
-import type { CatalogItem, StationEstimate } from '../../src/core/apiTypes'
+import type { CatalogItem, StationEstimate } from '../../src/shared/api/apiTypes'
 import type { BasketLineView } from '../../src/core/basket'
 
 const QUEUES: StationEstimate[] = [

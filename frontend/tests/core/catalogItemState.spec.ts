@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isLineFlaggedSoldOut, itemState } from '../../src/core/catalogItemState'
-import type { Catalog, CatalogItem } from '../../src/core/apiTypes'
+import type { Catalog, CatalogItem } from '../../src/shared/api/apiTypes'
 import type { BasketLineView } from '../../src/core/basket'
 
 function item(id: string, isAvailable: boolean): CatalogItem {

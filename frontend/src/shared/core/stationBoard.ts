@@ -1,7 +1,8 @@
-import type { ApiErrorBody } from './apiError'
-import type { DeliveryMode, StationOrder, StationOrderItem } from './apiTypes'
+import type { ApiErrorBody } from '../api/apiError'
+import type { DeliveryMode, StationOrder, StationOrderItem } from '../api/apiTypes'
 import { assertNever } from './assertNever'
-import { collapseLines } from './collapse'
+import { mergeLinesWithSameArticleAndNote } from './collapse'
+import type { Translate } from './translation'
 
 export type StationFailure =
   | { kind: 'unreachable' }
@@ -44,7 +45,9 @@ export function deliveryModeKey(deliveryMode: DeliveryMode): string {
   }
 }
 
-export function deliveryModeColour(deliveryMode: DeliveryMode): 'together' | 'individual' {
+export type ColourToken = 'together' | 'individual'
+
+export function deliveryModeColourToken(deliveryMode: DeliveryMode): ColourToken {
   switch (deliveryMode) {
     case 'together':
       return 'together'
@@ -76,7 +79,7 @@ function compareLines(left: ItemLine, right: ItemLine): number {
 }
 
 export function itemLines(items: readonly StationOrderItem[]): ItemLine[] {
-  return collapseLines(
+  return mergeLinesWithSameArticleAndNote(
     items,
     (item) => item.itemName,
     (item) => item.note,
@@ -89,9 +92,7 @@ export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {
   )
 }
 
-export type StationLineWording = (key: string, values?: Record<string, string | number>) => string
-
-export function itemLineText(line: ItemLine, t: StationLineWording): string {
+export function itemLineText(line: ItemLine, t: Translate): string {
   const counted = t('station.itemUnits', { count: line.units, item: line.itemName })
   if (line.note === null) {
     return counted

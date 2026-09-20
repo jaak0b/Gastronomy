@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request, requestAction, type ApiResult } from '../../api/client'
-import { adminItemsResponseSchema, createdItemSchema } from '../../core/apiSchemas'
+import { request, requestAction, type ApiResult } from '../../shared/api/client'
+import { adminItemsResponseSchema, createdItemSchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
-import type { AdminItem } from '../../core/apiTypes'
-import { assertNever } from '../../core/assertNever'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import type { AdminItem } from '../../shared/api/apiTypes'
+import { assertNever } from '../../shared/core/assertNever'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 
 export interface AdminItemDraft {
   itemId?: string
@@ -36,9 +36,9 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   async function loadItemsFrom(path: string): Promise<void> {
     loadFailed.value = false
-    const token = itemsGate.start()
+    const token = itemsGate.startRequest()
     const result = await request(path, { schema: adminItemsResponseSchema })
-    if (!itemsGate.isCurrent(token)) {
+    if (!itemsGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

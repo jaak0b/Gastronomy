@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildSubmitRequest, ensureClientOrderId } from '../../src/core/submission'
-import type { Catalog } from '../../src/core/apiTypes'
+import type { Catalog } from '../../src/shared/api/apiTypes'
 import {
   addLine,
   clearDraft,

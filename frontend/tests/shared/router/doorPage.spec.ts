@@ -111,32 +111,32 @@ describe('the start button', () => {
   })
 
   it('is asked for on a tab where the doors were never opened', async () => {
-    const { needsTheDoorOpened } = await import('../../src/router')
+    const { backButtonTrapNeedsBuilding } = await import('../../../src/shared/router/backButtonTrap')
 
-    expect(needsTheDoorOpened()).toBe(true)
+    expect(backButtonTrapNeedsBuilding()).toBe(true)
   })
 
   it('is not asked for again once the tab was opened', async () => {
-    const { needsTheDoorOpened, THE_DOOR_ANCHOR_KEY } = await import('../../src/router')
-    sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, 'yes')
+    const { BACK_BUTTON_TRAP_ANCHOR_KEY, backButtonTrapNeedsBuilding } = await import('../../../src/shared/router/backButtonTrap')
+    sessionStorage.setItem(BACK_BUTTON_TRAP_ANCHOR_KEY, 'yes')
 
-    expect(needsTheDoorOpened()).toBe(false)
+    expect(backButtonTrapNeedsBuilding()).toBe(false)
   })
 
   it('is asked for when the stored answer is not the one the door writes', async () => {
-    const { needsTheDoorOpened, THE_DOOR_ANCHOR_KEY } = await import('../../src/router')
-    sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, '{"opened":true}')
+    const { BACK_BUTTON_TRAP_ANCHOR_KEY, backButtonTrapNeedsBuilding } = await import('../../../src/shared/router/backButtonTrap')
+    sessionStorage.setItem(BACK_BUTTON_TRAP_ANCHOR_KEY, '{"opened":true}')
 
-    expect(needsTheDoorOpened()).toBe(true)
+    expect(backButtonTrapNeedsBuilding()).toBe(true)
   })
 
   it('is marked with a target the boot script can use', async () => {
-    const { openTheDoor, THE_DOOR_ANCHOR_KEY, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+    const { BACK_BUTTON_TRAP_ANCHOR_KEY, BACK_BUTTON_TRAP_RETURN_PATH_KEY, buildBackButtonTrap } = await import('../../../src/shared/router/backButtonTrap')
 
-    openTheDoor()
+    buildBackButtonTrap()
 
-    expect(sessionStorage.getItem(THE_DOOR_ANCHOR_KEY)).toBe('yes')
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_ANCHOR_KEY)).toBe('yes')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
 })
 
@@ -171,9 +171,9 @@ describe('the door page', () => {
     vi.resetModules()
     sessionStorage.clear()
     window.history.replaceState({}, '', '/')
-    const { openTheDoor } = await import('../../src/router')
+    const { buildBackButtonTrap } = await import('../../../src/shared/router/backButtonTrap')
 
-    openTheDoor()
+    buildBackButtonTrap()
     const storage: TheStorage = new Map()
     for (let index = 0; index < sessionStorage.length; index += 1) {
       const key = sessionStorage.key(index)!
@@ -201,25 +201,25 @@ describe('a browser that comes back to the anchor', () => {
   })
 
   it('rebuilds the doors when the browser restores the anchor', async () => {
-    const { openTheDoor, theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+    const { backButtonTrapNeedsRebuildOnRestore, buildBackButtonTrap } = await import('../../../src/shared/router/backButtonTrap')
 
-    openTheDoor()
+    buildBackButtonTrap()
 
-    expect(theDoorNeedsRebuildingWhenShown(true)).toBe(true)
+    expect(backButtonTrapNeedsRebuildOnRestore(true)).toBe(true)
   })
 
   it('leaves the first show of the screen alone', async () => {
-    const { openTheDoor, theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+    const { backButtonTrapNeedsRebuildOnRestore, buildBackButtonTrap } = await import('../../../src/shared/router/backButtonTrap')
 
-    openTheDoor()
+    buildBackButtonTrap()
 
-    expect(theDoorNeedsRebuildingWhenShown(false)).toBe(false)
+    expect(backButtonTrapNeedsRebuildOnRestore(false)).toBe(false)
   })
 
   it('has nothing to rebuild in a document that never opened the doors', async () => {
-    const { theDoorNeedsRebuildingWhenShown } = await import('../../src/router')
+    const { backButtonTrapNeedsRebuildOnRestore } = await import('../../../src/shared/router/backButtonTrap')
 
-    expect(theDoorNeedsRebuildingWhenShown(true)).toBe(false)
+    expect(backButtonTrapNeedsRebuildOnRestore(true)).toBe(false)
   })
 })
 
@@ -232,8 +232,9 @@ describe('a device that arrived through the door', () => {
   })
 
   it('replaces its entry when it moves between screens, so the doors stay behind it', async () => {
-    const { currentRoute, keepTheDeviceBehindTheDoor, navigate } = await import('../../src/router')
-    keepTheDeviceBehindTheDoor()
+    const { currentRoute, navigate } = await import('../../../src/shared/router/router')
+    const { markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
+    markBackButtonTrapActive(currentRoute.value)
     const entries = window.history.length
 
     navigate('/review')
@@ -245,57 +246,59 @@ describe('a device that arrived through the door', () => {
   })
 
   it('remembers the ordering screen as where a back press lands from the review screen', async () => {
-    const { keepTheDeviceBehindTheDoor, navigate, THE_DOOR_TARGET_KEY } = await import(
-      '../../src/router'
-    )
-    keepTheDeviceBehindTheDoor()
+    const { currentRoute, navigate } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY, markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
+    markBackButtonTrapActive(currentRoute.value)
 
     navigate('/review')
 
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
 
   it('remembers the ordering screen as where a back press lands from the open items screen', async () => {
-    const { keepTheDeviceBehindTheDoor, navigate, THE_DOOR_TARGET_KEY } = await import(
-      '../../src/router'
-    )
-    keepTheDeviceBehindTheDoor()
+    const { currentRoute, navigate } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY, markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
+    markBackButtonTrapActive(currentRoute.value)
 
     navigate('/open-items')
 
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
   })
 
   it('remembers the station screen as where a back press lands on a tablet', async () => {
     window.history.replaceState({}, '', '/stations')
-    const { keepTheDeviceBehindTheDoor, navigate, THE_DOOR_TARGET_KEY } = await import(
-      '../../src/router'
-    )
-    keepTheDeviceBehindTheDoor()
+    const { currentRoute, navigate } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY, markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
+    markBackButtonTrapActive(currentRoute.value)
 
     navigate('/stations')
 
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/stations')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/stations')
   })
 
   it('remembers the invitation address until the phone is set up', async () => {
     window.history.replaceState({}, '', '/j/abc123')
-    const { keepTheDeviceBehindTheDoor, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+    const { currentRoute } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY, markBackButtonTrapActive } = await import('../../../src/shared/router/backButtonTrap')
 
-    keepTheDeviceBehindTheDoor()
+    markBackButtonTrapActive(currentRoute.value)
 
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/j/abc123')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/j/abc123')
   })
 
   it('moves the back target with a fresh start, so it cannot land on the screen before', async () => {
-    const { startOverAt, THE_DOOR_ANCHOR_KEY, THE_DOOR_TARGET_KEY, THE_DOOR_ARRIVAL_KEY } =
-      await import('../../src/router')
+    const { startOverAt } = await import('../../../src/shared/router/router')
+    const {
+      BACK_BUTTON_TRAP_ANCHOR_KEY,
+      BACK_BUTTON_TRAP_FRESH_START_KEY,
+      BACK_BUTTON_TRAP_RETURN_PATH_KEY,
+    } = await import('../../../src/shared/router/backButtonTrap')
 
     startOverAt('/')
 
-    expect(sessionStorage.getItem(THE_DOOR_ANCHOR_KEY)).toBe('yes')
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBe('/')
-    expect(sessionStorage.getItem(THE_DOOR_ARRIVAL_KEY)).toBe('yes')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_ANCHOR_KEY)).toBe('yes')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBe('/')
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_FRESH_START_KEY)).toBe('yes')
   })
 })
 
@@ -308,7 +311,7 @@ describe('a tab where the doors were never opened', () => {
 
   it('keeps the browser step between its screens', async () => {
     window.history.pushState({}, '', '/admin/overview')
-    const { currentRoute, navigate, startRouter } = await import('../../src/router')
+    const { currentRoute, navigate, startRouter } = await import('../../../src/shared/router/router')
     startRouter()
     navigate('/admin/items')
 
@@ -324,11 +327,12 @@ describe('a tab where the doors were never opened', () => {
 
   it('never takes the doors or a back target', async () => {
     window.history.pushState({}, '', '/admin/overview')
-    const { navigate, startRouter, THE_DOOR_TARGET_KEY } = await import('../../src/router')
+    const { navigate, startRouter } = await import('../../../src/shared/router/router')
+    const { BACK_BUTTON_TRAP_RETURN_PATH_KEY } = await import('../../../src/shared/router/backButtonTrap')
     startRouter()
 
     navigate('/admin/items')
 
-    expect(sessionStorage.getItem(THE_DOOR_TARGET_KEY)).toBeNull()
+    expect(sessionStorage.getItem(BACK_BUTTON_TRAP_RETURN_PATH_KEY)).toBeNull()
   })
 })

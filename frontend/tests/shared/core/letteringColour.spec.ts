@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { letteringColourOn } from '../../src/core/letteringColour'
+import { letteringColourOn } from '../../../src/shared/core/letteringColour'
 
 describe('the lettering on a category colour', () => {
   it('is black on a bright colour', () => {

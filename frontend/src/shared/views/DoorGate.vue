@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { openTheDoor } from '../router'
+import { buildBackButtonTrap } from '../router/backButtonTrap'
 
 const { t } = useI18n()
 const theIcon = '/favicon.svg'
@@ -11,7 +11,7 @@ const theIcon = '/favicon.svg'
     <div class="door-gate-panel text-center">
       <img class="door-gate-icon" :src="theIcon" alt="" />
       <p class="door-gate-hint text-body-1 mb-6">{{ t('doorGate.hint') }}</p>
-      <v-btn class="door-gate-open" color="primary" size="x-large" block @click="openTheDoor">
+      <v-btn class="door-gate-open" color="primary" size="x-large" block @click="buildBackButtonTrap">
         {{ t('doorGate.open') }}
       </v-btn>
     </div>

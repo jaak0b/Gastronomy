@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { assertNever } from '../../core/assertNever'
-import { useConnectionStore } from '../../stores/connection'
+import { assertNever } from '../../shared/core/assertNever'
+import { useConnectionStore } from '../../shared/stores/connection'
 import { useOrderStore } from '../../stores/order'
 
 const { t } = useI18n()

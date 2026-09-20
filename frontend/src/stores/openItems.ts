@@ -1,18 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request, type ApiResult } from '../api/client'
+import { request, type ApiResult } from '../shared/api/client'
 import {
   openItemsResponseSchema,
   settlementResponseSchema,
   tableNamesResponseSchema,
-} from '../core/apiSchemas'
+} from '../shared/api/apiSchemas'
 import type {
   OpenItemsSettleLine,
   OpenTable,
   SettlementResponse,
-} from '../core/apiTypes'
-import { assertNever } from '../core/assertNever'
-import { createLatestRequestGate } from '../core/latestRequestGate'
+} from '../shared/api/apiTypes'
+import { assertNever } from '../shared/core/assertNever'
+import { createLatestRequestGate } from '../shared/core/latestRequestGate'
 import {
   noticeAfterSettling,
   selectedAmountCents,
@@ -25,8 +25,8 @@ import {
 } from '../core/openItems'
 import { SEND_TIMEOUT_MS } from '../core/sendTimeout'
 import { splitSettlement } from '../core/settlementSplit'
-import { useConnectionStore } from './connection'
-import { useSessionStore } from './session'
+import { useConnectionStore } from '../shared/stores/connection'
+import { useSessionStore } from '../shared/stores/session'
 
 export const useOpenItemsStore = defineStore('openItems', () => {
   const tables = ref<OpenTable[]>([])
@@ -53,12 +53,12 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (deviceToken() === null) {
       return
     }
-    const token = tablesGate.start()
+    const token = tablesGate.startRequest()
     const result = await request('/api/open-items', {
       token: deviceToken(),
       schema: openItemsResponseSchema,
     })
-    if (!tablesGate.isCurrent(token)) {
+    if (!tablesGate.isNewestRequest(token)) {
       return
     }
     loadFailed.value = result.kind !== 'ok'
@@ -75,12 +75,12 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (deviceToken() === null) {
       return
     }
-    const token = tableNamesGate.start()
+    const token = tableNamesGate.startRequest()
     const result = await request('/api/open-items/table-names', {
       token: deviceToken(),
       schema: tableNamesResponseSchema,
     })
-    if (!tableNamesGate.isCurrent(token)) {
+    if (!tableNamesGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

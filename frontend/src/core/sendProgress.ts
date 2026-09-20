@@ -1,5 +1,5 @@
-import { assertNever } from './assertNever'
-import type { OrderSubmitRequest } from './apiTypes'
+import { assertNever } from '../shared/core/assertNever'
+import type { OrderSubmitRequest } from '../shared/api/apiTypes'
 import { messageForAnInterruptedSend, type SendFailureMessage } from './sendFailure'
 
 export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted'] as const

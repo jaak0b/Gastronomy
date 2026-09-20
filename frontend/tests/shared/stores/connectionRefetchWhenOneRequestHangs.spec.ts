@@ -25,7 +25,7 @@ vi.mock('@microsoft/signalr', () => {
   return { HubConnectionBuilder, HubConnectionState: { Disconnected: 'Disconnected' } }
 })
 
-const { useConnectionStore } = await import('../../src/stores/connection')
+const { useConnectionStore } = await import('../../../src/shared/stores/connection')
 
 describe('a refetch whose request never answers', () => {
   beforeEach(() => {

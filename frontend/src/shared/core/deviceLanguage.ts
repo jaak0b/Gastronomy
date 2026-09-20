@@ -1,4 +1,4 @@
-import type { AppLanguage } from './core/apiTypes'
+import type { AppLanguage } from '../api/apiTypes'
 
 export const LANGUAGE_STORAGE_KEY = 'language'
 

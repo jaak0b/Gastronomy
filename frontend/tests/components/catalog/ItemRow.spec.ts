@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import ItemRow from '../../../src/components/catalog/ItemRow.vue'
 import { useKeyboardInset } from '../../../src/composables/useKeyboardInset'
-import type { CatalogItem } from '../../../src/core/apiTypes'
+import type { CatalogItem } from '../../../src/shared/api/apiTypes'
 import type { EstimateRange } from '../../../src/core/estimates'
 import type { ItemPosition } from '../../../src/core/itemPositions'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import de from '../../../src/shared/i18n/de.json'
+import en from '../../../src/shared/i18n/en.json'
 
 enableAutoUnmount(afterEach)
 

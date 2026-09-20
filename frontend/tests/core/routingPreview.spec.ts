@@ -5,7 +5,7 @@ import {
   routedStationId,
   stationStillPreparesIt,
 } from '../../src/core/routingPreview'
-import type { CatalogItem } from '../../src/core/apiTypes'
+import type { CatalogItem } from '../../src/shared/api/apiTypes'
 
 function item(stationIds: string[]): CatalogItem {
   return {

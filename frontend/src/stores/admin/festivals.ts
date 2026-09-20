@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request, requestAction, type ApiResult } from '../../api/client'
-import { adminFestivalsResponseSchema } from '../../core/apiSchemas'
+import { request, requestAction, type ApiResult } from '../../shared/api/client'
+import { adminFestivalsResponseSchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
-import type { AdminFestival } from '../../core/apiTypes'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import type { AdminFestival } from '../../shared/api/apiTypes'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 
 export interface FestivalDraft {
   name: string
@@ -35,11 +35,11 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
 
   async function load(): Promise<void> {
     loadFailed.value = false
-    const token = festivalsGate.start()
+    const token = festivalsGate.startRequest()
     const result = await request('/api/admin/festivals', {
       schema: adminFestivalsResponseSchema,
     })
-    if (!festivalsGate.isCurrent(token)) {
+    if (!festivalsGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

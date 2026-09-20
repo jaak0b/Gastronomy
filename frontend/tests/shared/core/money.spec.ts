@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../src/core/money'
+import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../../src/shared/core/money'
 
 describe('parseEuroInput, what an admin types', () => {
   it('reads a German price with a comma', () => {

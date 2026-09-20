@@ -6,10 +6,10 @@ import type {
   ConfirmedSettlement,
   DeliveryMode,
   StationEstimate,
-} from '../../core/apiTypes'
+} from '../../shared/api/apiTypes'
 import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
-import { deliveryModeKey } from '../../core/stationBoard'
+import { deliveryModeKey } from '../../shared/core/stationBoard'
 import { stationDeliveries, type StationDelivery } from '../../core/stationDeliveries'
 import { formatPrice } from '../../core/totals'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'

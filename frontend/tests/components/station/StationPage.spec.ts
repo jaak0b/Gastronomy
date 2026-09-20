@@ -3,8 +3,8 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import StationPage from '../../../src/views/StationPage.vue'
-import { bindLocaleToSession } from '../../../src/localeBinding'
-import { useSessionStore } from '../../../src/stores/session'
+import { useLocaleBinding } from '../../../src/shared/composables/useLocaleBinding'
+import { useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 
 const KITCHEN = { id: 'station-kueche', name: 'Küche' }
@@ -167,7 +167,8 @@ async function mountPage(): Promise<VueWrapper> {
 const StationPageFollowingTheLanguage = defineComponent({
   components: { StationPage },
   setup() {
-    bindLocaleToSession()
+    const session = useSessionStore()
+    useLocaleBinding(() => session.language)
   },
   template: '<StationPage />',
 })

@@ -3,7 +3,8 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppHeader from '../../../src/components/header/AppHeader.vue'
-import { bindLocaleToSession } from '../../../src/localeBinding'
+import { useLocaleBinding } from '../../../src/shared/composables/useLocaleBinding'
+import { useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
 
 const AppBarStub = {
@@ -13,7 +14,8 @@ const AppBarStub = {
 const HeaderFollowingTheLanguage = defineComponent({
   components: { AppHeader },
   setup() {
-    bindLocaleToSession()
+    const session = useSessionStore()
+    useLocaleBinding(() => session.language)
   },
   template: '<AppHeader />',
 })

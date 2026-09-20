@@ -1,4 +1,4 @@
-import type { ScreenName } from './landing'
+import { isPhoneScreen, type ScreenName } from './landing'
 import { assertNever } from './assertNever'
 
 export const APP_NAME = 'GastronomyApp'
@@ -8,13 +8,12 @@ export function screenTitle(
   stationName: string | null,
   t: (key: string) => string,
 ): string {
+  if (isPhoneScreen(screen)) {
+    return t('app.title.waiter')
+  }
   switch (screen) {
     case 'station':
       return stationName === null || stationName === '' ? APP_NAME : stationName
-    case 'catalog':
-    case 'review':
-    case 'openItems':
-      return t('app.title.waiter')
     case 'admin':
       return t('app.title.admin')
     case 'doorGate':

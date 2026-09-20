@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/views/Review.vue'
 import { useCatalogStore } from '../../../src/stores/catalog'
 import { useOrderStore } from '../../../src/stores/order'
-import { currentRoute, navigate } from '../../../src/router'
+import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { saveDraft, saveSendProgress } from '../../../src/core/draftCart'
 import { testPlugins } from '../../support/plugins'
 

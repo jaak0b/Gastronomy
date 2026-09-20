@@ -1,17 +1,35 @@
-import type { DeviceKind } from './apiTypes'
-import type { AppRoute } from './route'
+import type { DeviceKind } from '../api/apiTypes'
+import type { AppRoute } from '../router/route'
 import { assertNever } from './assertNever'
 
+export type PhoneScreenName = 'catalog' | 'review' | 'openItems'
+
 export type ScreenName =
+  | PhoneScreenName
   | 'doorGate'
   | 'enrolQr'
   | 'welcome'
   | 'startingUp'
-  | 'catalog'
-  | 'review'
-  | 'openItems'
   | 'station'
   | 'admin'
+
+export function isPhoneScreen(screen: ScreenName): screen is PhoneScreenName {
+  switch (screen) {
+    case 'catalog':
+    case 'review':
+    case 'openItems':
+      return true
+    case 'doorGate':
+    case 'enrolQr':
+    case 'welcome':
+    case 'startingUp':
+    case 'station':
+    case 'admin':
+      return false
+    default:
+      return assertNever(screen)
+  }
+}
 
 export type DeviceSession =
   | { state: 'notSetUp' }

@@ -21,8 +21,8 @@ Three audiences in one build:
 
 0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: a subagent prompt that concerns TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
 
-1. **Keep the core framework-agnostic and modular.** Code in `src/core/` must not import Vue or Pinia
-   and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
+1. **Keep the core framework-agnostic and modular.** Code in any `core/` folder, under `src/shared/`
+   or under a surface, must not import Vue or Pinia and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
    and submission identity are plain TypeScript, so they are testable without mounting anything.
 
 2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order status, a
@@ -69,7 +69,7 @@ Three audiences in one build:
    Any implementation that gives the phone a list, a timer that sends, or a rule for sending
    without a person pressing something has rebuilt the queue under another name and must be
    rejected in review. The client-generated submission id that makes retry safe against a lost
-   response lives in `src/core/` with tests.
+   response lives in `src/phone/core/` with tests.
 
 5. **Localization through vue-i18n, German and English complete in the same change.** No string
    literals in templates or components. A key present in one locale only is an incomplete change.
@@ -81,7 +81,7 @@ Three audiences in one build:
 
 8. **Colour carries meaning, one meaning per colour.** Surfaces, navigation and structure stay
    neutral; saturated colour is reserved for meaning, and at most one filled coloured control appears
-   per view. The palette lives in `src/theme.ts` and UI code uses its tokens, never raw hex values:
+   per view. The palette lives in `src/shared/theme.ts` and UI code uses its tokens, never raw hex values:
    - `primary` neutral contrast: every action and the active navigation, the only interactive colour.
    - `together` blue and `individual` orange: the two delivery modes, on card borders, mode words and
      chips.
@@ -108,19 +108,21 @@ Three audiences in one build:
 - **The device kind decides the screen.** A station tablet lands on the station screen and stays
   there; a waiter's phone keeps the ordering flow. A device that is set up but has not yet heard
   back from the laptop shows a starting screen until it does. That decision lives in
-  `src/core/landing.ts`, not in a component.
+  `src/shared/core/landing.ts`, not in a component.
 - **A delivery mode is chosen once, before sending, and never afterwards.** The server picks, per
   station, whether that station hands its part of the order out together or as each item is ready.
   No screen may offer to change it after the order is sent.
-- **A device tab opens through the start screen, and the doors stay behind it.** Chromium and WebKit
-  skip history entries created by a page that navigated the user on without any interaction, so no
-  automatic back trap survives on its own. The start screen (`DoorGate.vue`) needs one tap: that
-  activation makes the screen the unskippable anchor. Only then is the chain of real `door.html`
-  pages built, and every back press skips the chain and lands on the anchor, which rebuilds it and
-  returns the device to the app. Never build the chain at load, never remove the start screen, and
-  never let a tab that sits behind the doors grow its history, which is what `navigate` doing
-  `replaceState` there preserves. The address of the chain carries the page's last-modified stamp so
-  a cached door from an older build can never be used.
+- **A device tab opens through the start screen, and the back-button trap stays behind it.** Chromium
+  and WebKit skip history entries created by a page that navigated the user on without any
+  interaction, so no automatic back trap survives on its own. The start screen (`DoorGate.vue`) needs
+  one tap: that activation makes the screen the unskippable anchor. Only then is the chain of real
+  `door.html` pages built, and every back press skips the chain and lands on the anchor, which
+  rebuilds it and returns the device to the app. The trap is its own module,
+  `src/shared/router/backButtonTrap.ts`, beside the router and never importing it. Never build the
+  chain at load, never remove the start screen, and never let a tab that sits behind the trap grow
+  its history, which is what `navigate` doing `replaceState` there preserves. The address of the
+  chain carries the page's last-modified stamp so a cached door from an older build can never be
+  used.
 - **No feature may require a service worker**, a secure context, or an installed PWA.
 
 ## Testing

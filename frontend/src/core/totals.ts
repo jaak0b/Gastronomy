@@ -1,7 +1,7 @@
-import type { AppLanguage } from './apiTypes'
-import { assertNever } from './assertNever'
+import type { AppLanguage } from '../shared/api/apiTypes'
+import { assertNever } from '../shared/core/assertNever'
 import type { BasketLineView } from './basket'
-import type { CollapsedLine } from './collapse'
+import type { CollapsedLine } from '../shared/core/collapse'
 
 export function collapsedTotalCents(entry: CollapsedLine<BasketLineView>): number | null {
   const unitPriceCents = entry.line.unitPriceCents

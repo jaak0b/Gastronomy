@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
+import type { AppLanguage, CatalogItem } from '../../shared/api/apiTypes'
 import type { EstimateRange } from '../../core/estimates'
 import type { ItemPosition } from '../../core/itemPositions'
 import ItemRow from './ItemRow.vue'

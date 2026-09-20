@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { request, requestAction } from '../../api/client'
-import { adminStaffMembersResponseSchema } from '../../core/apiSchemas'
+import { request, requestAction } from '../../shared/api/client'
+import { adminStaffMembersResponseSchema } from '../../shared/api/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
-import type { AdminStaffMember } from '../../core/apiTypes'
-import { createLatestRequestGate } from '../../core/latestRequestGate'
-import { useConnectionStore } from '../connection'
+import type { AdminStaffMember } from '../../shared/api/apiTypes'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { useConnectionStore } from '../../shared/stores/connection'
 import { useAdminEnrolmentStore } from './enrolment'
 
 export const useAdminStaffStore = defineStore('adminStaff', () => {
@@ -21,11 +21,11 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
 
   async function load(): Promise<void> {
     loadFailed.value = false
-    const token = staffMembersGate.start()
+    const token = staffMembersGate.startRequest()
     const result = await request('/api/admin/staff-members', {
       schema: adminStaffMembersResponseSchema,
     })
-    if (!staffMembersGate.isCurrent(token)) {
+    if (!staffMembersGate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {

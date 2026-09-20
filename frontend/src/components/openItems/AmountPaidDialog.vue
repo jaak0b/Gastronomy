@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage } from '../../core/apiTypes'
+import type { AppLanguage } from '../../shared/api/apiTypes'
 import type { SettleNotice } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'

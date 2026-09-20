@@ -9,7 +9,7 @@ export interface HubCredential {
 }
 
 export const POLLING_INTERVAL_MS = 15000
-export const RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 30000]
+export const RECONNECT_DELAYS_MS = [0, 2000, 5000, 10000, 30000] as const
 export const RECOVERED_NOTICE_MS = 5000
 
 export const useConnectionStore = defineStore('connection', () => {

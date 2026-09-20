@@ -4,7 +4,7 @@ import { fireHubEvent, forgetHubEvents, hubEventsRegistered } from '../support/h
 
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
-const { useConnectionStore } = await import('../../src/stores/connection')
+const { useConnectionStore } = await import('../../src/shared/stores/connection')
 const { useAdminEnrolmentStore } = await import('../../src/stores/admin/enrolment')
 const { useAdminCategoriesStore } = await import('../../src/stores/admin/categories')
 const { useAdminStaffStore } = await import('../../src/stores/admin/staff')

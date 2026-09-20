@@ -3,8 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import AdminOverview from '../../../src/components/admin/overview/AdminOverview.vue'
-import de from '../../../src/locales/de.json'
-import en from '../../../src/locales/en.json'
+import de from '../../../src/shared/i18n/de.json'
+import en from '../../../src/shared/i18n/en.json'
 
 const SUMMER = {
   festivalId: 'fest-1',

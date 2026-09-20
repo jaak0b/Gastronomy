@@ -1,5 +1,5 @@
 import { adminErrorMessage } from '../core/adminErrorMessage'
-import { isApiErrorBody } from '../core/apiError'
+import { isApiErrorBody } from '../shared/api/apiError'
 import type { InvitationQr } from '../core/invitationQr'
 
 export function invitationQrPath(invitationId: string): string {

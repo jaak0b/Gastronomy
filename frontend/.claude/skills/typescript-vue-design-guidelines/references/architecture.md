@@ -20,7 +20,7 @@ Trade-offs); pinia.vuejs.org/core-concepts (Using the store); vuejs.org/guide/re
 
 - **A plain module** holds stateless logic: a function that takes input and immediately returns the
   expected output, such as a date formatter. The Vue guide names lodash and date-fns as libraries of
-  this kind. `parseEuroInput(typed)` in `core/money.ts` is that shape: no reactivity, no lifecycle.
+  this kind. `parseEuroInput(typed)` in `shared/core/money.ts` is that shape: no reactivity, no lifecycle.
 - **A composable** holds stateful logic: state that changes over time, tracked with the Composition
   API (a mouse position, a touch gesture, a connection status). Each component instance that calls
   a composable gets its own copy of that state, so composables do not share state between components.
@@ -188,8 +188,8 @@ Source: pinia.vuejs.org/cookbook/composing-stores
 
 ## Router
 
-This application keeps its hand-written router (`core/route.ts` and `router/index.ts`) and does
-not adopt Vue Router. The rules below apply to any client-side router and are checked against the
+This application keeps its hand-written router (`shared/router/route.ts`, `shared/router/router.ts`
+and `shared/router/backButtonTrap.ts`) and does not adopt Vue Router. The rules below apply to any client-side router and are checked against the
 hand-written one. Where a rule cites no source page, it is this repository's own rule.
 
 ### One route value, one navigation function
@@ -203,15 +203,15 @@ Source: none; this repository's own rule.
 - A route's shape is a discriminated union type, so every branch on the route name is exhaustive
   and ends in `assertNever`.
 
-### Lazy screen components
+### Screen components are loaded up front
 
-Source: router.vuejs.org/guide/advanced/lazy-loading
+Source: none; this is the owner's decision, not a source rule.
 
-- A screen component is loaded lazily, per surface, with a dynamic import
-  (`() => import('./StationPage.vue')`), so a phone never downloads the tablet or admin screens.
-  The Vue Router page says the same for every route component: always use a dynamic import, and
-  the bundler splits the chunk. An async component (`defineAsyncComponent`) is not the way to do
-  it; the lazy import function is.
+- Every screen component is imported at the top of the file that renders it, never through a
+  dynamic import. The whole bundle is small, it is served from the laptop on site over the
+  festival's own WiFi, and a chunk fetched only when a screen opens could fail at the moment a
+  server taps it. The Vue Router page asks for a dynamic import per route component, and it is not
+  followed here for that reason.
 
 ### Where a navigation decision lives
 
@@ -228,8 +228,9 @@ Source: router.vuejs.org/guide/advanced/navigation-guards (Global Before Guards,
 
 Source: none; this repository's own rule.
 
-- The back-button trap (the "door" in `router/index.ts`) is a separate concern and belongs in its
-  own module beside the router, not inside it.
+- The back-button trap lives in `shared/router/backButtonTrap.ts`, its own module beside the
+  router. It never imports the router: what it needs when the anchor comes back is passed to it as
+  arguments.
 
 ## Layers and the import rule
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
+import type { AppLanguage, CatalogItem } from '../../shared/api/apiTypes'
 import { itemState } from '../../core/catalogItemState'
-import { assertNever } from '../../core/assertNever'
+import { assertNever } from '../../shared/core/assertNever'
 import type { EstimateRange } from '../../core/estimates'
 import { estimateRangeText } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'

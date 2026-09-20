@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupByCategory } from '../../src/core/grouping'
+import { groupByCategorySortingItemsByName } from '../../../src/shared/core/grouping'
 
 interface Category {
   categoryId: string
@@ -15,7 +15,7 @@ const DRINKS: Category = { categoryId: 'category-drinks', name: 'Getränke' }
 const FOOD: Category = { categoryId: 'category-food', name: 'Speisen' }
 
 function group(categories: Category[], rows: Row[]) {
-  return groupByCategory(
+  return groupByCategorySortingItemsByName(
     categories,
     rows,
     (category) => category.categoryId,
@@ -24,7 +24,7 @@ function group(categories: Category[], rows: Row[]) {
   )
 }
 
-describe('groupByCategory', () => {
+describe('groupByCategorySortingItemsByName', () => {
   it('puts every item under the category it belongs to', () => {
     const grouped = group(
       [DRINKS, FOOD],

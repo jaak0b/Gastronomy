@@ -18,7 +18,7 @@ import {
   setTableName,
   stampFestival,
 } from '../../src/core/draftCart'
-import type { DraftLine, OrderSubmitRequest } from '../../src/core/apiTypes'
+import type { DraftLine, OrderSubmitRequest } from '../../src/shared/api/apiTypes'
 
 function bratwurstLine(): DraftLine {
   return {

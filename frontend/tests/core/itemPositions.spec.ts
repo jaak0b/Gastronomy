@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { groupPositions, countItemPortions, positionsForItem } from '../../src/core/itemPositions'
 import type { ItemPosition } from '../../src/core/itemPositions'
-import type { CatalogItem, DraftLine, DraftOrder } from '../../src/core/apiTypes'
+import type { CatalogItem, DraftLine, DraftOrder } from '../../src/shared/api/apiTypes'
 
 function item(stationIds: string[]): CatalogItem {
   return {

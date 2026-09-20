@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { countCategoryPortions } from '../../src/core/categoryPortions'
-import type { CatalogItem, DraftLine, DraftOrder } from '../../src/core/apiTypes'
+import type { CatalogItem, DraftLine, DraftOrder } from '../../src/shared/api/apiTypes'
 
 const MAIN_COURSE = 'category-hauptspeise'
 const DRINKS = 'category-getraenke'

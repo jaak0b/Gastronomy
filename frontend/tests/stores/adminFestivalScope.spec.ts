@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAdminItemsStore } from '../../src/stores/admin/items'
 import { useAdminStationsStore } from '../../src/stores/admin/stations'
-import { useConnectionStore } from '../../src/stores/connection'
+import { useConnectionStore } from '../../src/shared/stores/connection'
 
 const FESTIVAL_ID = 'fest-1'
 

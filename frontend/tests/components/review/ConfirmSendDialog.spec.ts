@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ConfirmSendDialog from '../../../src/components/review/ConfirmSendDialog.vue'
 import type { BasketLineView } from '../../../src/core/basket'
-import type { DeliveryMode, StationEstimate } from '../../../src/core/apiTypes'
+import type { DeliveryMode, StationEstimate } from '../../../src/shared/api/apiTypes'
 import { testPlugins } from '../../support/plugins'
 
 const QUEUES: StationEstimate[] = [{ stationId: 'station-kueche', queuedMinutes: 12 }]

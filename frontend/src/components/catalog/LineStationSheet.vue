@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, CatalogItem } from '../../core/apiTypes'
+import type { AppLanguage, CatalogItem } from '../../shared/api/apiTypes'
 import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
