@@ -80,14 +80,12 @@ export function itemLines(items: readonly StationOrderItem[]): ItemLine[] {
     items,
     (item) => item.itemName,
     (item) => item.note,
-  )
-    .map(({ line, quantity }) => ({ itemName: line.itemName, note: line.note, units: quantity }))
-    .sort(compareLines)
+  ).map(({ line, quantity }) => ({ itemName: line.itemName, note: line.note, units: quantity }))
 }
 
 export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {
   return [...lines].sort(
-    (left, right) => right.units - left.units || compareItemNames(left.itemName, right.itemName),
+    (left, right) => right.units - left.units || compareLines(left, right),
   )
 }
 
@@ -110,7 +108,7 @@ export function selectedUnits(
     stationOrders
       .flatMap((stationOrder) => openItemsIn(stationOrder))
       .filter((item) => selected.has(item.orderItemId)),
-  )
+  ).sort(compareLines)
 }
 
 export function selectedOpenItemIds(

@@ -54,7 +54,8 @@ public sealed class OrderRepository : IOrderRepository
                                                               StationOrder = stationOrder,
                                                               Station = station
                                                             })
-                           .OrderBy(joined => joined.StationOrder.StationOrderNumber)
+                           .OrderBy(joined => joined.Station.SortOrder)
+                           .ThenBy(joined => joined.Station.Name)
                            .ThenBy(joined => joined.StationOrder.Id)
                            .Select(joined => new PlacedStationOrder
                                              {
@@ -64,9 +65,11 @@ public sealed class OrderRepository : IOrderRepository
                                                StationOrderNumber = joined.StationOrder.StationOrderNumber,
                                                DeliveryMode = joined.StationOrder.DeliveryMode,
                                                Items = _dbContext.OrderItems.AsNoTracking()
-                                                                 .Where(item => item.StationOrderId == joined.StationOrder.Id)
-                                                                 .OrderBy(item => item.Id)
-                                                                 .Select(item => new PlacedOrderItem
+                                                                  .Where(item => item.StationOrderId == joined.StationOrder.Id)
+                                                                  .OrderBy(item => item.ItemName)
+                                                                  .ThenBy(item => item.Note)
+                                                                  .ThenBy(item => item.Id)
+                                                                  .Select(item => new PlacedOrderItem
                                                                                  {
                                                                                    OrderItemId = item.Id,
                                                                                    UnitPriceCents = item.UnitPriceCents,

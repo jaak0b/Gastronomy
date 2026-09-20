@@ -170,6 +170,13 @@ Full rules: [references/architecture.md](references/architecture.md)
 - **Do** import only from layers strictly below your own, never sideways to another slice of the same layer and never upward; App and Shared segments import each other freely.
 - **Do** put a file under the surface it serves (`src/phone/`, `src/station/`, `src/admin/`) or under `src/shared/` when two or more surfaces use it; a surface imports only from `shared/` and itself, and `shared/` never imports from a surface.
 
+## Ordering
+
+Repository rule; no source page.
+
+- **Do** render a list in the order the endpoint returned it when the backend already ordered it.
+- **Do** sort in the app only for a view the backend never returns as one list, such as an aggregate built from several orders.
+
 ## How to use
 
 Run this checklist over every new or changed module, type, function and component before handing

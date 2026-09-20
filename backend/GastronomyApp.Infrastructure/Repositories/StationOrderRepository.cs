@@ -128,7 +128,9 @@ public sealed class StationOrderRepository : IStationOrderRepository
                                             IsHiddenFromAsItComesQueue = joined.StationOrder.IsHiddenFromAsItComesQueue,
                                             ItemCount = joined.StationOrder.Items.Count,
                                             FulfilledItemCount = joined.StationOrder.Items.Count(item => item.FulfilledAtUtc != null),
-                                            Items = joined.StationOrder.Items.OrderBy(item => item.Id)
+                                            Items = joined.StationOrder.Items.OrderBy(item => item.ItemName)
+                                                          .ThenBy(item => item.Note)
+                                                          .ThenBy(item => item.Id)
                                                           .Select(item => new QueuedOrderItem
                                                                           {
                                                                             OrderItemId = item.Id,

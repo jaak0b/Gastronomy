@@ -44,8 +44,8 @@ const AS_IT_COMES_STATION_ORDER = {
   itemCount: 2,
   fulfilledItemCount: 0,
   items: [
-    { orderItemId: 'd', itemName: 'Bier', note: null, fulfilledAtUtc: null },
-    { orderItemId: 'e', itemName: 'Bratwurst', note: null, fulfilledAtUtc: null },
+    { orderItemId: 'd', itemName: 'Bratwurst', note: null, fulfilledAtUtc: null },
+    { orderItemId: 'e', itemName: 'Bier', note: null, fulfilledAtUtc: null },
   ],
 }
 

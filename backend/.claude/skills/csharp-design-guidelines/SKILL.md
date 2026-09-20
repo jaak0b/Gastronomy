@@ -124,6 +124,13 @@ Full rules: [references/usage-and-patterns.md](references/usage-and-patterns.md)
 - **Avoid** taking `ICollection<T>` only to read `Count`.
 - **Do** use the `Collection` or `Dictionary` suffix on custom collection types, without an implementation word such as `LinkedList` in the name.
 
+## Ordering
+
+Repository rule; no source page.
+
+- **Do** order a result by a value the data carries: a sort order, a name, a number.
+- **Do not** order by a generated identifier. A `Guid` key carries no order, so `OrderBy(row => row.Id)` hands rows out in a random-looking sequence that means nothing; an id is only ever the last tiebreaker after the meaningful keys.
+
 ## Equality and operators
 
 Full rules: [references/usage-and-patterns.md](references/usage-and-patterns.md), section Equality operators

@@ -122,10 +122,10 @@ describe('grouping what an employee selected', () => {
 describe('grouping the open items of one card', () => {
   it('keeps units with the same name and note together and separates different notes', () => {
     const items = [
+      stationOrderItem('d', 'Bier'),
       stationOrderItem('a', 'Frankfurter', null, 'Mit Ketchup'),
       stationOrderItem('b', 'Frankfurter', null, 'Mit Ketchup'),
       stationOrderItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
-      stationOrderItem('d', 'Bier'),
     ]
 
     expect(itemLines(items)).toEqual([
