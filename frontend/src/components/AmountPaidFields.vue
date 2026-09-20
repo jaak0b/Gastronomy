@@ -11,10 +11,13 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const typedAmount = ref(formatEuroInput(props.totalCents, props.language))
+const typedAmount = ref<string | null>(null)
 const reason = ref('')
 
-const amountPaidCents = computed(() => parseEuroInput(typedAmount.value))
+const shownAmount = computed(
+  () => typedAmount.value ?? formatEuroInput(props.totalCents, props.language),
+)
+const amountPaidCents = computed(() => parseEuroInput(shownAmount.value))
 const reasonIsNeeded = computed(
   () =>
     amountPaidCents.value !== null
@@ -42,7 +45,7 @@ function undoARefusedKeystroke(event: Event): void {
   if (canBeTypedIntoAEuroField(field.value)) {
     return
   }
-  field.value = typedAmount.value
+  field.value = shownAmount.value
 }
 
 defineExpose({ settlement })
@@ -54,7 +57,7 @@ defineExpose({ settlement })
       class="amount-field"
       inputmode="decimal"
       :label="t('openItems.amountPaidField')"
-      :model-value="typedAmount"
+      :model-value="shownAmount"
       @update:model-value="keepWhatCanStillBecomeAnAmount"
       @input="undoARefusedKeystroke"
     />
