@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
@@ -95,7 +95,7 @@ public sealed class EnrolmentRedemptionHandler
       ownerName = redemption.Station!.Name;
     }
 
-    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to " + "the {DeviceKind} {OwnerId}.", redemption.InvitationId, device.Id, deviceKind, ownerId);
+    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.InvitationId, device.Id, deviceKind, ownerId);
 
     await RetireHandedOverDeviceAsync(previousDeviceToken, device.Id, cancellationToken);
 
@@ -132,7 +132,7 @@ public sealed class EnrolmentRedemptionHandler
     if (retiredDeviceId is null)
       return;
 
-    _log.LogInformation("The browser that was just set up handed over the device {PreviousDeviceId} it still held, " + "so that one is signed out.", retiredDeviceId);
+    _log.LogInformation("The browser that was just set up handed over the device {PreviousDeviceId} it still held, so that one is signed out.", retiredDeviceId);
 
     await _revocationAnnouncer.AnnounceAsync(retiredDeviceId, cancellationToken);
   }

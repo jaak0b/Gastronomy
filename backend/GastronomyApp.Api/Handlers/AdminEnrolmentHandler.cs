@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
@@ -42,7 +42,7 @@ public sealed class AdminEnrolmentHandler
     var qrUrl = _urlBuilder.BuildEnrolmentUrl(invitation.QRCodeValue);
     _invitationCache.Remember(new(invitation.InvitationId, invitation.QRCodeValue, qrUrl, invitation.ExpiresAtUtc));
 
-    _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} " + "at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter " + "who types their name when they scan it.",
+    _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
                         invitation.InvitationId,
                         invitation.Owner?.Kind,
                         invitation.Owner?.Id,

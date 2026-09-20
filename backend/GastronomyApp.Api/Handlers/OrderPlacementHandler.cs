@@ -1,13 +1,13 @@
-using GastronomyApp.Api.Contracts;
+﻿using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api.Handlers;
 
@@ -70,7 +70,7 @@ public sealed class OrderPlacementHandler
 
   private void WarnAboutTheRefusal(PlaceOrderRequest request, StaffDeviceCaller caller, OrderValidationFailure failure)
   {
-    _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. " + "The catalog item it names is {CatalogItemId}.", request.ClientOrderId, caller.StaffMemberId, failure.Reason, failure.OffendingCatalogItemId);
+    _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. The catalog item it names is {CatalogItemId}.", request.ClientOrderId, caller.StaffMemberId, failure.Reason, failure.OffendingCatalogItemId);
 
     if (failure.SettlementFailureReason is { } settlementFailureReason)
       _log.LogWarning("The settlement of the order {ClientOrderId} from staff member {StaffMemberId} was refused because {SettlementFailureReason}.", request.ClientOrderId, caller.StaffMemberId, settlementFailureReason);

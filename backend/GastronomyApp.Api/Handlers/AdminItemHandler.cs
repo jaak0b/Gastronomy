@@ -1,10 +1,11 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -12,19 +13,21 @@ namespace GastronomyApp.Api.Handlers;
 
 public sealed class AdminItemHandler
 {
-  private readonly SavedChangeAnnouncer _announcement;
   private readonly CatalogChangeAnnouncer _announcer;
   private readonly ILogger<AdminItemHandler> _logger;
+  private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
   private readonly CatalogItemAdministrationService _service;
 
-  public AdminItemHandler(CatalogItemAdministrationService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer announcement, ResultEnvelope resultEnvelope, ILogger<AdminItemHandler> logger)
+  public AdminItemHandler(CatalogItemAdministrationService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer savedChangeAnnouncer, ResultEnvelope resultEnvelope, ILogger<AdminItemHandler> logger, IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
-    _announcement = announcement;
+    _savedChangeAnnouncer = savedChangeAnnouncer;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
+    _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
@@ -34,14 +37,14 @@ public sealed class AdminItemHandler
     if (!listed.IsSuccess)
       return RefusalFor(listed.Failure);
 
-    return Results.Ok(new AdminItemListView(listed.Value.Select(BuildItemView).ToList()));
+    return Results.Ok(new AdminItemListView(listed.Value.Select(_mapper.Map<AdminItemView>).ToList()));
   }
 
   public async Task<IResult> CreateAsync(SaveItemRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(BuildSaveRequest(request), cancellationToken);
+    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
 
     return await AnsweredAsync(created, itemId => Results.Json(new SavedItemView(itemId), statusCode: StatusCodes.Status201Created));
   }
@@ -50,7 +53,7 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, BuildSaveRequest(request), cancellationToken);
+    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, _mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
 
     return await AnsweredAsync(updated, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }
@@ -69,37 +72,12 @@ public sealed class AdminItemHandler
     return await AnsweredAsync(switchedOff, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }
 
-  private SaveCatalogItemRequest BuildSaveRequest(SaveItemRequest request)
-  {
-    return new()
-           {
-             Name = request.Name,
-             CategoryId = request.CategoryId,
-             SortOrder = request.SortOrder,
-             ProductionMinutes = request.ProductionMinutes,
-             IsQueueIndependent = request.IsQueueIndependent
-           };
-  }
-
-  private AdminItemView BuildItemView(AdministeredCatalogItem item)
-  {
-    return new(item.ItemId, item.Name, item.CategoryId, item.SortOrder, item.IsActive, item.ProductionMinutes, item.IsQueueIndependent, BuildItemAtFestivalView(item));
-  }
-
-  private AdminItemAtFestivalView? BuildItemAtFestivalView(AdministeredCatalogItem item)
-  {
-    if (item.AtTheFestival is not { } atTheFestival)
-      return null;
-
-    return new(atTheFestival.PriceCents, atTheFestival.IsAvailable, atTheFestival.StationIds);
-  }
-
   private async Task<IResult> AnsweredAsync(Result<Guid, CatalogItemAdministrationFailure> written, Func<Guid, IResult> buildResponse)
   {
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);
 
-    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
 
     return buildResponse(written.Value);
   }

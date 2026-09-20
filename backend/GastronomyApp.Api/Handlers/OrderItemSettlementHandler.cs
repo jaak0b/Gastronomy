@@ -1,30 +1,30 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api.Handlers;
 
 public sealed class OrderItemSettlementHandler
 {
-  private readonly SavedChangeAnnouncer _announcement;
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly ILogger<OrderItemSettlementHandler> _logger;
   private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
   private readonly OrderItemSettlementService _settlementService;
 
-  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncer announcement, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger, IMapper mapper)
+  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncer savedChangeAnnouncer, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger, IMapper mapper)
   {
     _settlementService = settlementService;
-    _announcement = announcement;
+    _savedChangeAnnouncer = savedChangeAnnouncer;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
@@ -68,7 +68,7 @@ public sealed class OrderItemSettlementHandler
 
   private Task<bool> TellTheOtherPhonesAsync(IReadOnlyList<Guid> settledIds, IReadOnlyList<string> tableNames)
   {
-    return _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken => _dispatcher.PushOrderItemsSettledAsync(new(settledIds, tableNames), cancellationToken));
+    return _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken => _dispatcher.PushOrderItemsSettledAsync(new(settledIds, tableNames), cancellationToken));
   }
 
   private void WarnAboutASettlementTheScreenCannotProduce(SettlementFailure failure, Guid staffMemberId)

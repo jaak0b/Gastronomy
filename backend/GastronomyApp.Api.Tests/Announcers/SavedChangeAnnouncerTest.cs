@@ -17,7 +17,7 @@ public sealed class SavedChangeAnnouncerTest
     var lifetime = A.Fake<IHostApplicationLifetime>();
     A.CallTo(() => lifetime.ApplicationStopping).Returns(_programIsQuitting.Token);
 
-    _announcement = new(lifetime, _logger);
+    _savedChangeAnnouncer = new(lifetime, _logger);
   }
 
   [TearDown]
@@ -26,14 +26,14 @@ public sealed class SavedChangeAnnouncerTest
     _programIsQuitting.Dispose();
   }
 
-  private SavedChangeAnnouncer _announcement = null!;
+  private SavedChangeAnnouncer _savedChangeAnnouncer = null!;
   private ILogger<SavedChangeAnnouncer> _logger = null!;
   private CancellationTokenSource _programIsQuitting = null!;
 
   [Test]
   public void TellTheDevicesWithoutFailingTheSavedChangeAsync_NullCallback_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(null!), Throws.ArgumentNullException);
+    Assert.That(async () => await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(null!), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -42,11 +42,11 @@ public sealed class SavedChangeAnnouncerTest
     using CancellationTokenSource adminRequest = new();
     var tokenUsedForThePush = adminRequest.Token;
 
-    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(async cancellationToken =>
-                                                                        {
-                                                                          await adminRequest.CancelAsync();
-                                                                          tokenUsedForThePush = cancellationToken;
-                                                                        });
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(async cancellationToken =>
+                                                                                {
+                                                                                  await adminRequest.CancelAsync();
+                                                                                  tokenUsedForThePush = cancellationToken;
+                                                                                });
 
     Assert.That(tokenUsedForThePush.IsCancellationRequested, Is.False);
   }
@@ -54,13 +54,13 @@ public sealed class SavedChangeAnnouncerTest
   [Test]
   public void TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_DoesNotFailTheSavedChange()
   {
-    Assert.That(async () => await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke.")), Throws.Nothing);
+    Assert.That(async () => await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke.")), Throws.Nothing);
   }
 
   [Test]
   public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_WritesTheReasonToTheLogAsAnError()
   {
-    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke."));
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke."));
 
     A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error && call.GetArgument<Exception?>(3) != null && Rendered(call.GetArgument<object>(2)).Contains("station tablets", StringComparison.Ordinal)).MustHaveHappened();
   }
@@ -83,11 +83,11 @@ public sealed class SavedChangeAnnouncerTest
 
   private async Task QuitTheProgramWhileTheDevicesAreBeingToldAsync()
   {
-    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(async cancellationToken =>
-                                                                        {
-                                                                          await _programIsQuitting.CancelAsync();
-                                                                          cancellationToken.ThrowIfCancellationRequested();
-                                                                        });
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(async cancellationToken =>
+                                                                                {
+                                                                                  await _programIsQuitting.CancelAsync();
+                                                                                  cancellationToken.ThrowIfCancellationRequested();
+                                                                                });
   }
 
   private string Rendered(object? state)

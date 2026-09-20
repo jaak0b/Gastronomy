@@ -1,20 +1,20 @@
-using GastronomyApp.Api.Hub;
+﻿using GastronomyApp.Api.Hub;
 
 namespace GastronomyApp.Api.Announcers;
 
 public sealed class FestivalChangeAnnouncer
 {
-  private readonly SavedChangeAnnouncer _announcement;
   private readonly HubNotificationDispatcher _dispatcher;
+  private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
 
-  public FestivalChangeAnnouncer(HubNotificationDispatcher dispatcher, SavedChangeAnnouncer announcement)
+  public FestivalChangeAnnouncer(HubNotificationDispatcher dispatcher, SavedChangeAnnouncer savedChangeAnnouncer)
   {
     _dispatcher = dispatcher;
-    _announcement = announcement;
+    _savedChangeAnnouncer = savedChangeAnnouncer;
   }
 
   public Task AnnounceAsync()
   {
-    return _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_dispatcher.PushFestivalChangedAsync);
+    return _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_dispatcher.PushFestivalChangedAsync);
   }
 }

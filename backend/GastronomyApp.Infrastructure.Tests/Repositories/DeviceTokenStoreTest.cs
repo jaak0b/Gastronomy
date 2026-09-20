@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+﻿using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -152,7 +152,11 @@ public sealed class DeviceTokenStoreTest
         for (var column = 0; column < reader.FieldCount; column++)
         {
           var value = reader.GetValue(column);
-          storedValues.Add(value is byte[] bytes ? Convert.ToHexString(bytes) : value.ToString() ?? string.Empty);
+
+          if (value is byte[] bytes)
+            storedValues.Add(Convert.ToHexString(bytes));
+          else
+            storedValues.Add(value.ToString() ?? string.Empty);
         }
       }
     }

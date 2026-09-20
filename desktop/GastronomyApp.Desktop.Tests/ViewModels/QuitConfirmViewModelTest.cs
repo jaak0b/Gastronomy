@@ -1,7 +1,7 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 
@@ -168,6 +168,27 @@ public sealed class QuitConfirmViewModelTest
     Assert.Multiple(() =>
                     {
                       Assert.That(stops, Is.EqualTo(1));
+                      Assert.That(_exitRequests, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task ConfirmAsync_AfterAFailedStop_StopsTheServerAgainAndExits()
+  {
+    var stops = 0;
+    A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).Invokes(() => stops++).Returns(Task.CompletedTask);
+    A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).Invokes(() => stops++).Throws(() => new InvalidOperationException("The server could not be stopped.")).Once();
+    var viewModel = CreateViewModel();
+    viewModel.RequestQuit();
+    viewModel.ConfirmCommand.Execute(null);
+
+    Assert.ThrowsAsync<InvalidOperationException>(async () => await viewModel.ConfirmAsync());
+
+    await viewModel.ConfirmAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(stops, Is.EqualTo(2));
                       Assert.That(_exitRequests, Is.EqualTo(1));
                     });
   }

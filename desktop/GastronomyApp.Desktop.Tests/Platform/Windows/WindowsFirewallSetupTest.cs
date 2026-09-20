@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using FakeItEasy;
 using GastronomyApp.Desktop.Platform.Windows;
 using GastronomyApp.Desktop.Ports;
@@ -15,7 +15,7 @@ public sealed class WindowsFirewallSetupTest
 
   private const string ShowRuleForBothProfiles = ShowRule + " profile=private,public";
 
-  private const string RuleSettings = "action=allow program=\"" + ExecutablePath + "\" " + "protocol=TCP profile=private,public remoteip=localsubnet enable=yes";
+  private const string RuleSettings = "action=allow program=\"" + ExecutablePath + "\" protocol=TCP profile=private,public remoteip=localsubnet enable=yes";
 
   private const string AddRule = "advfirewall firewall add rule name=\"GastronomyApp ordering system\" dir=in " + RuleSettings;
 

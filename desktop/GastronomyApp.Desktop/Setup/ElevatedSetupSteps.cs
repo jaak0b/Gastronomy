@@ -1,6 +1,6 @@
+﻿using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Values;
 using Serilog;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Setup;
 
@@ -17,9 +17,9 @@ public sealed class ElevatedSetupSteps
 
   public ElevatedSetupStepReport RunAll()
   {
-    var networkAccessSucceeded = Attempt(_firewall.EnsureRuleConfigured, "The one-time setup could not allow incoming connections through " + "the Windows firewall, so the phones may not be able to reach " + "this laptop.");
+    var networkAccessSucceeded = Attempt(_firewall.EnsureRuleConfigured, "The one-time setup could not allow incoming connections through the Windows firewall, so the phones may not be able to reach this laptop.");
 
-    var dataFolderSucceeded = Attempt(MakeTheDataFolderWritableForEveryone, "The one-time setup could not give every user of this laptop write " + "access to the data folder, so orders may fail for anybody who did " + "not set this laptop up.");
+    var dataFolderSucceeded = Attempt(MakeTheDataFolderWritableForEveryone, "The one-time setup could not give every user of this laptop write access to the data folder, so orders may fail for anybody who did not set this laptop up.");
 
     return new(networkAccessSucceeded, dataFolderSucceeded);
   }

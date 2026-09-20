@@ -1,12 +1,12 @@
-using FakeItEasy;
+﻿using FakeItEasy;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
+using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.ViewModels;
 using Serilog.Events;
-using GastronomyApp.Desktop.Ports;
-using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Desktop.Tests.Hosting;
 
@@ -148,7 +148,7 @@ public sealed class AppBootstrapperTest
 
     bootstrapper.Start();
 
-    Assert.That(bootstrapper.MainWindowViewModel!.ErrorMessage, Is.EqualTo("Look on the task bar for a window of this program. If there is none, " + "restart the computer and open the program again."));
+    Assert.That(bootstrapper.MainWindowViewModel!.ErrorMessage, Is.EqualTo("Look on the task bar for a window of this program. If there is none, restart the computer and open the program again."));
   }
 
   [Test]

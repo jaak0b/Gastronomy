@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Entities;
@@ -13,17 +13,17 @@ namespace GastronomyApp.Api.Handlers;
 
 public sealed class AdminCategoryHandler
 {
-  private readonly SavedChangeAnnouncer _announcement;
   private readonly CatalogChangeAnnouncer _announcer;
   private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
   private readonly CatalogCategoryAdministrationService _service;
 
-  public AdminCategoryHandler(CatalogCategoryAdministrationService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer announcement, ResultEnvelope resultEnvelope, IMapper mapper)
+  public AdminCategoryHandler(CatalogCategoryAdministrationService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer savedChangeAnnouncer, ResultEnvelope resultEnvelope, IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
-    _announcement = announcement;
+    _savedChangeAnnouncer = savedChangeAnnouncer;
     _resultEnvelope = resultEnvelope;
     _mapper = mapper;
   }
@@ -63,7 +63,7 @@ public sealed class AdminCategoryHandler
       return RefusalFor(moved.Failure);
 
     if (moved.Value.OrderChanged)
-      await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+      await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
 
     return Results.Ok(BuildCategoryListView(moved.Value.Categories));
   }
@@ -87,7 +87,7 @@ public sealed class AdminCategoryHandler
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);
 
-    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
 
     return buildResponse(written.Value);
   }

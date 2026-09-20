@@ -1,4 +1,4 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using Serilog;
 
 namespace GastronomyApp.Desktop.Platform.Windows;
@@ -45,7 +45,7 @@ public sealed class ActivationPipeListener
       return;
     }
 
-    Log.Error(failure, "The listener for a second start stopped. Starting the program again will no longer " + "bring the open window to the front.");
+    Log.Error(failure, "The listener for a second start stopped. Starting the program again will no longer bring the open window to the front.");
   }
 
   private async Task ReceiveActivationSignalsAsync(CancellationToken cancellationToken)

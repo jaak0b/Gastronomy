@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.Ports;
 
@@ -79,8 +79,17 @@ public sealed class QuitConfirmViewModel : ViewModelBase
     _quitIsUnderWay = true;
     IsConfirmationVisible = false;
 
-    await _prepareUpdateOnQuit(cancellationToken);
-    await _stopServer(cancellationToken);
+    try
+    {
+      await _prepareUpdateOnQuit(cancellationToken);
+      await _stopServer(cancellationToken);
+    }
+    catch
+    {
+      _quitIsUnderWay = false;
+
+      throw;
+    }
 
     _requestApplicationExit();
   }

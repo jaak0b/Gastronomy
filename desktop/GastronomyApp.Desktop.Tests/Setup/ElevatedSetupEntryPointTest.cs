@@ -1,7 +1,7 @@
-using FakeItEasy;
+﻿using FakeItEasy;
+using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Setup;
 using Serilog;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Setup;
 
@@ -62,7 +62,7 @@ public sealed class ElevatedSetupEntryPointTest
   [Test]
   public void Run_WhenTheFirewallStepFails_ReportsTheFailureAndLogsWhatWindowsSaid()
   {
-    A.CallTo(() => _firewall.EnsureRuleConfigured()).Throws(new InvalidOperationException("Configuring the inbound firewall rule failed with exit code 5: " + "The requested operation requires elevation."));
+    A.CallTo(() => _firewall.EnsureRuleConfigured()).Throws(new InvalidOperationException("Configuring the inbound firewall rule failed with exit code 5: The requested operation requires elevation."));
     A.CallTo(() => _dataFolder.Exists()).Returns(false);
 
     var exitCode = Run();

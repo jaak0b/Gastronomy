@@ -1,11 +1,11 @@
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using GastronomyApp.Api;
+using GastronomyApp.Api.Values;
+using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Values;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using GastronomyApp.Api.Values;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Hosting;
 

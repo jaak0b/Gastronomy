@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Requests;
@@ -75,8 +75,7 @@ public sealed class CatalogItemAdministrationService
 
   private async Task<Result<Guid, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
-    var refusal = Validate(request)
-                  ?? (await _itemRepository.IsNameTakenAsync(request.Name!, null, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
+    var refusal = Validate(request) ?? await NameRefusalAsync(request.Name!, null, cancellationToken) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
 
     if (refusal is not null)
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
@@ -107,8 +106,7 @@ public sealed class CatalogItemAdministrationService
     if (item is null)
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
-    var refusal = Validate(request)
-                  ?? (await _itemRepository.IsNameTakenAsync(request.Name!, itemId, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
+    var refusal = Validate(request) ?? await NameRefusalAsync(request.Name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
@@ -158,6 +156,14 @@ public sealed class CatalogItemAdministrationService
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
     return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
+  }
+
+  private async Task<CatalogItemAdministrationFailure?> NameRefusalAsync(string name, Guid? itemKeepingItsOwnName, CancellationToken cancellationToken)
+  {
+    if (!await _itemRepository.IsNameTakenAsync(name, itemKeepingItsOwnName, cancellationToken))
+      return null;
+
+    return new() { Reason = CatalogItemAdministrationFailureReason.NameTaken };
   }
 
   private async Task<CatalogItemAdministrationFailure?> CategoryRefusalAsync(Guid? categoryId, bool theArticleIsSwitchedOn, CancellationToken cancellationToken)

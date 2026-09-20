@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Events;
+using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Values;
 using Serilog;
-using GastronomyApp.Api.Values;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.ViewModels;
 

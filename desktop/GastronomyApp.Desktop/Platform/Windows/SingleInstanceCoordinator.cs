@@ -1,8 +1,8 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using GastronomyApp.Desktop.Enums;
-using Serilog;
 using GastronomyApp.Desktop.Ports;
+using Serilog;
 
 namespace GastronomyApp.Desktop.Platform.Windows;
 
@@ -88,7 +88,7 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
         return;
     }
 
-    Log.Error(lastFailure, "The program is already running, but it did not answer, so its window was not brought " + "to the front. This second start is closing again and the operator sees nothing " + "happen.");
+    Log.Error(lastFailure, "The program is already running, but it did not answer, so its window was not brought to the front. This second start is closing again and the operator sees nothing happen.");
   }
 
   private Exception? TrySignalExisting()
@@ -115,7 +115,7 @@ public sealed class SingleInstanceCoordinator : ISingleInstance, IDisposable
   private void AllowTheRunningInstanceToComeToFront()
   {
     if (OperatingSystem.IsWindows() && !AllowSetForegroundWindow(AnyProcess))
-      Log.Warning("Windows did not grant this start the right to raise the running window, so " + "starting the program again may only flash its task bar button (error {ErrorCode}).", Marshal.GetLastWin32Error());
+      Log.Warning("Windows did not grant this start the right to raise the running window, so starting the program again may only flash its task bar button (error {ErrorCode}).", Marshal.GetLastWin32Error());
   }
 
   [DllImport("user32.dll", SetLastError = true)]

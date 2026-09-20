@@ -1,8 +1,8 @@
+﻿using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Values;
 using Serilog;
 using Velopack;
 using Velopack.Sources;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Updates;
 
@@ -63,7 +63,10 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
     if (_installScheduled)
       return;
 
-    var release = _downloadedRelease ?? (IsInstalled ? _manager.UpdatePendingRestart : null);
+    var release = _downloadedRelease;
+
+    if (release is null && IsInstalled)
+      release = _manager.UpdatePendingRestart;
 
     if (release is null)
       return;

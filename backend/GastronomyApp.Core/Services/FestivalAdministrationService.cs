@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Requests;
@@ -10,19 +10,19 @@ public sealed class FestivalAdministrationService
 {
   private const int FirstNumber = 1;
 
-  private readonly IClock _clock;
   private readonly FestivalMoment _moment;
   private readonly IFestivalRepository _repository;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly FestivalSchedule _schedule;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, ITransactionRunner transactionRunner, IClock clock)
+  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, ITransactionRunner transactionRunner, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
     _schedule = schedule;
     _moment = moment;
     _transactionRunner = transactionRunner;
-    _clock = clock;
+    _runningFestival = runningFestival;
   }
 
   public async Task<IReadOnlyList<AdministeredFestival>> ListAsync(CancellationToken cancellationToken)
@@ -31,9 +31,8 @@ public sealed class FestivalAdministrationService
     IReadOnlyList<FestivalContentCounts> counts = await _repository.FindContentCountsAsync(cancellationToken);
 
     Dictionary<Guid, FestivalContentCounts> countsByFestivalId = counts.ToDictionary(count => count.FestivalId);
-    var nowUtc = _clock.UtcNow;
 
-    return festivals.Select(festival => BuildAdministeredFestival(festival, countsByFestivalId, nowUtc)).ToList();
+    return festivals.Select(festival => BuildAdministeredFestival(festival, countsByFestivalId)).ToList();
   }
 
   public Task<Result<SavedFestival, FestivalAdministrationFailure>> CreateAsync(FestivalPeriodRequest request, CancellationToken cancellationToken)
@@ -129,7 +128,7 @@ public sealed class FestivalAdministrationService
     if (festival is null)
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
 
-    if (_schedule.IsRunning(festival, _clock.UtcNow))
+    if (_runningFestival.IsRunning(festival))
     {
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(new()
                                                                          {
@@ -202,11 +201,11 @@ public sealed class FestivalAdministrationService
            };
   }
 
-  private AdministeredFestival BuildAdministeredFestival(Festival festival, IReadOnlyDictionary<Guid, FestivalContentCounts> countsByFestivalId, DateTime nowUtc)
+  private AdministeredFestival BuildAdministeredFestival(Festival festival, IReadOnlyDictionary<Guid, FestivalContentCounts> countsByFestivalId)
   {
     countsByFestivalId.TryGetValue(festival.Id, out var counts);
 
-    return new(festival.Id, festival.Name, festival.StartsAtUtc, festival.EndsAtUtc, festival.IsHidden, _schedule.IsRunning(festival, nowUtc), counts?.StationCount ?? 0, counts?.MenuItemCount ?? 0, counts?.OrderCount ?? 0);
+    return new(festival.Id, festival.Name, festival.StartsAtUtc, festival.EndsAtUtc, festival.IsHidden, _runningFestival.IsRunning(festival), counts?.StationCount ?? 0, counts?.MenuItemCount ?? 0, counts?.OrderCount ?? 0);
   }
 
   private Result<SavedFestival, FestivalAdministrationFailure> Saved(Guid festivalId, bool somethingChanged)

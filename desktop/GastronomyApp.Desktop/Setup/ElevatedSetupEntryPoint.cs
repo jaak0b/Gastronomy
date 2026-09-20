@@ -1,4 +1,4 @@
-using GastronomyApp.Desktop.Logging;
+﻿using GastronomyApp.Desktop.Logging;
 using GastronomyApp.Desktop.Values;
 using Serilog;
 
@@ -44,7 +44,7 @@ public sealed class ElevatedSetupEntryPoint
     if (!report.EveryStepSucceeded)
       return AStepFailed;
 
-    Log.Information("The one-time setup finished. Incoming connections are allowed through the Windows " + "firewall and every user of this laptop can write into {DataDirectory}.", _dataDirectoryPath);
+    Log.Information("The one-time setup finished. Incoming connections are allowed through the Windows firewall and every user of this laptop can write into {DataDirectory}.", _dataDirectoryPath);
 
     return EverythingSucceeded;
   }

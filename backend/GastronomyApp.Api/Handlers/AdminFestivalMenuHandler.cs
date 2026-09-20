@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Results;
@@ -10,17 +10,17 @@ namespace GastronomyApp.Api.Handlers;
 
 public sealed class AdminFestivalMenuHandler
 {
-  private readonly SavedChangeAnnouncer _announcement;
   private readonly CatalogChangeAnnouncer _announcer;
   private readonly ILogger<AdminFestivalMenuHandler> _logger;
   private readonly ResultEnvelope _resultEnvelope;
+  private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
   private readonly FestivalMenuService _service;
 
-  public AdminFestivalMenuHandler(FestivalMenuService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer announcement, ResultEnvelope resultEnvelope, ILogger<AdminFestivalMenuHandler> logger)
+  public AdminFestivalMenuHandler(FestivalMenuService service, CatalogChangeAnnouncer announcer, SavedChangeAnnouncer savedChangeAnnouncer, ResultEnvelope resultEnvelope, ILogger<AdminFestivalMenuHandler> logger)
   {
     _service = service;
     _announcer = announcer;
-    _announcement = announcement;
+    _savedChangeAnnouncer = savedChangeAnnouncer;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
   }
@@ -63,7 +63,7 @@ public sealed class AdminFestivalMenuHandler
       return RefusalFor(written.Failure, festivalId, itemId);
 
     if (written.Value.SomethingChanged)
-      await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+      await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
 
     return buildResponse(written.Value.CatalogItemId);
   }
