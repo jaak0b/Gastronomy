@@ -134,7 +134,7 @@ public sealed class OrderRepositoryTest
 
   private Order BuildOrderForTwoStations(SeededDomain seeded, Guid clientOrderId)
   {
-    Order order = BuildOrder(seeded, clientOrderId);
+    var order = BuildOrder(seeded, clientOrderId);
     order.StationOrders.Clear();
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.BarStationId, new("00000000-0000-0000-0000-000000000001")));
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.KitchenStationId, new("00000000-0000-0000-0000-000000000002")));
@@ -144,8 +144,8 @@ public sealed class OrderRepositoryTest
 
   private Order BuildOrderWithItems(SeededDomain seeded, Guid clientOrderId)
   {
-    Order order = BuildOrder(seeded, clientOrderId);
-    StationOrder stationOrder = order.StationOrders[0];
+    var order = BuildOrder(seeded, clientOrderId);
+    var stationOrder = order.StationOrders[0];
     stationOrder.Items.Clear();
     stationOrder.Items.Add(BuildItem(stationOrder.Id, seeded.SausageItemId, "Käsekrainer", _firstKasekrainerId));
     stationOrder.Items.Add(BuildItem(stationOrder.Id, seeded.LemonadeItemId, "Schnitzel", _schnitzelId));

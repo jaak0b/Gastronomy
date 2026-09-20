@@ -38,9 +38,7 @@ public sealed class OpenItemsService
 
     return new()
            {
-             Tables = openByTable.Keys.OrderBy(tableName => tableName, StringComparer.Ordinal)
-                                 .Select(tableName => BuildOpenTable(tableName, ItemsAtTable(openByTable, tableName), owners))
-                                 .ToList(),
+             Tables = openByTable.Keys.OrderBy(tableName => tableName, StringComparer.Ordinal).Select(tableName => BuildOpenTable(tableName, ItemsAtTable(openByTable, tableName), owners)).ToList(),
              OrderItemIdsWithoutAnOrder = openItems.Where(item => !owners.ContainsKey(item.Id)).Select(item => item.Id).Distinct().ToList()
            };
   }

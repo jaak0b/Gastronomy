@@ -88,12 +88,12 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var stationOrderId = Guid.NewGuid();
-    StationOrderRepository repository = await AnOrderWithItemsAsync(fixture,
-                                                                   seeded,
-                                                                   stationOrderId,
-                                                                   BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000002", null),
-                                                                   BuildItemWithId(stationOrderId, seeded.LemonadeItemId, "Schnitzel", "00000000-0000-0000-0000-000000000001", null),
-                                                                   BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000003", null));
+    var repository = await AnOrderWithItemsAsync(fixture,
+                                                 seeded,
+                                                 stationOrderId,
+                                                 BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000002", null),
+                                                 BuildItemWithId(stationOrderId, seeded.LemonadeItemId, "Schnitzel", "00000000-0000-0000-0000-000000000001", null),
+                                                 BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000003", null));
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -113,12 +113,12 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var stationOrderId = Guid.NewGuid();
-    StationOrderRepository repository = await AnOrderWithItemsAsync(fixture,
-                                                                   seeded,
-                                                                   stationOrderId,
-                                                                   BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000002", "Ohne Ketchup"),
-                                                                   BuildItemWithId(stationOrderId, seeded.LemonadeItemId, "Schnitzel", "00000000-0000-0000-0000-000000000001", null),
-                                                                   BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000003", null));
+    var repository = await AnOrderWithItemsAsync(fixture,
+                                                 seeded,
+                                                 stationOrderId,
+                                                 BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000002", "Ohne Ketchup"),
+                                                 BuildItemWithId(stationOrderId, seeded.LemonadeItemId, "Schnitzel", "00000000-0000-0000-0000-000000000001", null),
+                                                 BuildItemWithId(stationOrderId, seeded.SausageItemId, "Käsekrainer", "00000000-0000-0000-0000-000000000003", null));
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -130,7 +130,7 @@ public sealed class StationOrderRepositoryTest
                              "Schnitzel"
                            }));
     Assert.That(queue[0].Items.Select(item => item.Note),
-                Is.EqualTo(new string?[]
+                Is.EqualTo(new[]
                            {
                              null,
                              "Ohne Ketchup",
@@ -488,7 +488,7 @@ public sealed class StationOrderRepositoryTest
 
   private OrderItem BuildItemWithId(Guid stationOrderId, Guid catalogItemId, string itemName, string id, string? note)
   {
-    OrderItem item = BuildItem(stationOrderId, catalogItemId, itemName, 350, note);
+    var item = BuildItem(stationOrderId, catalogItemId, itemName, 350, note);
     item.Id = new(id);
     return item;
   }
@@ -519,7 +519,7 @@ public sealed class StationOrderRepositoryTest
                                   DeliveryMode = DeliveryMode.Together
                                 };
 
-    foreach (OrderItem item in items)
+    foreach (var item in items)
       stationOrder.Items.Add(item);
 
     order.StationOrders.Add(stationOrder);
