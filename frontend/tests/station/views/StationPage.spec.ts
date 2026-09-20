@@ -233,7 +233,7 @@ describe('the screen at a station', () => {
     const page = await mountPage()
 
     expect(page.findAll('.orders-column .station-order-heading')[0].text()).toBe(
-      'Bestellung 137 · Nr. 12',
+      'Bestellung 137 · Nr. 12 ·',
     )
   })
 
