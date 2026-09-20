@@ -24,7 +24,7 @@ import Catalog from './phone/views/Catalog.vue'
 import Review from './phone/views/Review.vue'
 import OpenItems from './phone/views/OpenItems.vue'
 import StationPage from './station/views/StationPage.vue'
-import AdminShell from './views/admin/AdminShell.vue'
+import AdminShell from './admin/views/AdminShell.vue'
 
 const session = useSessionStore()
 const station = useStationStore()

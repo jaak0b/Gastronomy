@@ -18,3 +18,10 @@ export function initialLanguage(): AppLanguage {
 export function storeLanguage(language: AppLanguage): void {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
 }
+
+export function appLanguageOf(locale: string): AppLanguage {
+  if (locale === 'en' || locale === 'de') {
+    return locale
+  }
+  throw new Error(`The locale ${locale} is not one of the application's languages.`)
+}

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { browserLanguage, initialLanguage, LANGUAGE_STORAGE_KEY } from '../../../src/shared/core/deviceLanguage'
+import {
+  appLanguageOf,
+  browserLanguage,
+  initialLanguage,
+  LANGUAGE_STORAGE_KEY,
+} from '../../../src/shared/core/deviceLanguage'
 
 function withTheBrowserLanguage(language: string): void {
   Object.defineProperty(window.navigator, 'language', { value: language, configurable: true })
@@ -46,5 +51,16 @@ describe('the language a device starts in', () => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, '{"language":"de"}')
 
     expect(initialLanguage()).toBe('en')
+  })
+})
+
+describe('reading a locale as one of the application languages', () => {
+  it('takes the two languages the application is written in', () => {
+    expect(appLanguageOf('de')).toBe('de')
+    expect(appLanguageOf('en')).toBe('en')
+  })
+
+  it('refuses anything else instead of picking a language for the reader', () => {
+    expect(() => appLanguageOf('fr')).toThrowError(/fr/)
   })
 })
