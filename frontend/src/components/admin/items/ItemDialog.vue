@@ -2,13 +2,14 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import type { AdminItem } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
 import { LONGEST_PRODUCTION_MINUTES } from '../../../core/productionMinutes'
 import {
   useAdminCategoriesStore,
   type AdminCategoryDraft,
 } from '../../../stores/admin/categories'
-import type { AdminItem, AdminItemDraft } from '../../../stores/admin/items'
+import type { AdminItemDraft } from '../../../stores/admin/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import FormDialog from '../FormDialog.vue'
 import { useRefusalText } from '../refusalText'

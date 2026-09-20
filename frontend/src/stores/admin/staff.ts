@@ -1,24 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listFrom, request } from '../../api/client'
+import { request, requestAction } from '../../api/client'
+import { adminStaffMembersResponseSchema } from '../../core/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
+import type { AdminStaffMember } from '../../core/apiTypes'
 import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 import { useAdminEnrolmentStore } from './enrolment'
-
-export interface AdminStaffMember {
-  staffMemberId: string
-  name: string
-  isActive: boolean
-  hasDevice: boolean
-  lastSeenAtUtc: string | null
-  hasOutstandingInvitation: boolean
-}
 
 export const useAdminStaffStore = defineStore('adminStaff', () => {
   const staffMembers = ref<AdminStaffMember[]>([])
@@ -29,7 +22,9 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   async function load(): Promise<void> {
     loadFailed.value = false
     const token = staffMembersGate.start()
-    const result = await request<unknown>('/api/admin/staff-members')
+    const result = await request('/api/admin/staff-members', {
+      schema: adminStaffMembersResponseSchema,
+    })
     if (!staffMembersGate.isCurrent(token)) {
       return
     }
@@ -37,12 +32,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminStaffMember>(result.data, 'staffMembers')
-    if (rows === null) {
-      loadFailed.value = true
-      return
-    }
-    staffMembers.value = rows
+    staffMembers.value = result.data.staffMembers
   }
 
   async function rename(id: string, name: string): Promise<AdminActionResult<null>> {
@@ -59,7 +49,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
     method: 'POST' | 'PUT',
     body: unknown,
   ): Promise<AdminActionResult<null>> {
-    const result = await request(path, { method, body })
+    const result = await requestAction(path, { method, body })
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }

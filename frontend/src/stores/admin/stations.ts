@@ -1,34 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listFrom, request, type ApiResult } from '../../api/client'
+import { request, requestAction, type ApiResult } from '../../api/client'
+import { adminStationsResponseSchema, createdStationSchema } from '../../core/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
+import type { AdminStation } from '../../core/apiTypes'
 import { assertNever } from '../../core/assertNever'
 import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 import { useAdminEnrolmentStore } from './enrolment'
 
-export interface AdminStation {
-  stationId: string
-  name: string
-  sortOrder: number
-  isActive: boolean
-  hasDevice: boolean
-  isAtTheFestival: boolean
-}
-
 export interface StationDraft {
   stationId?: string
   name: string
   sortOrder: number
-}
-
-interface CreatedStation {
-  stationId: string
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
@@ -41,7 +30,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   async function loadStationsFrom(path: string): Promise<void> {
     loadFailed.value = false
     const token = stationsGate.start()
-    const result = await request<unknown>(path)
+    const result = await request(path, { schema: adminStationsResponseSchema })
     if (!stationsGate.isCurrent(token)) {
       return
     }
@@ -49,12 +38,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminStation>(result.data, 'stations')
-    if (rows === null) {
-      loadFailed.value = true
-      return
-    }
-    stations.value = rows
+    stations.value = result.data.stations
   }
 
   async function load(): Promise<void> {
@@ -85,9 +69,10 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   async function create(draft: StationDraft): Promise<AdminActionResult<string>> {
-    const result = await request<CreatedStation>('/api/admin/stations', {
+    const result = await request('/api/admin/stations', {
       method: 'POST',
       body: { name: draft.name, sortOrder: draft.sortOrder },
+      schema: createdStationSchema,
     })
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
@@ -109,7 +94,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       }
     }
     return reportAndReload(
-      await request(`/api/admin/stations/${station.stationId}`, {
+      await requestAction(`/api/admin/stations/${station.stationId}`, {
         method: 'PUT',
         body: { name: station.name, sortOrder: station.sortOrder },
       }),
@@ -121,7 +106,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     stationId: string,
   ): Promise<AdminActionResult<null>> {
     return reportAndReload(
-      await request(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
+      await requestAction(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
         method: 'PUT',
       }),
     )
@@ -132,7 +117,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     stationId: string,
   ): Promise<AdminActionResult<null>> {
     return reportAndReload(
-      await request(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
+      await requestAction(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
         method: 'DELETE',
       }),
     )
@@ -141,11 +126,11 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
     if (isActive) {
       return reportAndReload(
-        await request(`/api/admin/stations/${id}/activate`, { method: 'POST' }),
+        await requestAction(`/api/admin/stations/${id}/activate`, { method: 'POST' }),
       )
     }
     return reportAndReload(
-      await request(`/api/admin/stations/${id}/deactivate`, { method: 'POST' }),
+      await requestAction(`/api/admin/stations/${id}/deactivate`, { method: 'POST' }),
     )
   }
 

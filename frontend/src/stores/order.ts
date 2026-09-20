@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../api/client'
+import { orderSubmitResponseSchema } from '../core/apiSchemas'
 import type {
   ConfirmedSettlement,
   DeliveryMode,
   DraftLine,
   DraftOrder,
   OrderSubmitRequest,
-  OrderSubmitResponse,
 } from '../core/apiTypes'
 import {
   addLine,
@@ -260,11 +260,12 @@ export const useOrderStore = defineStore('order', () => {
     failure.value = null
     sendState.value = 'sending'
     rememberWhatBecameOfTheSend()
-    const result = await request<OrderSubmitResponse>('/api/orders', {
+    const result = await request('/api/orders', {
       method: 'POST',
       body: attempt,
       token: session.deviceToken,
       timeoutMs: SEND_TIMEOUT_MS,
+      schema: orderSubmitResponseSchema,
     })
     switch (result.kind) {
       case 'ok':
@@ -277,6 +278,7 @@ export const useOrderStore = defineStore('order', () => {
         startNextOrder()
         return
       case 'unreachable':
+      case 'unreadableAnswer':
         failure.value = messageForSendFailure(result)
         sendState.value = 'failed'
         rememberWhatBecameOfTheSend()

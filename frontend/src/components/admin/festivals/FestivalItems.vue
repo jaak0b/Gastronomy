@@ -3,17 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import { adminMessage, type AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AppLanguage } from '../../../core/apiTypes'
+import type { AdminItem, AppLanguage } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
 import { groupByCategory } from '../../../core/grouping'
 import { letteringColourOn } from '../../../core/letteringColour'
 import { formatEuroInput, parseEuroInput } from '../../../core/money'
 import { useAdminCategoriesStore } from '../../../stores/admin/categories'
-import {
-  useAdminItemsStore,
-  type AdminItem,
-  type AdminItemDraft,
-} from '../../../stores/admin/items'
+import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import { useAdminStationsStore } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import ItemDialog from '../items/ItemDialog.vue'

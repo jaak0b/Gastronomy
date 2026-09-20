@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ADMIN_SECTIONS, currentRoute, navigate, type AdminSection } from '../../router'
 import { assertNever } from '../../core/assertNever'
-import { request } from '../../api/client'
+import { requestAction } from '../../api/client'
 import AdminOverview from '../../components/admin/overview/AdminOverview.vue'
 import FestivalsList from '../../components/admin/festivals/FestivalsList.vue'
 import FestivalPage from '../../components/admin/festivals/FestivalPage.vue'
@@ -47,7 +47,7 @@ function titleFor(value: AdminSection): string {
   }
 }
 
-void request('/api/admin/festivals').then((result) => {
+void requestAction('/api/admin/festivals').then((result) => {
   isReachable.value = !(result.kind === 'error' && result.status === 404)
 })
 </script>

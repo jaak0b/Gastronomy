@@ -81,8 +81,11 @@ describe('landing on a QR code link', () => {
 
   it('starts the app over on the order screen when the code belongs to somebody already', async () => {
     answerWith(200, {
+      deviceId: 'device-1',
       deviceToken: 'token-1',
+      deviceKind: 'staffMember',
       staffMember: { id: 'staff-1', name: 'Anna' },
+      station: null,
       language: 'de',
     })
 
@@ -92,7 +95,7 @@ describe('landing on a QR code link', () => {
   })
 
   it('asks for a name when the invitation belongs to nobody yet', async () => {
-    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLanding()
     await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
@@ -102,12 +105,15 @@ describe('landing on a QR code link', () => {
 
   it('starts the app over once the name has been entered', async () => {
     answerInTurn(
-      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
+      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing', parameters: {}, details: null } },
       {
         status: 200,
         body: {
+          deviceId: 'device-2',
           deviceToken: 'token-2',
+          deviceKind: 'staffMember',
           staffMember: { id: 'staff-2', name: 'Bernd' },
+          station: null,
           language: 'de',
         },
       },
@@ -124,10 +130,15 @@ describe('landing on a QR code link', () => {
 
   it('tells the volunteer to wait when the laptop has too many requests at once', async () => {
     answerInTurn(
-      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' } },
+      { status: 400, body: { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing', parameters: {}, details: null } },
       {
         status: 429,
-        body: { code: 'TooManyRequests', messageKey: 'session.tooManyRequests', parameters: {} },
+        body: {
+          code: 'TooManyRequests',
+          messageKey: 'session.tooManyRequests',
+          parameters: {},
+          details: null,
+        },
       },
     )
 
@@ -144,7 +155,7 @@ describe('landing on a QR code link', () => {
   })
 
   it('says the code is no longer valid when the laptop refuses it', async () => {
-    answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid' })
+    answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid', parameters: {}, details: null })
 
     const notice = await failureNoticeOf(mountLanding())
 
@@ -160,7 +171,7 @@ describe('landing on a QR code link', () => {
   })
 
   it('names the waiter being off the list when the laptop says so', async () => {
-    answerWith(410, { code: 'StaffMemberIsOffTheList', messageKey: 'enrolment.staffMemberIsOffTheList' })
+    answerWith(410, { code: 'StaffMemberIsOffTheList', messageKey: 'enrolment.staffMemberIsOffTheList', parameters: {}, details: null })
 
     const notice = await failureNoticeOf(mountLanding())
 
@@ -177,7 +188,7 @@ describe('landing on a QR code link', () => {
 
   it('offers to carry on when the phone is already set up', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.already-here')
-    answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid' })
+    answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid', parameters: {}, details: null })
 
     const landing = mountLanding()
     const notice = await failureNoticeOf(landing)
@@ -196,7 +207,7 @@ describe('the length of the name a waiter types while enrolling', () => {
   })
 
   it('stops where the laptop stops storing it', async () => {
-    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLanding()
     await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))
@@ -214,7 +225,7 @@ describe('the language picker on the QR landing', () => {
   })
 
   it('writes the enrolment screen in the language the reader chooses', async () => {
-    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing' })
+    answerWith(400, { code: 'ValidationFailed', messageKey: 'enrolment.nameMissing', parameters: {}, details: null })
 
     const landing = mountLandingFollowingTheChosenLanguage()
     await vi.waitFor(() => expect(landing.find('.enrolment').exists()).toBe(true))

@@ -7,7 +7,7 @@ import ItemDialog from '../../../src/components/admin/items/ItemDialog.vue'
 import CategoryDialog from '../../../src/components/admin/categories/CategoryDialog.vue'
 import type { AdminCategory } from '../../../src/core/apiTypes'
 import { useAdminCategoriesStore } from '../../../src/stores/admin/categories'
-import type { AdminItem } from '../../../src/stores/admin/items'
+import type { AdminItem } from '../../../src/core/apiTypes'
 import de from '../../../src/locales/de.json'
 import en from '../../../src/locales/en.json'
 

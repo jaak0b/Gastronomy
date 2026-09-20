@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { listFrom, request } from '../../api/client'
+import { request, requestAction } from '../../api/client'
+import { adminCategoriesResponseSchema, adminCategorySchema } from '../../core/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
@@ -28,7 +29,9 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   async function load(): Promise<void> {
     loadFailed.value = false
     const token = categoriesGate.start()
-    const result = await request<unknown>('/api/admin/categories')
+    const result = await request('/api/admin/categories', {
+      schema: adminCategoriesResponseSchema,
+    })
     if (!categoriesGate.isCurrent(token)) {
       return
     }
@@ -36,19 +39,15 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminCategory>(result.data, 'categories')
-    if (rows === null) {
-      loadFailed.value = true
-      return
-    }
-    categories.value = rows
+    categories.value = result.data.categories
   }
 
   async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
     const token = categoriesGate.start()
-    const result = await request<AdminCategory>('/api/admin/categories', {
+    const result = await request('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
+      schema: adminCategorySchema,
     })
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
@@ -62,7 +61,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   async function save(
     category: AdminCategoryDraft & { categoryId: string },
   ): Promise<AdminActionResult<null>> {
-    const result = await request(`/api/admin/categories/${category.categoryId}`, {
+    const result = await requestAction(`/api/admin/categories/${category.categoryId}`, {
       method: 'PUT',
       body: { name: category.name, colourHex: category.colourHex },
     })
@@ -86,20 +85,20 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     direction: CategoryMoveDirection,
   ): Promise<AdminActionResult<null>> {
     const token = categoriesGate.start()
-    const result = await request<unknown>(`/api/admin/categories/${categoryId}/move`, {
+    const result = await request(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',
       body: { direction },
+      schema: adminCategoriesResponseSchema,
     })
-    if (result.kind !== 'ok') {
-      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
-    }
-    const rows = listFrom<AdminCategory>(result.data, 'categories')
-    if (rows === null) {
+    if (result.kind === 'unreadableAnswer') {
       await load()
       return adminFailed(adminErrorMessage(null))
     }
+    if (result.kind !== 'ok') {
+      return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
+    }
     if (categoriesGate.isCurrent(token)) {
-      categories.value = rows
+      categories.value = result.data.categories
     }
     return adminOk(null)
   }
@@ -109,7 +108,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     isActive: boolean,
   ): Promise<AdminActionResult<null>> {
     const action = isActive ? 'activate' : 'deactivate'
-    const result = await request(`/api/admin/categories/${categoryId}/${action}`, {
+    const result = await requestAction(`/api/admin/categories/${categoryId}/${action}`, {
       method: 'POST',
     })
     if (result.kind !== 'ok') {

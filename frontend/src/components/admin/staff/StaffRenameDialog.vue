@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminStaffMember } from '../../../stores/admin/staff'
+import type { AdminStaffMember } from '../../../core/apiTypes'
 import FormDialog from '../FormDialog.vue'
 
 const props = defineProps<{ staffMember: AdminStaffMember; errorText: string | null }>()

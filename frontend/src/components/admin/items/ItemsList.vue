@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
-import type { AdminCategory } from '../../../core/apiTypes'
+import type { AdminCategory, AdminItem } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
 import { groupByCategory } from '../../../core/grouping'
 import { letteringColourOn } from '../../../core/letteringColour'
@@ -13,11 +13,7 @@ import {
   type CategoryMoveDirection,
 } from '../../../stores/admin/categories'
 import { useAdminFestivalsStore } from '../../../stores/admin/festivals'
-import {
-  useAdminItemsStore,
-  type AdminItem,
-  type AdminItemDraft,
-} from '../../../stores/admin/items'
+import { useAdminItemsStore, type AdminItemDraft } from '../../../stores/admin/items'
 import CategoryDialog from '../categories/CategoryDialog.vue'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useRefusalText } from '../refusalText'

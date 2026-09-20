@@ -69,7 +69,12 @@ describe('fetching an invitation QR code', () => {
     stubLaptop(
       () =>
         new Response(
-          JSON.stringify({ code: 'EnrolmentCodeAlreadyUsed', messageKey: 'admin.enrol.qrAlreadyUsed' }),
+          JSON.stringify({
+            code: 'EnrolmentCodeAlreadyUsed',
+            messageKey: 'admin.enrol.qrAlreadyUsed',
+            parameters: {},
+            details: null,
+          }),
           { status: 410 },
         ),
     )
@@ -147,7 +152,12 @@ describe('creating an invitation from the admin screen', () => {
     stubLaptop(
       () =>
         new Response(
-          JSON.stringify({ code: 'EnrolmentCodeExpired', messageKey: 'admin.enrol.expired' }),
+          JSON.stringify({
+            code: 'EnrolmentCodeExpired',
+            messageKey: 'admin.enrol.expired',
+            parameters: {},
+            details: null,
+          }),
           { status: 410 },
         ),
     )
@@ -171,7 +181,12 @@ describe('creating an invitation from the admin screen', () => {
         }
         if (url.endsWith('/invitations') && wasAskedBefore) {
           return new Response(
-            JSON.stringify({ code: 'Conflict', messageKey: 'admin.actionFailed', parameters: {} }),
+            JSON.stringify({
+              code: 'Conflict',
+              messageKey: 'admin.actionFailed',
+              parameters: {},
+              details: null,
+            }),
             { status: 409 },
           )
         }
@@ -206,6 +221,7 @@ describe('creating an invitation from the admin screen', () => {
               code: 'ValidationFailed',
               messageKey: 'enrolment.atMostOneOwner',
               parameters: {},
+              details: null,
             }),
             { status: 400 },
           ),

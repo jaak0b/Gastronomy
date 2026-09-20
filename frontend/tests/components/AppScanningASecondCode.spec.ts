@@ -47,6 +47,7 @@ function aLaptopThatTurnsTheTabletIntoAPhone(): unknown[] {
       }
       return new Response(
         JSON.stringify({
+          festival: null,
           categories: [],
           items: [],
           stations: [],

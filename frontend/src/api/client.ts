@@ -1,9 +1,11 @@
+import type { z } from 'zod'
 import { isApiErrorBody, type ApiErrorBody } from '../core/apiError'
 
 export type ApiResult<T> =
   | { kind: 'ok'; status: number; data: T }
   | { kind: 'error'; status: number; body: ApiErrorBody | null; raw: unknown }
   | { kind: 'unreachable' }
+  | { kind: 'unreadableAnswer'; status: number; raw: unknown }
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -32,7 +34,9 @@ export function answerIsABusinessRefusal(result: ApiResult<unknown>): boolean {
   )
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
+type RequestOutcome = { kind: 'notReached' } | { kind: 'answered'; response: Response }
+
+async function sendTheRequest(path: string, options: RequestOptions): Promise<RequestOutcome> {
   const headers: Record<string, string> = {}
   if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
@@ -52,44 +56,66 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       signal: timeLimit?.signal,
     })
   } catch {
-    return { kind: 'unreachable' }
+    return { kind: 'notReached' }
   } finally {
     if (alarm !== null) {
       clearTimeout(alarm)
     }
   }
-  if (response.status === 204) {
-    return { kind: 'ok', status: response.status, data: undefined as T }
-  }
-  let payload: unknown = null
-  try {
-    payload = await response.json()
-  } catch {
-    payload = null
-  }
   if (response.status === UNAUTHORISED) {
     reportThatTheDeviceIsNoLongerKnown()
   }
-  if (!response.ok) {
-    return {
-      kind: 'error',
-      status: response.status,
-      body: isApiErrorBody(payload) ? payload : null,
-      raw: payload,
-    }
-  }
-  return { kind: 'ok', status: response.status, data: payload as T }
+  return { kind: 'answered', response }
 }
 
-export function listFrom<T>(data: unknown, key: string): T[] | null {
-  if (Array.isArray(data)) {
-    return data as T[]
+async function readJsonBody(response: Response): Promise<unknown> {
+  try {
+    return await response.json()
+  } catch {
+    return null
   }
-  if (typeof data === 'object' && data !== null) {
-    const inner = (data as Record<string, unknown>)[key]
-    if (Array.isArray(inner)) {
-      return inner as T[]
-    }
+}
+
+function errorAnswer(status: number, payload: unknown): ApiResult<never> {
+  return {
+    kind: 'error',
+    status,
+    body: isApiErrorBody(payload) ? payload : null,
+    raw: payload,
   }
-  return null
+}
+
+export async function request<T>(
+  path: string,
+  options: RequestOptions & { schema: z.ZodType<T> },
+): Promise<ApiResult<T>> {
+  const outcome = await sendTheRequest(path, options)
+  if (outcome.kind === 'notReached') {
+    return { kind: 'unreachable' }
+  }
+  const { response } = outcome
+  const payload = await readJsonBody(response)
+  if (!response.ok) {
+    return errorAnswer(response.status, payload)
+  }
+  const parsed = options.schema.safeParse(payload)
+  if (!parsed.success) {
+    return { kind: 'unreadableAnswer', status: response.status, raw: payload }
+  }
+  return { kind: 'ok', status: response.status, data: parsed.data }
+}
+
+export async function requestAction(
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResult<null>> {
+  const outcome = await sendTheRequest(path, options)
+  if (outcome.kind === 'notReached') {
+    return { kind: 'unreachable' }
+  }
+  const { response } = outcome
+  if (response.ok) {
+    return { kind: 'ok', status: response.status, data: null }
+  }
+  return errorAnswer(response.status, await readJsonBody(response))
 }

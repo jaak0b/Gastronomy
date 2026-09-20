@@ -24,6 +24,7 @@ function answerWith(totalCents: number) {
             orderId: 'order-1',
             globalOrderNumber: 1,
             totalCents,
+            createdAtUtc: '2026-09-05T18:00:00Z',
             stationOrders: [],
           }),
           { status: 200 },

@@ -4,6 +4,7 @@ import { assertNever } from './assertNever'
 export type SendFailure =
   | { kind: 'unreachable' }
   | { kind: 'error'; status: number; body: ApiErrorBody | null }
+  | { kind: 'unreadableAnswer' }
 
 export interface SendFailureMessage {
   key: string
@@ -34,6 +35,7 @@ export function messageForAnInterruptedSend(): SendFailureMessage {
 export function messageForSendFailure(failure: SendFailure): SendFailureMessage {
   switch (failure.kind) {
     case 'unreachable':
+    case 'unreadableAnswer':
       return { key: 'review.sendFailed' }
     case 'error': {
       const statedReason = keyForRejection(failure.status, failure.body)

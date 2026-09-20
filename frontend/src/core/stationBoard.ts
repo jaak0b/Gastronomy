@@ -6,6 +6,7 @@ import { collapseLines } from './collapse'
 export type StationFailure =
   | { kind: 'unreachable' }
   | { kind: 'error'; status: number; body: ApiErrorBody | null; raw: unknown }
+  | { kind: 'unreadableAnswer'; status: number; raw: unknown }
 
 export interface ItemLine {
   itemName: string
@@ -25,6 +26,8 @@ export function stationFailureKey(failure: StationFailure): string {
       return 'station.actionNotReached'
     case 'error':
       return failure.body === null ? 'station.actionFailed' : failure.body.messageKey
+    case 'unreadableAnswer':
+      return 'station.actionFailed'
     default:
       return assertNever(failure)
   }

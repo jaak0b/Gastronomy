@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { onUnauthorisedAnswer, request } from '../api/client'
+import { onUnauthorisedAnswer, request, requestAction } from '../api/client'
+import { redeemResponseSchema, sessionInfoSchema } from '../core/apiSchemas'
 import type {
   AppLanguage,
   DeviceKind,
-  RedeemResponse,
   StaffMember,
-  SessionInfo,
   StationIdentity,
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
@@ -83,7 +82,7 @@ export const useSessionStore = defineStore('session', () => {
     if (deviceToken.value === null) {
       return
     }
-    void request('/api/session/language', {
+    void requestAction('/api/session/language', {
       method: 'PUT',
       body: { language: next },
       token: deviceToken.value,
@@ -106,7 +105,7 @@ export const useSessionStore = defineStore('session', () => {
 
   async function redeem(input: RedeemInput): Promise<boolean> {
     redeemErrorKey.value = null
-    const result = await request<RedeemResponse>('/api/enrolment/redeem', {
+    const result = await request('/api/enrolment/redeem', {
       method: 'POST',
       body: {
         code: input.code ?? null,
@@ -114,6 +113,7 @@ export const useSessionStore = defineStore('session', () => {
         userAgent: navigator.userAgent,
         previousDeviceToken: storedDeviceToken(),
       },
+      schema: redeemResponseSchema,
     })
     switch (result.kind) {
       case 'ok':
@@ -124,6 +124,7 @@ export const useSessionStore = defineStore('session', () => {
         storeLanguage(result.data.language)
         return true
       case 'unreachable':
+      case 'unreadableAnswer':
         redeemErrorKey.value = 'enrol.error.noConnection'
         return false
       case 'error':
@@ -140,7 +141,10 @@ export const useSessionStore = defineStore('session', () => {
       return
     }
     startingUpFailure.value = null
-    const result = await request<SessionInfo>('/api/session', { token: tokenTheAnswerBelongsTo })
+    const result = await request('/api/session', {
+      token: tokenTheAnswerBelongsTo,
+      schema: sessionInfoSchema,
+    })
     if (deviceToken.value !== tokenTheAnswerBelongsTo) {
       return
     }
@@ -153,6 +157,7 @@ export const useSessionStore = defineStore('session', () => {
         language.value = result.data.language
         return
       case 'error':
+      case 'unreadableAnswer':
         startingUpFailure.value = 'theLaptopCouldNotAnswer'
         return
       case 'unreachable':

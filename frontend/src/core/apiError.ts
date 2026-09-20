@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 export interface ApiErrorBody {
   code: string
   messageKey: string
@@ -5,10 +7,13 @@ export interface ApiErrorBody {
   details: string | null
 }
 
+const apiErrorBodySchema: z.ZodType<ApiErrorBody> = z.object({
+  code: z.string(),
+  messageKey: z.string(),
+  parameters: z.record(z.string(), z.union([z.string(), z.number()])),
+  details: z.string().nullable(),
+})
+
 export function isApiErrorBody(value: unknown): value is ApiErrorBody {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.code === 'string' && typeof candidate.messageKey === 'string'
+  return apiErrorBodySchema.safeParse(value).success
 }

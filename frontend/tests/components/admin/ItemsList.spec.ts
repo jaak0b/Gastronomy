@@ -69,6 +69,7 @@ const ONE_ITEM = {
       sortOrder: 1,
       isActive: true,
       productionMinutes: null,
+      isQueueIndependent: false,
       atTheFestival: { priceCents: 350, isAvailable: true, stationIds: [STATION_ID] },
     },
   ],

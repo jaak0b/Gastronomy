@@ -1,13 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { listFrom, request } from '../api/client'
-import type {
-  Catalog,
-  CatalogCategory,
-  CatalogItem,
-  CatalogStation,
-  RunningFestival,
-} from '../core/apiTypes'
+import { request } from '../api/client'
+import { catalogSchema } from '../core/apiSchemas'
+import type { Catalog, CatalogCategory, CatalogItem } from '../core/apiTypes'
 import { findCatalogStation } from '../core/basket'
 import { groupByCategory, type CategoryGroup } from '../core/grouping'
 import { createLatestRequestGate } from '../core/latestRequestGate'
@@ -20,21 +15,6 @@ const EMPTY_CATALOG: Catalog = {
   categories: [],
   items: [],
   stations: [],
-}
-
-function runningFestivalIn(data: unknown): RunningFestival | null {
-  if (typeof data !== 'object' || data === null) {
-    return null
-  }
-  const festival = (data as Record<string, unknown>).festival
-  if (typeof festival !== 'object' || festival === null) {
-    return null
-  }
-  const candidate = festival as Record<string, unknown>
-  if (typeof candidate.festivalId !== 'string' || typeof candidate.name !== 'string') {
-    return null
-  }
-  return { festivalId: candidate.festivalId, name: candidate.name }
 }
 
 export const useCatalogStore = defineStore('catalog', () => {
@@ -63,19 +43,17 @@ export const useCatalogStore = defineStore('catalog', () => {
       return
     }
     const token = loadGate.start()
-    const result = await request<unknown>('/api/catalog', { token: session.deviceToken })
+    const result = await request('/api/catalog', {
+      token: session.deviceToken,
+      schema: catalogSchema,
+    })
     if (!loadGate.isCurrent(token)) {
       return
     }
     if (result.kind !== 'ok') {
       return
     }
-    catalog.value = {
-      festival: runningFestivalIn(result.data),
-      categories: listFrom<CatalogCategory>(result.data, 'categories') ?? [],
-      items: listFrom<CatalogItem>(result.data, 'items') ?? [],
-      stations: listFrom<CatalogStation>(result.data, 'stations') ?? [],
-    }
+    catalog.value = result.data
     hasLoaded.value = true
     useOrderStore().dropTheDraftIfTheFestivalChanged()
   }

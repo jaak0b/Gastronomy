@@ -22,6 +22,7 @@ function stubTheLaptop(): string[] {
       }
       return new Response(
         JSON.stringify({
+          festival: null,
           categories: [],
           items: [],
           stations: [],

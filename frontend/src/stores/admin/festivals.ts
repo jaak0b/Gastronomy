@@ -1,26 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { listFrom, request, type ApiResult } from '../../api/client'
+import { request, requestAction, type ApiResult } from '../../api/client'
+import { adminFestivalsResponseSchema } from '../../core/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import {
   adminFailed,
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
+import type { AdminFestival } from '../../core/apiTypes'
 import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
-
-export interface AdminFestival {
-  festivalId: string
-  name: string
-  startsAtUtc: string
-  endsAtUtc: string
-  isHidden: boolean
-  isRunning: boolean
-  stationCount: number
-  menuItemCount: number
-  orderCount: number
-}
 
 export interface FestivalDraft {
   name: string
@@ -46,7 +36,9 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   async function load(): Promise<void> {
     loadFailed.value = false
     const token = festivalsGate.start()
-    const result = await request<unknown>('/api/admin/festivals')
+    const result = await request('/api/admin/festivals', {
+      schema: adminFestivalsResponseSchema,
+    })
     if (!festivalsGate.isCurrent(token)) {
       return
     }
@@ -54,12 +46,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
       loadFailed.value = true
       return
     }
-    const rows = listFrom<AdminFestival>(result.data, 'festivals')
-    if (rows === null) {
-      loadFailed.value = true
-      return
-    }
-    festivals.value = rows
+    festivals.value = result.data.festivals
   }
 
   function buildFestivalRequestBody(draft: FestivalDraft): FestivalDraft {
@@ -75,7 +62,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   async function create(draft: FestivalDraft): Promise<AdminActionResult<null>> {
-    const result = await request('/api/admin/festivals', {
+    const result = await requestAction('/api/admin/festivals', {
       method: 'POST',
       body: buildFestivalRequestBody(draft),
     })
@@ -83,7 +70,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   async function save(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
-    const result = await request(`/api/admin/festivals/${festivalId}`, {
+    const result = await requestAction(`/api/admin/festivals/${festivalId}`, {
       method: 'PUT',
       body: buildFestivalRequestBody(draft),
     })
@@ -91,7 +78,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   async function copy(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
-    const result = await request(`/api/admin/festivals/${festivalId}/copy`, {
+    const result = await requestAction(`/api/admin/festivals/${festivalId}/copy`, {
       method: 'POST',
       body: buildFestivalRequestBody(draft),
     })
@@ -99,12 +86,16 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   }
 
   async function hide(festivalId: string): Promise<AdminActionResult<null>> {
-    const result = await request(`/api/admin/festivals/${festivalId}/hide`, { method: 'POST' })
+    const result = await requestAction(`/api/admin/festivals/${festivalId}/hide`, {
+      method: 'POST',
+    })
     return reportAndReload(result)
   }
 
   async function show(festivalId: string): Promise<AdminActionResult<null>> {
-    const result = await request(`/api/admin/festivals/${festivalId}/show`, { method: 'POST' })
+    const result = await requestAction(`/api/admin/festivals/${festivalId}/show`, {
+      method: 'POST',
+    })
     return reportAndReload(result)
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../api/client'
 import { fetchInvitationQr } from '../../api/invitationQr'
+import { invitationSchema } from '../../core/apiSchemas'
 import { adminErrorMessage } from '../../core/adminErrorMessage'
 import { adminFailed, adminOk, type AdminActionResult } from '../../core/adminActionResult'
 import type { DeviceKind, Invitation } from '../../core/apiTypes'
@@ -63,9 +64,10 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     const token = invitationGate.start()
     enrolled.value = null
     invitationQr.value = { kind: 'loading' }
-    const result = await request<Invitation>('/api/admin/enrolment/invitations', {
+    const result = await request('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: bodyFor(owner),
+      schema: invitationSchema,
     })
     if (!invitationGate.isCurrent(token)) {
       return adminOk(null)

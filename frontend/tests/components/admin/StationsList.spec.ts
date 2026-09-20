@@ -16,6 +16,7 @@ const ONE_STATION = JSON.stringify({
       sortOrder: 1,
       isActive: true,
       hasDevice: true,
+      isAtTheFestival: true,
     },
   ],
 })

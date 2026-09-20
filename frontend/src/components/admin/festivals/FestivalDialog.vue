@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { AdminFestival } from '../../../core/apiTypes'
 import { localInputToUtcIso, utcIsoToLocalInput } from '../../../core/festivalTimes'
-import type { AdminFestival, FestivalDraft } from '../../../stores/admin/festivals'
+import type { FestivalDraft } from '../../../stores/admin/festivals'
 import FormDialog from '../FormDialog.vue'
 
 const props = defineProps<{

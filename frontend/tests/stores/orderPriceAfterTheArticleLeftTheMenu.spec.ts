@@ -97,7 +97,13 @@ describe('a retry after the article left the menu', () => {
           throw new TypeError('Failed to fetch')
         }
         return new Response(
-          JSON.stringify({ orderId: 'order-1', globalOrderNumber: 7, totalCents: 0, stationOrders: [] }),
+          JSON.stringify({
+            orderId: 'order-1',
+            globalOrderNumber: 7,
+            totalCents: 0,
+            createdAtUtc: '2026-09-05T18:00:00Z',
+            stationOrders: [],
+          }),
           { status: 200 },
         )
       }),

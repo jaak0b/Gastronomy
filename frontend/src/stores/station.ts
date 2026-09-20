@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../api/client'
-import type {
-  StationFulfilledResponse,
-  StationIdentity,
-  StationOrder,
-  StationOrdersResponse,
-} from '../core/apiTypes'
+import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../core/apiSchemas'
+import type { StationIdentity, StationOrder, StationOrdersResponse } from '../core/apiTypes'
 import { createLatestRequestGate } from '../core/latestRequestGate'
 import { retainOpenItemIds, stationFailureKey } from '../core/stationBoard'
 import { useConnectionStore } from './connection'
@@ -51,8 +47,9 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     const token = boardGate.start()
-    const result = await request<StationOrdersResponse>('/api/station/orders', {
+    const result = await request('/api/station/orders', {
       token: deviceToken(),
+      schema: stationOrdersResponseSchema,
     })
     if (!boardGate.isCurrent(token)) {
       return
@@ -73,8 +70,9 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     const token = fulfilledGate.start()
-    const result = await request<StationFulfilledResponse>('/api/station/orders/fulfilled', {
+    const result = await request('/api/station/orders/fulfilled', {
       token: deviceToken(),
+      schema: stationFulfilledResponseSchema,
     })
     if (!fulfilledGate.isCurrent(token)) {
       return
@@ -116,10 +114,11 @@ export const useStationStore = defineStore('station', () => {
     isWorking.value = true
     const token = boardGate.start()
     newestActionToken = token
-    const result = await request<StationOrdersResponse>('/api/station/items/fulfill', {
+    const result = await request('/api/station/items/fulfill', {
       method: 'POST',
       body: { orderItemIds },
       token: deviceToken(),
+      schema: stationOrdersResponseSchema,
     })
     if (newestActionToken === token) {
       isWorking.value = false
@@ -139,10 +138,11 @@ export const useStationStore = defineStore('station', () => {
     isWorking.value = true
     const token = boardGate.start()
     newestActionToken = token
-    const result = await request<StationOrdersResponse>('/api/station/items/unfulfill', {
+    const result = await request('/api/station/items/unfulfill', {
       method: 'POST',
       body: { orderItemIds: [orderItemId] },
       token: deviceToken(),
+      schema: stationOrdersResponseSchema,
     })
     if (newestActionToken === token) {
       isWorking.value = false
@@ -165,13 +165,11 @@ export const useStationStore = defineStore('station', () => {
     isWorking.value = true
     const token = boardGate.start()
     newestActionToken = token
-    const result = await request<StationOrdersResponse>(
-      `/api/station/orders/${stationOrderId}/hide`,
-      {
-        method: 'POST',
-        token: deviceToken(),
-      },
-    )
+    const result = await request(`/api/station/orders/${stationOrderId}/hide`, {
+      method: 'POST',
+      token: deviceToken(),
+      schema: stationOrdersResponseSchema,
+    })
     if (newestActionToken === token) {
       isWorking.value = false
     }

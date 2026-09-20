@@ -13,6 +13,7 @@ const { useSessionStore } = await import('../../src/stores/session')
 const { restoreDraft, saveDraft, saveSendProgress } = await import('../../src/core/draftCart')
 
 const SESSION = {
+  deviceId: 'device-1',
   deviceKind: 'staffMember',
   staffMember: { id: 'staff-1', name: 'Anna' },
   station: null,
@@ -20,6 +21,7 @@ const SESSION = {
 }
 
 const CATALOG = {
+  festival: null,
   categories: [
     { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#90CAF9', sortOrder: 1 },
   ],
@@ -33,6 +35,7 @@ const CATALOG = {
       isAvailable: true,
       stationIds: ['station-bar'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
   ],
   stations: [{ id: 'station-bar', name: 'Bar', sortOrder: 1 }],

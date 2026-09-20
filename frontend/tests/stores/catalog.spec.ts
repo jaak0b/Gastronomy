@@ -8,6 +8,7 @@ import { useSessionStore, TOKEN_STORAGE_KEY } from '../../src/stores/session'
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const FULL_CATALOG = {
+  festival: null,
   categories: [
     { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
   ],
@@ -21,6 +22,7 @@ const FULL_CATALOG = {
       isAvailable: true,
       stationIds: ['station-kueche'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
   ],
   stations: [{ id: 'station-kueche', name: 'Küche', sortOrder: 1 }],
@@ -54,7 +56,7 @@ describe('the catalog on the phone', () => {
   })
 
   it('stands empty rather than breaking when the laptop sends no categories', async () => {
-    laptopAnswers({ items: [], stations: [] })
+    laptopAnswers({ festival: null, categories: [], items: [], stations: [] })
     const catalog = useCatalogStore()
 
     await catalog.load()

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { deliveryModeSchema } from './apiSchemas'
 import type {
   DeliveryMode,
   DraftLine,
@@ -13,10 +14,6 @@ import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 
 export const DRAFT_STORAGE_KEY = 'draftOrder'
 export const SEND_PROGRESS_STORAGE_KEY = 'draftOrderSend'
-
-const DELIVERY_MODES = ['together', 'asItComes'] as const
-
-const deliveryModeSchema = z.enum(DELIVERY_MODES)
 
 const draftLineSchema: z.ZodType<DraftLine> = z.strictObject({
   catalogItemId: z.string(),

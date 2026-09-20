@@ -18,9 +18,11 @@ function stubTheLaptop(): void {
         new Response(
           JSON.stringify({
             language: 'de',
+            deviceId: 'device-1',
             deviceKind: 'staffMember',
             staffMember: { id: 'staff-1', name: 'Anna' },
             station: null,
+            festival: null,
             categories: [],
             items: [],
             stations: [],

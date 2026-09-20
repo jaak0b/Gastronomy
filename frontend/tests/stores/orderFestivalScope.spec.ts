@@ -14,6 +14,7 @@ const BRATWURST = {
   isAvailable: true,
   stationIds: ['station-kueche'],
   productionMinutes: null,
+  isQueueIndependent: false,
 }
 
 function catalogOf(festivalId: string | null) {

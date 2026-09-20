@@ -12,6 +12,7 @@ const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY, useSessionStore } = await impor
 )
 
 const CATALOG = {
+  festival: null,
   categories: [
     { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
   ],
@@ -25,6 +26,7 @@ const CATALOG = {
       isAvailable: true,
       stationIds: ['station-kueche'],
       productionMinutes: null,
+      isQueueIndependent: false,
     },
   ],
   stations: [{ id: 'station-kueche', name: 'Küche', sortOrder: 1 }],

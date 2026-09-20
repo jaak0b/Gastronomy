@@ -34,9 +34,11 @@ describe('the app puts a device behind the door as soon as its screen is on disp
               language: 'de',
             }
           : {
+              festival: null,
               stations: [],
               stationOrders: [],
               orders: [],
+              asItComes: [],
               items: [],
               station: { id: 's-1', name: 'Küche' },
             }

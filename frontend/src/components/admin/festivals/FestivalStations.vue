@@ -2,12 +2,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../../core/adminErrorMessage'
+import type { AdminStation } from '../../../core/apiTypes'
 import { assertNever } from '../../../core/assertNever'
-import {
-  useAdminStationsStore,
-  type AdminStation,
-  type StationDraft,
-} from '../../../stores/admin/stations'
+import { useAdminStationsStore, type StationDraft } from '../../../stores/admin/stations'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useRefusalText } from '../refusalText'
 import StationDialog from '../stations/StationDialog.vue'

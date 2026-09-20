@@ -104,7 +104,14 @@ describe('the screen a device lands on', () => {
               station: null,
               language: 'de',
             }
-          : { stations: [], stationOrders: [], orders: [], items: [], station: { id: 's-1', name: 'Küche' } }
+          : {
+              festival: null,
+              stations: [],
+              stationOrders: [],
+              orders: [],
+              items: [],
+              station: { id: 's-1', name: 'Küche' },
+            }
         return new Response(JSON.stringify(payload), { status: 200 })
       }),
     )
@@ -124,6 +131,7 @@ describe('the screen a device lands on', () => {
               language: 'de',
             }
           : {
+              festival: null,
               stations: [],
               stationOrders: [],
               orders: [],

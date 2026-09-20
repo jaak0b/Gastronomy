@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../api/client'
+import {
+  openItemsResponseSchema,
+  settlementResponseSchema,
+  tableNamesResponseSchema,
+} from '../core/apiSchemas'
 import type {
-  OpenItemsResponse,
   OpenItemsSettleLine,
   OpenTable,
   SettlementResponse,
-  TableNamesResponse,
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
 import { createLatestRequestGate } from '../core/latestRequestGate'
@@ -51,7 +54,10 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     const token = tablesGate.start()
-    const result = await request<OpenItemsResponse>('/api/open-items', { token: deviceToken() })
+    const result = await request('/api/open-items', {
+      token: deviceToken(),
+      schema: openItemsResponseSchema,
+    })
     if (!tablesGate.isCurrent(token)) {
       return
     }
@@ -70,8 +76,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     const token = tableNamesGate.start()
-    const result = await request<TableNamesResponse>('/api/open-items/table-names', {
+    const result = await request('/api/open-items/table-names', {
       token: deviceToken(),
+      schema: tableNamesResponseSchema,
     })
     if (!tableNamesGate.isCurrent(token)) {
       return
@@ -140,6 +147,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
         await load()
         return 'refused'
       case 'unreachable':
+      case 'unreadableAnswer':
         notice.value = { key: 'openItems.settleAnswerNeverCame', parameters: {}, count: null }
         return 'answerNeverCame'
       default:
@@ -160,11 +168,12 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       paymentNotice: split[index].paymentNotice,
     }))
     return await accept(
-      await request<SettlementResponse>('/api/open-items/settle', {
+      await request('/api/open-items/settle', {
         method: 'POST',
         body: { lines },
         token: deviceToken(),
         timeoutMs: SEND_TIMEOUT_MS,
+        schema: settlementResponseSchema,
       }),
       lines,
     )

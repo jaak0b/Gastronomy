@@ -5,7 +5,7 @@ import { VAutocomplete, VCheckbox } from 'vuetify/components'
 import FestivalPage from '../../../src/components/admin/festivals/FestivalPage.vue'
 import FestivalPlacementDialog from '../../../src/components/admin/festivals/FestivalPlacementDialog.vue'
 import StationSelect from '../../../src/components/admin/festivals/StationSelect.vue'
-import type { AdminItem } from '../../../src/stores/admin/items'
+import type { AdminItem } from '../../../src/core/apiTypes'
 import { useConnectionStore } from '../../../src/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../support/plugins'
 
@@ -798,6 +798,7 @@ describe('the items of this festival', () => {
           sortOrder: 3,
           isActive: true,
           productionMinutes: null,
+          isQueueIndependent: false,
           atTheFestival: null,
         },
       ],

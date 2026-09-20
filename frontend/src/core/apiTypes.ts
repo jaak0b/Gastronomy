@@ -21,6 +21,81 @@ export interface AdminCategory extends CatalogCategory {
   isActive: boolean
 }
 
+export interface AdminItemAtFestival {
+  priceCents: number
+  isAvailable: boolean
+  stationIds: string[]
+}
+
+export interface AdminItem {
+  itemId: string
+  name: string
+  categoryId: string
+  sortOrder: number
+  isActive: boolean
+  productionMinutes: number | null
+  isQueueIndependent: boolean
+  atTheFestival: AdminItemAtFestival | null
+}
+
+export interface AdminCategoriesResponse {
+  categories: AdminCategory[]
+}
+
+export interface AdminItemsResponse {
+  items: AdminItem[]
+}
+
+export interface AdminFestival {
+  festivalId: string
+  name: string
+  startsAtUtc: string
+  endsAtUtc: string
+  isHidden: boolean
+  isRunning: boolean
+  stationCount: number
+  menuItemCount: number
+  orderCount: number
+}
+
+export interface AdminFestivalsResponse {
+  festivals: AdminFestival[]
+}
+
+export interface AdminStaffMember {
+  staffMemberId: string
+  name: string
+  isActive: boolean
+  hasDevice: boolean
+  lastSeenAtUtc: string | null
+  hasOutstandingInvitation: boolean
+}
+
+export interface AdminStaffMembersResponse {
+  staffMembers: AdminStaffMember[]
+}
+
+export interface AdminStation {
+  stationId: string
+  name: string
+  sortOrder: number
+  isActive: boolean
+  hasDevice: boolean
+  isAtTheFestival: boolean
+}
+
+export interface AdminStationsResponse {
+  stations: AdminStation[]
+}
+
+export interface CreatedItem {
+  itemId: string
+}
+
+export interface CreatedStation {
+  stationId: string
+}
+
 export interface CatalogStation {
   id: string
   name: string
@@ -170,6 +245,10 @@ export interface StationIdentity {
 }
 
 export type AppLanguage = 'de' | 'en'
+
+export interface LanguageResponse {
+  language: AppLanguage
+}
 
 export interface SessionInfo {
   deviceId: string

@@ -7,16 +7,8 @@ const BACKEND_STATION = {
   name: 'Küche',
   sortOrder: 1,
   isActive: true,
-  accessKey: 'key-kueche',
-  breakGlassUrl: 'http://192.168.1.20:5000/s/key-kueche',
-  transportKind: 'Mock',
-  host: null,
-  port: 9100,
-  isEnabled: true,
-  isOnline: true,
-  isPaperEnd: false,
-  isCoverOpen: false,
-  isFaulty: false,
+  hasDevice: false,
+  isAtTheFestival: true,
 }
 
 interface RecordedCall {
