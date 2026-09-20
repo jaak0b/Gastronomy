@@ -474,11 +474,11 @@ describe('an order the laptop did not confirm', () => {
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
   })
 
-  it('offers writing the order down as soon as an attempt got no answer', async () => {
+  it('keeps the paper route away until the second attempt got no answer as well', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
-    expect(review.find('.written-down').exists()).toBe(true)
+    expect(review.find('.written-down').exists()).toBe(false)
     expect(review.find('.back').exists()).toBe(false)
   })
 
@@ -497,6 +497,8 @@ describe('an order the laptop did not confirm', () => {
   it('starts the next order once the waiter has written this one down', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
+    await review.get('.send-again').trigger('click')
+    await vi.waitFor(() => expect(review.find('.written-down').exists()).toBe(true))
 
     await review.get('.written-down').trigger('click')
 

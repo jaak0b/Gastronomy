@@ -100,7 +100,7 @@ function backToItems(): void {
       <div class="pt-3 pb-4">
         <template v-if="order.changesAreRefused">
           <v-btn
-            v-if="!order.isSending"
+            v-if="order.onlyWritingItDownIsLeft"
             class="written-down mt-2"
             color="primary"
             block
