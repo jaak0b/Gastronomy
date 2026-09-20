@@ -2,7 +2,7 @@
 
 Condensed from the Vue guide's Composables chapter and Composition API FAQ, the Pinia core concepts
 (Defining a Store, State, Getters, Actions) and the Composing Stores cookbook, the Vue Router guide
-(Getting Started, Lazy Loading Routes, Navigation Guards), and the Feature-Sliced Design overview
+(Getting Started, Navigation Guards), and the Feature-Sliced Design overview
 and layer reference (layer definitions and the import rule only). Every rule names its source page
 so it can be checked.
 
