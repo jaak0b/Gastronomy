@@ -439,6 +439,13 @@ describe('an order the laptop did not confirm', () => {
     expect(review.get('.line-name').text()).toBe('1 x Wasser')
     expect(review.get('.order-total').text()).toContain('2.00')
   })
+
+  it('shows no waiting time when the laptop never sent one, instead of a short made-up one', async () => {
+    const order = prepareOrder()
+    const review = await reviewAfterAFailedSend(order)
+
+    expect(review.get('.station-name').text()).toBe('Geht an Bar')
+  })
   it('offers the retry in the docked strip, where the send action stands', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
@@ -482,7 +489,7 @@ describe('an order the laptop did not confirm', () => {
     await review.get('.send-again').trigger('click')
     await vi.waitFor(() =>
       expect(review.get('.write-it-down').text()).toContain(
-        'Der Rechner hat zweimal nicht geantwortet.',
+        'Die Bestellung konnte noch nicht bestätigt werden.',
       ),
     )
   })
@@ -956,7 +963,7 @@ describe('the question the waiter answers before an order goes out', () => {
     expect(rowText('.row-table .value')).toBe('Tisch 3')
     expect(rowText('.row-amount .value')).toContain('2.00')
     expect(rowText('.row-station .label')).toBe('Bar:')
-    expect(rowText('.row-station .value')).toBe('Gemeinsam (~0 Min.)')
+    expect(rowText('.row-station .value')).toBe('Gemeinsam')
   })
 
   it('hands the order back untouched when the waiter backs out', async () => {

@@ -79,6 +79,7 @@ const { t } = useI18n()
 }
 
 .actions {
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 0 1rem 1rem;
 }

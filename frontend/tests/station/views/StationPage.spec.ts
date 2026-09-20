@@ -270,8 +270,8 @@ describe('the screen at a station', () => {
   it('counts what is done on the card', async () => {
     const page = await mountPage()
 
-    expect(page.findAll('.orders-column .done-counter')[0].text()).toBe('1 / 3 erledigt')
-    expect(page.findAll('.orders-column .done-counter')[1].text()).toBe('0 / 2 erledigt')
+    expect(page.findAll('.orders-column .done-counter')[0].text()).toBe('1 / 3 zubereitet')
+    expect(page.findAll('.orders-column .done-counter')[1].text()).toBe('0 / 2 zubereitet')
   })
 
   it('keeps a done item off the card and shows every open one with its note', async () => {
@@ -604,7 +604,7 @@ describe('the done view', () => {
     await page.get('.show-done').trigger('click')
     await flushPromises()
 
-    expect(page.get('.done-heading').text()).toBe('Erledigte Bestellungen')
+    expect(page.get('.done-heading').text()).toBe('Zubereitete Bestellungen')
     expect(page.findAll('.station-fulfilled')).toHaveLength(1)
     expect(page.get('.back-to-orders').text()).toBe('Zurück zu den Bestellungen')
   })
@@ -707,7 +707,7 @@ describe('the done view', () => {
     await page.get('.show-done').trigger('click')
     await flushPromises()
 
-    expect(page.get('.nothing-done').text()).toBe('Es ist noch keine Bestellung erledigt.')
+    expect(page.get('.nothing-done').text()).toBe('Es ist noch keine Bestellung zubereitet.')
   })
 })
 

@@ -59,8 +59,8 @@ describe('queuedMinutesAt', () => {
     expect(queuedMinutesAt(QUEUES, 'station-grill')).toBe(50)
   })
 
-  it('counts a station the laptop said nothing about as having no queue', () => {
-    expect(queuedMinutesAt(QUEUES, 'station-unknown')).toBe(0)
+  it('names nothing for a station the laptop said nothing about', () => {
+    expect(queuedMinutesAt(QUEUES, 'station-unknown')).toBeNull()
   })
 })
 
@@ -88,6 +88,10 @@ describe('stationReadyInMinutes, what one station will take for the whole order'
     expect(
       stationReadyInMinutes(QUEUES, [line({ productionMinutes: null })], 'station-grill'),
     ).toBe(50)
+  })
+
+  it('names nothing for a station the laptop said nothing about', () => {
+    expect(stationReadyInMinutes(QUEUES, [line()], 'station-unknown')).toBeNull()
   })
 
   it('names nothing when there is neither a queue nor a line with a time', () => {
@@ -126,6 +130,10 @@ describe('stationEstimateAfterAdding, what one station button promises', () => {
 
   it('counts an independent candidate once no matter how many units join', () => {
     expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-grill', 10, true, 3)).toBe(10)
+  })
+
+  it('promises nothing for a station the laptop said nothing about', () => {
+    expect(stationEstimateAfterAdding(PICKER_QUEUES, [], 'station-unknown', 10, false)).toBeNull()
   })
 })
 
@@ -242,6 +250,12 @@ describe('pickerEstimateRange, what the item list shows before a station is chos
 
   it('names nothing for an item no station prepares', () => {
     expect(pickerEstimateRange(item([], 10), PICKER_QUEUES, [])).toBeNull()
+  })
+
+  it('names no range when the laptop said nothing about one of its stations', () => {
+    expect(
+      pickerEstimateRange(item(['station-kueche', 'station-unknown'], 10), PICKER_QUEUES, []),
+    ).toBeNull()
   })
 
   it('promises the independent time once, without the queue', () => {
