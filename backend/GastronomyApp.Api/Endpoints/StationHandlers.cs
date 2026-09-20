@@ -54,24 +54,27 @@ public sealed class StationEstimateHandler
 {
   private readonly ProductionEstimateCalculator _estimateCalculator;
 
+  private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly IFestivalRepository _festivalRepository;
   private readonly StationsAtTheFestivalReader _stationsReader;
 
   public StationEstimateHandler(GastronomyAppDbContext dbContext,
                                 ProductionEstimateCalculator estimateCalculator,
-                                RunningFestivalLookup runningFestivalLookup,
-                                StationsAtTheFestivalReader stationsReader)
+                                IFestivalRepository festivalRepository,
+                                StationsAtTheFestivalReader stationsReader,
+                                IClock clock)
   {
     _dbContext = dbContext;
     _estimateCalculator = estimateCalculator;
-    _runningFestivalLookup = runningFestivalLookup;
+    _festivalRepository = festivalRepository;
     _stationsReader = stationsReader;
+    _clock = clock;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
 
     if (festival is null)
     {
@@ -243,7 +246,7 @@ public sealed class StationQueueHandler
   private readonly OrderReader _orderReader;
   private readonly StationQueueReader _queueReader;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly IFestivalRepository _festivalRepository;
   private readonly StationsAtTheFestivalReader _stationsReader;
   private readonly ITransactionRunner _transactionRunner;
   private readonly StationOrderVisibilityService _visibilityService;
@@ -255,14 +258,14 @@ public sealed class StationQueueHandler
                              OrderReader orderReader,
                              HubNotificationDispatcher dispatcher,
                              ResultEnvelope resultEnvelope,
-                             RunningFestivalLookup runningFestivalLookup,
+                             IFestivalRepository festivalRepository,
                              StationsAtTheFestivalReader stationsReader,
                              ITransactionRunner transactionRunner,
                              IClock clock)
   {
     _dbContext = dbContext;
     _transactionRunner = transactionRunner;
-    _runningFestivalLookup = runningFestivalLookup;
+    _festivalRepository = festivalRepository;
     _stationsReader = stationsReader;
     _queueReader = queueReader;
     _fulfillmentService = fulfillmentService;
@@ -556,7 +559,7 @@ public sealed class StationQueueHandler
 
   private async Task<FestivalStanding> FindFestivalStandingAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
 
     if (festival is null)
     {

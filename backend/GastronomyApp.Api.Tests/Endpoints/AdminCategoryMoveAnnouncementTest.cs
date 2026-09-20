@@ -3,7 +3,6 @@ using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
@@ -64,13 +63,10 @@ public sealed class AdminCategoryMoveAnnouncementTest
     CatalogChangeAnnouncer announcer =
       new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
 
-    return new(services.GetRequiredService<GastronomyAppDbContext>(),
-               services.GetRequiredService<ColorFormatValidator>(),
-               services.GetRequiredService<CatalogCategoryOrdering>(),
-               new(announcer,
-                   new(services.GetRequiredService<IHostApplicationLifetime>(),
-                       A.Fake<ILogger<SavedChangeAnnouncement>>()),
-                   services.GetRequiredService<ITransactionRunner>()),
+    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(),
+               announcer,
+               new(services.GetRequiredService<IHostApplicationLifetime>(),
+                   A.Fake<ILogger<SavedChangeAnnouncement>>()),
                services.GetRequiredService<ResultEnvelope>());
   }
 }

@@ -496,7 +496,7 @@ public sealed class AdminFestivalMenuHandler
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly FestivalSchedule _schedule;
-  private readonly OrderableItems _orderableItems;
+  private readonly ItemOrderability _orderability;
   private readonly IClock _clock;
   private readonly ILogger<AdminFestivalMenuHandler> _logger;
   private readonly ResultEnvelope _resultEnvelope;
@@ -505,7 +505,7 @@ public sealed class AdminFestivalMenuHandler
   public AdminFestivalMenuHandler(GastronomyAppDbContext dbContext,
                                   FestivalSchedule schedule,
                                   CatalogWriteTransaction writeTransaction,
-                                  OrderableItems orderableItems,
+                                  ItemOrderability orderability,
                                   ResultEnvelope resultEnvelope,
                                   IClock clock,
                                   ILogger<AdminFestivalMenuHandler> logger)
@@ -513,7 +513,7 @@ public sealed class AdminFestivalMenuHandler
     _dbContext = dbContext;
     _schedule = schedule;
     _writeTransaction = writeTransaction;
-    _orderableItems = orderableItems;
+    _orderability = orderability;
     _resultEnvelope = resultEnvelope;
     _clock = clock;
     _logger = logger;
@@ -599,7 +599,7 @@ public sealed class AdminFestivalMenuHandler
                  false);
     }
 
-    if (!await _orderableItems.AnyOfThemWouldPrepareAtAsync(_dbContext, festivalId, stationIds, cancellationToken))
+    if (!await _orderability.AnyOfTheseStationsPreparesAtAsync(festivalId, stationIds, cancellationToken))
     {
       return new(_resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
                                         "UnprocessableEntity",
@@ -726,14 +726,14 @@ public sealed class AdminFestivalStationHandler
   private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly INumberAllocator _numberAllocator;
-  private readonly OrderableItems _orderableItems;
+  private readonly ItemOrderability _orderability;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalSchedule _schedule;
   private readonly ITransactionRunner _transactionRunner;
 
   public AdminFestivalStationHandler(GastronomyAppDbContext dbContext,
                                      StationChangeAnnouncer announcer,
-                                     OrderableItems orderableItems,
+                                     ItemOrderability orderability,
                                      INumberAllocator numberAllocator,
                                      ResultEnvelope resultEnvelope,
                                      FestivalSchedule schedule,
@@ -743,7 +743,7 @@ public sealed class AdminFestivalStationHandler
     _dbContext = dbContext;
     _transactionRunner = transactionRunner;
     _announcer = announcer;
-    _orderableItems = orderableItems;
+    _orderability = orderability;
     _numberAllocator = numberAllocator;
     _resultEnvelope = resultEnvelope;
     _schedule = schedule;
@@ -870,10 +870,9 @@ public sealed class AdminFestivalStationHandler
     }
 
     IReadOnlyList<Guid> strandedItemIds =
-      await _orderableItems.WouldStopBeingOrderableAtAsync(_dbContext,
-                                                           festivalId,
-                                                           [stationId],
-                                                           cancellationToken);
+      await _orderability.FindItemsStrandedByRemovingStationsAsync(festivalId,
+                                                                   [stationId],
+                                                                   cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {

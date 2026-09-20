@@ -263,22 +263,25 @@ public sealed class OpenItemsReader
 
 public sealed class OpenItemQueryHandler
 {
+  private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly IFestivalRepository _festivalRepository;
   private readonly OpenItemsReader _reader;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
 
   public OpenItemQueryHandler(GastronomyAppDbContext dbContext,
                               OpenItemsReader reader,
-                              RunningFestivalLookup runningFestivalLookup)
+                              IFestivalRepository festivalRepository,
+                              IClock clock)
   {
     _dbContext = dbContext;
     _reader = reader;
-    _runningFestivalLookup = runningFestivalLookup;
+    _festivalRepository = festivalRepository;
+    _clock = clock;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
 
     return festival is null
              ? Results.Ok(new OpenItemsView([], 0))
@@ -287,7 +290,7 @@ public sealed class OpenItemQueryHandler
 
   public async Task<IResult> ListTableNamesAsync(CancellationToken cancellationToken)
   {
-    var festival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
 
     return festival is null
              ? Results.Ok(new TableNamesView([]))
@@ -304,7 +307,7 @@ public sealed class OrderItemSettlementHandler
   private readonly OpenItemsReader _reader;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly OrderItemSettlementService _settlementService;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly IFestivalRepository _festivalRepository;
   private readonly ITransactionRunner _transactionRunner;
 
   public OrderItemSettlementHandler(GastronomyAppDbContext dbContext,
@@ -312,14 +315,14 @@ public sealed class OrderItemSettlementHandler
                                     OpenItemsReader reader,
                                     HubNotificationDispatcher dispatcher,
                                     ResultEnvelope resultEnvelope,
-                                    RunningFestivalLookup runningFestivalLookup,
+                                    IFestivalRepository festivalRepository,
                                     ITransactionRunner transactionRunner,
                                     IClock clock,
                                     ILogger<OrderItemSettlementHandler> logger)
   {
     _dbContext = dbContext;
     _transactionRunner = transactionRunner;
-    _runningFestivalLookup = runningFestivalLookup;
+    _festivalRepository = festivalRepository;
     _settlementService = settlementService;
     _reader = reader;
     _dispatcher = dispatcher;
@@ -335,7 +338,7 @@ public sealed class OrderItemSettlementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    if (await _runningFestivalLookup.FindAsync(cancellationToken) is null)
+    if (await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken) is null)
     {
       SettlementFailure noFestivalIsRunning = new() { Reason = SettlementFailureReason.NoRunningFestival };
       _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because no festival is running, so nothing was settled.",

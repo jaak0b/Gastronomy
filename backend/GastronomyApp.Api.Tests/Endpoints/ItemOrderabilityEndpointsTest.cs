@@ -1,15 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
+using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
 [TestFixture]
-public sealed class OrderableItemsTest
+public sealed class ItemOrderabilityEndpointsTest
 {
 
   [SetUp]
@@ -27,7 +28,7 @@ public sealed class OrderableItemsTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task IdsAt_ArticleWhoseOnlyStationIsSwitchedOff_LeavesThatArticleOut()
+  public async Task FindOrderableItemIdsAsync_ArticleWhoseOnlyStationIsSwitchedOff_LeavesThatArticleOut()
   {
     await StationSwitchedOffAtTheFestivalAsync();
 
@@ -39,11 +40,13 @@ public sealed class OrderableItemsTest
     }
 
     await using var readContext = _context.Factory.CreateContext();
-    OrderableItems orderableItems = new(_context.Factory.Services.GetRequiredService<IClock>());
+    var clock = _context.Factory.Services.GetRequiredService<IClock>();
+    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext),
+                                        new FestivalRepository(readContext, new()),
+                                        clock);
 
-    IReadOnlyList<Guid> itemIds = await orderableItems.IdsAtAsync(readContext,
-                                                                  _context.World.FestivalId,
-                                                                  CancellationToken.None);
+    IReadOnlyList<Guid> itemIds = await orderability.FindOrderableItemIdsAsync(_context.World.FestivalId,
+                                                                              CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

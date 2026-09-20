@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public sealed record CatalogWrite(IResult Response, bool SomethingChanged);
-
 public sealed class CatalogWriteTransaction
 {
   private readonly SavedChangeAnnouncement _announcement;

@@ -5,6 +5,7 @@ using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -121,26 +122,26 @@ public sealed class AdminStationHandler
   private readonly GastronomyAppDbContext _dbContext;
   private readonly DeviceRevoker _deviceRevoker;
   private readonly OutstandingInvitationLookup _invitationLookup;
-  private readonly OrderableItems _orderableItems;
+  private readonly ItemOrderability _orderability;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly RunningFestivalLookup _runningFestivalLookup;
+  private readonly IFestivalRepository _festivalRepository;
 
   public AdminStationHandler(GastronomyAppDbContext dbContext,
                              OutstandingInvitationLookup invitationLookup,
                              DeviceRevoker deviceRevoker,
                              StationChangeAnnouncer announcer,
-                             OrderableItems orderableItems,
+                             ItemOrderability orderability,
                              ResultEnvelope resultEnvelope,
-                             RunningFestivalLookup runningFestivalLookup,
+                             IFestivalRepository festivalRepository,
                              IClock clock)
   {
     _dbContext = dbContext;
     _invitationLookup = invitationLookup;
-    _orderableItems = orderableItems;
+    _orderability = orderability;
     _deviceRevoker = deviceRevoker;
     _announcer = announcer;
     _resultEnvelope = resultEnvelope;
-    _runningFestivalLookup = runningFestivalLookup;
+    _festivalRepository = festivalRepository;
     _clock = clock;
   }
 
@@ -268,7 +269,7 @@ public sealed class AdminStationHandler
       return Results.NotFound();
     }
 
-    var runningFestival = await _runningFestivalLookup.FindAsync(cancellationToken);
+    var runningFestival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
     var unfinishedItemCount = runningFestival is null
                                 ? 0
                                 : await UnfinishedItemCountAsync(runningFestival.Id, stationId, cancellationToken);
@@ -281,9 +282,7 @@ public sealed class AdminStationHandler
     }
 
     IReadOnlyList<Guid> strandedItemIds =
-      await _orderableItems.WouldStopBeingOrderableWhenTheStationIsSwitchedOffAsync(_dbContext,
-                                                                                    stationId,
-                                                                                    cancellationToken);
+      await _orderability.FindItemsStrandedBySwitchingOffStationAsync(stationId, cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {

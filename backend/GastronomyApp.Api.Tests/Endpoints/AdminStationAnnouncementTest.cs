@@ -4,6 +4,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -117,9 +118,9 @@ public sealed class AdminStationAnnouncementTest
                services.GetRequiredService<OutstandingInvitationLookup>(),
                services.GetRequiredService<DeviceRevoker>(),
                announcer,
-               services.GetRequiredService<OrderableItems>(),
+               services.GetRequiredService<ItemOrderability>(),
                services.GetRequiredService<ResultEnvelope>(),
-               services.GetRequiredService<RunningFestivalLookup>(),
+               services.GetRequiredService<IFestivalRepository>(),
                services.GetRequiredService<IClock>());
   }
 }

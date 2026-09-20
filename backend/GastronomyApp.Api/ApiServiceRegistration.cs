@@ -51,6 +51,9 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
+    services.AddScoped<ICatalogCategoryRepository, CatalogCategoryRepository>();
+    services.AddScoped<ICatalogRepository, CatalogRepository>();
+    services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
@@ -66,12 +69,15 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderAcceptanceService>();
+    services.AddScoped<ItemOrderability>();
+    services.AddScoped<CatalogService>();
+    services.AddScoped<CatalogItemAdministrationService>();
+    services.AddScoped<CatalogCategoryAdministrationService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
-    services.AddSingleton<CatalogReader>();
     services.AddSingleton<SavedChangeAnnouncement>();
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddScoped<CatalogWriteTransaction>();
@@ -97,13 +103,13 @@ public sealed class ApiServiceRegistration
     services.AddScoped<DeviceRevoker>();
     services.AddScoped<OutstandingInvitationLookup>();
     services.AddSingleton<StationChangeAnnouncer>();
-    services.AddSingleton<OrderableItems>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();
     services.AddScoped<AdminFestivalStationHandler>();
     services.AddScoped<AdminCategoryHandler>();
     services.AddScoped<AdminItemHandler>();
+    services.AddScoped<CatalogHandler>();
     services.AddScoped<AdminStaffMembersHandler>();
     services.AddScoped<AdminEnrolmentHandler>();
     services.AddScoped<EnrolmentRedemptionHandler>();
@@ -111,7 +117,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<StationQueueReader>();
     services.AddSingleton<StationsAtTheFestivalReader>();
-    services.AddScoped<RunningFestivalLookup>();
     services.AddSingleton<DeviceKindGate>();
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();

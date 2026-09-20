@@ -71,7 +71,7 @@ public sealed class AdminItemAvailabilityAnnouncementTest
                    new(services.GetRequiredService<IHostApplicationLifetime>(),
                        A.Fake<ILogger<SavedChangeAnnouncement>>()),
                    services.GetRequiredService<ITransactionRunner>()),
-               services.GetRequiredService<OrderableItems>(),
+               services.GetRequiredService<ItemOrderability>(),
                services.GetRequiredService<ResultEnvelope>(),
                services.GetRequiredService<IClock>(),
                A.Fake<ILogger<AdminFestivalMenuHandler>>());
