@@ -1,0 +1,168 @@
+using FakeItEasy;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
+
+namespace GastronomyApp.Core.Tests.Services;
+
+[TestFixture]
+public sealed class StaffMemberAdministrationServiceTest
+{
+  [SetUp]
+  public void SetUp()
+  {
+    _repository = A.Fake<IStaffMemberRepository>();
+    _invitationStore = A.Fake<IEnrolmentInvitationStore>();
+    _deviceTokenStore = A.Fake<IDeviceTokenStore>();
+    _clock = A.Fake<IClock>();
+    _transactionRunner = new();
+
+    A.CallTo(() => _clock.UtcNow).Returns(_now);
+    A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<StaffMember?>(null));
+    A.CallTo(() => _repository.FindAdministeredAsync(A<DateTime>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyList<AdministeredStaffMember>>([]));
+
+    _service = new(_repository, new(_invitationStore, _deviceTokenStore, _clock), _transactionRunner, _clock);
+  }
+
+  private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+  private readonly Guid _annaId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
+  private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
+  private readonly Guid _invitationId = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
+
+  private IClock _clock = null!;
+  private IDeviceTokenStore _deviceTokenStore = null!;
+  private IEnrolmentInvitationStore _invitationStore = null!;
+  private IStaffMemberRepository _repository = null!;
+  private StaffMemberAdministrationService _service = null!;
+  private RecordingTransactionRunner _transactionRunner = null!;
+
+  [Test]
+  public async Task ListAsync_AskedForEverybody_ReadsTheListAsItIsRightNow()
+  {
+    await _service.ListAsync(CancellationToken.None);
+
+    A.CallTo(() => _repository.FindAdministeredAsync(_now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task RenameAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
+  {
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
+      await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(renamed.IsSuccess, Is.False);
+                      Assert.That(renamed.Failure.Reason,
+                                  Is.EqualTo(StaffMemberAdministrationFailureReason.NameMissing));
+                      Assert.That(_transactionRunner.Committed, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task RenameAsync_ASomebodyWhoIsNotOnTheList_FailsBecauseThePersonIsNotFound()
+  {
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
+      await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(renamed.IsSuccess, Is.False);
+                      Assert.That(renamed.Failure.Reason,
+                                  Is.EqualTo(StaffMemberAdministrationFailureReason.StaffMemberNotFound));
+                    });
+  }
+
+  [Test]
+  public async Task RenameAsync_ANewName_KeepsExactlyWhatWasTypedAndCommits()
+  {
+    StaffMember staffMember = BuildStaffMember(true, null, null);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
+     .Returns(Task.FromResult<StaffMember?>(staffMember));
+
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
+      await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(renamed.IsSuccess, Is.True);
+                      Assert.That(renamed.Value.Name, Is.EqualTo("Anne Marie"));
+                      Assert.That(staffMember.Name, Is.EqualTo("Anne Marie"));
+                      Assert.That(_transactionRunner.Committed, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task ActivateAsync_ASomebodyWhoWasTakenOffTheList_PutsThemBackOnIt()
+  {
+    StaffMember staffMember = BuildStaffMember(false, null, null);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
+     .Returns(Task.FromResult<StaffMember?>(staffMember));
+
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOn =
+      await _service.ActivateAsync(_annaId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(switchedOn.IsSuccess, Is.True);
+                      Assert.That(staffMember.IsActive, Is.True);
+                    });
+  }
+
+  [Test]
+  public async Task DeactivateAsync_ASomebodyHoldingAPhone_WithdrawsTheInvitationAndRevokesThePhone()
+  {
+    StaffMember staffMember = BuildStaffMember(true, _deviceId, _invitationId);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
+     .Returns(Task.FromResult<StaffMember?>(staffMember));
+
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff =
+      await _service.DeactivateAsync(_annaId, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(switchedOff.IsSuccess, Is.True);
+                      Assert.That(switchedOff.Value.RevokedDeviceId, Is.EqualTo(_deviceId));
+                      Assert.That(staffMember.IsActive, Is.False);
+                      Assert.That(staffMember.EnrolmentInvitationId, Is.Null);
+                      Assert.That(_transactionRunner.Committed, Is.True);
+                    });
+
+    A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._))
+     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._))
+     .MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task DeactivateAsync_ASomebodyWithoutAPhone_RevokesNothing()
+  {
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
+     .Returns(Task.FromResult<StaffMember?>(BuildStaffMember(true, null, null)));
+
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff =
+      await _service.DeactivateAsync(_annaId, CancellationToken.None);
+
+    Assert.That(switchedOff.Value.RevokedDeviceId, Is.Null);
+
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  private StaffMember BuildStaffMember(bool isActive, Guid? deviceId, Guid? invitationId)
+  {
+    return new()
+           {
+             Id = _annaId,
+             Name = "Anna",
+             IsActive = isActive,
+             DeviceId = deviceId,
+             EnrolmentInvitationId = invitationId,
+             CreatedAtUtc = _now
+           };
+  }
+}

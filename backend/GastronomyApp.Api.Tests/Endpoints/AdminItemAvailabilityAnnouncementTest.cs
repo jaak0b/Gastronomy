@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
@@ -65,15 +64,11 @@ public sealed class AdminItemAvailabilityAnnouncementTest
     CatalogChangeAnnouncer announcer =
       new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
 
-    return new(services.GetRequiredService<GastronomyAppDbContext>(),
-               services.GetRequiredService<FestivalSchedule>(),
-               new(announcer,
-                   new(services.GetRequiredService<IHostApplicationLifetime>(),
-                       A.Fake<ILogger<SavedChangeAnnouncement>>()),
-                   services.GetRequiredService<ITransactionRunner>()),
-               services.GetRequiredService<ItemOrderability>(),
+    return new(services.GetRequiredService<FestivalMenuService>(),
+               announcer,
+               new(services.GetRequiredService<IHostApplicationLifetime>(),
+                   A.Fake<ILogger<SavedChangeAnnouncement>>()),
                services.GetRequiredService<ResultEnvelope>(),
-               services.GetRequiredService<IClock>(),
                A.Fake<ILogger<AdminFestivalMenuHandler>>());
   }
 }

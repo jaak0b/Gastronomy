@@ -87,6 +87,25 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                        cancellationToken);
   }
 
+  public async Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken)
+  {
+    return await _dbContext.EnrolmentInvitations
+                           .AsNoTracking()
+                           .FirstOrDefaultAsync(invitation => invitation.Id == invitationId, cancellationToken);
+  }
+
+  public async Task ConsumeAsync(Guid invitationId, DateTime consumedAtUtc, CancellationToken cancellationToken)
+  {
+    var invitation = await _dbContext.EnrolmentInvitations
+                                     .FirstOrDefaultAsync(candidate => candidate.Id == invitationId,
+                                                          cancellationToken);
+
+    if (invitation is not null && invitation.ConsumedAtUtc is null)
+    {
+      invitation.ConsumedAtUtc = consumedAtUtc;
+    }
+  }
+
   private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(EnrolmentRedemptionRequest request,
                                                                                                  CancellationToken cancellationToken)
   {

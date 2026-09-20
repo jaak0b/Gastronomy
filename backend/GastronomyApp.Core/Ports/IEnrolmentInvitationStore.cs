@@ -1,3 +1,5 @@
+using GastronomyApp.Core.Entities;
+
 namespace GastronomyApp.Core.Ports;
 
 public interface IEnrolmentInvitationStore
@@ -6,4 +8,8 @@ public interface IEnrolmentInvitationStore
 
   public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
                                                      CancellationToken cancellationToken);
+
+  public Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken);
+
+  public Task ConsumeAsync(Guid invitationId, DateTime consumedAtUtc, CancellationToken cancellationToken);
 }

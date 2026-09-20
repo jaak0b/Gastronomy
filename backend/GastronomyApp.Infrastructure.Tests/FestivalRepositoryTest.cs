@@ -1,3 +1,4 @@
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -107,5 +108,128 @@ public sealed class FestivalRepositoryTest
                                                                       TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.EqualTo(new[] { wantedId }));
+  }
+
+  [Test]
+  public async Task FindByIdAsync_AFestivalThatIsNotThere_ReturnsNothing()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
+
+    FestivalRepository repository = new(fixture.DbContext, new FestivalSchedule());
+
+    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken),
+                Is.Null);
+  }
+
+  [Test]
+  public async Task FindContentCountsAsync_AFestivalNothingHasBeenAddedTo_CountsZeroInsteadOfLeavingItOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
+
+    FestivalRepository repository = new(fixture.DbContext, new FestivalSchedule());
+
+    IReadOnlyList<FestivalContentCounts> counts =
+      await repository.FindContentCountsAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(counts.Select(count => count.FestivalId), Is.EqualTo(new[] { festivalId }));
+                      Assert.That(counts[0].StationCount, Is.EqualTo(0));
+                      Assert.That(counts[0].MenuItemCount, Is.EqualTo(0));
+                      Assert.That(counts[0].OrderCount, Is.EqualTo(0));
+                    });
+  }
+
+  [Test]
+  public async Task FindContentCountsAsync_AFestivalWithStationsAndAMenu_CountsWhatBelongsToIt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    FestivalRepository repository = new(fixture.DbContext, new FestivalSchedule());
+
+    IReadOnlyList<FestivalContentCounts> counts =
+      await repository.FindContentCountsAsync(TestContext.CurrentContext.CancellationToken);
+
+    FestivalContentCounts sommerfest = counts.First(count => count.FestivalId == seeded.FestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(sommerfest.StationCount, Is.EqualTo(2));
+                      Assert.That(sommerfest.MenuItemCount, Is.EqualTo(2));
+                      Assert.That(sommerfest.OrderCount, Is.EqualTo(0));
+                    });
+  }
+
+  [Test]
+  public async Task CopyContentsAsync_AFestivalWithAMenu_CopiesItsStationsItemsAndAssignmentsAcross()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    FestivalRepository repository = new(fixture.DbContext, new FestivalSchedule());
+    var newFestivalId = Guid.NewGuid();
+
+    await repository.AddAsync(new()
+                              {
+                                Id = newFestivalId,
+                                Name = "Sommerfest 2027",
+                                StartsAtUtc = _start.AddYears(1),
+                                EndsAtUtc = _start.AddYears(1).AddDays(1),
+                                NextOrderNumber = 1,
+                                IsHidden = false
+                              },
+                              TestContext.CurrentContext.CancellationToken);
+    await repository.CopyContentsAsync(seeded.FestivalId,
+                                       newFestivalId,
+                                       TestContext.CurrentContext.CancellationToken);
+    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    IReadOnlyList<FestivalContentCounts> counts =
+      await repository.FindContentCountsAsync(TestContext.CurrentContext.CancellationToken);
+
+    FestivalContentCounts copy = counts.First(count => count.FestivalId == newFestivalId);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(copy.StationCount, Is.EqualTo(2));
+                      Assert.That(copy.MenuItemCount, Is.EqualTo(2));
+                      Assert.That(copy.OrderCount, Is.EqualTo(0));
+                    });
+  }
+
+  [Test]
+  public async Task CopyContentsAsync_AFestivalWhoseItemsHaveSoldOut_PutsThemBackOnSaleAtTheCopy()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    foreach (var menuRow in fixture.DbContext.FestivalCatalogItems)
+    {
+      menuRow.IsAvailable = false;
+    }
+
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    FestivalRepository repository = new(fixture.DbContext, new FestivalSchedule());
+    var newFestivalId = await AddFestivalAsync(fixture.DbContext,
+                                               "Sommerfest 2027",
+                                               _start.AddYears(1),
+                                               _start.AddYears(1).AddDays(1),
+                                               false);
+
+    await repository.CopyContentsAsync(seeded.FestivalId,
+                                       newFestivalId,
+                                       TestContext.CurrentContext.CancellationToken);
+    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    await using var readContext = fixture.CreateContext();
+
+    Assert.That(readContext.FestivalCatalogItems
+                           .Where(menuRow => menuRow.FestivalId == newFestivalId)
+                           .Select(menuRow => menuRow.IsAvailable),
+                Is.All.True);
   }
 }

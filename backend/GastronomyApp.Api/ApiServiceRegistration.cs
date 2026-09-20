@@ -55,7 +55,10 @@ public sealed class ApiServiceRegistration
     services.AddScoped<ICatalogRepository, CatalogRepository>();
     services.AddScoped<IItemOrderabilityRepository, ItemOrderabilityRepository>();
     services.AddScoped<IStationRepository, StationRepository>();
+    services.AddScoped<IStaffMemberRepository, StaffMemberRepository>();
     services.AddScoped<IFestivalRepository, FestivalRepository>();
+    services.AddScoped<IFestivalMenuRepository, FestivalMenuRepository>();
+    services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
 
     services.AddSingleton<OrderRoutingResolver>();
@@ -73,6 +76,13 @@ public sealed class ApiServiceRegistration
     services.AddScoped<CatalogService>();
     services.AddScoped<CatalogItemAdministrationService>();
     services.AddScoped<CatalogCategoryAdministrationService>();
+    services.AddScoped<DeviceOwnerRetirement>();
+    services.AddScoped<FestivalAdministrationService>();
+    services.AddScoped<FestivalMenuService>();
+    services.AddScoped<FestivalStationService>();
+    services.AddScoped<StationAdministrationService>();
+    services.AddScoped<StaffMemberAdministrationService>();
+    services.AddScoped<EnrolmentInvitationService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
@@ -80,7 +90,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<SavedChangeAnnouncement>();
     services.AddSingleton<CatalogChangeAnnouncer>();
-    services.AddScoped<CatalogWriteTransaction>();
+    services.AddSingleton<FestivalChangeAnnouncer>();
     services.AddSingleton<ColorFormatValidator>();
     services.AddSingleton<CatalogCategoryOrdering>();
     services.AddSingleton<ResultEnvelope>();
@@ -100,8 +110,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddScoped<DeviceRevoker>();
-    services.AddScoped<OutstandingInvitationLookup>();
+    services.AddSingleton<DeviceRevocationAnnouncer>();
     services.AddSingleton<StationChangeAnnouncer>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();
