@@ -4,9 +4,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -61,7 +59,7 @@ public sealed class AdminCategoryMoveAnnouncementTest
   private AdminCategoryHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
   {
     CatalogChangeAnnouncer announcer =
-      new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
+      new(new(hubContext));
 
     return new(services.GetRequiredService<CatalogCategoryAdministrationService>(),
                announcer,

@@ -1,35 +1,22 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Hub;
 
 public sealed class HubNotificationDispatcher
 {
-  private readonly IDbContextFactory<GastronomyAppDbContext> _contextFactory;
   private readonly HubEventNames _eventNames = new();
   private readonly HubGroupNames _groupNames = new();
   private readonly IHubContext<GastronomyHub> _hubContext;
 
-  public HubNotificationDispatcher(IHubContext<GastronomyHub> hubContext,
-                                   IDbContextFactory<GastronomyAppDbContext> contextFactory)
+  public HubNotificationDispatcher(IHubContext<GastronomyHub> hubContext)
   {
     _hubContext = hubContext;
-    _contextFactory = contextFactory;
   }
 
-  public async Task OnOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct)
+  public async Task PushOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct)
   {
-    await using var context = await _contextFactory.CreateDbContextAsync(ct);
-    var orderExists = await context.Orders.AnyAsync(candidate => candidate.Id == orderId, ct);
-
-    if (!orderExists)
-    {
-      return;
-    }
-
     await SendToAsync(_eventNames.OrderStatusChanged,
                       new OrderStatusChangedEvent(orderId, newStatus),
                       [_groupNames.Devices, _groupNames.Admin],

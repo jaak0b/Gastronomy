@@ -4,10 +4,8 @@ using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -98,7 +96,7 @@ public sealed class AdminFestivalHandlerTest
   private AdminFestivalHandler HandlerTalkingTo(IHubContext<GastronomyHub> hubContext)
   {
     FestivalChangeAnnouncer announcer =
-      new(new(hubContext, _scope.ServiceProvider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()),
+      new(new(hubContext),
           new(_scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>(),
               A.Fake<ILogger<SavedChangeAnnouncement>>()));
 

@@ -6,7 +6,6 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -72,7 +71,7 @@ public sealed class OrderItemSettlementNotificationTest
 
     return new(services.GetRequiredService<OrderItemSettlementService>(),
                services.GetRequiredService<SavedChangeAnnouncement>(),
-               new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()),
+               new(hubContext),
                services.GetRequiredService<ResultEnvelope>(),
                NullLogger<OrderItemSettlementHandler>.Instance);
   }

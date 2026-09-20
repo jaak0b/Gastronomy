@@ -6,7 +6,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -109,7 +108,7 @@ public sealed class AdminStationAnnouncementTest
   private AdminStationHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
   {
     StationChangeAnnouncer announcer =
-      new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()),
+      new(new(hubContext),
           new(services.GetRequiredService<IHostApplicationLifetime>(),
               A.Fake<ILogger<SavedChangeAnnouncement>>()));
 

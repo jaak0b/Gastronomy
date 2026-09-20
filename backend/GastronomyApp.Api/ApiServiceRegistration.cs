@@ -62,6 +62,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IFestivalMenuRepository, FestivalMenuRepository>();
     services.AddScoped<IFestivalStationRepository, FestivalStationRepository>();
     services.AddScoped<INumberAllocator, SequenceNumberAllocator>();
+    services.AddScoped<IStationOrderRepository, StationOrderRepository>();
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<FestivalSchedule>();
@@ -90,6 +91,12 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationAdministrationService>();
     services.AddScoped<StaffMemberAdministrationService>();
     services.AddScoped<EnrolmentInvitationService>();
+    services.AddScoped<StationStanding>();
+    services.AddScoped<StationQueueService>();
+    services.AddScoped<StationQueueWriter>();
+    services.AddScoped<StationQueueChangeService>();
+    services.AddScoped<OrderStatusReader>();
+    services.AddScoped<StationEstimateService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
@@ -130,11 +137,12 @@ public sealed class ApiServiceRegistration
     services.AddScoped<EnrolmentRedemptionHandler>();
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
-    services.AddSingleton<StationQueueReader>();
-    services.AddSingleton<StationsAtTheFestivalReader>();
     services.AddSingleton<DeviceKindGate>();
+    services.AddSingleton<StationQueueViewBuilder>();
+    services.AddSingleton<StationQueueRefusalResponder>();
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();
+    services.AddScoped<StationFulfillmentHandler>();
 
     services.AddSignalR()
             .AddJsonProtocol(protocolOptions =>

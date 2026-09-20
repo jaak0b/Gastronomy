@@ -2,7 +2,6 @@ using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.RateLimiting;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
@@ -50,7 +49,7 @@ public static class StationEndpoints
                           async (StationItemSelectionRequest request,
                                  HttpContext httpContext,
                                  CallerIdentity callerIdentity,
-                                 StationQueueHandler handler,
+                                 StationFulfillmentHandler handler,
                                  CancellationToken cancellationToken) =>
                           {
                             var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
@@ -61,7 +60,7 @@ public static class StationEndpoints
                           async (StationItemSelectionRequest request,
                                  HttpContext httpContext,
                                  CallerIdentity callerIdentity,
-                                 StationQueueHandler handler,
+                                 StationFulfillmentHandler handler,
                                  CancellationToken cancellationToken) =>
                           {
                             var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
@@ -72,7 +71,7 @@ public static class StationEndpoints
                           async (Guid stationOrderId,
                                  HttpContext httpContext,
                                  CallerIdentity callerIdentity,
-                                 StationQueueHandler handler,
+                                 StationFulfillmentHandler handler,
                                  CancellationToken cancellationToken) =>
                           {
                             var caller = callerIdentity.ReadStationDevice(httpContext.User)!;
@@ -80,57 +79,5 @@ public static class StationEndpoints
                           });
 
     return routes;
-  }
-}
-
-public sealed class StationShellResponder
-{
-  private readonly IWebHostEnvironment _environment;
-
-  public StationShellResponder(IWebHostEnvironment environment)
-  {
-    _environment = environment;
-  }
-
-  public IResult Respond(HttpContext httpContext)
-  {
-    ArgumentNullException.ThrowIfNull(httpContext);
-
-    var shellPath = Path.Combine(_environment.WebRootPath ?? string.Empty, "index.html");
-
-    if (!File.Exists(shellPath))
-    {
-      return Results.NotFound();
-    }
-
-    httpContext.Response.Headers.CacheControl = "no-cache";
-
-    return Results.File(shellPath, "text/html");
-  }
-}
-
-public sealed class ClientRouteFallbackResponder
-{
-  private const string ApiPrefix = "/api";
-  private const string HubPrefix = "/hub";
-
-  private readonly StationShellResponder _shellResponder;
-
-  public ClientRouteFallbackResponder(StationShellResponder shellResponder)
-  {
-    _shellResponder = shellResponder;
-  }
-
-  public IResult Respond(HttpContext httpContext)
-  {
-    ArgumentNullException.ThrowIfNull(httpContext);
-
-    if (httpContext.Request.Path.StartsWithSegments(ApiPrefix)
-        || httpContext.Request.Path.StartsWithSegments(HubPrefix))
-    {
-      return Results.NotFound();
-    }
-
-    return _shellResponder.Respond(httpContext);
   }
 }
