@@ -84,7 +84,7 @@ const { t } = useI18n()
 }
 
 .actions .v-btn {
-  min-width: 8rem;
+  min-width: 12rem;
   height: auto;
   min-height: 3.5rem;
   padding-block: 0.75rem;
