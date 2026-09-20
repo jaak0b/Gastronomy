@@ -1,7 +1,7 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GastronomyApp.Desktop.ViewModels"
-        xmlns:svc="using:GastronomyApp.Desktop.Services"
+        xmlns:svc="using:GastronomyApp.Desktop.Settings"
         xmlns:conv="using:GastronomyApp.Desktop.Converters"
         x:Class="GastronomyApp.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"

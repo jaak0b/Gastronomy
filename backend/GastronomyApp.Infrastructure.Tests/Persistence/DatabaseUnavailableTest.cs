@@ -1,0 +1,102 @@
+using System.Data.Common;
+using GastronomyApp.Core.Requests;
+using GastronomyApp.Infrastructure.ErrorHandling;
+using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.Tests.TestSupport;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+namespace GastronomyApp.Infrastructure.Tests.Persistence;
+
+public sealed class DatabaseUnavailableTest
+{
+  [Test]
+  public async Task AcceptAsync_ReadOnlyDataDirectory_ThrowsInfrastructureExceptionDatabaseUnavailable()
+  {
+    var path = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");
+    SeededDomain seeded;
+
+    using (SqliteConnection setupConnection = new($"Data Source={path}"))
+    {
+      setupConnection.Open();
+      using var setupContext = ContextOn(setupConnection);
+      await setupContext.Database.MigrateAsync(TestContext.CurrentContext.CancellationToken);
+      seeded = await new DomainSeeder().SeedAsync(setupContext, TestContext.CurrentContext.CancellationToken);
+    }
+
+    SqliteConnection.ClearAllPools();
+    File.SetAttributes(path, FileAttributes.ReadOnly);
+
+    try
+    {
+      using SqliteConnection readOnlyConnection = new($"Data Source={path}");
+      readOnlyConnection.Open();
+      using var readOnlyContext = ContextOn(readOnlyConnection);
+      var transaction = new OrderAcceptanceComposition().Create(readOnlyContext);
+
+      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken),
+                  Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
+    } finally
+    {
+      SqliteConnection.ClearAllPools();
+      File.SetAttributes(path, FileAttributes.Normal);
+      File.Delete(path);
+    }
+  }
+
+  [Test]
+  public async Task AcceptAsync_ConcurrentWriterHoldsLockPastBusyTimeout_ThrowsInfrastructureExceptionDatabaseUnavailable()
+  {
+    using SqliteTempFileFixture fixture = new();
+    var seedContext = fixture.CreateContext();
+    var seeded = await new DomainSeeder().SeedAsync(seedContext, TestContext.CurrentContext.CancellationToken);
+
+    var blockingContext = fixture.CreateContext();
+    var blockingConnection = blockingContext.Database.GetDbConnection();
+    await ExecuteAsync(blockingConnection, "BEGIN IMMEDIATE");
+
+    try
+    {
+      var blockedContext = fixture.CreateContext();
+      await ExecuteAsync(blockedContext.Database.GetDbConnection(), "PRAGMA busy_timeout = 200");
+      var transaction = new OrderAcceptanceComposition().Create(blockedContext);
+
+      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable));
+    } finally
+    {
+      await ExecuteAsync(blockingConnection, "ROLLBACK");
+    }
+  }
+
+  private async Task ExecuteAsync(DbConnection connection, string statement)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = statement;
+    await command.ExecuteNonQueryAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private GastronomyAppDbContext ContextOn(SqliteConnection connection)
+  {
+    return new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(connection).Options);
+  }
+
+  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded)
+  {
+    return new()
+           {
+             ClientOrderId = Guid.NewGuid(),
+             StaffMemberId = seeded.StaffMemberId,
+             TableName = "Tisch 12",
+             Note = null,
+             Items =
+             [
+               new()
+               {
+                 CatalogItemId = seeded.SausageItemId,
+                 Note = null,
+                 UnitPriceCents = 350
+               }
+             ]
+           };
+  }
+}

@@ -32,7 +32,7 @@ public sealed class AdminEnrolmentHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken);
+    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken);
 
     if (!issued.IsSuccess)
       return RefusalFor(issued.Failure);
@@ -74,7 +74,7 @@ public sealed class AdminEnrolmentHandler
     return new(invitation.Owner.Id, invitation.OwnerName!);
   }
 
-  private IResult RefusalFor(EnrolmentInvitationFailure failure)
+  private IResult RefusalFor(Failure<EnrolmentInvitationFailureReason> failure)
   {
     return failure.Reason switch
            {

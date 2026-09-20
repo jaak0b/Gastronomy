@@ -1,5 +1,7 @@
-﻿using Avalonia;
-using GastronomyApp.Desktop.Services;
+using Avalonia;
+using GastronomyApp.Desktop.Hosting;
+using GastronomyApp.Desktop.Logging;
+using GastronomyApp.Desktop.Setup;
 using Velopack;
 
 namespace GastronomyApp.Desktop;

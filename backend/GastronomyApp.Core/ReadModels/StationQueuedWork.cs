@@ -1,5 +1,3 @@
-using GastronomyApp.Core.Services;
-
 namespace GastronomyApp.Core.ReadModels;
 
 public sealed record StationQueuedWork

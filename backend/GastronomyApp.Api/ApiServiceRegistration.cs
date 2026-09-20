@@ -10,8 +10,11 @@ using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.ErrorHandling;
+using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +35,9 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
+
+    services.AddSingleton(new MapsterConfiguration().Build());
+    services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
     services.AddSingleton(connectionFactory);
@@ -137,7 +143,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddSingleton<StationQueueViewBuilder>();
     services.AddSingleton<StationQueueRefusalResponder>();
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();

@@ -1,6 +1,6 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Services;
+using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;

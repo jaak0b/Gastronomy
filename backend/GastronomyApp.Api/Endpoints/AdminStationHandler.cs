@@ -1,8 +1,10 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Endpoints;
@@ -10,16 +12,18 @@ namespace GastronomyApp.Api.Endpoints;
 public sealed class AdminStationHandler
 {
   private readonly StationChangeAnnouncer _announcer;
+  private readonly IMapper _mapper;
   private readonly DeviceRevocationAnnouncer _revocationAnnouncer;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly StationAdministrationService _service;
 
-  public AdminStationHandler(StationAdministrationService service, StationChangeAnnouncer announcer, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope)
+  public AdminStationHandler(StationAdministrationService service, StationChangeAnnouncer announcer, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope, IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
     _revocationAnnouncer = revocationAnnouncer;
     _resultEnvelope = resultEnvelope;
+    _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
@@ -29,14 +33,14 @@ public sealed class AdminStationHandler
     if (!listed.IsSuccess)
       return RefusalFor(listed.Failure);
 
-    return Results.Ok(new AdminStationListView(listed.Value.Select(BuildStationView).ToList()));
+    return Results.Ok(new AdminStationListView(_mapper.Map<IReadOnlyList<AdminStationView>>(listed.Value)));
   }
 
   public async Task<IResult> CreateAsync(SaveStationRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildSaveRequest(request), cancellationToken);
+    Result<SavedStation, StationAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
 
     return await AnsweredAsync(created, stationId => Results.Json(new SavedStationView(stationId), statusCode: StatusCodes.Status201Created), cancellationToken);
   }
@@ -45,7 +49,7 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, BuildSaveRequest(request), cancellationToken);
+    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, _mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
 
     return await AnsweredAsync(updated, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
   }
@@ -62,20 +66,6 @@ public sealed class AdminStationHandler
     Result<SavedStation, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(stationId, cancellationToken);
 
     return await AnsweredAsync(switchedOff, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
-  }
-
-  private SaveStationDetailsRequest BuildSaveRequest(SaveStationRequest request)
-  {
-    return new()
-           {
-             Name = request.Name,
-             SortOrder = request.SortOrder
-           };
-  }
-
-  private AdminStationView BuildStationView(AdministeredStation station)
-  {
-    return new(station.StationId, station.Name, station.SortOrder, station.IsActive, station.HasDevice, station.LastSeenAtUtc, station.HasOutstandingInvitation, station.IsAtTheFestival);
   }
 
   private async Task<IResult> AnsweredAsync(Result<SavedStation, StationAdministrationFailure> written, Func<Guid, IResult> buildResponse, CancellationToken cancellationToken)

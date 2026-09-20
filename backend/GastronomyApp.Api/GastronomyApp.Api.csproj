@@ -3,6 +3,8 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App"/>
     </ItemGroup>
     <ItemGroup>
+        <PackageReference Include="Mapster"/>
+        <PackageReference Include="Mapster.DependencyInjection"/>
         <PackageReference Include="QRCoder"/>
         <PackageReference Include="Serilog.Extensions.Logging"/>
     </ItemGroup>

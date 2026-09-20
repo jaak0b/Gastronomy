@@ -1,6 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -165,17 +166,13 @@ public sealed class FestivalAdministrationService
   private async Task<Result<FestivalPeriod, FestivalAdministrationFailure>> ReadPeriodAsync(FestivalPeriodRequest request, Guid candidateId, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
-    {
       return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.NameMissing });
-    }
 
     var startsAtUtc = _moment.AsUtc(request.StartsAtUtc);
     var endsAtUtc = _moment.AsUtc(request.EndsAtUtc);
 
     if (endsAtUtc <= startsAtUtc)
-    {
       return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.PeriodInvalid });
-    }
 
     IReadOnlyCollection<Festival> others = await _repository.FindAllAsync(cancellationToken);
     var inTheWay = _schedule.FindOverlapping(candidateId, startsAtUtc, endsAtUtc, others);

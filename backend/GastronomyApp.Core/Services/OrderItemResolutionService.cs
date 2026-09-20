@@ -1,5 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -50,7 +52,7 @@ public sealed class OrderItemResolutionService
 
       IReadOnlyCollection<ItemStationAssignment> assignments = await _catalogItemRepository.FindAssignmentsAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
 
-      Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(itemRequest.CatalogItemId, assignments, stationsAtTheFestival, itemRequest.StationId);
+      Result<RoutingDecision, Failure<RoutingFailureReason>> routing = _routingResolver.Resolve(itemRequest.CatalogItemId, assignments, stationsAtTheFestival, itemRequest.StationId);
 
       if (!routing.IsSuccess)
       {

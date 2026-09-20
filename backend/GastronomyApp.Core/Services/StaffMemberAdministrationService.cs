@@ -25,22 +25,22 @@ public sealed class StaffMemberAdministrationService
     return _repository.FindAdministeredAsync(_clock.UtcNow, cancellationToken);
   }
 
-  public Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
+  public Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => RenamedAsync(staffMemberId, name, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOnAsync(staffMemberId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(staffMemberId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
+  private async Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(name))
       return Failed(StaffMemberAdministrationFailureReason.NameMissing);
@@ -56,7 +56,7 @@ public sealed class StaffMemberAdministrationService
     return Saved(staffMember, null);
   }
 
-  private async Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> SwitchedOnAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> SwitchedOnAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
@@ -69,7 +69,7 @@ public sealed class StaffMemberAdministrationService
     return Saved(staffMember, null);
   }
 
-  private async Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> SwitchedOffAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> SwitchedOffAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
@@ -88,23 +88,23 @@ public sealed class StaffMemberAdministrationService
     return Saved(staffMember, revokedDeviceId);
   }
 
-  private Result<SavedStaffMember, StaffMemberAdministrationFailure> Saved(StaffMember staffMember, Guid? revokedDeviceId)
+  private Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> Saved(StaffMember staffMember, Guid? revokedDeviceId)
   {
-    return Result<SavedStaffMember, StaffMemberAdministrationFailure>.Success(new(staffMember.Id, staffMember.Name, revokedDeviceId));
+    return Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>.Success(new(staffMember.Id, staffMember.Name, revokedDeviceId));
   }
 
-  private Result<SavedStaffMember, StaffMemberAdministrationFailure> Failed(StaffMemberAdministrationFailureReason reason)
+  private Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> Failed(StaffMemberAdministrationFailureReason reason)
   {
-    return Result<SavedStaffMember, StaffMemberAdministrationFailure>.Failed(new() { Reason = reason });
+    return Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>> RunAsync(Func<CancellationToken, Task<Result<SavedStaffMember, StaffMemberAdministrationFailure>>> write, CancellationToken cancellationToken)
+  private async Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>> RunAsync(Func<CancellationToken, Task<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<SavedStaffMember, StaffMemberAdministrationFailure> written = await write(transactionCancellationToken);
+                                               Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<SavedStaffMember, StaffMemberAdministrationFailure>>
+                                               return new TransactionOutcome<Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>>>
                                                       {
                                                         Value = written,
                                                         ShouldCommit = written.IsSuccess

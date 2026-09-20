@@ -2,6 +2,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -26,42 +27,42 @@ public sealed class CatalogCategoryAdministrationService
     return _repository.FindAllOrderedAsync(cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> CreateAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreateAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
     return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> UpdateAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdateAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
     return RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, request, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<ReorderedCatalogCategories, CatalogCategoryAdministrationFailure>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  public Task<Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken), written => written.IsSuccess && written.Value.OrderChanged, cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  private async Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> CreatedAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreatedAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
-    var refusal = Validate(request, categories, null);
+    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(request, categories, null);
 
     if (refusal is not null)
-      return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Failed(refusal);
+      return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Failed(refusal);
 
     CatalogCategory created = new()
                               {
@@ -75,10 +76,10 @@ public sealed class CatalogCategoryAdministrationService
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Success(created);
+    return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(created);
   }
 
-  private async Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> UpdatedAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdatedAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
     var category = categories.FirstOrDefault(candidate => candidate.Id == categoryId);
@@ -86,19 +87,19 @@ public sealed class CatalogCategoryAdministrationService
     if (category is null)
       return Failed<CatalogCategory>(CatalogCategoryAdministrationFailureReason.CategoryNotFound);
 
-    var refusal = Validate(request, categories, categoryId);
+    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(request, categories, categoryId);
 
     if (refusal is not null)
-      return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Failed(refusal);
+      return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Failed(refusal);
 
     category.Name = request.Name!.Trim();
     category.ColourHex = request.ColourHex!;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Success(category);
+    return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
   }
 
-  private async Task<Result<ReorderedCatalogCategories, CatalogCategoryAdministrationFailure>> MovedAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  private async Task<Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>> MovedAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
 
@@ -112,17 +113,17 @@ public sealed class CatalogCategoryAdministrationService
     IReadOnlyList<CatalogCategory> reordered = positions.Select(position => categoriesById[position.CategoryId]).ToList();
 
     if (positions.All(position => categoriesById[position.CategoryId].SortOrder == position.SortOrder))
-      return Result<ReorderedCatalogCategories, CatalogCategoryAdministrationFailure>.Success(new(reordered, false));
+      return Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>.Success(new(reordered, false));
 
     foreach (var position in positions)
       categoriesById[position.CategoryId].SortOrder = position.SortOrder;
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<ReorderedCatalogCategories, CatalogCategoryAdministrationFailure>.Success(new(reordered, true));
+    return Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>.Success(new(reordered, true));
   }
 
-  private async Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> SwitchedOnAsync(Guid categoryId, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> SwitchedOnAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     var category = await _repository.FindByIdAsync(categoryId, cancellationToken);
 
@@ -132,10 +133,10 @@ public sealed class CatalogCategoryAdministrationService
     category.IsActive = true;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Success(category);
+    return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
   }
 
-  private async Task<Result<CatalogCategory, CatalogCategoryAdministrationFailure>> SwitchedOffAsync(Guid categoryId, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> SwitchedOffAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     var category = await _repository.FindByIdAsync(categoryId, cancellationToken);
 
@@ -148,10 +149,10 @@ public sealed class CatalogCategoryAdministrationService
     category.IsActive = false;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogCategory, CatalogCategoryAdministrationFailure>.Success(category);
+    return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
   }
 
-  private CatalogCategoryAdministrationFailure? Validate(SaveCatalogCategoryRequest request, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
+  private Failure<CatalogCategoryAdministrationFailureReason>? Validate(SaveCatalogCategoryRequest request, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
       return new() { Reason = CatalogCategoryAdministrationFailureReason.NameMissing };
@@ -169,18 +170,20 @@ public sealed class CatalogCategoryAdministrationService
     return null;
   }
 
-  private Result<TValue, CatalogCategoryAdministrationFailure> Failed<TValue>(CatalogCategoryAdministrationFailureReason reason)
+  private Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>> Failed<TValue>(CatalogCategoryAdministrationFailureReason reason)
   {
-    return Result<TValue, CatalogCategoryAdministrationFailure>.Failed(new() { Reason = reason });
+    return Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<TValue, CatalogCategoryAdministrationFailure>> RunAsync<TValue>(Func<CancellationToken, Task<Result<TValue, CatalogCategoryAdministrationFailure>>> write, Func<Result<TValue, CatalogCategoryAdministrationFailure>, bool> shouldCommit, CancellationToken cancellationToken)
+  private async Task<Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>>> RunAsync<TValue>(Func<CancellationToken, Task<Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>>>> write,
+                                                                                                           Func<Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>>, bool> shouldCommit,
+                                                                                                           CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<TValue, CatalogCategoryAdministrationFailure> written = await write(transactionCancellationToken);
+                                               Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<TValue, CatalogCategoryAdministrationFailure>>
+                                               return new TransactionOutcome<Result<TValue, Failure<CatalogCategoryAdministrationFailureReason>>>
                                                       {
                                                         Value = written,
                                                         ShouldCommit = shouldCommit(written)

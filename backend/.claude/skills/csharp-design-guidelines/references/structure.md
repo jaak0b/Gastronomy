@@ -170,3 +170,18 @@ above.
   early returns. `??`, `??=` and `?.` stay. **Do** build a list from a query with `.ToList()` or
   `.ToArray()`, never with a spread collection expression (`[.. items.Select(...)]`); a collection
   expression is only for a literal list of values. Neither of these can be enforced by the cleanup.
+- **Do** place a new file in the folder that names both its kind and its concept, so the folder alone
+  says what the file is. In `GastronomyApp.Core`: `Entities` for persisted aggregates, `Enums` for
+  domain enums shared beyond one area, `Ports` for interfaces the other projects implement together
+  with the records that exist only as a port's parameter or return type, `Requests` for the records a
+  caller hands to a service, `ReadModels` for what a service or a repository returns for reading
+  including intermediate values a service computes and hands on, `Results` for the outcome of a write
+  and for failure records with their reason enums, `Exceptions` for exception types, and `Services`
+  for classes only. In `GastronomyApp.Api`: `Endpoints` for mapping classes, handlers, announcers and
+  responders, `Contracts` for wire records only, and `Auth`, `Hub`, `Hosting`, `ErrorHandling`,
+  `Options` and `RateLimiting` for what their names say. In `GastronomyApp.Infrastructure`:
+  `Persistence` for the context, the connection factory and the transaction runner, `Repositories`,
+  `Configurations`, `Security` and `ErrorHandling`. In `GastronomyApp.Desktop`: one folder per
+  concern (`Hosting`, `Updates`, `Settings`, `Setup`, `Platform`, `Localization`, `Logging`,
+  `ViewModels`, `Views`), never a `Services` catch-all. In a test project a support type that is not
+  a fixture lives under `TestSupport` and the fixture folders mirror the production folders.

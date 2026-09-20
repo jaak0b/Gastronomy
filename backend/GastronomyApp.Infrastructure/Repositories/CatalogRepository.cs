@@ -1,5 +1,7 @@
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Infrastructure.Persistence;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -7,10 +9,12 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class CatalogRepository : ICatalogRepository
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
 
-  public CatalogRepository(GastronomyAppDbContext dbContext)
+  public CatalogRepository(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<CatalogAtFestival> ReadAtFestivalAsync(Guid festivalId, string festivalName, CancellationToken cancellationToken)
@@ -31,11 +35,7 @@ public sealed class CatalogRepository : ICatalogRepository
 
     HashSet<Guid> stationIdsAtTheFestival = stations.Select(station => station.StationId).ToHashSet();
 
-    List<CatalogCategoryRow> categories = await _dbContext.CatalogCategories.AsNoTracking()
-                                                          .Where(category => category.IsActive)
-                                                          .OrderBy(category => category.SortOrder)
-                                                          .Select(category => new CatalogCategoryRow(category.Id, category.Name, category.ColourHex, category.SortOrder))
-                                                          .ToListAsync(cancellationToken);
+    List<CatalogCategoryRow> categories = await _dbContext.CatalogCategories.AsNoTracking().Where(category => category.IsActive).OrderBy(category => category.SortOrder).ProjectToType<CatalogCategoryRow>(_mapperConfig).ToListAsync(cancellationToken);
 
     HashSet<Guid> activeCategoryIds = categories.Select(category => category.CategoryId).ToHashSet();
 

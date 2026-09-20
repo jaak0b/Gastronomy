@@ -1,5 +1,5 @@
-﻿using System.Data.Common;
-using GastronomyApp.Infrastructure;
+using System.Data.Common;
+using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace GastronomyApp.Api.Hosting;

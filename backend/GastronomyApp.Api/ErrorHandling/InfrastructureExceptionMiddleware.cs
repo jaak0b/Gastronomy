@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.ErrorHandling;

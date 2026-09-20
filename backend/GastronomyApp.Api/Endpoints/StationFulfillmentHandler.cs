@@ -3,6 +3,7 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Endpoints;
@@ -11,14 +12,14 @@ public sealed class StationFulfillmentHandler
 {
   private readonly StationQueueChangeService _changeService;
   private readonly HubNotificationDispatcher _dispatcher;
+  private readonly IMapper _mapper;
   private readonly StationQueueRefusalResponder _refusalResponder;
-  private readonly StationQueueViewBuilder _viewBuilder;
 
-  public StationFulfillmentHandler(StationQueueChangeService changeService, HubNotificationDispatcher dispatcher, StationQueueViewBuilder viewBuilder, StationQueueRefusalResponder refusalResponder)
+  public StationFulfillmentHandler(StationQueueChangeService changeService, HubNotificationDispatcher dispatcher, IMapper mapper, StationQueueRefusalResponder refusalResponder)
   {
     _changeService = changeService;
     _dispatcher = dispatcher;
-    _viewBuilder = viewBuilder;
+    _mapper = mapper;
     _refusalResponder = refusalResponder;
   }
 
@@ -61,6 +62,6 @@ public sealed class StationFulfillmentHandler
     foreach (var statusChange in change.Value.OrderStatusChanges)
       await _dispatcher.PushOrderStatusChangedAsync(statusChange.OrderId, statusChange.Status, cancellationToken);
 
-    return Results.Ok(_viewBuilder.Build(change.Value.Queue));
+    return Results.Ok(_mapper.Map<StationQueueView>(change.Value.Queue));
   }
 }

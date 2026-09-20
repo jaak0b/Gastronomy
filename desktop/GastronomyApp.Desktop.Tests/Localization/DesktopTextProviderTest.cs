@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop.Tests.Localization;
 

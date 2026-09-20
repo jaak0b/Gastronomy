@@ -1,8 +1,10 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -12,29 +14,31 @@ public sealed class AdminFestivalHandler
 {
   private readonly FestivalChangeAnnouncer _announcer;
   private readonly ILogger<AdminFestivalHandler> _logger;
+  private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalAdministrationService _service;
 
-  public AdminFestivalHandler(FestivalAdministrationService service, FestivalChangeAnnouncer announcer, ResultEnvelope resultEnvelope, ILogger<AdminFestivalHandler> logger)
+  public AdminFestivalHandler(FestivalAdministrationService service, FestivalChangeAnnouncer announcer, ResultEnvelope resultEnvelope, ILogger<AdminFestivalHandler> logger, IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
+    _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
     IReadOnlyList<AdministeredFestival> festivals = await _service.ListAsync(cancellationToken);
 
-    return Results.Ok(new AdminFestivalListView(festivals.Select(BuildFestivalView).ToList()));
+    return Results.Ok(new AdminFestivalListView(_mapper.Map<IReadOnlyList<AdminFestivalView>>(festivals)));
   }
 
   public async Task<IResult> CreateAsync(SaveFestivalRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
 
     return await AnsweredAsync(created, festivalId => Results.Json(new SavedFestivalView(festivalId), statusCode: StatusCodes.Status201Created));
   }
@@ -43,7 +47,7 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(festivalId, _mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
 
     return await AnsweredAsync(updated, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
   }
@@ -52,7 +56,7 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(festivalId, _mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
 
     return await AnsweredAsync(copied, newFestivalId => Results.Json(new SavedFestivalView(newFestivalId), statusCode: StatusCodes.Status201Created));
   }
@@ -69,21 +73,6 @@ public sealed class AdminFestivalHandler
     Result<SavedFestival, FestivalAdministrationFailure> shown = await _service.ShowAsync(festivalId, cancellationToken);
 
     return await AnsweredAsync(shown, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
-  }
-
-  private FestivalPeriodRequest BuildPeriodRequest(SaveFestivalRequest request)
-  {
-    return new()
-           {
-             Name = request.Name,
-             StartsAtUtc = request.StartsAtUtc,
-             EndsAtUtc = request.EndsAtUtc
-           };
-  }
-
-  private AdminFestivalView BuildFestivalView(AdministeredFestival festival)
-  {
-    return new(festival.FestivalId, festival.Name, festival.StartsAtUtc, festival.EndsAtUtc, festival.IsHidden, festival.IsRunning, festival.StationCount, festival.MenuItemCount, festival.OrderCount);
   }
 
   private async Task<IResult> AnsweredAsync(Result<SavedFestival, FestivalAdministrationFailure> written, Func<Guid, IResult> buildResponse)

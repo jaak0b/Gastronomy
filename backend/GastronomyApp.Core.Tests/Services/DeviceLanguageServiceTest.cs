@@ -26,7 +26,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ALanguageTheAppDoesNotSpeak_RefusesItAndSavesNothing()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
+    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -40,7 +40,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_NoLanguageAtAll_RefusesItAsUnsupported()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
+    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -52,7 +52,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ADeviceThatWasSetUpAgainElsewhere_RefusesBecauseTheDeviceIsGone()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -66,7 +66,7 @@ public sealed class DeviceLanguageServiceTest
   {
     var device = GivenTheDeviceSpeaks("de");
 
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

@@ -55,7 +55,7 @@ public sealed class SessionHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
+    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
 
     if (changed.IsSuccess)
       return Results.NoContent();

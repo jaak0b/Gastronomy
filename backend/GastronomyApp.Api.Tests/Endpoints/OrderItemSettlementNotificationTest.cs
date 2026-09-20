@@ -6,6 +6,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -127,7 +128,7 @@ public sealed class OrderItemSettlementNotificationTest
     IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
     A.CallTo(() => hubContext.Clients).Throws(new InvalidOperationException("the hub is not answering"));
 
-    return new(services.GetRequiredService<OrderItemSettlementService>(), services.GetRequiredService<SavedChangeAnnouncement>(), new(hubContext), services.GetRequiredService<ResultEnvelope>(), logger);
+    return new(services.GetRequiredService<OrderItemSettlementService>(), services.GetRequiredService<SavedChangeAnnouncement>(), new(hubContext), services.GetRequiredService<ResultEnvelope>(), logger, services.GetRequiredService<IMapper>());
   }
 
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync()

@@ -1,4 +1,5 @@
-﻿using System.Net;
+using System.Net;
+using GastronomyApp.Api.Tests.TestSupport;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 

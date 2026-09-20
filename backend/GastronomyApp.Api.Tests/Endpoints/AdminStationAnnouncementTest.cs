@@ -4,7 +4,8 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.Persistence;
+using MapsterMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -116,6 +117,6 @@ public sealed class AdminStationAnnouncementTest
   {
     StationChangeAnnouncer announcer = new(new(hubContext), new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()));
 
-    return new(services.GetRequiredService<StationAdministrationService>(), announcer, services.GetRequiredService<DeviceRevocationAnnouncer>(), services.GetRequiredService<ResultEnvelope>());
+    return new(services.GetRequiredService<StationAdministrationService>(), announcer, services.GetRequiredService<DeviceRevocationAnnouncer>(), services.GetRequiredService<ResultEnvelope>(), services.GetRequiredService<IMapper>());
   }
 }

@@ -18,7 +18,7 @@ public sealed class DeviceLanguageService
     _repository = repository;
   }
 
-  public async Task<Result<ChangedDeviceLanguage, DeviceLanguageFailure>> ChangeAsync(Guid deviceId, string? language, CancellationToken cancellationToken)
+  public async Task<Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>> ChangeAsync(Guid deviceId, string? language, CancellationToken cancellationToken)
   {
     if (language is null || !_supportedLanguages.Contains(language, StringComparer.Ordinal))
       return Failed(DeviceLanguageFailureReason.UnsupportedLanguage);
@@ -31,15 +31,15 @@ public sealed class DeviceLanguageService
     device.Language = language;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<ChangedDeviceLanguage, DeviceLanguageFailure>.Success(new()
-                                                                        {
-                                                                          DeviceId = deviceId,
-                                                                          Language = language
-                                                                        });
+    return Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>.Success(new()
+                                                                                       {
+                                                                                         DeviceId = deviceId,
+                                                                                         Language = language
+                                                                                       });
   }
 
-  private Result<ChangedDeviceLanguage, DeviceLanguageFailure> Failed(DeviceLanguageFailureReason reason)
+  private Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> Failed(DeviceLanguageFailureReason reason)
   {
-    return Result<ChangedDeviceLanguage, DeviceLanguageFailure>.Failed(new() { Reason = reason });
+    return Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>.Failed(new() { Reason = reason });
   }
 }

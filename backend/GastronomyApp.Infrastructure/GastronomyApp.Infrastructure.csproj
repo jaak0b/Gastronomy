@@ -3,6 +3,7 @@
         <ProjectReference Include="..\GastronomyApp.Core\GastronomyApp.Core.csproj"/>
     </ItemGroup>
     <ItemGroup>
+        <PackageReference Include="Mapster"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

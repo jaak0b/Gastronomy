@@ -6,17 +6,15 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationOrderVisibilityService
 {
-  public Result<StationOrder, StationOrderVisibilityFailure> HideFromAsItComesQueue(StationOrder stationOrder)
+  public Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> HideFromAsItComesQueue(StationOrder stationOrder)
   {
     ArgumentNullException.ThrowIfNull(stationOrder);
 
     if (stationOrder.DeliveryMode != DeliveryMode.AsItComes)
-    {
-      return Result<StationOrder, StationOrderVisibilityFailure>.Failed(new() { Reason = StationOrderVisibilityFailureReason.NotAnAsItComesOrder });
-    }
+      return Result<StationOrder, Failure<StationOrderVisibilityFailureReason>>.Failed(new() { Reason = StationOrderVisibilityFailureReason.NotAnAsItComesOrder });
 
     stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    return Result<StationOrder, StationOrderVisibilityFailure>.Success(stationOrder);
+    return Result<StationOrder, Failure<StationOrderVisibilityFailureReason>>.Success(stationOrder);
   }
 }

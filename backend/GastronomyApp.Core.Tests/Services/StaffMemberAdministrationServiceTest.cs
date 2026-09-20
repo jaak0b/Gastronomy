@@ -50,7 +50,7 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task RenameAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -63,7 +63,7 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task RenameAsync_ASomebodyWhoIsNotOnTheList_FailsBecauseThePersonIsNotFound()
   {
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -78,7 +78,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(true, null, null);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -95,7 +95,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(false, null, null);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOn = await _service.ActivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOn = await _service.ActivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -110,7 +110,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(true, _deviceId, _invitationId);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -130,7 +130,7 @@ public sealed class StaffMemberAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(BuildStaffMember(true, null, null)));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.That(switchedOff.Value.RevokedDeviceId, Is.Null);
 

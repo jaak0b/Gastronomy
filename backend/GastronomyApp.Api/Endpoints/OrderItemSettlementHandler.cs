@@ -2,8 +2,10 @@ using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -14,16 +16,18 @@ public sealed class OrderItemSettlementHandler
   private readonly SavedChangeAnnouncement _announcement;
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly ILogger<OrderItemSettlementHandler> _logger;
+  private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly OrderItemSettlementService _settlementService;
 
-  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncement announcement, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger)
+  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncement announcement, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger, IMapper mapper)
   {
     _settlementService = settlementService;
     _announcement = announcement;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
+    _mapper = mapper;
   }
 
   public async Task<IResult> SettleAsync(SettleItemsRequest request, StaffDeviceCaller caller, CancellationToken cancellationToken)
@@ -45,9 +49,7 @@ public sealed class OrderItemSettlementHandler
     List<Guid> alreadySettledByOthersIds = settlement.Value.AlreadySettledByOthers.Select(item => item.Id).ToList();
 
     if (settledIds.Count > 0)
-    {
       _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
-    }
 
     var otherPhonesWereTold = settledIds.Count == 0 || await TellTheOtherPhonesAsync(settledIds, settlement.Value.SettledTableNames);
 
@@ -58,13 +60,7 @@ public sealed class OrderItemSettlementHandler
   {
     return new()
            {
-             Lines = (request.Lines ?? []).Select(line => new SettlementLine
-                                                          {
-                                                            OrderItemId = line.OrderItemId,
-                                                            PaidPriceCents = line.PaidPriceCents,
-                                                            PaymentNotice = line.PaymentNotice
-                                                          })
-                                          .ToList(),
+             Lines = _mapper.Map<IReadOnlyList<SettlementLine>>(request.Lines ?? []),
              SettledByStaffMemberId = caller.StaffMemberId
            };
   }

@@ -1,8 +1,10 @@
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +15,7 @@ public sealed class AdminItemHandler
   private readonly SavedChangeAnnouncement _announcement;
   private readonly CatalogChangeAnnouncer _announcer;
   private readonly ILogger<AdminItemHandler> _logger;
+  private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogItemAdministrationService _service;
 
@@ -20,13 +23,15 @@ public sealed class AdminItemHandler
                           CatalogChangeAnnouncer announcer,
                           SavedChangeAnnouncement announcement,
                           ResultEnvelope resultEnvelope,
-                          ILogger<AdminItemHandler> logger)
+                          ILogger<AdminItemHandler> logger,
+                          IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
     _announcement = announcement;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
+    _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
@@ -39,7 +44,7 @@ public sealed class AdminItemHandler
       return RefusalFor(listed.Failure);
     }
 
-    return Results.Ok(new AdminItemListView(listed.Value.Select(BuildItemView).ToList()));
+    return Results.Ok(new AdminItemListView(_mapper.Map<IReadOnlyList<AdminItemView>>(listed.Value)));
   }
 
   public async Task<IResult> CreateAsync(SaveItemRequest request, CancellationToken cancellationToken)
@@ -47,7 +52,7 @@ public sealed class AdminItemHandler
     ArgumentNullException.ThrowIfNull(request);
 
     Result<Guid, CatalogItemAdministrationFailure> created =
-      await _service.CreateAsync(BuildSaveRequest(request), cancellationToken);
+      await _service.CreateAsync(_mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
 
     return await AnsweredAsync(created,
                                itemId => Results.Json(new SavedItemView(itemId),
@@ -59,7 +64,7 @@ public sealed class AdminItemHandler
     ArgumentNullException.ThrowIfNull(request);
 
     Result<Guid, CatalogItemAdministrationFailure> updated =
-      await _service.UpdateAsync(itemId, BuildSaveRequest(request), cancellationToken);
+      await _service.UpdateAsync(itemId, _mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
 
     return await AnsweredAsync(updated, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }
@@ -77,40 +82,6 @@ public sealed class AdminItemHandler
       await _service.DeactivateAsync(itemId, cancellationToken);
 
     return await AnsweredAsync(switchedOff, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
-  }
-
-  private SaveCatalogItemRequest BuildSaveRequest(SaveItemRequest request)
-  {
-    return new()
-           {
-             Name = request.Name,
-             CategoryId = request.CategoryId,
-             SortOrder = request.SortOrder,
-             ProductionMinutes = request.ProductionMinutes,
-             IsQueueIndependent = request.IsQueueIndependent
-           };
-  }
-
-  private AdminItemView BuildItemView(AdministeredCatalogItem item)
-  {
-    return new(item.ItemId,
-               item.Name,
-               item.CategoryId,
-               item.SortOrder,
-               item.IsActive,
-               item.ProductionMinutes,
-               item.IsQueueIndependent,
-               BuildItemAtFestivalView(item));
-  }
-
-  private AdminItemAtFestivalView? BuildItemAtFestivalView(AdministeredCatalogItem item)
-  {
-    if (item.AtTheFestival is not { } atTheFestival)
-    {
-      return null;
-    }
-
-    return new(atTheFestival.PriceCents, atTheFestival.IsAvailable, atTheFestival.StationIds);
   }
 
   private async Task<IResult> AnsweredAsync(Result<Guid, CatalogItemAdministrationFailure> written,

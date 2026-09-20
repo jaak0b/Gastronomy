@@ -1,5 +1,6 @@
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -37,9 +38,7 @@ public sealed class StationAdministrationService
   public async Task<Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
-    {
       return Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>.Failed(new() { Reason = StationAdministrationFailureReason.FestivalNotFound });
-    }
 
     IReadOnlyList<AdministeredStation> stations = await _repository.FindAdministeredAsync(festivalId, _clock.UtcNow, cancellationToken);
 

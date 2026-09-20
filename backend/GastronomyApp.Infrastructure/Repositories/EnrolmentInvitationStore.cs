@@ -3,6 +3,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 

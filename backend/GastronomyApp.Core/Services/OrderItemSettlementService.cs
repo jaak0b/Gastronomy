@@ -1,6 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -27,9 +28,7 @@ public sealed class OrderItemSettlementService
     var festival = await _runningFestival.FindAsync(cancellationToken);
 
     if (festival is null)
-    {
       return Result<SettlementResult, SettlementFailure>.Failed(new() { Reason = SettlementFailureReason.NoRunningFestival });
-    }
 
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
@@ -193,9 +192,7 @@ public sealed class OrderItemSettlementService
   private void EnsureSettlerNamed(Guid settledByStaffMemberId)
   {
     if (settledByStaffMemberId == Guid.Empty)
-    {
       throw new ArgumentException("A settled item has to name the staff member who collected the money.", nameof(settledByStaffMemberId));
-    }
   }
 
   private void OverwriteChargedPrice(OrderItem item, int chargedPriceCents, string? paymentNotice)

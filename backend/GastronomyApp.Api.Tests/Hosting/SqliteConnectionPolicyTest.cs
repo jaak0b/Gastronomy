@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+using System.Globalization;
+using GastronomyApp.Api.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Hosting;

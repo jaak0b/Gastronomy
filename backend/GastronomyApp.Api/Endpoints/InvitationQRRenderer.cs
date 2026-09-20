@@ -29,7 +29,7 @@ public sealed class InvitationQRRenderer
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
+    Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
 
     if (!stillOpen.IsSuccess)
       return RefusalFor(stillOpen.Failure);
@@ -45,7 +45,7 @@ public sealed class InvitationQRRenderer
     return Results.Text(Render(remembered.QRUrl), SvgMediaType, Encoding.UTF8);
   }
 
-  private IResult RefusalFor(EnrolmentInvitationFailure failure)
+  private IResult RefusalFor(Failure<EnrolmentInvitationFailureReason> failure)
   {
     return failure.Reason switch
            {

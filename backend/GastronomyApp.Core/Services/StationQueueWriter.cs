@@ -56,16 +56,12 @@ public sealed class StationQueueWriter
     var stationOrder = await _repository.FindAtStationAsync(stationOrderId, stationId, festivalId, cancellationToken);
 
     if (stationOrder is null)
-    {
       return Result<StationOrder, StationQueueFailure>.Failed(new() { Reason = StationQueueFailureReason.OrderNotAtThisStation });
-    }
 
-    Result<StationOrder, StationOrderVisibilityFailure> hidden = _visibilityService.HideFromAsItComesQueue(stationOrder);
+    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> hidden = _visibilityService.HideFromAsItComesQueue(stationOrder);
 
     if (!hidden.IsSuccess)
-    {
       return Result<StationOrder, StationQueueFailure>.Failed(new() { Reason = TranslateVisibilityReason(hidden.Failure.Reason) });
-    }
 
     await _repository.SaveChangesAsync(cancellationToken);
 

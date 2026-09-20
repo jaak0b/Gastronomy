@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -13,9 +14,7 @@ public sealed class OrderItemFulfillmentService
     List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
-    {
       return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
-    }
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> toFulfill = [];
@@ -56,9 +55,7 @@ public sealed class OrderItemFulfillmentService
     List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
-    {
       return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
-    }
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> toClear = [];

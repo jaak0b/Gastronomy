@@ -1,5 +1,5 @@
-﻿using GastronomyApp.Api.Options;
-using GastronomyApp.Infrastructure;
+using GastronomyApp.Api.Options;
+using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 

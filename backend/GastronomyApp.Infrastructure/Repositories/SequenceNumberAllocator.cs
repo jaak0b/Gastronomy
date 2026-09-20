@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;

@@ -1,4 +1,4 @@
-using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

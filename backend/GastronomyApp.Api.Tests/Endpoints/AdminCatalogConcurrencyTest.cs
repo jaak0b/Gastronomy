@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Infrastructure;
+using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

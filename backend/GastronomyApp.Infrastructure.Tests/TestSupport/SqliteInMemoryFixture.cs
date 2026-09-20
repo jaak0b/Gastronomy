@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;

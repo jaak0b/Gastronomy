@@ -3,20 +3,21 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Endpoints;
 
 public sealed class StationQueueHandler
 {
+  private readonly IMapper _mapper;
   private readonly StationQueueService _queueService;
   private readonly StationQueueRefusalResponder _refusalResponder;
-  private readonly StationQueueViewBuilder _viewBuilder;
 
-  public StationQueueHandler(StationQueueService queueService, StationQueueViewBuilder viewBuilder, StationQueueRefusalResponder refusalResponder)
+  public StationQueueHandler(StationQueueService queueService, IMapper mapper, StationQueueRefusalResponder refusalResponder)
   {
     _queueService = queueService;
-    _viewBuilder = viewBuilder;
+    _mapper = mapper;
     _refusalResponder = refusalResponder;
   }
 
@@ -29,7 +30,7 @@ public sealed class StationQueueHandler
     if (!queue.IsSuccess)
       return _refusalResponder.Respond(queue.Failure);
 
-    return Results.Ok(_viewBuilder.Build(queue.Value));
+    return Results.Ok(_mapper.Map<StationQueueView>(queue.Value));
   }
 
   public async Task<IResult> ListFulfilledAsync(StationDeviceCaller caller, CancellationToken cancellationToken)
@@ -41,6 +42,6 @@ public sealed class StationQueueHandler
     if (!stationOrders.IsSuccess)
       return _refusalResponder.Respond(stationOrders.Failure);
 
-    return Results.Ok(new StationFulfilledView(_viewBuilder.BuildStationOrders(stationOrders.Value)));
+    return Results.Ok(new StationFulfilledView(_mapper.Map<IReadOnlyList<StationOrderQueueView>>(stationOrders.Value)));
   }
 }

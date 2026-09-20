@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Core.Services;
+using GastronomyApp.Core.ReadModels;
+
+namespace GastronomyApp.Core.Services;
 
 public sealed class OrderLineCollapser
 {

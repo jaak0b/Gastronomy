@@ -1,6 +1,9 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -69,9 +72,7 @@ public sealed class OrderAcceptanceService
 
     var festival = await _runningFestival.FindAsync(cancellationToken);
     if (festival is null)
-    {
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.NoRunningFestival });
-    }
 
     Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution = await _itemResolutionService.ResolveAsync(festival.Id, request.Items, cancellationToken);
 

@@ -21,7 +21,7 @@ public sealed class StationOrderVisibilityServiceTest
   {
     var stationOrder = BuildStationOrder(DeliveryMode.Together);
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
@@ -36,7 +36,7 @@ public sealed class StationOrderVisibilityServiceTest
   {
     var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
@@ -52,7 +52,7 @@ public sealed class StationOrderVisibilityServiceTest
     var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
     stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {

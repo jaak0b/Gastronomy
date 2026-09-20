@@ -1,10 +1,10 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FakeItEasy;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Services;
+using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
 

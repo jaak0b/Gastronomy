@@ -1,5 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using GastronomyApp.Desktop.Services;
+using CommunityToolkit.Mvvm.Input;
+using GastronomyApp.Desktop.Localization;
 
 namespace GastronomyApp.Desktop.ViewModels;
 

@@ -4,6 +4,7 @@ using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,6 +94,6 @@ public sealed class AdminFestivalHandlerTest
   {
     FestivalChangeAnnouncer announcer = new(new(hubContext), new(_scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()));
 
-    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(), announcer, _scope.ServiceProvider.GetRequiredService<ResultEnvelope>(), A.Fake<ILogger<AdminFestivalHandler>>());
+    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(), announcer, _scope.ServiceProvider.GetRequiredService<ResultEnvelope>(), A.Fake<ILogger<AdminFestivalHandler>>(), _scope.ServiceProvider.GetRequiredService<IMapper>());
   }
 }

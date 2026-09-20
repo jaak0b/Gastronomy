@@ -1,3 +1,5 @@
+using GastronomyApp.Infrastructure.Persistence;
+
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed record SeededDomain

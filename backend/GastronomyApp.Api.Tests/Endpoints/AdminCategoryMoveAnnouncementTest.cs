@@ -4,6 +4,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Services;
+using MapsterMapper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -54,6 +55,6 @@ public sealed class AdminCategoryMoveAnnouncementTest
   {
     CatalogChangeAnnouncer announcer = new(new(hubContext));
 
-    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()), services.GetRequiredService<ResultEnvelope>());
+    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()), services.GetRequiredService<ResultEnvelope>(), services.GetRequiredService<IMapper>());
   }
 }

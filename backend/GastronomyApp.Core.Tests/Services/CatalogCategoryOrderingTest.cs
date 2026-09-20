@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;

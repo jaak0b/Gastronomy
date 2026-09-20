@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
