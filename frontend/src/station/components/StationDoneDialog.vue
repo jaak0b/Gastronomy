@@ -6,10 +6,6 @@ defineProps<{ tableName: string; lines: ItemLine[] }>()
 const emit = defineEmits<{ confirmed: []; cancelled: [] }>()
 
 const { t } = useI18n()
-
-function lineText(line: ItemLine): string {
-  return itemLineText(line, t)
-}
 </script>
 
 <template>
@@ -21,8 +17,8 @@ function lineText(line: ItemLine): string {
           <span class="label">{{ t('station.tableIs', { name: tableName }) }}</span>
         </div>
         <ul class="units">
-          <li v-for="(line, position) in lines" :key="position" class="unit">
-            {{ lineText(line) }}
+          <li v-for="line in lines" :key="line.key" class="unit">
+            {{ itemLineText(line, t) }}
           </li>
         </ul>
       </v-card-text>

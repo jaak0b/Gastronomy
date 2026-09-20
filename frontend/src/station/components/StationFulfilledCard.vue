@@ -2,36 +2,18 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationOrder } from '../../shared/api/apiTypes'
-import {
-  deliveryModeColourToken,
-  deliveryModeKey,
-  isFulfilled,
-  itemLineText,
-  itemLines,
-} from '../../shared/core/stationBoard'
-import './stationCard.css'
+import { isFulfilled, itemLineText, itemLines } from '../../shared/core/stationBoard'
+import { useStationOrderHeader } from '../composables/useStationOrderHeader'
+import BaseStationCard from './BaseStationCard.vue'
 
 const props = defineProps<{ stationOrder: StationOrder; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
 
 const { t } = useI18n()
+const { deliveryText, modeColour, orderReference, doneCounter } = useStationOrderHeader(
+  () => props.stationOrder,
+)
 
-const deliveryText = computed(() => t(deliveryModeKey(props.stationOrder.deliveryMode)))
-const modeColour = computed(
-  () => `rgb(var(--v-theme-${deliveryModeColourToken(props.stationOrder.deliveryMode)}))`,
-)
-const orderReference = computed(() =>
-  t('station.order', {
-    order: props.stationOrder.globalOrderNumber,
-    sequence: props.stationOrder.stationOrderNumber,
-  }),
-)
-const doneCounter = computed(() =>
-  t('station.doneCounter', {
-    fulfilled: props.stationOrder.fulfilledItemCount,
-    total: props.stationOrder.itemCount,
-  }),
-)
 const unitSummary = computed(() =>
   itemLines(props.stationOrder.items)
     .map((line) => itemLineText(line, t))
@@ -40,7 +22,7 @@ const unitSummary = computed(() =>
 </script>
 
 <template>
-  <div class="station-fulfilled mb-4 bg-surface" :style="{ borderColor: modeColour }">
+  <BaseStationCard class="station-fulfilled mb-4 bg-surface" :mode-colour="modeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">
         {{ t('station.tableIs', { name: stationOrder.tableName }) }}
@@ -84,7 +66,7 @@ const unitSummary = computed(() =>
         {{ t('station.putBack') }}
       </v-btn>
     </div>
-  </div>
+  </BaseStationCard>
 </template>
 
 <style scoped>

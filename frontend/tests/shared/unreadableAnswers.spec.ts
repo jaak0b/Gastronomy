@@ -5,7 +5,7 @@ import type { OpenTable } from '../../src/shared/api/apiTypes'
 const { useOpenItemsStore } = await import('../../src/phone/stores/openItems')
 const { useOrderStore } = await import('../../src/phone/stores/order')
 const { TOKEN_STORAGE_KEY, useSessionStore } = await import('../../src/shared/stores/session')
-const { useStationStore } = await import('../../src/stores/station')
+const { useStationStore } = await import('../../src/station/stores/station')
 
 function aLaptopThatAnswersWith(aBody: unknown): void {
   vi.stubGlobal(

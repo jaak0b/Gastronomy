@@ -3,15 +3,13 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { StationOrder } from '../../shared/api/apiTypes'
 import {
-  deliveryModeColourToken,
-  deliveryModeKey,
   itemLineText,
   itemLines,
   openItemsIn,
   selectedOpenItemIds,
-  type ItemLine,
 } from '../../shared/core/stationBoard'
-import './stationCard.css'
+import { useStationOrderHeader } from '../composables/useStationOrderHeader'
+import BaseStationCard from './BaseStationCard.vue'
 
 const props = defineProps<{
   stationOrder: StationOrder
@@ -21,32 +19,19 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   toggleItem: [orderItemId: string]
-  fulfil: [stationOrder: StationOrder, orderItemIds: string[]]
+  fulfill: [stationOrder: StationOrder, orderItemIds: string[]]
   hide: [stationOrderId: string]
 }>()
 
 const { t } = useI18n()
+const { deliveryText, modeColour, orderReference, doneCounter } = useStationOrderHeader(
+  () => props.stationOrder,
+)
 
 const isGrouped = ref(false)
 const openItems = computed(() => openItemsIn(props.stationOrder))
 const selectedHere = computed(() =>
   selectedOpenItemIds(props.stationOrder, props.selectedItemIds),
-)
-const deliveryText = computed(() => t(deliveryModeKey(props.stationOrder.deliveryMode)))
-const modeColour = computed(
-  () => `rgb(var(--v-theme-${deliveryModeColourToken(props.stationOrder.deliveryMode)}))`,
-)
-const orderReference = computed(() =>
-  t('station.order', {
-    order: props.stationOrder.globalOrderNumber,
-    sequence: props.stationOrder.stationOrderNumber,
-  }),
-)
-const doneCounter = computed(() =>
-  t('station.doneCounter', {
-    fulfilled: props.stationOrder.fulfilledItemCount,
-    total: props.stationOrder.itemCount,
-  }),
 )
 const groupedLines = computed(() => itemLines(openItems.value))
 const viewToggleLabel = computed(() =>
@@ -59,14 +44,10 @@ const viewToggleIcon = computed(() =>
 function isSelected(orderItemId: string): boolean {
   return selectedHere.value.includes(orderItemId)
 }
-
-function lineText(line: ItemLine): string {
-  return itemLineText(line, t)
-}
 </script>
 
 <template>
-  <div class="station-order mb-4 bg-surface" :style="{ borderColor: modeColour }">
+  <BaseStationCard class="station-order mb-4 bg-surface" :mode-colour="modeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">
         {{ t('station.tableIs', { name: stationOrder.tableName }) }}
@@ -118,12 +99,8 @@ function lineText(line: ItemLine): string {
       </v-btn>
     </template>
     <div v-else class="grouped-items">
-      <p
-        v-for="(line, position) in groupedLines"
-        :key="position"
-        class="grouped-line text-body-1 mb-0"
-      >
-        {{ lineText(line) }}
+      <p v-for="line in groupedLines" :key="line.key" class="grouped-line text-body-1 mb-0">
+        {{ itemLineText(line, t) }}
       </p>
     </div>
     <div v-if="!isGrouped" class="card-actions d-flex mt-3">
@@ -133,7 +110,7 @@ function lineText(line: ItemLine): string {
         variant="flat"
         size="large"
         :disabled="selectedHere.length === 0 || isWorking"
-        @click="emit('fulfil', stationOrder, selectedHere)"
+        @click="emit('fulfill', stationOrder, selectedHere)"
       >
         {{ t('station.done') }}
       </v-btn>
@@ -148,7 +125,7 @@ function lineText(line: ItemLine): string {
         {{ t('station.hideHere') }}
       </v-btn>
     </div>
-  </div>
+  </BaseStationCard>
 </template>
 
 <style scoped>

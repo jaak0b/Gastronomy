@@ -10,6 +10,7 @@ export type StationFailure =
   | { kind: 'unreadableAnswer'; status: number; raw: unknown }
 
 export interface ItemLine {
+  key: string
   itemName: string
   note: string | null
   units: number
@@ -83,7 +84,12 @@ export function itemLines(items: readonly StationOrderItem[]): ItemLine[] {
     items,
     (item) => item.itemName,
     (item) => item.note,
-  ).map(({ line, quantity }) => ({ itemName: line.itemName, note: line.note, units: quantity }))
+  ).map(({ key, line, quantity }) => ({
+    key,
+    itemName: line.itemName,
+    note: line.note,
+    units: quantity,
+  }))
 }
 
 export function linesByCount(lines: readonly ItemLine[]): ItemLine[] {

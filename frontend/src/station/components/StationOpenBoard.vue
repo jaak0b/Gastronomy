@@ -51,7 +51,7 @@ const orderedLines = computed(() => linesByCount(props.lines))
       </v-chip>
     </div>
     <ul class="units">
-      <li v-for="(line, position) in orderedLines" :key="position" class="unit">
+      <li v-for="line in orderedLines" :key="line.key" class="unit">
         {{ itemLineText(line, t) }}
       </li>
     </ul>

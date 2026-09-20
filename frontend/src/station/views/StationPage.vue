@@ -1,32 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationOrder } from '../shared/api/apiTypes'
-import { selectedUnits, stationStats, type ItemLine } from '../shared/core/stationBoard'
+import { stationStats } from '../../shared/core/stationBoard'
+import { useSessionStore } from '../../shared/stores/session'
+import LanguageSwitch from '../../shared/components/LanguageSwitch.vue'
+import { useStationDoneDialog } from '../composables/useStationDoneDialog'
 import { useStationStore } from '../stores/station'
-import { useSessionStore } from '../shared/stores/session'
-import LanguageSwitch from '../shared/components/LanguageSwitch.vue'
-import StationOrderCard from '../components/station/StationOrderCard.vue'
-import StationFulfilledCard from '../components/station/StationFulfilledCard.vue'
-import StationDoneDialog from '../components/station/StationDoneDialog.vue'
-import StationOpenBoard from '../components/station/StationOpenBoard.vue'
+import StationOrderCard from '../components/StationOrderCard.vue'
+import StationFulfilledCard from '../components/StationFulfilledCard.vue'
+import StationDoneDialog from '../components/StationDoneDialog.vue'
+import StationOpenBoard from '../components/StationOpenBoard.vue'
 
 const { t } = useI18n()
 const station = useStationStore()
 const session = useSessionStore()
+const { doneStationOrder, doneUnits, openDone, closeDone, confirmDone } = useStationDoneDialog()
 let stopListening: (() => void) | null = null
 
 const stats = computed(() => stationStats(station.orders))
-const doneStationOrder = ref<StationOrder | null>(null)
-const doneItemIds = ref<string[]>([])
 const isShowingOverview = ref(false)
-const doneUnits = computed<ItemLine[]>(() =>
-  doneStationOrder.value === null
-    ? []
-    : selectedUnits([doneStationOrder.value], doneItemIds.value),
-)
 
-const stationName = computed(() => station.station?.name ?? session.station?.name ?? '')
+const stationName = computed(() => station.identity?.name ?? session.station?.name ?? '')
 
 const failureText = computed<string | null>(() => {
   if (station.loadFailed) {
@@ -44,22 +38,6 @@ onUnmounted(() => {
   stopListening?.()
   stopListening = null
 })
-
-function openDone(stationOrder: StationOrder, orderItemIds: string[]): void {
-  doneStationOrder.value = stationOrder
-  doneItemIds.value = orderItemIds
-}
-
-function closeDone(): void {
-  doneStationOrder.value = null
-  doneItemIds.value = []
-}
-
-async function confirmDone(): Promise<void> {
-  const orderItemIds = doneItemIds.value
-  closeDone()
-  await station.fulfill(orderItemIds)
-}
 
 function openOverview(): void {
   isShowingOverview.value = true
@@ -156,7 +134,7 @@ function closeOverview(): void {
             :is-working="station.isWorking"
             :show-hide="false"
             @toggle-item="station.toggleItemSelection"
-            @fulfil="openDone"
+            @fulfill="openDone"
             @hide="station.hide"
           />
         </v-col>
@@ -172,7 +150,7 @@ function closeOverview(): void {
             :is-working="station.isWorking"
             :show-hide="true"
             @toggle-item="station.toggleItemSelection"
-            @fulfil="openDone"
+            @fulfill="openDone"
             @hide="station.hide"
           />
         </v-col>

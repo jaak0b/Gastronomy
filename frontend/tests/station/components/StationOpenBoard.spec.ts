@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import StationOpenBoard from '../../../src/components/station/StationOpenBoard.vue'
+import StationOpenBoard from '../../../src/station/components/StationOpenBoard.vue'
 import { testPlugins } from '../../support/plugins'
+import type { ItemLine } from '../../../src/shared/core/stationBoard'
+
+function line(itemName: string, note: string | null, units: number): ItemLine {
+  return { key: `${itemName}|${note ?? ''}`, itemName, note, units }
+}
 
 function textsOf(selector: string): string[] {
   return [...document.querySelectorAll(selector)].map((element) => element.textContent?.trim() ?? '')
 }
 
-function board(
-  lines: { itemName: string; note: string | null; units: number }[],
-  failureText: string | null = null,
-) {
+function board(lines: ItemLine[], failureText: string | null = null) {
   return mount(StationOpenBoard, {
     props: { togetherCount: 2, asItComesCount: 3, lines, failureText },
     global: { plugins: testPlugins() },
@@ -35,11 +37,11 @@ describe('the overview board at a station', () => {
 
   it('lists every open article once per note, largest count first and ties by name', () => {
     board([
-      { itemName: 'Wasser', note: null, units: 1 },
-      { itemName: 'Hotdog', note: null, units: 20 },
-      { itemName: 'Hotdog', note: 'Ohne Ketchup', units: 3 },
-      { itemName: 'Bier', note: null, units: 3 },
-      { itemName: 'Bratwurst', note: null, units: 2 },
+      line('Wasser', null, 1),
+      line('Hotdog', null, 20),
+      line('Hotdog', 'Ohne Ketchup', 3),
+      line('Bier', null, 3),
+      line('Bratwurst', null, 2),
     ])
 
     expect(textsOf('.station-open-board .unit')).toEqual([
@@ -52,13 +54,10 @@ describe('the overview board at a station', () => {
   })
 
   it('stays live while it is open', async () => {
-    const page = board([{ itemName: 'Bratwurst', note: null, units: 1 }])
+    const page = board([line('Bratwurst', null, 1)])
 
     await page.setProps({
-      lines: [
-        { itemName: 'Bratwurst', note: null, units: 1 },
-        { itemName: 'Bier', note: null, units: 2 },
-      ],
+      lines: [line('Bratwurst', null, 1), line('Bier', null, 2)],
     })
 
     expect(textsOf('.station-open-board .unit')).toEqual(['2 x Bier', '1 x Bratwurst'])

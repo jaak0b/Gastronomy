@@ -12,7 +12,16 @@ import {
   stationFailureKey,
   stationStats,
 } from '../../../src/shared/core/stationBoard'
+import type { ItemLine } from '../../../src/shared/core/stationBoard'
 import type { StationOrder, StationOrderItem } from '../../../src/shared/api/apiTypes'
+
+function articleAndUnits(lines: readonly ItemLine[]): Omit<ItemLine, 'key'>[] {
+  return lines.map(({ itemName, note, units }) => ({ itemName, note, units }))
+}
+
+function line(itemName: string, note: string | null, units: number): ItemLine {
+  return { key: `${itemName}|${note ?? ''}`, itemName, note, units }
+}
 
 function stationOrderItem(
   orderItemId: string,
@@ -88,7 +97,7 @@ describe('grouping what an employee selected', () => {
   ]
 
   it('keeps only the selected open items and groups them by name and note', () => {
-    expect(selectedUnits(orders, ['a', 'c'])).toEqual([
+    expect(articleAndUnits(selectedUnits(orders, ['a', 'c']))).toEqual([
       { itemName: 'Bratwurst', note: null, units: 1 },
       { itemName: 'Wasser', note: null, units: 1 },
     ])
@@ -104,7 +113,7 @@ describe('grouping what an employee selected', () => {
       }),
     ]
 
-    expect(selectedUnits(noted, ['a', 'b'])).toEqual([
+    expect(articleAndUnits(selectedUnits(noted, ['a', 'b']))).toEqual([
       { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 1 },
       { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 1 },
     ])
@@ -128,11 +137,22 @@ describe('grouping the open items of one card', () => {
       stationOrderItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
     ]
 
-    expect(itemLines(items)).toEqual([
+    expect(articleAndUnits(itemLines(items))).toEqual([
       { itemName: 'Bier', note: null, units: 1 },
       { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 2 },
       { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 1 },
     ])
+  })
+
+  it('gives two lines of the same article with different notes keys of their own', () => {
+    const items = [
+      stationOrderItem('a', 'Frankfurter', null, 'Mit Ketchup'),
+      stationOrderItem('b', 'Frankfurter', null, 'Ohne Ketchup'),
+    ]
+
+    const [withKetchup, withoutKetchup] = itemLines(items)
+
+    expect(withKetchup.key).not.toBe(withoutKetchup.key)
   })
 })
 
@@ -140,16 +160,16 @@ describe('the open articles of the overview board', () => {
   it('puts the largest count first and breaks ties by name', () => {
     expect(
       linesByCount([
-        { itemName: 'Wasser', note: null, units: 1 },
-        { itemName: 'Frankfurter', note: null, units: 3 },
-        { itemName: 'Bier', note: null, units: 3 },
-        { itemName: 'Bratwurst', note: null, units: 2 },
+        line('Wasser', null, 1),
+        line('Frankfurter', null, 3),
+        line('Bier', null, 3),
+        line('Bratwurst', null, 2),
       ]),
     ).toEqual([
-      { itemName: 'Bier', note: null, units: 3 },
-      { itemName: 'Frankfurter', note: null, units: 3 },
-      { itemName: 'Bratwurst', note: null, units: 2 },
-      { itemName: 'Wasser', note: null, units: 1 },
+      line('Bier', null, 3),
+      line('Frankfurter', null, 3),
+      line('Bratwurst', null, 2),
+      line('Wasser', null, 1),
     ])
   })
 })
@@ -159,13 +179,13 @@ describe('the words on one grouped line', () => {
     values === undefined ? `[${key}]` : `[${key} ${Object.values(values).join(' ')}]`
 
   it('names only the units when the article carries no note', () => {
-    expect(itemLineText({ itemName: 'Frankfurter', note: null, units: 2 }, words)).toBe(
+    expect(itemLineText(line('Frankfurter', null, 2), words)).toBe(
       '[station.itemUnits 2 Frankfurter]',
     )
   })
 
   it('keeps the note beside the units when the article carries one', () => {
-    expect(itemLineText({ itemName: 'Frankfurter', note: 'Mit Ketchup', units: 2 }, words)).toBe(
+    expect(itemLineText(line('Frankfurter', 'Mit Ketchup', 2), words)).toBe(
       '[station.itemUnits 2 Frankfurter][station.unitSeparator][station.note Mit Ketchup]',
     )
   })
@@ -198,16 +218,16 @@ describe('the statistics above the queue', () => {
       }),
     ]
 
-    expect(stationStats(orders)).toEqual({
-      togetherOrders: 1,
-      asItComesOrders: 2,
-      openLines: [
-        { itemName: 'Bratwurst', note: null, units: 2 },
-        { itemName: 'Bratwurst', note: 'Ohne Senf', units: 1 },
-        { itemName: 'Pommes', note: null, units: 1 },
-        { itemName: 'Wasser', note: null, units: 1 },
-      ],
-    })
+    const stats = stationStats(orders)
+
+    expect(stats.togetherOrders).toBe(1)
+    expect(stats.asItComesOrders).toBe(2)
+    expect(articleAndUnits(stats.openLines)).toEqual([
+      { itemName: 'Bratwurst', note: null, units: 2 },
+      { itemName: 'Bratwurst', note: 'Ohne Senf', units: 1 },
+      { itemName: 'Pommes', note: null, units: 1 },
+      { itemName: 'Wasser', note: null, units: 1 },
+    ])
   })
 })
 

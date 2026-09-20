@@ -10,7 +10,7 @@ import { useLocaleBinding } from './shared/composables/useLocaleBinding'
 import { screenTitle } from './shared/core/appTitle'
 import { isPhoneScreen, screenFor, type ScreenName } from './shared/core/landing'
 import { useSessionStore } from './shared/stores/session'
-import { useStationStore } from './stores/station'
+import { useStationStore } from './station/stores/station'
 import { useCatalogStore } from './phone/stores/catalog'
 import { useConnectionStore } from './shared/stores/connection'
 import { useEstimatesStore } from './phone/stores/estimates'
@@ -23,7 +23,7 @@ import StartingUp from './shared/views/StartingUp.vue'
 import Catalog from './phone/views/Catalog.vue'
 import Review from './phone/views/Review.vue'
 import OpenItems from './phone/views/OpenItems.vue'
-import StationPage from './views/StationPage.vue'
+import StationPage from './station/views/StationPage.vue'
 import AdminShell from './views/admin/AdminShell.vue'
 
 const session = useSessionStore()
@@ -54,7 +54,7 @@ watch(
   { immediate: true },
 )
 
-const stationName = computed(() => station.station?.name ?? session.station?.name ?? null)
+const stationName = computed(() => station.identity?.name ?? session.station?.name ?? null)
 
 const title = computed(() => screenTitle(screen.value, stationName.value, t))
 

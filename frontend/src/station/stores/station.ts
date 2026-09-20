@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { request } from '../shared/api/client'
-import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../shared/api/apiSchemas'
-import type { StationIdentity, StationOrder, StationOrdersResponse } from '../shared/api/apiTypes'
-import { createLatestRequestGate } from '../shared/core/latestRequestGate'
-import { retainOpenItemIds, stationFailureKey } from '../shared/core/stationBoard'
-import { useConnectionStore } from '../shared/stores/connection'
-import { useSessionStore } from '../shared/stores/session'
+import { request } from '../../shared/api/client'
+import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../../shared/api/apiSchemas'
+import type { StationIdentity, StationOrder, StationOrdersResponse } from '../../shared/api/apiTypes'
+import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { retainOpenItemIds, stationFailureKey } from '../../shared/core/stationBoard'
+import { useConnectionStore } from '../../shared/stores/connection'
+import { useSessionStore } from '../../shared/stores/session'
 
 export const useStationStore = defineStore('station', () => {
-  const station = ref<StationIdentity | null>(null)
+  const identity = ref<StationIdentity | null>(null)
   const orders = ref<StationOrder[]>([])
   const asItComes = ref<StationOrder[]>([])
   const fulfilled = ref<StationOrder[]>([])
@@ -36,7 +36,7 @@ export const useStationStore = defineStore('station', () => {
   }
 
   function applyQueue(data: StationOrdersResponse): void {
-    station.value = data.station
+    identity.value = data.station
     orders.value = data.orders
     asItComes.value = data.asItComes
     selectedItemIds.value = retainOpenItemIds(selectedItemIds.value, data.orders)
@@ -205,7 +205,7 @@ export const useStationStore = defineStore('station', () => {
   }
 
   return {
-    station,
+    identity,
     orders,
     asItComes,
     fulfilled,

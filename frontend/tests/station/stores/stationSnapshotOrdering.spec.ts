@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { StationOrder, StationOrderItem } from '../../src/shared/api/apiTypes'
-import { useStationStore } from '../../src/stores/station'
-import { useSessionStore } from '../../src/shared/stores/session'
+import type { StationOrder, StationOrderItem } from '../../../src/shared/api/apiTypes'
+import { useStationStore } from '../../../src/station/stores/station'
+import { useSessionStore } from '../../../src/shared/stores/session'
 
 const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 
