@@ -29,7 +29,8 @@ sealed internal class Program
 
       log.Start(composition.DataDirectoryPath);
       BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-    } finally
+    }
+    finally
     {
       log.Stop();
     }

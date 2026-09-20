@@ -37,7 +37,8 @@ public sealed class DatabaseUnavailableTest
 
       Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken),
                   Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
-    } finally
+    }
+    finally
     {
       SqliteConnection.ClearAllPools();
       File.SetAttributes(path, FileAttributes.Normal);
@@ -63,7 +64,8 @@ public sealed class DatabaseUnavailableTest
       var transaction = new OrderAcceptanceComposition().Create(blockedContext);
 
       Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable));
-    } finally
+    }
+    finally
     {
       await ExecuteAsync(blockingConnection, "ROLLBACK");
     }

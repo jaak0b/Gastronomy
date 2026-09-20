@@ -60,7 +60,8 @@ public sealed class SqliteConnectionFactoryTest
                         Assert.That(journalModeValue, Is.EqualTo("wal"));
                         Assert.That(Convert.ToInt32(busyTimeoutValue), Is.EqualTo(5000));
                       });
-    } finally
+    }
+    finally
     {
       SqliteConnection.ClearAllPools();
       File.Delete(path);

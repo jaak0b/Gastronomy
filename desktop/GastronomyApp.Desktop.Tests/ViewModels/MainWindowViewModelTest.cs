@@ -259,7 +259,8 @@ public sealed class MainWindowViewModelTest
       var viewModel = CreateViewModel();
 
       Assert.That(viewModel.SelectedLanguage!.Code, Is.EqualTo("de"));
-    } finally
+    }
+    finally
     {
       CultureInfo.CurrentUICulture = original;
     }
@@ -281,7 +282,8 @@ public sealed class MainWindowViewModelTest
                         Assert.That(viewModel.SelectedLanguage!.Code, Is.EqualTo("de"));
                         Assert.That(viewModel.AdminButtonLabel, Is.EqualTo("Verwaltung öffnen"));
                       });
-    } finally
+    }
+    finally
     {
       CultureInfo.CurrentUICulture = original;
     }
@@ -307,7 +309,8 @@ public sealed class MainWindowViewModelTest
                         Assert.That(viewModel.QuitButtonLabel, Is.EqualTo("Programm beenden"));
                         Assert.That(changedProperties, Does.Contain(string.Empty));
                       });
-    } finally
+    }
+    finally
     {
       CultureInfo.CurrentUICulture = original;
     }

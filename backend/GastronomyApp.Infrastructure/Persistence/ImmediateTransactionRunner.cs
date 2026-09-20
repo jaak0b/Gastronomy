@@ -86,7 +86,8 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     catch (DbUpdateException exception) when (exception.InnerException is SqliteException inner && _failureTranslator.IsUniqueConstraintViolation(inner))
     {
       throw _failureTranslator.TranslateConflict(inner);
-    } finally
+    }
+    finally
     {
       if (transactionIsOpen)
         await RollbackAbandonedTransactionAsync(connection);

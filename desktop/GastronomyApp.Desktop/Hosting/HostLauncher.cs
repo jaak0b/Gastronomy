@@ -87,7 +87,8 @@ public sealed class HostLauncher : IHostLauncher
                        await running.DisposeAsync();
                      },
                      cancellationToken);
-    } finally
+    }
+    finally
     {
       Application = null;
     }

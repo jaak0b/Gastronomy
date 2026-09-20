@@ -52,7 +52,8 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
     {
       Log.Error(failure, "Checking for or downloading an update failed.");
       return new UpdatePreparation.Failed(failure.ToString());
-    } finally
+    }
+    finally
     {
       _oneTransferAtATime.Release();
     }

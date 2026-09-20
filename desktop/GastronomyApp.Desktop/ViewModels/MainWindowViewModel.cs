@@ -384,7 +384,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
           break;
       }
-    } finally
+    }
+    finally
     {
       IsUpdateCheckRunning = false;
     }
