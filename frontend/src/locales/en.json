@@ -230,6 +230,7 @@
       "noneYet": "Click \"New category\". There is no category to choose yet."
     },
     "itemNameMissing": "Give the item a name before you save it.",
+    "itemNameTaken": "There is already an item with this name. Choose a different one.",
     "categoryNameMissing": "Give the category a name before you save.",
     "categoryNameTaken": "There is already a category with this name. Choose a different one.",
     "categoryColourInvalid": "Choose a colour before you save.",

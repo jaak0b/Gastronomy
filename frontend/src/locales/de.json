@@ -230,6 +230,7 @@
       "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
     },
     "itemNameMissing": "Geben Sie dem Artikel einen Namen, bevor Sie ihn speichern.",
+    "itemNameTaken": "Dieser Name ist schon vergeben. Wählen Sie einen anderen Namen.",
     "categoryNameMissing": "Geben Sie der Kategorie einen Namen, bevor Sie speichern.",
     "categoryNameTaken": "Es gibt schon eine Kategorie mit diesem Namen. Wählen Sie einen anderen.",
     "categoryColourInvalid": "Wählen Sie eine Farbe aus, bevor Sie speichern.",

@@ -172,7 +172,11 @@ public sealed class AdminItemHandler
 
   private async Task<CatalogWrite> CreatedAsync(SaveItemRequest request, CancellationToken cancellationToken)
   {
-    var refusal = Validate(request) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
+    var refusal = Validate(request)
+                  ?? (await IsTheNameAlreadyTakenAsync(request.Name!, null, cancellationToken)
+                        ? BuildNameTakenProblem()
+                        : null)
+                  ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
 
     if (refusal is not null)
     {
@@ -210,6 +214,9 @@ public sealed class AdminItemHandler
     }
 
     var refusal = Validate(request)
+                  ?? (await IsTheNameAlreadyTakenAsync(request.Name!, itemId, cancellationToken)
+                        ? BuildNameTakenProblem()
+                        : null)
                   ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
@@ -284,6 +291,25 @@ public sealed class AdminItemHandler
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     return new(Results.Ok(new SavedItemView(itemId)), true);
+  }
+
+  private async Task<bool> IsTheNameAlreadyTakenAsync(string name,
+                                                      Guid? itemBeingSaved,
+                                                      CancellationToken cancellationToken)
+  {
+    var candidates = _dbContext.CatalogItems.AsNoTracking().Where(item => item.Name == name);
+
+    if (itemBeingSaved is { } savedItemId)
+    {
+      candidates = candidates.Where(item => item.Id != savedItemId);
+    }
+
+    return await candidates.AnyAsync(cancellationToken);
+  }
+
+  private IResult BuildNameTakenProblem()
+  {
+    return _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemNameTaken", "admin.itemNameTaken");
   }
 
   private async Task<IResult?> CategoryRefusalAsync(Guid? categoryId,

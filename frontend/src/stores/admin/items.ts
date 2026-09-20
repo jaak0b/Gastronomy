@@ -101,7 +101,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   function buildItemRequestBody(item: AdminItemDraft): Record<string, unknown> {
     return {
-      name: item.name,
+      name: item.name.trim(),
       categoryId: item.categoryId,
       sortOrder: item.sortOrder,
       productionMinutes: item.productionMinutes,
