@@ -5,7 +5,7 @@ import { fireHubEvent, forgetHubEvents } from '../support/hubConnection'
 vi.mock('@microsoft/signalr', async () => (await import('../support/hubConnection')).signalrModuleFake())
 
 const { useConnectionStore } = await import('../../src/shared/stores/connection')
-const { useCatalogStore } = await import('../../src/stores/catalog')
+const { useCatalogStore } = await import('../../src/phone/stores/catalog')
 const { useStationStore } = await import('../../src/stores/station')
 const { useSessionStore } = await import('../../src/shared/stores/session')
 

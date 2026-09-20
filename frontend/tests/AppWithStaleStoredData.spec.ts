@@ -7,9 +7,9 @@ vi.mock('@microsoft/signalr', async () => (await import('./support/hubConnection
 const { navigate } = await import('../src/shared/router/router')
 const App = (await import('../src/App.vue')).default
 const { testPlugins } = await import('./support/plugins')
-const { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY } = await import('../src/core/draftCart')
+const { DRAFT_STORAGE_KEY, SEND_PROGRESS_STORAGE_KEY } = await import('../src/phone/core/draftCart')
 const { LANGUAGE_STORAGE_KEY, TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
-const { useOrderStore } = await import('../src/stores/order')
+const { useOrderStore } = await import('../src/phone/stores/order')
 
 let device: ReturnType<typeof mount> | null = null
 

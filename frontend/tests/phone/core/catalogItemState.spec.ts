@@ -1,0 +1,75 @@
+import { describe, expect, it } from 'vitest'
+import { isLineFlaggedSoldOut, itemState } from '../../../src/phone/core/catalogItemState'
+import type { Catalog, CatalogItem } from '../../../src/shared/api/apiTypes'
+import type { BasketLineView } from '../../../src/phone/core/basket'
+
+function item(id: string, isAvailable: boolean): CatalogItem {
+  return {
+    id,
+    name: 'Bratwurst',
+    categoryId: 'category-essen',
+    priceCents: 350,
+    sortOrder: 1,
+    isAvailable,
+    stationIds: ['station-kueche'],
+    isQueueIndependent: false,
+  }
+}
+
+function catalogWith(items: CatalogItem[]): Catalog {
+  return {
+    categories: [
+      { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
+    ],
+    items,
+    stations: [{ id: 'station-kueche', name: 'Kueche', sortOrder: 1 }],
+  }
+}
+
+function line(catalogItemId: string): BasketLineView {
+  return {
+    catalogItemId,
+    name: 'Bratwurst',
+    unitPriceCents: 350,
+    quantity: 1,
+    note: null,
+    stationId: null,
+    candidateStationIds: ['station-kueche'],
+    isSoldOut: false,
+    isNoLongerOnTheMenu: false,
+  }
+}
+
+describe('itemState', () => {
+  it('reads an item the kitchen still has as available', () => {
+    const state = itemState(item('item-1', true))
+
+    expect(state).toBe('available')
+  })
+
+  it('reads an item the kitchen has run out of as sold out', () => {
+    const state = itemState(item('item-1', false))
+
+    expect(state).toBe('soldOut')
+  })
+})
+
+describe('isLineFlaggedSoldOut', () => {
+  it('flags a line whose item sold out while the basket was open', () => {
+    const flagged = isLineFlaggedSoldOut(line('item-1'), catalogWith([item('item-1', false)]))
+
+    expect(flagged).toBe(true)
+  })
+
+  it('leaves a line whose item is still available unflagged', () => {
+    const flagged = isLineFlaggedSoldOut(line('item-1'), catalogWith([item('item-1', true)]))
+
+    expect(flagged).toBe(false)
+  })
+
+  it('leaves a line unflagged when its item is no longer on the menu at all', () => {
+    const flagged = isLineFlaggedSoldOut(line('item-gone'), catalogWith([item('item-1', true)]))
+
+    expect(flagged).toBe(false)
+  })
+})

@@ -8,9 +8,9 @@ const { navigate } = await import('../src/shared/router/router')
 const App = (await import('../src/App.vue')).default
 const { testPlugins } = await import('./support/plugins')
 const { TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
-const { useOrderStore } = await import('../src/stores/order')
+const { useOrderStore } = await import('../src/phone/stores/order')
 const { useSessionStore } = await import('../src/shared/stores/session')
-const { restoreDraft, saveDraft, saveSendProgress } = await import('../src/core/draftCart')
+const { restoreDraft, saveDraft, saveSendProgress } = await import('../src/phone/core/draftCart')
 
 const SESSION = {
   deviceId: 'device-1',

@@ -1,0 +1,358 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { CatalogCategory, CatalogItem } from '../../shared/api/apiTypes'
+import { lineCannotBeOrdered } from '../core/basket'
+import { itemState } from '../core/catalogItemState'
+import { countCategoryPortions } from '../core/categoryPortions'
+import { positionsForItem, type ItemPosition } from '../core/itemPositions'
+import {
+  pickerEstimateRange,
+  stationEstimateAfterAdding,
+  type EstimateRange,
+} from '../core/estimates'
+import { letteringColourOn } from '../../shared/core/letteringColour'
+import { needsStationChoice } from '../core/routingPreview'
+import { isTableNameValid } from '../core/tableName'
+import { useCatalogStore } from '../stores/catalog'
+import { useEstimatesStore } from '../stores/estimates'
+import { useOpenItemsStore } from '../stores/openItems'
+import { useOrderStore } from '../stores/order'
+import { useSessionStore } from '../../shared/stores/session'
+import { closeOpenStep, navigate, registerOpenStepCloser } from '../../shared/router/router'
+import { useKeyboardInset } from '../composables/useKeyboardInset'
+import DockedStrip from '../components/DockedStrip.vue'
+import ItemGrid from '../components/catalog/ItemGrid.vue'
+import LineStationSheet from '../components/catalog/LineStationSheet.vue'
+import BasketBar from '../components/catalog/BasketBar.vue'
+import TableField from '../components/review/TableField.vue'
+
+const { t } = useI18n()
+const keyboardInset = useKeyboardInset()
+const catalog = useCatalogStore()
+const estimates = useEstimatesStore()
+const openItems = useOpenItemsStore()
+const order = useOrderStore()
+const session = useSessionStore()
+
+const tappedCategory = ref<string | null>(null)
+const tableField = ref<{ focus: () => void } | null>(null)
+const isTableMissing = ref(false)
+const itemAwaitingStation = ref<CatalogItem | null>(null)
+const linesAwaitingStation = ref<number[]>([])
+const focusTheNoteField = ref(false)
+
+onMounted(() => {
+  if (order.changesAreRefused) {
+    navigate('/review')
+  }
+})
+
+onMounted(async () => {
+  await openItems.loadTableNames()
+  await estimates.load()
+})
+
+onUnmounted(() => {
+  closeOpenStep()
+})
+
+const openCategory = computed<CatalogCategory | null>(
+  () =>
+    catalog.catalog.categories.find(
+      (category) => category.categoryId === tappedCategory.value,
+    ) ?? null,
+)
+
+watch(openCategory, (category) => {
+  if (category === null) {
+    closeOpenStep()
+  }
+})
+
+function forgetTheStationQuestion(): void {
+  itemAwaitingStation.value = null
+  linesAwaitingStation.value = []
+  focusTheNoteField.value = false
+}
+
+function closeTheOpenCategory(): void {
+  tappedCategory.value = null
+  forgetTheStationQuestion()
+}
+
+function openTheCategory(category: CatalogCategory): void {
+  tappedCategory.value = category.categoryId
+  registerOpenStepCloser(closeTheOpenCategory)
+}
+
+const itemsInTheOpenCategory = computed(
+  () =>
+    catalog.groups.find(
+      (group) => group.category.categoryId === openCategory.value?.categoryId,
+    )?.items ?? [],
+)
+
+const tableName = computed({
+  get: () => order.draft.tableName,
+  set: (value: string) => {
+    order.setTable(value)
+    if (isTableNameValid(value)) {
+      isTableMissing.value = false
+    }
+  },
+})
+
+function goToTheSummary(): void {
+  if (!isTableNameValid(order.draft.tableName)) {
+    isTableMissing.value = true
+    tableField.value?.focus()
+    return
+  }
+  navigate('/review')
+}
+
+const itemBehindTheStationChoice = computed(() => {
+  if (linesAwaitingStation.value.length === 0) {
+    return itemAwaitingStation.value
+  }
+  const line = order.draft.lines[linesAwaitingStation.value[0]]
+  return catalog.catalog.items.find((item) => item.id === line?.catalogItemId) ?? null
+})
+
+function portionsIn(categoryId: string): number {
+  return countCategoryPortions(order.draft, catalog.catalog.items, categoryId)
+}
+
+function labelFor(category: CatalogCategory): string {
+  const portions = portionsIn(category.categoryId)
+  if (portions < 1) {
+    return category.name
+  }
+  return t('catalog.categoryWithCount', { count: portions, name: category.name })
+}
+
+function paintedIn(colourHex: string): Record<string, string> {
+  return { backgroundColor: colourHex, color: letteringColourOn(colourHex) }
+}
+
+function positionsFor(itemId: string): ItemPosition[] {
+  const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
+  return item === undefined ? [] : positionsForItem(order.draft, item, catalog.stationName)
+}
+
+const currentStationId = computed(() => {
+  const first = linesAwaitingStation.value[0]
+  return first === undefined ? null : order.draft.lines[first]?.stationId ?? null
+})
+
+const orderableBasketLines = computed(() =>
+  order.basketLines.filter((line) => !lineCannotBeOrdered(line)),
+)
+
+function estimateRangeFor(itemId: string): EstimateRange | null {
+  const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
+  return item === undefined
+    ? null
+    : pickerEstimateRange(item, estimates.stations, orderableBasketLines.value)
+}
+
+function estimateForTheStationChoice(stationId: string): number | null {
+  const item = itemBehindTheStationChoice.value
+  if (item === null || itemState(item) === 'soldOut') {
+    return null
+  }
+  const productionMinutes = item.productionMinutes
+  if (productionMinutes === null) {
+    return null
+  }
+  const movedIndexes = new Set(linesAwaitingStation.value)
+  const linesStaying = order.basketLines.filter(
+    (line, index) => !movedIndexes.has(index) && !lineCannotBeOrdered(line),
+  )
+  const unitsAtTheStation =
+    linesAwaitingStation.value.length === 0 ? 1 : linesAwaitingStation.value.length
+  return stationEstimateAfterAdding(
+    estimates.stations,
+    linesStaying,
+    stationId,
+    productionMinutes,
+    item.isQueueIndependent,
+    unitsAtTheStation,
+  )
+}
+
+function place(item: CatalogItem, note: string | null, stationId: string | null): void {
+  order.addItem({
+    catalogItemId: item.id,
+    note: note,
+    stationId: stationId,
+    name: item.name,
+  })
+}
+
+function addItem(item: CatalogItem, note: string | null = null): void {
+  if (needsStationChoice(item)) {
+    itemAwaitingStation.value = item
+    focusTheNoteField.value = false
+    return
+  }
+  place(item, note, item.stationIds[0] ?? null)
+}
+
+function addItemWithANote(item: CatalogItem, note: string): void {
+  addItem(item, note)
+}
+
+function addItemWithANoteAtAStation(item: CatalogItem): void {
+  addItem(item)
+  focusTheNoteField.value = true
+}
+
+function addLikeGroup(item: CatalogItem, note: string | null, stationId: string | null): void {
+  place(item, note, stationId)
+}
+
+function renameNote(indexes: number[], note: string): void {
+  indexes.forEach((index) => order.noteLine(index, note))
+}
+
+function chooseStation(stationId: string, note: string | null): void {
+  const movedLines = linesAwaitingStation.value
+  if (movedLines.length > 0) {
+    movedLines.forEach((index) => order.chooseStation(index, stationId))
+    linesAwaitingStation.value = []
+    return
+  }
+  const item = itemAwaitingStation.value
+  if (item === null) {
+    return
+  }
+  itemAwaitingStation.value = null
+  place(item, note, stationId)
+}
+</script>
+
+<template>
+  <v-container class="catalog" :style="{ paddingBottom: `${keyboardInset}px` }">
+    <template v-if="openCategory === null">
+      <div class="category-grid my-2">
+        <v-btn
+          v-for="category in catalog.catalog.categories"
+          :key="category.categoryId"
+          class="category-button"
+          size="x-large"
+          variant="flat"
+          :style="paintedIn(category.colourHex)"
+          @click="openTheCategory(category)"
+        >
+          {{ labelFor(category) }}
+        </v-btn>
+      </div>
+      <DockedStrip class="order-tray">
+        <TableField
+          ref="tableField"
+          v-model="tableName"
+          :is-missing="isTableMissing"
+          :known-table-names="openItems.knownTableNames"
+        />
+        <v-textarea
+          class="order-note"
+          maxlength="200"
+          :label="t('catalog.orderNote')"
+          :model-value="order.draft.note ?? ''"
+          @update:model-value="order.setNote($event || null)"
+        />
+        <BasketBar
+          :item-count="order.itemCount"
+          :total-cents="order.totalCents"
+          :language="session.language"
+          @review="goToTheSummary"
+        />
+      </DockedStrip>
+    </template>
+    <template v-else>
+      <h2
+        class="open-category-name text-h6 px-3 py-2 rounded"
+        :style="paintedIn(openCategory.colourHex)"
+      >
+        {{ openCategory.name }}
+      </h2>
+      <v-alert v-if="estimates.loadFailed" class="estimates-failed my-2" type="info" variant="tonal">
+        {{ t('estimates.loadFailed') }}
+      </v-alert>
+      <ItemGrid
+        :items="itemsInTheOpenCategory"
+        :language="session.language"
+        :positions-for="positionsFor"
+        :estimate-range-for="estimateRangeFor"
+        class="my-2"
+        @add="addItem"
+        @add-with-a-note="addItemWithANote"
+        @add-with-a-note-at-a-station="addItemWithANoteAtAStation"
+        @add-like-group="addLikeGroup"
+        @remove-one="order.dropLine"
+        @rename-note="renameNote"
+        @change-station="(indexes) => (linesAwaitingStation = indexes)"
+      />
+      <LineStationSheet
+        v-if="itemBehindTheStationChoice !== null"
+        :item="itemBehindTheStationChoice"
+        :language="session.language"
+        :station-name-for="catalog.stationName"
+        :estimate-for="estimateForTheStationChoice"
+        :current-station-id="currentStationId"
+        :with-note="linesAwaitingStation.length === 0"
+        :focus-the-note="focusTheNoteField"
+        @choose="chooseStation"
+        @cancel="forgetTheStationQuestion"
+      />
+      <DockedStrip class="back-strip">
+        <div class="py-3">
+          <v-btn
+            class="back-to-categories"
+            block
+            size="x-large"
+            variant="outlined"
+            @click="closeOpenStep()"
+          >
+            {{ t('catalog.backToCategories') }}
+          </v-btn>
+        </div>
+      </DockedStrip>
+    </template>
+  </v-container>
+</template>
+
+<style scoped>
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.category-button {
+  min-width: 0;
+  height: auto;
+  min-height: 64px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.category-button :deep(.v-btn__content) {
+  white-space: normal;
+}
+
+.catalog {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--v-layout-top, 0px));
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
+  padding-bottom: 0;
+}
+
+.order-tray,
+.back-strip {
+  margin-top: auto;
+}
+</style>

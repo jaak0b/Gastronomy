@@ -5,8 +5,8 @@ import {
   restoreDraft,
   saveDraft,
   saveSendProgress,
-} from '../../../src/core/draftCart'
-import { useOrderStore } from '../../../src/stores/order'
+} from '../../../src/phone/core/draftCart'
+import { useOrderStore } from '../../../src/phone/stores/order'
 import { request } from '../../../src/shared/api/client'
 
 function withBrowserLanguage(language: string): void {

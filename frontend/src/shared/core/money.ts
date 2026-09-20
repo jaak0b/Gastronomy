@@ -19,12 +19,23 @@ export function parseEuroInput(typed: string): number | null {
   return Number(euros) * 100 + Number(cents)
 }
 
+export interface EuroAndCentDigits {
+  euros: string
+  remainder: string
+}
+
+export function euroAndCentDigits(cents: number): EuroAndCentDigits {
+  return {
+    euros: Math.floor(cents / 100).toString(),
+    remainder: (cents % 100).toString().padStart(2, '0'),
+  }
+}
+
 export function formatEuroInput(cents: number | null, locale: AppLanguage): string {
   if (cents === null) {
     return ''
   }
-  const euros = Math.floor(cents / 100).toString()
-  const remainder = (cents % 100).toString().padStart(2, '0')
+  const { euros, remainder } = euroAndCentDigits(cents)
   switch (locale) {
     case 'de':
       return `${euros},${remainder}`

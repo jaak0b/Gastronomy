@@ -4,28 +4,38 @@ export interface CollapsedLine<TLine> {
   quantity: number
 }
 
+export function groupKeepingFirstSeenOrder<TItem, TGroup>(
+  items: readonly TItem[],
+  keyOf: (item: TItem) => string,
+  startGroup: (item: TItem, key: string) => TGroup,
+  addToGroup: (group: TGroup, item: TItem) => TGroup,
+): TGroup[] {
+  const groups: TGroup[] = []
+  const positionByKey = new Map<string, number>()
+
+  for (const item of items) {
+    const key = keyOf(item)
+    const position = positionByKey.get(key)
+    if (position === undefined) {
+      positionByKey.set(key, groups.length)
+      groups.push(startGroup(item, key))
+      continue
+    }
+    groups[position] = addToGroup(groups[position], item)
+  }
+
+  return groups
+}
+
 export function mergeLinesWithSameArticleAndNote<TLine>(
   lines: readonly TLine[],
   nameOf: (line: TLine) => string,
   noteOf: (line: TLine) => string | null,
 ): CollapsedLine<TLine>[] {
-  const collapsed: CollapsedLine<TLine>[] = []
-  const positionByKey = new Map<string, number>()
-
-  for (const line of lines) {
-    const key = JSON.stringify([nameOf(line), noteOf(line) ?? ''])
-    const position = positionByKey.get(key)
-    if (position === undefined) {
-      positionByKey.set(key, collapsed.length)
-      collapsed.push({ key, line, quantity: 1 })
-      continue
-    }
-    collapsed[position] = {
-      key: collapsed[position].key,
-      line: collapsed[position].line,
-      quantity: collapsed[position].quantity + 1,
-    }
-  }
-
-  return collapsed
+  return groupKeepingFirstSeenOrder<TLine, CollapsedLine<TLine>>(
+    lines,
+    (line) => JSON.stringify([nameOf(line), noteOf(line) ?? '']),
+    (line, key) => ({ key, line, quantity: 1 }),
+    (collapsed) => ({ ...collapsed, quantity: collapsed.quantity + 1 }),
+  )
 }
