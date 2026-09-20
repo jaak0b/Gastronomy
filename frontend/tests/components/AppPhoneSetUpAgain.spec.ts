@@ -184,9 +184,22 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: {
+        clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+        tableName: 'Tisch 5',
+        note: null,
+        items: [
+          {
+            catalogItemId: 'item-wasser',
+            unitPriceCents: 200,
+            note: null,
+            stationId: 'station-bar',
+            settlement: null,
+          },
+        ],
+        deliveryModes: [],
+      },
     })
     aLaptopThatForgotThisPhoneAfterItStarted()
     navigate('/review')

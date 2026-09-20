@@ -18,7 +18,7 @@ import {
   setTableName,
   stampFestival,
 } from '../../src/core/draftCart'
-import type { DraftLine } from '../../src/core/apiTypes'
+import type { DraftLine, OrderSubmitRequest } from '../../src/core/apiTypes'
 
 function bratwurstLine(): DraftLine {
   return {
@@ -27,6 +27,24 @@ function bratwurstLine(): DraftLine {
     stationId: null,
     name: 'Bratwurst',
     stationName: '',
+  }
+}
+
+function anAttempt(): OrderSubmitRequest {
+  return {
+    clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+    tableName: 'Tisch 5',
+    note: null,
+    items: [
+      {
+        catalogItemId: 'item-1',
+        unitPriceCents: 350,
+        note: null,
+        stationId: null,
+        settlement: null,
+      },
+    ],
+    deliveryModes: [],
   }
 }
 
@@ -430,9 +448,8 @@ describe('the record of what became of a send', () => {
     expect(restoreSendProgress()).toEqual({
       state: 'idle',
       attempts: 0,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: null,
     })
   })
 
@@ -440,9 +457,8 @@ describe('the record of what became of a send', () => {
     const stored = {
       state: 'failed',
       attempts: 2,
-      settlement: { amountPaidCents: 500, paymentNotice: 'Stammgast' },
-      anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailedDatabase' },
+      unresolvedAttempt: anAttempt(),
     } as const
 
     saveSendProgress(stored)
@@ -452,14 +468,13 @@ describe('the record of what became of a send', () => {
 
   it('keeps the words a refusal fills in, so its notice still names the item after a reload', () => {
     const stored = {
-      state: 'failed',
+      state: 'rejected',
       attempts: 2,
-      settlement: null,
-      anAttemptWentUnanswered: true,
       failure: {
         key: 'catalog.itemSoldOut',
         parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
       },
+      unresolvedAttempt: null,
     } as const
 
     saveSendProgress(stored)
@@ -468,18 +483,45 @@ describe('the record of what became of a send', () => {
   })
 
   it('remembers a send that is still on its way, so a reload cannot make it look untouched', () => {
+    const attempt = anAttempt()
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settlement: { amountPaidCents: 500, paymentNotice: null },
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: attempt,
     })
 
     expect(restoreSendProgress().state).toBe('sending')
-    expect(restoreSendProgress().settlement).toEqual({
-      amountPaidCents: 500,
-      paymentNotice: null,
+    expect(restoreSendProgress().unresolvedAttempt).toEqual(attempt)
+  })
+
+  it('discards a send that was on its way without the attempt it carried', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({ state: 'sending', attempts: 1, failure: null }),
+    )
+
+    expect(restoreSendProgress()).toEqual({
+      state: 'idle',
+      attempts: 0,
+      failure: null,
+      unresolvedAttempt: null,
+    })
+  })
+
+  it('discards a stored attempt that is not a request, so it can never be replayed', () => {
+    saveSendProgress({
+      state: 'failed',
+      attempts: 1,
+      failure: null,
+      unresolvedAttempt: { tableName: 'Tisch 5' } as unknown as OrderSubmitRequest,
+    })
+
+    expect(restoreSendProgress()).toEqual({
+      state: 'idle',
+      attempts: 0,
+      failure: null,
+      unresolvedAttempt: null,
     })
   })
 
@@ -489,9 +531,8 @@ describe('the record of what became of a send', () => {
     expect(restoreSendProgress()).toEqual({
       state: 'idle',
       attempts: 0,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: null,
     })
   })
 
@@ -499,9 +540,8 @@ describe('the record of what became of a send', () => {
     saveSendProgress({
       state: 'failed',
       attempts: 2,
-      settlement: null,
-      anAttemptWentUnanswered: true,
       failure: null,
+      unresolvedAttempt: anAttempt(),
     })
 
     clearDraft()

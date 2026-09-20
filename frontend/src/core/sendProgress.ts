@@ -1,5 +1,5 @@
 import { assertNever } from './assertNever'
-import type { ConfirmedSettlement } from './apiTypes'
+import type { OrderSubmitRequest } from './apiTypes'
 import { messageForAnInterruptedSend, type SendFailureMessage } from './sendFailure'
 
 export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted'] as const
@@ -11,18 +11,16 @@ const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
 export interface SendProgress {
   state: SendState
   attempts: number
-  settlement: ConfirmedSettlement | null
-  anAttemptWentUnanswered: boolean
   failure: SendFailureMessage | null
+  unresolvedAttempt: OrderSubmitRequest | null
 }
 
 export function noSendProgress(): SendProgress {
   return {
     state: 'idle',
     attempts: 0,
-    settlement: null,
-    anAttemptWentUnanswered: false,
     failure: null,
+    unresolvedAttempt: null,
   }
 }
 
@@ -69,18 +67,7 @@ export function sendWasAcceptedIn(state: SendState): boolean {
 }
 
 export function changesAreRefusedFor(progress: SendProgress): boolean {
-  switch (progress.state) {
-    case 'accepted':
-      return false
-    case 'idle':
-    case 'rejected':
-      return progress.anAttemptWentUnanswered
-    case 'sending':
-    case 'failed':
-      return true
-    default:
-      return assertNever(progress.state)
-  }
+  return progress.unresolvedAttempt !== null
 }
 
 export function paperIsTheOnlyWayLeft(progress: SendProgress): boolean {
@@ -92,7 +79,7 @@ export function paperIsTheOnlyWayLeft(progress: SendProgress): boolean {
     case 'failed':
       return progress.attempts >= PAPER_FALLBACK_AFTER_ATTEMPTS
     case 'rejected':
-      return changesAreRefusedFor(progress)
+      return progress.unresolvedAttempt !== null
     default:
       return assertNever(progress.state)
   }
@@ -110,7 +97,6 @@ export function progressAfterALoad(stored: SendProgress): SendProgress {
       return {
         ...stored,
         state: 'failed',
-        anAttemptWentUnanswered: true,
         failure: messageForAnInterruptedSend(),
       }
     default:

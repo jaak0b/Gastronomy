@@ -1,8 +1,8 @@
 import type {
-  ConfirmedSettlement,
   DeliveryMode,
   DraftLine,
   DraftOrder,
+  OrderSubmitRequest,
 } from './apiTypes'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
@@ -155,23 +155,18 @@ function toSendFailureMessage(value: unknown): SendFailureMessage | null {
   return parameters === undefined ? { key: candidate.key } : { key: candidate.key, parameters }
 }
 
-function toConfirmedSettlement(value: unknown): ConfirmedSettlement | null | undefined {
-  if (value === null) {
+function toUnresolvedAttempt(value: unknown): OrderSubmitRequest | null | undefined {
+  if (value === null || value === undefined) {
     return null
   }
   if (typeof value !== 'object' || Array.isArray(value)) {
     return undefined
   }
   const candidate = value as Record<string, unknown>
-  const amountPaidCents = candidate.amountPaidCents
-  const paymentNotice = candidate.paymentNotice
-  if (typeof amountPaidCents !== 'number') {
+  if (typeof candidate.clientOrderId !== 'string' || !Array.isArray(candidate.items)) {
     return undefined
   }
-  if (paymentNotice !== null && typeof paymentNotice !== 'string') {
-    return undefined
-  }
-  return { amountPaidCents, paymentNotice }
+  return candidate as unknown as OrderSubmitRequest
 }
 
 function toSendProgress(value: unknown): SendProgress | null {
@@ -180,16 +175,21 @@ function toSendProgress(value: unknown): SendProgress | null {
   }
   const candidate = value as Record<string, unknown>
   const state = SEND_STATES.find((known) => known === candidate.state)
-  const settlement = toConfirmedSettlement(candidate.settlement)
-  if (state === undefined || typeof candidate.attempts !== 'number' || settlement === undefined) {
+  if (state === undefined || typeof candidate.attempts !== 'number') {
+    return null
+  }
+  const unresolvedAttempt = toUnresolvedAttempt(candidate.unresolvedAttempt)
+  if (unresolvedAttempt === undefined) {
+    return null
+  }
+  if (unresolvedAttempt === null && (state === 'sending' || state === 'failed')) {
     return null
   }
   return {
     state,
     attempts: candidate.attempts,
-    settlement,
-    anAttemptWentUnanswered: candidate.anAttemptWentUnanswered === true,
     failure: toSendFailureMessage(candidate.failure),
+    unresolvedAttempt,
   }
 }
 
@@ -211,14 +211,13 @@ export function saveSendProgress(progress: SendProgress): void {
     JSON.stringify({
       state: progress.state,
       attempts: progress.attempts,
-      settlement: progress.settlement,
-      anAttemptWentUnanswered: progress.anAttemptWentUnanswered,
       failure:
         progress.failure === null
           ? null
           : progress.failure.parameters === undefined
             ? { key: progress.failure.key }
             : { key: progress.failure.key, parameters: progress.failure.parameters },
+      unresolvedAttempt: progress.unresolvedAttempt,
     }),
   )
 }

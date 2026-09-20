@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { OrderSubmitRequest } from '../../src/core/apiTypes'
 import {
   changesAreRefusedFor,
   noSendProgress,
@@ -11,8 +12,29 @@ import {
   type SendState,
 } from '../../src/core/sendProgress'
 
-function sendThatIs(state: SendState, anAttemptWentUnanswered = false): SendProgress {
-  return { ...noSendProgress(), state, anAttemptWentUnanswered }
+function anUnresolvedAttempt(): OrderSubmitRequest {
+  return {
+    clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+    tableName: 'Tisch 4',
+    note: null,
+    items: [
+      {
+        catalogItemId: 'item-wasser',
+        unitPriceCents: 200,
+        note: null,
+        stationId: 'station-bar',
+        settlement: null,
+      },
+    ],
+    deliveryModes: [{ stationId: 'station-bar', deliveryMode: 'together' }],
+  }
+}
+
+function sendThatIs(
+  state: SendState,
+  unresolvedAttempt: OrderSubmitRequest | null = null,
+): SendProgress {
+  return { ...noSendProgress(), state, unresolvedAttempt }
 }
 
 describe('what the phone knows about a send still allows the waiter to change', () => {
@@ -21,11 +43,11 @@ describe('what the phone knows about a send still allows the waiter to change', 
   })
 
   it('refuses every change while the order is on its way to the laptop', () => {
-    expect(changesAreRefusedFor(sendThatIs('sending'))).toBe(true)
+    expect(changesAreRefusedFor(sendThatIs('sending', anUnresolvedAttempt()))).toBe(true)
   })
 
   it('refuses every change after a failed send, because the laptop may already hold the order', () => {
-    expect(changesAreRefusedFor(sendThatIs('failed'))).toBe(true)
+    expect(changesAreRefusedFor(sendThatIs('failed', anUnresolvedAttempt()))).toBe(true)
   })
 
   it('takes changes again once the laptop has accepted, because the order on screen is the next one', () => {
@@ -39,15 +61,11 @@ describe('what the phone knows about a send still allows the waiter to change', 
 
 describe('an order one attempt was left unanswered on', () => {
   it('refuses every change even after the laptop has refused a later attempt', () => {
-    expect(changesAreRefusedFor(sendThatIs('rejected', true))).toBe(true)
+    expect(changesAreRefusedFor(sendThatIs('rejected', anUnresolvedAttempt()))).toBe(true)
   })
 
   it('refuses every change even where the reason has just left the screen', () => {
-    expect(changesAreRefusedFor(sendThatIs('idle', true))).toBe(true)
-  })
-
-  it('takes changes again once the laptop has accepted it, because that order is done with', () => {
-    expect(changesAreRefusedFor(sendThatIs('accepted', true))).toBe(false)
+    expect(changesAreRefusedFor(sendThatIs('idle', anUnresolvedAttempt()))).toBe(true)
   })
 })
 
@@ -62,11 +80,15 @@ describe('what the phone may still offer after an unsuccessful send', () => {
   })
 
   it('leaves the waiter with the retry alone after one attempt the laptop never answered', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('failed', true), attempts: 1 })).toBe(false)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 1 }),
+    ).toBe(false)
   })
 
   it('offers paper once two attempts have gone unanswered', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('failed', true), attempts: 2 })).toBe(true)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 2 }),
+    ).toBe(true)
   })
 
   it('offers no paper after a refusal the waiter is still allowed to put right', () => {
@@ -74,8 +96,12 @@ describe('what the phone may still offer after an unsuccessful send', () => {
   })
 
   it('offers no paper while nothing has been sent and while an order is on its way', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('idle', true), attempts: 5 })).toBe(false)
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('sending', true), attempts: 5 })).toBe(false)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('idle', anUnresolvedAttempt()), attempts: 5 }),
+    ).toBe(false)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('sending', anUnresolvedAttempt()), attempts: 5 }),
+    ).toBe(false)
   })
 
   it('offers no paper for an order the laptop took', () => {
@@ -85,11 +111,15 @@ describe('what the phone may still offer after an unsuccessful send', () => {
 
 describe('an order the laptop refused although it may already hold it', () => {
   it('offers paper on the first refusal, because the waiter is not allowed to change the order', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', true), attempts: 1 })).toBe(true)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 1 }),
+    ).toBe(true)
   })
 
   it('offers paper however few attempts were made, because a second refusal says the same thing', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', true), attempts: 0 })).toBe(true)
+    expect(
+      paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 0 }),
+    ).toBe(true)
   })
 })
 
@@ -121,9 +151,8 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: anUnresolvedAttempt(),
     })
 
     expect(loaded.state).toBe('failed')
@@ -133,9 +162,8 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: anUnresolvedAttempt(),
     })
 
     expect(loaded.failure).toEqual({ key: 'review.sendInterrupted' })
@@ -145,45 +173,41 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: anUnresolvedAttempt(),
     })
 
-    expect(changesAreRefusedFor({ ...loaded, state: 'rejected' })).toBe(true)
+    expect(changesAreRefusedFor(loaded)).toBe(true)
   })
 
   it('counts the cut off attempt, so a second failure is the second one and not the first', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 2,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: anUnresolvedAttempt(),
     })
 
     expect(loaded.attempts).toBe(2)
   })
 
-  it('keeps the settlement the waiter confirmed, so a retry cannot swap it', () => {
+  it('keeps the attempt the waiter sent, so a retry cannot swap it', () => {
     const loaded = progressAfterALoad({
       state: 'sending',
       attempts: 1,
-      settlement: { amountPaidCents: 1200, paymentNotice: 'Stammgast' },
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: anUnresolvedAttempt(),
     })
 
-    expect(loaded.settlement).toEqual({ amountPaidCents: 1200, paymentNotice: 'Stammgast' })
+    expect(loaded.unresolvedAttempt).toEqual(anUnresolvedAttempt())
   })
 
   it('leaves a send that had already failed exactly as it was', () => {
     const failed = {
       state: 'failed',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailedDatabase' },
+      unresolvedAttempt: anUnresolvedAttempt(),
     } as const
 
     expect(progressAfterALoad(failed)).toEqual(failed)
@@ -193,9 +217,8 @@ describe('the send progress a freshly loaded page can honestly report', () => {
     const refused = {
       state: 'rejected',
       attempts: 0,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: { key: 'order.unknownItem' },
+      unresolvedAttempt: null,
     } as const
 
     expect(progressAfterALoad(refused)).toEqual(refused)
@@ -210,9 +233,8 @@ describe('the send progress a freshly loaded page can honestly report', () => {
       progressAfterALoad({
         state: 'accepted',
         attempts: 0,
-        settlement: { amountPaidCents: 700, paymentNotice: null },
-        anAttemptWentUnanswered: false,
         failure: null,
+        unresolvedAttempt: null,
       }),
     ).toEqual(noSendProgress())
   })

@@ -6,6 +6,7 @@ import type {
   DeliveryMode,
   DraftLine,
   DraftOrder,
+  OrderSubmitRequest,
   OrderSubmitResponse,
 } from '../core/apiTypes'
 import {
@@ -88,10 +89,9 @@ export const useOrderStore = defineStore('order', () => {
   const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
   const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
   const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
-  const settlementOnSend = ref<ConfirmedSettlement | null>(
-    progressWhenTheAppLoaded.settlement,
+  const unresolvedAttempt = ref<OrderSubmitRequest | null>(
+    progressWhenTheAppLoaded.unresolvedAttempt,
   )
-  const anAttemptWentUnanswered = ref(progressWhenTheAppLoaded.anAttemptWentUnanswered)
   const acceptedOrderNumber = ref<number | null>(null)
   let arrivalNoticeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -101,9 +101,8 @@ export const useOrderStore = defineStore('order', () => {
     return {
       state: sendState.value,
       attempts: attemptsMade.value,
-      settlement: settlementOnSend.value,
-      anAttemptWentUnanswered: anAttemptWentUnanswered.value,
       failure: failure.value,
+      unresolvedAttempt: unresolvedAttempt.value,
     }
   }
 
@@ -117,6 +116,7 @@ export const useOrderStore = defineStore('order', () => {
       return
     }
     failure.value = null
+    unresolvedAttempt.value = null
     sendState.value = 'idle'
     rememberWhatBecameOfTheSend()
   }
@@ -218,7 +218,7 @@ export const useOrderStore = defineStore('order', () => {
   function startNextOrderAfterWritingItDown(): void {
     failure.value = null
     attemptsMade.value = 0
-    anAttemptWentUnanswered.value = false
+    unresolvedAttempt.value = null
     sendState.value = 'idle'
     startNextOrder()
   }
@@ -230,28 +230,39 @@ export const useOrderStore = defineStore('order', () => {
   function putTheSendBackTo(progress: SendProgress): void {
     sendState.value = progress.state
     attemptsMade.value = progress.attempts
-    settlementOnSend.value = progress.settlement
-    anAttemptWentUnanswered.value = progress.anAttemptWentUnanswered
     failure.value = progress.failure
+    unresolvedAttempt.value = progress.unresolvedAttempt
     rememberWhatBecameOfTheSend()
   }
 
   async function send(settlement: ConfirmedSettlement | null): Promise<void> {
-    const session = useSessionStore()
+    if (unresolvedAttempt.value !== null) {
+      await sendAgain()
+      return
+    }
+    const submitRequest = buildSubmitRequest(
+      draft.value,
+      catalogStore.catalog,
+      settlement,
+      buildStationDeliveryModes(stationOrders.value, draft.value.deliveryModes),
+    )
     const sendBeforeThisAttempt = whatTheSendHasComeTo()
-    settlementOnSend.value = settlement
+    unresolvedAttempt.value = submitRequest
+    await postTheAttempt(submitRequest, sendBeforeThisAttempt)
+  }
+
+  async function postTheAttempt(
+    attempt: OrderSubmitRequest,
+    sendBeforeThisAttempt: SendProgress = whatTheSendHasComeTo(),
+  ): Promise<void> {
+    const session = useSessionStore()
     attemptsMade.value += 1
     failure.value = null
     sendState.value = 'sending'
     rememberWhatBecameOfTheSend()
     const result = await request<OrderSubmitResponse>('/api/orders', {
       method: 'POST',
-      body: buildSubmitRequest(
-        draft.value,
-        catalogStore.catalog,
-        settlement,
-        buildStationDeliveryModes(stationOrders.value, draft.value.deliveryModes),
-      ),
+      body: attempt,
       token: session.deviceToken,
       timeoutMs: SEND_TIMEOUT_MS,
     })
@@ -260,14 +271,13 @@ export const useOrderStore = defineStore('order', () => {
         acceptedOrderNumber.value = result.data.globalOrderNumber
         failure.value = null
         attemptsMade.value = 0
-        anAttemptWentUnanswered.value = false
+        unresolvedAttempt.value = null
         sendState.value = 'accepted'
         arrivalNoticeTimer = setTimeout(dismissConfirmation, ARRIVAL_NOTICE_MS)
         startNextOrder()
         return
       case 'unreachable':
         failure.value = messageForSendFailure(result)
-        anAttemptWentUnanswered.value = true
         sendState.value = 'failed'
         rememberWhatBecameOfTheSend()
         return
@@ -277,8 +287,10 @@ export const useOrderStore = defineStore('order', () => {
           return
         }
         if (answerIsABusinessRefusal(result)) {
-          anAttemptWentUnanswered.value = false
+          unresolvedAttempt.value = null
           void catalogStore.load()
+        } else if (sendBeforeThisAttempt.unresolvedAttempt === null) {
+          unresolvedAttempt.value = null
         }
         failure.value = messageForSendFailure(result)
         attemptsMade.value = sendBeforeThisAttempt.attempts
@@ -291,7 +303,11 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   async function sendAgain(): Promise<void> {
-    await send(settlementOnSend.value)
+    const attempt = unresolvedAttempt.value
+    if (attempt === null) {
+      return
+    }
+    await postTheAttempt(attempt)
   }
 
   return {
@@ -301,7 +317,6 @@ export const useOrderStore = defineStore('order', () => {
     failure,
     attemptsMade,
     acceptedOrderNumber,
-    settlementOnSend,
     basketLines,
     stationOrders,
     itemCount,

@@ -211,9 +211,22 @@ describe('a phone that is signed out while a reason stands on the order screen',
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailed' },
+      unresolvedAttempt: {
+        clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+        tableName: 'Tisch 12',
+        note: null,
+        items: [
+          {
+            catalogItemId: 'item-1',
+            unitPriceCents: 350,
+            note: null,
+            stationId: null,
+            settlement: null,
+          },
+        ],
+        deliveryModes: [],
+      },
     })
     const order = useOrderStore()
     const session = useSessionStore()

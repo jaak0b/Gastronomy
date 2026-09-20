@@ -793,9 +793,22 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     saveSendProgress({
       state: 'failed',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: true,
       failure: { key: 'review.sendFailed' },
+      unresolvedAttempt: {
+        clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+        tableName: 'Tisch 3',
+        note: null,
+        items: [
+          {
+            catalogItemId: WASSER.id,
+            unitPriceCents: WASSER.priceCents,
+            note: null,
+            stationId: 'station-bar',
+            settlement: null,
+          },
+        ],
+        deliveryModes: [],
+      },
     })
     const catalog = useCatalogStore()
     catalog.catalog = {

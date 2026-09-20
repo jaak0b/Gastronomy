@@ -433,6 +433,16 @@ describe('an order the waiter has already pressed send on', () => {
     expect(order.attemptsMade).toBe(1)
   })
 
+  it('writes the attempt down before the request leaves, so a reload still sees it', () => {
+    orderOnItsWayToTheLaptop()
+
+    const posted = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    const stored = restoreSendProgress()
+
+    expect(stored.state).toBe('sending')
+    expect(stored.unresolvedAttempt).toEqual(posted)
+  })
+
   it('stays on its way when the arrival notice of an earlier order is tapped away', () => {
     const order = orderOnItsWayToTheLaptop()
 
@@ -526,9 +536,22 @@ describe('an order the page was still sending when it was loaded again', () => {
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settlement: { amountPaidCents: 200, paymentNotice: null },
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: {
+        clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+        tableName: 'Tisch 4',
+        note: null,
+        items: [
+          {
+            catalogItemId: 'item-wasser',
+            unitPriceCents: 200,
+            note: null,
+            stationId: 'station-bar',
+            settlement: { paidPriceCents: 200, paymentNotice: null },
+          },
+        ],
+        deliveryModes: [],
+      },
     })
   }
 
@@ -1212,9 +1235,22 @@ describe('an order sent from a phone the laptop no longer knows', () => {
     saveSendProgress({
       state: 'sending',
       attempts: 1,
-      settlement: null,
-      anAttemptWentUnanswered: false,
       failure: null,
+      unresolvedAttempt: {
+        clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+        tableName: 'Tisch 5',
+        note: null,
+        items: [
+          {
+            catalogItemId: 'item-wasser',
+            unitPriceCents: 200,
+            note: null,
+            stationId: 'station-bar',
+            settlement: null,
+          },
+        ],
+        deliveryModes: [],
+      },
     })
     aLaptopThatNoLongerKnowsThisPhone()
     return useOrderStore()
