@@ -1,3 +1,5 @@
+using GastronomyApp.Core.Results;
+
 namespace GastronomyApp.Core.Ports;
 
 public interface ITransactionRunner

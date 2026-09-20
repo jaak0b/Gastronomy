@@ -1,3 +1,4 @@
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Setup;
 
 namespace GastronomyApp.Desktop.Platform.Windows;

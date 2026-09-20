@@ -1,10 +1,11 @@
 using FakeItEasy;
 using GastronomyApp.Api.Options;
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Tests.Logging;
+using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.ViewModels;
 using Serilog.Events;

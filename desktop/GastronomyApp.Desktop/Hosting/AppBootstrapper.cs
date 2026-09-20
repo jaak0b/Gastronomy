@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Services;
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.ViewModels;
 using Serilog;

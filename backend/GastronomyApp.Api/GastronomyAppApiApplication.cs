@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Options;
+﻿using GastronomyApp.Api.Hosting;
+using GastronomyApp.Api.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 

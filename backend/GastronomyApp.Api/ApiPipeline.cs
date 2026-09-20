@@ -2,6 +2,7 @@ using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Responders;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 

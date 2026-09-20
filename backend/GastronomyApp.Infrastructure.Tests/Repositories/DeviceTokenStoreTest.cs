@@ -1,5 +1,5 @@
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;

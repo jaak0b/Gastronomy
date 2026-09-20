@@ -1,0 +1,175 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace GastronomyApp.Api.Tests.Handlers;
+
+[TestFixture]
+public sealed class AdminCatalogConcurrencyTest
+{
+  private const int SimultaneousCreates = 8;
+  private const int RacedSwitches = 8;
+  private const string SmallUmlautA = "ä";
+  private const string CapitalUmlautA = "Ä";
+
+  private string ColdDrinksName => $"Kaltgetr{SmallUmlautA}nke";
+
+  private string ColdDrinksNameWithTheUmlautInCapitals => $"Kaltgetr{CapitalUmlautA}nke";
+
+  [SetUp]
+  public async Task SetUp()
+  {
+    _context = await new OrderTestContextBuilder().StartAsync();
+  }
+
+  [TearDown]
+  public async Task TearDown()
+  {
+    await _context.DisposeAsync();
+  }
+
+  private OrderTestContext _context = null!;
+
+  [Test]
+  public async Task PostCategory_TheSameNameTwiceAtTheSameMoment_RefusesTheSecondOneInWords()
+  {
+    List<Task<HttpResponseMessage>> attempts = Enumerable.Range(0, SimultaneousCreates).Select(_ => CreateColdDrinksCategoryAsync()).ToList();
+
+    HttpResponseMessage[] responses = await Task.WhenAll(attempts);
+    List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
+    List<string?> messageKeys = [];
+
+    foreach (var response in responses)
+    {
+      messageKeys.Add(await ReadMessageKeyAsync(response));
+      response.Dispose();
+    }
+
+    await using var database = _context.Factory.CreateContext();
+    var normalizedName = ColdDrinksName.Trim();
+    var stored = await database.CatalogCategories.CountAsync(category => category.Name == normalizedName);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError), "A name collision must never reach the operator as a crash.");
+                      Assert.That(statuses, Has.One.EqualTo(HttpStatusCode.Created));
+                      Assert.That(messageKeys.Where(key => key is not null), Is.All.EqualTo("admin.categoryNameTaken"), "Every refused attempt must say that the name is taken.");
+                      Assert.That(stored, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task CreateCategory_AnotherWriterTookTheSameNameFirst_SaysTheNameIsTakenInsteadOfCrashing()
+  {
+    using var scope = _context.Factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+    dbContext.CatalogCategories.Add(new()
+                                    {
+                                      Id = Guid.NewGuid(),
+                                      Name = ColdDrinksName,
+                                      ColourHex = "#1565C0",
+                                      SortOrder = 9,
+                                      IsActive = true
+                                    });
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    var result = await scope.ServiceProvider.GetRequiredService<AdminCategoryHandler>()
+                .CreateAsync(new()
+                             {
+                               Name = ColdDrinksNameWithTheUmlautInCapitals,
+                               ColourHex = "#1565C0"
+                             },
+                             CancellationToken.None);
+
+    JsonHttpResult<ApiError> refusal = (JsonHttpResult<ApiError>)result;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(refusal.StatusCode, Is.EqualTo((int)HttpStatusCode.Conflict));
+                      Assert.That(refusal.Value!.MessageKey, Is.EqualTo("admin.categoryNameTaken"));
+                    });
+  }
+
+  [Test]
+  public async Task PostActivateItemAndDeactivateCategory_AtTheSameMoment_NeverSwitchesAnArticleOnUnderASwitchedOffCategory()
+  {
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
+
+    for (var attempt = 0; attempt < RacedSwitches; attempt++)
+    {
+      await SwitchTheBeerOffAsync();
+
+      Task<HttpResponseMessage> deactivation = SendAsync($"/api/admin/categories/{categoryId}/deactivate");
+      Task<HttpResponseMessage> activation = SendAsync($"/api/admin/items/{_context.World.BeerItemId}/activate");
+
+      HttpResponseMessage[] responses = await Task.WhenAll(deactivation, activation);
+      List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
+
+      foreach (var response in responses)
+        response.Dispose();
+
+      await using (var database = _context.Factory.CreateContext())
+      {
+        var category = await database.CatalogCategories.FirstAsync(candidate => candidate.Id == categoryId);
+        var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+
+        Assert.Multiple(() =>
+                        {
+                          Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError));
+                          Assert.That(category.IsActive || !beer.IsActive, Is.True, "A switched-on article may never sit in a switched-off category, or the phone drops it without telling anyone.");
+                        });
+      }
+
+      await SwitchTheDrinksCategoryOnAsync(categoryId);
+    }
+  }
+
+  private async Task SwitchTheBeerOffAsync()
+  {
+    await using var database = _context.Factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+    beer.IsActive = false;
+    await database.SaveChangesAsync();
+  }
+
+  private async Task SwitchTheDrinksCategoryOnAsync(Guid categoryId)
+  {
+    using var response = await SendAsync($"/api/admin/categories/{categoryId}/activate");
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+  }
+
+  private async Task<string?> ReadMessageKeyAsync(HttpResponseMessage response)
+  {
+    if (response.IsSuccessStatusCode)
+      return null;
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    if (body.RootElement.TryGetProperty("messageKey", out var messageKey))
+      return messageKey.GetString();
+
+    return null;
+  }
+
+  private Task<HttpResponseMessage> SendAsync(string path)
+  {
+    return _context.Client.PostAsync(path, null);
+  }
+
+  private Task<HttpResponseMessage> CreateColdDrinksCategoryAsync()
+  {
+    return _context.Client.PostAsJsonAsync("/api/admin/categories",
+                                           new
+                                           {
+                                             name = ColdDrinksName,
+                                             colourHex = "#1565C0"
+                                           });
+  }
+}

@@ -1,0 +1,62 @@
+using FakeItEasy;
+using GastronomyApp.Api.Announcers;
+using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Services;
+using MapsterMapper;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace GastronomyApp.Api.Tests.Announcers;
+
+[TestFixture]
+public sealed class AdminCategoryMoveAnnouncementTest
+{
+  [SetUp]
+  public async Task SetUp()
+  {
+    _context = await new OrderTestContextBuilder().StartAsync();
+  }
+
+  [TearDown]
+  public async Task TearDown()
+  {
+    await _context.DisposeAsync();
+  }
+
+  private OrderTestContext _context = null!;
+
+  [Test]
+  public async Task Move_UpFromTheFirstPosition_TellsTheDevicesNothingBecauseNothingMoved()
+  {
+    using var scope = _context.Factory.Services.CreateScope();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
+
+    await HandlerTalkingTo(scope.ServiceProvider, hubContext).MoveAsync(_context.World.FoodCategoryId, new() { Direction = CategoryMoveDirection.Up }, CancellationToken.None);
+
+    A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task Move_DownFromTheFirstPosition_TellsTheDevicesTheCatalogChanged()
+  {
+    using var scope = _context.Factory.Services.CreateScope();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
+
+    await HandlerTalkingTo(scope.ServiceProvider, hubContext).MoveAsync(_context.World.FoodCategoryId, new() { Direction = CategoryMoveDirection.Down }, CancellationToken.None);
+
+    A.CallTo(() => hubContext.Clients).MustHaveHappened();
+  }
+
+  private AdminCategoryHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
+  {
+    CatalogChangeAnnouncer announcer = new(new(hubContext));
+
+    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncer>>()), services.GetRequiredService<ResultEnvelope>(), services.GetRequiredService<IMapper>());
+  }
+}

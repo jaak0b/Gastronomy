@@ -170,21 +170,28 @@ above.
   early returns. `??`, `??=` and `?.` stay. **Do** build a list from a query with `.ToList()` or
   `.ToArray()`, never with a spread collection expression (`[.. items.Select(...)]`); a collection
   expression is only for a literal list of values. Neither of these can be enforced by the cleanup.
+- **Do** put exactly one kind of type in a folder, name the folder after that kind, and give the file
+  the namespace of its project plus its folder, so no folder is a catch-all and no folder is written
+  an exception.
 - **Do** place a new file in the folder that names both its kind and its concept, so the folder alone
   says what the file is. In `GastronomyApp.Core`: `Entities` for persisted aggregates, `Enums` for
-  domain enums shared beyond one area, `Ports` for interfaces the other projects implement together
-  with the records that exist only as a port's parameter or return type, `Requests` for the records a
+  domain enums shared beyond one area, `Ports` for interfaces only, `Requests` for the records a
   caller hands to a service, `ReadModels` for what a service or a repository returns for reading
   including intermediate values a service computes and hands on, `Results` for the outcome of a write
-  and for failure records with their reason enums, `Exceptions` for exception types, and `Services`
-  for classes only. In `GastronomyApp.Api`: `Endpoints` for mapping classes, handlers, announcers and
-  responders, `Contracts` for wire records only, and `Auth`, `Hub`, `Hosting`, `ErrorHandling`,
-  `Options` and `RateLimiting` for what their names say. In `GastronomyApp.Infrastructure`:
+  or a verification and for failure records with their reason enums, `Exceptions` for exception types,
+  and `Services` for classes only. In `GastronomyApp.Api`: `Endpoints` for the route mapping classes
+  only, `Handlers` for the classes an endpoint calls, `Mapping` for the Mapster `IRegister` classes and
+  the configuration that compiles them, `Announcers` for the classes that tell the devices, `Responders`
+  for the classes that write a response body, `Contracts` for wire records only, `Auth` for
+  authentication with `Auth/Filters` for the endpoint filters and `Auth/Callers` for the caller records,
+  and `Hub`, `Hosting`, `ErrorHandling`, `Options` and `RateLimiting` for what their names say. In
+  `GastronomyApp.Infrastructure`:
   `Persistence` for the context, the connection factory and the transaction runner, `Repositories`,
   `Configurations`, `Security` and `ErrorHandling`. `Projections` holds the Mapster `IRegister`
   classes that declare how entities and query rows become read models, and `QueryRows` holds the
   intermediate records a query materialises on the way there, so `Repositories` keeps to repositories
   alone. In `GastronomyApp.Desktop`: one folder per
   concern (`Hosting`, `Updates`, `Settings`, `Setup`, `Platform`, `Localization`, `Logging`,
-  `ViewModels`, `Views`), never a `Services` catch-all. In a test project a support type that is not
+  `ViewModels`, `Views`), with `Enums` for its enums and `Events` for its event argument classes, and
+  never a `Services` catch-all. In a test project a support type that is not
   a fixture lives under `TestSupport` and the fixture folders mirror the production folders.

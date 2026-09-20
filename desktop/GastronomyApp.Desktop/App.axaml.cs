@@ -5,6 +5,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Desktop.Enums;
+using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;

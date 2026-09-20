@@ -1,7 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.ErrorHandling;

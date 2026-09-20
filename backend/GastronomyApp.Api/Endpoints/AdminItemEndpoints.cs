@@ -1,4 +1,5 @@
 using GastronomyApp.Api.Contracts;
+using GastronomyApp.Api.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 

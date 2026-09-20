@@ -1,3 +1,5 @@
+using GastronomyApp.Desktop.Enums;
+
 namespace GastronomyApp.Desktop.Platform;
 
 public interface ISingleInstance

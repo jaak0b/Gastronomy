@@ -1,6 +1,6 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
-using GastronomyApp.Api.Tests.Logging;
+using GastronomyApp.Api.Tests.TestSupport;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 

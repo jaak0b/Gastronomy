@@ -1,3 +1,6 @@
+using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Results;
+
 namespace GastronomyApp.Core.Ports;
 
 public interface IDeviceOwnerStore

@@ -3,11 +3,12 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Desktop.Enums;
+using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.Updates;
 using Serilog;
 

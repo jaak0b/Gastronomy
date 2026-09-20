@@ -1,4 +1,5 @@
 using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth.Callers;
 using GastronomyApp.Core.Enums;
 using Microsoft.AspNetCore.SignalR;
 

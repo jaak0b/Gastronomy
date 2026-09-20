@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Views;

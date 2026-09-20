@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Api.Tests.Logging;
+using GastronomyApp.Api.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;

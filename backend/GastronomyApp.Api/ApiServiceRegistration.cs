@@ -1,12 +1,17 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Endpoints;
+using GastronomyApp.Api.Auth.Callers;
+using GastronomyApp.Api.Auth.Filters;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Api.Mapping;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Api.RateLimiting;
+using GastronomyApp.Api.Responders;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
@@ -36,7 +41,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton(new MapsterConfiguration().Build());
+    services.AddSingleton(new MappingConfiguration().Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -106,7 +111,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
-    services.AddSingleton<SavedChangeAnnouncement>();
+    services.AddSingleton<SavedChangeAnnouncer>();
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddSingleton<FestivalChangeAnnouncer>();
     services.AddSingleton<ColorFormatValidator>();
@@ -123,7 +128,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderItemSettlementHandler>();
     services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
-    services.AddScoped<InvitationQRRenderer>();
+    services.AddScoped<InvitationQRHandler>();
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();

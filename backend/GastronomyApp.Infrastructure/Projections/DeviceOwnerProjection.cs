@@ -1,6 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Results;
 using Mapster;
 
 namespace GastronomyApp.Infrastructure.Projections;

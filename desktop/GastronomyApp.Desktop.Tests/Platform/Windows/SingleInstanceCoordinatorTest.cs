@@ -1,6 +1,6 @@
-using GastronomyApp.Desktop.Platform;
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Platform.Windows;
-using GastronomyApp.Desktop.Tests.Logging;
+using GastronomyApp.Desktop.Tests.TestSupport;
 using Serilog.Events;
 
 namespace GastronomyApp.Desktop.Tests.Platform.Windows;

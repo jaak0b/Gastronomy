@@ -3,6 +3,7 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
 using GastronomyApp.Desktop.Localization;
+using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
 

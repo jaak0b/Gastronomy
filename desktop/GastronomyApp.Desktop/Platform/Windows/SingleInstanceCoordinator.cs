@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using GastronomyApp.Desktop.Enums;
 using Serilog;
 
 namespace GastronomyApp.Desktop.Platform.Windows;

@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using FakeItEasy;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Setup;
+using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
 

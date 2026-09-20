@@ -1,4 +1,5 @@
-using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth.Filters;
+using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;

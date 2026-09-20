@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using GastronomyApp.Api.Tests.Endpoints;
+using GastronomyApp.Api.Tests.TestSupport;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace GastronomyApp.Api.Tests.Hub;

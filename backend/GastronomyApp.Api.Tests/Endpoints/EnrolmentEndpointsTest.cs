@@ -4,6 +4,7 @@ using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;

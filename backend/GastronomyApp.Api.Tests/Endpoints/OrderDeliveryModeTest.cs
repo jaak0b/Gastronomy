@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 

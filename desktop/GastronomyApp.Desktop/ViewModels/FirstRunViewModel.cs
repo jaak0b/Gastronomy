@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Setup;
 

@@ -1,6 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Tests.Logging;
+using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.Updates;
 using Serilog.Events;
 

@@ -1,4 +1,5 @@
 using FakeItEasy;
+using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.ViewModels;

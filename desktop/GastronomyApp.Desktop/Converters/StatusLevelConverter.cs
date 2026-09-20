@@ -1,6 +1,6 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
-using GastronomyApp.Desktop.ViewModels;
+using GastronomyApp.Desktop.Enums;
 
 namespace GastronomyApp.Desktop.Converters;
 

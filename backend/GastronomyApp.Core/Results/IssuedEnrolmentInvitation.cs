@@ -1,5 +1,3 @@
-using GastronomyApp.Core.Ports;
-
 namespace GastronomyApp.Core.Results;
 
 public sealed record IssuedEnrolmentInvitation

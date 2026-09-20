@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Requests;
+using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Security;
