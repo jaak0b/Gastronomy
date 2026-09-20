@@ -26,7 +26,10 @@ public sealed class StationEstimateServiceTest
     A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
      .Returns(Task.FromResult<IReadOnlyList<StationQueuedWork>>([]));
 
-    _service = new(_stationRepository, _stationOrderRepository, _festivalRepository, new(), _clock);
+    _service = new(_stationRepository,
+                   _stationOrderRepository,
+                   new RunningFestivalLookup(_festivalRepository, new(), _clock),
+                   new());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);

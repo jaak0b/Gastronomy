@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -37,7 +38,8 @@ public sealed class OrderItemSettlementNotificationTest
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync();
     using var scope = _context.Factory.Services.CreateScope();
 
-    var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider)
+    var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider,
+                                                           NullLogger<OrderItemSettlementHandler>.Instance)
                    .SettleAsync(new()
                                 {
                                   Lines =
@@ -64,7 +66,52 @@ public sealed class OrderItemSettlementNotificationTest
                     });
   }
 
-  private OrderItemSettlementHandler HandlerThatCannotReachTheOtherPhones(IServiceProvider services)
+  [Test]
+  public async Task SettleAsync_ItemsWereSettled_NamesTheirIdsAndTheirCountInTheLog()
+  {
+    IReadOnlyList<Guid> itemIds = await PlaceOrderAsync();
+    using var scope = _context.Factory.Services.CreateScope();
+    var logger = A.Fake<ILogger<OrderItemSettlementHandler>>();
+
+    await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider, logger)
+      .SettleAsync(new()
+                   {
+                     Lines =
+                     [
+                       new() { OrderItemId = itemIds[0], PaidPriceCents = 350 },
+                       new() { OrderItemId = itemIds[1], PaidPriceCents = 350 }
+                     ]
+                   },
+                   new(_context.World.StaffMemberId, _context.DeviceId, "de"),
+                   CancellationToken.None);
+
+    A.CallTo(logger)
+     .Where(call => call.Method.Name == nameof(ILogger.Log)
+                    && call.GetArgument<LogLevel>(0) == LogLevel.Information
+                    && Equals(ValueNamed(call.GetArgument<object>(2), "SettledItemCount"), 2)
+                    && SettledIdsIn(call.GetArgument<object>(2)).Contains(itemIds[0])
+                    && SettledIdsIn(call.GetArgument<object>(2)).Contains(itemIds[1]))
+     .MustHaveHappened();
+  }
+
+  private object? ValueNamed(object? state, string name)
+  {
+    if (state is not IReadOnlyList<KeyValuePair<string, object?>> values)
+    {
+      return null;
+    }
+
+    return values.FirstOrDefault(value => value.Key == name).Value;
+  }
+
+  private IReadOnlyList<Guid> SettledIdsIn(object? state)
+  {
+    return ValueNamed(state, "SettledOrderItemIds") as IReadOnlyList<Guid> ?? [];
+  }
+
+  private OrderItemSettlementHandler HandlerThatCannotReachTheOtherPhones(
+    IServiceProvider services,
+    ILogger<OrderItemSettlementHandler> logger)
   {
     var hubContext = A.Fake<IHubContext<GastronomyHub>>();
     A.CallTo(() => hubContext.Clients).Throws(new InvalidOperationException("the hub is not answering"));
@@ -73,7 +120,7 @@ public sealed class OrderItemSettlementNotificationTest
                services.GetRequiredService<SavedChangeAnnouncement>(),
                new(hubContext),
                services.GetRequiredService<ResultEnvelope>(),
-               NullLogger<OrderItemSettlementHandler>.Instance);
+               logger);
   }
 
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync()

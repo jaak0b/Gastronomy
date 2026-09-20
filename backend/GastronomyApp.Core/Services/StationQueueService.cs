@@ -7,29 +7,29 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationQueueService
 {
+  private readonly StationAtFestivalLookup _lookup;
   private readonly IStationOrderRepository _repository;
-  private readonly StationStanding _standing;
 
-  public StationQueueService(StationStanding standing, IStationOrderRepository repository)
+  public StationQueueService(StationAtFestivalLookup lookup, IStationOrderRepository repository)
   {
-    _standing = standing;
+    _lookup = lookup;
     _repository = repository;
   }
 
   public async Task<Result<StationQueue, StationQueueFailure>> ReadQueueAsync(Guid stationId,
                                                                              CancellationToken cancellationToken)
   {
-    Result<StationAtFestival, StationQueueFailure> access = await _standing.FindAsync(stationId, cancellationToken);
+    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
     {
       return Result<StationQueue, StationQueueFailure>.Failed(access.Failure);
     }
 
-    return Result<StationQueue, StationQueueFailure>.Success(await ReadQueueAsync(access.Value, cancellationToken));
+    return Result<StationQueue, StationQueueFailure>.Success(await ReadQueueAtAsync(access.Value, cancellationToken));
   }
 
-  public async Task<StationQueue> ReadQueueAsync(StationAtFestival station, CancellationToken cancellationToken)
+  public async Task<StationQueue> ReadQueueAtAsync(StationAtFestival station, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(station);
 
@@ -53,7 +53,7 @@ public sealed class StationQueueService
     Guid stationId,
     CancellationToken cancellationToken)
   {
-    Result<StationAtFestival, StationQueueFailure> access = await _standing.FindAsync(stationId, cancellationToken);
+    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
     {

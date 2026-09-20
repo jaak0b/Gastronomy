@@ -1,6 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -86,35 +87,31 @@ public sealed class EnrolmentInvitationService
     return await _retirement.RevokeDeviceAsync(verification.Device.Id, cancellationToken);
   }
 
-  public async Task<Result<Guid, EnrolmentInvitationFailure>> FindRenderableAsync(Guid invitationId,
-                                                                                  CancellationToken cancellationToken)
+  public async Task<Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>> EnsureStillOpenAsync(
+    Guid invitationId,
+    CancellationToken cancellationToken)
   {
     EnrolmentInvitation? invitation = await _store.FindByIdAsync(invitationId, cancellationToken);
 
     if (invitation is null)
     {
-      return Result<Guid, EnrolmentInvitationFailure>
-        .Failed(new() { Reason = EnrolmentInvitationFailureReason.InvitationUnknown });
+      return Refused(EnrolmentInvitationFailureReason.InvitationUnknown);
     }
 
     if (invitation.ConsumedAtUtc is not null)
     {
-      return Result<Guid, EnrolmentInvitationFailure>
-        .Failed(new()
-                {
-                  Reason = invitation.ConsumedByDeviceId is null
-                             ? EnrolmentInvitationFailureReason.InvitationReplaced
-                             : EnrolmentInvitationFailureReason.InvitationAlreadyUsed
-                });
+      return Refused(invitation.ConsumedByDeviceId is null
+                       ? EnrolmentInvitationFailureReason.InvitationReplaced
+                       : EnrolmentInvitationFailureReason.InvitationAlreadyUsed);
     }
 
     if (invitation.ExpiresAtUtc <= _clock.UtcNow)
     {
-      return Result<Guid, EnrolmentInvitationFailure>
-        .Failed(new() { Reason = EnrolmentInvitationFailureReason.InvitationExpired });
+      return Refused(EnrolmentInvitationFailureReason.InvitationExpired);
     }
 
-    return Result<Guid, EnrolmentInvitationFailure>.Success(invitation.Id);
+    return Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>
+      .Success(new(invitation.Id, invitation.ExpiresAtUtc));
   }
 
   private DeviceOwner? ReadOwner(Guid? staffMemberId, Guid? stationId)
@@ -131,5 +128,11 @@ public sealed class EnrolmentInvitationService
     EnrolmentInvitationFailureReason reason)
   {
     return Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure>.Failed(new() { Reason = reason });
+  }
+
+  private Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> Refused(
+    EnrolmentInvitationFailureReason reason)
+  {
+    return Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>.Failed(new() { Reason = reason });
   }
 }

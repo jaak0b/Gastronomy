@@ -6,17 +6,17 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationQueueChangeService
 {
+  private readonly StationAtFestivalLookup _lookup;
   private readonly StationQueueService _queueService;
-  private readonly StationStanding _standing;
   private readonly OrderStatusReader _statusReader;
   private readonly StationQueueWriter _writer;
 
-  public StationQueueChangeService(StationStanding standing,
+  public StationQueueChangeService(StationAtFestivalLookup lookup,
                                    StationQueueWriter writer,
                                    StationQueueService queueService,
                                    OrderStatusReader statusReader)
   {
-    _standing = standing;
+    _lookup = lookup;
     _writer = writer;
     _queueService = queueService;
     _statusReader = statusReader;
@@ -29,7 +29,7 @@ public sealed class StationQueueChangeService
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<StationAtFestival, StationQueueFailure> access = await _standing.FindAsync(stationId, cancellationToken);
+    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
     {
@@ -56,7 +56,7 @@ public sealed class StationQueueChangeService
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<StationAtFestival, StationQueueFailure> access = await _standing.FindAsync(stationId, cancellationToken);
+    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
     {
@@ -79,7 +79,7 @@ public sealed class StationQueueChangeService
     Guid stationId,
     CancellationToken cancellationToken)
   {
-    Result<StationAtFestival, StationQueueFailure> access = await _standing.FindAsync(stationId, cancellationToken);
+    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
     {
@@ -110,7 +110,7 @@ public sealed class StationQueueChangeService
                                                                           .Distinct()],
                                                            cancellationToken);
 
-    StationQueue queue = await _queueService.ReadQueueAsync(station, cancellationToken);
+    StationQueue queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
 
     return Result<StationQueueChange, StationQueueFailure>.Success(new()
                                                                   {

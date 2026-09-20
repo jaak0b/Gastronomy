@@ -51,6 +51,13 @@ public sealed class OrderItemSettlementHandler
     List<Guid> reappliedIds = [.. settlement.Value.Reapplied.Select(item => item.Id)];
     List<Guid> alreadySettledByOthersIds = [.. settlement.Value.AlreadySettledByOthers.Select(item => item.Id)];
 
+    if (settledIds.Count > 0)
+    {
+      _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.",
+                             settledIds.Count,
+                             settledIds);
+    }
+
     var otherPhonesWereTold = settledIds.Count == 0
                               || await TellTheOtherPhonesAsync(settledIds, settlement.Value.SettledTableNames);
 

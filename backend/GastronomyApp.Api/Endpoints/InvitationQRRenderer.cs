@@ -1,6 +1,7 @@
 using System.Text;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -32,12 +33,12 @@ public sealed class InvitationQRRenderer
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(invitationId, cancellationToken);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
 
-    if (!renderable.IsSuccess)
+    if (!stillOpen.IsSuccess)
     {
-      return RefusalFor(renderable.Failure);
+      return RefusalFor(stillOpen.Failure);
     }
 
     OutstandingInvitation? remembered = _invitationCache.Read();

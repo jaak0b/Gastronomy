@@ -42,6 +42,7 @@ public sealed class StationAdministrationServiceTest
                    _festivalStationRepository,
                    new(_invitationStore, _deviceTokenStore, _clock),
                    new(_orderabilityRepository, _festivalRepository, _clock),
+                   new RunningFestivalLookup(_festivalRepository, new(), _clock),
                    _transactionRunner,
                    _clock);
   }

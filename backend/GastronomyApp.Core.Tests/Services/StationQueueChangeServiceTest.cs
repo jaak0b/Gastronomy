@@ -48,11 +48,13 @@ public sealed class StationQueueChangeServiceTest
                                                                        }
                                                                      ]));
 
-    StationStanding standing = new(_stationRepository, _festivalRepository, _festivalStationRepository, _clock);
+    StationAtFestivalLookup lookup = new(_stationRepository,
+                                        _festivalStationRepository,
+                                        new RunningFestivalLookup(_festivalRepository, new(), _clock));
 
-    _service = new(standing,
+    _service = new(lookup,
                    new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock),
-                   new(standing, _stationOrderRepository),
+                   new(lookup, _stationOrderRepository),
                    new(_stationOrderRepository, new()));
   }
 

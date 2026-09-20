@@ -6,28 +6,25 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationEstimateService
 {
-  private readonly IClock _clock;
   private readonly ProductionEstimateCalculator _estimateCalculator;
-  private readonly IFestivalRepository _festivalRepository;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationOrderRepository _stationOrderRepository;
   private readonly IStationRepository _stationRepository;
 
   public StationEstimateService(IStationRepository stationRepository,
                                 IStationOrderRepository stationOrderRepository,
-                                IFestivalRepository festivalRepository,
-                                ProductionEstimateCalculator estimateCalculator,
-                                IClock clock)
+                                RunningFestivalLookup runningFestival,
+                                ProductionEstimateCalculator estimateCalculator)
   {
     _stationRepository = stationRepository;
     _stationOrderRepository = stationOrderRepository;
-    _festivalRepository = festivalRepository;
+    _runningFestival = runningFestival;
     _estimateCalculator = estimateCalculator;
-    _clock = clock;
   }
 
   public async Task<IReadOnlyList<StationEstimate>> ReadAsync(CancellationToken cancellationToken)
   {
-    Festival? festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+    Festival? festival = await _runningFestival.FindAsync(cancellationToken);
 
     if (festival is null)
     {

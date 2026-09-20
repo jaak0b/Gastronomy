@@ -1,25 +1,23 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed class StationStanding
+public sealed class StationAtFestivalLookup
 {
-  private readonly IClock _clock;
-  private readonly IFestivalRepository _festivalRepository;
   private readonly IFestivalStationRepository _festivalStationRepository;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
 
-  public StationStanding(IStationRepository stationRepository,
-                         IFestivalRepository festivalRepository,
-                         IFestivalStationRepository festivalStationRepository,
-                         IClock clock)
+  public StationAtFestivalLookup(IStationRepository stationRepository,
+                                 IFestivalStationRepository festivalStationRepository,
+                                 RunningFestivalLookup runningFestival)
   {
     _stationRepository = stationRepository;
-    _festivalRepository = festivalRepository;
     _festivalStationRepository = festivalStationRepository;
-    _clock = clock;
+    _runningFestival = runningFestival;
   }
 
   public async Task<Result<StationAtFestival, StationQueueFailure>> FindAsync(Guid stationId,
@@ -32,7 +30,7 @@ public sealed class StationStanding
       return Refuse(StationQueueFailureReason.StationUnknown);
     }
 
-    Festival? festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+    Festival? festival = await _runningFestival.FindAsync(cancellationToken);
 
     if (festival is null)
     {

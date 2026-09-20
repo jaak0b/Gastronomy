@@ -13,6 +13,7 @@ public sealed class StationAdministrationService
   private readonly ItemOrderability _orderability;
   private readonly IStationRepository _repository;
   private readonly DeviceOwnerRetirement _retirement;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
   public StationAdministrationService(IStationRepository repository,
@@ -20,6 +21,7 @@ public sealed class StationAdministrationService
                                       IFestivalStationRepository festivalStationRepository,
                                       DeviceOwnerRetirement retirement,
                                       ItemOrderability orderability,
+                                      RunningFestivalLookup runningFestival,
                                       ITransactionRunner transactionRunner,
                                       IClock clock)
   {
@@ -28,6 +30,7 @@ public sealed class StationAdministrationService
     _festivalStationRepository = festivalStationRepository;
     _retirement = retirement;
     _orderability = orderability;
+    _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
     _clock = clock;
   }
@@ -163,7 +166,7 @@ public sealed class StationAdministrationService
       return Failed(StationAdministrationFailureReason.StationNotFound);
     }
 
-    Festival? runningFestival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+    Festival? runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is not null
         && await _festivalStationRepository.CountUnfulfilledItemsAsync(runningFestival.Id,

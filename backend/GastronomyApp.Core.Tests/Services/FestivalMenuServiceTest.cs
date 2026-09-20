@@ -36,9 +36,8 @@ public sealed class FestivalMenuServiceTest
     _service = new(_repository,
                    _festivalRepository,
                    new(_orderabilityRepository, _festivalRepository, _clock),
-                   new(),
-                   _transactionRunner,
-                   _clock);
+                   new RunningFestivalLookup(_festivalRepository, new(), _clock),
+                   _transactionRunner);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

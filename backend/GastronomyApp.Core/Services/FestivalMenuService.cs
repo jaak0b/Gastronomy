@@ -9,26 +9,23 @@ public sealed class FestivalMenuService
   private const int HighestPriceCents = 99999;
   private const int LowestPriceCents = 0;
 
-  private readonly IClock _clock;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalMenuRepository _repository;
-  private readonly FestivalSchedule _schedule;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
   public FestivalMenuService(IFestivalMenuRepository repository,
                              IFestivalRepository festivalRepository,
                              ItemOrderability orderability,
-                             FestivalSchedule schedule,
-                             ITransactionRunner transactionRunner,
-                             IClock clock)
+                             RunningFestivalLookup runningFestival,
+                             ITransactionRunner transactionRunner)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
     _orderability = orderability;
-    _schedule = schedule;
+    _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
-    _clock = clock;
   }
 
   public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnTheMenuAsync(
@@ -173,7 +170,7 @@ public sealed class FestivalMenuService
       return Failed(FestivalMenuFailureReason.FestivalNotFound);
     }
 
-    if (_schedule.IsRunning(festival, _clock.UtcNow))
+    if (_runningFestival.IsRunning(festival))
     {
       return Failed(FestivalMenuFailureReason.FestivalIsRunning);
     }

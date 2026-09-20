@@ -1,7 +1,5 @@
 ﻿namespace GastronomyApp.Api.Hosting;
 
-public sealed record OutstandingInvitation(Guid InvitationId, string QRCodeValue, string QRUrl, DateTime ExpiresAtUtc);
-
 public sealed class OutstandingInvitationCache
 {
   private readonly Lock _guard = new();

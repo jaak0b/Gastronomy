@@ -1,6 +1,6 @@
 using GastronomyApp.Core.Entities;
 
-namespace GastronomyApp.Core.Results;
+namespace GastronomyApp.Core.ReadModels;
 
 public sealed record StationAtFestival
 {

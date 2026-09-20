@@ -6,12 +6,11 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalStationService
 {
-  private readonly IClock _clock;
   private readonly IFestivalRepository _festivalRepository;
   private readonly INumberAllocator _numberAllocator;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalStationRepository _repository;
-  private readonly FestivalSchedule _schedule;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
   private readonly ITransactionRunner _transactionRunner;
 
@@ -20,18 +19,16 @@ public sealed class FestivalStationService
                                 IStationRepository stationRepository,
                                 ItemOrderability orderability,
                                 INumberAllocator numberAllocator,
-                                FestivalSchedule schedule,
-                                ITransactionRunner transactionRunner,
-                                IClock clock)
+                                RunningFestivalLookup runningFestival,
+                                ITransactionRunner transactionRunner)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
     _stationRepository = stationRepository;
     _orderability = orderability;
     _numberAllocator = numberAllocator;
-    _schedule = schedule;
+    _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
-    _clock = clock;
   }
 
   public Task<Result<SavedFestivalStation, FestivalStationFailure>> AddAsync(Guid festivalId,
@@ -106,7 +103,7 @@ public sealed class FestivalStationService
       return Failed(FestivalStationFailureReason.FestivalNotFound);
     }
 
-    if (_schedule.IsRunning(festival, _clock.UtcNow)
+    if (_runningFestival.IsRunning(festival)
         && await _repository.CountUnfulfilledItemsAsync(festivalId, stationId, cancellationToken) > 0)
     {
       return Failed(FestivalStationFailureReason.StationHasUnfulfilledItems);

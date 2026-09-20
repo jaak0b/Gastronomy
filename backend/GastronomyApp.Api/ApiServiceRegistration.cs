@@ -91,7 +91,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationAdministrationService>();
     services.AddScoped<StaffMemberAdministrationService>();
     services.AddScoped<EnrolmentInvitationService>();
-    services.AddScoped<StationStanding>();
+    services.AddScoped<RunningFestivalLookup>();
+    services.AddScoped<StationAtFestivalLookup>();
     services.AddScoped<StationQueueService>();
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();

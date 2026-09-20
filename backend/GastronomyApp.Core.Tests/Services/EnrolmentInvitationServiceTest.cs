@@ -2,6 +2,7 @@ using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -125,69 +126,70 @@ public sealed class EnrolmentInvitationServiceTest
   }
 
   [Test]
-  public async Task FindRenderableAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
+  public async Task EnsureStillOpenAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
   {
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(renderable.IsSuccess, Is.False);
-                      Assert.That(renderable.Failure.Reason,
+                      Assert.That(stillOpen.IsSuccess, Is.False);
+                      Assert.That(stillOpen.Failure.Reason,
                                   Is.EqualTo(EnrolmentInvitationFailureReason.InvitationUnknown));
                     });
   }
 
   [Test]
-  public async Task FindRenderableAsync_AnInvitationAPhoneAlreadyUsed_SaysItWasAlreadyUsed()
+  public async Task EnsureStillOpenAsync_AnInvitationAPhoneAlreadyUsed_SaysItWasAlreadyUsed()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
      .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), _deviceId, _now.AddMinutes(4))));
 
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(renderable.Failure.Reason,
+    Assert.That(stillOpen.Failure.Reason,
                 Is.EqualTo(EnrolmentInvitationFailureReason.InvitationAlreadyUsed));
   }
 
   [Test]
-  public async Task FindRenderableAsync_AnInvitationANewerOneReplaced_SaysItWasReplaced()
+  public async Task EnsureStillOpenAsync_AnInvitationANewerOneReplaced_SaysItWasReplaced()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
      .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), null, _now.AddMinutes(4))));
 
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(renderable.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationReplaced));
+    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationReplaced));
   }
 
   [Test]
-  public async Task FindRenderableAsync_AnInvitationWhoseTimeRanOut_SaysItExpired()
+  public async Task EnsureStillOpenAsync_AnInvitationWhoseTimeRanOut_SaysItExpired()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
      .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now)));
 
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(renderable.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationExpired));
+    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationExpired));
   }
 
   [Test]
-  public async Task FindRenderableAsync_AnInvitationThatIsStillOutstanding_AnswersWithIt()
+  public async Task EnsureStillOpenAsync_AnInvitationThatIsStillOutstanding_AnswersWithIt()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
      .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
 
-    Result<Guid, EnrolmentInvitationFailure> renderable =
-      await _service.FindRenderableAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
+      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(renderable.IsSuccess, Is.True);
-                      Assert.That(renderable.Value, Is.EqualTo(_invitationId));
+                      Assert.That(stillOpen.IsSuccess, Is.True);
+                      Assert.That(stillOpen.Value.Id, Is.EqualTo(_invitationId));
+                      Assert.That(stillOpen.Value.ExpiresAtUtc, Is.EqualTo(_now.AddMinutes(4)));
                     });
   }
 

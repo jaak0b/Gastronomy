@@ -32,7 +32,11 @@ public sealed class StationQueueServiceTest
     A.CallTo(() => _repository.FindFulfilledAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
      .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
 
-    _service = new(new(_stationRepository, _festivalRepository, _festivalStationRepository, _clock), _repository);
+    StationAtFestivalLookup lookup = new(_stationRepository,
+                                        _festivalStationRepository,
+                                        new RunningFestivalLookup(_festivalRepository, new(), _clock));
+
+    _service = new(lookup, _repository);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -92,7 +96,7 @@ public sealed class StationQueueServiceTest
   }
 
   [Test]
-  public async Task ReadQueueAsync_NoFestivalIsRunning_RefusesWithTheReasonOfTheStanding()
+  public async Task ReadQueueAsync_NoFestivalIsRunning_RefusesWithTheReasonOfTheLookup()
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
      .Returns(Task.FromResult<Festival?>(null));
@@ -117,9 +121,9 @@ public sealed class StationQueueServiceTest
   }
 
   [Test]
-  public void ReadQueueAsync_NoStanding_ThrowsArgumentNullException()
+  public void ReadQueueAtAsync_NoStation_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.ReadQueueAsync(null!, TestContext.CurrentContext.CancellationToken),
+    Assert.That(async () => await _service.ReadQueueAtAsync(null!, TestContext.CurrentContext.CancellationToken),
                 Throws.ArgumentNullException);
   }
 
