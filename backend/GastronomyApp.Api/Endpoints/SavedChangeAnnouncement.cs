@@ -15,7 +15,7 @@ public sealed class SavedChangeAnnouncement
     _logger = logger;
   }
 
-  public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices)
+  public async Task<bool> TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices)
   {
     ArgumentNullException.ThrowIfNull(tellTheDevices);
 
@@ -24,15 +24,21 @@ public sealed class SavedChangeAnnouncement
     try
     {
       await tellTheDevices(tokenOutlivingTheAdminsRequest);
+
+      return true;
     }
     catch (OperationCanceledException) when (tokenOutlivingTheAdminsRequest.IsCancellationRequested)
     {
       _logger.LogInformation("The change was saved, but the program was quitting, so the phones and station tablets were not told about it and will load it the next time they connect.");
+
+      return false;
     }
     catch (Exception exception)
     {
       _logger.LogError(exception,
                        "The change was saved, but the phones and station tablets could not be told about it, so they keep showing what they loaded before until they load it again.");
+
+      return false;
     }
   }
 }

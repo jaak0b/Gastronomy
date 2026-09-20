@@ -26,12 +26,15 @@ public sealed class OrderAcceptanceComposition
                                                            new StationRepository(dbContext),
                                                            new());
 
+    ImmediateTransactionRunner transactionRunner = new(dbContext, new(), logger);
+    FestivalRepository festivalRepository = new(dbContext, new FestivalSchedule());
+
     return new(new OrderRepository(dbContext),
-               new FestivalRepository(dbContext, new FestivalSchedule()),
+               festivalRepository,
                numberAllocator,
                itemResolutionService,
-               new(),
-               new ImmediateTransactionRunner(dbContext, new(), logger),
+               new(new OpenItemRepository(dbContext, new()), festivalRepository, transactionRunner, new SystemClock()),
+               transactionRunner,
                new SystemClock());
   }
 }

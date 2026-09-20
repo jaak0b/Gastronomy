@@ -1,5 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 
@@ -40,6 +41,56 @@ public sealed class OrderRepositoryTest
     var found = await repository.FindByClientOrderIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.Null);
+  }
+
+  [Test]
+  public async Task FindPlacedAsync_AnOrderThatIsNotThere_ReturnsNull()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    OrderRepository repository = new(fixture.DbContext);
+
+    Assert.That(await repository.FindPlacedAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken),
+                Is.Null);
+  }
+
+  [Test]
+  public async Task FindPlacedAsync_AnOrderThatWasSent_CarriesItsStationOrdersWithTheStationNames()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    OrderRepository repository = new(fixture.DbContext);
+    var order = BuildOrder(seeded, Guid.NewGuid());
+    await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
+
+    PlacedOrder placed =
+      (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(placed.GlobalOrderNumber, Is.EqualTo(1));
+                      Assert.That(placed.StationOrders, Has.Count.EqualTo(1));
+                      Assert.That(placed.StationOrders[0].StationName, Is.EqualTo("Kueche"));
+                      Assert.That(placed.StationOrders[0].DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
+                      Assert.That(placed.StationOrders[0].Items, Has.Count.EqualTo(1));
+                      Assert.That(placed.StationOrders[0].Items[0].UnitPriceCents, Is.EqualTo(350));
+                      Assert.That(placed.StationOrders[0].Items[0].IsFulfilled, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task FindPlacedAsync_AnItemTheStationHandedOut_SaysItIsFulfilled()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    OrderRepository repository = new(fixture.DbContext);
+    var order = BuildOrder(seeded, Guid.NewGuid());
+    order.StationOrders[0].Items[0].FulfilledAtUtc = new(2026, 8, 27, 18, 45, 0, DateTimeKind.Utc);
+    await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
+
+    PlacedOrder placed =
+      (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
+
+    Assert.That(placed.StationOrders[0].Items[0].IsFulfilled, Is.True);
   }
 
   private Order BuildOrder(SeededDomain seeded, Guid clientOrderId)

@@ -52,7 +52,7 @@ public sealed class OrderAcceptanceServiceTest
                    _festivalRepository,
                    _numberAllocator,
                    new(_catalogItemRepository, _stationRepository, new()),
-                   new(),
+                   new(A.Fake<IOpenItemRepository>(), _festivalRepository, _transactionRunner, _clock),
                    _transactionRunner,
                    _clock);
   }

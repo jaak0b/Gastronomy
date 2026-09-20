@@ -1,11 +1,55 @@
-using System.Linq.Expressions;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemSettlementService
 {
+  private readonly IClock _clock;
+  private readonly IFestivalRepository _festivalRepository;
+  private readonly IOpenItemRepository _repository;
+  private readonly ITransactionRunner _transactionRunner;
+
+  public OrderItemSettlementService(IOpenItemRepository repository,
+                                    IFestivalRepository festivalRepository,
+                                    ITransactionRunner transactionRunner,
+                                    IClock clock)
+  {
+    _repository = repository;
+    _festivalRepository = festivalRepository;
+    _transactionRunner = transactionRunner;
+    _clock = clock;
+  }
+
+  public async Task<Result<SettlementResult, SettlementFailure>> SettleAsync(SettlementRequest request,
+                                                                             CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+
+    Festival? festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+
+    if (festival is null)
+    {
+      return Result<SettlementResult, SettlementFailure>
+        .Failed(new() { Reason = SettlementFailureReason.NoRunningFestival });
+    }
+
+    return await _transactionRunner.RunAsync(async transactionCancellationToken =>
+                                             {
+                                               Result<SettlementResult, SettlementFailure> settlement =
+                                                 await SettledInsideTransactionAsync(request, transactionCancellationToken);
+
+                                               return new TransactionOutcome<Result<SettlementResult, SettlementFailure>>
+                                                      {
+                                                        Value = settlement,
+                                                        ShouldCommit = settlement.IsSuccess
+                                                      };
+                                             },
+                                             cancellationToken);
+  }
+
   public Result<SettlementResult, SettlementFailure> Settle(SettlementRequest request,
                                                             IReadOnlyCollection<SettlementCandidate> knownItems,
                                                             DateTime settledAtUtc)
@@ -53,17 +97,20 @@ public sealed class OrderItemSettlementService
     List<OrderItem> newlySettled = [];
     List<OrderItem> reapplied = [];
     List<OrderItem> alreadySettledByOthers = [];
+    List<string> tableNamesOfTheNewlySettled = [];
 
     for (var index = 0; index < request.Lines.Count; index++)
     {
       var line = request.Lines[index];
-      var item = selected[index].Item;
+      var candidate = selected[index];
+      var item = candidate.Item;
       var paidPriceCents = line.PaidPriceCents!.Value;
 
       if (item.SettledAtUtc is null)
       {
         MarkSettled(item, paidPriceCents, line.PaymentNotice, request.SettledByStaffMemberId, settledAtUtc);
         newlySettled.Add(item);
+        tableNamesOfTheNewlySettled.Add(candidate.TableName);
         continue;
       }
 
@@ -81,15 +128,9 @@ public sealed class OrderItemSettlementService
                                                                {
                                                                  NewlySettled = newlySettled,
                                                                  Reapplied = reapplied,
-                                                                 AlreadySettledByOthers = alreadySettledByOthers
+                                                                 AlreadySettledByOthers = alreadySettledByOthers,
+                                                                 SettledTableNames = SortedNames(tableNamesOfTheNewlySettled)
                                                                });
-  }
-
-  public IReadOnlyList<Guid> ReadSelectedIds(SettlementRequest request)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return [.. request.Lines.Select(line => line.OrderItemId).Distinct()];
   }
 
   public int SumOpenAmountCents(IEnumerable<OrderItem> items)
@@ -115,14 +156,6 @@ public sealed class OrderItemSettlementService
     return items.Sum(CalculateWaivedAmountCents);
   }
 
-  public Expression<Func<OrderItem, bool>> WasGivenAwaySince(DateTime settledFromUtc)
-  {
-    return item => item.SettledAtUtc != null
-                && item.SettledAtUtc >= settledFromUtc
-                && item.ChargedPriceCents != null
-                && item.ChargedPriceCents < item.UnitPriceCents;
-  }
-
   public void MarkSettled(OrderItem item,
                           int chargedPriceCents,
                           string? paymentNotice,
@@ -135,6 +168,57 @@ public sealed class OrderItemSettlementService
     item.SettledAtUtc = settledAtUtc;
     item.SettledByStaffMemberId = settledByStaffMemberId;
     OverwriteChargedPrice(item, chargedPriceCents, paymentNotice);
+  }
+
+  private async Task<Result<SettlementResult, SettlementFailure>> SettledInsideTransactionAsync(
+    SettlementRequest request,
+    CancellationToken cancellationToken)
+  {
+    IReadOnlyList<OrderItem> selected =
+      await _repository.FindForSettlementAsync(ReadSelectedIds(request), cancellationToken);
+
+    IReadOnlyCollection<SettlementCandidate> candidates = await BuildCandidatesAsync(selected, cancellationToken);
+
+    Result<SettlementResult, SettlementFailure> settlement = Settle(request, candidates, _clock.UtcNow);
+
+    if (settlement.IsSuccess)
+    {
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    return settlement;
+  }
+
+  private async Task<IReadOnlyCollection<SettlementCandidate>> BuildCandidatesAsync(
+    IReadOnlyCollection<OrderItem> selected,
+    CancellationToken cancellationToken)
+  {
+    IReadOnlyDictionary<Guid, OrderItemOwner> owners =
+      await _repository.FindOwnersAsync([.. selected.Select(item => item.Id)], cancellationToken);
+
+    return
+    [
+      .. selected.Where(item => owners.ContainsKey(item.Id))
+                 .Select(item => new SettlementCandidate
+                                 {
+                                   Item = item,
+                                   TableName = owners[item.Id].TableName
+                                 })
+    ];
+  }
+
+  private IReadOnlyList<Guid> ReadSelectedIds(SettlementRequest request)
+  {
+    return [.. request.Lines.Select(line => line.OrderItemId).Distinct()];
+  }
+
+  private IReadOnlyList<string> SortedNames(IEnumerable<string> tableNames)
+  {
+    return
+    [
+      .. tableNames.Distinct(StringComparer.Ordinal)
+                   .OrderBy(tableName => tableName, StringComparer.Ordinal)
+    ];
   }
 
   private void EnsureSettlerNamed(Guid settledByStaffMemberId)
@@ -218,12 +302,7 @@ public sealed class OrderItemSettlementService
 
   private SettlementFailure? ValidateOneTable(IReadOnlyList<SettlementCandidate> selected)
   {
-    List<string> tableNames =
-    [
-      .. selected.Select(candidate => candidate.TableName)
-                 .Distinct(StringComparer.Ordinal)
-                 .OrderBy(tableName => tableName, StringComparer.Ordinal)
-    ];
+    IReadOnlyList<string> tableNames = SortedNames(selected.Select(candidate => candidate.TableName));
 
     if (tableNames.Count <= 1)
     {

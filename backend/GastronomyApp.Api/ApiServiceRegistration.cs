@@ -50,6 +50,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped<ITransactionRunner>(provider => provider.GetRequiredService<ImmediateTransactionRunner>());
 
     services.AddScoped<IOrderRepository, OrderRepository>();
+    services.AddScoped<IOpenItemRepository, OpenItemRepository>();
+    services.AddScoped<IDeviceRepository, DeviceRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
     services.AddScoped<ICatalogCategoryRepository, CatalogCategoryRepository>();
     services.AddScoped<ICatalogRepository, CatalogRepository>();
@@ -65,12 +67,17 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<FestivalMoment>();
     services.AddSingleton<OrderStatusCalculator>();
-    services.AddSingleton<OrderItemSettlementService>();
+    services.AddSingleton<OrderTotalCalculator>();
+    services.AddSingleton<GivenAwayItemSpecification>();
     services.AddSingleton<OrderItemFulfillmentService>();
     services.AddSingleton<StationOrderVisibilityService>();
     services.AddSingleton<ProductionEstimateCalculator>();
 
     services.AddScoped<OrderItemResolutionService>();
+    services.AddScoped<OrderItemSettlementService>();
+    services.AddScoped<OpenItemsService>();
+    services.AddScoped<PlacedOrderReader>();
+    services.AddScoped<DeviceLanguageService>();
     services.AddScoped<OrderAcceptanceService>();
     services.AddScoped<ItemOrderability>();
     services.AddScoped<CatalogService>();
@@ -100,11 +107,10 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<LoopbackAdminAuthorizationMiddleware>();
     services.AddScoped<InfrastructureExceptionMiddleware>();
 
-    services.AddScoped<OrderReader>();
     services.AddScoped<OrderPlacementHandler>();
-    services.AddSingleton<OpenItemsReader>();
     services.AddScoped<OpenItemQueryHandler>();
     services.AddScoped<OrderItemSettlementHandler>();
+    services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
     services.AddScoped<InvitationQRRenderer>();
     services.AddSingleton<LocalNetworkAddressProvider>();

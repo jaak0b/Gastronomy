@@ -1,6 +1,10 @@
+using FakeItEasy;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -10,7 +14,20 @@ public sealed class OrderItemSettlementServiceTest
   [SetUp]
   public void SetUp()
   {
-    _service = new();
+    _repository = A.Fake<IOpenItemRepository>();
+    _festivalRepository = A.Fake<IFestivalRepository>();
+    _clock = A.Fake<IClock>();
+    _transactionRunner = new();
+
+    A.CallTo(() => _clock.UtcNow).Returns(_now);
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
+    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(new Dictionary<Guid, OrderItemOwner>()));
+
+    _service = new(_repository, _festivalRepository, _transactionRunner, _clock);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -18,7 +35,11 @@ public sealed class OrderItemSettlementServiceTest
   private readonly Guid _collectingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
 
+  private IClock _clock = null!;
+  private IFestivalRepository _festivalRepository = null!;
+  private IOpenItemRepository _repository = null!;
   private OrderItemSettlementService _service = null!;
+  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public void Settle_OnePricePerLine_StoresExactlyThePricesThePhoneSent()
@@ -382,6 +403,119 @@ public sealed class OrderItemSettlementServiceTest
     _service.MarkSettled(bratwurst, 350, null, _anotherWaiter, _earlier);
 
     Assert.That(_service.SumWaivedAmountCents([beer, bratwurst]), Is.EqualTo(400));
+  }
+
+  [Test]
+  public void SettleAsync_NullRequest_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _service.SettleAsync(null!, CancellationToken.None),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public async Task SettleAsync_NoFestivalIsRunning_RefusesTheSettlementAndSavesNothing()
+  {
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<Festival?>(null));
+
+    Result<SettlementResult, SettlementFailure> settlement =
+      await _service.SettleAsync(RequestFor([Line(Guid.NewGuid(), 350)]), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason,
+                                  Is.EqualTo(SettlementFailureReason.NoRunningFestival));
+                      Assert.That(_transactionRunner.Committed, Is.Null);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task SettleAsync_TheItemsTheScreenSent_SettlesThemAndCommitsTheTransaction()
+  {
+    var bratwurst = OpenItem(350);
+    GivenTheTableHolds("Tisch 12", bratwurst);
+
+    Result<SettlementResult, SettlementFailure> settlement =
+      await _service.SettleAsync(RequestFor([Line(bratwurst, 350)]), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.True);
+                      Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
+                      Assert.That(settlement.Value.SettledTableNames, Is.EqualTo(new[] { "Tisch 12" }));
+                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
+                      Assert.That(_transactionRunner.Committed, Is.True);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task SettleAsync_AnItemThatIsNoLongerThere_RefusesTheSettlementAndRollsTheTransactionBack()
+  {
+    Result<SettlementResult, SettlementFailure> settlement =
+      await _service.SettleAsync(RequestFor([Line(Guid.NewGuid(), 350)]), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason,
+                                  Is.EqualTo(SettlementFailureReason.UnknownOrderItemId));
+                      Assert.That(_transactionRunner.Committed, Is.False);
+                    });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
+
+  [Test]
+  public async Task SettleAsync_AnItemWhoseOrderCannotBeFound_RefusesTheSettlementBecauseItsTableIsUnknown()
+  {
+    var bratwurst = OpenItem(350);
+    A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bratwurst]));
+
+    Result<SettlementResult, SettlementFailure> settlement =
+      await _service.SettleAsync(RequestFor([Line(bratwurst, 350)]), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(settlement.IsSuccess, Is.False);
+                      Assert.That(settlement.Failure.Reason,
+                                  Is.EqualTo(SettlementFailureReason.UnknownOrderItemId));
+                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
+                    });
+  }
+
+  private void GivenTheTableHolds(string tableName, params OrderItem[] items)
+  {
+    A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([.. items]));
+    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(
+                items.ToDictionary(item => item.Id,
+                                   item => new OrderItemOwner
+                                           {
+                                             OrderId = Guid.NewGuid(),
+                                             TableName = tableName,
+                                             GlobalOrderNumber = 1,
+                                             OrderedAtUtc = _earlier
+                                           })));
+  }
+
+  private Festival RunningFestival()
+  {
+    return new()
+           {
+             Id = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001"),
+             Name = "Sommerfest",
+             StartsAtUtc = _earlier,
+             EndsAtUtc = _now.AddHours(5),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 
   private SettlementRequest RequestFor(IReadOnlyList<SettlementLine> lines)

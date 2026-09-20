@@ -5,7 +5,6 @@ using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -71,14 +70,10 @@ public sealed class OrderItemSettlementNotificationTest
     var hubContext = A.Fake<IHubContext<GastronomyHub>>();
     A.CallTo(() => hubContext.Clients).Throws(new InvalidOperationException("the hub is not answering"));
 
-    return new(services.GetRequiredService<GastronomyAppDbContext>(),
-               services.GetRequiredService<OrderItemSettlementService>(),
-               services.GetRequiredService<OpenItemsReader>(),
+    return new(services.GetRequiredService<OrderItemSettlementService>(),
+               services.GetRequiredService<SavedChangeAnnouncement>(),
                new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()),
                services.GetRequiredService<ResultEnvelope>(),
-               services.GetRequiredService<IFestivalRepository>(),
-               services.GetRequiredService<ITransactionRunner>(),
-               services.GetRequiredService<IClock>(),
                NullLogger<OrderItemSettlementHandler>.Instance);
   }
 

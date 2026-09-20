@@ -243,7 +243,7 @@ public sealed class StationQueueHandler
   private readonly GastronomyAppDbContext _dbContext;
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly OrderItemFulfillmentService _fulfillmentService;
-  private readonly OrderReader _orderReader;
+  private readonly PlacedOrderReader _placedOrderReader;
   private readonly StationQueueReader _queueReader;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly IFestivalRepository _festivalRepository;
@@ -255,7 +255,7 @@ public sealed class StationQueueHandler
                              StationQueueReader queueReader,
                              OrderItemFulfillmentService fulfillmentService,
                              StationOrderVisibilityService visibilityService,
-                             OrderReader orderReader,
+                             PlacedOrderReader placedOrderReader,
                              HubNotificationDispatcher dispatcher,
                              ResultEnvelope resultEnvelope,
                              IFestivalRepository festivalRepository,
@@ -270,7 +270,7 @@ public sealed class StationQueueHandler
     _queueReader = queueReader;
     _fulfillmentService = fulfillmentService;
     _visibilityService = visibilityService;
-    _orderReader = orderReader;
+    _placedOrderReader = placedOrderReader;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
     _clock = clock;
@@ -548,11 +548,11 @@ public sealed class StationQueueHandler
 
     foreach (var orderId in orderIds)
     {
-      var loaded = await _orderReader.LoadAsync(_dbContext, orderId, cancellationToken);
+      var placed = await _placedOrderReader.FindAsync(orderId, cancellationToken);
 
-      if (loaded is not null)
+      if (placed is not null)
       {
-        await _dispatcher.OnOrderStatusChangedAsync(orderId, _orderReader.CalculateStatus(loaded), cancellationToken);
+        await _dispatcher.OnOrderStatusChangedAsync(orderId, placed.Status, cancellationToken);
       }
     }
   }

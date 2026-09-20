@@ -1,15 +1,9 @@
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
-using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
-using GastronomyApp.Core.Results;
-using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Endpoints;
 
@@ -36,111 +30,3 @@ public static class OrderEndpoints
     return routes;
   }
 }
-
-public sealed class OrderPlacementHandler
-{
-  private readonly OrderAcceptanceService _acceptanceService;
-  private readonly GastronomyAppDbContext _dbContext;
-  private readonly HubNotificationDispatcher _dispatcher;
-  private readonly ILogger<OrderPlacementHandler> _log;
-  private readonly OrderReader _orderReader;
-  private readonly ResultEnvelope _resultEnvelope;
-
-  public OrderPlacementHandler(GastronomyAppDbContext dbContext,
-                               OrderAcceptanceService acceptanceService,
-                               OrderReader orderReader,
-                               HubNotificationDispatcher dispatcher,
-                               ResultEnvelope resultEnvelope,
-                               ILogger<OrderPlacementHandler> log)
-  {
-    _dbContext = dbContext;
-    _acceptanceService = acceptanceService;
-    _orderReader = orderReader;
-    _dispatcher = dispatcher;
-    _resultEnvelope = resultEnvelope;
-    _log = log;
-  }
-
-  public async Task<IResult> PlaceAsync(PlaceOrderRequest request,
-                                        StaffDeviceCaller caller,
-                                        CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-    ArgumentNullException.ThrowIfNull(caller);
-
-    OrderAcceptanceRequest acceptanceRequest = new()
-                                               {
-                                                 ClientOrderId = request.ClientOrderId,
-                                                 StaffMemberId = caller.StaffMemberId,
-                                                 TableName = request.TableName ?? string.Empty,
-                                                 Note = request.Note,
-                                                 Items =
-                                                 [
-                                                   .. (request.Items ?? []).Select(item => new OrderAcceptanceItemRequest
-                                                                                           {
-                                                                                             CatalogItemId = item.CatalogItemId,
-                                                                                             UnitPriceCents = item.UnitPriceCents,
-                                                                                             Note = item.Note,
-                                                                                             StationId = item.StationId,
-                                                                                             Settlement = item.Settlement is null
-                                                                                                            ? null
-                                                                                                            : new OrderSettlementLineTerms
-                                                                                                              {
-                                                                                                                PaidPriceCents = item.Settlement.PaidPriceCents,
-                                                                                                                PaymentNotice = item.Settlement.PaymentNotice
-                                                                                                              }
-                                                                                           })
-                                                 ],
-                                                 DeliveryModes =
-                                                 [
-                                                   .. (request.DeliveryModes ?? []).Select(mode => new StationDeliveryModeRequest
-                                                                                                   {
-                                                                                                     StationId = mode.StationId,
-                                                                                                     DeliveryMode = mode.DeliveryMode
-                                                                                                   })
-                                                 ]
-                                               };
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
-      await _acceptanceService.AcceptAsync(acceptanceRequest, cancellationToken);
-
-    if (!acceptance.IsSuccess)
-    {
-      _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. "
-                      + "The catalog item it names is {CatalogItemId}.",
-                      request.ClientOrderId,
-                      caller.StaffMemberId,
-                      acceptance.Failure.Reason,
-                      acceptance.Failure.OffendingCatalogItemId);
-
-      if (acceptance.Failure.SettlementFailureReason is { } settlementFailureReason)
-      {
-        _log.LogWarning("The settlement of the order {ClientOrderId} from staff member {StaffMemberId} was refused because {SettlementFailureReason}.",
-                        request.ClientOrderId,
-                        caller.StaffMemberId,
-                        settlementFailureReason);
-      }
-
-      return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(acceptance.Failure));
-    }
-
-    var stored = (await _orderReader.LoadAsync(_dbContext, acceptance.Value.Order.Id, cancellationToken))!;
-    var view = _orderReader.BuildPlacedOrderView(stored);
-
-    await TellEveryStationWithAStationOrderAsync(view, cancellationToken);
-
-    return Results.Json(view,
-                        statusCode: acceptance.Value.WasAlreadyAccepted
-                                      ? StatusCodes.Status200OK
-                                      : StatusCodes.Status201Created);
-  }
-
-  private async Task TellEveryStationWithAStationOrderAsync(PlacedOrderView view, CancellationToken cancellationToken)
-  {
-    foreach (var stationId in view.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
-    {
-      await _dispatcher.PushStationOrdersChangedAsync(stationId, cancellationToken);
-    }
-  }
-}
-
