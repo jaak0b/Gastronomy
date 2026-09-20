@@ -16,7 +16,8 @@ namespace GastronomyApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false, collation: "NOCASE"),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    NormalizedName = table.Column<string>(type: "TEXT", nullable: false),
                     ColourHex = table.Column<string>(type: "TEXT", maxLength: 7, nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
@@ -50,10 +51,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    QRCodeHash = table.Column<byte[]>(type: "BLOB", nullable: false),
-                    QRCodeSalt = table.Column<byte[]>(type: "BLOB", nullable: false),
-                    QRCodeIterations = table.Column<int>(type: "INTEGER", nullable: false),
-                    QRCodeAlgorithm = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    QrCodeHash = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    QrCodeSalt = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    QrCodeIterations = table.Column<int>(type: "INTEGER", nullable: false),
+                    QrCodeAlgorithm = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ExpiresAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ConsumedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -314,9 +315,9 @@ namespace GastronomyApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_CatalogCategories_Name",
+                name: "IX_CatalogCategories_NormalizedName",
                 table: "CatalogCategories",
-                column: "Name",
+                column: "NormalizedName",
                 unique: true);
 
             migrationBuilder.CreateIndex(

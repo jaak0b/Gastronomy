@@ -1,4 +1,4 @@
-using GastronomyApp.Infrastructure.Persistence;
+﻿using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,12 +10,19 @@ public sealed class SqliteTempFileFixture : IDisposable
   private readonly List<SqliteConnection> _connections = [];
   private readonly List<GastronomyAppDbContext> _contexts = [];
 
-  public SqliteTempFileFixture()
+  public SqliteTempFileFixture() : this(TemporaryDatabaseSchema.Migrated)
+  {
+  }
+
+  public SqliteTempFileFixture(TemporaryDatabaseSchema schema)
   {
     DatabasePath = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");
 
-    using var migrationContext = CreateContext();
-    migrationContext.Database.Migrate();
+    if (schema == TemporaryDatabaseSchema.Migrated)
+    {
+      using var migrationContext = CreateContext();
+      migrationContext.Database.Migrate();
+    }
   }
 
   public string DatabasePath { get; }
@@ -39,10 +46,17 @@ public sealed class SqliteTempFileFixture : IDisposable
       File.Delete(path);
   }
 
-  public GastronomyAppDbContext CreateContext()
+  public SqliteConnection OpenConnection()
   {
     var connection = _connectionFactory.Open(DatabasePath);
     _connections.Add(connection);
+
+    return connection;
+  }
+
+  public GastronomyAppDbContext CreateContext()
+  {
+    var connection = OpenConnection();
 
     GastronomyAppDbContext context = new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(connection).Options);
     _contexts.Add(context);
