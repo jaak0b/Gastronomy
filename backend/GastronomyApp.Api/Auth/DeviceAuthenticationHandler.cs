@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,15 +15,17 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private readonly DeviceClaimTypes _claimTypes = new();
 
   private readonly IDeviceTokenStore _deviceTokenStore;
-  private readonly DeviceTokenSplitter _tokenSplitter = new();
+  private readonly DeviceTokenSplitter _tokenSplitter;
 
   public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options,
                                      ILoggerFactory logger,
                                      UrlEncoder encoder,
-                                     IDeviceTokenStore deviceTokenStore)
+                                     IDeviceTokenStore deviceTokenStore,
+                                     DeviceTokenSplitter tokenSplitter)
     : base(options, logger, encoder)
   {
     _deviceTokenStore = deviceTokenStore;
+    _tokenSplitter = tokenSplitter;
   }
 
   override protected async Task<AuthenticateResult> HandleAuthenticateAsync()

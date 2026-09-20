@@ -13,7 +13,7 @@ namespace GastronomyApp.Desktop;
 
 public class App : Application
 {
-  private readonly Never _never = new();
+  private readonly UnreachableCase _unreachableCase = new();
   private AppBootstrapper? _bootstrapper;
   private DesktopComposition? _composition;
   private MainWindow? _mainWindow;
@@ -94,7 +94,7 @@ public class App : Application
              BootstrapOutcome.ProceedToWindow => true,
              BootstrapOutcome.ProceedToWindowWithoutServer => false,
              BootstrapOutcome.ExitImmediately => false,
-             _ => _never.OfType<bool>(outcome)
+             _ => _unreachableCase.Throw<bool>(outcome)
            };
   }
 

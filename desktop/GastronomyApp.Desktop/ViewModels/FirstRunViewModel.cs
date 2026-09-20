@@ -9,7 +9,7 @@ public sealed class FirstRunViewModel : ViewModelBase
   private readonly IDataFolderSetup _dataFolder;
   private readonly IElevatedSetupLauncher _elevatedSetup;
   private readonly IFirewallSetup _firewall;
-  private readonly Never _never = new();
+  private readonly UnreachableCase _unreachableCase = new();
   private readonly IDesktopTextProvider _text;
   private string? _declinedText;
 
@@ -112,7 +112,7 @@ public sealed class FirstRunViewModel : ViewModelBase
         break;
 
       default:
-        _never.OfType<ElevatedSetupOutcome>(outcome);
+        _unreachableCase.Throw<ElevatedSetupOutcome>(outcome);
 
         break;
     }

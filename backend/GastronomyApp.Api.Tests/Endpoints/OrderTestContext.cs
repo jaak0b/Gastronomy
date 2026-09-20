@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
-using GastronomyApp.Infrastructure.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;

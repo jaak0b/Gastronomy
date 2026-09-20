@@ -88,30 +88,30 @@ public sealed class AdminCategoryHandler
   public Task<IResult> CreateAsync(SaveCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
-    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
+    return _writeTransaction.RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> UpdateAsync(Guid categoryId, SaveCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
-    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => UpdatedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
+    return _writeTransaction.RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> MoveAsync(Guid categoryId, MoveCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => MovedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
+    return _writeTransaction.RunAsync(transactionCancellationToken => MovedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken), cancellationToken);
+    return _writeTransaction.RunAsync(transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), cancellationToken);
+    return _writeTransaction.RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), cancellationToken);
   }
 
   private async Task<CatalogWrite> CreatedAsync(SaveCategoryRequest request, CancellationToken cancellationToken)

@@ -5,8 +5,8 @@ using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Ports;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -41,7 +41,7 @@ public sealed class EnrolmentRedemptionHandler
   private readonly IEnrolmentInvitationStore _invitationStore;
   private readonly ILogger<EnrolmentRedemptionHandler> _log;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly DeviceTokenSplitter _tokenSplitter = new();
+  private readonly DeviceTokenSplitter _tokenSplitter;
 
   public EnrolmentRedemptionHandler(IEnrolmentInvitationStore invitationStore,
                                     HubNotificationDispatcher dispatcher,
@@ -49,8 +49,10 @@ public sealed class EnrolmentRedemptionHandler
                                     IDeviceTokenStore deviceTokenStore,
                                     DeviceRevoker deviceRevoker,
                                     ResultEnvelope resultEnvelope,
+                                    DeviceTokenSplitter tokenSplitter,
                                     ILogger<EnrolmentRedemptionHandler> log)
   {
+    _tokenSplitter = tokenSplitter;
     _invitationStore = invitationStore;
     _dispatcher = dispatcher;
     _invitationCache = invitationCache;
@@ -118,7 +120,7 @@ public sealed class EnrolmentRedemptionHandler
                                                                 StatusCodes.Status400BadRequest,
                                                                 "ValidationFailed",
                                                                 "enrolment.nameMissing"),
-             _ => new Never().OfType<IResult>(redemption.Outcome)
+             _ => new UnreachableCase().Throw<IResult>(redemption.Outcome)
            };
   }
 

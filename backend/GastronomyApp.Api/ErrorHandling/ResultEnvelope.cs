@@ -37,7 +37,7 @@ public sealed class ResultEnvelope
              OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem or
              OrderValidationFailureReason.StationNotAssignedToItem =>
                BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", OffendingItemParameters(failure)),
-             _ => new Never().OfType<ProblemDescription>(failure.Reason)
+             _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
            };
   }
 
@@ -61,7 +61,7 @@ public sealed class ResultEnvelope
                BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.NoRunningFestival =>
                BuildValidationProblem(SettlementCannotBeProcessedKey),
-             _ => new Never().OfType<ProblemDescription>(failure.Reason)
+             _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
            };
   }
 

@@ -1,9 +1,10 @@
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GastronomyApp.Infrastructure.Tests;
 
@@ -292,7 +293,12 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(fixture.DbContext);
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
-    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, clock);
+    EnrolmentInvitationStore store = new(fixture.DbContext,
+                                        ownerStore,
+                                        secretHasher,
+                                        deviceTokenStore,
+                                        new ImmediateTransactionRunner(fixture.DbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance),
+                                        clock);
 
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"),
@@ -408,6 +414,7 @@ public sealed class EnrolmentInvitationStoreTest
                ownerStore,
                secretHasher,
                new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock),
+               new ImmediateTransactionRunner(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance),
                clock);
   }
 }

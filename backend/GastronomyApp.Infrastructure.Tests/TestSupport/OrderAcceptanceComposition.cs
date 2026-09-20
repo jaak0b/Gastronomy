@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
@@ -8,31 +8,30 @@ namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed class OrderAcceptanceComposition
 {
-  public OrderAcceptanceTransaction Create(GastronomyAppDbContext dbContext)
+  public OrderAcceptanceService Create(GastronomyAppDbContext dbContext)
   {
     return Create(dbContext, new SequenceNumberAllocator(dbContext));
   }
 
-  public OrderAcceptanceTransaction Create(GastronomyAppDbContext dbContext, INumberAllocator numberAllocator)
+  public OrderAcceptanceService Create(GastronomyAppDbContext dbContext, INumberAllocator numberAllocator)
   {
-    return Create(dbContext, numberAllocator, NullLogger<OrderAcceptanceTransaction>.Instance);
+    return Create(dbContext, numberAllocator, NullLogger<ImmediateTransactionRunner>.Instance);
   }
 
-  public OrderAcceptanceTransaction Create(GastronomyAppDbContext dbContext,
-                                           INumberAllocator numberAllocator,
-                                           ILogger<OrderAcceptanceTransaction> logger)
+  public OrderAcceptanceService Create(GastronomyAppDbContext dbContext,
+                                       INumberAllocator numberAllocator,
+                                       ILogger<ImmediateTransactionRunner> logger)
   {
-    OrderRepository orderRepository = new(dbContext);
+    OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext),
+                                                           new StationRepository(dbContext),
+                                                           new());
 
-    OrderAcceptanceService acceptanceService = new(orderRepository,
-                                                   new CatalogItemRepository(dbContext),
-                                                   new StationRepository(dbContext),
-                                                   new FestivalRepository(dbContext, new FestivalSchedule()),
-                                                   numberAllocator,
-                                                   new(),
-                                                   new(),
-                                                   new SystemClock());
-
-    return new(dbContext, orderRepository, acceptanceService, logger);
+    return new(new OrderRepository(dbContext),
+               new FestivalRepository(dbContext, new FestivalSchedule()),
+               numberAllocator,
+               itemResolutionService,
+               new(),
+               new ImmediateTransactionRunner(dbContext, new(), logger),
+               new SystemClock());
   }
 }

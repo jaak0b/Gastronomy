@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using GastronomyApp.Infrastructure;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

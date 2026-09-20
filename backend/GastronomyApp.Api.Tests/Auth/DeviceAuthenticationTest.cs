@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Auth;

@@ -6,7 +6,6 @@ using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
-using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -40,7 +39,7 @@ public static class OrderEndpoints
 
 public sealed class OrderPlacementHandler
 {
-  private readonly OrderAcceptanceTransaction _acceptanceTransaction;
+  private readonly OrderAcceptanceService _acceptanceService;
   private readonly GastronomyAppDbContext _dbContext;
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly ILogger<OrderPlacementHandler> _log;
@@ -48,14 +47,14 @@ public sealed class OrderPlacementHandler
   private readonly ResultEnvelope _resultEnvelope;
 
   public OrderPlacementHandler(GastronomyAppDbContext dbContext,
-                               OrderAcceptanceTransaction acceptanceTransaction,
+                               OrderAcceptanceService acceptanceService,
                                OrderReader orderReader,
                                HubNotificationDispatcher dispatcher,
                                ResultEnvelope resultEnvelope,
                                ILogger<OrderPlacementHandler> log)
   {
     _dbContext = dbContext;
-    _acceptanceTransaction = acceptanceTransaction;
+    _acceptanceService = acceptanceService;
     _orderReader = orderReader;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
@@ -103,7 +102,7 @@ public sealed class OrderPlacementHandler
                                                };
 
     Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
-      await _acceptanceTransaction.AcceptAsync(acceptanceRequest, cancellationToken);
+      await _acceptanceService.AcceptAsync(acceptanceRequest, cancellationToken);
 
     if (!acceptance.IsSuccess)
     {

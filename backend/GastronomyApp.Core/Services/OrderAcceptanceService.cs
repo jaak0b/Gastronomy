@@ -7,32 +7,29 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderAcceptanceService
 {
-  private readonly ICatalogItemRepository _catalogItemRepository;
   private readonly IClock _clock;
   private readonly IFestivalRepository _festivalRepository;
+  private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
 
   private readonly IOrderRepository _orderRepository;
-  private readonly OrderRoutingResolver _routingResolver;
   private readonly OrderItemSettlementService _settlementService;
-  private readonly IStationRepository _stationRepository;
+  private readonly ITransactionRunner _transactionRunner;
 
   public OrderAcceptanceService(IOrderRepository orderRepository,
-                                ICatalogItemRepository catalogItemRepository,
-                                IStationRepository stationRepository,
                                 IFestivalRepository festivalRepository,
                                 INumberAllocator numberAllocator,
-                                OrderRoutingResolver routingResolver,
+                                OrderItemResolutionService itemResolutionService,
                                 OrderItemSettlementService settlementService,
+                                ITransactionRunner transactionRunner,
                                 IClock clock)
   {
     _orderRepository = orderRepository;
-    _catalogItemRepository = catalogItemRepository;
-    _stationRepository = stationRepository;
     _festivalRepository = festivalRepository;
     _numberAllocator = numberAllocator;
-    _routingResolver = routingResolver;
+    _itemResolutionService = itemResolutionService;
     _settlementService = settlementService;
+    _transactionRunner = transactionRunner;
     _clock = clock;
   }
 
@@ -41,6 +38,33 @@ public sealed class OrderAcceptanceService
   {
     ArgumentNullException.ThrowIfNull(request);
 
+    try
+    {
+      return await _transactionRunner.RunAsync(async transactionCancellationToken =>
+                                               {
+                                                 Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
+                                                   await AcceptInsideTransactionAsync(request, transactionCancellationToken);
+
+                                                 return new TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>
+                                                        {
+                                                          Value = acceptance,
+                                                          ShouldCommit = acceptance.IsSuccess
+                                                        };
+                                               },
+                                               cancellationToken);
+    }
+    catch (ConcurrentWriteException)
+    {
+      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
+                                                                          {
+                                                                            Reason = OrderValidationFailureReason.OrderNumberCouldNotBeAllocated
+                                                                          });
+    }
+  }
+
+  private async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptInsideTransactionAsync(OrderAcceptanceRequest request,
+                                                                                                         CancellationToken cancellationToken)
+  {
     var shapeFailure = ValidateShape(request);
     if (shapeFailure is not null)
     {
@@ -67,60 +91,15 @@ public sealed class OrderAcceptanceService
                                                                           });
     }
 
-    IReadOnlyCollection<Station> stationsAtTheFestival =
-      await _stationRepository.FindAtFestivalAsync(festival.Id, cancellationToken);
+    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution =
+      await _itemResolutionService.ResolveAsync(festival.Id, request.Items, cancellationToken);
 
-    List<ResolvedItem> resolvedItems = [];
-    foreach (var itemRequest in request.Items)
+    if (!resolution.IsSuccess)
     {
-      var catalogItem =
-        await _catalogItemRepository.FindByIdAsync(itemRequest.CatalogItemId, cancellationToken);
-      if (catalogItem is null)
-      {
-        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
-                                                                            {
-                                                                              Reason = OrderValidationFailureReason.UnknownCatalogItemId,
-                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId
-                                                                            });
-      }
-
-      var menuRow =
-        await _catalogItemRepository.FindMenuRowAsync(festival.Id, itemRequest.CatalogItemId, cancellationToken);
-      if (!catalogItem.IsActive || menuRow is { IsAvailable: false })
-      {
-        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
-                                                                            {
-                                                                              Reason = OrderValidationFailureReason.ItemNotAvailable,
-                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId,
-                                                                              OffendingCatalogItemName = catalogItem.Name
-                                                                            });
-      }
-
-      IReadOnlyCollection<ItemStationAssignment> assignments =
-        await _catalogItemRepository.FindAssignmentsAsync(festival.Id, itemRequest.CatalogItemId, cancellationToken);
-
-      Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(itemRequest.CatalogItemId,
-                                                                                 assignments,
-                                                                                 stationsAtTheFestival,
-                                                                                 itemRequest.StationId);
-
-      if (!routing.IsSuccess)
-      {
-        return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
-                                                                            {
-                                                                              Reason = TranslateRoutingFailureReason(routing.Failure.Reason),
-                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId,
-                                                                              OffendingCatalogItemName = catalogItem.Name
-                                                                            });
-      }
-
-      resolvedItems.Add(new()
-                        {
-                          Request = itemRequest,
-                          CatalogItem = catalogItem,
-                          Decision = routing.Value
-                        });
+      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(resolution.Failure);
     }
+
+    IReadOnlyList<ResolvedOrderItem> resolvedItems = resolution.Value;
 
     var builtOrder = await BuildOrderAsync(request, festival.Id, resolvedItems, cancellationToken);
 
@@ -164,19 +143,6 @@ public sealed class OrderAcceptanceService
     }
 
     return null;
-  }
-
-  private OrderValidationFailureReason TranslateRoutingFailureReason(RoutingFailureReason routingFailureReason)
-  {
-    return routingFailureReason switch
-           {
-             RoutingFailureReason.ItemHasNoStation => OrderValidationFailureReason.ItemHasNoStation,
-             RoutingFailureReason.StationRequired => OrderValidationFailureReason.StationRequired,
-             RoutingFailureReason.StationNotAssignedToItem => OrderValidationFailureReason.StationNotAssignedToItem,
-             RoutingFailureReason.ChosenStationNoLongerPreparesTheItem =>
-               OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem,
-             _ => new Never().OfType<OrderValidationFailureReason>(routingFailureReason)
-           };
   }
 
   private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, BuiltOrder builtOrder)
@@ -225,7 +191,7 @@ public sealed class OrderAcceptanceService
 
   private async Task<BuiltOrder> BuildOrderAsync(OrderAcceptanceRequest request,
                                                  Guid festivalId,
-                                                 IReadOnlyCollection<ResolvedItem> resolvedItems,
+                                                 IReadOnlyCollection<ResolvedOrderItem> resolvedItems,
                                                  CancellationToken cancellationToken)
   {
     var createdAtUtc = _clock.UtcNow;
@@ -300,15 +266,6 @@ public sealed class OrderAcceptanceService
              Order = order,
              Items = createdItems
            };
-  }
-
-  private sealed record ResolvedItem
-  {
-    public required OrderAcceptanceItemRequest Request { get; init; }
-
-    public required CatalogItem CatalogItem { get; init; }
-
-    public required RoutingDecision Decision { get; init; }
   }
 
   private sealed record BuiltOrderItem

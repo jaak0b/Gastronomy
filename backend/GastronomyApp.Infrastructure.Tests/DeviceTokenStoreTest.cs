@@ -1,5 +1,5 @@
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -186,7 +186,7 @@ public sealed class DeviceTokenStoreTest
 
   private DeviceTokenStore CreateStore(SqliteInMemoryFixture fixture)
   {
-    return new(fixture.DbContext, new(fixture.DbContext), new(), new SystemClock());
+    return new(fixture.DbContext, new DeviceOwnerStore(fixture.DbContext), new(), new SystemClock());
   }
 
   private sealed record TokenParts(string TokenLookupId, string Secret);

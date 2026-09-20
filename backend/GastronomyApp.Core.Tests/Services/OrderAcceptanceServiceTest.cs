@@ -41,13 +41,19 @@ public sealed class OrderAcceptanceServiceTest
     GivenCatalogItem(_bratwurstId, "Bratwurst", [_kitchenId]);
     GivenCatalogItem(_beerId, "Bier", [_barIndoorId]);
 
+    _transactionRunner = A.Fake<ITransactionRunner>();
+    A.CallTo(_transactionRunner)
+     .WithReturnType<Task<Result<OrderAcceptanceResult, OrderValidationFailure>>>()
+     .ReturnsLazily(async call =>
+                      (await call.GetArgument<Func<CancellationToken, Task<TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>>>>(0)!
+                         (call.GetArgument<CancellationToken>(1))).Value);
+
     _service = new(_orderRepository,
-                   _catalogItemRepository,
-                   _stationRepository,
                    _festivalRepository,
                    _numberAllocator,
+                   new(_catalogItemRepository, _stationRepository, new()),
                    new(),
-                   new(),
+                   _transactionRunner,
                    _clock);
   }
 
@@ -69,6 +75,7 @@ public sealed class OrderAcceptanceServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private INumberAllocator _numberAllocator = null!;
   private IClock _clock = null!;
+  private ITransactionRunner _transactionRunner = null!;
   private OrderAcceptanceService _service = null!;
 
   private Festival RunningFestival()
@@ -219,109 +226,6 @@ public sealed class OrderAcceptanceServiceTest
                                                                                               CancellationToken.None);
 
     Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameMissing));
-  }
-
-  [Test]
-  public async Task AcceptAsync_UnknownCatalogItemId_FailsNamingTheOffendingItemAndStopsAtTheFirstUnknown()
-  {
-    var unknownId = Guid.Parse("bbbbbbbb-0000-0000-0000-00000000dead");
-    var secondUnknownId = Guid.Parse("bbbbbbbb-0000-0000-0000-00000000beef");
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(unknownId, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(null));
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(secondUnknownId, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(null));
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(unknownId), ItemFor(secondUnknownId)]),
-                                                                                              CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.UnknownCatalogItemId));
-                      Assert.That(result.Failure.OffendingCatalogItemId, Is.EqualTo(unknownId));
-                    });
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(secondUnknownId, A<CancellationToken>._))
-     .MustNotHaveHappened();
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_MoreThanOneCandidateAndNoStationChosen_FailsWithStationRequired()
-  {
-    GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
-    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
-                                                              BuildStation(_barIndoorId, "Theke innen", 2),
-                                                              BuildStation(_barOutdoorId, "Theke aussen", 3)
-                                                            ]));
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(_beerId)]), CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.StationRequired));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_StationNotAssignedToTheItem_FailsWithStationNotAssignedToItem()
-  {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
-                                                                                              CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.StationNotAssignedToItem));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_DeactivatedItemReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
-  {
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(_bratwurstId, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(new()
-                                            {
-                                              Id = _bratwurstId,
-                                              Name = "Bratwurst",
-                                              CategoryId = Guid.NewGuid(),
-                                              SortOrder = 1,
-                                              IsActive = false
-                                            }));
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.ItemNotAvailable));
-                      Assert.That(result.Failure.OffendingCatalogItemId, Is.EqualTo(_bratwurstId));
-                      Assert.That(result.Failure.OffendingCatalogItemName, Is.EqualTo("Bratwurst"));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_SoldOutMenuRowReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
-  {
-    Guid soldOutItemId = SoldOutItemId();
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(soldOutItemId)]), CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.ItemNotAvailable));
-                      Assert.That(result.Failure.OffendingCatalogItemId, Is.EqualTo(soldOutItemId));
-                      Assert.That(result.Failure.OffendingCatalogItemName, Is.EqualTo("Bratwurst"));
-                    });
-    AssertNothingWasAllocatedOrStored();
   }
 
   [Test]
@@ -756,29 +660,4 @@ public sealed class OrderAcceptanceServiceTest
     }
   }
 
-  [Test]
-  public async Task AcceptAsync_EveryDeclaredRoutingFailureReason_MapsToItsOwnValidationFailureReason()
-  {
-    Dictionary<RoutingFailureReason, OrderValidationFailureReason> expectedMapping = new()
-                                                                                     {
-                                                                                       [RoutingFailureReason.StationRequired] = OrderValidationFailureReason.StationRequired,
-                                                                                       [RoutingFailureReason.StationNotAssignedToItem] =
-                                                                                         OrderValidationFailureReason.StationNotAssignedToItem,
-                                                                                       [RoutingFailureReason.ItemHasNoStation] = OrderValidationFailureReason.ItemHasNoStation,
-                                                                                       [RoutingFailureReason.ChosenStationNoLongerPreparesTheItem] =
-                                                                                         OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem
-                                                                                     };
-
-    Assert.That(expectedMapping.Keys,
-                Is.EquivalentTo(Enum.GetValues<RoutingFailureReason>()),
-                "every routing failure reason needs a mapping this test pins down");
-
-    foreach (var routingFailureReason in Enum.GetValues<RoutingFailureReason>())
-    {
-      SetUp();
-
-      Assert.That(await ReasonProducedByAsync(expectedMapping[routingFailureReason]),
-                  Is.EqualTo(expectedMapping[routingFailureReason]));
-    }
-  }
 }

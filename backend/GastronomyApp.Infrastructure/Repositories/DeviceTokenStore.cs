@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,11 +12,11 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
   private readonly IClock _clock;
 
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly DeviceOwnerStore _ownerStore;
+  private readonly IDeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
 
   public DeviceTokenStore(GastronomyAppDbContext dbContext,
-                          DeviceOwnerStore ownerStore,
+                          IDeviceOwnerStore ownerStore,
                           Pbkdf2SecretHasher secretHasher,
                           IClock clock)
   {

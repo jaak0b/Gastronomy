@@ -9,7 +9,6 @@ using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
-using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -45,6 +44,10 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<IClock, SystemClock>();
     services.AddSingleton<Pbkdf2SecretHasher>();
+    services.AddSingleton<SqliteFailureTranslator>();
+
+    services.AddScoped<ImmediateTransactionRunner>();
+    services.AddScoped<ITransactionRunner>(provider => provider.GetRequiredService<ImmediateTransactionRunner>());
 
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
@@ -54,27 +57,29 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<FestivalSchedule>();
+    services.AddSingleton<FestivalMoment>();
     services.AddSingleton<OrderStatusCalculator>();
     services.AddSingleton<OrderItemSettlementService>();
     services.AddSingleton<OrderItemFulfillmentService>();
     services.AddSingleton<StationOrderVisibilityService>();
     services.AddSingleton<ProductionEstimateCalculator>();
 
+    services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderAcceptanceService>();
-    services.AddScoped<OrderAcceptanceTransaction>();
 
-    services.AddScoped<DeviceOwnerStore>();
+    services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
     services.AddSingleton<CatalogReader>();
     services.AddSingleton<SavedChangeAnnouncement>();
     services.AddSingleton<CatalogChangeAnnouncer>();
-    services.AddSingleton<CatalogWriteTransaction>();
+    services.AddScoped<CatalogWriteTransaction>();
     services.AddSingleton<ColorFormatValidator>();
     services.AddSingleton<CatalogCategoryOrdering>();
     services.AddSingleton<ResultEnvelope>();
     services.AddSingleton<CallerIdentity>();
+    services.AddSingleton<DeviceTokenSplitter>();
     services.AddSingleton<LocalAddressSet>();
     services.AddSingleton<LoopbackAdminAuthorizationMiddleware>();
     services.AddScoped<InfrastructureExceptionMiddleware>();

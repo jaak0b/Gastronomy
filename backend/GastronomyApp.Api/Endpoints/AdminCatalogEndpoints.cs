@@ -119,8 +119,7 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         CreatedAsync(request, transactionCancellationToken),
                                       cancellationToken);
   }
@@ -131,24 +130,21 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         UpdatedAsync(itemId, request, transactionCancellationToken),
                                       cancellationToken);
   }
 
   public Task<IResult> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         SwitchedOnAsync(itemId, transactionCancellationToken),
                                       cancellationToken);
   }
 
   public Task<IResult> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         SwitchedOffAsync(itemId, transactionCancellationToken),
                                       cancellationToken);
   }

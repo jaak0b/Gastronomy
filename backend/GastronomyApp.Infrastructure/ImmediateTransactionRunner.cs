@@ -1,34 +1,76 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Globalization;
+using GastronomyApp.Core.Ports;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Infrastructure;
 
-public sealed class ImmediateTransactionRunner
+public sealed class ImmediateTransactionRunner : ITransactionRunner
 {
-  private readonly SqliteFailureTranslator _failureTranslator = new();
+  private const int AttemptsBeforeGivingUp = 5;
 
-  public async Task<TValue> RunAsync<TValue>(GastronomyAppDbContext dbContext,
-                                             Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
+  private readonly GastronomyAppDbContext _dbContext;
+  private readonly SqliteFailureTranslator _failureTranslator;
+  private readonly ILogger<ImmediateTransactionRunner> _logger;
+
+  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext,
+                                    SqliteFailureTranslator failureTranslator,
+                                    ILogger<ImmediateTransactionRunner> logger)
+  {
+    _dbContext = dbContext;
+    _failureTranslator = failureTranslator;
+    _logger = logger;
+  }
+
+  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
                                              CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(body);
 
-    var previousBehavior = dbContext.Database.AutoTransactionBehavior;
+    DbUpdateConcurrencyException? lostRace = null;
+
+    for (var attempt = 1; attempt <= AttemptsBeforeGivingUp; attempt++)
+    {
+      try
+      {
+        return await RunOnceAsync(body, cancellationToken);
+      }
+      catch (DbUpdateConcurrencyException exception)
+      {
+        lostRace = exception;
+        _dbContext.ChangeTracker.Clear();
+
+        if (attempt < AttemptsBeforeGivingUp)
+        {
+          _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to write inside an immediate transaction lost a row to another writer, so it is being tried again.",
+                             attempt,
+                             AttemptsBeforeGivingUp);
+        }
+      }
+    }
+
+    throw new ConcurrentWriteException("Another writer took the rows this transaction had read, and every attempt to write them lost that race.",
+                                       lostRace!);
+  }
+
+  private async Task<TValue> RunOnceAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
+                                                  CancellationToken cancellationToken)
+  {
+    var previousBehavior = _dbContext.Database.AutoTransactionBehavior;
     if (previousBehavior == AutoTransactionBehavior.Never)
     {
       throw new InvalidOperationException("This context is already inside an immediate transaction, and SQLite cannot nest one inside another.");
     }
 
-    await dbContext.Database.OpenConnectionAsync(cancellationToken);
-    var connection = dbContext.Database.GetDbConnection();
+    await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+    var connection = _dbContext.Database.GetDbConnection();
     var transactionIsOpen = false;
 
     try
     {
-      dbContext.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
+      _dbContext.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
 
       await ExecuteAsync(connection, "BEGIN IMMEDIATE", ReadBusyTimeoutSeconds(connection), cancellationToken);
       transactionIsOpen = true;
@@ -61,8 +103,8 @@ public sealed class ImmediateTransactionRunner
         await RollbackAbandonedTransactionAsync(connection);
       }
 
-      dbContext.Database.AutoTransactionBehavior = previousBehavior;
-      await dbContext.Database.CloseConnectionAsync();
+      _dbContext.Database.AutoTransactionBehavior = previousBehavior;
+      await _dbContext.Database.CloseConnectionAsync();
     }
   }
 

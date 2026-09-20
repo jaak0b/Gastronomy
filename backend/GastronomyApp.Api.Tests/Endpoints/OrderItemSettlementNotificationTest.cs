@@ -77,6 +77,7 @@ public sealed class OrderItemSettlementNotificationTest
                new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()),
                services.GetRequiredService<ResultEnvelope>(),
                services.GetRequiredService<RunningFestivalLookup>(),
+               services.GetRequiredService<ITransactionRunner>(),
                services.GetRequiredService<IClock>(),
                NullLogger<OrderItemSettlementHandler>.Instance);
   }

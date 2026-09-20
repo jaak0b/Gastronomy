@@ -1,6 +1,5 @@
-using GastronomyApp.Infrastructure.Ports;
 
-namespace GastronomyApp.Infrastructure.Repositories;
+namespace GastronomyApp.Core.Ports;
 
 public sealed record DeviceOwnerRecord
 {

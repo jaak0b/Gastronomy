@@ -1,11 +1,11 @@
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure.Ports;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
 
-public sealed class DeviceOwnerStore
+public sealed class DeviceOwnerStore : IDeviceOwnerStore
 {
   private readonly GastronomyAppDbContext _dbContext;
 
@@ -49,7 +49,7 @@ public sealed class DeviceOwnerStore
                      EnrolmentInvitationId = station.EnrolmentInvitationId
                    };
       default:
-        return new Never().OfType<DeviceOwnerRecord?>(owner.Kind);
+        return new UnreachableCase().Throw<DeviceOwnerRecord?>(owner.Kind);
     }
   }
 
@@ -110,7 +110,7 @@ public sealed class DeviceOwnerStore
         station.DeviceId = deviceId;
         return;
       default:
-        new Never().OfType<object>(owner.Kind);
+        new UnreachableCase().Throw<object>(owner.Kind);
         return;
     }
   }
@@ -132,7 +132,7 @@ public sealed class DeviceOwnerStore
         station.EnrolmentInvitationId = invitationId;
         return;
       default:
-        new Never().OfType<object>(owner.Kind);
+        new UnreachableCase().Throw<object>(owner.Kind);
         return;
     }
   }

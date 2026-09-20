@@ -1,4 +1,4 @@
-namespace GastronomyApp.Infrastructure;
+namespace GastronomyApp.Core.Ports;
 
 public sealed record TransactionOutcome<TValue>
 {

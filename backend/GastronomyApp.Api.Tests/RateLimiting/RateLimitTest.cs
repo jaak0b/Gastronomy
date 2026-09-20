@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.Endpoints;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
+using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.RateLimiting;

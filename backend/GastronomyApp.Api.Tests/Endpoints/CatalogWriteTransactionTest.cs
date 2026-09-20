@@ -1,6 +1,7 @@
 using FakeItEasy;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.Hub;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
@@ -53,7 +54,7 @@ public sealed class CatalogWriteTransactionTest
                 adminRequest.Cancel();
               });
 
-    await TransactionTalkingTo(_proxy).RunAsync(_dbContext, RaiseTheBratwurstPriceAsync, adminRequest.Token);
+    await TransactionTalkingTo(_proxy).RunAsync(RaiseTheBratwurstPriceAsync, adminRequest.Token);
 
     A.CallTo(() => _proxy.SendCoreAsync(A<string>._, A<object?[]>._, A<CancellationToken>._)).MustHaveHappened();
     Assert.That(tokenUsedForThePush.IsCancellationRequested, Is.False);
@@ -66,7 +67,7 @@ public sealed class CatalogWriteTransactionTest
      .Throws(new InvalidOperationException("The connection to the station tablets broke."));
 
     IResult response = await TransactionTalkingTo(_proxy)
-      .RunAsync(_dbContext, RaiseTheBratwurstPriceAsync, TestContext.CurrentContext.CancellationToken);
+      .RunAsync(RaiseTheBratwurstPriceAsync, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(response, Is.SameAs(_savedChange));
   }
@@ -78,7 +79,7 @@ public sealed class CatalogWriteTransactionTest
      .Throws(new InvalidOperationException("The connection to the station tablets broke."));
 
     await TransactionTalkingTo(_proxy)
-      .RunAsync(_dbContext, RaiseTheBratwurstPriceAsync, TestContext.CurrentContext.CancellationToken);
+      .RunAsync(RaiseTheBratwurstPriceAsync, TestContext.CurrentContext.CancellationToken);
 
     A.CallTo(_logger)
      .Where(call => call.Method.Name == nameof(ILogger.Log)
@@ -137,8 +138,7 @@ public sealed class CatalogWriteTransactionTest
   private async Task<IResult> QuitTheProgramWhileTheDevicesAreBeingToldAsync()
   {
     return await TransactionTalkingTo(_proxy)
-      .RunAsync(_dbContext,
-                RaisingTheBratwurstPriceAndThen(_programIsQuitting.CancelAsync),
+      .RunAsync(RaisingTheBratwurstPriceAndThen(_programIsQuitting.CancelAsync),
                 TestContext.CurrentContext.CancellationToken);
   }
 
@@ -167,6 +167,8 @@ public sealed class CatalogWriteTransactionTest
     var lifetime = A.Fake<IHostApplicationLifetime>();
     A.CallTo(() => lifetime.ApplicationStopping).Returns(_programIsQuitting.Token);
 
-    return new(announcer, new(lifetime, _logger));
+    return new(announcer,
+               new(lifetime, _logger),
+               _scope.ServiceProvider.GetRequiredService<ITransactionRunner>());
   }
 }

@@ -245,7 +245,7 @@ public sealed class StationQueueHandler
   private readonly ResultEnvelope _resultEnvelope;
   private readonly RunningFestivalLookup _runningFestivalLookup;
   private readonly StationsAtTheFestivalReader _stationsReader;
-  private readonly ImmediateTransactionRunner _transactionRunner = new();
+  private readonly ITransactionRunner _transactionRunner;
   private readonly StationOrderVisibilityService _visibilityService;
 
   public StationQueueHandler(GastronomyAppDbContext dbContext,
@@ -257,9 +257,11 @@ public sealed class StationQueueHandler
                              ResultEnvelope resultEnvelope,
                              RunningFestivalLookup runningFestivalLookup,
                              StationsAtTheFestivalReader stationsReader,
+                             ITransactionRunner transactionRunner,
                              IClock clock)
   {
     _dbContext = dbContext;
+    _transactionRunner = transactionRunner;
     _runningFestivalLookup = runningFestivalLookup;
     _stationsReader = stationsReader;
     _queueReader = queueReader;
@@ -338,8 +340,7 @@ public sealed class StationQueueHandler
     List<Guid> selectedIds = [.. request.OrderItemIds ?? []];
 
     Result<FulfillmentResult, FulfillmentFailure> outcome =
-      await _transactionRunner.RunAsync(_dbContext,
-                                        async transactionCancellationToken =>
+      await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                         {
                                           var fulfillment = await ApplyFulfillmentAsync(selectedIds,
                                                                                         caller.StationId,
@@ -386,8 +387,7 @@ public sealed class StationQueueHandler
     List<Guid> selectedIds = [.. request.OrderItemIds ?? []];
 
     Result<FulfillmentResult, FulfillmentFailure> outcome =
-      await _transactionRunner.RunAsync(_dbContext,
-                                        async transactionCancellationToken =>
+      await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                         {
                                           var unfulfillment = await ApplyUnfulfillmentAsync(selectedIds,
                                                                                             caller.StationId,
@@ -596,7 +596,7 @@ public sealed class StationQueueHandler
                _resultEnvelope.Problem(StatusCodes.Status409Conflict,
                                       "ItemNotFulfilled",
                                       "station.changeNotSaved"),
-             _ => new Never().OfType<IResult>(failure.Reason)
+             _ => new UnreachableCase().Throw<IResult>(failure.Reason)
            };
   }
 

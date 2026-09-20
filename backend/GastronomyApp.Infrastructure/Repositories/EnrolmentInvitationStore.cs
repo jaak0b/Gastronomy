@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Infrastructure.Ports;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,17 +17,19 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly IDeviceTokenStore _deviceTokenStore;
-  private readonly DeviceOwnerStore _ownerStore;
+  private readonly IDeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
-  private readonly ImmediateTransactionRunner _transactionRunner = new();
+  private readonly ITransactionRunner _transactionRunner;
 
   public EnrolmentInvitationStore(GastronomyAppDbContext dbContext,
-                                  DeviceOwnerStore ownerStore,
+                                  IDeviceOwnerStore ownerStore,
                                   Pbkdf2SecretHasher secretHasher,
                                   IDeviceTokenStore deviceTokenStore,
+                                  ITransactionRunner transactionRunner,
                                   IClock clock)
   {
     _dbContext = dbContext;
+    _transactionRunner = transactionRunner;
     _ownerStore = ownerStore;
     _secretHasher = secretHasher;
     _deviceTokenStore = deviceTokenStore;
@@ -37,8 +38,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(_dbContext,
-                                       async transactionCancellationToken =>
+    return _transactionRunner.RunAsync(async transactionCancellationToken =>
                                        {
                                          var now = _clock.UtcNow;
 
@@ -83,8 +83,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
                                                      CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(_dbContext,
-                                       async transactionCancellationToken => await RedeemInsideTransactionAsync(request, transactionCancellationToken),
+    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(request, transactionCancellationToken),
                                        cancellationToken);
   }
 
@@ -145,7 +144,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
            {
              DeviceOwnerKind.StaffMember => EnrolmentRedemptionOutcome.StaffMemberIsOffTheList,
              DeviceOwnerKind.Station => EnrolmentRedemptionOutcome.StationIsOffTheList,
-             _ => new Core.Services.Never().OfType<EnrolmentRedemptionOutcome>(kind)
+             _ => new Core.Services.UnreachableCase().Throw<EnrolmentRedemptionOutcome>(kind)
            };
   }
 

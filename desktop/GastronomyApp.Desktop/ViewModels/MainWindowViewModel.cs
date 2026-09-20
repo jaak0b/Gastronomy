@@ -17,7 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase
   private readonly string _currentVersion;
   private readonly IFreePortProvider _freePorts;
   private readonly IHostLauncher _launcher;
-  private readonly Never _never = new();
+  private readonly UnreachableCase _unreachableCase = new();
   private readonly IPowerManager _power;
   private readonly ISettingsStore _settingsStore;
   private readonly IDesktopTextProvider _text;
@@ -318,7 +318,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       default:
-        _never.OfType<HostLaunchResult>(result);
+        _unreachableCase.Throw<HostLaunchResult>(result);
 
         break;
     }
@@ -381,7 +381,7 @@ public sealed class MainWindowViewModel : ViewModelBase
           break;
 
         default:
-          _never.OfType<UpdatePreparation>(preparation);
+          _unreachableCase.Throw<UpdatePreparation>(preparation);
 
           break;
       }
@@ -411,7 +411,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       default:
-        _never.OfType<ElevatedSetupOutcome>(outcome);
+        _unreachableCase.Throw<ElevatedSetupOutcome>(outcome);
 
         break;
     }

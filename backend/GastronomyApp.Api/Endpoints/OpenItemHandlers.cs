@@ -305,7 +305,7 @@ public sealed class OrderItemSettlementHandler
   private readonly ResultEnvelope _resultEnvelope;
   private readonly OrderItemSettlementService _settlementService;
   private readonly RunningFestivalLookup _runningFestivalLookup;
-  private readonly ImmediateTransactionRunner _transactionRunner = new();
+  private readonly ITransactionRunner _transactionRunner;
 
   public OrderItemSettlementHandler(GastronomyAppDbContext dbContext,
                                     OrderItemSettlementService settlementService,
@@ -313,10 +313,12 @@ public sealed class OrderItemSettlementHandler
                                     HubNotificationDispatcher dispatcher,
                                     ResultEnvelope resultEnvelope,
                                     RunningFestivalLookup runningFestivalLookup,
+                                    ITransactionRunner transactionRunner,
                                     IClock clock,
                                     ILogger<OrderItemSettlementHandler> logger)
   {
     _dbContext = dbContext;
+    _transactionRunner = transactionRunner;
     _runningFestivalLookup = runningFestivalLookup;
     _settlementService = settlementService;
     _reader = reader;
@@ -361,8 +363,7 @@ public sealed class OrderItemSettlementHandler
   private async Task<IResult> ApplyAsync(SettlementRequest request, CancellationToken cancellationToken)
   {
     Result<SettlementResult, SettlementFailure> settlement =
-      await _transactionRunner.RunAsync(_dbContext,
-                                        async transactionCancellationToken =>
+      await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                         {
                                           IReadOnlyList<Guid> ids = _settlementService.ReadSelectedIds(request);
 

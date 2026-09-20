@@ -1,4 +1,4 @@
-namespace GastronomyApp.Infrastructure.Ports;
+namespace GastronomyApp.Core.Ports;
 
 public interface IEnrolmentInvitationStore
 {

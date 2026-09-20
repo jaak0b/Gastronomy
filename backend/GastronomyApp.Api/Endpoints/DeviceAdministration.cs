@@ -1,7 +1,6 @@
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
-using GastronomyApp.Infrastructure.Ports;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Endpoints;

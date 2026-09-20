@@ -3,8 +3,8 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Core.Enums;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure;
-using GastronomyApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -21,7 +21,7 @@ public static class SessionEndpoints
     group.MapGet(string.Empty,
                  async (HttpContext httpContext,
                         CallerIdentity callerIdentity,
-                        DeviceOwnerStore ownerStore,
+                        IDeviceOwnerStore ownerStore,
                         CancellationToken cancellationToken) =>
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;

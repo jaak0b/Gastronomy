@@ -93,16 +93,6 @@ public static class AdminFestivalEndpoints
   }
 }
 
-public sealed class FestivalMoment
-{
-  public DateTime AsUtc(DateTime moment)
-  {
-    return moment.Kind == DateTimeKind.Local
-             ? moment.ToUniversalTime()
-             : DateTime.SpecifyKind(moment, DateTimeKind.Utc);
-  }
-}
-
 public sealed record FestivalPeriod(string Name, DateTime StartsAtUtc, DateTime EndsAtUtc);
 
 public sealed record FestivalPeriodOutcome(FestivalPeriod? Period, IResult? Refusal);
@@ -117,7 +107,7 @@ public sealed class AdminFestivalHandler
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ILogger<AdminFestivalHandler> _logger;
-  private readonly FestivalMoment _moment = new();
+  private readonly FestivalMoment _moment;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalSchedule _schedule;
   private readonly CatalogWriteTransaction _writeTransaction;
@@ -125,6 +115,7 @@ public sealed class AdminFestivalHandler
   public AdminFestivalHandler(GastronomyAppDbContext dbContext,
                               IFestivalRepository festivalRepository,
                               FestivalSchedule schedule,
+                              FestivalMoment moment,
                               CatalogWriteTransaction writeTransaction,
                               HubNotificationDispatcher dispatcher,
                               SavedChangeAnnouncement announcement,
@@ -135,6 +126,7 @@ public sealed class AdminFestivalHandler
     _dbContext = dbContext;
     _festivalRepository = festivalRepository;
     _schedule = schedule;
+    _moment = moment;
     _writeTransaction = writeTransaction;
     _dispatcher = dispatcher;
     _announcement = announcement;
@@ -236,15 +228,14 @@ public sealed class AdminFestivalHandler
   {
     CatalogWrite? written = null;
 
-    IResult response = await _writeTransaction.RunWithoutCatalogAnnouncementAsync(_dbContext,
-                                                        async transactionCancellationToken =>
-                                                        {
-                                                          CatalogWrite outcome = await write(transactionCancellationToken);
-                                                          written = outcome;
+    IResult response = await _writeTransaction.RunWithoutCatalogAnnouncementAsync(async transactionCancellationToken =>
+                                                                                  {
+                                                                                    CatalogWrite outcome = await write(transactionCancellationToken);
+                                                                                    written = outcome;
 
-                                                          return outcome;
-                                                        },
-                                                        cancellationToken);
+                                                                                    return outcome;
+                                                                                  },
+                                                                                  cancellationToken);
 
     if (written is { SomethingChanged: true })
     {
@@ -535,16 +526,14 @@ public sealed class AdminFestivalMenuHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         PutOnAsync(festivalId, itemId, request, transactionCancellationToken),
                                       cancellationToken);
   }
 
   public Task<IResult> TakeOffTheMenuAsync(Guid festivalId, Guid itemId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         TakenOffAsync(festivalId, itemId, transactionCancellationToken),
                                       cancellationToken);
   }
@@ -556,8 +545,7 @@ public sealed class AdminFestivalMenuHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
+    return _writeTransaction.RunAsync(transactionCancellationToken =>
                                         AvailabilitySetAsync(festivalId, itemId, request, transactionCancellationToken),
                                       cancellationToken);
   }
@@ -741,7 +729,7 @@ public sealed class AdminFestivalStationHandler
   private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalSchedule _schedule;
-  private readonly ImmediateTransactionRunner _transactionRunner = new();
+  private readonly ITransactionRunner _transactionRunner;
 
   public AdminFestivalStationHandler(GastronomyAppDbContext dbContext,
                                      StationChangeAnnouncer announcer,
@@ -749,9 +737,11 @@ public sealed class AdminFestivalStationHandler
                                      INumberAllocator numberAllocator,
                                      ResultEnvelope resultEnvelope,
                                      FestivalSchedule schedule,
+                                     ITransactionRunner transactionRunner,
                                      IClock clock)
   {
     _dbContext = dbContext;
+    _transactionRunner = transactionRunner;
     _announcer = announcer;
     _orderableItems = orderableItems;
     _numberAllocator = numberAllocator;
@@ -762,8 +752,7 @@ public sealed class AdminFestivalStationHandler
 
   public async Task<IResult> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    CatalogWrite written = await _transactionRunner.RunAsync(_dbContext,
-                                                             async transactionCancellationToken =>
+    CatalogWrite written = await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                                              {
                                                                CatalogWrite outcome =
                                                                  await AddedAsync(festivalId,
@@ -783,8 +772,7 @@ public sealed class AdminFestivalStationHandler
 
   public async Task<IResult> RemoveAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    CatalogWrite written = await _transactionRunner.RunAsync(_dbContext,
-                                                             async transactionCancellationToken =>
+    CatalogWrite written = await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                                              {
                                                                CatalogWrite outcome =
                                                                  await RemovedAsync(festivalId,

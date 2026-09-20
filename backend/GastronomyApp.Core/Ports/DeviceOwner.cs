@@ -1,5 +1,5 @@
 using GastronomyApp.Core.Enums;
 
-namespace GastronomyApp.Infrastructure.Ports;
+namespace GastronomyApp.Core.Ports;
 
 public sealed record DeviceOwner(DeviceOwnerKind Kind, Guid Id);

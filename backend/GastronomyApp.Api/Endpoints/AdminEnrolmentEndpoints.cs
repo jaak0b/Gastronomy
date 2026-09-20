@@ -2,8 +2,7 @@
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Core.Enums;
-using GastronomyApp.Infrastructure.Ports;
-using GastronomyApp.Infrastructure.Repositories;
+using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -30,12 +29,12 @@ public sealed class AdminEnrolmentHandler
   private readonly OutstandingInvitationCache _invitationCache;
   private readonly IEnrolmentInvitationStore _invitationStore;
   private readonly ILogger<AdminEnrolmentHandler> _log;
-  private readonly DeviceOwnerStore _ownerStore;
+  private readonly IDeviceOwnerStore _ownerStore;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly EnrolmentUrlBuilder _urlBuilder;
 
   public AdminEnrolmentHandler(IEnrolmentInvitationStore invitationStore,
-                               DeviceOwnerStore ownerStore,
+                               IDeviceOwnerStore ownerStore,
                                EnrolmentUrlBuilder urlBuilder,
                                OutstandingInvitationCache invitationCache,
                                DeviceRevoker deviceRevoker,

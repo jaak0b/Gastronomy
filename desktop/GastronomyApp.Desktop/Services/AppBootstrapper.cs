@@ -9,7 +9,7 @@ public sealed class AppBootstrapper
   private readonly Action _bringExistingWindowToFront;
   private readonly Action<Action> _dispatchToUserInterface;
   private readonly Func<MainWindowViewModel> _mainWindowViewModelFactory;
-  private readonly Never _never = new();
+  private readonly UnreachableCase _unreachableCase = new();
   private readonly ISingleInstance _singleInstance;
 
   private bool _holdsTheInstance;
@@ -59,7 +59,7 @@ public sealed class AppBootstrapper
         return BootstrapOutcome.ExitImmediately;
 
       default:
-        return _never.OfType<BootstrapOutcome>(outcome);
+        return _unreachableCase.Throw<BootstrapOutcome>(outcome);
     }
   }
 
