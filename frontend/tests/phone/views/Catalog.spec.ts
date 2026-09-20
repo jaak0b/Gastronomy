@@ -106,13 +106,12 @@ describe('the categories on the ordering screen', () => {
     expect(view.get('.to-review').element.closest('.docked-strip')).not.toBeNull()
   })
 
-  it('keeps the table, the note and the summary together in one tray at the bottom', () => {
+  it('keeps the table and the summary together in one tray at the bottom', () => {
     const view = mountCatalog()
 
     const tray = view.get('.order-tray')
     expect(tray.classes()).toContain('docked-strip')
     expect(tray.find('.table-field').exists()).toBe(true)
-    expect(tray.find('.order-note').exists()).toBe(true)
     expect(tray.find('.to-review').exists()).toBe(true)
   })
 
@@ -404,12 +403,6 @@ describe('the length of what a waiter types on the ordering screen', () => {
     document.body.innerHTML = ''
     navigate('/')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
-  })
-
-  it('stops the note for the whole order after two hundred characters', () => {
-    const view = mountCatalog()
-
-    expect(view.get('.order-note textarea').attributes('maxlength')).toBe('200')
   })
 
   it('stops the table name after forty characters', () => {
@@ -876,7 +869,7 @@ describe('the ordering screen on a phone whose keyboard covers the lower screen'
     vi.unstubAllGlobals()
   })
 
-  it('lifts the tray with the table field and the order note above the keyboard', async () => {
+  it('lifts the tray with the table field above the keyboard', async () => {
     const view = mountCatalog()
     await view.vm.$nextTick()
 

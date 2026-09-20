@@ -167,7 +167,6 @@ public sealed class OrderAcceptanceService
                     GlobalOrderNumber = globalOrderNumber,
                     StaffMemberId = request.StaffMemberId,
                     TableName = request.TableName,
-                    Note = request.Note,
                     CreatedAtUtc = createdAtUtc
                   };
 

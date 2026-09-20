@@ -21,7 +21,7 @@ function line(catalogItemId: string, note: string | null, stationId: string | nu
 }
 
 function draftWith(lines: DraftLine[]): DraftOrder {
-  return { tableName: '', note: null, lines, clientOrderId: null }
+  return { tableName: '', lines, clientOrderId: null }
 }
 
 const stationNameOf = (stationId: string): string =>

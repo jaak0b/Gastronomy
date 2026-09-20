@@ -26,7 +26,6 @@ const draftLineSchema: z.ZodType<DraftLine> = z.strictObject({
 const draftOrderSchema: z.ZodType<DraftOrder> = z.strictObject({
   festivalId: z.string().nullable(),
   tableName: z.string(),
-  note: z.string().nullable(),
   lines: z.array(draftLineSchema),
   clientOrderId: z.string().nullable(),
   deliveryModes: z.record(z.string(), deliveryModeSchema),
@@ -58,7 +57,6 @@ const stationDeliveryModeSchema: z.ZodType<StationDeliveryMode> = z.strictObject
 const submitRequestSchema: z.ZodType<OrderSubmitRequest> = z.strictObject({
   clientOrderId: z.string(),
   tableName: z.string(),
-  note: z.string().nullable(),
   items: z.array(submitItemSchema),
   deliveryModes: z.array(stationDeliveryModeSchema),
 })
@@ -80,7 +78,6 @@ export function emptyDraft(): DraftOrder {
   return {
     festivalId: null,
     tableName: '',
-    note: null,
     lines: [],
     clientOrderId: null,
     deliveryModes: {},
@@ -120,7 +117,6 @@ export function saveDraft(draft: DraftOrder): void {
     JSON.stringify({
       festivalId: draft.festivalId,
       tableName: draft.tableName,
-      note: draft.note,
       lines: draft.lines.map((line) => ({
         catalogItemId: line.catalogItemId,
         note: line.note,
@@ -223,10 +219,6 @@ export function stampFestival(draft: DraftOrder, festivalId: string): DraftOrder
 
 export function setTableName(draft: DraftOrder, tableName: string): DraftOrder {
   return persisted({ ...draft, tableName })
-}
-
-export function setOrderNote(draft: DraftOrder, note: string | null): DraftOrder {
-  return persisted({ ...draft, note })
 }
 
 export function setDeliveryMode(

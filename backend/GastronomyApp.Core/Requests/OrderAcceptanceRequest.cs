@@ -8,8 +8,6 @@ public sealed record OrderAcceptanceRequest
 
   public required string TableName { get; init; }
 
-  public string? Note { get; init; }
-
   public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
 
   public IReadOnlyList<StationDeliveryModeRequest> DeliveryModes { get; init; } = [];

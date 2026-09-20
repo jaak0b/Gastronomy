@@ -795,7 +795,6 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     saveDraft({
       festivalId: null,
       tableName: 'Tisch 3',
-      note: null,
       lines: [
         {
           catalogItemId: WASSER.id,
@@ -815,7 +814,6 @@ describe('an order the laptop refused after an attempt it never answered', () =>
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 3',
-        note: null,
         items: [
           {
             catalogItemId: WASSER.id,

@@ -14,7 +14,6 @@ const TOGETHER_STATION_ORDER = {
   globalOrderNumber: 137,
   stationOrderNumber: 12,
   tableName: '3',
-  note: 'Bitte zusammen bringen',
   deliveryMode: 'together',
   createdAtUtc: '2026-09-05T18:00:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -37,7 +36,6 @@ const AS_IT_COMES_STATION_ORDER = {
   globalOrderNumber: 138,
   stationOrderNumber: 14,
   tableName: '7',
-  note: null,
   deliveryMode: 'asItComes',
   createdAtUtc: '2026-09-05T18:05:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -54,7 +52,6 @@ const NOTED_STATION_ORDER = {
   globalOrderNumber: 140,
   stationOrderNumber: 16,
   tableName: '5',
-  note: null,
   deliveryMode: 'together',
   createdAtUtc: '2026-09-05T18:07:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -255,14 +252,6 @@ describe('the screen at a station', () => {
     )
     expect(page.findAll('.orders-column .station-order')[1].attributes('style')).toContain(
       'var(--v-theme-individual)',
-    )
-  })
-
-  it('shows the note that belongs to the whole order', async () => {
-    const page = await mountPage()
-
-    expect(page.findAll('.orders-column .station-order-note')[0].text()).toBe(
-      'Hinweis zur Bestellung: Bitte zusammen bringen',
     )
   })
 

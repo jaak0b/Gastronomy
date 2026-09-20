@@ -72,9 +72,6 @@ function isSelected(orderItemId: string): boolean {
         {{ viewToggleLabel }}
       </v-btn>
     </div>
-    <p v-if="stationOrder.note !== null" class="station-order-note text-body-1 mt-1 mb-0">
-      {{ t('station.orderNote', { note: stationOrder.note }) }}
-    </p>
     <v-divider class="my-2" />
     <template v-if="!isGrouped">
       <v-btn

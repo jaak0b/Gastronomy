@@ -16,7 +16,6 @@ interface StationPart extends StationDelivery {
 
 const props = defineProps<{
   lines: BasketLineView[]
-  orderNote: string | null
   language: AppLanguage
   estimates: StationEstimate[]
   deliveryModeFor: (stationId: string) => DeliveryMode
@@ -69,10 +68,6 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
 
 <template>
   <div class="line-list">
-    <div v-if="orderNote !== null" class="order-note mb-3">
-      <span class="label text-body-2 text-medium-emphasis">{{ t('catalog.orderNote') }}</span>
-      <div class="text-body-1">{{ orderNote }}</div>
-    </div>
     <v-card
       v-for="part in parts"
       :key="part.stationId ?? part.stationName"

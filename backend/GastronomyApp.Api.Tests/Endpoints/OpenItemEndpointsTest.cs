@@ -518,7 +518,6 @@ public sealed class OpenItemEndpointsTest
 
     OrderBody order = new(Guid.NewGuid(),
                           tableName,
-                          null,
                           [
                             new(_context.World.BratwurstItemId, 350, null, null, settlement),
                             new(_context.World.BratwurstItemId, 350, null, null, settlement)

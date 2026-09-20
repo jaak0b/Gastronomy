@@ -121,7 +121,6 @@ export interface DraftLine {
 export interface DraftOrder {
   festivalId: string | null
   tableName: string
-  note: string | null
   lines: DraftLine[]
   clientOrderId: string | null
   deliveryModes: Record<string, DeliveryMode>
@@ -163,7 +162,6 @@ export interface OpenItemsSettleRequest {
 export interface OrderSubmitRequest {
   clientOrderId: string
   tableName: string
-  note: string | null
   items: OrderSubmitItem[]
   deliveryModes: StationDeliveryMode[]
 }
@@ -276,7 +274,6 @@ export interface StationOrder {
   globalOrderNumber: number
   stationOrderNumber: number
   tableName: string
-  note: string | null
   deliveryMode: DeliveryMode
   createdAtUtc: string
   isHiddenFromAsItComesQueue: boolean

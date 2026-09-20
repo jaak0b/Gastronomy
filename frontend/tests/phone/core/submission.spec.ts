@@ -120,7 +120,7 @@ describe('buildSubmitRequest', () => {
     return withClientOrderIdIfMissing(setTableName(withLine, 'Tisch 12'))
   }
 
-  it('sends the table, the note and every item with the price the phone showed', () => {
+  it('sends the table and every item with its note and the price the phone showed', () => {
     const ready = draftWithABratwurst('ohne Zwiebeln')
 
     const request = buildSubmitRequest(ready, catalog(), null, [
@@ -130,7 +130,6 @@ describe('buildSubmitRequest', () => {
     expect(request).toEqual({
       clientOrderId: ready.clientOrderId,
       tableName: 'Tisch 12',
-      note: null,
       items: [
         {
           catalogItemId: 'item-1',

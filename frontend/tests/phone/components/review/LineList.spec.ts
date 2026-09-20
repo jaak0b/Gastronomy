@@ -37,7 +37,6 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
 }
 
 interface ListOptions {
-  orderNote?: string | null
   estimates?: StationEstimate[]
   deliveryModes?: Record<string, DeliveryMode>
   changesAreRefused?: boolean
@@ -50,7 +49,6 @@ function mountList(lines: BasketLineView[], options: ListOptions = {}) {
   return mount(LineList, {
     props: {
       lines,
-      orderNote: options.orderNote ?? null,
       language,
       estimates: options.estimates ?? [],
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
@@ -133,35 +131,6 @@ describe('the part of the order each station will receive', () => {
 
     expect(list.findAll('.line')).toHaveLength(1)
     expect(list.get('.line').element).toBe(elementOfWasser)
-  })
-
-  it('writes the order note once, above the station cards', () => {
-    const list = mountList(
-      [
-        line(),
-        line({
-          catalogItemId: 'item-bier',
-          name: 'Bier',
-          candidateStationIds: ['station-theke-innen'],
-        }),
-      ],
-      { orderNote: 'Bitte alles zusammen bringen.' },
-    )
-
-    const notes = list.findAll('.order-note')
-
-    expect(notes).toHaveLength(1)
-    expect(notes[0].text()).toContain('Bitte alles zusammen bringen.')
-    expect(
-      notes[0].element.compareDocumentPosition(list.get('.station-part').element) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-  })
-
-  it('leaves the note off the screen when nobody wrote one', () => {
-    const list = mountList([line()])
-
-    expect(list.find('.order-note').exists()).toBe(false)
   })
 })
 

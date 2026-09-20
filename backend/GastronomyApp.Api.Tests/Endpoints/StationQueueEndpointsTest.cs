@@ -358,7 +358,6 @@ public sealed class StationQueueEndpointsTest
 
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
                                            tableName,
-                                           null,
                                            [
                                              new(_context.World.BratwurstItemId, 350, null, null),
                                              new(_context.World.BratwurstItemId, 350, null, null),

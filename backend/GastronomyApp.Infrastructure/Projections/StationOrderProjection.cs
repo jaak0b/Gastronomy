@@ -27,7 +27,6 @@ public sealed class StationOrderProjection : IRegister
           .Map(queued => queued.GlobalOrderNumber, row => row.Order.GlobalOrderNumber)
           .Map(queued => queued.StationOrderNumber, row => row.StationOrder.StationOrderNumber)
           .Map(queued => queued.TableName, row => row.Order.TableName)
-          .Map(queued => queued.Note, row => row.Order.Note)
           .Map(queued => queued.DeliveryMode, row => row.StationOrder.DeliveryMode)
           .Map(queued => queued.CreatedAtUtc, row => row.Order.CreatedAtUtc)
           .Map(queued => queued.IsHiddenFromAsItComesQueue, row => row.StationOrder.IsHiddenFromAsItComesQueue)

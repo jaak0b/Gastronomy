@@ -281,7 +281,6 @@ public sealed class OrderAcceptanceServiceTest
              ClientOrderId = clientOrderId,
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
-             Note = null,
              Items =
              [
                new()

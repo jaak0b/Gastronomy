@@ -127,7 +127,6 @@ public sealed class OrderAcceptanceServiceTest
              ClientOrderId = _clientOrderId,
              StaffMemberId = _staffMemberId,
              TableName = tableName,
-             Note = null,
              Items = items,
              DeliveryModes = deliveryModes ?? []
            };

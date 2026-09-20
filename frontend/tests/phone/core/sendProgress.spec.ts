@@ -16,7 +16,6 @@ function anUnresolvedAttempt(): OrderSubmitRequest {
   return {
     clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
     tableName: 'Tisch 4',
-    note: null,
     items: [
       {
         catalogItemId: 'item-wasser',

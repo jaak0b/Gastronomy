@@ -158,7 +158,6 @@ public sealed class OpenItemRepositoryTest
                     GlobalOrderNumber = globalOrderNumber,
                     StaffMemberId = Guid.NewGuid(),
                     TableName = tableName,
-                    Note = null,
                     CreatedAtUtc = _orderedAtUtc
                   };
 

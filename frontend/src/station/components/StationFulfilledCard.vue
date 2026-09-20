@@ -38,9 +38,6 @@ const unitSummary = computed(() =>
       </span>
       <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>
     </div>
-    <p v-if="stationOrder.note !== null" class="station-order-note text-body-1 mt-1 mb-0">
-      {{ t('station.orderNote', { note: stationOrder.note }) }}
-    </p>
     <v-divider class="my-2" />
     <div
       v-for="item in stationOrder.items"

@@ -61,7 +61,6 @@ function draftForZeltVier(): void {
   saveDraft({
     festivalId: 'fest-1',
     tableName: 'Zelt 4',
-    note: null,
     clientOrderId: '11111111-1111-4111-8111-111111111111',
     deliveryModes: {},
     lines: [

@@ -79,7 +79,7 @@ public sealed class EstimateEndpointsTest
   [Test]
   public async Task GetEstimates_AnItemWithoutAStatedDuration_CountsAsNoTimeAtAll()
   {
-    OrderBody beerOnly = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BeerItemId, 300, null, null)]);
+    OrderBody beerOnly = new(Guid.NewGuid(), "Tisch 12", [new(_context.World.BeerItemId, 300, null, null)]);
 
     using (var placed = await _context.PostOrderAsync(beerOnly))
     {
@@ -104,7 +104,6 @@ public sealed class EstimateEndpointsTest
 
     OrderBody both = new(Guid.NewGuid(),
                          "Tisch 12",
-                         null,
                          [
                            new(_context.World.BratwurstItemId, 350, null, null),
                            new(_context.World.BeerItemId, 300, null, null)

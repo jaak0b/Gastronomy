@@ -45,7 +45,7 @@ function catalog(): Catalog {
 }
 
 function draftWith(lines: DraftOrder['lines']): DraftOrder {
-  return { tableName: '', note: null, lines, clientOrderId: null }
+  return { tableName: '', lines, clientOrderId: null }
 }
 
 describe('buildBasketView', () => {
@@ -208,13 +208,12 @@ describe('withoutLinesThatCannotBeOrdered', () => {
     expect(remaining.lines.map((line) => line.catalogItemId)).toEqual(['item-bratwurst'])
   })
 
-  it('keeps the table and the note the server has already typed', () => {
-    const draft = { ...draftWithOneVanishedItem(), tableName: 'Tisch 12', note: 'schnell bitte' }
+  it('keeps the table the server has already typed', () => {
+    const draft = { ...draftWithOneVanishedItem(), tableName: 'Tisch 12' }
 
     const remaining = withoutLinesThatCannotBeOrdered(draft, catalog())
 
     expect(remaining.tableName).toBe('Tisch 12')
-    expect(remaining.note).toBe('schnell bitte')
   })
 
   it('writes the shortened order to storage, so a reload does not bring the line back', () => {

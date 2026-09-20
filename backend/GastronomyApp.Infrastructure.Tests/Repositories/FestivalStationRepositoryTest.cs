@@ -111,7 +111,6 @@ public sealed class FestivalStationRepositoryTest
                                    GlobalOrderNumber = 1,
                                    StaffMemberId = seeded.StaffMemberId,
                                    TableName = "Tisch 1",
-                                   Note = null,
                                    CreatedAtUtc = now
                                  });
 

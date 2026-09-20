@@ -256,13 +256,6 @@ function chooseStation(stationId: string, note: string | null): void {
           :is-missing="isTableMissing"
           :known-table-names="openItems.knownTableNames"
         />
-        <v-textarea
-          class="order-note"
-          maxlength="200"
-          :label="t('catalog.orderNote')"
-          :model-value="order.draft.note ?? ''"
-          @update:model-value="order.setNote($event || null)"
-        />
         <BasketBar
           :item-count="order.itemCount"
           :total-cents="order.totalCents"

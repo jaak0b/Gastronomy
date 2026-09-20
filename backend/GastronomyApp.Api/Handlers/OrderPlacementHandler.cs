@@ -62,7 +62,6 @@ public sealed class OrderPlacementHandler
              ClientOrderId = request.ClientOrderId,
              StaffMemberId = caller.StaffMemberId,
              TableName = request.TableName ?? string.Empty,
-             Note = request.Note,
              Items = _mapper.Map<IReadOnlyList<OrderAcceptanceItemRequest>>(request.Items ?? []),
              DeliveryModes = _mapper.Map<IReadOnlyList<StationDeliveryModeRequest>>(request.DeliveryModes ?? [])
            };

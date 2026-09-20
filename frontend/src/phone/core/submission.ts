@@ -64,7 +64,6 @@ export function buildSubmitRequest(
   return {
     clientOrderId,
     tableName: draft.tableName.trim(),
-    note: draft.note,
     items: pricedLines.map(({ line, unitPriceCents }, index) => ({
       catalogItemId: line.catalogItemId,
       unitPriceCents,

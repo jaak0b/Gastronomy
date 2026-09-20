@@ -37,7 +37,6 @@ public sealed class OrderTestContext : IAsyncDisposable
   {
     return new(clientOrderId,
                "Tisch 12",
-               null,
                [
                  new(World.BratwurstItemId, 350, null, null),
                  new(World.BratwurstItemId, 350, null, null)

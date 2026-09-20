@@ -82,7 +82,6 @@ function backToItems(): void {
     </div>
     <LineList
       :lines="order.basketLines"
-      :order-note="order.draft.note"
       :language="session.language"
       :estimates="estimates.stations"
       :delivery-mode-for="order.deliveryModeAt"

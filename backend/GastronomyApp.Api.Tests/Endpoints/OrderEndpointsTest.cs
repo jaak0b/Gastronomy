@@ -72,7 +72,6 @@ public sealed class OrderEndpointsTest
   {
     OrderBody twoStations = new(Guid.NewGuid(),
                                 "Tisch 12",
-                                null,
                                 [
                                   new(_context.World.BratwurstItemId, 350, null, null),
                                   new(_context.World.BratwurstItemId, 350, null, null),
@@ -92,7 +91,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_UnknownItemId_IsRefusedAsUnprocessable()
   {
-    OrderBody unknownItem = new(Guid.NewGuid(), "Tisch 12", null, [new(Guid.NewGuid(), 350, null, null)]);
+    OrderBody unknownItem = new(Guid.NewGuid(), "Tisch 12", [new(Guid.NewGuid(), 350, null, null)]);
 
     using var response = await _context.PostOrderAsync(unknownItem);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -107,7 +106,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_NoItems_IsRefusedAsAValidationFailure()
   {
-    OrderBody empty = new(Guid.NewGuid(), "Tisch 12", null, []);
+    OrderBody empty = new(Guid.NewGuid(), "Tisch 12", []);
 
     using var response = await _context.PostOrderAsync(empty);
 
@@ -186,7 +185,7 @@ public sealed class OrderEndpointsTest
       await seeding.SaveChangesAsync();
     }
 
-    OrderBody body = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
+    OrderBody body = new(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -211,7 +210,6 @@ public sealed class OrderEndpointsTest
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
-                         null,
                          [
                            new(_context.World.BratwurstItemId, 399, null, null),
                            new(_context.World.BratwurstItemId, 399, null, null)
@@ -234,7 +232,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_SettlementBelowTheItemPriceWithoutANotice_IsRefusedWithWordingThePhoneCanShow()
   {
-    OrderBody body = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BratwurstItemId, 350, null, null, new(100))]);
+    OrderBody body = new(Guid.NewGuid(), "Tisch 12", [new(_context.World.BratwurstItemId, 350, null, null, new(100))]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -258,7 +256,6 @@ public sealed class OrderEndpointsTest
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
-                         null,
                          [
                            new(_context.World.BratwurstItemId, 350, null, null, new(200, "Stammgast")),
                            new(_context.World.BeerItemId, 350, null, null, new(350))
@@ -285,7 +282,6 @@ public sealed class OrderEndpointsTest
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
-                         null,
                          [
                            new(_context.World.BratwurstItemId, 350, null, null, new(350)),
                            new(_context.World.BratwurstItemId, 350, null, null)

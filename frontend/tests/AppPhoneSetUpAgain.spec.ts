@@ -178,7 +178,6 @@ describe('a waiter whose order was already frozen when the phone was set up agai
     saveDraft({
       festivalId: null,
       tableName: 'Tisch 5',
-      note: null,
       lines: [
         {
           catalogItemId: 'item-wasser',
@@ -198,7 +197,6 @@ describe('a waiter whose order was already frozen when the phone was set up agai
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 5',
-        note: null,
         items: [
           {
             catalogItemId: 'item-wasser',

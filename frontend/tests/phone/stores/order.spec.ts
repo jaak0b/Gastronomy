@@ -97,7 +97,6 @@ describe('an order in progress that could not be read back', () => {
       JSON.stringify({
         festivalId: null,
         tableName: 'Tisch 12',
-        note: null,
         clientOrderId: null,
         deliveryModes: {},
         lines: [],
@@ -439,14 +438,6 @@ describe('an order the waiter has already pressed send on', () => {
     expect(order.draft.tableName).toBe('Tisch 7')
   })
 
-  it('takes no note on the order as a whole', () => {
-    const order = orderOnItsWayToTheLaptop()
-
-    order.setNote('bitte schnell')
-
-    expect(order.draft.note).toBeNull()
-  })
-
   it('takes no other delivery choice for a station', () => {
     const order = orderOnItsWayToTheLaptop()
 
@@ -557,7 +548,6 @@ describe('an order the page was still sending when it was loaded again', () => {
       JSON.stringify({
         festivalId: null,
         tableName: 'Tisch 4',
-        note: null,
         lines: [
           {
             catalogItemId: 'item-wasser',
@@ -578,7 +568,6 @@ describe('an order the page was still sending when it was loaded again', () => {
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 4',
-        note: null,
         items: [
           {
             catalogItemId: 'item-wasser',
@@ -1262,7 +1251,6 @@ describe('an order sent from a phone the laptop no longer knows', () => {
     saveDraft({
       festivalId: null,
       tableName: 'Tisch 5',
-      note: null,
       lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser', stationName: 'Bar' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -1278,7 +1266,6 @@ describe('an order sent from a phone the laptop no longer knows', () => {
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 5',
-        note: null,
         items: [
           {
             catalogItemId: 'item-wasser',

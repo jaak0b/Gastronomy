@@ -54,7 +54,6 @@ public sealed class OrderPlacementScenarioTest
 
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
                                            "Tisch 3",
-                                           "Ohne Senf",
                                            [
                                              new(_context.World.BratwurstItemId, 350, null, null),
                                              new(_context.World.BratwurstItemId, 350, null, null),
@@ -171,7 +170,6 @@ public sealed class OrderPlacementScenarioTest
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
-                         null,
                          [
                            new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),
                            new(selection.BratwurstItemId, selection.BratwurstPriceCents, null, null),

@@ -16,8 +16,6 @@ public sealed class Order
 
   public required string TableName { get; set; }
 
-  public string? Note { get; set; }
-
   public required DateTime CreatedAtUtc { get; set; }
 
   public Collection<StationOrder> StationOrders { get; } = [];

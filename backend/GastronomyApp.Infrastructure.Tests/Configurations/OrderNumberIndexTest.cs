@@ -49,7 +49,6 @@ public sealed class OrderNumberIndexTest
              GlobalOrderNumber = globalOrderNumber,
              StaffMemberId = seeded.StaffMemberId,
              TableName = $"Tisch {distinguisher}",
-             Note = null,
              CreatedAtUtc = new(2026, 8, 27, 18, 30, 0, DateTimeKind.Utc)
            };
   }

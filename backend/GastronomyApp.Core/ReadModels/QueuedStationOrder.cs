@@ -12,8 +12,6 @@ public sealed record QueuedStationOrder
 
   public required string TableName { get; init; }
 
-  public required string? Note { get; init; }
-
   public required DeliveryMode DeliveryMode { get; init; }
 
   public required DateTime CreatedAtUtc { get; init; }

@@ -158,7 +158,6 @@ describe('a phone the laptop does not know any more', () => {
     saveDraft({
       festivalId: null,
       tableName: 'Tisch 12',
-      note: null,
       lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -205,7 +204,6 @@ describe('a phone that is signed out while a reason stands on the order screen',
     saveDraft({
       festivalId: null,
       tableName: 'Tisch 12',
-      note: null,
       lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
@@ -217,7 +215,6 @@ describe('a phone that is signed out while a reason stands on the order screen',
       unresolvedAttempt: {
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
         tableName: 'Tisch 12',
-        note: null,
         items: [
           {
             catalogItemId: 'item-1',

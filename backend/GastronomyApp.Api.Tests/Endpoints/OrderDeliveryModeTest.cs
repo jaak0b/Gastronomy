@@ -28,7 +28,6 @@ public sealed class OrderDeliveryModeTest
   {
     OrderWithDeliveryModesBody body = new(Guid.NewGuid(),
                                           "Tisch 3",
-                                          null,
                                           [
                                             new(_context.World.BratwurstItemId, 350, null, null),
                                             new(_context.World.BeerItemId, 300, null, null)
@@ -55,7 +54,7 @@ public sealed class OrderDeliveryModeTest
   [Test]
   public async Task PostOrder_TheSameSubmissionSentTwice_StillAnswersWithTheOriginalOrder()
   {
-    OrderWithDeliveryModesBody body = new(Guid.NewGuid(), "Tisch 3", null, [new(_context.World.BeerItemId, 300, null, null)], [new(_context.World.BarStationId, "asItComes")]);
+    OrderWithDeliveryModesBody body = new(Guid.NewGuid(), "Tisch 3", [new(_context.World.BeerItemId, 300, null, null)], [new(_context.World.BarStationId, "asItComes")]);
 
     string firstBody;
     using (var first = await _context.SendAsync(HttpMethod.Post, "/api/orders", body))

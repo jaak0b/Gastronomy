@@ -113,7 +113,7 @@ to one festival.
   neither, because both are facts about an item at one festival.
 - **ItemStationAssignment**: which station prepares an item at one festival. Unique on
   `(FestivalId, CatalogItemId, StationId)`.
-- **Order**: what the waiter sent. The festival it belongs to, global order number, table name, note,
+- **Order**: what the waiter sent. The festival it belongs to, global order number, table name,
   who took it, when. It has no status and no total: both are derived, never stored.
 - **StationOrder**: the part of that order belonging to one station, carrying the number that station
   shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two station orders of

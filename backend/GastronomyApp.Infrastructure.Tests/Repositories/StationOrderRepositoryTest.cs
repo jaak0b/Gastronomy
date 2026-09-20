@@ -449,7 +449,6 @@ public sealed class StationOrderRepositoryTest
                     GlobalOrderNumber = orderNumber,
                     StaffMemberId = seeded.StaffMemberId,
                     TableName = tableName,
-                    Note = null,
                     CreatedAtUtc = _orderedAtUtc
                   };
 
@@ -505,7 +504,6 @@ public sealed class StationOrderRepositoryTest
                     GlobalOrderNumber = 1,
                     StaffMemberId = seeded.StaffMemberId,
                     TableName = "Tisch 12",
-                    Note = null,
                     CreatedAtUtc = _orderedAtUtc
                   };
 

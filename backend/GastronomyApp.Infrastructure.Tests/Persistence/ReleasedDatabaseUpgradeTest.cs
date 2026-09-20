@@ -49,9 +49,10 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(invitation.QRCodeSalt, Is.EqualTo(qrCodeSalt));
                       Assert.That(invitation.QRCodeIterations, Is.EqualTo(210000));
                       Assert.That(invitation.QRCodeAlgorithm, Is.EqualTo("PBKDF2-HMAC-SHA512"));
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(2));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(3));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
+                      Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
                     });
   }
 

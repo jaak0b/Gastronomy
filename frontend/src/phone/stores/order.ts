@@ -20,7 +20,6 @@ import {
   setDeliveryMode,
   setLineNote,
   setLineStation,
-  setOrderNote,
   setTableName,
   stampFestival,
 } from '../core/draftCart'
@@ -174,10 +173,6 @@ export const useOrderStore = defineStore('order', () => {
 
   function setTable(tableName: string): void {
     change((current) => setTableName(current, tableName))
-  }
-
-  function setNote(note: string | null): void {
-    change((current) => setOrderNote(current, note))
   }
 
   function deliveryModeAt(stationId: string): DeliveryMode {
@@ -334,7 +329,6 @@ export const useOrderStore = defineStore('order', () => {
     noteLine,
     chooseStation,
     setTable,
-    setNote,
     deliveryModeAt,
     chooseDeliveryMode,
     dismissConfirmation,

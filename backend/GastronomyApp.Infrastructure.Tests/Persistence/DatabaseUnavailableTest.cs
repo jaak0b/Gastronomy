@@ -90,7 +90,6 @@ public sealed class DatabaseUnavailableTest
              ClientOrderId = Guid.NewGuid(),
              StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
-             Note = null,
              Items =
              [
                new()
