@@ -325,14 +325,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 - **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
   name, and whichever server passes the station takes the tray. That is deliberate.
 
-19. **The product is in development, so stale data is not a problem to solve.** Breaking the
-    database, and breaking whatever a phone has in its storage, is acceptable and wanted. Nothing is
-    installed anywhere, the only devices holding old data are the owner's own, and he clears them
-    himself. **Never propose or build a migration, a backfill, a default for a missing field, or any
-    other shim whose only purpose is to cope with data written by an earlier build.** Change the
-    shape, delete the old data, move on. This holds until the owner says the product is installed
-    somewhere real, and it binds the main agent, every subagent and every reviewer: a finding whose
-    only victim is data from a previous build is not a defect and must not be reported as one.
+19. **The product is installed (since 2026-09-20), so stored data outlives every build.** The
+    database is never broken or recreated: a schema change is a migration under backend rule 7, and
+    a finding whose victim is data written by an earlier build is a defect. Phone and tablet
+    storage is split in two: the device token is never discarded by a build, because losing it
+    sends the waiter back to the laptop to enrol again; everything else a device stores (the draft
+    cart, a remembered screen) carries no promise, and when its shape changes the new build
+    discards the old value and starts empty, never migrates it. A draft is not an order, so
+    dropping one is acceptable, and dropping a token is not.
 
 20. **An item's note is part of the item.** Whenever order items are grouped, collapsed, summarised or
     counted for anyone to read or act on, the note travels with the group: the line carries the article
