@@ -180,18 +180,38 @@ describe('a station at a festival', () => {
     })
   })
 
-  it('is created and handed back with its id, so it can be added straight away', async () => {
+  it('is created and handed back as the station itself, so it can be added straight away', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) =>
         (init?.method ?? 'GET') === 'POST'
-          ? new Response(JSON.stringify({ stationId: 'station-new' }), { status: 201 })
+          ? new Response(
+              JSON.stringify({
+                stationId: 'station-new',
+                name: 'Theke',
+                sortOrder: 1,
+                isActive: true,
+                hasDevice: false,
+                isAtTheFestival: false,
+              }),
+              { status: 201 },
+            )
           : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
       ),
     )
 
     const created = await useAdminStationsStore().create({ name: 'Theke', sortOrder: 1 })
 
-    expect(created).toEqual({ kind: 'ok', value: 'station-new' })
+    expect(created).toEqual({
+      kind: 'ok',
+      value: {
+        stationId: 'station-new',
+        name: 'Theke',
+        sortOrder: 1,
+        isActive: true,
+        hasDevice: false,
+        isAtTheFestival: false,
+      },
+    })
   })
 })

@@ -80,13 +80,33 @@ public sealed class StationAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<SavedStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildRequest("  ", 1), CancellationToken.None);
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildRequest("  ", 1), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.False);
                       Assert.That(created.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.NameMissing));
                       Assert.That(_transactionRunner.Committed, Is.False);
+                    });
+  }
+
+  [Test]
+  public async Task CreateAsync_AValidRequest_HandsBackTheStationTheAdminListShows()
+  {
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildRequest("Kueche am Zelt", 2), CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(created.IsSuccess, Is.True);
+                      Assert.That(created.Value.StationId, Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(created.Value.Name, Is.EqualTo("Kueche am Zelt"));
+                      Assert.That(created.Value.SortOrder, Is.EqualTo(2));
+                      Assert.That(created.Value.IsActive, Is.True);
+                      Assert.That(created.Value.HasDevice, Is.False);
+                      Assert.That(created.Value.LastSeenAtUtc, Is.Null);
+                      Assert.That(created.Value.HasOutstandingInvitation, Is.False);
+                      Assert.That(created.Value.IsAtTheFestival, Is.False);
+                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 

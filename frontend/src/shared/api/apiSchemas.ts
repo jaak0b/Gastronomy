@@ -15,8 +15,6 @@ import type {
   CatalogCategory,
   CatalogItem,
   CatalogStation,
-  CreatedItem,
-  CreatedStation,
   EstimatesResponse,
   Invitation,
   LanguageResponse,
@@ -226,7 +224,7 @@ const adminItemAtFestivalSchema: z.ZodType<AdminItemAtFestival> = z.object({
   stationIds: z.array(z.string()),
 })
 
-const adminItemSchema: z.ZodType<AdminItem> = z.object({
+export const adminItemSchema: z.ZodType<AdminItem> = z.object({
   itemId: z.string(),
   name: z.string(),
   categoryId: z.string(),
@@ -270,7 +268,7 @@ export const adminStaffMembersResponseSchema: z.ZodType<AdminStaffMembersRespons
   staffMembers: z.array(adminStaffMemberSchema),
 })
 
-const adminStationSchema: z.ZodType<AdminStation> = z.object({
+export const adminStationSchema: z.ZodType<AdminStation> = z.object({
   stationId: z.string(),
   name: z.string(),
   sortOrder: z.number(),
@@ -281,12 +279,4 @@ const adminStationSchema: z.ZodType<AdminStation> = z.object({
 
 export const adminStationsResponseSchema: z.ZodType<AdminStationsResponse> = z.object({
   stations: z.array(adminStationSchema),
-})
-
-export const createdItemSchema: z.ZodType<CreatedItem> = z.object({
-  itemId: z.string(),
-})
-
-export const createdStationSchema: z.ZodType<CreatedStation> = z.object({
-  stationId: z.string(),
 })

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
-import { adminStationsResponseSchema, createdStationSchema } from '../../shared/api/apiSchemas'
+import { adminStationsResponseSchema, adminStationSchema } from '../../shared/api/apiSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
@@ -58,17 +58,20 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     await loadAtTheFestival(festivalId)
   }
 
-  async function create(draft: StationDraft): Promise<AdminActionResult<string>> {
+  async function create(draft: StationDraft): Promise<AdminActionResult<AdminStation>> {
+    const token = stationsGate.startRequest()
     const result = await request('/api/admin/stations', {
       method: 'POST',
       body: { name: draft.name, sortOrder: draft.sortOrder },
-      schema: createdStationSchema,
+      schema: adminStationSchema,
     })
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
     }
-    await reload()
-    return adminOk(result.data.stationId)
+    if (stationsGate.isNewestRequest(token)) {
+      stations.value = [...stations.value, result.data]
+    }
+    return adminOk(result.data)
   }
 
   async function save(station: StationDraft): Promise<AdminActionResult<null>> {

@@ -116,7 +116,7 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     A.CallTo(() => _itemRepository.IsNameTakenAsync("Bratwurst", null, A<CancellationToken>._)).Returns(true);
 
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Bratwurst", _foodCategoryId), CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Bratwurst", _foodCategoryId), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -128,7 +128,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_NameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("   ", _foodCategoryId), CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("   ", _foodCategoryId), CancellationToken.None);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.NameMissing));
   }
@@ -136,7 +136,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_CategoryThatIsNotThere_FailsBecauseTheCategoryIsUnknown()
   {
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", Guid.NewGuid()), CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", Guid.NewGuid()), CancellationToken.None);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.CategoryUnknown));
   }
@@ -144,7 +144,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_CategoryThatIsSwitchedOff_FailsBecauseTheCategoryIsSwitchedOff()
   {
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _switchedOffCategoryId), CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _switchedOffCategoryId), CancellationToken.None);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff));
   }
@@ -154,7 +154,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [TestCase(1.25d)]
   public async Task CreateAsync_PreparationTimeTheItemFormNeverProduces_FailsBecauseItIsOutOfRange(double minutes)
   {
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _foodCategoryId) with { ProductionMinutes = minutes }, CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _foodCategoryId) with { ProductionMinutes = minutes }, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -166,7 +166,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AnItemNothingRefuses_StoresItAndCommits()
   {
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _foodCategoryId) with { ProductionMinutes = 1.5 }, CancellationToken.None);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _foodCategoryId) with { ProductionMinutes = 1.5 }, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -176,6 +176,23 @@ public sealed class CatalogItemAdministrationServiceTest
 
     A.CallTo(() => _itemRepository.AddAsync(A<CatalogItem>.That.Matches(item => item.Name == "Currywurst" && item.IsActive && item.ProductionMinutes == 1.5), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _itemRepository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task CreateAsync_AnItemNothingRefuses_HandsBackTheCreatedArticle()
+  {
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(RequestFor("Currywurst", _foodCategoryId) with { SortOrder = 4 }, CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(created.IsSuccess, Is.True);
+                      Assert.That(created.Value.ItemId, Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(created.Value.Name, Is.EqualTo("Currywurst"));
+                      Assert.That(created.Value.CategoryId, Is.EqualTo(_foodCategoryId));
+                      Assert.That(created.Value.SortOrder, Is.EqualTo(4));
+                      Assert.That(created.Value.IsActive, Is.True);
+                      Assert.That(created.Value.AtTheFestival, Is.Null);
+                    });
   }
 
   [Test]

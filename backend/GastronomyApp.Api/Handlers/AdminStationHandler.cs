@@ -41,9 +41,14 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStation, StationAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
 
-    return await AnsweredAsync(created, stationId => Results.Json(new SavedStationView(stationId), statusCode: StatusCodes.Status201Created), cancellationToken);
+    if (!created.IsSuccess)
+      return RefusalFor(created.Failure);
+
+    await _announcer.AnnounceAsync(created.Value.StationId);
+
+    return Results.Json(_mapper.Map<AdminStationView>(created.Value), statusCode: StatusCodes.Status201Created);
   }
 
   public async Task<IResult> UpdateAsync(Guid stationId, SaveStationRequest request, CancellationToken cancellationToken)

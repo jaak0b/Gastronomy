@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
-import { adminItemsResponseSchema, createdItemSchema } from '../../shared/api/apiSchemas'
+import { adminItemsResponseSchema, adminItemSchema } from '../../shared/api/apiSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
@@ -75,17 +75,20 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     }
   }
 
-  async function create(item: AdminItemDraft): Promise<AdminActionResult<string>> {
+  async function create(item: AdminItemDraft): Promise<AdminActionResult<AdminItem>> {
+    const token = itemsGate.startRequest()
     const result = await request('/api/admin/items', {
       method: 'POST',
       body: buildItemRequestBody(item),
-      schema: createdItemSchema,
+      schema: adminItemSchema,
     })
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
     }
-    await reload()
-    return adminOk(result.data.itemId)
+    if (itemsGate.isNewestRequest(token)) {
+      items.value = [...items.value, result.data]
+    }
+    return adminOk(result.data)
   }
 
   async function save(item: AdminItemDraft): Promise<AdminActionResult<null>> {

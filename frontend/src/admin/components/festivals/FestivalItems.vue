@@ -111,14 +111,10 @@ async function create(draft: AdminItemDraft): Promise<void> {
   createRefusal.value = null
   const created = await items.create(draft)
   switch (created.kind) {
-    case 'ok': {
+    case 'ok':
       isCreating.value = false
-      const item = items.items.find((listed) => listed.itemId === created.value)
-      if (item !== undefined) {
-        startPlacing(item)
-      }
+      startPlacing(created.value)
       return
-    }
     case 'failed':
       createRefusal.value = created.message
       return

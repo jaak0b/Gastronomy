@@ -69,6 +69,32 @@ public sealed class AdminEndpointsTest
   }
 
   [Test]
+  public async Task PostStation_ValidRequest_AnswersWithTheWholeStationTheAdminListShows()
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/stations",
+                                                               new
+                                                               {
+                                                                 name = "Zelt",
+                                                                 sortOrder = 3
+                                                               });
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(body.RootElement.GetProperty("stationId").GetGuid(), Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(body.RootElement.GetProperty("name").GetString(), Is.EqualTo("Zelt"));
+                      Assert.That(body.RootElement.GetProperty("sortOrder").GetInt32(), Is.EqualTo(3));
+                      Assert.That(body.RootElement.GetProperty("isActive").GetBoolean(), Is.True);
+                      Assert.That(body.RootElement.GetProperty("hasDevice").GetBoolean(), Is.False);
+                      Assert.That(body.RootElement.GetProperty("lastSeenAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(body.RootElement.GetProperty("hasOutstandingInvitation").GetBoolean(), Is.False);
+                      Assert.That(body.RootElement.GetProperty("isAtTheFestival").GetBoolean(), Is.False);
+                    });
+  }
+
+  [Test]
   public async Task PutStation_RenamedStation_StoresTheNewName()
   {
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/stations/{_context.World.KitchenStationId}",
@@ -107,6 +133,31 @@ public sealed class AdminEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(menuRows, Is.EqualTo(0));
+                    });
+  }
+
+  [Test]
+  public async Task PostItem_ValidRequest_AnswersWithTheWholeArticleTheAdminListShows()
+  {
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 sortOrder = 3
+                                                               });
+
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+                      Assert.That(body.RootElement.GetProperty("itemId").GetGuid(), Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(body.RootElement.GetProperty("name").GetString(), Is.EqualTo("Pommes"));
+                      Assert.That(body.RootElement.GetProperty("categoryId").GetGuid(), Is.EqualTo(_context.World.FoodCategoryId));
+                      Assert.That(body.RootElement.GetProperty("sortOrder").GetInt32(), Is.EqualTo(3));
+                      Assert.That(body.RootElement.GetProperty("isActive").GetBoolean(), Is.True);
+                      Assert.That(body.RootElement.GetProperty("atTheFestival").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 

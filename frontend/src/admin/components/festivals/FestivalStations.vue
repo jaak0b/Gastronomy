@@ -65,7 +65,7 @@ async function create(draft: StationDraft): Promise<void> {
   switch (created.kind) {
     case 'ok':
       isCreating.value = false
-      chosenStationId.value = created.value
+      chosenStationId.value = created.value.stationId
       return
     case 'failed':
       refusal.value = created.message

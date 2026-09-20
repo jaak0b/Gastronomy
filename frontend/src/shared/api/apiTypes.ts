@@ -88,14 +88,6 @@ export interface AdminStationsResponse {
   stations: AdminStation[]
 }
 
-export interface CreatedItem {
-  itemId: string
-}
-
-export interface CreatedStation {
-  stationId: string
-}
-
 export interface CatalogStation {
   id: string
   name: string

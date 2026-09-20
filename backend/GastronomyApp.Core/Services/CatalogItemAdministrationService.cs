@@ -49,7 +49,7 @@ public sealed class CatalogItemAdministrationService
     return Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>.Success(administered);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> CreateAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  public Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreateAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
@@ -73,30 +73,29 @@ public sealed class CatalogItemAdministrationService
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  private async Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
     var refusal = Validate(request) ?? await NameRefusalAsync(request.Name!, null, cancellationToken) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
 
     if (refusal is not null)
-      return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
+      return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
 
-    var itemId = Guid.NewGuid();
+    CatalogItem created = new()
+                          {
+                            Id = Guid.NewGuid(),
+                            Name = request.Name!,
+                            CategoryId = request.CategoryId!.Value,
+                            SortOrder = request.SortOrder,
+                            IsActive = true,
+                            ProductionMinutes = request.ProductionMinutes,
+                            IsQueueIndependent = request.IsQueueIndependent
+                          };
 
-    await _itemRepository.AddAsync(new()
-                                   {
-                                     Id = itemId,
-                                     Name = request.Name!,
-                                     CategoryId = request.CategoryId!.Value,
-                                     SortOrder = request.SortOrder,
-                                     IsActive = true,
-                                     ProductionMinutes = request.ProductionMinutes,
-                                     IsQueueIndependent = request.IsQueueIndependent
-                                   },
-                                   cancellationToken);
+    await _itemRepository.AddAsync(created, cancellationToken);
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
+    return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Success(new(created.Id, created.Name, created.CategoryId, created.SortOrder, created.IsActive, created.ProductionMinutes, created.IsQueueIndependent, null));
   }
 
   private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, SaveCatalogItemRequest request, CancellationToken cancellationToken)
@@ -212,13 +211,13 @@ public sealed class CatalogItemAdministrationService
     return Result<TValue, CatalogItemAdministrationFailure>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> RunAsync(Func<CancellationToken, Task<Result<Guid, CatalogItemAdministrationFailure>>> write, CancellationToken cancellationToken)
+  private async Task<Result<TValue, CatalogItemAdministrationFailure>> RunAsync<TValue>(Func<CancellationToken, Task<Result<TValue, CatalogItemAdministrationFailure>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<Guid, CatalogItemAdministrationFailure> written = await write(transactionCancellationToken);
+                                               Result<TValue, CatalogItemAdministrationFailure> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<Guid, CatalogItemAdministrationFailure>>
+                                               return new TransactionOutcome<Result<TValue, CatalogItemAdministrationFailure>>
                                                       {
                                                         Value = written,
                                                         ShouldCommit = written.IsSuccess

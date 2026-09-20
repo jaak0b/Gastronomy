@@ -116,6 +116,48 @@ describe('switching a station off', () => {
   })
 })
 
+describe('a new station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    document.body.innerHTML = ''
+  })
+
+  it('is shown in the list right away even when the answer to the list is still the old one', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if ((init?.method ?? 'GET') === 'POST') {
+          return new Response(
+            JSON.stringify({
+              stationId: 'station-neu',
+              name: 'Zelt',
+              sortOrder: 2,
+              isActive: true,
+              hasDevice: false,
+              isAtTheFestival: false,
+            }),
+            { status: 201 },
+          )
+        }
+        return new Response(ONE_STATION, { status: 200 })
+      }),
+    )
+
+    const list = mountList()
+    await vi.waitFor(() => expect(list.find('.station-row').exists()).toBe(true))
+    await list.get('.new-station').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.station-name-field')).not.toBeNull())
+    const input = document.querySelector('.station-name-field input') as HTMLInputElement
+    input.value = 'Zelt'
+    input.dispatchEvent(new Event('input'))
+    await list.vm.$nextTick()
+    ;(document.querySelector('.form-save') as HTMLElement).click()
+
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+    expect(list.findAll('.station-row .name').map((row) => row.text())).toContain('Zelt')
+  })
+})
+
 describe('a station that is switched off', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

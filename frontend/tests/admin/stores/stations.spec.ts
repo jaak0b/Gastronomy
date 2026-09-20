@@ -11,9 +11,24 @@ const BACKEND_STATION = {
   isAtTheFestival: true,
 }
 
+const ZELT = {
+  stationId: '22222222-2222-2222-2222-222222222222',
+  name: 'Zelt',
+  sortOrder: 2,
+  isActive: true,
+  hasDevice: false,
+  isAtTheFestival: false,
+}
+
 interface RecordedCall {
   url: string
   method: string
+}
+
+interface Call {
+  url: string
+  method: string
+  body: unknown
 }
 
 function stubFetch(responder: (url: string) => { status: number; payload: unknown }) {
@@ -24,6 +39,26 @@ function stubFetch(responder: (url: string) => { status: number; payload: unknow
       calls.push({ url, method: init?.method ?? 'GET' })
       const { status, payload } = responder(url)
       return new Response(JSON.stringify(payload), { status })
+    }),
+  )
+  return calls
+}
+
+function answerWith(payloadFor: (url: string, method: string) => unknown, status = 200): Call[] {
+  const calls: Call[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      calls.push({
+        url,
+        method,
+        body: init?.body === undefined ? null : JSON.parse(init.body as string),
+      })
+      const isRead = method === 'GET'
+      return new Response(JSON.stringify(payloadFor(url, method)), {
+        status: isRead ? 200 : status,
+      })
     }),
   )
   return calls
@@ -56,6 +91,79 @@ describe('the station list the admin configures', () => {
     })
   })
 
+})
+
+describe('a new station', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('hands back the station the laptop created, so it can be picked right away', async () => {
+    answerWith((_url, method) => (method === 'GET' ? { stations: [BACKEND_STATION] } : ZELT))
+    const stations = useAdminStationsStore()
+
+    const created = await stations.create({ name: 'Zelt', sortOrder: 2 })
+
+    expect(created).toEqual({ kind: 'ok', value: ZELT })
+  })
+
+  it('takes the created station from the answer instead of reading the whole list again', async () => {
+    const calls = answerWith((_url, method) =>
+      method === 'GET' ? { stations: [BACKEND_STATION] } : ZELT,
+    )
+    const stations = useAdminStationsStore()
+
+    await stations.create({ name: 'Zelt', sortOrder: 2 })
+
+    expect(calls.map((call) => call.method)).toEqual(['POST'])
+    expect(stations.stations).toEqual([ZELT])
+  })
+
+  it('stays in the list even when the list cannot be read again afterwards', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if ((init?.method ?? 'GET') === 'POST') {
+          return new Response(JSON.stringify(ZELT), { status: 201 })
+        }
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    const stations = useAdminStationsStore()
+
+    await stations.create({ name: 'Zelt', sortOrder: 2 })
+
+    expect(stations.stations.map((station) => station.name)).toEqual(['Zelt'])
+  })
+
+  it('keeps the reason the laptop refused it and appends nothing', async () => {
+    answerWith(
+      (_url, method) =>
+        method === 'GET'
+          ? { stations: [BACKEND_STATION] }
+          : {
+              code: 'ValidationFailed',
+              messageKey: 'admin.stationNameMissing',
+              parameters: {},
+              details: null,
+            },
+      400,
+    )
+    const stations = useAdminStationsStore()
+    await stations.load()
+
+    const created = await stations.create({ name: '', sortOrder: 2 })
+
+    expect(created).toEqual({
+      kind: 'failed',
+      message: { key: 'admin.stationNameMissing', parameters: {}, count: null },
+    })
+    expect(stations.stations).toEqual([BACKEND_STATION])
+  })
 })
 
 describe('a station the laptop would not save', () => {

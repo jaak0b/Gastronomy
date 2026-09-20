@@ -44,9 +44,9 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Guid, CatalogItemAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
 
-    return await AnsweredAsync(created, itemId => Results.Json(new SavedItemView(itemId), statusCode: StatusCodes.Status201Created));
+    return await AnsweredAsync(created, item => Results.Json(_mapper.Map<AdminItemView>(item), statusCode: StatusCodes.Status201Created));
   }
 
   public async Task<IResult> UpdateAsync(Guid itemId, SaveItemRequest request, CancellationToken cancellationToken)
@@ -72,7 +72,7 @@ public sealed class AdminItemHandler
     return await AnsweredAsync(switchedOff, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }
 
-  private async Task<IResult> AnsweredAsync(Result<Guid, CatalogItemAdministrationFailure> written, Func<Guid, IResult> buildResponse)
+  private async Task<IResult> AnsweredAsync<TValue>(Result<TValue, CatalogItemAdministrationFailure> written, Func<TValue, IResult> buildResponse)
   {
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);

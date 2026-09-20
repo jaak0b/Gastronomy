@@ -377,7 +377,15 @@ describe('the stations of this festival', () => {
   })
 
   it('creates a station in the popup and only offers it for adding afterwards', async () => {
-    const calls = stubLaptop({ created: { stationId: 'station-neu' } })
+    const NEW_STATION = {
+      stationId: 'station-neu',
+      name: 'Zelt',
+      sortOrder: 3,
+      isActive: true,
+      hasDevice: false,
+      isAtTheFestival: false,
+    }
+    const calls = stubLaptop({ created: NEW_STATION })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.find('.new-station').exists()).toBe(true))
@@ -396,6 +404,7 @@ describe('the stations of this festival', () => {
       'POST /api/admin/stations',
     ])
     expect(page.findAllComponents(VAutocomplete)[0].props('modelValue')).toBe('station-neu')
+    expect(page.findAllComponents(VAutocomplete)[0].props('items')).toEqual([BAR, NEW_STATION])
   })
 
   it('asks before a station leaves the festival', async () => {
@@ -787,7 +796,16 @@ describe('the items of this festival', () => {
 
   it('creates an item in the popup and opens the placement dialog for it', async () => {
     const calls = stubLaptop({
-      created: { itemId: 'item-neu' },
+      created: {
+        itemId: 'item-neu',
+        name: 'Pommes',
+        categoryId: FOOD_ID,
+        sortOrder: 3,
+        isActive: true,
+        productionMinutes: null,
+        isQueueIndependent: false,
+        atTheFestival: null,
+      },
       items: [
         SAUSAGE,
         BEER,
@@ -825,6 +843,40 @@ describe('the items of this festival', () => {
     expect(writtenCalls(calls).map((call) => `${call.method} ${call.url}`)).toEqual([
       'POST /api/admin/items',
     ])
+  })
+
+  it('opens the placement dialog for the created item even when the list is still the old one', async () => {
+    stubLaptop({
+      created: {
+        itemId: 'item-neu',
+        name: 'Pommes',
+        categoryId: FOOD_ID,
+        sortOrder: 3,
+        isActive: true,
+        productionMinutes: null,
+        isQueueIndependent: false,
+        atTheFestival: null,
+      },
+      items: [SAUSAGE, BEER],
+    })
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.new-item').exists()).toBe(true))
+    await page.get('.new-item').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .item-name-field')).not.toBeNull(),
+    )
+    await page.findComponent({ name: 'ItemDialog' }).vm.$emit('save', {
+      name: 'Pommes',
+      categoryId: FOOD_ID,
+      sortOrder: 1,
+      productionMinutes: null,
+    })
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .price-field')).not.toBeNull(),
+    )
+    expect(document.querySelector('.form-dialog-title')?.textContent).toContain('Pommes')
   })
 
   it('will not let the admin cancel a placement while the laptop is still answering', async () => {
