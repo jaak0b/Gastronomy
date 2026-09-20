@@ -72,7 +72,7 @@ public sealed class AdminStaffMembersHandler
 
     HashSet<Guid> outstandingInvitationIds =
       await _invitationLookup.InvitationIdsStillOutstandingAsync(cancellationToken);
-    Dictionary<Guid, DateTime> lastSeenByDeviceId =
+    IReadOnlyDictionary<Guid, DateTime> lastSeenByDeviceId =
       await _invitationLookup.LastSeenByDeviceIdAsync(cancellationToken);
 
     List<AdminStaffMemberView> views =
@@ -155,7 +155,7 @@ public sealed class AdminStaffMembersHandler
     return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
   }
 
-  private DateTime? ReadLastSeen(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
+  private DateTime? ReadLastSeen(IReadOnlyDictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
   {
     return deviceId is not null && lastSeenByDeviceId.TryGetValue(deviceId.Value, out var lastSeen)
              ? lastSeen

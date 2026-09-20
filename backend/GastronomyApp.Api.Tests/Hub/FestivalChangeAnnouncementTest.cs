@@ -31,7 +31,7 @@ public sealed class FestivalChangeAnnouncementTest
   public async Task Show_AHiddenFestival_TellsTheStationTablet()
   {
     TaskCompletionSource heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var festivalId = await AHiddenFestivalAsync();
+    var festivalId = await CreateHiddenFestivalAsync();
 
     await using var tablet = Connect(_kitchenToken);
     tablet.On<JsonElement>("FestivalChanged", _ => heard.TrySetResult());
@@ -50,7 +50,7 @@ public sealed class FestivalChangeAnnouncementTest
   public async Task Show_AHiddenFestival_TellsThePhones()
   {
     TaskCompletionSource heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var festivalId = await AHiddenFestivalAsync();
+    var festivalId = await CreateHiddenFestivalAsync();
 
     await using var phone = Connect(_context.DeviceToken);
     phone.On<JsonElement>("FestivalChanged", _ => heard.TrySetResult());
@@ -70,7 +70,7 @@ public sealed class FestivalChangeAnnouncementTest
   {
     TaskCompletionSource heardTheFestivalChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource heardTheCatalogChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var festivalId = await AHiddenFestivalAsync();
+    var festivalId = await CreateHiddenFestivalAsync();
 
     await using var phone = Connect(_context.DeviceToken);
     phone.On<JsonElement>("FestivalChanged", _ => heardTheFestivalChanged.TrySetResult());
@@ -94,7 +94,7 @@ public sealed class FestivalChangeAnnouncementTest
   public async Task Hide_AFestivalInTheFuture_TellsTheStationTablet()
   {
     TaskCompletionSource heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    var festivalId = await AFestivalInTheFutureAsync();
+    var festivalId = await CreateFestivalInTheFutureAsync();
 
     await using var tablet = Connect(_kitchenToken);
     tablet.On<JsonElement>("FestivalChanged", _ => heard.TrySetResult());
@@ -109,7 +109,7 @@ public sealed class FestivalChangeAnnouncementTest
                 "The tablet standing at a production location must be told when a festival is hidden, or it keeps taking orders for an event that is not running.");
   }
 
-  private async Task<Guid> AFestivalInTheFutureAsync()
+  private async Task<Guid> CreateFestivalInTheFutureAsync()
   {
     var startsAtUtc = DateTime.UtcNow.AddYears(2);
     Guid festivalId;
@@ -132,9 +132,9 @@ public sealed class FestivalChangeAnnouncementTest
     return festivalId;
   }
 
-  private async Task<Guid> AHiddenFestivalAsync()
+  private async Task<Guid> CreateHiddenFestivalAsync()
   {
-    var festivalId = await AFestivalInTheFutureAsync();
+    var festivalId = await CreateFestivalInTheFutureAsync();
 
     await HideTheFestivalAsync(festivalId);
 

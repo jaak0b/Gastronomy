@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Core.Entities;
@@ -18,5 +19,5 @@ public sealed class StationOrder
 
   public bool IsHiddenFromAsItComesQueue { get; set; }
 
-  public List<OrderItem> Items { get; set; } = [];
+  public Collection<OrderItem> Items { get; } = [];
 }

@@ -11,14 +11,14 @@ using QRCoder;
 
 namespace GastronomyApp.Api.Endpoints;
 
-public static class AdminInvitationQrEndpoints
+public static class AdminInvitationQREndpoints
 {
-  public static IEndpointRouteBuilder MapAdminInvitationQrEndpoints(this IEndpointRouteBuilder routes)
+  public static IEndpointRouteBuilder MapAdminInvitationQREndpoints(this IEndpointRouteBuilder routes)
   {
     routes.MapGet("/api/admin/enrolment/invitations/{invitationId:guid}/qr.svg",
                   async (Guid invitationId,
                          HttpContext httpContext,
-                         InvitationQrRenderer renderer,
+                         InvitationQRRenderer renderer,
                          CancellationToken cancellationToken) =>
                     await renderer.RenderAsync(invitationId, httpContext, cancellationToken));
 
@@ -26,7 +26,7 @@ public static class AdminInvitationQrEndpoints
   }
 }
 
-public sealed class InvitationQrRenderer
+public sealed class InvitationQRRenderer
 {
   private const string SvgMediaType = "image/svg+xml";
   private const int PixelsPerModule = 8;
@@ -36,7 +36,7 @@ public sealed class InvitationQrRenderer
   private readonly OutstandingInvitationCache _invitationCache;
   private readonly ResultEnvelope _resultEnvelope;
 
-  public InvitationQrRenderer(GastronomyAppDbContext dbContext,
+  public InvitationQRRenderer(GastronomyAppDbContext dbContext,
                               OutstandingInvitationCache invitationCache,
                               ResultEnvelope resultEnvelope,
                               IClock clock)
@@ -57,7 +57,7 @@ public sealed class InvitationQrRenderer
 
     if (invitation is null)
     {
-      return BuildQrUnavailableProblem();
+      return BuildQRUnavailableProblem();
     }
 
     if (invitation.ConsumedAtUtc is not null)
@@ -82,16 +82,16 @@ public sealed class InvitationQrRenderer
 
     if (remembered is null || remembered.InvitationId != invitationId)
     {
-      return BuildQrUnavailableProblem();
+      return BuildQRUnavailableProblem();
     }
 
     httpContext.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
     httpContext.Response.Headers.Pragma = "no-cache";
 
-    return Results.Text(Render(remembered.QrUrl), SvgMediaType, Encoding.UTF8);
+    return Results.Text(Render(remembered.QRUrl), SvgMediaType, Encoding.UTF8);
   }
 
-  private IResult BuildQrUnavailableProblem()
+  private IResult BuildQRUnavailableProblem()
   {
     return _resultEnvelope.Problem(StatusCodes.Status404NotFound,
                                   "EnrolmentCodeUnknown",

@@ -10,7 +10,7 @@ namespace GastronomyApp.Infrastructure.Repositories;
 
 public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 {
-  private const int QrCodeLengthBytes = 32;
+  private const int QRCodeLengthBytes = 32;
   private const int InvitationLifetimeMinutes = 5;
   private const string GermanLanguage = "de";
   private const string EnglishLanguage = "en";
@@ -44,18 +44,18 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
                                          await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, transactionCancellationToken);
 
-                                         var qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QrCodeLengthBytes));
+                                         var qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QRCodeLengthBytes));
 
-                                         var hashedQrCode = _secretHasher.Hash(qrCodeValue);
+                                         var hashedQRCode = _secretHasher.Hash(qrCodeValue);
                                          var expiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes);
 
                                          EnrolmentInvitation invitation = new()
                                                                           {
                                                                             Id = Guid.NewGuid(),
-                                                                            QrCodeHash = hashedQrCode.Hash,
-                                                                            QrCodeSalt = hashedQrCode.Salt,
-                                                                            QrCodeIterations = hashedQrCode.Iterations,
-                                                                            QrCodeAlgorithm = hashedQrCode.Algorithm,
+                                                                            QRCodeHash = hashedQRCode.Hash,
+                                                                            QRCodeSalt = hashedQRCode.Salt,
+                                                                            QRCodeIterations = hashedQRCode.Iterations,
+                                                                            QRCodeAlgorithm = hashedQRCode.Algorithm,
                                                                             CreatedAtUtc = now,
                                                                             ExpiresAtUtc = expiresAtUtc,
                                                                             ConsumedAtUtc = null,
@@ -105,10 +105,10 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     }
 
     var qrCodeMatches = _secretHasher.Verify(request.Code,
-                                             invitation.QrCodeHash,
-                                             invitation.QrCodeSalt,
-                                             invitation.QrCodeIterations,
-                                             invitation.QrCodeAlgorithm);
+                                             invitation.QRCodeHash,
+                                             invitation.QRCodeSalt,
+                                             invitation.QRCodeIterations,
+                                             invitation.QRCodeAlgorithm);
 
     if (!qrCodeMatches)
     {

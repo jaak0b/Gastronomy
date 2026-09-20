@@ -69,7 +69,7 @@ public sealed class OrderRefusalLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(_log.RenderedMessages, Has.Some.Contains("TableNameMissing"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("TableNameMissing"));
                     });
   }
 

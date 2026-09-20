@@ -28,7 +28,7 @@ public static class DeviceKindEndpointConventions
                                                                                        .RequestServices
                                                                                        .GetRequiredService<DeviceKindGate>();
 
-                                                           return gate.RefusalFor(invocationContext.HttpContext, requiredKind)
+                                                           return gate.FindRefusal(invocationContext.HttpContext, requiredKind)
                                                                   ?? await next(invocationContext);
                                                          });
   }

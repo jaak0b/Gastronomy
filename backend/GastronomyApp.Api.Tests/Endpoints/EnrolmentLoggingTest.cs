@@ -62,7 +62,7 @@ public sealed class EnrolmentLoggingTest
   {
     var invitation = await CreateInvitationAsync();
 
-    Assert.That(_log.RenderedMessages,
+    Assert.That(_log.ReadRenderedMessages(),
                 Has.Some.Contains("Enrolment invitation").And.Some.Contains(invitation.InvitationId.ToString()));
   }
 
@@ -76,7 +76,7 @@ public sealed class EnrolmentLoggingTest
     var deviceId = body.RootElement.GetProperty("deviceId").GetGuid();
     var staffMemberId = body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid();
 
-    Assert.That(_log.RenderedMessages,
+    Assert.That(_log.ReadRenderedMessages(),
                 Has.Some.Contains(invitation.InvitationId.ToString())
                         .And.Contains(deviceId.ToString())
                         .And.Contains(staffMemberId.ToString()));
@@ -94,10 +94,10 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(deviceToken, Is.Not.Empty);
-                      Assert.That(_log.RenderedMessages,
+                      Assert.That(_log.ReadRenderedMessages(),
                                   Has.None.Contains(deviceToken),
                                   "A device token is a credential and must never reach the log file.");
-                      Assert.That(_log.RenderedMessages,
+                      Assert.That(_log.ReadRenderedMessages(),
                                   Has.None.Contains(invitation.Code),
                                   "The enrolment code is a credential and must never reach the log file.");
                     });
@@ -113,7 +113,7 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-                      Assert.That(_log.RenderedMessages, Has.Some.Contains("does not match the invitation"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("does not match the invitation"));
                     });
   }
 
@@ -132,7 +132,7 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(_log.RenderedMessages, Has.Some.Contains("no invitation is outstanding"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("no invitation is outstanding"));
                     });
   }
 
@@ -147,7 +147,7 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(_log.RenderedMessages, Has.Some.Contains("had already expired"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("had already expired"));
                     });
   }
 }

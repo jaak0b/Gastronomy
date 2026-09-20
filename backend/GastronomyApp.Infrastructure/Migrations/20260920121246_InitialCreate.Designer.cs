@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GastronomyApp.Infrastructure.Migrations
 {
     [DbContext(typeof(GastronomyAppDbContext))]
-    [Migration("20260915222426_InitialCreate")]
+    [Migration("20260920121246_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -147,19 +147,19 @@ namespace GastronomyApp.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasComputedColumnSql("CASE WHEN ConsumedAtUtc IS NULL THEN 1 END", true);
 
-                    b.Property<string>("QrCodeAlgorithm")
+                    b.Property<string>("QRCodeAlgorithm")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
-                    b.Property<byte[]>("QrCodeHash")
+                    b.Property<byte[]>("QRCodeHash")
                         .IsRequired()
                         .HasColumnType("BLOB");
 
-                    b.Property<int>("QrCodeIterations")
+                    b.Property<int>("QRCodeIterations")
                         .HasColumnType("INTEGER");
 
-                    b.Property<byte[]>("QrCodeSalt")
+                    b.Property<byte[]>("QRCodeSalt")
                         .IsRequired()
                         .HasColumnType("BLOB");
 

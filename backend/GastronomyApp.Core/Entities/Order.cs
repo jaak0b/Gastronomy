@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class Order
@@ -18,5 +20,5 @@ public sealed class Order
 
   public required DateTime CreatedAtUtc { get; set; }
 
-  public List<StationOrder> StationOrders { get; set; } = [];
+  public Collection<StationOrder> StationOrders { get; } = [];
 }

@@ -4,13 +4,13 @@ public sealed class EnrolmentInvitation
 {
   public required Guid Id { get; set; }
 
-  public required byte[] QrCodeHash { get; set; }
+  public required byte[] QRCodeHash { get; set; }
 
-  public required byte[] QrCodeSalt { get; set; }
+  public required byte[] QRCodeSalt { get; set; }
 
-  public required int QrCodeIterations { get; set; }
+  public required int QRCodeIterations { get; set; }
 
-  public required string QrCodeAlgorithm { get; set; }
+  public required string QRCodeAlgorithm { get; set; }
 
   public required DateTime CreatedAtUtc { get; set; }
 

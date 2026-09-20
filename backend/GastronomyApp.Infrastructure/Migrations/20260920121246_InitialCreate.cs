@@ -50,10 +50,10 @@ namespace GastronomyApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    QrCodeHash = table.Column<byte[]>(type: "BLOB", nullable: false),
-                    QrCodeSalt = table.Column<byte[]>(type: "BLOB", nullable: false),
-                    QrCodeIterations = table.Column<int>(type: "INTEGER", nullable: false),
-                    QrCodeAlgorithm = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    QRCodeHash = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    QRCodeSalt = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    QRCodeIterations = table.Column<int>(type: "INTEGER", nullable: false),
+                    QRCodeAlgorithm = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ExpiresAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ConsumedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true),

@@ -2,5 +2,5 @@ namespace GastronomyApp.Infrastructure.Ports;
 
 public sealed record EnrolmentInvitationCreated(
   Guid InvitationId,
-  string QrCodeValue,
+  string QRCodeValue,
   DateTime ExpiresAtUtc);

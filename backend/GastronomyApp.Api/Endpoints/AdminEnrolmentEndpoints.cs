@@ -74,8 +74,8 @@ public sealed class AdminEnrolmentHandler
     var deviceToReplace = ownerRecord?.DeviceId;
 
     var created = await _invitationStore.CreateAsync(owner, cancellationToken);
-    var qrUrl = _urlBuilder.BuildEnrolmentUrl(created.QrCodeValue);
-    _invitationCache.Remember(new(created.InvitationId, created.QrCodeValue, qrUrl, created.ExpiresAtUtc));
+    var qrUrl = _urlBuilder.BuildEnrolmentUrl(created.QRCodeValue);
+    _invitationCache.Remember(new(created.InvitationId, created.QRCodeValue, qrUrl, created.ExpiresAtUtc));
 
     _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} "
                         + "at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter "

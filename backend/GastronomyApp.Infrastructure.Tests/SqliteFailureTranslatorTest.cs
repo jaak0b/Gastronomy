@@ -48,10 +48,10 @@ public sealed class SqliteFailureTranslatorTest
     return new()
            {
              Id = Guid.NewGuid(),
-             QrCodeHash = [1],
-             QrCodeSalt = [2],
-             QrCodeIterations = 1,
-             QrCodeAlgorithm = "PBKDF2-HMAC-SHA512",
+             QRCodeHash = [1],
+             QRCodeSalt = [2],
+             QRCodeIterations = 1,
+             QRCodeAlgorithm = "PBKDF2-HMAC-SHA512",
              CreatedAtUtc = now,
              ExpiresAtUtc = now.AddMinutes(5),
              ConsumedAtUtc = null,

@@ -54,7 +54,7 @@ public sealed class OutstandingInvitationLookup
     return [.. outstanding];
   }
 
-  public async Task<Dictionary<Guid, DateTime>> LastSeenByDeviceIdAsync(CancellationToken cancellationToken)
+  public async Task<IReadOnlyDictionary<Guid, DateTime>> LastSeenByDeviceIdAsync(CancellationToken cancellationToken)
   {
     return await _dbContext.Devices
                            .AsNoTracking()

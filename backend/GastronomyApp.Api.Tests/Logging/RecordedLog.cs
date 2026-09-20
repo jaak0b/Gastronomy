@@ -19,9 +19,15 @@ public sealed class RecordedLog : IDisposable
     Log.Logger = _logger;
   }
 
-  public IReadOnlyList<LogEvent> Entries => _recorder.Snapshot();
+  public IReadOnlyList<LogEvent> ReadEntries()
+  {
+    return _recorder.Snapshot();
+  }
 
-  public IReadOnlyList<string> RenderedMessages => [.. Entries.Select(entry => entry.RenderMessage())];
+  public IReadOnlyList<string> ReadRenderedMessages()
+  {
+    return [.. ReadEntries().Select(entry => entry.RenderMessage())];
+  }
 
   public void Dispose()
   {

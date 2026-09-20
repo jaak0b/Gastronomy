@@ -106,7 +106,7 @@ public sealed class OrderAcceptanceService
       {
         return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
                                                                             {
-                                                                              Reason = ReasonFor(routing.Failure.Reason),
+                                                                              Reason = TranslateRoutingFailureReason(routing.Failure.Reason),
                                                                               OffendingCatalogItemId = itemRequest.CatalogItemId,
                                                                               OffendingCatalogItemName = catalogItem.Name
                                                                             });
@@ -164,7 +164,7 @@ public sealed class OrderAcceptanceService
     return null;
   }
 
-  private OrderValidationFailureReason ReasonFor(RoutingFailureReason routingFailureReason)
+  private OrderValidationFailureReason TranslateRoutingFailureReason(RoutingFailureReason routingFailureReason)
   {
     return routingFailureReason switch
            {

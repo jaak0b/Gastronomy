@@ -161,7 +161,7 @@ public sealed class AdminStationHandler
 
     HashSet<Guid> outstandingInvitationIds =
       await _invitationLookup.InvitationIdsStillOutstandingAsync(cancellationToken);
-    Dictionary<Guid, DateTime> lastSeenByDeviceId =
+    IReadOnlyDictionary<Guid, DateTime> lastSeenByDeviceId =
       await _invitationLookup.LastSeenByDeviceIdAsync(cancellationToken);
 
     List<Guid> stationIdsAtTheFestival = festivalId is null
@@ -321,7 +321,7 @@ public sealed class AdminStationHandler
     }
   }
 
-  private DateTime? ReadLastSeen(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
+  private DateTime? ReadLastSeen(IReadOnlyDictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
   {
     return deviceId is not null && lastSeenByDeviceId.TryGetValue(deviceId.Value, out var lastSeen)
              ? lastSeen

@@ -33,7 +33,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using var response = await RedeemAsync(invitation.QrCodeValue);
+    using var response = await RedeemAsync(invitation.QRCodeValue);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -62,7 +62,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationForNobodyAsync();
 
-    using var response = await RedeemAsync(invitation.QrCodeValue, "   ");
+    using var response = await RedeemAsync(invitation.QRCodeValue, "   ");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -78,7 +78,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationForNobodyAsync();
 
-    using var response = await RedeemAsync(invitation.QrCodeValue, "  Bernd  ");
+    using var response = await RedeemAsync(invitation.QRCodeValue, "  Bernd  ");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -96,12 +96,12 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using (var first = await RedeemAsync(invitation.QrCodeValue))
+    using (var first = await RedeemAsync(invitation.QRCodeValue))
     {
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var second = await RedeemAsync(invitation.QrCodeValue);
+    using var second = await RedeemAsync(invitation.QRCodeValue);
 
     Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
   }
@@ -114,7 +114,7 @@ public sealed class EnrolmentEndpointsTest
     string firstToken;
     Guid staffMemberId;
 
-    using (var redeemed = await RedeemAsync(firstInvitation.QrCodeValue))
+    using (var redeemed = await RedeemAsync(firstInvitation.QRCodeValue))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
@@ -127,7 +127,7 @@ public sealed class EnrolmentEndpointsTest
       Assert.That(authenticated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using (var replayed = await RedeemAsync(firstInvitation.QrCodeValue))
+    using (var replayed = await RedeemAsync(firstInvitation.QRCodeValue))
     {
       Assert.That(replayed.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
     }
@@ -141,7 +141,7 @@ public sealed class EnrolmentEndpointsTest
                   "Asking for a new code hands the phone over, so the old one is signed out at once.");
     }
 
-    using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue);
+    using var secondRedemption = await RedeemAsync(secondInvitation.QRCodeValue);
     var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -167,7 +167,7 @@ public sealed class EnrolmentEndpointsTest
     var firstInvitation = await CreateInvitationAsync();
     string firstToken;
 
-    using (var firstRedemption = await RedeemAsync(firstInvitation.QrCodeValue))
+    using (var firstRedemption = await RedeemAsync(firstInvitation.QRCodeValue))
     {
       Assert.That(firstRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var firstBody = JsonDocument.Parse(await firstRedemption.Content.ReadAsStringAsync());
@@ -176,7 +176,7 @@ public sealed class EnrolmentEndpointsTest
 
     var secondInvitation = await CreateInvitationForNobodyAsync();
 
-    using var secondRedemption = await RedeemAsync(secondInvitation.QrCodeValue, "Bernd", firstToken);
+    using var secondRedemption = await RedeemAsync(secondInvitation.QRCodeValue, "Bernd", firstToken);
     var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -199,14 +199,14 @@ public sealed class EnrolmentEndpointsTest
     var invitation = await CreateInvitationAsync();
     string token;
 
-    using (var redemption = await RedeemAsync(invitation.QrCodeValue))
+    using (var redemption = await RedeemAsync(invitation.QRCodeValue))
     {
       Assert.That(redemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var body = JsonDocument.Parse(await redemption.Content.ReadAsStringAsync());
       token = body.RootElement.GetProperty("deviceToken").GetString()!;
     }
 
-    using var refused = await RedeemAsync(invitation.QrCodeValue, null, token);
+    using var refused = await RedeemAsync(invitation.QRCodeValue, null, token);
     using var stillSetUp = await GetSessionAsync(token);
 
     Assert.Multiple(() =>
@@ -223,7 +223,7 @@ public sealed class EnrolmentEndpointsTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using var response = await RedeemAsync(invitation.QrCodeValue, null, previousDeviceToken);
+    using var response = await RedeemAsync(invitation.QRCodeValue, null, previousDeviceToken);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -245,7 +245,7 @@ public sealed class EnrolmentEndpointsTest
 
     using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem")
                         {
-                          Content = JsonContent.Create(new RedeemBody(invitation.QrCodeValue, null, "NUnit")),
+                          Content = JsonContent.Create(new RedeemBody(invitation.QRCodeValue, null, "NUnit")),
                         };
     request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
 

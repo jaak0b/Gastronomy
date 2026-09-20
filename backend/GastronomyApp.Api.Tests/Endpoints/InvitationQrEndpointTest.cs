@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GastronomyApp.Api.Tests.Endpoints;
 
 [TestFixture]
-public sealed class InvitationQrEndpointTest
+public sealed class InvitationQREndpointTest
 {
 
   [SetUp]
@@ -26,9 +26,9 @@ public sealed class InvitationQrEndpointTest
 
   private OrderTestContext _context = null!;
 
-  private sealed record CreatedInvitation(Guid InvitationId, string QrUrl);
+  private sealed record CreatedInvitation(Guid InvitationId, string QRUrl);
 
-  private string QrPathFor(Guid invitationId)
+  private string QRPathFor(Guid invitationId)
   {
     return $"/api/admin/enrolment/invitations/{invitationId}/qr.svg";
   }
@@ -36,7 +36,7 @@ public sealed class InvitationQrEndpointTest
   [Test]
   public async Task GetQr_AnInvitationThatNeverExisted_AnswersNotFoundWithWordingForTheAdmin()
   {
-    using var response = await _context.Client.GetAsync(QrPathFor(Guid.NewGuid()));
+    using var response = await _context.Client.GetAsync(QRPathFor(Guid.NewGuid()));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -52,11 +52,11 @@ public sealed class InvitationQrEndpointTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    using var response = await _context.Client.GetAsync(QRPathFor(invitation.InvitationId));
     var svg = await response.Content.ReadAsStringAsync();
 
     var side = ReadDeclaredSide(svg);
-    var smallestSideThatHolds = SmallestModuleCountFor(invitation.QrUrl.Length) * PixelsPerModule;
+    var smallestSideThatHolds = SmallestModuleCountFor(invitation.QRUrl.Length) * PixelsPerModule;
 
     Assert.Multiple(() =>
                     {
@@ -65,7 +65,7 @@ public sealed class InvitationQrEndpointTest
                       Assert.That(svg, Does.Contain("<svg"));
                       Assert.That(side,
                                   Is.GreaterThanOrEqualTo(smallestSideThatHolds),
-                                  $"A QR carrying {invitation.QrUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
+                                  $"A QR carrying {invitation.QRUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
                       Assert.That(side % PixelsPerModule, Is.EqualTo(0), "The QR must be drawn in whole modules.");
                     });
   }
@@ -76,14 +76,14 @@ public sealed class InvitationQrEndpointTest
     var first = await CreateInvitationAsync();
 
     string firstSvg;
-    using (var firstResponse = await _context.Client.GetAsync(QrPathFor(first.InvitationId)))
+    using (var firstResponse = await _context.Client.GetAsync(QRPathFor(first.InvitationId)))
     {
       firstSvg = await firstResponse.Content.ReadAsStringAsync();
     }
 
     var second = await CreateInvitationAsync();
 
-    using var secondResponse = await _context.Client.GetAsync(QrPathFor(second.InvitationId));
+    using var secondResponse = await _context.Client.GetAsync(QRPathFor(second.InvitationId));
     var secondSvg = await secondResponse.Content.ReadAsStringAsync();
 
     Assert.Multiple(() =>
@@ -103,7 +103,7 @@ public sealed class InvitationQrEndpointTest
     var first = await CreateInvitationAsync();
     await CreateInvitationAsync();
 
-    using var response = await _context.Client.GetAsync(QrPathFor(first.InvitationId));
+    using var response = await _context.Client.GetAsync(QRPathFor(first.InvitationId));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -119,7 +119,7 @@ public sealed class InvitationQrEndpointTest
   {
     var invitation = await CreateInvitationAsync();
 
-    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    using var response = await _context.Client.GetAsync(QRPathFor(invitation.InvitationId));
 
     Assert.Multiple(() =>
                     {
@@ -132,7 +132,7 @@ public sealed class InvitationQrEndpointTest
   public async Task GetQr_InvitationAlreadyRedeemed_SaysAPhoneHasUsedIt()
   {
     var invitation = await CreateInvitationAsync();
-    var code = invitation.QrUrl[(invitation.QrUrl.LastIndexOf('/') + 1)..];
+    var code = invitation.QRUrl[(invitation.QRUrl.LastIndexOf('/') + 1)..];
 
     using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                                new RedeemBody(code, null, "NUnit")))
@@ -140,7 +140,7 @@ public sealed class InvitationQrEndpointTest
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    using var response = await _context.Client.GetAsync(QRPathFor(invitation.InvitationId));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -164,7 +164,7 @@ public sealed class InvitationQrEndpointTest
       await database.SaveChangesAsync();
     }
 
-    using var response = await _context.Client.GetAsync(QrPathFor(invitation.InvitationId));
+    using var response = await _context.Client.GetAsync(QRPathFor(invitation.InvitationId));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>

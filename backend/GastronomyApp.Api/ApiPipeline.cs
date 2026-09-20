@@ -42,7 +42,7 @@ public sealed class ApiPipeline
     app.MapAdminItemEndpoints();
     app.MapAdminStaffMembersEndpoints();
     app.MapAdminEnrolmentEndpoints();
-    app.MapAdminInvitationQrEndpoints();
+    app.MapAdminInvitationQREndpoints();
     app.MapAdminFestivalEndpoints();
     app.MapFallback("/{*clientRoute:nonfile}",
                     (HttpContext httpContext, ClientRouteFallbackResponder responder) => responder.Respond(httpContext));

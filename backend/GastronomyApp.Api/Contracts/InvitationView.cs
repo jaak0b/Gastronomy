@@ -4,7 +4,7 @@ namespace GastronomyApp.Api.Contracts;
 
 public sealed record InvitationView(
   Guid InvitationId,
-  string QrUrl,
+  string QRUrl,
   DateTime ExpiresAtUtc,
   DeviceOwnerKind? OwnerKind,
   StaffMemberView? StaffMember,

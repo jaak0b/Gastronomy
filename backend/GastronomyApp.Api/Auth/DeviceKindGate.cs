@@ -15,7 +15,7 @@ public sealed class DeviceKindGate
     _resultEnvelope = resultEnvelope;
   }
 
-  public IResult? RefusalFor(HttpContext httpContext, DeviceOwnerKind requiredKind)
+  public IResult? FindRefusal(HttpContext httpContext, DeviceOwnerKind requiredKind)
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
