@@ -8,6 +8,8 @@ public sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
 {
   public void Configure(EntityTypeBuilder<Device> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(device => device.Id);
     builder.Property(device => device.Id).ValueGeneratedNever();
     builder.Property(device => device.Language).IsRequired().HasMaxLength(2);

@@ -5,6 +5,39 @@ namespace GastronomyApp.Infrastructure.Tests;
 public sealed class SqliteConnectionFactoryTest
 {
   [Test]
+  public void Open_NullDataSource_ThrowsArgumentNullException()
+  {
+    SqliteConnectionFactory factory = new();
+
+    Assert.That(() => factory.Open(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Open_EmptyDataSource_ThrowsArgumentException()
+  {
+    SqliteConnectionFactory factory = new();
+
+    Assert.That(() => factory.Open(""), Throws.ArgumentException);
+  }
+
+  [Test]
+  public void ApplyConnectionPolicy_NullConnection_ThrowsArgumentNullException()
+  {
+    SqliteConnectionFactory factory = new();
+
+    Assert.That(() => factory.ApplyConnectionPolicy(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void ApplyConnectionPolicyAsync_NullConnection_ThrowsArgumentNullException()
+  {
+    SqliteConnectionFactory factory = new();
+
+    Assert.That(() => factory.ApplyConnectionPolicyAsync(null!, CancellationToken.None),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
   public async Task OpenConnection_OnFile_SetsWalModeAndBusyTimeout()
   {
     var path = Path.Combine(Path.GetTempPath(), $"gastronomyapp-test-{Guid.NewGuid():N}.db");

@@ -11,6 +11,8 @@ public sealed class Pbkdf2SecretHasher
 
   public HashedSecret Hash(string secret)
   {
+    ArgumentNullException.ThrowIfNull(secret);
+
     var salt = RandomNumberGenerator.GetBytes(SaltLengthBytes);
     var hash = Rfc2898DeriveBytes.Pbkdf2(secret,
                                          salt,
@@ -23,6 +25,11 @@ public sealed class Pbkdf2SecretHasher
 
   public bool Verify(string secret, byte[] storedHash, byte[] storedSalt, int storedIterations, string storedAlgorithm)
   {
+    ArgumentNullException.ThrowIfNull(secret);
+    ArgumentNullException.ThrowIfNull(storedHash);
+    ArgumentNullException.ThrowIfNull(storedSalt);
+    ArgumentNullException.ThrowIfNull(storedAlgorithm);
+
     if (storedAlgorithm != AlgorithmName)
     {
       return false;

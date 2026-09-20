@@ -8,6 +8,8 @@ public sealed class HubConnectionRegistry
 
   public void Add(TrackedHubConnection connection)
   {
+    ArgumentNullException.ThrowIfNull(connection);
+
     _connections[connection.ConnectionId] = connection;
   }
 

@@ -8,6 +8,8 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
 {
   public void Configure(EntityTypeBuilder<OrderItem> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(item => item.Id);
     builder.Property(item => item.Id).ValueGeneratedNever();
     builder.Property(item => item.StationOrderId).IsRequired();

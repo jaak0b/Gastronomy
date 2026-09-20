@@ -5,6 +5,54 @@ namespace GastronomyApp.Infrastructure.Tests;
 public sealed class Pbkdf2SecretHasherTest
 {
   [Test]
+  public void Hash_NullSecret_ThrowsArgumentNullException()
+  {
+    Pbkdf2SecretHasher hasher = new();
+
+    Assert.That(() => hasher.Hash(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Verify_NullSecret_ThrowsArgumentNullException()
+  {
+    Pbkdf2SecretHasher hasher = new();
+    var hashed = hasher.Hash("the-secret");
+
+    Assert.That(() => hasher.Verify(null!, hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Verify_NullStoredHash_ThrowsArgumentNullException()
+  {
+    Pbkdf2SecretHasher hasher = new();
+    var hashed = hasher.Hash("the-secret");
+
+    Assert.That(() => hasher.Verify("the-secret", null!, hashed.Salt, hashed.Iterations, hashed.Algorithm),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Verify_NullStoredSalt_ThrowsArgumentNullException()
+  {
+    Pbkdf2SecretHasher hasher = new();
+    var hashed = hasher.Hash("the-secret");
+
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, null!, hashed.Iterations, hashed.Algorithm),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Verify_NullStoredAlgorithm_ThrowsArgumentNullException()
+  {
+    Pbkdf2SecretHasher hasher = new();
+    var hashed = hasher.Hash("the-secret");
+
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, null!),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
   public void Hash_ThenVerify_SameSecret_ReturnsTrue()
   {
     Pbkdf2SecretHasher hasher = new();

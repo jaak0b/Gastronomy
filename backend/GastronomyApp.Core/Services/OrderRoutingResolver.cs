@@ -10,6 +10,9 @@ public sealed class OrderRoutingResolver
                                                          IReadOnlyCollection<Station> activeStations,
                                                          Guid? chosenStationId)
   {
+    ArgumentNullException.ThrowIfNull(assignments);
+    ArgumentNullException.ThrowIfNull(activeStations);
+
     HashSet<Guid> assignedStationIds = assignments
                                       .Where(assignment => assignment.CatalogItemId == catalogItemId)
                                       .Select(assignment => assignment.StationId)

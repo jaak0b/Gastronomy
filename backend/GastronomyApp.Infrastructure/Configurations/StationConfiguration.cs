@@ -8,6 +8,8 @@ public sealed class StationConfiguration : IEntityTypeConfiguration<Station>
 {
   public void Configure(EntityTypeBuilder<Station> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(station => station.Id);
     builder.Property(station => station.Id).ValueGeneratedNever();
     builder.Property(station => station.Name).IsRequired();

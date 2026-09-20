@@ -9,6 +9,10 @@ public sealed class AppLanguage
   public string Current
   {
     get => _current;
-    set => _current = string.IsNullOrWhiteSpace(value) ? GermanCode : value;
+    set
+    {
+      ArgumentException.ThrowIfNullOrWhiteSpace(value);
+      _current = value;
+    }
   }
 }

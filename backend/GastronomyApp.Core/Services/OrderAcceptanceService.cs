@@ -39,6 +39,8 @@ public sealed class OrderAcceptanceService
   public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(OrderAcceptanceRequest request,
                                                                                        CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(request);
+
     var shapeFailure = ValidateShape(request);
     if (shapeFailure is not null)
     {

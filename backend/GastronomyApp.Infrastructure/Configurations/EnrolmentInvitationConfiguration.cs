@@ -10,6 +10,8 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
 
   public void Configure(EntityTypeBuilder<EnrolmentInvitation> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(invitation => invitation.Id);
     builder.Property(invitation => invitation.Id).ValueGeneratedNever();
     builder.Property(invitation => invitation.QRCodeHash).IsRequired();

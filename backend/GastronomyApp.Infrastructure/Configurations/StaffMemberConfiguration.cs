@@ -8,6 +8,8 @@ public sealed class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMem
 {
   public void Configure(EntityTypeBuilder<StaffMember> builder)
   {
+    ArgumentNullException.ThrowIfNull(builder);
+
     builder.HasKey(staffMember => staffMember.Id);
     builder.Property(staffMember => staffMember.Id).ValueGeneratedNever();
     builder.Property(staffMember => staffMember.Name).IsRequired();

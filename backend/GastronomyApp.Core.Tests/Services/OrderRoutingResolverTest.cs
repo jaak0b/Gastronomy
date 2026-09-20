@@ -44,6 +44,20 @@ public sealed class OrderRoutingResolverTest
   }
 
   [Test]
+  public void Resolve_NullAssignments_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _resolver.Resolve(_catalogItemId, null!, [BuildStation(_kitchenId, "Kueche", 1)], null),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Resolve_NullActiveStations_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], null!, null),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
   public void Resolve_SingleCandidateAndNoChoice_RoutesThereWithoutStationControl()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,

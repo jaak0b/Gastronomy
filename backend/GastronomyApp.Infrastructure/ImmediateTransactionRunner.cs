@@ -13,6 +13,9 @@ public sealed class ImmediateTransactionRunner
                                              Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
                                              CancellationToken cancellationToken)
   {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(body);
+
     var previousBehavior = dbContext.Database.AutoTransactionBehavior;
     if (previousBehavior == AutoTransactionBehavior.Never)
     {

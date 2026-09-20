@@ -14,6 +14,8 @@ public sealed class SqliteFailureTranslator
 
   public bool IsDatabaseUnavailable(SqliteException exception)
   {
+    ArgumentNullException.ThrowIfNull(exception);
+
     return exception.SqliteErrorCode switch
            {
              SqliteBusy => true,
@@ -28,12 +30,16 @@ public sealed class SqliteFailureTranslator
 
   public bool IsUniqueConstraintViolation(SqliteException exception)
   {
+    ArgumentNullException.ThrowIfNull(exception);
+
     return exception.SqliteErrorCode == SqliteConstraint
            && exception.Message.Contains("UNIQUE constraint failed", StringComparison.Ordinal);
   }
 
   public InfrastructureException TranslateConflict(SqliteException exception)
   {
+    ArgumentNullException.ThrowIfNull(exception);
+
     return new(InfrastructureFailureReason.ConflictingChange,
                "Another write reached the same unique row first.",
                exception);
@@ -41,6 +47,8 @@ public sealed class SqliteFailureTranslator
 
   public InfrastructureException Translate(SqliteException exception)
   {
+    ArgumentNullException.ThrowIfNull(exception);
+
     return new(InfrastructureFailureReason.DatabaseUnavailable,
                "The order database could not be written to.",
                exception);

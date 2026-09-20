@@ -169,6 +169,13 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
+  public void AcceptAsync_NullRequest_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _service.AcceptAsync(null!, CancellationToken.None),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
   public async Task AcceptAsync_EmptyLines_FailsWithNoLinesAndAllocatesNothing()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result =

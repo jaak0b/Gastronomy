@@ -10,6 +10,27 @@ namespace GastronomyApp.Infrastructure.Tests;
 public sealed class ImmediateTransactionRunnerTest
 {
   [Test]
+  public void RunAsync_NullDbContext_ThrowsArgumentNullException()
+  {
+    ImmediateTransactionRunner runner = new();
+
+    Assert.That(() => runner.RunAsync<int>(null!,
+                                          _ => Task.FromResult(new TransactionOutcome<int> { Value = 1, ShouldCommit = true }),
+                                          TestContext.CurrentContext.CancellationToken),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void RunAsync_NullBody_ThrowsArgumentNullException()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    ImmediateTransactionRunner runner = new();
+
+    Assert.That(() => runner.RunAsync<int>(fixture.DbContext, null!, TestContext.CurrentContext.CancellationToken),
+                Throws.ArgumentNullException);
+  }
+
+  [Test]
   public async Task RunAsync_BodyThrows_LeavesNoTransactionOpenOnTheConnection()
   {
     using SqliteTempFileFixture fixture = new();

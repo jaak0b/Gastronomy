@@ -10,6 +10,30 @@ public sealed class SqliteFailureTranslatorTest
   private readonly SqliteFailureTranslator _translator = new();
 
   [Test]
+  public void IsDatabaseUnavailable_NullException_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _translator.IsDatabaseUnavailable(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void IsUniqueConstraintViolation_NullException_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _translator.IsUniqueConstraintViolation(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void TranslateConflict_NullException_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _translator.TranslateConflict(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public void Translate_NullException_ThrowsArgumentNullException()
+  {
+    Assert.That(() => _translator.Translate(null!), Throws.ArgumentNullException);
+  }
+
+  [Test]
   public void IsUniqueConstraintViolation_RealUniqueIndexCollision_IsRecognised()
   {
     using SqliteInMemoryFixture fixture = new();
