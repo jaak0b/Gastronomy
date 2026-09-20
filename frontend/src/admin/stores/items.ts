@@ -5,6 +5,7 @@ import { adminItemsResponseSchema, adminItemSchema } from '../../shared/api/apiS
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
+import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
 import type { AdminItem } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -30,6 +31,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   const festivalInView = ref<string | null>(null)
 
   const itemsGate = createLatestRequestGate()
+  const pendingCreatedItems = createPendingCreatedEntities<AdminItem>((item) => item.itemId)
 
   async function loadItemsFrom(path: string): Promise<void> {
     await loadAdminList({
@@ -38,7 +40,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
       gate: itemsGate,
       itemsOf: (response) => response.items,
       showItems: (loaded) => {
-        items.value = loaded
+        items.value = pendingCreatedItems.mergeInto(loaded)
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed
@@ -47,11 +49,17 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   async function load(): Promise<void> {
+    if (festivalInView.value !== null) {
+      pendingCreatedItems.clear()
+    }
     festivalInView.value = null
     await loadItemsFrom('/api/admin/items')
   }
 
   async function loadAtTheFestival(festivalId: string): Promise<void> {
+    if (festivalInView.value !== festivalId) {
+      pendingCreatedItems.clear()
+    }
     festivalInView.value = festivalId
     await loadItemsFrom(`/api/admin/items?festivalId=${festivalId}`)
   }
@@ -76,7 +84,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   }
 
   async function create(item: AdminItemDraft): Promise<AdminActionResult<AdminItem>> {
-    const token = itemsGate.startRequest()
+    const scopeAtStart = festivalInView.value
     const result = await request('/api/admin/items', {
       method: 'POST',
       body: buildItemRequestBody(item),
@@ -85,8 +93,9 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
     }
-    if (itemsGate.isNewestRequest(token)) {
-      items.value = [...items.value, result.data]
+    if (scopeAtStart === festivalInView.value) {
+      pendingCreatedItems.remember(result.data)
+      items.value = pendingCreatedItems.mergeInto(items.value)
     }
     return adminOk(result.data)
   }

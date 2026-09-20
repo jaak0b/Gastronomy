@@ -224,3 +224,69 @@ describe('a station the laptop would not save', () => {
     })
   })
 })
+
+const CREATED_STATION = {
+  stationId: 'station-neu',
+  name: 'Zelt',
+  sortOrder: 2,
+  isActive: true,
+  hasDevice: false,
+  isAtTheFestival: false,
+}
+
+describe('a station created while a list read is on the way', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stays in the list when the slower read answers first', async () => {
+    let releaseThePost = (): void => {}
+    const thePost = new Promise<Response>((carryOn) => {
+      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_STATION), { status: 201 }))
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? await thePost
+          : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
+      ),
+    )
+    const stations = useAdminStationsStore()
+
+    const created = stations.create({ name: 'Zelt', sortOrder: 2 })
+    await stations.load()
+    releaseThePost()
+    await created
+
+    expect(stations.stations.map((station) => station.stationId)).toEqual(['station-neu'])
+  })
+
+  it('does not show the created station in a list of another festival', async () => {
+    let releaseThePost = (): void => {}
+    const thePost = new Promise<Response>((carryOn) => {
+      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_STATION), { status: 201 }))
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? await thePost
+          : new Response(JSON.stringify({ stations: [] }), { status: 200 }),
+      ),
+    )
+    const stations = useAdminStationsStore()
+
+    await stations.loadAtTheFestival('fest-1')
+    const created = stations.create({ name: 'Zelt', sortOrder: 2 })
+    await stations.loadAtTheFestival('fest-2')
+    releaseThePost()
+    await created
+
+    expect(stations.stations).toEqual([])
+  })
+})

@@ -172,6 +172,63 @@ describe('an item the laptop would not switch on or off', () => {
   })
 })
 
+describe('an article created while a list read is on the way', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stays in the list when the slower read answers first', async () => {
+    let releaseThePost = (): void => {}
+    const thePost = new Promise<Response>((carryOn) => {
+      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_ITEM), { status: 201 }))
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? await thePost
+          : new Response(JSON.stringify({ items: [] }), { status: 200 }),
+      ),
+    )
+    const items = useAdminItemsStore()
+
+    const created = items.create(AN_ITEM)
+    await items.load()
+    releaseThePost()
+    await created
+
+    expect(items.items.map((item) => item.itemId)).toEqual(['item-neu'])
+  })
+
+  it('does not show the created article in a list of another festival', async () => {
+    let releaseThePost = (): void => {}
+    const thePost = new Promise<Response>((carryOn) => {
+      releaseThePost = () => carryOn(new Response(JSON.stringify(CREATED_ITEM), { status: 201 }))
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? await thePost
+          : new Response(JSON.stringify({ items: [] }), { status: 200 }),
+      ),
+    )
+    const items = useAdminItemsStore()
+
+    await items.loadAtTheFestival('fest-1')
+    const created = items.create(AN_ITEM)
+    await items.loadAtTheFestival('fest-2')
+    releaseThePost()
+    await created
+
+    expect(items.items).toEqual([])
+  })
+})
+
 describe('a new item the laptop creates', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

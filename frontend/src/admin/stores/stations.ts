@@ -5,6 +5,7 @@ import { adminStationsResponseSchema, adminStationSchema } from '../../shared/ap
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
+import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
 import type { AdminStation } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -23,6 +24,9 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   const festivalInView = ref<string | null>(null)
 
   const stationsGate = createLatestRequestGate()
+  const pendingCreatedStations = createPendingCreatedEntities<AdminStation>(
+    (station) => station.stationId,
+  )
 
   async function loadStationsFrom(path: string): Promise<void> {
     await loadAdminList({
@@ -31,7 +35,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
       gate: stationsGate,
       itemsOf: (response) => response.stations,
       showItems: (loaded) => {
-        stations.value = loaded
+        stations.value = pendingCreatedStations.mergeInto(loaded)
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed
@@ -40,11 +44,17 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   async function load(): Promise<void> {
+    if (festivalInView.value !== null) {
+      pendingCreatedStations.clear()
+    }
     festivalInView.value = null
     await loadStationsFrom('/api/admin/stations')
   }
 
   async function loadAtTheFestival(festivalId: string): Promise<void> {
+    if (festivalInView.value !== festivalId) {
+      pendingCreatedStations.clear()
+    }
     festivalInView.value = festivalId
     await loadStationsFrom(`/api/admin/stations?festivalId=${festivalId}`)
   }
@@ -59,7 +69,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   }
 
   async function create(draft: StationDraft): Promise<AdminActionResult<AdminStation>> {
-    const token = stationsGate.startRequest()
+    const scopeAtStart = festivalInView.value
     const result = await request('/api/admin/stations', {
       method: 'POST',
       body: { name: draft.name, sortOrder: draft.sortOrder },
@@ -68,8 +78,9 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
     }
-    if (stationsGate.isNewestRequest(token)) {
-      stations.value = [...stations.value, result.data]
+    if (scopeAtStart === festivalInView.value) {
+      pendingCreatedStations.remember(result.data)
+      stations.value = pendingCreatedStations.mergeInto(stations.value)
     }
     return adminOk(result.data)
   }
