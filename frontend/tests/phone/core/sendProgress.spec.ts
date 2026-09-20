@@ -3,7 +3,7 @@ import type { OrderSubmitRequest } from '../../../src/shared/api/apiTypes'
 import {
   changesAreRefusedFor,
   noSendProgress,
-  paperIsTheOnlyWayLeft,
+  writingItDownIsTheOnlyWayLeft,
   progressAfterALoad,
   sendHasFailedIn,
   sendIsUnderWayIn,
@@ -81,44 +81,44 @@ describe('what the phone may still offer after an unsuccessful send', () => {
 
   it('leaves the waiter with the retry alone after one attempt the laptop never answered', () => {
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 1 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 1 }),
     ).toBe(false)
   })
 
   it('offers paper once two attempts have gone unanswered', () => {
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 2 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('failed', anUnresolvedAttempt()), attempts: 2 }),
     ).toBe(true)
   })
 
   it('offers no paper after a refusal the waiter is still allowed to put right', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('rejected'), attempts: 5 })).toBe(false)
+    expect(writingItDownIsTheOnlyWayLeft({ ...sendThatIs('rejected'), attempts: 5 })).toBe(false)
   })
 
   it('offers no paper while nothing has been sent and while an order is on its way', () => {
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('idle', anUnresolvedAttempt()), attempts: 5 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('idle', anUnresolvedAttempt()), attempts: 5 }),
     ).toBe(false)
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('sending', anUnresolvedAttempt()), attempts: 5 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('sending', anUnresolvedAttempt()), attempts: 5 }),
     ).toBe(false)
   })
 
   it('offers no paper for an order the laptop took', () => {
-    expect(paperIsTheOnlyWayLeft({ ...sendThatIs('accepted'), attempts: 5 })).toBe(false)
+    expect(writingItDownIsTheOnlyWayLeft({ ...sendThatIs('accepted'), attempts: 5 })).toBe(false)
   })
 })
 
 describe('an order the laptop refused although it may already hold it', () => {
   it('offers paper on the first refusal, because the waiter is not allowed to change the order', () => {
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 1 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 1 }),
     ).toBe(true)
   })
 
   it('offers paper however few attempts were made, because a second refusal says the same thing', () => {
     expect(
-      paperIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 0 }),
+      writingItDownIsTheOnlyWayLeft({ ...sendThatIs('rejected', anUnresolvedAttempt()), attempts: 0 }),
     ).toBe(true)
   })
 })

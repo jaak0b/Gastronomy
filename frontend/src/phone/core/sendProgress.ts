@@ -6,7 +6,7 @@ export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted']
 
 export type SendState = (typeof SEND_STATES)[number]
 
-const PAPER_FALLBACK_AFTER_ATTEMPTS = 2
+const WRITE_IT_DOWN_AFTER_ATTEMPTS = 2
 
 export interface SendProgress {
   state: SendState
@@ -70,14 +70,14 @@ export function changesAreRefusedFor(progress: SendProgress): boolean {
   return progress.unresolvedAttempt !== null
 }
 
-export function paperIsTheOnlyWayLeft(progress: SendProgress): boolean {
+export function writingItDownIsTheOnlyWayLeft(progress: SendProgress): boolean {
   switch (progress.state) {
     case 'idle':
     case 'sending':
     case 'accepted':
       return false
     case 'failed':
-      return progress.attempts >= PAPER_FALLBACK_AFTER_ATTEMPTS
+      return progress.attempts >= WRITE_IT_DOWN_AFTER_ATTEMPTS
     case 'rejected':
       return progress.unresolvedAttempt !== null
     default:

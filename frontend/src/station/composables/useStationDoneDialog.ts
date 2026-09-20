@@ -3,7 +3,7 @@ import type { StationOrder } from '../../shared/api/apiTypes'
 import { selectedUnits, type ItemLine } from '../../shared/core/stationBoard'
 import { useStationStore } from '../stores/station'
 
-export interface StationDoneDialog {
+export interface StationDoneDialogState {
   doneStationOrder: Ref<StationOrder | null>
   doneUnits: ComputedRef<ItemLine[]>
   openDone: (stationOrder: StationOrder, orderItemIds: string[]) => void
@@ -11,7 +11,7 @@ export interface StationDoneDialog {
   confirmDone: () => Promise<void>
 }
 
-export function useStationDoneDialog(): StationDoneDialog {
+export function useStationDoneDialog(): StationDoneDialogState {
   const station = useStationStore()
 
   const doneStationOrder = ref<StationOrder | null>(null)

@@ -24,7 +24,7 @@ export interface Placement {
   stationIds: string[]
 }
 
-export interface ItemRow {
+export interface FestivalItemRow {
   price: LaptopConfirmedField<string>
   stations: LaptopConfirmedField<string[]>
   onItsWay: Placement | null
@@ -34,7 +34,7 @@ export interface ItemRow {
 
 export interface FestivalItemRows {
   itemsAtTheFestival: ComputedRef<PlacedItem[]>
-  rowShownFor: (itemId: string) => ItemRow
+  rowShownFor: (itemId: string) => FestivalItemRow
   rowRefusalText: (itemId: string) => string | null
   priceIsUnreadable: (itemId: string) => boolean
   typePrice: (itemId: string, typed: string) => void
@@ -48,7 +48,7 @@ function namesTheSameStations(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((stationId) => right.includes(stationId))
 }
 
-function emptyItemRow(): ItemRow {
+function emptyFestivalItemRow(): FestivalItemRow {
   return {
     price: laptopConfirmedField('', ''),
     stations: laptopConfirmedField<string[]>([], []),
@@ -61,38 +61,38 @@ function emptyItemRow(): ItemRow {
 export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
   const { t, locale } = useI18n()
   const items = useAdminItemsStore()
-  const rows = ref(new Map<string, ItemRow>())
+  const rows = ref(new Map<string, FestivalItemRow>())
 
   const itemsAtTheFestival = computed(() =>
     items.items.filter((item): item is PlacedItem => item.atTheFestival !== null),
   )
 
-  function rowForPlacedItem(item: PlacedItem): ItemRow {
+  function rowForPlacedItem(item: PlacedItem): FestivalItemRow {
     const priceText = formatEuroInput(item.atTheFestival.priceCents, appLanguageOf(locale.value))
     const stationIds = [...item.atTheFestival.stationIds]
     return {
-      ...emptyItemRow(),
+      ...emptyFestivalItemRow(),
       price: laptopConfirmedField(priceText, priceText),
       stations: laptopConfirmedField([...stationIds], [...stationIds]),
       soldOutSwitchRenderKey: rows.value.get(item.itemId)?.soldOutSwitchRenderKey ?? 0,
     }
   }
 
-  function awaitsTheLaptop(row: ItemRow): boolean {
+  function awaitsTheLaptop(row: FestivalItemRow): boolean {
     return (
       stillDiffersFromTheLaptop(row.price)
       || stillDiffersFromTheLaptop(row.stations, namesTheSameStations)
     )
   }
 
-  function isBeingEdited(row: ItemRow): boolean {
+  function isBeingEdited(row: FestivalItemRow): boolean {
     return row.onItsWay !== null || row.refusal !== null || awaitsTheLaptop(row)
   }
 
   watch(
     itemsAtTheFestival,
     (listed) => {
-      const next = new Map<string, ItemRow>()
+      const next = new Map<string, FestivalItemRow>()
       for (const item of listed) {
         const known = rows.value.get(item.itemId)
         next.set(
@@ -105,18 +105,18 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     { immediate: true },
   )
 
-  function rowShownFor(itemId: string): ItemRow {
-    return rows.value.get(itemId) ?? emptyItemRow()
+  function rowShownFor(itemId: string): FestivalItemRow {
+    return rows.value.get(itemId) ?? emptyFestivalItemRow()
   }
 
-  function matchesPlacement(row: ItemRow, placement: Placement): boolean {
+  function matchesPlacement(row: FestivalItemRow, placement: Placement): boolean {
     return (
       row.price.edited === placement.priceText
       && namesTheSameStations(row.stations.edited, placement.stationIds)
     )
   }
 
-  function isAlreadyAtTheLaptop(row: ItemRow): boolean {
+  function isAlreadyAtTheLaptop(row: FestivalItemRow): boolean {
     return row.onItsWay === null ? !awaitsTheLaptop(row) : matchesPlacement(row, row.onItsWay)
   }
 
@@ -163,7 +163,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     return typed.trim().length > 0 && parseEuroInput(typed) === null
   }
 
-  function priceTheLaptopCanTake(itemId: string, row: ItemRow): number | null {
+  function priceTheLaptopCanTake(itemId: string, row: FestivalItemRow): number | null {
     const priceCents = parseEuroInput(row.price.edited)
     if (priceCents === null) {
       refuse(itemId, 'admin.itemPriceOutOfRange')
@@ -197,7 +197,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     await sendUntilTheLaptopHasTheRow(itemId, row)
   }
 
-  async function sendUntilTheLaptopHasTheRow(itemId: string, row: ItemRow): Promise<void> {
+  async function sendUntilTheLaptopHasTheRow(itemId: string, row: FestivalItemRow): Promise<void> {
     while (awaitsTheLaptop(row)) {
       const priceCents = priceTheLaptopCanTake(itemId, row)
       if (priceCents === null) {

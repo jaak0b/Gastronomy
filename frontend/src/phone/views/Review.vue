@@ -151,7 +151,7 @@ function backToItems(): void {
       @cancelled="keepTheOrderOnTheScreen"
     />
     <SendFailedTwiceDialog
-      v-if="order.onlyPaperIsLeft"
+      v-if="order.onlyWritingItDownIsLeft"
       @written-down="startTheNextOrder"
       @try-again="sendAgain"
     />

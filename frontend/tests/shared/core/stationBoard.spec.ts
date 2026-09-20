@@ -129,18 +129,20 @@ describe('grouping what an employee selected', () => {
 })
 
 describe('grouping the open items of one card', () => {
-  it('keeps units with the same name and note together and separates different notes', () => {
+  it('keeps the lines in the order the laptop sent the items in, not in the order of their names', () => {
     const items = [
-      stationOrderItem('d', 'Bier'),
-      stationOrderItem('a', 'Frankfurter', null, 'Mit Ketchup'),
-      stationOrderItem('b', 'Frankfurter', null, 'Mit Ketchup'),
-      stationOrderItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
+      stationOrderItem('a', 'Wasser'),
+      stationOrderItem('b', 'Frankfurter', null, 'Ohne Ketchup'),
+      stationOrderItem('c', 'Bier'),
+      stationOrderItem('d', 'Frankfurter', null, 'Ohne Ketchup'),
+      stationOrderItem('e', 'Frankfurter', null, 'Mit Ketchup'),
     ]
 
     expect(articleAndUnits(itemLines(items))).toEqual([
+      { itemName: 'Wasser', note: null, units: 1 },
+      { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 2 },
       { itemName: 'Bier', note: null, units: 1 },
-      { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 2 },
-      { itemName: 'Frankfurter', note: 'Ohne Ketchup', units: 1 },
+      { itemName: 'Frankfurter', note: 'Mit Ketchup', units: 1 },
     ])
   })
 

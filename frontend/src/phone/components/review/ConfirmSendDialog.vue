@@ -11,7 +11,7 @@ import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../../shared/core/stationBoard'
 import {
-  deliveriesThatReachedAStation,
+  deliveriesWithAStation,
   stationDeliveries,
   type StationDelivery,
 } from '../../core/stationDeliveries'
@@ -39,7 +39,7 @@ const keyboardInset = useKeyboardInset()
 const amount = computed(() => formatPrice(props.totalCents, props.language))
 
 const stations = computed(() =>
-  deliveriesThatReachedAStation(
+  deliveriesWithAStation(
     stationDeliveries(props.lines, props.estimates, props.deliveryModeFor),
   ),
 )

@@ -365,12 +365,7 @@ enough; this is not an exhaustive edge-case matrix.
   minimize, and it must never be shrunk to make a test file "look tidy" or to speed a run up.
 - **Two-scan flows** (XY/XZ/YZ) upload both scans via `scans-input`, wait for each `scan-island`
   to show a `ring-count`, then wait for `plane-status-{plane}` before clicking `analyze-btn`.
-- **Existing testid inventory** (`src/components/ScanPage.vue` and the results pages):
-  `calibrate-btn`, `scans-input`, `scan-island`, `ring-count`, `plane-group-{plane}`,
-  `plane-status-{plane}`, `analyze-btn`, `status`, `startover-btn`, `scale-{axis}`,
-  `skew-{plane}`, `skew-code`, `size-code`, `zero-note-*`; the PA and EM flows follow the same
-  `{flow}-{field}` convention (`em-width`, `em-failure`, `pa-best`, `pa-code`). Add a new testid rather than
-  matching on visible text or CSS classes, which drift.
+- **Add a new testid** rather than matching on visible text or CSS classes, which drift.
 - **Config**: `playwright.config.ts` sets a 120 second per-test timeout and a 240 second
   webServer startup against the production build (`npm run build && npm run preview`), so a
   webtest runs against the real bundle, not the dev server.

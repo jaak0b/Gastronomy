@@ -220,7 +220,7 @@ describe('an order whose send failed', () => {
 
     await order.send(null)
 
-    expect(order.onlyPaperIsLeft).toBe(false)
+    expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
 
   it('says paper is the way out once the second attempt has failed too', async () => {
@@ -230,7 +230,7 @@ describe('an order whose send failed', () => {
 
     await order.sendAgain()
 
-    expect(order.onlyPaperIsLeft).toBe(true)
+    expect(order.onlyWritingItDownIsLeft).toBe(true)
   })
 })
 
@@ -678,7 +678,7 @@ describe('an order whose send failed, after the page is loaded again', () => {
     const afterTheReload = useOrderStore()
     await afterTheReload.sendAgain()
 
-    expect(afterTheReload.onlyPaperIsLeft).toBe(true)
+    expect(afterTheReload.onlyWritingItDownIsLeft).toBe(true)
   })
 })
 
@@ -859,7 +859,7 @@ describe('an order the laptop answered no to', () => {
 
     await order.sendAgain()
 
-    expect(order.onlyPaperIsLeft).toBe(false)
+    expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
 
   it('counts no unanswered attempt, because the laptop answered', async () => {
@@ -998,7 +998,7 @@ describe('an order the laptop could not save', () => {
 
     await order.sendAgain()
 
-    expect(order.onlyPaperIsLeft).toBe(false)
+    expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
 
   it('stays open for changes after a reload, because no order was created', async () => {
@@ -1074,7 +1074,7 @@ describe('an order the laptop answered only after it had already stayed silent o
   it('offers the paper route at once, because the refusal names nothing the waiter may change', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenRefused()
 
-    expect(order.onlyPaperIsLeft).toBe(true)
+    expect(order.onlyWritingItDownIsLeft).toBe(true)
   })
 
   it('keeps every line of the order the silent attempt may have carried away', async () => {
@@ -1201,7 +1201,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
       aReasonedRefusal(422, 'catalog.itemSoldOut'),
     )
 
-    expect(order.onlyPaperIsLeft).toBe(false)
+    expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
 
   it('stays open for changes after a reload, because the reason was written down', async () => {
@@ -1332,7 +1332,7 @@ describe('an order sent from a phone the laptop no longer knows', () => {
 
     await order.sendAgain()
 
-    expect(order.onlyPaperIsLeft).toBe(false)
+    expect(order.onlyWritingItDownIsLeft).toBe(false)
   })
 
   it('leaves an order nothing had happened to open for changes', async () => {

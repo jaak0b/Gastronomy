@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
 import { adminStationsResponseSchema, createdStationSchema } from '../../shared/api/apiSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reportAndReload } from '../core/adminMutation'
+import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import type { AdminStation } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
@@ -83,7 +83,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
           return assertNever(created)
       }
     }
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/stations/${station.stationId}`, {
         method: 'PUT',
         body: { name: station.name, sortOrder: station.sortOrder },
@@ -96,7 +96,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     festivalId: string,
     stationId: string,
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
         method: 'PUT',
       }),
@@ -108,7 +108,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     festivalId: string,
     stationId: string,
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/stations/${stationId}`, {
         method: 'DELETE',
       }),
@@ -118,12 +118,12 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
     if (isActive) {
-      return await reportAndReload(
+      return await reloadOrFailureOf(
         await requestAction(`/api/admin/stations/${id}/activate`, { method: 'POST' }),
         reload,
       )
     }
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/stations/${id}/deactivate`, { method: 'POST' }),
       reload,
     )

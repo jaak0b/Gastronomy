@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
 import { adminItemsResponseSchema, createdItemSchema } from '../../shared/api/apiSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reportAndReload } from '../core/adminMutation'
+import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import type { AdminItem } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
@@ -100,7 +100,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
           return assertNever(created)
       }
     }
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/items/${item.itemId}`, {
         method: 'PUT',
         body: buildItemRequestBody(item),
@@ -114,7 +114,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     itemId: string,
     placement: FestivalPlacement,
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/items/${itemId}`, {
         method: 'PUT',
         body: { priceCents: placement.priceCents, stationIds: placement.stationIds },
@@ -127,7 +127,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     festivalId: string,
     itemId: string,
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/items/${itemId}`, {
         method: 'DELETE',
       }),
@@ -140,7 +140,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     itemId: string,
     isAvailable: boolean,
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/festivals/${festivalId}/items/${itemId}/availability`, {
         method: 'POST',
         body: { isAvailable },
@@ -151,12 +151,12 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   async function setActive(itemId: string, isActive: boolean): Promise<AdminActionResult<null>> {
     if (isActive) {
-      return await reportAndReload(
+      return await reloadOrFailureOf(
         await requestAction(`/api/admin/items/${itemId}/activate`, { method: 'POST' }),
         reload,
       )
     }
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/items/${itemId}/deactivate`, { method: 'POST' }),
       reload,
     )

@@ -14,8 +14,15 @@ interface MessageTree {
   [key: string]: string | MessageTree
 }
 
-function knownKeys(tree: MessageTree, prefix = ''): Set<string> {
+function isMessageTree(value: unknown): value is MessageTree {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function knownKeys(tree: unknown, prefix = ''): Set<string> {
   const known = new Set<string>()
+  if (!isMessageTree(tree)) {
+    return known
+  }
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix === '' ? key : `${prefix}.${key}`
     if (typeof value === 'string') {
@@ -29,7 +36,7 @@ function knownKeys(tree: MessageTree, prefix = ''): Set<string> {
   return known
 }
 
-const RENDERABLE_KEYS = knownKeys(de as MessageTree)
+const RENDERABLE_KEYS = knownKeys(de)
 
 function wholeNumberOrNull(value: number): number | null {
   return Number.isInteger(value) ? value : null
@@ -59,40 +66,6 @@ export function adminErrorMessageForKey(
   parameters: Record<string, string | number> = {},
 ): AdminErrorMessage {
   return adminErrorMessage({ code: '', messageKey, parameters, details: null })
-}
-
-function conditionsFrom(value: unknown): unknown[] {
-  if (Array.isArray(value)) {
-    return value
-  }
-  if (typeof value === 'object' && value !== null) {
-    const inner = (value as Record<string, unknown>).blockingConditions
-    if (Array.isArray(inner)) {
-      return inner
-    }
-  }
-  return []
-}
-
-export function adminBlockingConditionMessagesFrom(value: unknown): AdminErrorMessage[] {
-  const listed: AdminErrorMessage[] = []
-  for (const entry of conditionsFrom(value)) {
-    if (typeof entry !== 'object' || entry === null) {
-      continue
-    }
-    const candidate = entry as Record<string, unknown>
-    const messageKey = typeof candidate.messageKey === 'string' ? candidate.messageKey : ''
-    const parameters =
-      typeof candidate.parameters === 'object' && candidate.parameters !== null
-        ? (candidate.parameters as Record<string, string | number>)
-        : {}
-    const resolved = adminErrorMessageForKey(messageKey, parameters)
-    if (listed.some((shown) => shown.key === resolved.key && resolved.key === GENERIC_ADMIN_ERROR_KEY)) {
-      continue
-    }
-    listed.push(resolved)
-  }
-  return listed
 }
 
 export function adminErrorMessageText(translate: Translate, message: AdminErrorMessage): string {

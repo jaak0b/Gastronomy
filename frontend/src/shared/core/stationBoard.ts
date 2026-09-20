@@ -46,9 +46,9 @@ export function deliveryModeKey(deliveryMode: DeliveryMode): string {
   }
 }
 
-export type ColourToken = 'together' | 'individual'
+export type DeliveryModeColourToken = 'together' | 'individual'
 
-export function deliveryModeColourToken(deliveryMode: DeliveryMode): ColourToken {
+export function deliveryModeColourToken(deliveryMode: DeliveryMode): DeliveryModeColourToken {
   switch (deliveryMode) {
     case 'together':
       return 'together'

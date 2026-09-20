@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
 import { adminCategoriesResponseSchema, adminCategorySchema } from '../../shared/api/apiSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
-import { adminFailureFrom, reportAndReload } from '../core/adminMutation'
+import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import type { AdminCategory } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -57,7 +57,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   async function save(
     category: AdminCategoryDraft & { categoryId: string },
   ): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/categories/${category.categoryId}`, {
         method: 'PUT',
         body: { name: category.name, colourHex: category.colourHex },
@@ -102,7 +102,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     isActive: boolean,
   ): Promise<AdminActionResult<null>> {
     const action = isActive ? 'activate' : 'deactivate'
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/categories/${categoryId}/${action}`, { method: 'POST' }),
       load,
     )

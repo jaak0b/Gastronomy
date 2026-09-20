@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { requestAction } from '../../shared/api/client'
 import { adminStaffMembersResponseSchema } from '../../shared/api/apiSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
-import { reportAndReload } from '../core/adminMutation'
+import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import type { AdminStaffMember } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -32,7 +32,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   }
 
   async function rename(id: string, name: string): Promise<AdminActionResult<null>> {
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/staff-members/${id}`, { method: 'PUT', body: { name } }),
       load,
     )
@@ -40,7 +40,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
 
   async function setActive(id: string, isActive: boolean): Promise<AdminActionResult<null>> {
     const action = isActive ? 'activate' : 'deactivate'
-    return await reportAndReload(
+    return await reloadOrFailureOf(
       await requestAction(`/api/admin/staff-members/${id}/${action}`, { method: 'POST' }),
       load,
     )

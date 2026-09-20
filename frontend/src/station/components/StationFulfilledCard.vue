@@ -10,7 +10,7 @@ const props = defineProps<{ stationOrder: StationOrder; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
 
 const { t } = useI18n()
-const { deliveryText, modeColour, orderReference, doneCounter } = useStationOrderHeader(
+const { deliveryText, deliveryModeColour, orderReference, doneCounter } = useStationOrderHeader(
   () => props.stationOrder,
 )
 
@@ -22,7 +22,7 @@ const unitSummary = computed(() =>
 </script>
 
 <template>
-  <BaseStationCard class="station-fulfilled mb-4 bg-surface" :mode-colour="modeColour">
+  <BaseStationCard class="station-fulfilled mb-4 bg-surface" :delivery-mode-colour="deliveryModeColour">
     <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
       <span class="table-name text-h5">
         {{ t('station.tableIs', { name: stationOrder.tableName }) }}
@@ -33,7 +33,7 @@ const unitSummary = computed(() =>
       <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
     </div>
     <div class="station-order-mode-row d-flex flex-wrap align-baseline ga-2 mb-1">
-      <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
+      <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: deliveryModeColour }">
         {{ deliveryText }}
       </span>
       <span v-if="unitSummary !== ''" class="unit-summary text-body-1">{{ unitSummary }}</span>

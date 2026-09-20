@@ -123,6 +123,18 @@ describe('the part of the order each station will receive', () => {
     expect(list.findAll('.line')[1].get('.line-note').text()).toBe('mit Zitrone')
   })
 
+  it('keeps a line on the element it was already drawn on when another line leaves the order', async () => {
+    const bier = line({ catalogItemId: 'item-bier', name: 'Bier' })
+    const wasser = line({ catalogItemId: 'item-wasser', name: 'Wasser' })
+    const list = mountList([bier, wasser])
+    const elementOfWasser = list.findAll('.line')[1].element
+
+    await list.setProps({ lines: [wasser] })
+
+    expect(list.findAll('.line')).toHaveLength(1)
+    expect(list.get('.line').element).toBe(elementOfWasser)
+  })
+
   it('writes the order note once, above the station cards', () => {
     const list = mountList(
       [

@@ -13,15 +13,15 @@ export interface StationDelivery {
   lines: BasketLineView[]
 }
 
-export interface StationDeliveryWithAStation extends StationDelivery {
+export interface StationDeliveryWithStation extends StationDelivery {
   stationId: string
 }
 
-export function deliveriesThatReachedAStation(
+export function deliveriesWithAStation(
   deliveries: readonly StationDelivery[],
-): StationDeliveryWithAStation[] {
+): StationDeliveryWithStation[] {
   return deliveries.filter(
-    (delivery): delivery is StationDeliveryWithAStation => delivery.stationId !== null,
+    (delivery): delivery is StationDeliveryWithStation => delivery.stationId !== null,
   )
 }
 

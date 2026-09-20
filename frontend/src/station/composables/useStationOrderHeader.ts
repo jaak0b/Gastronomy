@@ -5,7 +5,7 @@ import { deliveryModeColourToken, deliveryModeKey } from '../../shared/core/stat
 
 export interface StationOrderHeader {
   deliveryText: ComputedRef<string>
-  modeColour: ComputedRef<string>
+  deliveryModeColour: ComputedRef<string>
   orderReference: ComputedRef<string>
   doneCounter: ComputedRef<string>
 }
@@ -17,7 +17,7 @@ export function useStationOrderHeader(
 
   const deliveryText = computed(() => t(deliveryModeKey(toValue(stationOrder).deliveryMode)))
 
-  const modeColour = computed(
+  const deliveryModeColour = computed(
     () => `rgb(var(--v-theme-${deliveryModeColourToken(toValue(stationOrder).deliveryMode)}))`,
   )
 
@@ -35,5 +35,5 @@ export function useStationOrderHeader(
     }),
   )
 
-  return { deliveryText, modeColour, orderReference, doneCounter }
+  return { deliveryText, deliveryModeColour, orderReference, doneCounter }
 }

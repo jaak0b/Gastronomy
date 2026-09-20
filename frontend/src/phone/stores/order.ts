@@ -26,7 +26,7 @@ import {
 } from '../core/draftCart'
 import {
   changesAreRefusedFor,
-  paperIsTheOnlyWayLeft,
+  writingItDownIsTheOnlyWayLeft,
   progressAfterALoad,
   sendHasFailedIn,
   sendIsUnderWayIn,
@@ -109,7 +109,7 @@ export const useOrderStore = defineStore('order', () => {
   const isSending = computed(() => sendIsUnderWayIn(sendState.value))
   const sendHasFailed = computed(() => sendHasFailedIn(sendState.value))
   const changesAreRefused = computed(() => changesAreRefusedFor(whatTheSendHasComeTo()))
-  const onlyPaperIsLeft = computed(() => paperIsTheOnlyWayLeft(whatTheSendHasComeTo()))
+  const onlyWritingItDownIsLeft = computed(() => writingItDownIsTheOnlyWayLeft(whatTheSendHasComeTo()))
 
   function theRefusalNoLongerFitsTheOrder(): void {
     if (failure.value === null) {
@@ -327,7 +327,7 @@ export const useOrderStore = defineStore('order', () => {
     isSending,
     sendHasFailed,
     changesAreRefused,
-    onlyPaperIsLeft,
+    onlyWritingItDownIsLeft,
     addItem,
     dropLine,
     dropLinesThatCannotBeOrdered,

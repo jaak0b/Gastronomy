@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminBlockingConditionMessagesFrom, adminErrorMessage } from '../../../src/admin/core/adminErrorMessage'
+import { adminErrorMessage } from '../../../src/admin/core/adminErrorMessage'
 
 describe('adminErrorMessage, the key the laptop actually sent', () => {
   it('renders a refusal about unfinished orders as that message', () => {

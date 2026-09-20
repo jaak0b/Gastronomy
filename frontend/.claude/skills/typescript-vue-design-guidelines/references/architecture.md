@@ -125,7 +125,8 @@ Source: pinia.vuejs.org/core-concepts (Option Stores, Setup Stores, What syntax 
   the return, or returning it as readonly, breaks SSR, devtools and plugins.
 - A setup store may create watchers and use any composable, and may `inject()` anything provided at
   the app level, such as the router or the route. It does not return such injected values; a
-  component reads them itself with `useRoute()` or `inject()`.
+  component reads the current route from the router module's exported value, and reads anything
+  else provided with `inject()`.
 - Either syntax is acceptable; option stores are simpler, setup stores more flexible. This
   repository's stores are setup stores (`defineStore('estimates', () => { ... })`).
 

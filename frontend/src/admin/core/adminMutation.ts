@@ -6,7 +6,7 @@ export function adminFailureFrom(result: ApiResult<unknown>): AdminActionResult<
   return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
 }
 
-export async function reportAndReload(
+export async function reloadOrFailureOf(
   result: ApiResult<unknown>,
   reload: () => Promise<void>,
 ): Promise<AdminActionResult<null>> {

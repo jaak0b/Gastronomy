@@ -84,8 +84,8 @@ function choose(part: StationPart, deliveryMode: DeliveryMode): void {
       </v-card-title>
       <v-divider v-if="part.stationId !== null" />
       <div
-        v-for="(entry, position) in part.entries"
-        :key="position"
+        v-for="entry in part.entries"
+        :key="entry.key"
         class="line px-4 py-2"
         :class="{ 'is-unavailable': lineCannotBeOrdered(entry.line) }"
       >

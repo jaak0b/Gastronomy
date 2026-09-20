@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { requestAction } from '../../shared/api/client'
 import { adminFestivalsResponseSchema } from '../../shared/api/apiSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
-import { reportAndReload } from '../core/adminMutation'
+import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import type { AdminFestival } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -54,7 +54,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
       method: 'POST',
       body: buildFestivalRequestBody(draft),
     })
-    return await reportAndReload(result, load)
+    return await reloadOrFailureOf(result, load)
   }
 
   async function save(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
@@ -62,7 +62,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
       method: 'PUT',
       body: buildFestivalRequestBody(draft),
     })
-    return await reportAndReload(result, load)
+    return await reloadOrFailureOf(result, load)
   }
 
   async function copy(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
@@ -70,21 +70,21 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
       method: 'POST',
       body: buildFestivalRequestBody(draft),
     })
-    return await reportAndReload(result, load)
+    return await reloadOrFailureOf(result, load)
   }
 
   async function hide(festivalId: string): Promise<AdminActionResult<null>> {
     const result = await requestAction(`/api/admin/festivals/${festivalId}/hide`, {
       method: 'POST',
     })
-    return await reportAndReload(result, load)
+    return await reloadOrFailureOf(result, load)
   }
 
   async function show(festivalId: string): Promise<AdminActionResult<null>> {
     const result = await requestAction(`/api/admin/festivals/${festivalId}/show`, {
       method: 'POST',
     })
-    return await reportAndReload(result, load)
+    return await reloadOrFailureOf(result, load)
   }
 
   function listen(): () => void {

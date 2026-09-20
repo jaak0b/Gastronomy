@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ApiResult } from '../../../src/shared/api/client'
-import { adminFailureFrom, reportAndReload } from '../../../src/admin/core/adminMutation'
+import { adminFailureFrom, reloadOrFailureOf } from '../../../src/admin/core/adminMutation'
 import { GENERIC_ADMIN_ERROR_KEY } from '../../../src/admin/core/adminErrorMessage'
 
 const ACCEPTED: ApiResult<null> = { kind: 'ok', status: 200, data: null }
@@ -18,7 +18,7 @@ describe('turning the laptop answer to a change into something the screen can sh
   it('reloads the list once the laptop accepted the change', async () => {
     let reloads = 0
 
-    const reported = await reportAndReload(ACCEPTED, async () => {
+    const reported = await reloadOrFailureOf(ACCEPTED, async () => {
       reloads += 1
     })
 
@@ -29,7 +29,7 @@ describe('turning the laptop answer to a change into something the screen can sh
   it('carries the laptop refusal and leaves the list alone', async () => {
     let reloads = 0
 
-    const reported = await reportAndReload(REFUSED, async () => {
+    const reported = await reloadOrFailureOf(REFUSED, async () => {
       reloads += 1
     })
 

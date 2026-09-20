@@ -1,9 +1,9 @@
 <script setup lang="ts">
-defineProps<{ modeColour: string }>()
+defineProps<{ deliveryModeColour: string }>()
 </script>
 
 <template>
-  <div class="station-card" :style="{ borderColor: modeColour }">
+  <div class="station-card" :style="{ borderColor: deliveryModeColour }">
     <slot />
   </div>
 </template>
