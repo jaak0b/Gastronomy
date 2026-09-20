@@ -418,11 +418,11 @@ describe('an order the laptop did not confirm', () => {
     expect(review.get('.send-again').exists()).toBe(true)
   })
 
-  it('refuses the way back to the items, because everything there would change the order', async () => {
+  it('hides the way back to the items, because everything there would change the order', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
-    expect(review.get('.back').attributes('disabled')).toBeDefined()
+    expect(review.find('.back').exists()).toBe(false)
   })
 
   it('refuses to have the delivery choice changed', async () => {
@@ -467,33 +467,31 @@ describe('an order the laptop did not confirm', () => {
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
   })
 
-  it('leaves the waiter with the retry alone after the first failure', async () => {
+  it('offers writing the order down as soon as an attempt got no answer', async () => {
     const order = prepareOrder()
-    await reviewAfterAFailedSend(order)
+    const review = await reviewAfterAFailedSend(order)
 
-    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
+    expect(review.find('.written-down').exists()).toBe(true)
+    expect(review.find('.back').exists()).toBe(false)
   })
 
-  it('takes over the screen once the second attempt has failed as well', async () => {
+  it('says the order may have arrived once the second attempt got no answer either', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
 
     await review.get('.send-again').trigger('click')
     await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
+      expect(review.get('.write-it-down').text()).toContain(
+        'Der Rechner hat zweimal nicht geantwortet.',
+      ),
     )
   })
 
   it('starts the next order once the waiter has written this one down', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
-    await review.get('.send-again').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
-    )
 
-    ;(document.querySelector('.send-failed-twice-dialog .written-down') as HTMLElement).click()
-    await review.vm.$nextTick()
+    await review.get('.written-down').trigger('click')
 
     expect(order.basketLines).toEqual([])
     expect(currentRoute.value).toEqual({ name: 'home' })
@@ -503,29 +501,29 @@ describe('an order the laptop did not confirm', () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
     await review.get('.send-again').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
-    ;(document.querySelector('.send-failed-twice-dialog .try-again') as HTMLElement).click()
+    await review.get('.send-again').trigger('click')
 
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(3))
   })
 
-  it('comes back when that attempt fails too', async () => {
+  it('comes back to the same screen, lines and paper route, when that attempt fails too', async () => {
     const order = prepareOrder()
     const review = await reviewAfterAFailedSend(order)
     await review.get('.send-again').trigger('click')
-    await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(2))
 
-    ;(document.querySelector('.send-failed-twice-dialog .try-again') as HTMLElement).click()
+    await review.get('.send-again').trigger('click')
     await vi.waitFor(() => expect(vi.mocked(fetch).mock.calls).toHaveLength(3))
 
     await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog .written-down')).not.toBeNull(),
+      expect(review.get('.write-it-down').text()).toContain(
+        'Schreiben Sie die Bestellung auf einen Zettel',
+      ),
     )
+    expect(review.get('.written-down').exists()).toBe(true)
+    expect(review.get('.line-name').text()).toBe('1 x Wasser')
   })
 })
 
@@ -548,10 +546,10 @@ describe('an order that is still on its way to the laptop', () => {
     return review
   }
 
-  it('refuses the way back to the items, because everything there would change the order', async () => {
+  it('hides the way back to the items, because everything there would change the order', async () => {
     const review = await reviewOfAnOrderOnItsWay()
 
-    expect(review.get('.back').attributes('disabled')).toBeDefined()
+    expect(review.find('.back').exists()).toBe(false)
   })
 
   it('refuses to have the delivery choice changed', async () => {
@@ -666,14 +664,6 @@ describe('an order the laptop refused with a reason', () => {
     expect(review.find('.send-again').exists()).toBe(false)
   })
 
-  it('never covers the screen with the paper dialog, however often the laptop refuses', async () => {
-    const order = prepareOrder()
-    await reviewAfterARefusal(order)
-
-    await order.sendAgain()
-
-    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
-  })
 })
 
 describe('an order the laptop answered but could not save', () => {
@@ -715,15 +705,6 @@ describe('an order the laptop answered but could not save', () => {
     expect(review.get('.back').attributes('disabled')).toBeUndefined()
   })
 
-  it('never covers the screen with the paper dialog, because the laptop answered', async () => {
-    const order = prepareOrder()
-    await order.send(null)
-    mount(Review, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await order.sendAgain()
-
-    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
-  })
 })
 
 describe('an order holding a line the admin moved to another station', () => {
@@ -847,11 +828,9 @@ describe('an order the laptop refused after an attempt it never answered', () =>
   it('offers the paper route at once, because nothing on the phone can put the refusal right', async () => {
     const order = anOrderTheLaptopMayAlreadyHold()
 
-    await reviewAfterTheRefusedRetry(order)
+    const review = await reviewAfterTheRefusedRetry(order)
 
-    await vi.waitFor(() =>
-      expect(document.querySelector('.send-failed-twice-dialog')).not.toBeNull(),
-    )
+    expect(review.find('.written-down').exists()).toBe(true)
   })
 
   it('keeps the order closed for changes, because the laptop may hold it as it stands', async () => {
@@ -860,7 +839,7 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     const review = await reviewAfterTheRefusedRetry(order)
 
     expect(order.changesAreRefused).toBe(true)
-    expect(review.get('.back').attributes('disabled')).toBeDefined()
+    expect(review.find('.back').exists()).toBe(false)
   })
 
   it('keeps every line on the screen, so the waiter can copy the order onto paper', async () => {
@@ -897,8 +876,8 @@ describe('an order the laptop refused after an attempt it never answered', () =>
     const review = await reviewAfterTheRefusedRetry(order)
 
     expect(order.changesAreRefused).toBe(false)
-    expect(document.querySelector('.send-failed-twice-dialog')).toBeNull()
-    expect(review.get('.back').attributes('disabled')).toBeUndefined()
+    expect(review.find('.written-down').exists()).toBe(false)
+    expect(review.find('.back').exists()).toBe(true)
   })
 })
 

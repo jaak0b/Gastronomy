@@ -93,11 +93,9 @@
     "confirmSendAmount": "Amount:",
     "confirmSendStation": "{name}:",
     "confirmSendCancel": "Cancel",
-    "sendFailedTwiceTitle": "The order was not sent",
-    "sendFailedTwiceUnknown": "The computer did not answer either time. The order may have arrived anyway.",
-    "sendFailedTwiceWriteItDown": "Write the order on a slip of paper and check the tablet at the station.",
-    "sendFailedTwiceWrittenDown": "The order is written down",
-    "sendFailedTwiceTryAgain": "Try again",
+    "sendStillUnknown": "The computer did not answer either time. The order may have arrived anyway.",
+    "writeItDown": "Write the order on a slip of paper and check the tablet at the station.",
+    "writtenDown": "The order is written down",
     "conflictingChange": "Somebody else changed something at the same moment. Try again."
   },
   "order": {

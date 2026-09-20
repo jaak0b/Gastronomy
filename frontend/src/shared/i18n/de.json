@@ -93,11 +93,9 @@
     "confirmSendAmount": "Betrag:",
     "confirmSendStation": "{name}:",
     "confirmSendCancel": "Abbrechen",
-    "sendFailedTwiceTitle": "Die Bestellung wurde nicht gesendet",
-    "sendFailedTwiceUnknown": "Der Rechner hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.",
-    "sendFailedTwiceWriteItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet.",
-    "sendFailedTwiceWrittenDown": "Bestellung ist aufgeschrieben",
-    "sendFailedTwiceTryAgain": "Noch einmal versuchen",
+    "sendStillUnknown": "Der Rechner hat zweimal nicht geantwortet. Die Bestellung ist vielleicht trotzdem angekommen.",
+    "writeItDown": "Schreiben Sie die Bestellung auf einen Zettel und schauen Sie an der Ausgabestelle auf das Tablet.",
+    "writtenDown": "Bestellung ist aufgeschrieben",
     "conflictingChange": "Jemand anderes hat im selben Moment etwas geändert. Versuchen Sie es noch einmal."
   },
   "order": {
