@@ -9,6 +9,7 @@ import type {
   TableNamesResponse,
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
+import { createLatestRequestGate } from '../core/latestRequestGate'
 import {
   noticeAfterSettling,
   selectedAmountCents,
@@ -34,6 +35,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const isSettling = ref(false)
   const notice = ref<SettleNotice | null>(null)
 
+  const tablesGate = createLatestRequestGate()
+  const tableNamesGate = createLatestRequestGate()
+
   const selectedTotalCents = computed(() =>
     selectedAmountCents(tables.value, selectedItemIds.value),
   )
@@ -46,7 +50,11 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (deviceToken() === null) {
       return
     }
+    const token = tablesGate.start()
     const result = await request<OpenItemsResponse>('/api/open-items', { token: deviceToken() })
+    if (!tablesGate.isCurrent(token)) {
+      return
+    }
     loadFailed.value = result.kind !== 'ok'
     if (result.kind !== 'ok') {
       return
@@ -61,9 +69,13 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     if (deviceToken() === null) {
       return
     }
+    const token = tableNamesGate.start()
     const result = await request<TableNamesResponse>('/api/open-items/table-names', {
       token: deviceToken(),
     })
+    if (!tableNamesGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       return
     }

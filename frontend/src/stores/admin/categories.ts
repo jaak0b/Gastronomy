@@ -8,6 +8,7 @@ import {
   type AdminActionResult,
 } from '../../core/adminActionResult'
 import type { AdminCategory } from '../../core/apiTypes'
+import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 
 export interface AdminCategoryDraft {
@@ -20,11 +21,17 @@ export type CategoryMoveDirection = 'up' | 'down'
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   const categories = ref<AdminCategory[]>([])
   const loadFailed = ref(false)
+
+  const categoriesGate = createLatestRequestGate()
   let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
 
   async function load(): Promise<void> {
     loadFailed.value = false
+    const token = categoriesGate.start()
     const result = await request<unknown>('/api/admin/categories')
+    if (!categoriesGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return
@@ -38,6 +45,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   }
 
   async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
+    const token = categoriesGate.start()
     const result = await request<AdminCategory>('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
@@ -45,7 +53,9 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
-    categories.value = [...categories.value, result.data]
+    if (categoriesGate.isCurrent(token)) {
+      categories.value = [...categories.value, result.data]
+    }
     return adminOk(result.data)
   }
 
@@ -75,6 +85,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     categoryId: string,
     direction: CategoryMoveDirection,
   ): Promise<AdminActionResult<null>> {
+    const token = categoriesGate.start()
     const result = await request<unknown>(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',
       body: { direction },
@@ -87,7 +98,9 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
       await load()
       return adminFailed(adminErrorMessage(null))
     }
-    categories.value = rows
+    if (categoriesGate.isCurrent(token)) {
+      categories.value = rows
+    }
     return adminOk(null)
   }
 

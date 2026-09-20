@@ -7,6 +7,7 @@ import {
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
+import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 
 export interface AdminFestival {
@@ -31,6 +32,8 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   const festivals = ref<AdminFestival[]>([])
   const loadFailed = ref(false)
 
+  const festivalsGate = createLatestRequestGate()
+
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
   const runningFestival = computed<AdminFestival | null>(
     () => festivals.value.find((festival) => festival.isRunning) ?? null,
@@ -42,7 +45,11 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
 
   async function load(): Promise<void> {
     loadFailed.value = false
+    const token = festivalsGate.start()
     const result = await request<unknown>('/api/admin/festivals')
+    if (!festivalsGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return

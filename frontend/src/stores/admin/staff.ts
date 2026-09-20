@@ -7,6 +7,7 @@ import {
   adminOk,
   type AdminActionResult,
 } from '../../core/adminActionResult'
+import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 import { useAdminEnrolmentStore } from './enrolment'
 
@@ -23,9 +24,15 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   const staffMembers = ref<AdminStaffMember[]>([])
   const loadFailed = ref(false)
 
+  const staffMembersGate = createLatestRequestGate()
+
   async function load(): Promise<void> {
     loadFailed.value = false
+    const token = staffMembersGate.start()
     const result = await request<unknown>('/api/admin/staff-members')
+    if (!staffMembersGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return

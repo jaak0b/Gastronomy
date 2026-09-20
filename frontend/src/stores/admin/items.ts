@@ -8,6 +8,7 @@ import {
   type AdminActionResult,
 } from '../../core/adminActionResult'
 import { assertNever } from '../../core/assertNever'
+import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 
 export interface AdminItemAtFestival {
@@ -50,9 +51,15 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
 
+  const itemsGate = createLatestRequestGate()
+
   async function loadItemsFrom(path: string): Promise<void> {
     loadFailed.value = false
+    const token = itemsGate.start()
     const result = await request<unknown>(path)
+    if (!itemsGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return

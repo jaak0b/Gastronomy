@@ -10,6 +10,7 @@ import type {
 } from '../core/apiTypes'
 import { findCatalogStation } from '../core/basket'
 import { groupByCategory, type CategoryGroup } from '../core/grouping'
+import { createLatestRequestGate } from '../core/latestRequestGate'
 import { useConnectionStore } from './connection'
 import { useOrderStore } from './order'
 import { useSessionStore } from './session'
@@ -40,6 +41,8 @@ export const useCatalogStore = defineStore('catalog', () => {
   const catalog = ref<Catalog>(EMPTY_CATALOG)
   const hasLoaded = ref(false)
 
+  const loadGate = createLatestRequestGate()
+
   const groups = computed<CategoryGroup<CatalogCategory, CatalogItem>[]>(() =>
     groupByCategory(
       catalog.value.categories,
@@ -59,7 +62,11 @@ export const useCatalogStore = defineStore('catalog', () => {
     if (session.deviceToken === null) {
       return
     }
+    const token = loadGate.start()
     const result = await request<unknown>('/api/catalog', { token: session.deviceToken })
+    if (!loadGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       return
     }

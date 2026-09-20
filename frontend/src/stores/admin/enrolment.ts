@@ -7,6 +7,7 @@ import { adminFailed, adminOk, type AdminActionResult } from '../../core/adminAc
 import type { DeviceKind, Invitation } from '../../core/apiTypes'
 import type { InvitationQr } from '../../core/invitationQr'
 import { assertNever } from '../../core/assertNever'
+import { createLatestRequestGate } from '../../core/latestRequestGate'
 import { useConnectionStore } from '../connection'
 
 
@@ -38,6 +39,8 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const invitationQr = ref<InvitationQr>({ kind: 'loading' })
   const enrolled = ref<EnrolledDevice | null>(null)
 
+  const invitationGate = createLatestRequestGate()
+
   function enrolledNameFor(wanted: DeviceKind): string | null {
     const device = enrolled.value
     if (device === null) {
@@ -57,18 +60,26 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const enrolledStationName = computed(() => enrolledNameFor('station'))
 
   async function createInvitation(owner: InvitationOwner): Promise<AdminActionResult<null>> {
+    const token = invitationGate.start()
     enrolled.value = null
     invitationQr.value = { kind: 'loading' }
     const result = await request<Invitation>('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: bodyFor(owner),
     })
+    if (!invitationGate.isCurrent(token)) {
+      return adminOk(null)
+    }
     if (result.kind !== 'ok') {
       closeInvitation()
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
     }
     invitation.value = result.data
-    invitationQr.value = await fetchInvitationQr(result.data.invitationId)
+    const qr = await fetchInvitationQr(result.data.invitationId)
+    if (!invitationGate.isCurrent(token)) {
+      return adminOk(null)
+    }
+    invitationQr.value = qr
     return adminOk(null)
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request } from '../api/client'
 import type { EstimatesResponse, StationEstimate } from '../core/apiTypes'
+import { createLatestRequestGate } from '../core/latestRequestGate'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
 
@@ -9,14 +10,20 @@ export const useEstimatesStore = defineStore('estimates', () => {
   const stations = ref<StationEstimate[]>([])
   const loadFailed = ref(false)
 
+  const loadGate = createLatestRequestGate()
+
   async function load(): Promise<void> {
     const session = useSessionStore()
     if (session.deviceToken === null) {
       return
     }
+    const token = loadGate.start()
     const result = await request<EstimatesResponse>('/api/estimates', {
       token: session.deviceToken,
     })
+    if (!loadGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       return

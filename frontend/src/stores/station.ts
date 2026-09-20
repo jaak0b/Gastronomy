@@ -7,6 +7,7 @@ import type {
   StationOrder,
   StationOrdersResponse,
 } from '../core/apiTypes'
+import { createLatestRequestGate } from '../core/latestRequestGate'
 import { retainOpenItemIds, stationFailureKey } from '../core/stationBoard'
 import { useConnectionStore } from './connection'
 import { useSessionStore } from './session'
@@ -24,6 +25,10 @@ export const useStationStore = defineStore('station', () => {
   const isShowingFulfilled = ref(false)
   const fulfilledHasLoaded = ref(false)
   const fulfilledLoadFailed = ref(false)
+
+  const boardGate = createLatestRequestGate()
+  const fulfilledGate = createLatestRequestGate()
+  let newestActionToken = 0
 
   const hasNothingDone = computed(
     () =>
@@ -45,9 +50,13 @@ export const useStationStore = defineStore('station', () => {
     if (deviceToken() === null) {
       return
     }
+    const token = boardGate.start()
     const result = await request<StationOrdersResponse>('/api/station/orders', {
       token: deviceToken(),
     })
+    if (!boardGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       loadFailed.value = true
       loadFailureKey.value =
@@ -63,9 +72,13 @@ export const useStationStore = defineStore('station', () => {
     if (deviceToken() === null) {
       return
     }
+    const token = fulfilledGate.start()
     const result = await request<StationFulfilledResponse>('/api/station/orders/fulfilled', {
       token: deviceToken(),
     })
+    if (!fulfilledGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       fulfilledLoadFailed.value = true
       return
@@ -101,12 +114,19 @@ export const useStationStore = defineStore('station', () => {
   async function fulfill(orderItemIds: string[]): Promise<void> {
     failureKey.value = null
     isWorking.value = true
+    const token = boardGate.start()
+    newestActionToken = token
     const result = await request<StationOrdersResponse>('/api/station/items/fulfill', {
       method: 'POST',
       body: { orderItemIds },
       token: deviceToken(),
     })
-    isWorking.value = false
+    if (newestActionToken === token) {
+      isWorking.value = false
+    }
+    if (!boardGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       failureKey.value = stationFailureKey(result)
       return
@@ -117,12 +137,19 @@ export const useStationStore = defineStore('station', () => {
   async function unfulfill(orderItemId: string): Promise<void> {
     failureKey.value = null
     isWorking.value = true
+    const token = boardGate.start()
+    newestActionToken = token
     const result = await request<StationOrdersResponse>('/api/station/items/unfulfill', {
       method: 'POST',
       body: { orderItemIds: [orderItemId] },
       token: deviceToken(),
     })
-    isWorking.value = false
+    if (newestActionToken === token) {
+      isWorking.value = false
+    }
+    if (!boardGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       failureKey.value = stationFailureKey(result)
       return
@@ -136,6 +163,8 @@ export const useStationStore = defineStore('station', () => {
   async function hide(stationOrderId: string): Promise<void> {
     failureKey.value = null
     isWorking.value = true
+    const token = boardGate.start()
+    newestActionToken = token
     const result = await request<StationOrdersResponse>(
       `/api/station/orders/${stationOrderId}/hide`,
       {
@@ -143,7 +172,12 @@ export const useStationStore = defineStore('station', () => {
         token: deviceToken(),
       },
     )
-    isWorking.value = false
+    if (newestActionToken === token) {
+      isWorking.value = false
+    }
+    if (!boardGate.isCurrent(token)) {
+      return
+    }
     if (result.kind !== 'ok') {
       failureKey.value = stationFailureKey(result)
       return
