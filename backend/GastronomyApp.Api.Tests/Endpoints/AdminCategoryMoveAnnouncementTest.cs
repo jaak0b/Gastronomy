@@ -64,9 +64,8 @@ public sealed class AdminCategoryMoveAnnouncementTest
       new(new(hubContext, services.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>()));
 
     return new(services.GetRequiredService<GastronomyAppDbContext>(),
-               services.GetRequiredService<CatalogCategoryColour>(),
+               services.GetRequiredService<ColorFormatValidator>(),
                services.GetRequiredService<CatalogCategoryOrdering>(),
-               services.GetRequiredService<CatalogCategoryNaming>(),
                new(announcer,
                    new(services.GetRequiredService<IHostApplicationLifetime>(),
                        A.Fake<ILogger<SavedChangeAnnouncement>>())),

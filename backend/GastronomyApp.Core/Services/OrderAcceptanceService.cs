@@ -149,7 +149,8 @@ public sealed class OrderAcceptanceService
         return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
                                                                             {
                                                                               Reason = ReasonFor(routing.Failure.Reason),
-                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId
+                                                                              OffendingCatalogItemId = itemRequest.CatalogItemId,
+                                                                              OffendingCatalogItemName = catalogItem.Name
                                                                             });
       }
 
@@ -212,6 +213,8 @@ public sealed class OrderAcceptanceService
              RoutingFailureReason.ItemHasNoStation => OrderValidationFailureReason.ItemHasNoStation,
              RoutingFailureReason.StationRequired => OrderValidationFailureReason.StationRequired,
              RoutingFailureReason.StationNotAssignedToItem => OrderValidationFailureReason.StationNotAssignedToItem,
+             RoutingFailureReason.ChosenStationNoLongerPreparesTheItem =>
+               OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem,
              _ => new Never().OfType<OrderValidationFailureReason>(routingFailureReason)
            };
   }

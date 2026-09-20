@@ -346,12 +346,6 @@ describe('a line whose item is no longer on the menu', () => {
 
     expect(list.get('.line .price').text()).toBe('-')
   })
-
-  it('falls back to a label when the draft predates the stored name', () => {
-    const list = mountList([line({ name: '', isNoLongerOnTheMenu: true })])
-
-    expect(list.get('.line-name').text()).toContain('Nicht mehr auf der Karte.')
-  })
 })
 
 describe('a line whose station no longer prepares its item', () => {
@@ -365,12 +359,10 @@ describe('a line whose station no longer prepares its item', () => {
     })
   }
 
-  it('says that the station on the card no longer prepares the item', () => {
+  it('says the item is sold out, the same as every line that cannot be ordered', () => {
     const list = mountList([movedLine()])
 
-    expect(list.get('.station-no-longer-prepares-it').text()).toBe(
-      'Diese Ausgabestelle bereitet den Artikel nicht mehr zu.',
-    )
+    expect(list.get('.sold-out').text()).toBe('Bier ist gerade ausverkauft.')
   })
 
   it('is greyed the way every line that cannot be ordered is', () => {
@@ -379,10 +371,10 @@ describe('a line whose station no longer prepares its item', () => {
     expect(list.get('.line').classes()).toContain('is-unavailable')
   })
 
-  it('says nothing of the sort while the station still prepares the item', () => {
+  it('shows no sold-out notice while the station still prepares the item', () => {
     const list = mountList([line({ stationId: 'station-kueche' })])
 
-    expect(list.find('.station-no-longer-prepares-it').exists()).toBe(false)
+    expect(list.find('.sold-out').exists()).toBe(false)
   })
 })
 

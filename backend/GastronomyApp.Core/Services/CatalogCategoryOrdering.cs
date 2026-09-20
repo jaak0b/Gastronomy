@@ -15,9 +15,7 @@ public sealed class CatalogCategoryOrdering
     return takenSortOrders.Count == 0 ? FirstSortOrder : takenSortOrders.Max() + 1;
   }
 
-  public IReadOnlyList<CatalogCategoryPosition> Move(IReadOnlyList<Guid> orderedCategoryIds,
-                                                     Guid categoryId,
-                                                     CategoryMoveDirection direction)
+  public IReadOnlyList<CatalogCategoryPosition> Move(IReadOnlyList<Guid> orderedCategoryIds, Guid categoryId, CategoryMoveDirection direction)
   {
     ArgumentNullException.ThrowIfNull(orderedCategoryIds);
 
@@ -27,9 +25,7 @@ public sealed class CatalogCategoryOrdering
 
     if (position >= 0 && target >= 0 && target < reordered.Count)
     {
-      var moving = reordered[position];
-      reordered[position] = reordered[target];
-      reordered[target] = moving;
+      (reordered[position], reordered[target]) = (reordered[target], reordered[position]);
     }
 
     return [.. reordered.Select((id, index) => new CatalogCategoryPosition(id, index + FirstSortOrder))];

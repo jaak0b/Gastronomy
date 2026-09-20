@@ -1,5 +1,3 @@
-using GastronomyApp.Core.Services;
-
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed record SeededDomain
@@ -25,8 +23,6 @@ public sealed record SeededDomain
 
 public sealed class DomainSeeder
 {
-  private readonly CatalogCategoryNaming _naming = new();
-
   public async Task<SeededDomain> SeedAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
   {
     SeededDomain seeded = new()
@@ -98,7 +94,6 @@ public sealed class DomainSeeder
                                     {
                                       Id = seeded.FoodCategoryId,
                                       Name = "Speisen",
-                                      NormalizedName = _naming.ToNormalizedName("Speisen"),
                                       ColourHex = "#C62828",
                                       SortOrder = 1,
                                       IsActive = true
@@ -108,7 +103,6 @@ public sealed class DomainSeeder
                                     {
                                       Id = seeded.DrinkCategoryId,
                                       Name = "Getraenke",
-                                      NormalizedName = _naming.ToNormalizedName("Getraenke"),
                                       ColourHex = "#1565C0",
                                       SortOrder = 2,
                                       IsActive = true

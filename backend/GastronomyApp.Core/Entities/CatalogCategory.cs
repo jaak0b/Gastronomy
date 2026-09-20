@@ -6,8 +6,6 @@ public sealed class CatalogCategory
 
   public required string Name { get; set; }
 
-  public required string NormalizedName { get; set; }
-
   public required string ColourHex { get; set; }
 
   public required int SortOrder { get; set; }

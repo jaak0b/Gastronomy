@@ -33,10 +33,10 @@ public sealed class ResultEnvelope
                BuildValidationProblem(SettlementCannotBeProcessedKey),
              OrderValidationFailureReason.UnknownCatalogItemId =>
                BuildUnprocessableProblem("order.unknownItem", failure.OffendingCatalogItemId),
+             OrderValidationFailureReason.ItemNotAvailable or
+             OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem or
              OrderValidationFailureReason.StationNotAssignedToItem =>
-               BuildUnprocessableProblem("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
-             OrderValidationFailureReason.ItemNotAvailable =>
-               BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", SoldOutParameters(failure)),
+               BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", OffendingItemParameters(failure)),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
@@ -130,7 +130,7 @@ public sealed class ResultEnvelope
            };
   }
 
-  private Dictionary<string, string> SoldOutParameters(OrderValidationFailure failure)
+  private Dictionary<string, string> OffendingItemParameters(OrderValidationFailure failure)
   {
     Dictionary<string, string> parameters = [];
     if (failure.OffendingCatalogItemId is { } catalogItemId)

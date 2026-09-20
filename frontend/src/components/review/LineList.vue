@@ -28,15 +28,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function lineName(line: BasketLineView): string {
-  return line.name.length > 0 ? line.name : t('catalog.lineNoLongerOnTheMenu')
-}
-
 function readingOrder(
   left: CollapsedLine<BasketLineView>,
   right: CollapsedLine<BasketLineView>,
 ): number {
-  const byName = lineName(left.line).localeCompare(lineName(right.line))
+  const byName = left.line.name.localeCompare(right.line.name)
   if (byName !== 0) {
     return byName
   }
@@ -46,12 +42,12 @@ function readingOrder(
 const parts = computed<StationPart[]>(() =>
   stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map((delivery) => ({
     ...delivery,
-    entries: collapseLines(delivery.lines, lineName, (line) => line.note).sort(readingOrder),
+    entries: collapseLines(delivery.lines, (line) => line.name, (line) => line.note).sort(readingOrder),
   })),
 )
 
 function countedNameFor(entry: CollapsedLine<BasketLineView>): string {
-  return countedName(entry.quantity, lineName(entry.line), t)
+  return countedName(entry.quantity, entry.line.name, t)
 }
 
 function deliveryTextFor(deliveryMode: DeliveryMode): string {
@@ -91,17 +87,8 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
         :class="{ 'is-unavailable': lineCannotBeOrdered(entry.line) }"
       >
         <fieldset class="line-body">
-          <legend
-            v-if="entry.line.isSoldOut || entry.line.isNoLongerOnTheMenu"
-            class="reason sold-out text-body-2"
-          >
+          <legend v-if="lineCannotBeOrdered(entry.line)" class="reason sold-out text-body-2">
             {{ t('catalog.itemSoldOut', { name: entry.line.name }) }}
-          </legend>
-          <legend
-            v-else-if="entry.line.isNoLongerPreparedAtItsStation"
-            class="reason station-no-longer-prepares-it text-body-2"
-          >
-            {{ t('catalog.lineStationNoLongerPreparesIt') }}
           </legend>
           <div class="d-flex align-start">
             <span class="line-name text-body-1 flex-grow-1">

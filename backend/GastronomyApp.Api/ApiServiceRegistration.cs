@@ -71,9 +71,8 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<SavedChangeAnnouncement>();
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddSingleton<CatalogWriteTransaction>();
-    services.AddSingleton<CatalogCategoryColour>();
+    services.AddSingleton<ColorFormatValidator>();
     services.AddSingleton<CatalogCategoryOrdering>();
-    services.AddSingleton<CatalogCategoryNaming>();
     services.AddSingleton<ResultEnvelope>();
     services.AddSingleton<CallerIdentity>();
     services.AddSingleton<LocalAddressSet>();

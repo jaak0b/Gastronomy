@@ -20,6 +20,14 @@ reverse proxy.
 
 ## Hard rules
 
+0. **Read the `csharp-design-guidelines` skill before touching any C# file.** This comes before the
+   first edit, before a rename, before a new test, and before a review, and it binds the main agent
+   and every subagent without exception: a subagent prompt that concerns C# must say so. The skill
+   lives at `backend/.claude/skills/csharp-design-guidelines/SKILL.md` and is the checklist of the
+   official .NET design guidelines; its reference files hold the full rules. Code written without
+   reading it is handed back, and a name, type or member that fails a checklist item is a review
+   finding.
+
 1. **No static methods or properties.** Framework metadata registration is the only exception.
 
 2. **Localization is resx-only.** Every translatable string lives in `Strings.en.resx` /

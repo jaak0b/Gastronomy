@@ -56,24 +56,21 @@ public static class AdminCategoryEndpoints
 
 public sealed class AdminCategoryHandler
 {
-  private readonly CatalogCategoryColour _colour;
+  private readonly ColorFormatValidator _colour;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly CatalogCategoryNaming _naming;
   private readonly CatalogCategoryOrdering _ordering;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly CatalogWriteTransaction _writeTransaction;
 
   public AdminCategoryHandler(GastronomyAppDbContext dbContext,
-                              CatalogCategoryColour colour,
+                              ColorFormatValidator colour,
                               CatalogCategoryOrdering ordering,
-                              CatalogCategoryNaming naming,
                               CatalogWriteTransaction writeTransaction,
                               ResultEnvelope resultEnvelope)
   {
     _dbContext = dbContext;
     _colour = colour;
     _ordering = ordering;
-    _naming = naming;
     _writeTransaction = writeTransaction;
     _resultEnvelope = resultEnvelope;
   }
@@ -91,72 +88,48 @@ public sealed class AdminCategoryHandler
   public Task<IResult> CreateAsync(SaveCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
-
-    return TellingTheOperatorAboutATakenNameAsync(() =>
-                                                    _writeTransaction.RunAsync(_dbContext,
-                                                                               transactionCancellationToken =>
-                                                                                 CreatedAsync(request, transactionCancellationToken),
-                                                                               cancellationToken));
+    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<IResult> UpdateAsync(Guid categoryId,
-                                   SaveCategoryRequest request,
-                                   CancellationToken cancellationToken)
+  public Task<IResult> UpdateAsync(Guid categoryId, SaveCategoryRequest request, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => UpdatedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
+  }
+
+  public Task<IResult> MoveAsync(Guid categoryId, MoveCategoryRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return TellingTheOperatorAboutATakenNameAsync(() =>
-                                                    _writeTransaction.RunAsync(_dbContext,
-                                                                               transactionCancellationToken =>
-                                                                                 UpdatedAsync(categoryId, request, transactionCancellationToken),
-                                                                               cancellationToken));
-  }
-
-  public Task<IResult> MoveAsync(Guid categoryId,
-                                 MoveCategoryRequest request,
-                                 CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        MovedAsync(categoryId, request, transactionCancellationToken),
-                                      cancellationToken);
+    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => MovedAsync(categoryId, request, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        SwitchedOnAsync(categoryId, transactionCancellationToken),
-                                      cancellationToken);
+    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken), cancellationToken);
   }
 
   public Task<IResult> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _writeTransaction.RunAsync(_dbContext,
-                                      transactionCancellationToken =>
-                                        SwitchedOffAsync(categoryId, transactionCancellationToken),
-                                      cancellationToken);
+    return _writeTransaction.RunAsync(_dbContext, transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), cancellationToken);
   }
 
   private async Task<CatalogWrite> CreatedAsync(SaveCategoryRequest request, CancellationToken cancellationToken)
   {
-    List<CatalogCategory> categories = await OrderedCategoriesAsync(cancellationToken);
-    var refusal = Refusal(request, categories, null);
+    List<CatalogCategory> categories = await _dbContext.CatalogCategories
+                                                       .OrderBy(category => category.SortOrder)
+                                                       .ToListAsync(cancellationToken);;
+    var refusal = ValidateRequest(request, categories, null);
 
     if (refusal is not null)
-    {
       return new(refusal, false);
-    }
 
     CatalogCategory created = new()
                               {
                                 Id = Guid.NewGuid(),
-                                Name = _naming.ToCleanedName(request.Name!),
-                                NormalizedName = _naming.ToNormalizedName(request.Name!),
+                                Name = request.Name?.Trim()!,
                                 ColourHex = request.ColourHex!,
-                                SortOrder = _ordering.NextSortOrder([.. categories.Select(category => category.SortOrder)]),
+                                SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
                                 IsActive = true
                               };
 
@@ -166,27 +139,22 @@ public sealed class AdminCategoryHandler
     return new(Results.Json(BuildCategoryView(created), statusCode: StatusCodes.Status201Created), true);
   }
 
-  private async Task<CatalogWrite> UpdatedAsync(Guid categoryId,
-                                                SaveCategoryRequest request,
-                                                CancellationToken cancellationToken)
+  private async Task<CatalogWrite> UpdatedAsync(Guid categoryId, SaveCategoryRequest request, CancellationToken cancellationToken)
   {
-    List<CatalogCategory> categories = await OrderedCategoriesAsync(cancellationToken);
+    List<CatalogCategory> categories = await _dbContext.CatalogCategories
+                                                       .OrderBy(category => category.SortOrder)
+                                                       .ToListAsync(cancellationToken);
     var category = categories.FirstOrDefault(candidate => candidate.Id == categoryId);
 
     if (category is null)
-    {
       return new(Results.NotFound(), false);
-    }
 
-    var refusal = Refusal(request, categories, categoryId);
+    var refusal = ValidateRequest(request, categories, categoryId);
 
     if (refusal is not null)
-    {
       return new(refusal, false);
-    }
 
-    category.Name = _naming.ToCleanedName(request.Name!);
-    category.NormalizedName = _naming.ToNormalizedName(request.Name!);
+    category.Name = request.Name?.Trim()!;
     category.ColourHex = request.ColourHex!;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -197,7 +165,9 @@ public sealed class AdminCategoryHandler
                                               MoveCategoryRequest request,
                                               CancellationToken cancellationToken)
   {
-    List<CatalogCategory> categories = await OrderedCategoriesAsync(cancellationToken);
+    List<CatalogCategory> categories = await _dbContext.CatalogCategories
+                                                       .OrderBy(category => category.SortOrder)
+                                                       .ToListAsync(cancellationToken);
 
     if (categories.All(candidate => candidate.Id != categoryId))
     {
@@ -206,11 +176,9 @@ public sealed class AdminCategoryHandler
 
     Dictionary<Guid, CatalogCategory> categoriesById = categories.ToDictionary(category => category.Id);
 
-    IReadOnlyList<CatalogCategoryPosition> positions = _ordering.Move([.. categories.Select(category => category.Id)],
-                                                                     categoryId,
-                                                                     request.Direction);
+    IReadOnlyList<CatalogCategoryPosition> positions = _ordering.Move(categories.Select(category => category.Id).ToList(), categoryId, request.Direction);
 
-    List<CatalogCategory> reordered = [.. positions.Select(position => categoriesById[position.CategoryId])];
+    List<CatalogCategory> reordered = positions.Select(position => categoriesById[position.CategoryId]).ToList();
 
     if (positions.All(position => categoriesById[position.CategoryId].SortOrder == position.SortOrder))
     {
@@ -271,54 +239,24 @@ public sealed class AdminCategoryHandler
     return new(Results.Ok(BuildCategoryView(category)), true);
   }
 
-  private async Task<IResult> TellingTheOperatorAboutATakenNameAsync(Func<Task<IResult>> write)
-  {
-    try
-    {
-      return await write();
-    }
-    catch (InfrastructureException exception)
-      when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
-    {
-      return BuildNameTakenProblem();
-    }
-  }
-
-  private async Task<List<CatalogCategory>> OrderedCategoriesAsync(CancellationToken cancellationToken)
-  {
-    return await _dbContext.CatalogCategories
-                           .OrderBy(category => category.SortOrder)
-                           .ToListAsync(cancellationToken);
-  }
-
-  private IResult? Refusal(SaveCategoryRequest request,
-                           IReadOnlyCollection<CatalogCategory> categories,
-                           Guid? categoryBeingSaved)
+  private IResult? ValidateRequest(SaveCategoryRequest request, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
     {
-      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                     "ValidationFailed",
-                                     "admin.categoryNameMissing");
+      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.categoryNameMissing");
     }
 
     if (!_colour.IsWellFormed(request.ColourHex))
     {
-      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                     "ValidationFailed",
-                                     "admin.categoryColourInvalid");
+      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.categoryColourInvalid");
     }
 
-    var wanted = _naming.ToNormalizedName(request.Name);
-    var taken = categories.Any(category => category.Id != categoryBeingSaved
-                                           && string.Equals(category.NormalizedName, wanted, StringComparison.Ordinal));
+    var wantedName = request.Name.Trim();
+    var taken = categories.Any(category => category.Id != categoryBeingSaved && string.Equals(category.Name, wantedName, StringComparison.OrdinalIgnoreCase));
 
-    return taken ? BuildNameTakenProblem() : null;
-  }
-
-  private IResult BuildNameTakenProblem()
-  {
-    return _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CategoryNameTaken", "admin.categoryNameTaken");
+    if (taken)
+      return _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CategoryNameTaken", "admin.categoryNameTaken");
+    return null;
   }
 
   private AdminCategoryListView BuildCategoryListView(IReadOnlyCollection<CatalogCategory> categories)

@@ -54,8 +54,6 @@
     "basketSummary": "{count} item, {total} | {count} items, {total}",
     "toReview": "Go to the summary",
     "itemSoldOut": "{name} is sold out.",
-    "lineNoLongerOnTheMenu": "No longer on the menu.",
-    "lineStationNoLongerPreparesIt": "This station no longer prepares this item.",
     "productionMinutesOutOfRange": "Enter minutes from 0 to 600."
   },
   "estimates": {
@@ -107,7 +105,6 @@
   "order": {
     "cannotBeProcessed": "The order could not be processed. Take it to the station yourself.",
     "draftLost": "The order you had started could not be read. Enter it again.",
-    "stationNotAssignedToItem": "That station does not prepare this item. Take it off the order and add it again.",
     "unknownItem": "One item is no longer on the menu. Take it off the order.",
     "settlementNoItemsSelected": "Choose the items you want to settle first.",
     "settlementCannotBeProcessed": "The settlement could not be processed. Write on a slip of paper what the table paid.",

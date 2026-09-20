@@ -415,23 +415,6 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_StaleChosenStation_RoutesToTheFallbackAndKeepsTheChoice()
-  {
-    GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
-
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_beerId, _barOutdoorId)]),
-                                                                                              CancellationToken.None);
-
-    var order = result.Value.Order;
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(order.StationOrders[0].StationId, Is.EqualTo(_barIndoorId));
-                    });
-  }
-
-  [Test]
   public async Task AcceptAsync_ValidRequest_GivesEveryCreatedRowItsOwnNonEmptyIdentifier()
   {
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
@@ -673,6 +656,8 @@ public sealed class OrderAcceptanceServiceTest
                       RequestWith([ItemFor(ItemWithNoActiveStationId())]),
                     OrderValidationFailureReason.ItemNotAvailable =>
                       RequestWith([ItemFor(SoldOutItemId())]),
+                    OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem =>
+                      RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
                     OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
                     OrderValidationFailureReason.SettlementCannotBeProcessed =>
                       RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
@@ -725,6 +710,15 @@ public sealed class OrderAcceptanceServiceTest
     return _beerId;
   }
 
+  private Guid ItemWithAStaleStationChoiceId()
+  {
+    GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
+    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
+     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([BuildStation(_barIndoorId, "Theke innen", 2)]));
+
+    return _beerId;
+  }
+
   private Guid SoldOutItemId()
   {
     A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
@@ -763,7 +757,9 @@ public sealed class OrderAcceptanceServiceTest
                                                                                        [RoutingFailureReason.StationRequired] = OrderValidationFailureReason.StationRequired,
                                                                                        [RoutingFailureReason.StationNotAssignedToItem] =
                                                                                          OrderValidationFailureReason.StationNotAssignedToItem,
-                                                                                       [RoutingFailureReason.ItemHasNoStation] = OrderValidationFailureReason.ItemHasNoStation
+                                                                                       [RoutingFailureReason.ItemHasNoStation] = OrderValidationFailureReason.ItemHasNoStation,
+                                                                                       [RoutingFailureReason.ChosenStationNoLongerPreparesTheItem] =
+                                                                                         OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem
                                                                                      };
 
     Assert.That(expectedMapping.Keys,

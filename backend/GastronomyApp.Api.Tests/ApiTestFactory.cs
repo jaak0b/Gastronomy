@@ -1,5 +1,4 @@
 using GastronomyApp.Api.Options;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -102,7 +101,6 @@ public sealed record SeededWorld(
 public sealed class ApiSeeder
 {
   private readonly DateTime _baseline = new(2026, 8, 26, 19, 40, 0, DateTimeKind.Utc);
-  private readonly CatalogCategoryNaming _naming = new();
 
   public async Task<SeededWorld> SeedAsync(GastronomyAppDbContext context, CancellationToken cancellationToken)
   {
@@ -181,7 +179,6 @@ public sealed class ApiSeeder
                                   {
                                     Id = categoryId,
                                     Name = name,
-                                    NormalizedName = _naming.ToNormalizedName(name),
                                     ColourHex = colourHex,
                                     SortOrder = sortOrder,
                                     IsActive = true

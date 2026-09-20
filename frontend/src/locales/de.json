@@ -54,8 +54,6 @@
     "basketSummary": "{count} Artikel, {total} | {count} Artikel, {total}",
     "toReview": "Weiter zur Übersicht",
     "itemSoldOut": "{name} ist gerade ausverkauft.",
-    "lineNoLongerOnTheMenu": "Nicht mehr auf der Karte.",
-    "lineStationNoLongerPreparesIt": "Diese Ausgabestelle bereitet den Artikel nicht mehr zu.",
     "productionMinutesOutOfRange": "Tragen Sie Minuten von 0 bis 600 ein."
   },
   "estimates": {
@@ -107,7 +105,6 @@
   "order": {
     "cannotBeProcessed": "Die Bestellung konnte nicht verarbeitet werden. Geben Sie sie an der Ausgabestelle persönlich auf.",
     "draftLost": "Die angefangene Bestellung konnte nicht gelesen werden. Geben Sie sie noch einmal ein.",
-    "stationNotAssignedToItem": "Diese Ausgabestelle bereitet den Artikel nicht zu. Nehmen Sie ihn von der Bestellung und fügen Sie ihn neu hinzu.",
     "unknownItem": "Ein Artikel steht nicht mehr auf der Karte. Nehmen Sie ihn von der Bestellung.",
     "settlementNoItemsSelected": "Wählen Sie zuerst die Positionen aus, die Sie abrechnen wollen.",
     "settlementCannotBeProcessed": "Die Abrechnung konnte nicht verarbeitet werden. Schreiben Sie auf einen Zettel, was der Tisch bezahlt hat.",

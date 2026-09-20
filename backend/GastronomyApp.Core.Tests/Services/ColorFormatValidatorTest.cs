@@ -3,7 +3,7 @@ using GastronomyApp.Core.Services;
 namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class CatalogCategoryColourTest
+public sealed class ColorFormatValidatorTest
 {
   [SetUp]
   public void SetUp()
@@ -11,7 +11,7 @@ public sealed class CatalogCategoryColourTest
     _colour = new();
   }
 
-  private CatalogCategoryColour _colour = null!;
+  private ColorFormatValidator _colour = null!;
 
   [TestCase("#C62828")]
   [TestCase("#000000")]

@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,13 +6,8 @@ namespace GastronomyApp.Infrastructure.Tests;
 
 public sealed class CatalogCategoryNameIndexTest
 {
-  private const string SmallUmlautU = "ü";
-  private const string CapitalUmlautU = "Ü";
-
-  private readonly CatalogCategoryNaming _naming = new();
-
   [Test]
-  public async Task Save_NameThatOnlyDiffersInItsCasing_IsRefusedJustAsTheNamingServiceSaysItIs()
+  public async Task Save_NameThatOnlyDiffersInItsCasing_IsRefusedByTheIndex()
   {
     using SqliteInMemoryFixture fixture = new();
     await StoreCategoryAsync(fixture, "Kaffee");
@@ -21,29 +15,7 @@ public sealed class CatalogCategoryNameIndexTest
     await using var second = fixture.CreateContext();
     second.CatalogCategories.Add(BuildCategory("kaffee", 2));
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
-                      Assert.That(_naming.ToNormalizedName("kaffee"), Is.EqualTo(_naming.ToNormalizedName("Kaffee")));
-                    });
-  }
-
-  [Test]
-  public async Task Save_NameThatOnlyDiffersInTheCasingOfAnUmlaut_IsRefusedJustAsTheNamingServiceSaysItIs()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var name = $"Gr{SmallUmlautU}tze";
-    var nameInCapitals = $"GR{CapitalUmlautU}TZE";
-    await StoreCategoryAsync(fixture, name);
-
-    await using var second = fixture.CreateContext();
-    second.CatalogCategories.Add(BuildCategory(nameInCapitals, 2));
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
-                      Assert.That(_naming.ToNormalizedName(nameInCapitals), Is.EqualTo(_naming.ToNormalizedName(name)));
-                    });
+    Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
   }
 
   private async Task StoreCategoryAsync(SqliteInMemoryFixture fixture, string name)
@@ -59,7 +31,6 @@ public sealed class CatalogCategoryNameIndexTest
            {
              Id = Guid.NewGuid(),
              Name = name,
-             NormalizedName = _naming.ToNormalizedName(name),
              ColourHex = "#C62828",
              SortOrder = sortOrder,
              IsActive = true

@@ -5,7 +5,6 @@ using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -20,8 +19,6 @@ public sealed class AdminCatalogConcurrencyTest
   private const int RacedSwitches = 8;
   private const string SmallUmlautA = "ä";
   private const string CapitalUmlautA = "Ä";
-
-  private readonly CatalogCategoryNaming _naming = new();
 
   private string ColdDrinksName => $"Kaltgetr{SmallUmlautA}nke";
 
@@ -57,8 +54,8 @@ public sealed class AdminCatalogConcurrencyTest
     }
 
     await using var database = _context.Factory.CreateContext();
-    var normalizedName = _naming.ToNormalizedName(ColdDrinksName);
-    var stored = await database.CatalogCategories.CountAsync(category => category.NormalizedName == normalizedName);
+    var normalizedName = ColdDrinksName.Trim();
+    var stored = await database.CatalogCategories.CountAsync(category => category.Name == normalizedName);
 
     Assert.Multiple(() =>
                     {
@@ -82,11 +79,11 @@ public sealed class AdminCatalogConcurrencyTest
                                     {
                                       Id = Guid.NewGuid(),
                                       Name = ColdDrinksName,
-                                      NormalizedName = _naming.ToNormalizedName(ColdDrinksName),
                                       ColourHex = "#1565C0",
                                       SortOrder = 9,
                                       IsActive = true
                                     });
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     var result = await scope.ServiceProvider.GetRequiredService<AdminCategoryHandler>()
                             .CreateAsync(new SaveCategoryRequest

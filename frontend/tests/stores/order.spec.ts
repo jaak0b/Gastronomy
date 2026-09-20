@@ -1164,7 +1164,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('takes changes again, because the reason proves the laptop never took the order', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+      aReasonedRefusal(422, 'catalog.itemSoldOut'),
     )
 
     expect(order.changesAreRefused).toBe(false)
@@ -1180,15 +1180,15 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('keeps the reason the laptop gave, so the waiter can put it right', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+      aReasonedRefusal(422, 'catalog.itemSoldOut'),
     )
 
-    expect(order.failure?.key).toBe('order.stationNotAssignedToItem')
+    expect(order.failure?.key).toBe('catalog.itemSoldOut')
   })
 
   it('keeps the paper route away, because the waiter has something to fix', async () => {
     const order = await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+      aReasonedRefusal(422, 'catalog.itemSoldOut'),
     )
 
     expect(order.onlyPaperIsLeft).toBe(false)
@@ -1196,7 +1196,7 @@ describe('an order the laptop refused with a reason after it had stayed silent o
 
   it('stays open for changes after a reload, because the reason was written down', async () => {
     await anOrderTheLaptopNeverAnsweredAndThenAnsweredWith(
-      aReasonedRefusal(422, 'order.stationNotAssignedToItem'),
+      aReasonedRefusal(422, 'catalog.itemSoldOut'),
     )
 
     setActivePinia(createPinia())

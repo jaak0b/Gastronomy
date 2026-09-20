@@ -341,30 +341,13 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
     Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
 
-21. **A name tells a developer what the code does without reading the body.** It states the subject
-    and the result, in the domain's words, in every language and layer. **One concept has one word:**
-    the part of an order that belongs to one station is a `StationOrder` in code, and a collection of
-    them is `stationOrders`, never a second word for the same thing.
-    - **A name must survive being read alone.** Read it with no body and say what goes in and what
-      comes back; if that takes a guess, the name is wrong. A check that answers yes or no is written
-      as the question it asks (`IsTheNameAlreadyTakenAsync`, `HasOpenItems`), never as a noun for its
-      answer. A method that produces something is named after what it produces
-      (`BuildNameTakenProblem`). Never an invented noun for a return value (`refusal`, `result`,
-      `response`), and never an action verb for a method that only answers.
-    - Methods start with a verb that says what happens (`Load`, `Find`, `Build`, `Read`, `Count`,
-      `Push`, `Split`), and the name carries the subject, not only the parameters:
-      `LoadOwnersAsync(items)`, never `OwnersOfAsync(items)`.
-    - No `XOf(...)` names. Use `For`, `At`, `In`, or fold the subject into the name:
-      `ItemsAtTable(...)`, `CountForFestival(...)`, `StationName(...)`.
-    - A method that only converts a shape names what it produces: `BuildOpenItemViews(...)`,
-      `ToRequest(...)`. A bare `Describe` that could mean anything tells the reader nothing.
-    - Async methods end in `Async`. Booleans read as statements: `IsRunning`, `HasOpenItems`,
-      `CanBeSettled`.
-    - Properties are nouns (`TableName`, `OpenAmountCents`). C# fields are `_camelCase`, C# methods
-      and properties are PascalCase. TypeScript functions and locals are camelCase, TypeScript types
-      and components are PascalCase.
-    - A name that needs a comment to explain it is wrong: rename until the comment is redundant
-      (rule 7).
+21. **C# code follows the `csharp-design-guidelines` skill, and nothing else.** The skill under
+    `backend/.claude/skills/` is the checklist of the official .NET design guidelines: how code is
+    structured into layers, files and classes, how types and members are designed, how names are
+    chosen, how exceptions and collections are used. It is read before any C# file is touched, and
+    its naming principles bind the TypeScript and Vue code too. No naming, structure or design rule
+    is written into a `CLAUDE.md` again; a new rule goes into the skill. A name that needs a comment
+    to explain it is wrong: rename until the comment is redundant (rule 7).
 
 22. **A delayed answer never overwrites a newer one.** Where a read and an action share the state a
     screen shows, the read takes a number from the request gate in
@@ -375,6 +358,14 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     case: the gate is shared, and a new store that loads state an action also writes adopts it. This
     is not a nicety: a stale snapshot that wins by arrival time can make an employee hand the same
     item out twice.
+
+23. **The app never changes what a person entered or chose.** A value a waiter, an admin or a station
+    employee typed or picked is either kept exactly as it was given, or refused with a message that
+    names the problem so the person can fix it themselves. It is never quietly replaced by a default,
+    a first or nearest candidate, a clamped number, a shortened string, or a value recomputed from
+    other data. This binds every layer: the phone, the station tablet, the admin screen and the
+    server. Review treats any silent substitution as a defect, however small the difference looks,
+    because the person acted on a screen that showed something else.
 
 ## Verification bar
 

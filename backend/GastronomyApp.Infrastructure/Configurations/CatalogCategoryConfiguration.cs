@@ -14,11 +14,10 @@ public sealed class CatalogCategoryConfiguration : IEntityTypeConfiguration<Cata
 
     builder.HasKey(category => category.Id);
     builder.Property(category => category.Id).ValueGeneratedNever();
-    builder.Property(category => category.Name).IsRequired();
-    builder.Property(category => category.NormalizedName).IsRequired();
+    builder.Property(category => category.Name).IsRequired().UseCollation("NOCASE");
     builder.Property(category => category.ColourHex).IsRequired().HasMaxLength(ColourHexLength);
     builder.Property(category => category.SortOrder).IsRequired();
     builder.Property(category => category.IsActive).IsRequired();
-    builder.HasIndex(category => category.NormalizedName).IsUnique();
+    builder.HasIndex(category => category.Name).IsUnique();
   }
 }

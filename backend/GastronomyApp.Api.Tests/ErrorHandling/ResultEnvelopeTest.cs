@@ -14,7 +14,7 @@ public sealed class ResultEnvelopeTest
   [TestCase(OrderValidationFailureReason.StationRequired, 422, "UnprocessableEntity", "order.cannotBeProcessed")]
   [TestCase(OrderValidationFailureReason.ItemHasNoStation, 422, "UnprocessableEntity", "order.cannotBeProcessed")]
   [TestCase(OrderValidationFailureReason.UnknownCatalogItemId, 422, "UnprocessableEntity", "order.unknownItem")]
-  [TestCase(OrderValidationFailureReason.StationNotAssignedToItem, 422, "UnprocessableEntity", "order.stationNotAssignedToItem")]
+  [TestCase(OrderValidationFailureReason.StationNotAssignedToItem, 422, "UnprocessableEntity", "catalog.itemSoldOut")]
   [TestCase(OrderValidationFailureReason.OrderNumberCouldNotBeAllocated, 422, "UnprocessableEntity", "order.cannotBeProcessed")]
   public void BuildProblemDescription_OrderValidationFailure_MapsToItsStatusCodeAndItsMessage(OrderValidationFailureReason reason,
                                                                                               int expectedStatusCode,

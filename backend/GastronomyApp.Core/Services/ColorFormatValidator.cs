@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Services;
 
-public sealed class CatalogCategoryColour
+public sealed class ColorFormatValidator
 {
   private const int HexDigitCount = 6;
   private const int WellFormedLength = HexDigitCount + 1;

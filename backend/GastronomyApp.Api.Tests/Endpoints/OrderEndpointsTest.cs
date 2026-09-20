@@ -178,6 +178,49 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
+  public async Task PostOrder_ChosenStationSwitchedOff_IsRefusedWithTheWordingThePhoneShows()
+  {
+    await using (var seeding = _context.Factory.CreateContext())
+    {
+      seeding.ItemStationAssignments.Add(new()
+                                         {
+                                           Id = Guid.NewGuid(),
+                                           FestivalId = _context.World.FestivalId,
+                                           CatalogItemId = _context.World.BratwurstItemId,
+                                           StationId = _context.World.BarStationId
+                                         });
+      var kitchen = await seeding.Stations.FirstAsync(station => station.Id == _context.World.KitchenStationId);
+      kitchen.IsActive = false;
+      await seeding.SaveChangesAsync();
+    }
+
+    OrderBody body = new(Guid.NewGuid(),
+                         "Tisch 12",
+                         null,
+                         [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
+
+    using var response = await _context.PostOrderAsync(body);
+    var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    await using var database = _context.Factory.CreateContext();
+    var storedOrders = await database.Orders.CountAsync();
+    var storedItems = await database.OrderItems.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(),
+                                  Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
+                                  Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
+                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(storedOrders, Is.Zero);
+                      Assert.That(storedItems, Is.Zero);
+                    });
+  }
+
+  [Test]
   public async Task PostOrder_ItemPrices_AreStoredAsThePhoneSentThem()
   {
     OrderBody body = new(Guid.NewGuid(),

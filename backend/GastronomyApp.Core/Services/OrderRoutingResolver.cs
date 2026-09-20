@@ -34,9 +34,7 @@ public sealed class OrderRoutingResolver
 
       return Result<RoutingDecision, RoutingFailure>.Success(new()
                                                              {
-                                                               ResolvedStationId = candidates[0].Id,
-                                                               ChosenStationId = null,
-                                                               FellBackFromStaleChoice = false
+                                                               ResolvedStationId = candidates[0].Id
                                                              });
     }
 
@@ -47,13 +45,17 @@ public sealed class OrderRoutingResolver
       return Result<RoutingDecision, RoutingFailure>.Failed(new() { Reason = RoutingFailureReason.StationNotAssignedToItem });
     }
 
-    var chosenIsStillActive = candidates.Any(candidate => candidate.Id == chosenId);
+    if (!candidates.Any(candidate => candidate.Id == chosenId))
+    {
+      return Result<RoutingDecision, RoutingFailure>.Failed(new()
+                                                           {
+                                                             Reason = RoutingFailureReason.ChosenStationNoLongerPreparesTheItem
+                                                           });
+    }
 
     return Result<RoutingDecision, RoutingFailure>.Success(new()
                                                            {
-                                                             ResolvedStationId = chosenIsStillActive ? chosenId : candidates[0].Id,
-                                                             ChosenStationId = chosenId,
-                                                             FellBackFromStaleChoice = !chosenIsStillActive
+                                                             ResolvedStationId = chosenId
                                                            });
   }
 }

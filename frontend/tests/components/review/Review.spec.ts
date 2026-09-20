@@ -748,13 +748,11 @@ describe('an order holding a line the admin moved to another station', () => {
     expect(review.get('.drop-lines-that-cannot-be-ordered').exists()).toBe(true)
   })
 
-  it('marks the line on the card of the station that no longer prepares it', () => {
+  it('marks the line as sold out on the card of the station that no longer prepares it', () => {
     orderWhoseStationWasTakenOff()
     const review = mountReview()
 
-    expect(review.get('.station-no-longer-prepares-it').text()).toBe(
-      'Diese Ausgabestelle bereitet den Artikel nicht mehr zu.',
-    )
+    expect(review.get('.sold-out').text()).toBe('Wasser ist gerade ausverkauft.')
   })
 
   it('lets the one button that clears such lines take it off', async () => {
@@ -864,8 +862,8 @@ describe('an order the laptop refused after an attempt it never answered', () =>
           new Response(
             JSON.stringify({
               code: 'UnprocessableEntity',
-              messageKey: 'order.stationNotAssignedToItem',
-              parameters: {},
+              messageKey: 'catalog.itemSoldOut',
+              parameters: { name: 'Wasser', catalogItemId: 'item-wasser' },
               details: null,
             }),
             { status: 422 },

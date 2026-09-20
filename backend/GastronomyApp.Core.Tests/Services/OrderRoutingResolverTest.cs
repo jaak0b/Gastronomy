@@ -55,8 +55,6 @@ public sealed class OrderRoutingResolverTest
                     {
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_kitchenId));
-                      Assert.That(result.Value.ChosenStationId, Is.Null);
-                      Assert.That(result.Value.FellBackFromStaleChoice, Is.False);
                     });
   }
 
@@ -106,13 +104,11 @@ public sealed class OrderRoutingResolverTest
                     {
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_barOutdoorId));
-                      Assert.That(result.Value.ChosenStationId, Is.EqualTo(_barOutdoorId));
-                      Assert.That(result.Value.FellBackFromStaleChoice, Is.False);
                     });
   }
 
   [Test]
-  public void Resolve_ChoiceNoLongerActive_FallsBackToLowestSortOrderActiveCandidateAndKeepsTheChoice()
+  public void Resolve_ChoiceNoLongerActive_IsRefusedInsteadOfGoingSomewhereTheWaiterDidNotPick()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId), AssignmentTo(_kitchenId)],
@@ -121,10 +117,11 @@ public sealed class OrderRoutingResolverTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_barIndoorId));
-                      Assert.That(result.Value.ChosenStationId, Is.EqualTo(_barOutdoorId));
-                      Assert.That(result.Value.FellBackFromStaleChoice, Is.True);
+                      Assert.That(result.IsSuccess,
+                                  Is.False,
+                                  "a station the waiter chose and that is switched off must never be replaced by another one");
+                      Assert.That(result.Failure.Reason,
+                                  Is.EqualTo(RoutingFailureReason.ChosenStationNoLongerPreparesTheItem));
                     });
   }
 
@@ -140,7 +137,6 @@ public sealed class OrderRoutingResolverTest
                     {
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(result.Value.ResolvedStationId, Is.EqualTo(_kitchenId));
-                      Assert.That(result.Value.ChosenStationId, Is.EqualTo(_kitchenId));
                     });
   }
 
