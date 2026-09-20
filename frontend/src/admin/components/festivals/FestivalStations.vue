@@ -15,11 +15,14 @@ const { t } = useI18n()
 const stations = useAdminStationsStore()
 const chosenStationId = ref<string | null>(null)
 const isCreating = ref(false)
+const editingStation = ref<AdminStation | null>(null)
 const removedStation = ref<AdminStation | null>(null)
 const refusedStationId = ref<string | null>(null)
 const refusal = ref<AdminErrorMessage | null>(null)
+const stationRefusal = ref<AdminErrorMessage | null>(null)
 
 const refusalText = useRefusalText(refusal)
+const stationRefusalText = useRefusalText(stationRefusal)
 
 const atTheFestival = computed(() =>
   stations.stations.filter((station) => station.isAtTheFestival),
@@ -75,6 +78,31 @@ async function create(draft: StationDraft): Promise<void> {
   }
 }
 
+function startEditing(station: AdminStation): void {
+  stationRefusal.value = null
+  editingStation.value = station
+}
+
+function stopEditing(): void {
+  stationRefusal.value = null
+  editingStation.value = null
+}
+
+async function saveStation(station: StationDraft): Promise<void> {
+  stationRefusal.value = null
+  const saved = await stations.save(station)
+  switch (saved.kind) {
+    case 'ok':
+      stopEditing()
+      return
+    case 'failed':
+      stationRefusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
+  }
+}
+
 async function remove(): Promise<void> {
   const station = removedStation.value
   removedStation.value = null
@@ -115,6 +143,9 @@ async function remove(): Promise<void> {
                 {{ t('admin.deactivated') }}
               </v-chip>
               <v-spacer />
+              <v-btn class="edit-station" variant="text" @click="startEditing(station)">
+                {{ t('admin.edit') }}
+              </v-btn>
               <v-btn class="remove-station" variant="text" @click="removedStation = station">
                 {{ t('admin.festival.remove') }}
               </v-btn>
@@ -171,6 +202,14 @@ async function remove(): Promise<void> {
         </v-alert>
       </div>
     </v-card>
+
+    <StationDialog
+      v-if="editingStation !== null"
+      :station="editingStation"
+      :error-text="stationRefusalText"
+      @save="saveStation"
+      @cancel="stopEditing"
+    />
 
     <StationDialog
       v-if="isCreating"

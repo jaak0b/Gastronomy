@@ -407,6 +407,26 @@ describe('the stations of this festival', () => {
     expect(page.findAllComponents(VAutocomplete)[0].props('items')).toEqual([BAR, NEW_STATION])
   })
 
+  it('renames the station through the dialog on its row', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.edit-station').exists()).toBe(true))
+    await page.get('.edit-station').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .station-name-field')).not.toBeNull(),
+    )
+    writeInto('.form-dialog .station-name-field input', 'Küche Nord')
+    inDialog('.form-dialog .form-save').click()
+
+    await vi.waitFor(() => {
+      const sent = calls.find((call) => call.method === 'PUT')
+      expect(sent?.url).toBe(`/api/admin/stations/${KITCHEN_ID}`)
+      expect(sent?.body).toEqual({ name: 'Küche Nord', sortOrder: 1 })
+    })
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+  })
+
   it('asks before a station leaves the festival', async () => {
     const calls = stubLaptop()
 
@@ -792,6 +812,52 @@ describe('the items of this festival', () => {
         (item) => item.name,
       ),
     ).toEqual(['Bier'])
+  })
+
+  it('renames the category through the dialog on its heading', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.edit-category').exists()).toBe(true))
+    await page.get('.edit-category').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .category-name-field')).not.toBeNull(),
+    )
+    writeInto('.form-dialog .category-name-field input', 'Speisen neu')
+    inDialog('.form-dialog .form-save').click()
+
+    await vi.waitFor(() => {
+      const sent = calls.find((call) => call.method === 'PUT')
+      expect(sent?.url).toBe(`/api/admin/categories/${FOOD_ID}`)
+      expect(sent?.body).toEqual({ name: 'Speisen neu', colourHex: '#FFEB3B' })
+    })
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
+  })
+
+  it('renames the item through the dialog on its row', async () => {
+    const calls = stubLaptop()
+
+    const page = mountPage()
+    await vi.waitFor(() => expect(page.find('.edit-item').exists()).toBe(true))
+    await page.get('.edit-item').trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('.form-dialog .item-name-field')).not.toBeNull(),
+    )
+    writeInto('.form-dialog .item-name-field input', 'Bratwurst XL')
+    inDialog('.form-dialog .form-save').click()
+
+    await vi.waitFor(() => {
+      const sent = calls.find((call) => call.method === 'PUT')
+      expect(sent?.url).toBe(`/api/admin/items/${SAUSAGE_ID}`)
+      expect(sent?.body).toEqual({
+        name: 'Bratwurst XL',
+        categoryId: FOOD_ID,
+        sortOrder: 1,
+        productionMinutes: null,
+        isQueueIndependent: false,
+      })
+    })
+    await vi.waitFor(() => expect(document.querySelector('.form-dialog')).toBeNull())
   })
 
   it('creates an item in the popup and opens the placement dialog for it', async () => {

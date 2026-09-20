@@ -2,16 +2,17 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminItem } from '../../../shared/api/apiTypes'
+import type { AdminCategory, AdminItem } from '../../../shared/api/apiTypes'
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
-import { useAdminCategoriesStore } from '../../stores/categories'
+import { useAdminCategoriesStore, type AdminCategoryDraft } from '../../stores/categories'
 import { useAdminItemsStore, type AdminItemDraft } from '../../stores/items'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useFestivalItemRows } from '../../composables/useFestivalItemRows'
 import { useRefusalText } from '../../composables/useRefusalText'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
+import CategoryDialog from '../categories/CategoryDialog.vue'
 import ItemDialog from '../items/ItemDialog.vue'
 import FestivalPlacementDialog from './FestivalPlacementDialog.vue'
 import StationSelect from './StationSelect.vue'
@@ -25,10 +26,16 @@ const stations = useAdminStationsStore()
 const chosenItemId = ref<string | null>(null)
 const itemToPlace = ref<AdminItem | null>(null)
 const isCreating = ref(false)
+const editingCategory = ref<AdminCategory | null>(null)
+const editingItem = ref<AdminItem | null>(null)
 const removedItem = ref<AdminItem | null>(null)
 const createRefusal = ref<AdminErrorMessage | null>(null)
+const categoryRefusal = ref<AdminErrorMessage | null>(null)
+const itemRefusal = ref<AdminErrorMessage | null>(null)
 
 const createRefusalText = useRefusalText(createRefusal)
+const categoryRefusalText = useRefusalText(categoryRefusal)
+const itemRefusalText = useRefusalText(itemRefusal)
 
 const {
   itemsAtTheFestival,
@@ -123,6 +130,60 @@ async function create(draft: AdminItemDraft): Promise<void> {
   }
 }
 
+function startEditingCategory(category: AdminCategory): void {
+  categoryRefusal.value = null
+  editingCategory.value = category
+}
+
+function stopEditingCategory(): void {
+  categoryRefusal.value = null
+  editingCategory.value = null
+}
+
+async function saveCategory(draft: AdminCategoryDraft): Promise<void> {
+  const category = editingCategory.value
+  if (category === null) {
+    return
+  }
+  categoryRefusal.value = null
+  const saved = await categories.save({ categoryId: category.categoryId, ...draft })
+  switch (saved.kind) {
+    case 'ok':
+      stopEditingCategory()
+      return
+    case 'failed':
+      categoryRefusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
+  }
+}
+
+function startEditingItem(item: AdminItem): void {
+  itemRefusal.value = null
+  editingItem.value = item
+}
+
+function stopEditingItem(): void {
+  itemRefusal.value = null
+  editingItem.value = null
+}
+
+async function saveEditedItem(draft: AdminItemDraft): Promise<void> {
+  itemRefusal.value = null
+  const saved = await items.save(draft)
+  switch (saved.kind) {
+    case 'ok':
+      stopEditingItem()
+      return
+    case 'failed':
+      itemRefusal.value = saved.message
+      return
+    default:
+      assertNever(saved)
+  }
+}
+
 async function remove(): Promise<void> {
   const item = removedItem.value
   removedItem.value = null
@@ -162,15 +223,24 @@ async function remove(): Promise<void> {
             :key="group.category.categoryId"
             class="category-section"
           >
-            <h3
-              class="category-name text-subtitle-1 font-weight-bold px-3 py-1 rounded d-inline-block mb-1 mt-3"
-              :style="{
-                backgroundColor: group.category.colourHex,
-                color: letteringColourOn(group.category.colourHex),
-              }"
-            >
-              {{ group.category.name }}
-            </h3>
+            <div class="category-heading d-flex align-center flex-wrap ga-2 mb-1 mt-3">
+              <h3
+                class="category-name text-subtitle-1 font-weight-bold px-3 py-1 rounded"
+                :style="{
+                  backgroundColor: group.category.colourHex,
+                  color: letteringColourOn(group.category.colourHex),
+                }"
+              >
+                {{ group.category.name }}
+              </h3>
+              <v-btn
+                class="edit-category"
+                variant="text"
+                @click="startEditingCategory(group.category)"
+              >
+                {{ t('admin.edit') }}
+              </v-btn>
+            </div>
             <div
               v-for="item in group.items"
               :key="item.itemId"
@@ -214,6 +284,9 @@ async function remove(): Promise<void> {
                   :label="t('admin.items.soldOut')"
                   @update:model-value="(value: boolean | null) => setSoldOut(item, value === true)"
                 />
+                <v-btn class="edit-item" variant="text" @click="startEditingItem(item)">
+                  {{ t('admin.edit') }}
+                </v-btn>
                 <span class="remove-item-wrapper">
                   <v-btn
                     class="remove-item"
@@ -275,6 +348,22 @@ async function remove(): Promise<void> {
         </template>
       </div>
     </v-card>
+
+    <CategoryDialog
+      v-if="editingCategory !== null"
+      :category="editingCategory"
+      :error-text="categoryRefusalText"
+      @save="saveCategory"
+      @cancel="stopEditingCategory"
+    />
+
+    <ItemDialog
+      v-if="editingItem !== null"
+      :item="editingItem"
+      :error-text="itemRefusalText"
+      @save="saveEditedItem"
+      @cancel="stopEditingItem"
+    />
 
     <ItemDialog
       v-if="isCreating"
