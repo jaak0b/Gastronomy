@@ -58,7 +58,7 @@ describe('the waiter list of the admin', () => {
 describe('the station list of the admin', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    hubEventsRegistered.length = 0
+    forgetHubEvents()
   })
 
   afterEach(() => {
@@ -72,6 +72,17 @@ describe('the station list of the admin', () => {
     await useConnectionStore().refetchAll()
 
     expect(urls).toEqual(['/api/admin/stations'])
+  })
+
+  it('is read again when the laptop says a station changed', async () => {
+    const urls = stubTheLaptop()
+    useAdminStationsStore().listen()
+    await useConnectionStore().connect({})
+    urls.length = 0
+
+    fireHubEvent('StationsChanged')
+
+    await vi.waitFor(() => expect(urls).toEqual(['/api/admin/stations']))
   })
 
   it('is left alone once the admin has moved to another screen', async () => {

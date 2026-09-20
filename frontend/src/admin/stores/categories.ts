@@ -5,6 +5,7 @@ import { adminCategoriesResponseSchema, adminCategorySchema } from '../../shared
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
+import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
 import type { AdminCategory } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -21,6 +22,9 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   const loadFailed = ref(false)
 
   const categoriesGate = createLatestRequestGate()
+  const pendingCreatedCategories = createPendingCreatedEntities<AdminCategory>(
+    (category) => category.categoryId,
+  )
   let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
 
   async function load(): Promise<void> {
@@ -30,7 +34,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
       gate: categoriesGate,
       itemsOf: (response) => response.categories,
       showItems: (loaded) => {
-        categories.value = loaded
+        categories.value = pendingCreatedCategories.mergeInto(loaded)
       },
       setLoadFailed: (failed) => {
         loadFailed.value = failed
@@ -39,7 +43,6 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   }
 
   async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
-    const token = categoriesGate.startRequest()
     const result = await request('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
@@ -48,9 +51,8 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
     }
-    if (categoriesGate.isNewestRequest(token)) {
-      categories.value = [...categories.value, result.data]
-    }
+    pendingCreatedCategories.remember(result.data)
+    categories.value = pendingCreatedCategories.mergeInto(categories.value)
     return adminOk(result.data)
   }
 
@@ -93,7 +95,9 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     }
     if (categoriesGate.isNewestRequest(token)) {
       categories.value = result.data.categories
+      return adminOk(null)
     }
+    await load()
     return adminOk(null)
   }
 

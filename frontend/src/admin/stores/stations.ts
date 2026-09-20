@@ -147,6 +147,9 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     const connection = useConnectionStore()
     const releases = [
       connection.registerRefetch(reload),
+      connection.onEvent<unknown>('StationsChanged', () => {
+        void reload()
+      }),
       useAdminEnrolmentStore().listen(() => {
         void reload()
       }),

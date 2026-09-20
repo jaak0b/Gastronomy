@@ -18,6 +18,14 @@ const FOOD = {
   isActive: true,
 }
 
+const CREATED_CATEGORY = {
+  categoryId: 'category-neu',
+  name: 'Getränke',
+  colourHex: '#C62828',
+  sortOrder: 1,
+  isActive: true,
+}
+
 interface Call {
   url: string
   method: string
@@ -188,6 +196,40 @@ describe('a new category', () => {
   })
 })
 
+describe('a category created while a list read is on the way', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('stays in the list when the slower read answers first', async () => {
+    let releaseThePost = (): void => {}
+    const thePost = new Promise<Response>((carryOn) => {
+      releaseThePost = () =>
+        carryOn(new Response(JSON.stringify(CREATED_CATEGORY), { status: 201 }))
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init?.method ?? 'GET') === 'POST'
+          ? await thePost
+          : new Response(JSON.stringify({ categories: [] }), { status: 200 }),
+      ),
+    )
+    const categories = useAdminCategoriesStore()
+
+    const created = categories.create({ name: 'Getränke', colourHex: '#C62828' })
+    await categories.load()
+    releaseThePost()
+    await created
+
+    expect(categories.categories.map((category) => category.categoryId)).toEqual(['category-neu'])
+  })
+})
+
 describe('renaming and recolouring a category', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -278,6 +320,43 @@ describe('moving a category', () => {
       'Getränke',
     ])
     expect(calls.map((call) => call.method)).toEqual(['POST'])
+  })
+
+  it('takes the order from a fresh read when a list read overtook the move', async () => {
+    let releaseTheMove = (): void => {}
+    const theMove = new Promise<Response>((carryOn) => {
+      releaseTheMove = () =>
+        carryOn(new Response(JSON.stringify({ categories: [FOOD, DRINKS] }), { status: 200 }))
+    })
+    let reads = 0
+    let posts = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if ((init?.method ?? 'GET') === 'POST') {
+          posts += 1
+          return await theMove
+        }
+        reads += 1
+        return new Response(
+          JSON.stringify({ categories: reads >= 3 ? [FOOD, DRINKS] : [DRINKS, FOOD] }),
+          { status: 200 },
+        )
+      }),
+    )
+    const categories = useAdminCategoriesStore()
+    await categories.load()
+
+    const moved = categories.move(FOOD.categoryId, 'up')
+    await vi.waitFor(() => expect(posts).toBe(1))
+    await categories.load()
+    releaseTheMove()
+    await moved
+
+    expect(categories.categories.map((category) => category.name)).toEqual([
+      'Speisen',
+      'Getränke',
+    ])
   })
 
   it('says the action did not work when the laptop cannot be reached', async () => {
