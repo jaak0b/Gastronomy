@@ -67,6 +67,24 @@ reverse proxy.
    `.Join`, `.OrderBy`), never query-comprehension syntax (`from ... in ...`). The whole codebase
    keeps one query style, and a join stays a chain instead of a block of SQL pasted into C#.
 
+## Code style
+
+- Two spaces per level, never tabs, and no trailing whitespace.
+- A fluent chain stays on one line while it fits. When it wraps, it breaks after every dot, one call
+  per line, indented to the start of the chain:
+
+  ```csharp
+  var stationOrders = await database.StationOrders
+                                    .AsNoTracking()
+                                    .Where(stationOrder => stationOrder.FestivalId == festivalId)
+                                    .OrderBy(stationOrder => stationOrder.StationOrderNumber)
+                                    .ToListAsync(cancellationToken);
+  ```
+
+- Never break an assignment after `=`. Keep the line whole and wrap the chain, or align a plain
+  call's arguments under its opening parenthesis as `OrderAcceptanceService` does.
+- Two statements on one line are never written, however short they are.
+
 ## The order model
 
 One order, split per station, worked off item by item on that station's tablet, and all of it belongs
@@ -114,7 +132,10 @@ done, `PartiallyFulfilled` when some are, `Fulfilled` when all are. It is never 
 as numbers with pinned values, so a member may be renamed freely but never
 reordered. Counters live where they belong: `Festival.NextOrderNumber` for the global order number
 and `FestivalStation.NextStationOrderNumber` for each station at that festival, so every festival
-starts at 1 by itself and nothing ever sets a counter back.
+starts at 1 by itself and nothing ever sets a counter back. Removing a station link deletes the row
+that holds its counter, so adding the station back computes the next number from the highest
+`StationOrderNumber` already used at that festival, and its numbering continues instead of
+repeating.
 
 ## Intended project structure
 
