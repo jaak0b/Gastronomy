@@ -43,9 +43,7 @@ export const useConnectionStore = defineStore('connection', () => {
   }
 
   async function refetchAll(): Promise<void> {
-    for (const callback of refetchCallbacks) {
-      await callback()
-    }
+    await Promise.allSettled(refetchCallbacks.map((callback) => callback()))
   }
 
   function onEvent<T>(eventName: string, handler: (payload: T) => void): () => void {
