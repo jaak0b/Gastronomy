@@ -144,6 +144,14 @@ describe('buildSubmitRequest', () => {
     })
   })
 
+  it('sends the table name with the spaces around it cut off', () => {
+    const ready = setTableName(draftWithABratwurst(), ' Tisch 12 ')
+
+    const request = buildSubmitRequest(ready, catalog(), null, [])
+
+    expect(request.tableName).toBe('Tisch 12')
+  })
+
   it('takes the price from the item list the laptop pushed out, not from the line', () => {
     const ready = draftWithABratwurst()
 

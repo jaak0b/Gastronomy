@@ -326,6 +326,34 @@ describe('the settlement an order goes out with', () => {
   })
 })
 
+describe('the table name an order goes out with', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('has no spaces around it, so the open list cannot hold the same table twice', async () => {
+    answerWith(0)
+    const order = useOrderStore()
+    order.addItem({
+      catalogItemId: 'item-wasser',
+      note: null,
+      stationId: 'station-bar',
+      name: 'Wasser',
+    })
+    order.setTable(' Tisch 3 ')
+
+    await order.send(null)
+
+    const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
+    expect(sent.tableName).toBe('Tisch 3')
+  })
+})
+
 describe('an order the waiter has already pressed send on', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

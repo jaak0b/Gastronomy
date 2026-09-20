@@ -63,7 +63,7 @@ export function buildSubmitRequest(
       : splitSettlement(settlement.amountPaidCents, pricedLines, settlement.paymentNotice ?? '')
   return {
     clientOrderId,
-    tableName: draft.tableName,
+    tableName: draft.tableName.trim(),
     note: draft.note,
     items: pricedLines.map(({ line, unitPriceCents }, index) => ({
       catalogItemId: line.catalogItemId,
