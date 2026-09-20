@@ -134,7 +134,7 @@ watch(
   { immediate: true },
 )
 
-function rowOf(itemId: string): ItemRow {
+function rowFor(itemId: string): ItemRow {
   return (
     rows.value.get(itemId)
     ?? {
@@ -165,7 +165,7 @@ function isAlreadyAtTheLaptop(row: ItemRow): boolean {
   return matchesTheLaptop(row, row.sentPriceText, row.sentStationIds)
 }
 
-function itemNameOf(itemId: string): string {
+function itemNameFor(itemId: string): string {
   return items.items.find((item) => item.itemId === itemId)?.name ?? ''
 }
 
@@ -192,7 +192,7 @@ function showRowRefusal(itemId: string, result: AdminActionResult<unknown>): voi
 }
 
 function rowRefusalText(itemId: string): string | null {
-  const message = rowOf(itemId).refusal
+  const message = rowFor(itemId).refusal
   return message === null ? null : refusalMessageText(t, message)
 }
 
@@ -204,7 +204,7 @@ function typePrice(itemId: string, typed: string): void {
 }
 
 function priceIsUnreadable(itemId: string): boolean {
-  const typed = rowOf(itemId).priceText
+  const typed = rowFor(itemId).priceText
   return typed.trim().length > 0 && parseEuroInput(typed) === null
 }
 
@@ -215,7 +215,7 @@ function priceTheLaptopCanTake(itemId: string, row: ItemRow): number | null {
     return null
   }
   if (row.stationIds.length === 0) {
-    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameOf(itemId) })
+    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameFor(itemId) })
     return null
   }
   return priceCents
@@ -285,7 +285,7 @@ async function changeStations(itemId: string, stationIds: string[]): Promise<voi
     return
   }
   if (stationIds.length === 0) {
-    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameOf(itemId) })
+    refuse(itemId, 'admin.festival.itemNeedsAStation', { item: itemNameFor(itemId) })
     return
   }
   row.stationIds = [...stationIds]
@@ -421,7 +421,7 @@ async function remove(): Promise<void> {
                   density="compact"
                   inputmode="decimal"
                   hide-details="auto"
-                  :model-value="rowOf(item.itemId).priceText"
+                  :model-value="rowFor(item.itemId).priceText"
                   :label="t('admin.items.price')"
                   :error="priceIsUnreadable(item.itemId)"
                   :error-messages="
@@ -433,13 +433,13 @@ async function remove(): Promise<void> {
                 />
                 <StationSelect
                   :stations="festivalStations"
-                  :selected-station-ids="rowOf(item.itemId).stationIds"
+                  :selected-station-ids="rowFor(item.itemId).stationIds"
                   :error-text="null"
                   @select="(stationIds: string[]) => changeStations(item.itemId, stationIds)"
                 />
                 <v-spacer />
                 <v-switch
-                  :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowOf(item.itemId).laptopAnswers}`"
+                  :key="`${item.itemId}-${item.atTheFestival.isAvailable}-${rowFor(item.itemId).laptopAnswers}`"
                   class="sold-out-switch flex-grow-0"
                   density="compact"
                   color="primary"

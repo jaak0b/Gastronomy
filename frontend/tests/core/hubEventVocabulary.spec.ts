@@ -8,7 +8,9 @@ const SOURCE_ROOT = `${process.cwd()}/src`
 function eventsTheLaptopCanPush(): string[] {
   const source = readFileSync(BACKEND_HUB, 'utf8')
   const declaration = source.indexOf('public sealed record HubEventNames')
-  const body = source.slice(declaration, source.indexOf('\n}', declaration))
+  const recordEnd = source.indexOf('\n}', declaration)
+  const body =
+    recordEnd < declaration ? source.substring(declaration) : source.substring(declaration, recordEnd)
   return [...body.matchAll(/=\s*"(\w+)";/g)].map((match) => match[1]).sort()
 }
 
@@ -17,7 +19,7 @@ function eventsThePhoneWaitsFor(): Map<string, string> {
   for (const file of sourceFilesUnder(SOURCE_ROOT)) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(/onEvent(?:<[\s\S]*?>)?\s*\(\s*'(\w+)'/g)) {
-      waited.set(match[1], file.slice(SOURCE_ROOT.length + 1))
+      waited.set(match[1], file.substring(SOURCE_ROOT.length + 1))
     }
   }
   return waited

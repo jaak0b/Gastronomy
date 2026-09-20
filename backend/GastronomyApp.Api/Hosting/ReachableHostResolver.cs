@@ -42,7 +42,7 @@ public sealed class ReachableAddressPolicy
     NetworkInterfaceType.Tunnel
   ];
 
-  public IReadOnlyList<LocalNetworkAddress> InTheOrderAPhoneShouldTry(IEnumerable<CandidateNetworkAddress> candidates)
+  public IReadOnlyList<LocalNetworkAddress> OrderReachableAddresses(IEnumerable<CandidateNetworkAddress> candidates)
   {
     List<RankedNetworkAddress> reachable = [];
 
@@ -58,7 +58,7 @@ public sealed class ReachableAddressPolicy
                         _interfacesCarryingTheSiteNetwork.Contains(candidate.InterfaceType)
                           ? PreferredRank
                           : RemainingRank,
-                        NumericValueOf(candidate.Address)));
+                        ToNumericValue(candidate.Address)));
     }
 
     return
@@ -105,7 +105,7 @@ public sealed class ReachableAddressPolicy
            || (octets[0] == PrivateOneNineTwoFirstOctet && octets[1] == PrivateOneNineTwoSecondOctet);
   }
 
-  private uint NumericValueOf(IPAddress address)
+  private uint ToNumericValue(IPAddress address)
   {
     var octets = address.GetAddressBytes();
 
@@ -125,7 +125,7 @@ public sealed class LocalNetworkAddressProvider
 
   public IReadOnlyList<LocalNetworkAddress> FindReachableAddresses()
   {
-    return _policy.InTheOrderAPhoneShouldTry(EveryAddressTheOperatingSystemReports());
+    return _policy.OrderReachableAddresses(EveryAddressTheOperatingSystemReports());
   }
 
   private IEnumerable<CandidateNetworkAddress> EveryAddressTheOperatingSystemReports()

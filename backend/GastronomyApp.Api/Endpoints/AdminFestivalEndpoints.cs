@@ -181,9 +181,9 @@ public sealed class AdminFestivalHandler
                                                             festival.EndsAtUtc,
                                                             festival.IsHidden,
                                                             _schedule.IsRunning(festival, nowUtc),
-                                                            CountOf(stationCounts, festival.Id),
-                                                            CountOf(menuItemCounts, festival.Id),
-                                                            CountOf(orderCounts, festival.Id)))
+                                                            CountForFestival(stationCounts, festival.Id),
+                                                            CountForFestival(menuItemCounts, festival.Id),
+                                                            CountForFestival(orderCounts, festival.Id)))
     ];
 
     return Results.Ok(new AdminFestivalListView(views));
@@ -257,7 +257,7 @@ public sealed class AdminFestivalHandler
 
   private async Task<CatalogWrite> CreatedAsync(SaveFestivalRequest request, CancellationToken cancellationToken)
   {
-    FestivalPeriodOutcome period = await PeriodOfAsync(request, Guid.Empty, cancellationToken);
+    FestivalPeriodOutcome period = await BuildFestivalPeriodOutcomeAsync(request, Guid.Empty, cancellationToken);
 
     if (period.Refusal is not null)
     {
@@ -294,7 +294,7 @@ public sealed class AdminFestivalHandler
     }
 
     FestivalPeriodOutcome period =
-      await PeriodOfAsync(request, festivalId, cancellationToken);
+      await BuildFestivalPeriodOutcomeAsync(request, festivalId, cancellationToken);
 
     if (period.Refusal is not null)
     {
@@ -323,7 +323,7 @@ public sealed class AdminFestivalHandler
       return new(Results.NotFound(), false);
     }
 
-    FestivalPeriodOutcome period = await PeriodOfAsync(request, Guid.Empty, cancellationToken);
+    FestivalPeriodOutcome period = await BuildFestivalPeriodOutcomeAsync(request, Guid.Empty, cancellationToken);
 
     if (period.Refusal is not null)
     {
@@ -411,7 +411,7 @@ public sealed class AdminFestivalHandler
       _logger.LogWarning("The festival {FestivalId} was not hidden because it is running right now, and hiding it would empty every phone and every station tablet in the middle of service. The festivals page draws no hide control on a running festival, so this call did not come from that screen.",
                          festivalId);
 
-      return new(ActionFailed(), false);
+      return new(BuildActionFailedProblem(), false);
     }
 
     if (festival.IsHidden)
@@ -446,7 +446,7 @@ public sealed class AdminFestivalHandler
     return new(Results.Ok(new SavedFestivalView(festivalId)), true);
   }
 
-  private async Task<FestivalPeriodOutcome> PeriodOfAsync(SaveFestivalRequest request,
+  private async Task<FestivalPeriodOutcome> BuildFestivalPeriodOutcomeAsync(SaveFestivalRequest request,
                                                                     Guid candidateId,
                                                                     CancellationToken cancellationToken)
   {
@@ -471,7 +471,7 @@ public sealed class AdminFestivalHandler
 
     IReadOnlyCollection<Festival> others = await _festivalRepository.FindAllAsync(cancellationToken);
 
-    var inTheWay = _schedule.Overlapping(candidateId, startsAtUtc, endsAtUtc, others);
+    var inTheWay = _schedule.FindOverlapping(candidateId, startsAtUtc, endsAtUtc, others);
 
     if (inTheWay is not null)
     {
@@ -485,12 +485,12 @@ public sealed class AdminFestivalHandler
     return new(new(request.Name, startsAtUtc, endsAtUtc), null);
   }
 
-  private IResult ActionFailed()
+  private IResult BuildActionFailedProblem()
   {
     return _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.actionFailed");
   }
 
-  private int CountOf(Dictionary<Guid, int> counts, Guid festivalId)
+  private int CountForFestival(Dictionary<Guid, int> counts, Guid festivalId)
   {
     return counts.TryGetValue(festivalId, out var count) ? count : 0;
   }
@@ -864,9 +864,9 @@ public sealed class AdminFestivalStationHandler
     {
       var openItemCount = await _dbContext.StationOrders
                                           .AsNoTracking()
-                                          .Where(slice => slice.StationId == stationId
-                                                          && slice.FestivalId == festivalId)
-                                          .SelectMany(slice => slice.Items)
+                                          .Where(stationOrder => stationOrder.StationId == stationId
+                                                                 && stationOrder.FestivalId == festivalId)
+                                          .SelectMany(stationOrder => stationOrder.Items)
                                           .CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
 
       if (openItemCount > 0)

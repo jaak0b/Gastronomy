@@ -74,7 +74,7 @@ public sealed class AdminEnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_AStationInvitation_HandsOutATabletThatBelongsToThatStation()
   {
-    var code = await CodeOfNewInvitationAsync(new { stationId = _context.World.KitchenStationId });
+    var code = await CreateInvitationAndReadCodeAsync(new { stationId = _context.World.KitchenStationId });
 
     using var response = await RedeemAsync(code);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -98,7 +98,7 @@ public sealed class AdminEnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_AStationThatWasSwitchedOffMeanwhile_IsRefusedAndSaysSo()
   {
-    var code = await CodeOfNewInvitationAsync(new { stationId = _context.World.BarStationId });
+    var code = await CreateInvitationAndReadCodeAsync(new { stationId = _context.World.BarStationId });
 
     await using (var database = _context.Factory.CreateContext())
     {
@@ -122,7 +122,7 @@ public sealed class AdminEnrolmentEndpointsTest
   public async Task PostInvitation_ForAStationThatAlreadyHasATablet_RevokesTheOldTabletImmediately()
   {
     var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
-    var idOfTheOldTablet = await DeviceIdOfTheKitchenAsync();
+    var idOfTheOldTablet = await FindKitchenDeviceIdAsync();
 
     using (var invitation = await CreateInvitationAsync(new { stationId = _context.World.KitchenStationId }))
     {
@@ -145,8 +145,8 @@ public sealed class AdminEnrolmentEndpointsTest
   public async Task PostRedeem_ForAStationThatAlreadyHasATablet_ReplacesItAndTheOldTokenStopsWorking()
   {
     var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
-    var idOfTheOldTablet = await DeviceIdOfTheKitchenAsync();
-    var code = await CodeOfNewInvitationAsync(new { stationId = _context.World.KitchenStationId });
+    var idOfTheOldTablet = await FindKitchenDeviceIdAsync();
+    var code = await CreateInvitationAndReadCodeAsync(new { stationId = _context.World.KitchenStationId });
 
     using var redeemed = await RedeemAsync(code);
     var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
@@ -166,7 +166,7 @@ public sealed class AdminEnrolmentEndpointsTest
                     });
   }
 
-  private async Task<Guid?> DeviceIdOfTheKitchenAsync()
+  private async Task<Guid?> FindKitchenDeviceIdAsync()
   {
     await using var database = _context.Factory.CreateContext();
 
@@ -186,7 +186,7 @@ public sealed class AdminEnrolmentEndpointsTest
     return _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, null, "NUnit"));
   }
 
-  private async Task<string> CodeOfNewInvitationAsync(object body)
+  private async Task<string> CreateInvitationAndReadCodeAsync(object body)
   {
     using var response = await CreateInvitationAsync(body);
 

@@ -22,7 +22,7 @@ const wholeTableIsSelected = computed(() =>
   isTheWholeTableSelected(props.table, props.selectedItemIds),
 )
 
-function priceOf(cents: number): string {
+function priceTextFor(cents: number): string {
   return formatPrice(cents, props.language)
 }
 
@@ -55,7 +55,7 @@ function setWholeTable(): void {
       <span class="table-name text-h6">{{ t('openItems.tableIs', { name: table.tableName }) }}</span>
       <v-spacer />
       <span class="open-amount text-body-1">
-        {{ t('openItems.tableOpen', { amount: priceOf(table.openAmountCents) }) }}
+        {{ t('openItems.tableOpen', { amount: priceTextFor(table.openAmountCents) }) }}
       </span>
     </v-expansion-panel-title>
     <v-expansion-panel-text>
@@ -92,7 +92,7 @@ function setWholeTable(): void {
               {{ t('openItems.itemNote', { note: item.note }) }}
             </v-list-item-subtitle>
             <template #append>
-              <span class="line-price text-body-1">{{ priceOf(item.unitPriceCents) }}</span>
+              <span class="line-price text-body-1">{{ priceTextFor(item.unitPriceCents) }}</span>
             </template>
           </v-list-item>
         </v-list>
@@ -100,7 +100,7 @@ function setWholeTable(): void {
       <section v-if="table.givenAwayItems.length > 0" class="given-away mt-2">
         <v-divider class="mb-3" />
         <h2 class="given-away-heading text-subtitle-1 font-weight-medium">
-          {{ t('openItems.givenAwayHeading', { amount: priceOf(table.givenAwayAmountCents) }) }}
+          {{ t('openItems.givenAwayHeading', { amount: priceTextFor(table.givenAwayAmountCents) }) }}
         </h2>
         <v-list class="given-away-lines" lines="two">
           <v-list-item
@@ -117,7 +117,7 @@ function setWholeTable(): void {
             </v-list-item-subtitle>
             <template #append>
               <span class="given-away-price text-body-1">
-                {{ priceOf(item.waivedAmountCents) }}
+                {{ priceTextFor(item.waivedAmountCents) }}
               </span>
             </template>
           </v-list-item>

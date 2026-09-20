@@ -14,14 +14,14 @@ interface NumberedLine {
   index: number
 }
 
-function linesOfItem(draft: DraftOrder, catalogItemId: string): NumberedLine[] {
+function numberedLinesForItem(draft: DraftOrder, catalogItemId: string): NumberedLine[] {
   return draft.lines
     .map((line, index) => ({ line, index }))
     .filter((entry) => entry.line.catalogItemId === catalogItemId)
 }
 
-export function portionsOfItem(draft: DraftOrder, catalogItemId: string): number {
-  return linesOfItem(draft, catalogItemId).length
+export function countItemPortions(draft: DraftOrder, catalogItemId: string): number {
+  return numberedLinesForItem(draft, catalogItemId).length
 }
 
 export function positionsForItem(
@@ -31,7 +31,7 @@ export function positionsForItem(
 ): ItemPosition[] {
   const hasAStationChoice = needsStationChoice(item)
 
-  return linesOfItem(draft, item.id)
+  return numberedLinesForItem(draft, item.id)
     .map((entry) => ({
       index: entry.index,
       note: entry.line.note,

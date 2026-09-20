@@ -5,27 +5,27 @@ import {
   itemLineText,
   itemLines,
   linesByCount,
-  openItemsOf,
+  openItemsIn,
   retainOpenItemIds,
   selectedOpenItemIds,
   selectedUnits,
   stationFailureKey,
   stationStats,
 } from '../../src/core/stationBoard'
-import type { StationSlice, StationSliceItem } from '../../src/core/apiTypes'
+import type { StationOrder, StationOrderItem } from '../../src/core/apiTypes'
 
-function sliceItem(
+function stationOrderItem(
   orderItemId: string,
   itemName = 'Bratwurst',
   fulfilledAtUtc: string | null = null,
   note: string | null = null,
-): StationSliceItem {
+): StationOrderItem {
   return { orderItemId, itemName, note, fulfilledAtUtc }
 }
 
-function slice(overrides: Partial<StationSlice> = {}): StationSlice {
+function stationOrder(overrides: Partial<StationOrder> = {}): StationOrder {
   return {
-    stationOrderId: 'slice-1',
+    stationOrderId: 'station-order-1',
     globalOrderNumber: 137,
     stationOrderNumber: 12,
     tableName: 'Tisch 3',
@@ -35,7 +35,7 @@ function slice(overrides: Partial<StationSlice> = {}): StationSlice {
     isHiddenFromAsItComesQueue: false,
     itemCount: 1,
     fulfilledItemCount: 0,
-    items: [sliceItem('a')],
+    items: [stationOrderItem('a')],
     ...overrides,
   }
 }
@@ -58,31 +58,31 @@ describe('the words a station tablet uses for a delivery mode', () => {
   })
 })
 
-describe('picking the open items out of a slice', () => {
-  const order = slice({
+describe('picking the open items out of a station order', () => {
+  const order = stationOrder({
     items: [
-      sliceItem('a', 'Bratwurst'),
-      sliceItem('b', 'Pommes', '2026-09-05T18:10:00Z'),
-      sliceItem('c', 'Wasser'),
+      stationOrderItem('a', 'Bratwurst'),
+      stationOrderItem('b', 'Pommes', '2026-09-05T18:10:00Z'),
+      stationOrderItem('c', 'Wasser'),
     ],
   })
 
   it('lists only the items nobody has handed out yet', () => {
-    expect(openItemsOf(order).map((item) => item.orderItemId)).toEqual(['a', 'c'])
+    expect(openItemsIn(order).map((item) => item.orderItemId)).toEqual(['a', 'c'])
   })
 })
 
 describe('grouping what an employee selected', () => {
   const orders = [
-    slice({
-      stationOrderId: 'slice-1',
-      items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes')],
+    stationOrder({
+      stationOrderId: 'station-order-1',
+      items: [stationOrderItem('a', 'Bratwurst'), stationOrderItem('b', 'Pommes')],
     }),
-    slice({
-      stationOrderId: 'slice-2',
+    stationOrder({
+      stationOrderId: 'station-order-2',
       items: [
-        sliceItem('c', 'Wasser'),
-        sliceItem('d', 'Bratwurst', '2026-09-05T18:20:00Z'),
+        stationOrderItem('c', 'Wasser'),
+        stationOrderItem('d', 'Bratwurst', '2026-09-05T18:20:00Z'),
       ],
     }),
   ]
@@ -96,10 +96,10 @@ describe('grouping what an employee selected', () => {
 
   it('keeps two units of the same article apart when their notes differ', () => {
     const noted = [
-      slice({
+      stationOrder({
         items: [
-          sliceItem('a', 'Frankfurter', null, 'Mit Ketchup'),
-          sliceItem('b', 'Frankfurter', null, 'Ohne Ketchup'),
+          stationOrderItem('a', 'Frankfurter', null, 'Mit Ketchup'),
+          stationOrderItem('b', 'Frankfurter', null, 'Ohne Ketchup'),
         ],
       }),
     ]
@@ -114,7 +114,7 @@ describe('grouping what an employee selected', () => {
     expect(selectedUnits(orders, ['d', 'gone'])).toEqual([])
   })
 
-  it('names the selected open items of one slice', () => {
+  it('names the selected open items of one station order', () => {
     expect(selectedOpenItemIds(orders[1], ['c', 'd', 'gone'])).toEqual(['c'])
   })
 })
@@ -122,10 +122,10 @@ describe('grouping what an employee selected', () => {
 describe('grouping the open items of one card', () => {
   it('keeps units with the same name and note together and separates different notes', () => {
     const items = [
-      sliceItem('a', 'Frankfurter', null, 'Mit Ketchup'),
-      sliceItem('b', 'Frankfurter', null, 'Mit Ketchup'),
-      sliceItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
-      sliceItem('d', 'Bier'),
+      stationOrderItem('a', 'Frankfurter', null, 'Mit Ketchup'),
+      stationOrderItem('b', 'Frankfurter', null, 'Mit Ketchup'),
+      stationOrderItem('c', 'Frankfurter', null, 'Ohne Ketchup'),
+      stationOrderItem('d', 'Bier'),
     ]
 
     expect(itemLines(items)).toEqual([
@@ -174,27 +174,27 @@ describe('the words on one grouped line', () => {
 describe('the statistics above the queue', () => {
   it('counts the orders by delivery mode and keeps the open lines apart by note', () => {
     const orders = [
-      slice({
-        stationOrderId: 'slice-1',
+      stationOrder({
+        stationOrderId: 'station-order-1',
         items: [
-          sliceItem('a', 'Bratwurst'),
-          sliceItem('b', 'Pommes'),
-          sliceItem('c', 'Bratwurst', null, 'Ohne Senf'),
+          stationOrderItem('a', 'Bratwurst'),
+          stationOrderItem('b', 'Pommes'),
+          stationOrderItem('c', 'Bratwurst', null, 'Ohne Senf'),
         ],
       }),
-      slice({
-        stationOrderId: 'slice-2',
+      stationOrder({
+        stationOrderId: 'station-order-2',
         deliveryMode: 'asItComes',
         items: [
-          sliceItem('d', 'Bratwurst'),
-          sliceItem('e', 'Wasser', '2026-09-05T18:20:00Z'),
+          stationOrderItem('d', 'Bratwurst'),
+          stationOrderItem('e', 'Wasser', '2026-09-05T18:20:00Z'),
         ],
       }),
-      slice({
-        stationOrderId: 'slice-3',
+      stationOrder({
+        stationOrderId: 'station-order-3',
         deliveryMode: 'asItComes',
         isHiddenFromAsItComesQueue: true,
-        items: [sliceItem('f', 'Wasser')],
+        items: [stationOrderItem('f', 'Wasser')],
       }),
     ]
 
@@ -214,8 +214,8 @@ describe('the statistics above the queue', () => {
 describe('a selection after a reload', () => {
   it('drops the ids whose item is no longer open in the queue', () => {
     const orders = [
-      slice({
-        items: [sliceItem('a', 'Bratwurst'), sliceItem('b', 'Pommes', '2026-09-05T18:30:00Z')],
+      stationOrder({
+        items: [stationOrderItem('a', 'Bratwurst'), stationOrderItem('b', 'Pommes', '2026-09-05T18:30:00Z')],
       }),
     ]
 

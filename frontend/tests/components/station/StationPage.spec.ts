@@ -9,8 +9,8 @@ import { testPlugins } from '../../support/plugins'
 
 const KITCHEN = { id: 'station-kueche', name: 'Küche' }
 
-const TOGETHER_SLICE = {
-  stationOrderId: 'slice-1',
+const TOGETHER_STATION_ORDER = {
+  stationOrderId: 'station-order-1',
   globalOrderNumber: 137,
   stationOrderNumber: 12,
   tableName: '3',
@@ -32,8 +32,8 @@ const TOGETHER_SLICE = {
   ],
 }
 
-const AS_IT_COMES_SLICE = {
-  stationOrderId: 'slice-2',
+const AS_IT_COMES_STATION_ORDER = {
+  stationOrderId: 'station-order-2',
   globalOrderNumber: 138,
   stationOrderNumber: 14,
   tableName: '7',
@@ -49,8 +49,8 @@ const AS_IT_COMES_SLICE = {
   ],
 }
 
-const NOTED_SLICE = {
-  stationOrderId: 'slice-3',
+const NOTED_STATION_ORDER = {
+  stationOrderId: 'station-order-3',
   globalOrderNumber: 140,
   stationOrderNumber: 16,
   tableName: '5',
@@ -66,8 +66,8 @@ const NOTED_SLICE = {
   ],
 }
 
-const DONE_SLICE = {
-  ...TOGETHER_SLICE,
+const DONE_STATION_ORDER = {
+  ...TOGETHER_STATION_ORDER,
   itemCount: 3,
   fulfilledItemCount: 2,
   items: [
@@ -77,8 +77,8 @@ const DONE_SLICE = {
   ],
 }
 
-const DONE_NOTED_SLICE = {
-  ...NOTED_SLICE,
+const DONE_NOTED_STATION_ORDER = {
+  ...NOTED_STATION_ORDER,
   itemCount: 2,
   fulfilledItemCount: 2,
   items: [
@@ -112,7 +112,7 @@ function queue(orders: unknown[], asItComes: unknown[] = []): Response {
 }
 
 function queueWithBoard(): Response {
-  return queue([TOGETHER_SLICE, AS_IT_COMES_SLICE], [AS_IT_COMES_SLICE])
+  return queue([TOGETHER_STATION_ORDER, AS_IT_COMES_STATION_ORDER], [AS_IT_COMES_STATION_ORDER])
 }
 
 interface StubRoutes {
@@ -135,7 +135,7 @@ function stubTheLaptop(routes: StubRoutes = {}): { url: string; body: unknown }[
         return (routes.orders ?? queueWithBoard)()
       }
       if (url === '/api/station/orders/fulfilled') {
-        return (routes.fulfilled ?? (() => ok({ slices: [] })))()
+        return (routes.fulfilled ?? (() => ok({ stationOrders: [] })))()
       }
       if (url === '/api/station/items/fulfill') {
         return (routes.fulfill ?? (() => queue([])))()
@@ -223,15 +223,15 @@ describe('the screen at a station', () => {
   it('puts every order in the left column and only the as-it-comes ones in the right', async () => {
     const page = await mountPage()
 
-    expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
-    expect(page.findAll('.as-it-comes-column .station-slice')).toHaveLength(1)
+    expect(page.findAll('.orders-column .station-order')).toHaveLength(2)
+    expect(page.findAll('.as-it-comes-column .station-order')).toHaveLength(1)
     expect(page.get('.as-it-comes-column .table-name').text()).toBe('Tisch 7')
   })
 
   it('shows the order number and the number of this station on a card', async () => {
     const page = await mountPage()
 
-    expect(page.findAll('.orders-column .slice-heading')[0].text()).toBe(
+    expect(page.findAll('.orders-column .station-order-heading')[0].text()).toBe(
       'Bestellung 137 · Nr. 12',
     )
   })
@@ -249,10 +249,10 @@ describe('the screen at a station', () => {
       'Gemeinsam',
       'Einzeln',
     ])
-    expect(page.findAll('.orders-column .station-slice')[0].attributes('style')).toContain(
+    expect(page.findAll('.orders-column .station-order')[0].attributes('style')).toContain(
       'var(--v-theme-together)',
     )
-    expect(page.findAll('.orders-column .station-slice')[1].attributes('style')).toContain(
+    expect(page.findAll('.orders-column .station-order')[1].attributes('style')).toContain(
       'var(--v-theme-individual)',
     )
   })
@@ -260,7 +260,7 @@ describe('the screen at a station', () => {
   it('shows the note that belongs to the whole order', async () => {
     const page = await mountPage()
 
-    expect(page.findAll('.orders-column .slice-note')[0].text()).toBe(
+    expect(page.findAll('.orders-column .station-order-note')[0].text()).toBe(
       'Hinweis zur Bestellung: Bitte zusammen bringen',
     )
   })
@@ -275,7 +275,7 @@ describe('the screen at a station', () => {
   it('keeps a done item off the card and shows every open one with its note', async () => {
     const page = await mountPage()
 
-    const items = page.findAll('.orders-column .station-slice')[0].findAll('.station-item')
+    const items = page.findAll('.orders-column .station-order')[0].findAll('.station-item')
 
     expect(items).toHaveLength(2)
     expect(items[0].get('.item-name').text()).toBe('Bratwurst')
@@ -298,9 +298,9 @@ describe('switching a card between the list and the grouped view', () => {
   })
 
   it('groups the open items by name and note and brings the list back', async () => {
-    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    stubTheLaptop({ orders: () => queue([NOTED_STATION_ORDER]) })
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
 
     expect(card.get('.grouped-toggle').text()).toBe('Gruppiert')
 
@@ -353,11 +353,11 @@ describe('the overview board on the station screen', () => {
     await flushPromises()
 
     expect(document.querySelector('.station-open-board')).toBeNull()
-    expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
+    expect(page.findAll('.orders-column .station-order')).toHaveLength(2)
   })
 
   it('shows two rows when two of the same article carry different notes', async () => {
-    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    stubTheLaptop({ orders: () => queue([NOTED_STATION_ORDER]) })
     const page = await mountPage()
 
     await page.get('.show-overview').trigger('click')
@@ -416,19 +416,19 @@ describe('marking selected items as done from a card', () => {
   it('keeps the done control of a card off until one of its lines is selected', async () => {
     stubTheLaptop()
     const page = await mountPage()
-    const done = page.findAll('.orders-column .station-slice')[0].get('.fulfill')
+    const done = page.findAll('.orders-column .station-order')[0].get('.fulfill')
 
     expect(done.attributes('disabled')).toBeDefined()
 
-    await page.findAll('.orders-column .station-slice')[0].findAll('.station-item')[0].trigger('click')
+    await page.findAll('.orders-column .station-order')[0].findAll('.station-item')[0].trigger('click')
 
-    expect(page.findAll('.orders-column .station-slice')[0].get('.fulfill').attributes('disabled')).toBeUndefined()
+    expect(page.findAll('.orders-column .station-order')[0].get('.fulfill').attributes('disabled')).toBeUndefined()
   })
 
   it('selects and deselects a line on tap', async () => {
     stubTheLaptop()
     const page = await mountPage()
-    const line = page.findAll('.orders-column .station-slice')[0].findAll('.station-item')[0]
+    const line = page.findAll('.orders-column .station-order')[0].findAll('.station-item')[0]
 
     await line.trigger('click')
     expect(line.attributes('aria-pressed')).toBe('true')
@@ -442,7 +442,7 @@ describe('marking selected items as done from a card', () => {
   it('asks again on a full screen before anything is done', async () => {
     stubTheLaptop()
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
 
     await card.findAll('.station-item')[0].trigger('click')
     await card.findAll('.station-item')[1].trigger('click')
@@ -463,9 +463,9 @@ describe('marking selected items as done from a card', () => {
   })
 
   it('asks again with one line per note, so two different frankfurters are not merged', async () => {
-    stubTheLaptop({ orders: () => queue([NOTED_SLICE]) })
+    stubTheLaptop({ orders: () => queue([NOTED_STATION_ORDER]) })
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
 
     await card.findAll('.station-item')[0].trigger('click')
     await card.findAll('.station-item')[1].trigger('click')
@@ -481,7 +481,7 @@ describe('marking selected items as done from a card', () => {
   it('keeps the selection when the employee backs out of the question', async () => {
     stubTheLaptop()
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
     await card.findAll('.station-item')[0].trigger('click')
     await card.get('.fulfill').trigger('click')
     await flushPromises()
@@ -496,10 +496,10 @@ describe('marking selected items as done from a card', () => {
 
   it('posts the selected items and updates the screen from the answer', async () => {
     const posts = stubTheLaptop({
-      fulfill: () => queue([AS_IT_COMES_SLICE], [AS_IT_COMES_SLICE]),
+      fulfill: () => queue([AS_IT_COMES_STATION_ORDER], [AS_IT_COMES_STATION_ORDER]),
     })
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
 
     await card.findAll('.station-item')[0].trigger('click')
     await card.findAll('.station-item')[1].trigger('click')
@@ -511,7 +511,7 @@ describe('marking selected items as done from a card', () => {
     expect(posts).toEqual([
       { url: '/api/station/items/fulfill', body: { orderItemIds: ['a', 'b'] } },
     ])
-    expect(page.findAll('.orders-column .station-slice')).toHaveLength(1)
+    expect(page.findAll('.orders-column .station-order')).toHaveLength(1)
     expect(page.get('.orders-column .table-name').text()).toBe('Tisch 7')
   })
 
@@ -520,7 +520,7 @@ describe('marking selected items as done from a card', () => {
       fulfill: () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
     })
     const page = await mountPage()
-    const card = page.findAll('.orders-column .station-slice')[0]
+    const card = page.findAll('.orders-column .station-order')[0]
 
     await card.findAll('.station-item')[0].trigger('click')
     await card.get('.fulfill').trigger('click')
@@ -556,16 +556,16 @@ describe('hiding an order from the second column', () => {
   it('takes the card out of the second column and leaves it in the first', async () => {
     const posts = stubTheLaptop({
       hide: () =>
-        queue([TOGETHER_SLICE, { ...AS_IT_COMES_SLICE, isHiddenFromAsItComesQueue: true }]),
+        queue([TOGETHER_STATION_ORDER, { ...AS_IT_COMES_STATION_ORDER, isHiddenFromAsItComesQueue: true }]),
     })
     const page = await mountPage()
 
     await page.get('.as-it-comes-column .hide').trigger('click')
     await flushPromises()
 
-    expect(posts).toEqual([{ url: '/api/station/orders/slice-2/hide', body: null }])
-    expect(page.findAll('.as-it-comes-column .station-slice')).toHaveLength(0)
-    expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
+    expect(posts).toEqual([{ url: '/api/station/orders/station-order-2/hide', body: null }])
+    expect(page.findAll('.as-it-comes-column .station-order')).toHaveLength(0)
+    expect(page.findAll('.orders-column .station-order')).toHaveLength(2)
   })
 
   it('states the reason when the order belongs to another station', async () => {
@@ -595,7 +595,7 @@ describe('the done view', () => {
   })
 
   it('opens from the button and lists every order with at least one done item', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }) })
     const page = await mountPage()
 
     await page.get('.show-done').trigger('click')
@@ -607,7 +607,7 @@ describe('the done view', () => {
   })
 
   it('shows every item and ticks the done ones', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }) })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
     await flushPromises()
@@ -621,7 +621,7 @@ describe('the done view', () => {
   })
 
   it('summarises on one line what the order contained', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }) })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
     await flushPromises()
@@ -630,7 +630,7 @@ describe('the done view', () => {
   })
 
   it('keeps two different notes apart in the summary line', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_NOTED_SLICE] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_NOTED_STATION_ORDER] }) })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
     await flushPromises()
@@ -642,8 +642,8 @@ describe('the done view', () => {
 
   it('offers a put back control on a done item only and posts it', async () => {
     const posts = stubTheLaptop({
-      fulfilled: () => ok({ slices: [DONE_SLICE] }),
-      unfulfill: () => queue([{ ...DONE_SLICE, fulfilledItemCount: 1 }]),
+      fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }),
+      unfulfill: () => queue([{ ...DONE_STATION_ORDER, fulfilledItemCount: 1 }]),
     })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
@@ -660,7 +660,7 @@ describe('the done view', () => {
 
   it('states the reason when the laptop did not put an item back', async () => {
     stubTheLaptop({
-      fulfilled: () => ok({ slices: [DONE_SLICE] }),
+      fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }),
       unfulfill: () => refused('ItemNotFulfilled', 'station.changeNotSaved'),
     })
     const page = await mountPage()
@@ -676,7 +676,7 @@ describe('the done view', () => {
   })
 
   it('goes back to the queue', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [DONE_SLICE] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }) })
     const page = await mountPage()
     await page.get('.show-done').trigger('click')
     await flushPromises()
@@ -684,12 +684,12 @@ describe('the done view', () => {
     await page.get('.back-to-orders').trigger('click')
     await flushPromises()
 
-    expect(page.findAll('.orders-column .station-slice')).toHaveLength(2)
+    expect(page.findAll('.orders-column .station-order')).toHaveLength(2)
     expect(page.find('.station-fulfilled').exists()).toBe(false)
   })
 
   it('says so when nothing is done yet', async () => {
-    stubTheLaptop({ fulfilled: () => ok({ slices: [] }) })
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [] }) })
     const page = await mountPage()
 
     await page.get('.show-done').trigger('click')

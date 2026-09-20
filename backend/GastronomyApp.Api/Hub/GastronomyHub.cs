@@ -12,12 +12,12 @@ public sealed record HubGroupNames
 
   public string Admin { get; } = "admin";
 
-  public string Device(Guid deviceId)
+  public string BuildDeviceGroupName(Guid deviceId)
   {
     return $"device:{deviceId}";
   }
 
-  public string Station(Guid stationId)
+  public string BuildStationGroupName(Guid stationId)
   {
     return $"station:{stationId}";
   }
@@ -67,11 +67,11 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 
     if (caller is not null)
     {
-      joinedGroups.Add(_groupNames.Device(caller.DeviceId));
+      joinedGroups.Add(_groupNames.BuildDeviceGroupName(caller.DeviceId));
 
       if (caller.OwnerKind == DeviceOwnerKind.Station)
       {
-        joinedGroups.Add(_groupNames.Station(caller.OwnerId));
+        joinedGroups.Add(_groupNames.BuildStationGroupName(caller.OwnerId));
         joinedGroups.Add(_groupNames.Stations);
       }
       else

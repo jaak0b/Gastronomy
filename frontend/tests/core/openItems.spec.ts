@@ -6,11 +6,11 @@ import {
   isPaymentNoticeNeeded,
   isPaymentNoticeWritten,
   isTheWholeTableSelected,
-  itemIdsOfTable,
+  itemIdsAtTable,
   noticeAfterSettling,
   selectedAmountCents,
   tableHoldingTheSelection,
-  tableOfItem,
+  tableForItem,
   withItemToggled,
   withWholeTable,
   withoutItemsThatAreGone,
@@ -99,7 +99,7 @@ describe('taking a whole table at once', () => {
   const tables = [twelve, hundredAndTwentyThree]
 
   it('ticks every item the table still owes for', () => {
-    expect(withWholeTable([], tables, twelve, true).sort()).toEqual(itemIdsOfTable(twelve).sort())
+    expect(withWholeTable([], tables, twelve, true).sort()).toEqual(itemIdsAtTable(twelve).sort())
   })
 
   it('ignores the table while another table holds the selection', () => {
@@ -113,7 +113,7 @@ describe('taking a whole table at once', () => {
   it('reports the table as fully ticked once every item is ticked', () => {
     const table = tableWith('Tisch 12', [350, 400])
 
-    expect(isTheWholeTableSelected(table, itemIdsOfTable(table))).toBe(true)
+    expect(isTheWholeTableSelected(table, itemIdsAtTable(table))).toBe(true)
   })
 
   it('reports the table as not fully ticked while one item is left', () => {
@@ -329,11 +329,11 @@ describe('which table an item belongs to', () => {
   const tables = [tableWith('1', [300, 300]), tableWith('123', [500])]
 
   it('names the table the item is still open at', () => {
-    expect(tableOfItem(tables, '123-0')).toBe('123')
+    expect(tableForItem(tables, '123-0')).toBe('123')
   })
 
   it('names no table for an item the list no longer holds', () => {
-    expect(tableOfItem(tables, 'gone')).toBeNull()
+    expect(tableForItem(tables, 'gone')).toBeNull()
   })
 })
 

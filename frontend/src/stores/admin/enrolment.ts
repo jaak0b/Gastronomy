@@ -38,7 +38,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const invitationQr = ref<InvitationQr>({ kind: 'loading' })
   const enrolled = ref<EnrolledDevice | null>(null)
 
-  function enrolledNameOf(wanted: DeviceKind): string | null {
+  function enrolledNameFor(wanted: DeviceKind): string | null {
     const device = enrolled.value
     if (device === null) {
       return null
@@ -53,8 +53,8 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     }
   }
 
-  const enrolledStaffMemberName = computed(() => enrolledNameOf('staffMember'))
-  const enrolledStationName = computed(() => enrolledNameOf('station'))
+  const enrolledStaffMemberName = computed(() => enrolledNameFor('staffMember'))
+  const enrolledStationName = computed(() => enrolledNameFor('station'))
 
   async function createInvitation(owner: InvitationOwner): Promise<AdminActionResult<null>> {
     enrolled.value = null

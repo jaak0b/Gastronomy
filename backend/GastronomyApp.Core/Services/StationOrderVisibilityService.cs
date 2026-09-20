@@ -16,11 +16,11 @@ public sealed record StationOrderVisibilityFailure
 
 public sealed class StationOrderVisibilityService
 {
-  public Result<StationOrder, StationOrderVisibilityFailure> HideFromAsItComesQueue(StationOrder slice)
+  public Result<StationOrder, StationOrderVisibilityFailure> HideFromAsItComesQueue(StationOrder stationOrder)
   {
-    ArgumentNullException.ThrowIfNull(slice);
+    ArgumentNullException.ThrowIfNull(stationOrder);
 
-    if (slice.DeliveryMode != DeliveryMode.AsItComes)
+    if (stationOrder.DeliveryMode != DeliveryMode.AsItComes)
     {
       return Result<StationOrder, StationOrderVisibilityFailure>.Failed(new()
                                                                         {
@@ -30,8 +30,8 @@ public sealed class StationOrderVisibilityService
                                                                         });
     }
 
-    slice.IsHiddenFromAsItComesQueue = true;
+    stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    return Result<StationOrder, StationOrderVisibilityFailure>.Success(slice);
+    return Result<StationOrder, StationOrderVisibilityFailure>.Success(stationOrder);
   }
 }

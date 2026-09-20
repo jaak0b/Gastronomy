@@ -2,7 +2,7 @@ import type { DeliveryMode, StationEstimate } from './apiTypes'
 import { assertNever } from './assertNever'
 import { lineCannotBeOrdered, type BasketLineView } from './basket'
 import { stationReadyInMinutes } from './estimates'
-import { DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES, orderSlices } from './orderSlices'
+import { buildStationOrders, DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES } from './stationOrders'
 
 export interface StationDelivery {
   stationId: string | null
@@ -32,20 +32,20 @@ export function stationDeliveries(
   estimates: readonly StationEstimate[],
   deliveryModeFor: (stationId: string) => DeliveryMode,
 ): StationDelivery[] {
-  return orderSlices(lines).map((slice) => {
-    const stationId = slice.stationId
+  return buildStationOrders(lines).map((stationOrder) => {
+    const stationId = stationOrder.stationId
     const deliveryMode =
       stationId === null ? DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES : deliveryModeFor(stationId)
-    const orderableLines = slice.lines.filter((line) => !lineCannotBeOrdered(line))
+    const orderableLines = stationOrder.lines.filter((line) => !lineCannotBeOrdered(line))
     const stationMinutes =
       stationId === null ? null : stationReadyInMinutes(estimates, orderableLines, stationId)
     return {
       stationId,
-      stationName: slice.lines[0].stationName,
+      stationName: stationOrder.lines[0].stationName,
       deliveryMode,
       minutes: minutesForTheChosenMode(deliveryMode, stationMinutes),
       stationMinutes,
-      lines: slice.lines,
+      lines: stationOrder.lines,
     }
   })
 }

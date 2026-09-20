@@ -4,7 +4,7 @@ public sealed record QueuedWork(double? ProductionMinutes, bool IsQueueIndepende
 
 public sealed class ProductionEstimateCalculator
 {
-  public double QueuedMinutesOf(IEnumerable<QueuedWork> work)
+  public double SumQueuedMinutes(IEnumerable<QueuedWork> work)
   {
     ArgumentNullException.ThrowIfNull(work);
 

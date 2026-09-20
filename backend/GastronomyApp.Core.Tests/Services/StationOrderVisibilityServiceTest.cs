@@ -17,52 +17,52 @@ public sealed class StationOrderVisibilityServiceTest
   private StationOrderVisibilityService _service = null!;
 
   [Test]
-  public void HideFromAsItComesQueue_ATogetherSlice_IsRefusedAndLeavesTheFlagOff()
+  public void HideFromAsItComesQueue_ATogetherStationOrder_IsRefusedAndLeavesTheFlagOff()
   {
-    var slice = SliceWith(DeliveryMode.Together);
+    var stationOrder = BuildStationOrder(DeliveryMode.Together);
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(slice);
+    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
                       Assert.That(outcome.Failure.Reason,
                                   Is.EqualTo(StationOrderVisibilityFailureReason.NotAnAsItComesOrder));
-                      Assert.That(slice.IsHiddenFromAsItComesQueue, Is.False);
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }
 
   [Test]
-  public void HideFromAsItComesQueue_AnAsItComesSlice_SetsTheFlag()
+  public void HideFromAsItComesQueue_AnAsItComesStationOrder_SetsTheFlag()
   {
-    var slice = SliceWith(DeliveryMode.AsItComes);
+    var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(slice);
+    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.True);
-                      Assert.That(outcome.Value, Is.SameAs(slice));
-                      Assert.That(slice.IsHiddenFromAsItComesQueue, Is.True);
+                      Assert.That(outcome.Value, Is.SameAs(stationOrder));
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
                     });
   }
 
   [Test]
-  public void HideFromAsItComesQueue_AnAlreadyHiddenSlice_IsAccepted()
+  public void HideFromAsItComesQueue_AnAlreadyHiddenStationOrder_IsAccepted()
   {
-    var slice = SliceWith(DeliveryMode.AsItComes);
-    slice.IsHiddenFromAsItComesQueue = true;
+    var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
+    stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(slice);
+    Result<StationOrder, StationOrderVisibilityFailure> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.True);
-                      Assert.That(slice.IsHiddenFromAsItComesQueue, Is.True);
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
                     });
   }
 
-  private StationOrder SliceWith(DeliveryMode deliveryMode)
+  private StationOrder BuildStationOrder(DeliveryMode deliveryMode)
   {
     return new()
            {

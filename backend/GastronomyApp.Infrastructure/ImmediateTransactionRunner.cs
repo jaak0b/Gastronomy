@@ -34,7 +34,7 @@ public sealed class ImmediateTransactionRunner
     {
       dbContext.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
 
-      await ExecuteAsync(connection, "BEGIN IMMEDIATE", BusyTimeoutSecondsOf(connection), cancellationToken);
+      await ExecuteAsync(connection, "BEGIN IMMEDIATE", ReadBusyTimeoutSeconds(connection), cancellationToken);
       transactionIsOpen = true;
 
       TransactionOutcome<TValue> outcome = await body(cancellationToken);
@@ -99,7 +99,7 @@ public sealed class ImmediateTransactionRunner
     await command.ExecuteNonQueryAsync(cancellationToken);
   }
 
-  private int BusyTimeoutSecondsOf(DbConnection connection)
+  private int ReadBusyTimeoutSeconds(DbConnection connection)
   {
     using var command = connection.CreateCommand();
     command.CommandText = "PRAGMA busy_timeout";

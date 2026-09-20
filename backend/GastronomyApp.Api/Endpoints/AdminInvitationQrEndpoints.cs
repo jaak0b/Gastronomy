@@ -57,7 +57,7 @@ public sealed class InvitationQrRenderer
 
     if (invitation is null)
     {
-      return NoLongerShowable();
+      return BuildQrUnavailableProblem();
     }
 
     if (invitation.ConsumedAtUtc is not null)
@@ -82,7 +82,7 @@ public sealed class InvitationQrRenderer
 
     if (remembered is null || remembered.InvitationId != invitationId)
     {
-      return NoLongerShowable();
+      return BuildQrUnavailableProblem();
     }
 
     httpContext.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
@@ -91,7 +91,7 @@ public sealed class InvitationQrRenderer
     return Results.Text(Render(remembered.QrUrl), SvgMediaType, Encoding.UTF8);
   }
 
-  private IResult NoLongerShowable()
+  private IResult BuildQrUnavailableProblem()
   {
     return _resultEnvelope.Problem(StatusCodes.Status404NotFound,
                                   "EnrolmentCodeUnknown",

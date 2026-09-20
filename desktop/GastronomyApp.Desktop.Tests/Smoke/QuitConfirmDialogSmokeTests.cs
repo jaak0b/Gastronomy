@@ -30,7 +30,7 @@ public sealed class QuitConfirmDialogSmokeTests
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(RenderedColours.LabelBackgroundOf(confirm),
+                      Assert.That(RenderedColours.ReadLabelBackground(confirm),
                                   Is.EqualTo(Color.Parse("#C94F4F")));
                       Assert.That(RenderedColours.LabelBackgroundWhile(confirm, ":pointerover"),
                                   Is.EqualTo(Color.Parse("#D96060")));

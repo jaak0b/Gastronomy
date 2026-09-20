@@ -197,7 +197,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PutCategory_RenamedAndRecoloured_KeepsItsPositionAndStoresBoth()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
                                                               new { name = "Speisen", colourHex = "#2E7D32" });
@@ -216,7 +216,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PutCategory_NameAnotherCategoryAlreadyHas_IsRefused()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
                                                               new { name = "Getraenke", colourHex = "#2E7D32" });
@@ -234,7 +234,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PutCategory_ItsOwnNameUnchanged_IsAccepted()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
                                                               new { name = "Essen", colourHex = "#2E7D32" });
@@ -245,7 +245,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostMove_DownFromTheFirstPosition_SwapsItWithTheOneBelow()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
                                                               new { direction = "down" });
@@ -266,7 +266,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostMove_UpFromTheFirstPosition_ChangesNothing()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
                                                               new { direction = "up" });
@@ -285,7 +285,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostMove_UpFromTheLastPosition_SwapsItWithTheOneAbove()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
     using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
                                                               new { direction = "up" });
@@ -304,7 +304,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostMove_DownFromTheLastPosition_ChangesNothing()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
     using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
                                                               new { direction = "down" });
@@ -323,7 +323,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostDeactivate_CategoryThatStillHoldsSwitchedOnArticles_IsRefused()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
     using var response = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -339,7 +339,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostDeactivate_CategoryWhoseArticlesAreAllSwitchedOff_SwitchesItOff()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
     await SwitchTheBeerOffAsync();
 
     using var response = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
@@ -355,7 +355,7 @@ public sealed class AdminCategoryEndpointsTest
   [Test]
   public async Task PostActivate_SwitchedOffCategory_SwitchesItOn()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
     await SwitchTheBeerOffAsync();
     using var deactivated = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     Assert.That(deactivated.StatusCode, Is.EqualTo(HttpStatusCode.OK));

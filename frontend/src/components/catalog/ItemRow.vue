@@ -72,7 +72,7 @@ function askForANote(): void {
   isAsking.value = true
 }
 
-function correctTheNoteOf(group: PositionGroup): void {
+function correctTheNoteFor(group: PositionGroup): void {
   if (group.note === null) {
     return
   }
@@ -92,7 +92,7 @@ function confirm(): void {
   emit('renameNote', corrected.indexes, note)
 }
 
-function mostRecentOf(group: PositionGroup): number {
+function mostRecentIndexIn(group: PositionGroup): number {
   return group.indexes[group.indexes.length - 1]
 }
 </script>
@@ -108,7 +108,7 @@ function mostRecentOf(group: PositionGroup): number {
           variant="text"
           size="large"
           :aria-label="t('catalog.removeOne', { name: item.name })"
-          @click="emit('removeOne', mostRecentOf(plainGroup))"
+          @click="emit('removeOne', mostRecentIndexIn(plainGroup))"
         />
         <span v-if="plainGroup !== null" class="count text-h6">{{ plainGroup.indexes.length }}</span>
       </div>
@@ -140,7 +140,7 @@ function mostRecentOf(group: PositionGroup): number {
         variant="text"
         size="small"
         :aria-label="t('catalog.removeOne', { name: item.name })"
-        @click="emit('removeOne', mostRecentOf(group))"
+        @click="emit('removeOne', mostRecentIndexIn(group))"
       />
       <span class="group-count text-body-2">{{ group.indexes.length }}</span>
       <div class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column">
@@ -154,7 +154,7 @@ function mostRecentOf(group: PositionGroup): number {
         <button
           v-if="group.note !== null"
           class="group-note text-medium-emphasis"
-          @click="correctTheNoteOf(group)"
+          @click="correctTheNoteFor(group)"
         >
           {{ t('catalog.noteText', { note: group.note }) }}
         </button>

@@ -63,7 +63,7 @@ public sealed class AdminEnrolmentHandler
                                     "enrolment.atMostOneOwner");
     }
 
-    var owner = OwnerOf(request);
+    var owner = ReadOwner(request);
     var ownerRecord = owner is null ? null : await _ownerStore.FindAsync(owner, cancellationToken);
 
     if (owner is not null && ownerRecord is null)
@@ -105,7 +105,7 @@ public sealed class AdminEnrolmentHandler
                         statusCode: StatusCodes.Status201Created);
   }
 
-  private DeviceOwner? OwnerOf(CreateInvitationRequest request)
+  private DeviceOwner? ReadOwner(CreateInvitationRequest request)
   {
     if (request.StaffMemberId is not null)
     {

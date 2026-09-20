@@ -85,7 +85,7 @@ public sealed class OrderTestContext : IAsyncDisposable
     return await Client.SendAsync(request);
   }
 
-  public async Task<Guid> CategoryIdOfAsync(string name)
+  public async Task<Guid> FindCategoryIdAsync(string name)
   {
     using var response = await Client.GetAsync("/api/admin/categories");
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

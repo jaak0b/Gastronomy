@@ -74,20 +74,20 @@ public sealed class OrderPlacementScenarioTest
       Assert.That(queue.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
       var body = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
-      var slice = body.RootElement.GetProperty("orders")[0];
+      var stationOrder = body.RootElement.GetProperty("orders")[0];
 
       kitchenItemIds =
       [
-        .. slice.GetProperty("items")
-                .EnumerateArray()
-                .Select(item => item.GetProperty("orderItemId").GetGuid())
+        .. stationOrder.GetProperty("items")
+                       .EnumerateArray()
+                       .Select(item => item.GetProperty("orderItemId").GetGuid())
       ];
 
       Assert.Multiple(() =>
                       {
                         Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.EqualTo(1));
-                        Assert.That(slice.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
-                        Assert.That(slice.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
+                        Assert.That(stationOrder.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                        Assert.That(stationOrder.GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
                         Assert.That(kitchenItemIds, Has.Count.EqualTo(2));
                       });
     }
@@ -206,7 +206,7 @@ public sealed class OrderPlacementScenarioTest
                placed.RootElement.GetProperty("globalOrderNumber").GetInt32(),
                placed.RootElement.GetProperty("totalCents").GetInt32(),
                stationOrders.GetArrayLength(),
-               [.. stationOrders.EnumerateArray().Select(slice => slice.GetProperty("stationOrderNumber").GetInt32())]);
+               [.. stationOrders.EnumerateArray().Select(stationOrder => stationOrder.GetProperty("stationOrderNumber").GetInt32())]);
   }
 
   private async Task<HttpResponseMessage> SendAsync(HttpMethod method,

@@ -3,13 +3,13 @@ const DARK_LETTERING = '#000000'
 const LIGHT_LETTERING = '#FFFFFF'
 const BRIGHTNESS_THAT_STILL_CARRIES_DARK_LETTERING = 0.179
 
-function brightnessOfChannel(component: number): number {
+function channelBrightness(component: number): number {
   const share = component / 255
   return share <= 0.03928 ? share / 12.92 : ((share + 0.055) / 1.055) ** 2.4
 }
 
 function channelAt(colourHex: string, position: number): number {
-  return brightnessOfChannel(Number.parseInt(colourHex.slice(position, position + 2), 16))
+  return channelBrightness(Number.parseInt(colourHex.substring(position, position + 2), 16))
 }
 
 export function letteringColourOn(colourHex: string): string {

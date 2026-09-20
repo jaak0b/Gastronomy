@@ -18,7 +18,7 @@ function stubTheLaptop(): string[] {
     vi.fn(async (url: string) => {
       urls.push(url)
       if (url === '/api/station/orders/fulfilled') {
-        return new Response(JSON.stringify({ slices: [] }), { status: 200 })
+        return new Response(JSON.stringify({ stationOrders: [] }), { status: 200 })
       }
       return new Response(
         JSON.stringify({

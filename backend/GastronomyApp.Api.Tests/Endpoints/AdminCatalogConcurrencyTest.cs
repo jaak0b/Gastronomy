@@ -52,12 +52,12 @@ public sealed class AdminCatalogConcurrencyTest
 
     foreach (var response in responses)
     {
-      messageKeys.Add(await MessageKeyOfAsync(response));
+      messageKeys.Add(await ReadMessageKeyAsync(response));
       response.Dispose();
     }
 
     await using var database = _context.Factory.CreateContext();
-    var normalizedName = _naming.Normalized(ColdDrinksName);
+    var normalizedName = _naming.ToNormalizedName(ColdDrinksName);
     var stored = await database.CatalogCategories.CountAsync(category => category.NormalizedName == normalizedName);
 
     Assert.Multiple(() =>
@@ -82,7 +82,7 @@ public sealed class AdminCatalogConcurrencyTest
                                     {
                                       Id = Guid.NewGuid(),
                                       Name = ColdDrinksName,
-                                      NormalizedName = _naming.Normalized(ColdDrinksName),
+                                      NormalizedName = _naming.ToNormalizedName(ColdDrinksName),
                                       ColourHex = "#1565C0",
                                       SortOrder = 9,
                                       IsActive = true
@@ -107,7 +107,7 @@ public sealed class AdminCatalogConcurrencyTest
   [Test]
   public async Task PostActivateItemAndDeactivateCategory_AtTheSameMoment_NeverSwitchesAnArticleOnUnderASwitchedOffCategory()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
     for (var attempt = 0; attempt < RacedSwitches; attempt++)
     {
@@ -156,7 +156,7 @@ public sealed class AdminCatalogConcurrencyTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
 
-  private async Task<string?> MessageKeyOfAsync(HttpResponseMessage response)
+  private async Task<string?> ReadMessageKeyAsync(HttpResponseMessage response)
   {
     if (response.IsSuccessStatusCode)
     {

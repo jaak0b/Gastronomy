@@ -8,7 +8,7 @@ public sealed record StationQueueItemView(
   string? Note,
   DateTime? FulfilledAtUtc);
 
-public sealed record StationQueueSliceView(
+public sealed record StationOrderQueueView(
   Guid StationOrderId,
   int GlobalOrderNumber,
   int StationOrderNumber,
@@ -23,10 +23,10 @@ public sealed record StationQueueSliceView(
 
 public sealed record StationQueueView(
   StationSummaryView Station,
-  IReadOnlyList<StationQueueSliceView> Orders,
-  IReadOnlyList<StationQueueSliceView> AsItComes);
+  IReadOnlyList<StationOrderQueueView> Orders,
+  IReadOnlyList<StationOrderQueueView> AsItComes);
 
-public sealed record StationFulfilledView(IReadOnlyList<StationQueueSliceView> Slices);
+public sealed record StationFulfilledView(IReadOnlyList<StationOrderQueueView> StationOrders);
 
 public sealed record StationItemSelectionRequest
 {

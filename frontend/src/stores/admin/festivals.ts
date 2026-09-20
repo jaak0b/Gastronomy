@@ -36,7 +36,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     () => festivals.value.find((festival) => festival.isRunning) ?? null,
   )
 
-  function festivalWithId(festivalId: string): AdminFestival | null {
+  function findFestivalWithId(festivalId: string): AdminFestival | null {
     return festivals.value.find((festival) => festival.festivalId === festivalId) ?? null
   }
 
@@ -55,7 +55,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     festivals.value = rows
   }
 
-  function bodyOf(draft: FestivalDraft): FestivalDraft {
+  function buildFestivalRequestBody(draft: FestivalDraft): FestivalDraft {
     return { name: draft.name, startsAtUtc: draft.startsAtUtc, endsAtUtc: draft.endsAtUtc }
   }
 
@@ -70,7 +70,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   async function create(draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request('/api/admin/festivals', {
       method: 'POST',
-      body: bodyOf(draft),
+      body: buildFestivalRequestBody(draft),
     })
     return reportAndReload(result)
   }
@@ -78,7 +78,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   async function save(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}`, {
       method: 'PUT',
-      body: bodyOf(draft),
+      body: buildFestivalRequestBody(draft),
     })
     return reportAndReload(result)
   }
@@ -86,7 +86,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
   async function copy(festivalId: string, draft: FestivalDraft): Promise<AdminActionResult<null>> {
     const result = await request(`/api/admin/festivals/${festivalId}/copy`, {
       method: 'POST',
-      body: bodyOf(draft),
+      body: buildFestivalRequestBody(draft),
     })
     return reportAndReload(result)
   }
@@ -121,7 +121,7 @@ export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
     shownFestivals,
     runningFestival,
     loadFailed,
-    festivalWithId,
+    findFestivalWithId,
     load,
     create,
     save,

@@ -8,19 +8,19 @@ namespace GastronomyApp.Desktop.Tests.Smoke;
 
 internal static class RenderedColours
 {
-  public static Color Of(IBrush? brush)
+  public static Color ToColour(IBrush? brush)
   {
     return ((ISolidColorBrush)brush!).Color;
   }
 
-  public static Color LabelForegroundOf(Button button)
+  public static Color ReadLabelForeground(Button button)
   {
-    return Of(Label(button).Foreground);
+    return ToColour(Label(button).Foreground);
   }
 
-  public static Color LabelBackgroundOf(Button button)
+  public static Color ReadLabelBackground(Button button)
   {
-    return Of(Label(button).Background);
+    return ToColour(Label(button).Background);
   }
 
   public static Color LabelBackgroundWhile(Button button, string pseudoClass)
@@ -28,7 +28,7 @@ internal static class RenderedColours
     var pseudoClasses = (IPseudoClasses)button.Classes;
     pseudoClasses.Add(pseudoClass);
     Dispatcher.UIThread.RunJobs();
-    var colour = LabelBackgroundOf(button);
+    var colour = ReadLabelBackground(button);
     pseudoClasses.Remove(pseudoClass);
     Dispatcher.UIThread.RunJobs();
 

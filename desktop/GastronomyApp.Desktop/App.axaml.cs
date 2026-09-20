@@ -62,17 +62,17 @@ public class App : Application
 
     _mainWindowViewModel.AdminPagesRequested += OpenAdminPages;
     _mainWindowViewModel.DataFolderRequested += OpenDataFolder;
-    _mainWindowViewModel.RepairRequested += RepairSetup;
-    _mainWindowViewModel.QuitRequested += AskWhetherToQuit;
+    _mainWindowViewModel.RepairRequested += RepairSetupAsync;
+    _mainWindowViewModel.QuitRequested += AskWhetherToQuitAsync;
     _mainWindowViewModel.FailureDetailRequested += ShowFailureDetail;
-    _mainWindowViewModel.UpdateReadyRequested += ShowUpdateConfirmation;
-    _mainWindowViewModel.UpdateFailureRequested += ShowUpdateFailure;
+    _mainWindowViewModel.UpdateReadyRequested += ShowUpdateConfirmationAsync;
+    _mainWindowViewModel.UpdateFailureRequested += ShowUpdateFailureAsync;
 
     _mainWindow = new() { DataContext = _mainWindowViewModel };
 
     if (ServesTheOrderPages(outcome))
     {
-      _mainWindow.Opened += OnMainWindowOpened;
+      _mainWindow.Opened += OnMainWindowOpenedAsync;
     }
 
     lifetime.MainWindow = _mainWindow;
@@ -138,11 +138,11 @@ public class App : Application
     _mainWindow?.BringToFront();
   }
 
-  private async void OnMainWindowOpened(object? sender, EventArgs eventArgs)
+  private async void OnMainWindowOpenedAsync(object? sender, EventArgs eventArgs)
   {
     if (_mainWindow is not null)
     {
-      _mainWindow.Opened -= OnMainWindowOpened;
+      _mainWindow.Opened -= OnMainWindowOpenedAsync;
     }
 
     await RunFirstRunThenStartAsync();
@@ -195,7 +195,7 @@ public class App : Application
                   });
   }
 
-  private async void RepairSetup()
+  private async void RepairSetupAsync()
   {
     if (_composition is null || _mainWindowViewModel is null)
     {
@@ -231,7 +231,7 @@ public class App : Application
     _ = ShowTechnicalDetailAsync(detail);
   }
 
-  private async void ShowUpdateFailure(Exception failure)
+  private async void ShowUpdateFailureAsync(Exception failure)
   {
     await ShowTechnicalDetailAsync(failure.ToString());
   }
@@ -250,7 +250,7 @@ public class App : Application
     await dialog.ShowDialog(_mainWindow);
   }
 
-  private async void ShowUpdateConfirmation(string version)
+  private async void ShowUpdateConfirmationAsync(string version)
   {
     if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
     {
@@ -287,7 +287,7 @@ public class App : Application
     }
   }
 
-  private async void AskWhetherToQuit()
+  private async void AskWhetherToQuitAsync()
   {
     if (_quitConfirmViewModel is null || _mainWindow is null)
     {

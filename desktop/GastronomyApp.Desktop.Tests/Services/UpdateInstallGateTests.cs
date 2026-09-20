@@ -29,7 +29,7 @@ public sealed class UpdateInstallGateTests
     return new(_festivals, new FestivalSchedule(), _clock);
   }
 
-  private Festival FestivalOf(DateTime startsAtUtc, DateTime endsAtUtc, bool isHidden = false)
+  private Festival BuildFestival(DateTime startsAtUtc, DateTime endsAtUtc, bool isHidden = false)
   {
     return new()
            {
@@ -51,7 +51,7 @@ public sealed class UpdateInstallGateTests
   [Test]
   public async Task CanInstallNowAsync_WhenAFestivalIsRunning_IsFalse()
   {
-    FestivalsAre(FestivalOf(_now.AddHours(-1), _now.AddHours(1)));
+    FestivalsAre(BuildFestival(_now.AddHours(-1), _now.AddHours(1)));
 
     Assert.That(await CreateGate().CanInstallNowAsync(CancellationToken.None), Is.False);
   }
@@ -59,7 +59,7 @@ public sealed class UpdateInstallGateTests
   [Test]
   public async Task CanInstallNowAsync_WhenAHiddenFestivalStartsInTwelveHours_IsFalse()
   {
-    FestivalsAre(FestivalOf(_now.AddHours(12), _now.AddHours(30), true));
+    FestivalsAre(BuildFestival(_now.AddHours(12), _now.AddHours(30), true));
 
     Assert.That(await CreateGate().CanInstallNowAsync(CancellationToken.None), Is.False);
   }
@@ -67,7 +67,7 @@ public sealed class UpdateInstallGateTests
   [Test]
   public async Task CanInstallNowAsync_WhenTheNextFestivalIsTwentyFiveHoursAway_IsTrue()
   {
-    FestivalsAre(FestivalOf(_now.AddHours(25), _now.AddHours(40)));
+    FestivalsAre(BuildFestival(_now.AddHours(25), _now.AddHours(40)));
 
     Assert.That(await CreateGate().CanInstallNowAsync(CancellationToken.None), Is.True);
   }
@@ -75,7 +75,7 @@ public sealed class UpdateInstallGateTests
   [Test]
   public async Task CanInstallNowAsync_WhenTheLastFestivalAlreadyEnded_IsTrue()
   {
-    FestivalsAre(FestivalOf(_now.AddHours(-25), _now.AddHours(-1)));
+    FestivalsAre(BuildFestival(_now.AddHours(-25), _now.AddHours(-1)));
 
     Assert.That(await CreateGate().CanInstallNowAsync(CancellationToken.None), Is.True);
   }

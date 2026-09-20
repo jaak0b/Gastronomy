@@ -32,7 +32,7 @@ public sealed class OrderRoutingResolverTest
            };
   }
 
-  private Station StationOf(Guid id, string name, int sortOrder)
+  private Station BuildStation(Guid id, string name, int sortOrder)
   {
     return new()
            {
@@ -48,7 +48,7 @@ public sealed class OrderRoutingResolverTest
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_kitchenId)],
-                                                                       [StationOf(_kitchenId, "Kueche", 1)],
+                                                                       [BuildStation(_kitchenId, "Kueche", 1)],
                                                                        null);
 
     Assert.Multiple(() =>
@@ -65,7 +65,7 @@ public sealed class OrderRoutingResolverTest
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-                                                                       [StationOf(_barIndoorId, "Theke innen", 1), StationOf(_barOutdoorId, "Theke aussen", 2)],
+                                                                       [BuildStation(_barIndoorId, "Theke innen", 1), BuildStation(_barOutdoorId, "Theke aussen", 2)],
                                                                        null);
 
     Assert.Multiple(() =>
@@ -81,9 +81,9 @@ public sealed class OrderRoutingResolverTest
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
                                                                        [
-                                                                         StationOf(_barIndoorId, "Theke innen", 1),
-                                                                         StationOf(_barOutdoorId, "Theke aussen", 2),
-                                                                         StationOf(_kitchenId, "Kueche", 3)
+                                                                         BuildStation(_barIndoorId, "Theke innen", 1),
+                                                                         BuildStation(_barOutdoorId, "Theke aussen", 2),
+                                                                         BuildStation(_kitchenId, "Kueche", 3)
                                                                        ],
                                                                        _kitchenId);
 
@@ -99,7 +99,7 @@ public sealed class OrderRoutingResolverTest
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-                                                                       [StationOf(_barIndoorId, "Theke innen", 1), StationOf(_barOutdoorId, "Theke aussen", 2)],
+                                                                       [BuildStation(_barIndoorId, "Theke innen", 1), BuildStation(_barOutdoorId, "Theke aussen", 2)],
                                                                        _barOutdoorId);
 
     Assert.Multiple(() =>
@@ -116,7 +116,7 @@ public sealed class OrderRoutingResolverTest
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId), AssignmentTo(_kitchenId)],
-                                                                       [StationOf(_kitchenId, "Kueche", 7), StationOf(_barIndoorId, "Theke innen", 3)],
+                                                                       [BuildStation(_kitchenId, "Kueche", 7), BuildStation(_barIndoorId, "Theke innen", 3)],
                                                                        _barOutdoorId);
 
     Assert.Multiple(() =>
@@ -133,7 +133,7 @@ public sealed class OrderRoutingResolverTest
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
                                                                        [AssignmentTo(_kitchenId)],
-                                                                       [StationOf(_kitchenId, "Kueche", 1)],
+                                                                       [BuildStation(_kitchenId, "Kueche", 1)],
                                                                        _kitchenId);
 
     Assert.Multiple(() =>

@@ -35,7 +35,7 @@ public sealed class OrderReader
     return order is null ? null : await LoadForAsync(context, order, cancellationToken);
   }
 
-  public OrderStatus StatusOf(LoadedOrder loaded)
+  public OrderStatus CalculateStatus(LoadedOrder loaded)
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
@@ -43,26 +43,26 @@ public sealed class OrderReader
                                        loaded.Items.Count(item => item.FulfilledAtUtc is not null));
   }
 
-  public int TotalCentsOf(LoadedOrder loaded)
+  public int SumTotalCents(LoadedOrder loaded)
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
     return loaded.Items.Sum(item => item.UnitPriceCents);
   }
 
-  public PlacedOrderView Describe(LoadedOrder loaded)
+  public PlacedOrderView BuildPlacedOrderView(LoadedOrder loaded)
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
     return new(loaded.Order.Id,
                loaded.Order.GlobalOrderNumber,
-               StatusOf(loaded),
-               TotalCentsOf(loaded),
+               CalculateStatus(loaded),
+               SumTotalCents(loaded),
                loaded.Order.CreatedAtUtc,
-               DescribeStationOrders(loaded));
+               BuildStationOrderViews(loaded));
   }
 
-  public IReadOnlyList<StationOrderView> DescribeStationOrders(LoadedOrder loaded)
+  public IReadOnlyList<StationOrderView> BuildStationOrderViews(LoadedOrder loaded)
   {
     ArgumentNullException.ThrowIfNull(loaded);
 
@@ -70,7 +70,7 @@ public sealed class OrderReader
     [
       .. loaded.StationOrders.Select(stationOrder => new StationOrderView(stationOrder.Id,
                                                                           stationOrder.StationId,
-                                                                          NameOf(loaded, stationOrder.StationId),
+                                                                          StationName(loaded, stationOrder.StationId),
                                                                           stationOrder.StationOrderNumber,
                                                                           stationOrder.DeliveryMode,
                                                                           [
@@ -81,7 +81,7 @@ public sealed class OrderReader
     ];
   }
 
-  private string NameOf(LoadedOrder loaded, Guid stationId)
+  private string StationName(LoadedOrder loaded, Guid stationId)
   {
     return loaded.StationNames.TryGetValue(stationId, out var name) ? name : string.Empty;
   }

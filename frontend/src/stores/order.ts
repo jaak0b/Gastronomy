@@ -35,7 +35,7 @@ import {
 } from '../core/sendProgress'
 import { assertNever } from '../core/assertNever'
 import { buildSubmitRequest, ensureClientOrderId } from '../core/submission'
-import { chosenDeliveryMode, deliveryModesOf, orderSlices } from '../core/orderSlices'
+import { buildStationDeliveryModes, buildStationOrders, chosenDeliveryMode } from '../core/stationOrders'
 import {
   buildBasketView,
   basketItemCount,
@@ -130,7 +130,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   const basketLines = computed(() => buildBasketView(draft.value, catalogStore.catalog))
-  const slices = computed(() => orderSlices(basketLines.value))
+  const stationOrders = computed(() => buildStationOrders(basketLines.value))
   const itemCount = computed(() => basketItemCount(draft.value))
   const totalCents = computed(() => orderTotalCents(basketLines.value))
   const hasLinesThatCannotBeOrdered = computed(() =>
@@ -141,7 +141,7 @@ export const useOrderStore = defineStore('order', () => {
     draftWasLost.value = false
   }
 
-  function nameOfTheStation(stationId: string | null): string {
+  function stationName(stationId: string | null): string {
     return stationId === null ? '' : catalogStore.stationName(stationId)
   }
 
@@ -151,7 +151,7 @@ export const useOrderStore = defineStore('order', () => {
     }
     dismissDraftLoss()
     draft.value = underTheRunningFestival(
-      addLine(draft.value, { ...line, stationName: nameOfTheStation(line.stationId) }),
+      addLine(draft.value, { ...line, stationName: stationName(line.stationId) }),
     )
     theRefusalNoLongerFitsTheOrder()
   }
@@ -169,7 +169,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   function chooseStation(index: number, stationId: string | null): void {
-    change((current) => setLineStation(current, index, stationId, nameOfTheStation(stationId)))
+    change((current) => setLineStation(current, index, stationId, stationName(stationId)))
   }
 
   function setTable(tableName: string): void {
@@ -250,7 +250,7 @@ export const useOrderStore = defineStore('order', () => {
         draft.value,
         catalogStore.catalog,
         settlement,
-        deliveryModesOf(slices.value, draft.value.deliveryModes),
+        buildStationDeliveryModes(stationOrders.value, draft.value.deliveryModes),
       ),
       token: session.deviceToken,
       timeoutMs: SEND_TIMEOUT_MS,
@@ -303,7 +303,7 @@ export const useOrderStore = defineStore('order', () => {
     acceptedOrderNumber,
     settlementOnSend,
     basketLines,
-    slices,
+    stationOrders,
     itemCount,
     totalCents,
     hasLinesThatCannotBeOrdered,

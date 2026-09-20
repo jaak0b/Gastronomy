@@ -122,7 +122,7 @@ function keysUsedInSource(): Map<string, string> {
   for (const file of sourceFilesUnder(SOURCE_ROOT)) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(/\$?\bt\(\s*'([a-zA-Z][\w.]*)'/g)) {
-      used.set(match[1], file.slice(SOURCE_ROOT.length + 1))
+      used.set(match[1], file.substring(SOURCE_ROOT.length + 1))
     }
   }
   return used
@@ -178,7 +178,7 @@ function keysTheLaptopCanSend(): Map<string, string> {
     for (const match of source.matchAll(
       /"((?:order|admin|auth|catalog|enrolment|station|session|review)\.[a-zA-Z][\w.]*)"/g,
     )) {
-      sent.set(match[1], file.slice(BACKEND_ROOT.length + 1))
+      sent.set(match[1], file.substring(BACKEND_ROOT.length + 1))
     }
   }
   return sent

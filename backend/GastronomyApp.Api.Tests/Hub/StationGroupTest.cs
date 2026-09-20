@@ -27,7 +27,7 @@ public sealed class StationGroupTest
   private string _kitchenToken = null!;
 
   [Test]
-  public async Task PlaceOrder_ASliceForThatStation_ReachesItsTabletAndTheWaiterPhones()
+  public async Task PlaceOrder_AStationOrderForThatStation_ReachesItsTabletAndTheWaiterPhones()
   {
     TaskCompletionSource<Guid> heardByTheTablet = new(TaskCreationOptions.RunContinuationsAsynchronously);
     TaskCompletionSource<Guid> heardByThePhone = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -51,7 +51,7 @@ public sealed class StationGroupTest
     var heardByBoth = Task.WhenAll(heardByTheTablet.Task, heardByThePhone.Task);
     var received = await Task.WhenAny(heardByBoth, Task.Delay(_patience));
 
-    Assert.That(received, Is.SameAs(heardByBoth), "The tablet of the station and the waiter phones must be told about its new slice.");
+    Assert.That(received, Is.SameAs(heardByBoth), "The tablet of the station and the waiter phones must be told about its new station order.");
 
     Assert.Multiple(() =>
                     {

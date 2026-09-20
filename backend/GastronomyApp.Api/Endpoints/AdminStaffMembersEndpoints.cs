@@ -81,7 +81,7 @@ public sealed class AdminStaffMembersHandler
                                                                       staffMember.Name,
                                                                       staffMember.IsActive,
                                                                       staffMember.DeviceId is not null,
-                                                                      LastSeenOf(lastSeenByDeviceId, staffMember.DeviceId),
+                                                                      ReadLastSeen(lastSeenByDeviceId, staffMember.DeviceId),
                                                                       staffMember.EnrolmentInvitationId is not null
                                                                       && outstandingInvitationIds.Contains(staffMember.EnrolmentInvitationId.Value)))
     ];
@@ -144,7 +144,7 @@ public sealed class AdminStaffMembersHandler
 
     var deviceId = staffMember.DeviceId;
     staffMember.IsActive = false;
-    await ConsumeOutstandingInvitationOfAsync(staffMember, cancellationToken);
+    await ConsumeOutstandingInvitationAsync(staffMember, cancellationToken);
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     if (deviceId is not null)
@@ -155,14 +155,14 @@ public sealed class AdminStaffMembersHandler
     return Results.Ok(new StaffMemberView(staffMember.Id, staffMember.Name));
   }
 
-  private DateTime? LastSeenOf(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
+  private DateTime? ReadLastSeen(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
   {
     return deviceId is not null && lastSeenByDeviceId.TryGetValue(deviceId.Value, out var lastSeen)
              ? lastSeen
              : null;
   }
 
-  private async Task ConsumeOutstandingInvitationOfAsync(StaffMember staffMember, CancellationToken cancellationToken)
+  private async Task ConsumeOutstandingInvitationAsync(StaffMember staffMember, CancellationToken cancellationToken)
   {
     if (staffMember.EnrolmentInvitationId is null)
     {

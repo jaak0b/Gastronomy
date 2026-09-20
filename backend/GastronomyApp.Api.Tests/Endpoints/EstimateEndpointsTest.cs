@@ -49,7 +49,7 @@ public sealed class EstimateEndpointsTest
 
     var stations = await ReadEstimatesAsync();
 
-    Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.EqualTo(8));
+    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(8));
   }
 
   [Test]
@@ -74,7 +74,7 @@ public sealed class EstimateEndpointsTest
 
     var stations = await ReadEstimatesAsync();
 
-    Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.Zero);
+    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.Zero);
   }
 
   [Test]
@@ -92,7 +92,7 @@ public sealed class EstimateEndpointsTest
 
     var stations = await ReadEstimatesAsync();
 
-    Assert.That(QueuedMinutesOf(stations, _context.World.BarStationId), Is.Zero);
+    Assert.That(ReadQueuedMinutes(stations, _context.World.BarStationId), Is.Zero);
   }
 
   [Test]
@@ -121,8 +121,8 @@ public sealed class EstimateEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.EqualTo(4));
-                      Assert.That(QueuedMinutesOf(stations, _context.World.BarStationId), Is.Zero);
+                      Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(4));
+                      Assert.That(ReadQueuedMinutes(stations, _context.World.BarStationId), Is.Zero);
                     });
   }
 
@@ -143,10 +143,10 @@ public sealed class EstimateEndpointsTest
 
     var stations = await ReadEstimatesAsync();
 
-    Assert.That(QueuedMinutesOf(stations, _context.World.KitchenStationId), Is.EqualTo(3));
+    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(3));
   }
 
-  private double QueuedMinutesOf(JsonElement stations, Guid stationId)
+  private double ReadQueuedMinutes(JsonElement stations, Guid stationId)
   {
     return stations.EnumerateArray()
                    .Single(station => station.GetProperty("stationId").GetGuid() == stationId)

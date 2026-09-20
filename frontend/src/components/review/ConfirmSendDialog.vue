@@ -40,7 +40,7 @@ const stations = computed(() =>
   ),
 )
 
-function deliveryTextOf(station: StationDelivery): string {
+function deliveryTextFor(station: StationDelivery): string {
   return withEstimate(t(deliveryModeKey(station.deliveryMode)), station.minutes, t, props.language)
 }
 
@@ -89,7 +89,7 @@ function confirm(): void {
           <span class="label">
             {{ t('review.confirmSendStation', { name: station.stationName }) }}
           </span>
-          <span class="value">{{ deliveryTextOf(station) }}</span>
+          <span class="value">{{ deliveryTextFor(station) }}</span>
         </div>
         <div class="choices">
           <v-btn-toggle

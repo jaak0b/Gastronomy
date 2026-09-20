@@ -25,7 +25,7 @@ export function findCatalogStation(catalog: Catalog, stationId: string): Catalog
   return catalog.stations.find((station) => station.id === stationId) ?? null
 }
 
-function nameOfTheStationTheLineGoesTo(
+function stationNameForLine(
   catalog: Catalog,
   line: DraftLine,
   candidateStationIds: readonly string[],
@@ -47,7 +47,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
         unitPriceCents: null,
         note: line.note,
         stationId: line.stationId,
-        stationName: nameOfTheStationTheLineGoesTo(catalog, line, []),
+        stationName: stationNameForLine(catalog, line, []),
         candidateStationIds: [],
         productionMinutes: null,
         isQueueIndependent: false,
@@ -63,7 +63,7 @@ export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLine
       unitPriceCents: item.priceCents,
       note: line.note,
       stationId: line.stationId,
-      stationName: nameOfTheStationTheLineGoesTo(catalog, line, candidateStationIds),
+      stationName: stationNameForLine(catalog, line, candidateStationIds),
       candidateStationIds,
       productionMinutes: item.productionMinutes,
       isQueueIndependent: item.isQueueIndependent,

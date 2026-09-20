@@ -1,5 +1,5 @@
 import type { ApiErrorBody } from './apiError'
-import type { DeliveryMode, StationSlice, StationSliceItem } from './apiTypes'
+import type { DeliveryMode, StationOrder, StationOrderItem } from './apiTypes'
 import { assertNever } from './assertNever'
 import { collapseLines } from './collapse'
 
@@ -52,12 +52,12 @@ export function deliveryModeColour(deliveryMode: DeliveryMode): 'together' | 'in
   }
 }
 
-export function isFulfilled(item: StationSliceItem): boolean {
+export function isFulfilled(item: StationOrderItem): boolean {
   return item.fulfilledAtUtc !== null
 }
 
-export function openItemsOf(slice: StationSlice): StationSliceItem[] {
-  return slice.items.filter((item) => !isFulfilled(item))
+export function openItemsIn(stationOrder: StationOrder): StationOrderItem[] {
+  return stationOrder.items.filter((item) => !isFulfilled(item))
 }
 
 function compareItemNames(left: string, right: string): number {
@@ -72,7 +72,7 @@ function compareLines(left: ItemLine, right: ItemLine): number {
   return byName !== 0 ? byName : compareItemNames(left.note ?? '', right.note ?? '')
 }
 
-export function itemLines(items: readonly StationSliceItem[]): ItemLine[] {
+export function itemLines(items: readonly StationOrderItem[]): ItemLine[] {
   return collapseLines(
     items,
     (item) => item.itemName,
@@ -99,30 +99,32 @@ export function itemLineText(line: ItemLine, t: StationLineWording): string {
 }
 
 export function selectedUnits(
-  slices: readonly StationSlice[],
+  stationOrders: readonly StationOrder[],
   selectedItemIds: readonly string[],
 ): ItemLine[] {
   const selected = new Set(selectedItemIds)
   return itemLines(
-    slices.flatMap((slice) => openItemsOf(slice)).filter((item) => selected.has(item.orderItemId)),
+    stationOrders
+      .flatMap((stationOrder) => openItemsIn(stationOrder))
+      .filter((item) => selected.has(item.orderItemId)),
   )
 }
 
 export function selectedOpenItemIds(
-  slice: StationSlice,
+  stationOrder: StationOrder,
   selectedItemIds: readonly string[],
 ): string[] {
   const selected = new Set(selectedItemIds)
-  return openItemsOf(slice)
+  return openItemsIn(stationOrder)
     .filter((item) => selected.has(item.orderItemId))
     .map((item) => item.orderItemId)
 }
 
-export function stationStats(orders: readonly StationSlice[]): StationStats {
+export function stationStats(stationOrders: readonly StationOrder[]): StationStats {
   let togetherOrders = 0
   let asItComesOrders = 0
-  for (const slice of orders) {
-    switch (slice.deliveryMode) {
+  for (const stationOrder of stationOrders) {
+    switch (stationOrder.deliveryMode) {
       case 'together':
         togetherOrders += 1
         break
@@ -130,22 +132,24 @@ export function stationStats(orders: readonly StationSlice[]): StationStats {
         asItComesOrders += 1
         break
       default:
-        assertNever(slice.deliveryMode)
+        assertNever(stationOrder.deliveryMode)
     }
   }
   return {
     togetherOrders,
     asItComesOrders,
-    openLines: linesByCount(itemLines(orders.flatMap((slice) => openItemsOf(slice)))),
+    openLines: linesByCount(
+      itemLines(stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder))),
+    ),
   }
 }
 
 export function retainOpenItemIds(
   selectedItemIds: readonly string[],
-  orders: readonly StationSlice[],
+  stationOrders: readonly StationOrder[],
 ): string[] {
   const open = new Set(
-    orders.flatMap((slice) => openItemsOf(slice)).map((item) => item.orderItemId),
+    stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder)).map((item) => item.orderItemId),
   )
   return selectedItemIds.filter((orderItemId) => open.has(orderItemId))
 }

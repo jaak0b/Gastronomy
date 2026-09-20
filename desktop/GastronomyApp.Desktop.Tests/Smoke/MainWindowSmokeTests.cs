@@ -82,7 +82,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar, Is.Not.Null);
-                      Assert.That(RenderedColours.Of(statusBar!.Background),
+                      Assert.That(RenderedColours.ToColour(statusBar!.Background),
                                   Is.EqualTo(Color.Parse("#9CA3AF")));
                       Assert.That(statusMessage!.IsVisible, Is.False);
                     });
@@ -102,7 +102,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar!.Classes, Does.Contain("running"));
-                      Assert.That(RenderedColours.Of(statusBar.Background),
+                      Assert.That(RenderedColours.ToColour(statusBar.Background),
                                   Is.EqualTo(Color.Parse("#2E8B57")));
                     });
   }
@@ -193,7 +193,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(secondary, Has.Count.EqualTo(3));
-                      Assert.That(secondary.Select(RenderedColours.LabelForegroundOf),
+                      Assert.That(secondary.Select(RenderedColours.ReadLabelForeground),
                                   Is.All.EqualTo(Color.Parse("#1F2937")));
                       Assert.That(TextOptions.GetTextRenderingMode(window),
                                   Is.EqualTo(TextRenderingMode.Antialias));
@@ -213,8 +213,8 @@ public sealed class MainWindowSmokeTests
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(RenderedColours.LabelForegroundOf(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
-                      Assert.That(RenderedColours.LabelBackgroundOf(accent), Is.EqualTo(Color.Parse("#1F2937")));
+                      Assert.That(RenderedColours.ReadLabelForeground(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
+                      Assert.That(RenderedColours.ReadLabelBackground(accent), Is.EqualTo(Color.Parse("#1F2937")));
                     });
   }
 

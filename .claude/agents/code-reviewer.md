@@ -87,7 +87,7 @@ reality together.
 Not a checklist to march through, and not a limit on what you may report. These are simply where this
 product has hurt before:
 
-- An order, a slice or an item that can go missing or be produced twice, and whether a failure along
+- An order, a station order or an item that can go missing or be produced twice, and whether a failure along
   that path is visible to somebody or only to a log file.
 - A control that refuses without saying why, or says why in a way a volunteer at a loud festival at
   night cannot act on.

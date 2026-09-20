@@ -1,49 +1,51 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationSlice } from '../../core/apiTypes'
+import type { StationOrder } from '../../core/apiTypes'
 import {
   deliveryModeColour,
   deliveryModeKey,
   itemLineText,
   itemLines,
-  openItemsOf,
+  openItemsIn,
   selectedOpenItemIds,
   type ItemLine,
 } from '../../core/stationBoard'
 import './stationCard.css'
 
 const props = defineProps<{
-  slice: StationSlice
+  stationOrder: StationOrder
   selectedItemIds: string[]
   isWorking: boolean
   showHide: boolean
 }>()
 const emit = defineEmits<{
   toggleItem: [orderItemId: string]
-  fulfil: [slice: StationSlice, orderItemIds: string[]]
+  fulfil: [stationOrder: StationOrder, orderItemIds: string[]]
   hide: [stationOrderId: string]
 }>()
 
 const { t } = useI18n()
 
 const isGrouped = ref(false)
-const openItems = computed(() => openItemsOf(props.slice))
-const selectedHere = computed(() => selectedOpenItemIds(props.slice, props.selectedItemIds))
-const deliveryText = computed(() => t(deliveryModeKey(props.slice.deliveryMode)))
+const openItems = computed(() => openItemsIn(props.stationOrder))
+const selectedHere = computed(() =>
+  selectedOpenItemIds(props.stationOrder, props.selectedItemIds),
+)
+const deliveryText = computed(() => t(deliveryModeKey(props.stationOrder.deliveryMode)))
 const modeColour = computed(
-  () => `rgb(var(--v-theme-${deliveryModeColour(props.slice.deliveryMode)}))`,
+  () => `rgb(var(--v-theme-${deliveryModeColour(props.stationOrder.deliveryMode)}))`,
 )
 const orderReference = computed(() =>
   t('station.order', {
-    order: props.slice.globalOrderNumber,
-    sequence: props.slice.stationOrderNumber,
+    order: props.stationOrder.globalOrderNumber,
+    sequence: props.stationOrder.stationOrderNumber,
   }),
 )
 const doneCounter = computed(() =>
   t('station.doneCounter', {
-    fulfilled: props.slice.fulfilledItemCount,
-    total: props.slice.itemCount,
+    fulfilled: props.stationOrder.fulfilledItemCount,
+    total: props.stationOrder.itemCount,
   }),
 )
 const groupedLines = computed(() => itemLines(openItems.value))
@@ -64,13 +66,17 @@ function lineText(line: ItemLine): string {
 </script>
 
 <template>
-  <div class="station-slice mb-4 bg-surface" :style="{ borderColor: modeColour }">
-    <div class="slice-head d-flex flex-wrap align-baseline ga-2">
-      <span class="table-name text-h5">{{ t('station.tableIs', { name: slice.tableName }) }}</span>
-      <span class="slice-heading text-body-2 text-medium-emphasis">{{ orderReference }}</span>
+  <div class="station-order mb-4 bg-surface" :style="{ borderColor: modeColour }">
+    <div class="station-order-head d-flex flex-wrap align-baseline ga-2">
+      <span class="table-name text-h5">
+        {{ t('station.tableIs', { name: stationOrder.tableName }) }}
+      </span>
+      <span class="station-order-heading text-body-2 text-medium-emphasis">
+        {{ orderReference }}
+      </span>
       <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
     </div>
-    <div class="slice-mode-row d-flex flex-wrap align-center ga-2 mb-1">
+    <div class="station-order-mode-row d-flex flex-wrap align-center ga-2 mb-1">
       <span class="delivery-mode text-body-1 font-weight-medium" :style="{ color: modeColour }">
         {{ deliveryText }}
       </span>
@@ -85,8 +91,8 @@ function lineText(line: ItemLine): string {
         {{ viewToggleLabel }}
       </v-btn>
     </div>
-    <p v-if="slice.note !== null" class="slice-note text-body-1 mt-1 mb-0">
-      {{ t('station.orderNote', { note: slice.note }) }}
+    <p v-if="stationOrder.note !== null" class="station-order-note text-body-1 mt-1 mb-0">
+      {{ t('station.orderNote', { note: stationOrder.note }) }}
     </p>
     <v-divider class="my-2" />
     <template v-if="!isGrouped">
@@ -127,7 +133,7 @@ function lineText(line: ItemLine): string {
         variant="flat"
         size="large"
         :disabled="selectedHere.length === 0 || isWorking"
-        @click="emit('fulfil', slice, selectedHere)"
+        @click="emit('fulfil', stationOrder, selectedHere)"
       >
         {{ t('station.done') }}
       </v-btn>
@@ -137,7 +143,7 @@ function lineText(line: ItemLine): string {
         variant="outlined"
         size="large"
         :disabled="isWorking"
-        @click="emit('hide', slice.stationOrderId)"
+        @click="emit('hide', stationOrder.stationOrderId)"
       >
         {{ t('station.hideHere') }}
       </v-btn>

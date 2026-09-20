@@ -116,7 +116,7 @@ describe('an answer that says the laptop does not know this device', () => {
     const deviceIsNoLongerKnown = vi.fn()
     onUnauthorisedAnswer(deviceIsNoLongerKnown)
 
-    await request('/api/station/slices', { token: 'token-of-a-waiter-phone' })
+    await request('/api/station/orders', { token: 'token-of-a-waiter-phone' })
 
     expect(deviceIsNoLongerKnown).not.toHaveBeenCalled()
   })

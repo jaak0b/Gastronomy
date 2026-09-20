@@ -122,13 +122,13 @@ public sealed class OrderPlacementHandler
                         settlementFailureReason);
       }
 
-      return _resultEnvelope.ToResult(_resultEnvelope.Describe(acceptance.Failure));
+      return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(acceptance.Failure));
     }
 
     var stored = (await _orderReader.LoadAsync(_dbContext, acceptance.Value.Order.Id, cancellationToken))!;
-    var view = _orderReader.Describe(stored);
+    var view = _orderReader.BuildPlacedOrderView(stored);
 
-    await TellEveryStationThatGotASliceAsync(view, cancellationToken);
+    await TellEveryStationWithAStationOrderAsync(view, cancellationToken);
 
     return Results.Json(view,
                         statusCode: acceptance.Value.WasAlreadyAccepted
@@ -136,7 +136,7 @@ public sealed class OrderPlacementHandler
                                       : StatusCodes.Status201Created);
   }
 
-  private async Task TellEveryStationThatGotASliceAsync(PlacedOrderView view, CancellationToken cancellationToken)
+  private async Task TellEveryStationWithAStationOrderAsync(PlacedOrderView view, CancellationToken cancellationToken)
   {
     foreach (var stationId in view.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
     {

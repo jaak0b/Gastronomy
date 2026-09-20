@@ -35,7 +35,7 @@ function lanesAt(queuedMinutes: number, lines: readonly EstimableLine[]) {
   }
 }
 
-function estimateOfLanes(
+function estimateFromLanes(
   queuedMinutes: number,
   lines: readonly EstimableLine[],
 ): number | null {
@@ -53,7 +53,7 @@ export function stationReadyInMinutes(
   stationId: string,
 ): number | null {
   const linesAtTheStation = lines.filter((line) => routedStationId(line) === stationId)
-  return estimateOfLanes(queuedMinutesAt(estimates, stationId), linesAtTheStation)
+  return estimateFromLanes(queuedMinutesAt(estimates, stationId), linesAtTheStation)
 }
 
 export function stationEstimateAfterAdding(
@@ -71,7 +71,7 @@ export function stationEstimateAfterAdding(
     productionMinutes: isQueueIndependent ? productionMinutes : productionMinutes * units,
     isQueueIndependent,
   }
-  return estimateOfLanes(queuedMinutesAt(estimates, stationId), [...linesAtTheStation, added]) ?? 0
+  return estimateFromLanes(queuedMinutesAt(estimates, stationId), [...linesAtTheStation, added]) ?? 0
 }
 
 export function pickerEstimateRange(

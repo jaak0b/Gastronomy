@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationSlice } from '../core/apiTypes'
+import type { StationOrder } from '../core/apiTypes'
 import { selectedUnits, stationStats, type ItemLine } from '../core/stationBoard'
 import { useStationStore } from '../stores/station'
 import { useSessionStore } from '../stores/session'
 import LanguageSwitch from '../components/LanguageSwitch.vue'
-import StationSliceCard from '../components/station/StationSliceCard.vue'
+import StationOrderCard from '../components/station/StationOrderCard.vue'
 import StationFulfilledCard from '../components/station/StationFulfilledCard.vue'
 import StationDoneDialog from '../components/station/StationDoneDialog.vue'
 import StationOpenBoard from '../components/station/StationOpenBoard.vue'
@@ -17,11 +17,13 @@ const session = useSessionStore()
 let stopListening: (() => void) | null = null
 
 const stats = computed(() => stationStats(station.orders))
-const doneSlice = ref<StationSlice | null>(null)
+const doneStationOrder = ref<StationOrder | null>(null)
 const doneItemIds = ref<string[]>([])
 const isShowingOverview = ref(false)
 const doneUnits = computed<ItemLine[]>(() =>
-  doneSlice.value === null ? [] : selectedUnits([doneSlice.value], doneItemIds.value),
+  doneStationOrder.value === null
+    ? []
+    : selectedUnits([doneStationOrder.value], doneItemIds.value),
 )
 
 const stationName = computed(() => station.station?.name ?? session.station?.name ?? '')
@@ -43,13 +45,13 @@ onUnmounted(() => {
   stopListening = null
 })
 
-function openDone(slice: StationSlice, orderItemIds: string[]): void {
-  doneSlice.value = slice
+function openDone(stationOrder: StationOrder, orderItemIds: string[]): void {
+  doneStationOrder.value = stationOrder
   doneItemIds.value = orderItemIds
 }
 
 function closeDone(): void {
-  doneSlice.value = null
+  doneStationOrder.value = null
   doneItemIds.value = []
 }
 
@@ -134,9 +136,9 @@ function closeOverview(): void {
         {{ t('station.nothingDone') }}
       </v-alert>
       <StationFulfilledCard
-        v-for="slice in station.fulfilled"
-        :key="slice.stationOrderId"
-        :slice="slice"
+        v-for="stationOrder in station.fulfilled"
+        :key="stationOrder.stationOrderId"
+        :station-order="stationOrder"
         :is-working="station.isWorking"
         @put-back="station.unfulfill"
       />
@@ -146,10 +148,10 @@ function closeOverview(): void {
       <v-row>
         <v-col cols="12" md="6" class="orders-column">
           <h2 class="orders-heading text-h6 mb-2">{{ t('station.ordersHeading') }}</h2>
-          <StationSliceCard
-            v-for="slice in station.orders"
-            :key="slice.stationOrderId"
-            :slice="slice"
+          <StationOrderCard
+            v-for="stationOrder in station.orders"
+            :key="stationOrder.stationOrderId"
+            :station-order="stationOrder"
             :selected-item-ids="station.selectedItemIds"
             :is-working="station.isWorking"
             :show-hide="false"
@@ -162,10 +164,10 @@ function closeOverview(): void {
           <h2 class="as-it-comes-heading text-h6 mb-2">
             {{ t('station.asItComesHeading') }}
           </h2>
-          <StationSliceCard
-            v-for="slice in station.asItComes"
-            :key="slice.stationOrderId"
-            :slice="slice"
+          <StationOrderCard
+            v-for="stationOrder in station.asItComes"
+            :key="stationOrder.stationOrderId"
+            :station-order="stationOrder"
             :selected-item-ids="station.selectedItemIds"
             :is-working="station.isWorking"
             :show-hide="true"
@@ -178,8 +180,8 @@ function closeOverview(): void {
     </template>
 
     <StationDoneDialog
-      v-if="doneSlice !== null"
-      :table-name="doneSlice.tableName"
+      v-if="doneStationOrder !== null"
+      :table-name="doneStationOrder.tableName"
       :lines="doneUnits"
       @confirmed="confirmDone"
       @cancelled="closeDone"

@@ -11,7 +11,7 @@ public sealed class FestivalSchedule
     return !festival.IsHidden && nowUtc >= festival.StartsAtUtc && nowUtc < festival.EndsAtUtc;
   }
 
-  public Festival? RunningAt(IReadOnlyCollection<Festival> festivals, DateTime nowUtc)
+  public Festival? FindRunningAt(IReadOnlyCollection<Festival> festivals, DateTime nowUtc)
   {
     ArgumentNullException.ThrowIfNull(festivals);
 
@@ -26,7 +26,7 @@ public sealed class FestivalSchedule
                                      && festival.StartsAtUtc <= nowUtc + window);
   }
 
-  public Festival? Overlapping(Guid candidateId,
+  public Festival? FindOverlapping(Guid candidateId,
                                DateTime startsAtUtc,
                                DateTime endsAtUtc,
                                IReadOnlyCollection<Festival> others)

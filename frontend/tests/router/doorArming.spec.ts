@@ -35,7 +35,7 @@ describe('the app puts a device behind the door as soon as its screen is on disp
             }
           : {
               stations: [],
-              slices: [],
+              stationOrders: [],
               orders: [],
               items: [],
               station: { id: 's-1', name: 'Küche' },

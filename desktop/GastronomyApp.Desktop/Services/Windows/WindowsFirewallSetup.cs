@@ -36,11 +36,11 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 
     if (result.ExitCode != 0)
     {
-      throw new InvalidOperationException(DescribeFailure(result));
+      throw new InvalidOperationException(BuildFailureText(result));
     }
   }
 
-  private string DescribeFailure(NetshResult result)
+  private string BuildFailureText(NetshResult result)
   {
     var reportedProblem = result.ErrorOutput.Trim();
 

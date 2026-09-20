@@ -50,7 +50,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
 
-  async function readInto(path: string): Promise<void> {
+  async function loadItemsFrom(path: string): Promise<void> {
     loadFailed.value = false
     const result = await request<unknown>(path)
     if (result.kind !== 'ok') {
@@ -67,12 +67,12 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
 
   async function load(): Promise<void> {
     festivalInView.value = null
-    await readInto('/api/admin/items')
+    await loadItemsFrom('/api/admin/items')
   }
 
   async function loadAtTheFestival(festivalId: string): Promise<void> {
     festivalInView.value = festivalId
-    await readInto(`/api/admin/items?festivalId=${festivalId}`)
+    await loadItemsFrom(`/api/admin/items?festivalId=${festivalId}`)
   }
 
   async function reload(): Promise<void> {
@@ -92,7 +92,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     return adminOk(null)
   }
 
-  function bodyOf(item: AdminItemDraft): Record<string, unknown> {
+  function buildItemRequestBody(item: AdminItemDraft): Record<string, unknown> {
     return {
       name: item.name,
       categoryId: item.categoryId,
@@ -105,7 +105,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
   async function create(item: AdminItemDraft): Promise<AdminActionResult<string>> {
     const result = await request<CreatedItem>('/api/admin/items', {
       method: 'POST',
-      body: bodyOf(item),
+      body: buildItemRequestBody(item),
     })
     if (result.kind !== 'ok') {
       return adminFailed(adminErrorMessage(result.kind === 'error' ? result.body : null))
@@ -127,7 +127,7 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
       }
     }
     return reportAndReload(
-      await request(`/api/admin/items/${item.itemId}`, { method: 'PUT', body: bodyOf(item) }),
+      await request(`/api/admin/items/${item.itemId}`, { method: 'PUT', body: buildItemRequestBody(item) }),
     )
   }
 

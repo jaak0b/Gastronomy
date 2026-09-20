@@ -85,14 +85,14 @@ to one festival.
   `(FestivalId, CatalogItemId, StationId)`.
 - **Order**: what the waiter sent. The festival it belongs to, global order number, table name, note,
   who took it, when. It has no status and no total: both are derived, never stored.
-- **StationOrder**: the slice of that order belonging to one station, carrying the number that station
-  shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two slices of one
-  order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the station
-  hands the whole slice over at once, `AsItComes` means each item leaves as soon as it is ready. It
-  also carries `IsHiddenFromAsItComesQueue`, the employee's manual decision to keep that order out of
-  the as-it-comes column; hiding only removes it from that column and is only meaningful for an
-  `AsItComes` slice.
-- **OrderItem**: one entry of that slice. The item name comes from the catalog; the price is the one
+- **StationOrder**: the part of that order belonging to one station, carrying the number that station
+  shows for it. Unique on `(OrderId, StationId)`, so a station can never receive two station orders of
+  one order. It carries the `DeliveryMode` the waiter chose for that station: `Together` means the
+  station hands the whole station order over at once, `AsItComes` means each item leaves as soon as it
+  is ready. It also carries `IsHiddenFromAsItComesQueue`, the employee's manual decision to keep that
+  order out of the as-it-comes column; hiding only removes it from that column and is only meaningful
+  for an `AsItComes` station order.
+- **OrderItem**: one entry of that station order. The item name comes from the catalog; the price is the one
   the phone displayed to the guest and the laptop stores it untouched, including when the item is given
   away. `FulfilledAtUtc` records the hand-out: null means the item is still open, a value means the
   station handed it out at that moment, and it is cleared again when a mistaken tap is put back. It

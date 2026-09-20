@@ -17,26 +17,26 @@ public sealed class CatalogCategoryNamingTest
   private CatalogCategoryNaming _naming = null!;
 
   [Test]
-  public void Cleaned_NameTypedWithSpacesAroundIt_KeepsOnlyTheName()
+  public void ToCleanedName_NameTypedWithSpacesAroundIt_KeepsOnlyTheName()
   {
-    Assert.That(_naming.Cleaned(" Kaffee "), Is.EqualTo("Kaffee"));
+    Assert.That(_naming.ToCleanedName(" Kaffee "), Is.EqualTo("Kaffee"));
   }
 
   [Test]
-  public void Normalized_TheSameNameWrittenWithSpacesAndInAnotherCasing_IsAlwaysTheSameValue()
+  public void ToNormalizedName_TheSameNameWrittenWithSpacesAndInAnotherCasing_IsAlwaysTheSameValue()
   {
-    var asItIsUsuallyWritten = _naming.Normalized($"Getr{SmallUmlautA}nke");
+    var asItIsUsuallyWritten = _naming.ToNormalizedName($"Getr{SmallUmlautA}nke");
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(_naming.Normalized($" Getr{SmallUmlautA}nke "), Is.EqualTo(asItIsUsuallyWritten));
-                      Assert.That(_naming.Normalized($"GETR{CapitalUmlautA}NKE"), Is.EqualTo(asItIsUsuallyWritten));
+                      Assert.That(_naming.ToNormalizedName($" Getr{SmallUmlautA}nke "), Is.EqualTo(asItIsUsuallyWritten));
+                      Assert.That(_naming.ToNormalizedName($"GETR{CapitalUmlautA}NKE"), Is.EqualTo(asItIsUsuallyWritten));
                     });
   }
 
   [Test]
-  public void Normalized_TwoNamesThatAreGenuinelyDifferent_AreDifferentValues()
+  public void ToNormalizedName_TwoNamesThatAreGenuinelyDifferent_AreDifferentValues()
   {
-    Assert.That(_naming.Normalized("Kaffee"), Is.Not.EqualTo(_naming.Normalized("Kuchen")));
+    Assert.That(_naming.ToNormalizedName("Kaffee"), Is.Not.EqualTo(_naming.ToNormalizedName("Kuchen")));
   }
 }

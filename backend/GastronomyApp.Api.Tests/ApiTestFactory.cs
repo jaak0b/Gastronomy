@@ -181,7 +181,7 @@ public sealed class ApiSeeder
                                   {
                                     Id = categoryId,
                                     Name = name,
-                                    NormalizedName = _naming.Normalized(name),
+                                    NormalizedName = _naming.ToNormalizedName(name),
                                     ColourHex = colourHex,
                                     SortOrder = sortOrder,
                                     IsActive = true

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupPositions, portionsOfItem, positionsForItem } from '../../src/core/itemPositions'
+import { groupPositions, countItemPortions, positionsForItem } from '../../src/core/itemPositions'
 import type { ItemPosition } from '../../src/core/itemPositions'
 import type { CatalogItem, DraftLine, DraftOrder } from '../../src/core/apiTypes'
 
@@ -82,7 +82,7 @@ describe('positionsForItem', () => {
   })
 })
 
-describe('portionsOfItem', () => {
+describe('countItemPortions', () => {
   it('counts every position of that item, whether or not it carries a note', () => {
     const draft = draftWith([
       line('item-1', null, null),
@@ -90,13 +90,13 @@ describe('portionsOfItem', () => {
       line('item-1', 'ohne Schaum', null),
     ])
 
-    expect(portionsOfItem(draft, 'item-1')).toBe(2)
+    expect(countItemPortions(draft, 'item-1')).toBe(2)
   })
 
   it('counts nothing for an item that is not on the order', () => {
     const draft = draftWith([line('item-2', null, null)])
 
-    expect(portionsOfItem(draft, 'item-1')).toBe(0)
+    expect(countItemPortions(draft, 'item-1')).toBe(0)
   })
 })
 

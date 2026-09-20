@@ -68,7 +68,7 @@ public sealed class OrderEndpointsTest
   }
 
   [Test]
-  public async Task PostOrder_TwoStations_CreatesOneSlicePerStation()
+  public async Task PostOrder_TwoStations_CreatesOneStationOrderPerStation()
   {
     OrderBody twoStations = new(Guid.NewGuid(),
                                 "Tisch 12",

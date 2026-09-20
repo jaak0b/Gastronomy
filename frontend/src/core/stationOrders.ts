@@ -3,25 +3,25 @@ import { routedStationId, type RoutableLine } from './routingPreview'
 
 export const DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES: DeliveryMode = 'together'
 
-export interface OrderSlice<TLine> {
+export interface StationOrder<TLine> {
   stationId: string | null
   lines: TLine[]
 }
 
-export function orderSlices<TLine extends RoutableLine>(
+export function buildStationOrders<TLine extends RoutableLine>(
   lines: readonly TLine[],
-): OrderSlice<TLine>[] {
-  const slices: OrderSlice<TLine>[] = []
+): StationOrder<TLine>[] {
+  const stationOrders: StationOrder<TLine>[] = []
   for (const line of lines) {
     const stationId = routedStationId(line)
-    const slice = slices.find((candidate) => candidate.stationId === stationId)
-    if (slice === undefined) {
-      slices.push({ stationId, lines: [line] })
+    const stationOrder = stationOrders.find((candidate) => candidate.stationId === stationId)
+    if (stationOrder === undefined) {
+      stationOrders.push({ stationId, lines: [line] })
     } else {
-      slice.lines.push(line)
+      stationOrder.lines.push(line)
     }
   }
-  return slices
+  return stationOrders
 }
 
 export function chosenDeliveryMode(
@@ -31,13 +31,13 @@ export function chosenDeliveryMode(
   return chosen[stationId] ?? DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES
 }
 
-export function deliveryModesOf<TLine extends RoutableLine>(
-  slices: readonly OrderSlice<TLine>[],
+export function buildStationDeliveryModes<TLine extends RoutableLine>(
+  stationOrders: readonly StationOrder<TLine>[],
   chosen: Readonly<Record<string, DeliveryMode>>,
 ): StationDeliveryMode[] {
   const modes: StationDeliveryMode[] = []
-  for (const slice of slices) {
-    const stationId = slice.stationId
+  for (const stationOrder of stationOrders) {
+    const stationId = stationOrder.stationId
     if (stationId === null) {
       continue
     }

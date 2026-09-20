@@ -92,21 +92,21 @@ public sealed class OrderItemSettlementService
                                                                });
   }
 
-  public IReadOnlyList<Guid> SelectedIdsOf(SettlementRequest request)
+  public IReadOnlyList<Guid> ReadSelectedIds(SettlementRequest request)
   {
     ArgumentNullException.ThrowIfNull(request);
 
     return [.. request.Lines.Select(line => line.OrderItemId).Distinct()];
   }
 
-  public int OpenAmountCentsOf(IEnumerable<OrderItem> items)
+  public int SumOpenAmountCents(IEnumerable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
     return items.Where(item => item.SettledAtUtc is null).Sum(item => item.UnitPriceCents);
   }
 
-  public int WaivedAmountCentsOf(OrderItem item)
+  public int CalculateWaivedAmountCents(OrderItem item)
   {
     ArgumentNullException.ThrowIfNull(item);
 
@@ -115,11 +115,11 @@ public sealed class OrderItemSettlementService
              : item.UnitPriceCents - (item.ChargedPriceCents ?? item.UnitPriceCents);
   }
 
-  public int WaivedAmountCentsOf(IEnumerable<OrderItem> items)
+  public int SumWaivedAmountCents(IEnumerable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
-    return items.Sum(WaivedAmountCentsOf);
+    return items.Sum(CalculateWaivedAmountCents);
   }
 
   public Expression<Func<OrderItem, bool>> WasGivenAwaySince(DateTime settledFromUtc)

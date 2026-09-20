@@ -340,48 +340,48 @@ public sealed class OrderItemSettlementServiceTest
   }
 
   [Test]
-  public void WaivedAmountCentsOf_OneItemGivenAway_CountsTheDisplayedPriceOfThatItemAlone()
+  public void CalculateWaivedAmountCents_OneItemGivenAway_CountsTheDisplayedPriceOfThatItemAlone()
   {
     var beer = OpenItem(400);
     _service.Settle(RequestFor([Line(beer, 0, "Kapelle")]), AtOneTable(beer), _earlier);
 
-    Assert.That(_service.WaivedAmountCentsOf(beer), Is.EqualTo(400));
+    Assert.That(_service.CalculateWaivedAmountCents(beer), Is.EqualTo(400));
   }
 
   [Test]
-  public void WaivedAmountCentsOf_AnItemStillOpen_CountsNothingBecauseNothingWasGivenAwayYet()
+  public void CalculateWaivedAmountCents_AnItemStillOpen_CountsNothingBecauseNothingWasGivenAwayYet()
   {
-    Assert.That(_service.WaivedAmountCentsOf(OpenItem(400)), Is.Zero);
+    Assert.That(_service.CalculateWaivedAmountCents(OpenItem(400)), Is.Zero);
   }
 
   [Test]
-  public void WaivedAmountCentsOf_AnItemTheTableOnlyPaidAPartOf_CountsWhatIsStillMissing()
+  public void CalculateWaivedAmountCents_AnItemTheTableOnlyPaidAPartOf_CountsWhatIsStillMissing()
   {
     var beer = OpenItem(400);
     _service.Settle(RequestFor([Line(beer, 150, "Der Tisch zahlt den Rest spaeter")]), AtOneTable(beer), _earlier);
 
-    Assert.That(_service.WaivedAmountCentsOf(beer), Is.EqualTo(250));
+    Assert.That(_service.CalculateWaivedAmountCents(beer), Is.EqualTo(250));
   }
 
   [Test]
-  public void OpenAmountCentsOf_AMixOfOpenAndSettledItems_CountsOnlyWhatIsStillOpen()
+  public void SumOpenAmountCents_AMixOfOpenAndSettledItems_CountsOnlyWhatIsStillOpen()
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
 
-    Assert.That(_service.OpenAmountCentsOf([bratwurst, beer]), Is.EqualTo(350));
+    Assert.That(_service.SumOpenAmountCents([bratwurst, beer]), Is.EqualTo(350));
   }
 
   [Test]
-  public void WaivedAmountCentsOf_AnItemGivenAwayBesideOneThatWasPaid_CountsOnlyTheGivenAwayPrice()
+  public void SumWaivedAmountCents_AnItemGivenAwayBesideOneThatWasPaid_CountsOnlyTheGivenAwayPrice()
   {
     var beer = OpenItem(400);
     var bratwurst = OpenItem(350);
     _service.MarkSettled(beer, 0, "Kapelle", _anotherWaiter, _earlier);
     _service.MarkSettled(bratwurst, 350, null, _anotherWaiter, _earlier);
 
-    Assert.That(_service.WaivedAmountCentsOf([beer, bratwurst]), Is.EqualTo(400));
+    Assert.That(_service.SumWaivedAmountCents([beer, bratwurst]), Is.EqualTo(400));
   }
 
   private SettlementRequest RequestFor(IReadOnlyList<SettlementLine> lines)

@@ -23,7 +23,7 @@ public sealed class AdminFestivalEndpointsTest
 
   private OrderTestContext _context = null!;
 
-  private object PeriodOf(string name, int yearsFromNow, int lengthInHours = 24)
+  private object BuildFestivalPeriod(string name, int yearsFromNow, int lengthInHours = 24)
   {
     var startsAtUtc = DateTime.UtcNow.AddYears(yearsFromNow);
 
@@ -38,7 +38,7 @@ public sealed class AdminFestivalEndpointsTest
   private async Task<Guid> CreateFestivalAsync(string name, int yearsFromNow, int lengthInHours = 24)
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals",
-                                                               PeriodOf(name, yearsFromNow, lengthInHours));
+                                                               BuildFestivalPeriod(name, yearsFromNow, lengthInHours));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -135,7 +135,7 @@ public sealed class AdminFestivalEndpointsTest
   [Test]
   public async Task PostFestival_NameMissing_IsRefusedWithTheNameKey()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", PeriodOf("   ", 2));
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", BuildFestivalPeriod("   ", 2));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -149,7 +149,7 @@ public sealed class AdminFestivalEndpointsTest
   [Test]
   public async Task PostFestival_EndBeforeTheStart_IsRefusedWithThePeriodKey()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", PeriodOf("Herbstfest", 2, -3));
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", BuildFestivalPeriod("Herbstfest", 2, -3));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -163,7 +163,7 @@ public sealed class AdminFestivalEndpointsTest
   [Test]
   public async Task PostFestival_APeriodAnotherFestivalAlreadyCovers_IsRefusedAndNamesThatFestival()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", PeriodOf("Herbstfest", 0, 1));
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", BuildFestivalPeriod("Herbstfest", 0, 1));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -181,7 +181,7 @@ public sealed class AdminFestivalEndpointsTest
   public async Task PutFestival_AFestivalThatIsNotThere_IsNotFound()
   {
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{Guid.NewGuid()}",
-                                                              PeriodOf("Herbstfest", 2));
+                                                              BuildFestivalPeriod("Herbstfest", 2));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
   }
@@ -192,7 +192,7 @@ public sealed class AdminFestivalEndpointsTest
     var festivalId = await CreateFestivalAsync("Herbstfest", 2);
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{festivalId}",
-                                                              PeriodOf("Herbstfest am See", 3));
+                                                              BuildFestivalPeriod("Herbstfest am See", 3));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -226,7 +226,7 @@ public sealed class AdminFestivalEndpointsTest
       Assert.That(hidden.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", PeriodOf("Weinfest", 2));
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/festivals", BuildFestivalPeriod("Weinfest", 2));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -299,7 +299,7 @@ public sealed class AdminFestivalEndpointsTest
   public async Task PostCopy_AFestivalWithStationsAndAMenu_BringsThemAlongAndStartsCountingAtOne()
   {
     using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/copy",
-                                                               PeriodOf("Sommerfest im naechsten Jahr", 2));
+                                                               BuildFestivalPeriod("Sommerfest im naechsten Jahr", 2));
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var copyId = body.RootElement.GetProperty("festivalId").GetGuid();

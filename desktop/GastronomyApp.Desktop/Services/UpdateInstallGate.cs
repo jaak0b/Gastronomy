@@ -24,7 +24,7 @@ public sealed class UpdateInstallGate : IUpdateInstallGate
       var festivals = await _festivals.ReadAllAsync(cancellationToken);
       var now = _clock.UtcNow;
 
-      if (_schedule.RunningAt(festivals, now) is not null)
+      if (_schedule.FindRunningAt(festivals, now) is not null)
       {
         return false;
       }

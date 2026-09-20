@@ -45,17 +45,17 @@ public sealed class OpenItemsReader
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    IQueryable<OrderItem> itemsOfTheFestival = ItemsOfTheFestival(dbContext, festivalId);
+    IQueryable<OrderItem> itemsAtFestival = ItemsAtFestival(dbContext, festivalId);
 
-    List<OrderItem> openItems = await itemsOfTheFestival
+    List<OrderItem> openItems = await itemsAtFestival
                                      .Where(item => item.SettledAtUtc == null)
                                      .ToListAsync(cancellationToken);
 
-    List<OrderItem> givenAwayItems = await itemsOfTheFestival
+    List<OrderItem> givenAwayItems = await itemsAtFestival
                                           .Where(_settlementService.WasGivenAwaySince(_clock.UtcNow - _givenAwayLookback))
                                           .ToListAsync(cancellationToken);
 
-    OpenItemOwnerLookup lookup = await OwnersOfAsync(dbContext, [.. openItems, .. givenAwayItems], cancellationToken);
+    OpenItemOwnerLookup lookup = await LoadOwnersAsync(dbContext, [.. openItems, .. givenAwayItems], cancellationToken);
 
     Dictionary<string, List<OrderItem>> openByTable = GroupByTable(openItems, lookup);
     Dictionary<string, List<OrderItem>> givenAwayByTable = GroupByTable(givenAwayItems, lookup);
@@ -65,30 +65,30 @@ public sealed class OpenItemsReader
                                .Concat(givenAwayByTable.Keys)
                                .Distinct(StringComparer.Ordinal)
                                .OrderBy(tableName => tableName, StringComparer.Ordinal)
-                               .Select(tableName => TableOf(tableName,
-                                                            ItemsOf(openByTable, tableName),
-                                                            ItemsOf(givenAwayByTable, tableName),
-                                                            lookup))
+                               .Select(tableName => BuildOpenTableView(tableName,
+                                                                       ItemsAtTable(openByTable, tableName),
+                                                                       ItemsAtTable(givenAwayByTable, tableName),
+                                                                       lookup))
                ],
                lookup.OrderItemIdsWithoutAnOrder.Count);
   }
 
-  public IQueryable<OrderItem> ItemsOfTheFestival(GastronomyAppDbContext dbContext, Guid festivalId)
+  public IQueryable<OrderItem> ItemsAtFestival(GastronomyAppDbContext dbContext, Guid festivalId)
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    IQueryable<Guid> sliceIdsOfAnotherFestival = dbContext.StationOrders
-                                                          .AsNoTracking()
-                                                          .Join(dbContext.Orders.AsNoTracking(),
-                                                                slice => slice.OrderId,
-                                                                order => order.Id,
-                                                                (slice, order) => new { Slice = slice, Order = order })
-                                                          .Where(joined => joined.Order.FestivalId != festivalId)
-                                                          .Select(joined => joined.Slice.Id);
+    IQueryable<Guid> stationOrderIdsOfAnotherFestival = dbContext.StationOrders
+                                                                 .AsNoTracking()
+                                                                 .Join(dbContext.Orders.AsNoTracking(),
+                                                                       stationOrder => stationOrder.OrderId,
+                                                                       order => order.Id,
+                                                                       (stationOrder, order) => new { StationOrder = stationOrder, Order = order })
+                                                                 .Where(joined => joined.Order.FestivalId != festivalId)
+                                                                 .Select(joined => joined.StationOrder.Id);
 
     return dbContext.OrderItems
                     .AsNoTracking()
-                    .Where(item => !sliceIdsOfAnotherFestival.Contains(item.StationOrderId));
+                    .Where(item => !stationOrderIdsOfAnotherFestival.Contains(item.StationOrderId));
   }
 
   public async Task<TableNamesView> ReadTableNamesAsync(GastronomyAppDbContext dbContext,
@@ -109,9 +109,9 @@ public sealed class OpenItemsReader
                ]);
   }
 
-  public async Task<IReadOnlyList<string>> TableNamesOfAsync(GastronomyAppDbContext dbContext,
-                                                             IReadOnlyCollection<Guid> orderItemIds,
-                                                             CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<string>> LoadTableNamesForOrderItemsAsync(GastronomyAppDbContext dbContext,
+                                                                            IReadOnlyCollection<Guid> orderItemIds,
+                                                                            CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(orderItemIds);
@@ -141,26 +141,26 @@ public sealed class OpenItemsReader
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(items);
 
-    OpenItemOwnerLookup lookup = await OwnersOfAsync(dbContext, items, cancellationToken);
+    OpenItemOwnerLookup lookup = await LoadOwnersAsync(dbContext, items, cancellationToken);
 
     return lookup.Owners.ToDictionary(owner => owner.Key, owner => owner.Value.TableName);
   }
 
-  private IReadOnlyCollection<OrderItem> ItemsOf(Dictionary<string, List<OrderItem>> byTable, string tableName)
+  private IReadOnlyCollection<OrderItem> ItemsAtTable(Dictionary<string, List<OrderItem>> byTable, string tableName)
   {
     return byTable.TryGetValue(tableName, out var items) ? items : [];
   }
 
-  private OpenTableView TableOf(string tableName,
-                                IReadOnlyCollection<OrderItem> openItems,
-                                IReadOnlyCollection<OrderItem> givenAwayItems,
-                                OpenItemOwnerLookup lookup)
+  private OpenTableView BuildOpenTableView(string tableName,
+                                           IReadOnlyCollection<OrderItem> openItems,
+                                           IReadOnlyCollection<OrderItem> givenAwayItems,
+                                           OpenItemOwnerLookup lookup)
   {
     return new(tableName,
-               _settlementService.OpenAmountCentsOf(openItems),
-               _settlementService.WaivedAmountCentsOf(givenAwayItems),
-               DescribeOpenItems(openItems, lookup),
-               DescribeGivenAwayItems(givenAwayItems, lookup));
+               _settlementService.SumOpenAmountCents(openItems),
+               _settlementService.SumWaivedAmountCents(givenAwayItems),
+               BuildOpenItemViews(openItems, lookup),
+               BuildGivenAwayItemViews(givenAwayItems, lookup));
   }
 
   private Dictionary<string, List<OrderItem>> GroupByTable(IEnumerable<OrderItem> items,
@@ -172,8 +172,8 @@ public sealed class OpenItemsReader
           .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
   }
 
-  private IReadOnlyList<OpenOrderItemView> DescribeOpenItems(IEnumerable<OrderItem> items,
-                                                             OpenItemOwnerLookup lookup)
+  private IReadOnlyList<OpenOrderItemView> BuildOpenItemViews(IEnumerable<OrderItem> items,
+                                                              OpenItemOwnerLookup lookup)
   {
     return
     [
@@ -190,8 +190,8 @@ public sealed class OpenItemsReader
     ];
   }
 
-  private IReadOnlyList<GivenAwayOrderItemView> DescribeGivenAwayItems(IEnumerable<OrderItem> items,
-                                                                       OpenItemOwnerLookup lookup)
+  private IReadOnlyList<GivenAwayOrderItemView> BuildGivenAwayItemViews(IEnumerable<OrderItem> items,
+                                                                        OpenItemOwnerLookup lookup)
   {
     return
     [
@@ -200,7 +200,7 @@ public sealed class OpenItemsReader
                                                    lookup.Owners[item.Id].OrderId,
                                                    lookup.Owners[item.Id].GlobalOrderNumber,
                                                    item.ItemName,
-                                                   _settlementService.WaivedAmountCentsOf(item),
+                                                   _settlementService.CalculateWaivedAmountCents(item),
                                                    item.PaymentNotice,
                                                    item.SettledAtUtc ?? lookup.Owners[item.Id].OrderedAtUtc))
         .OrderBy(view => view.GlobalOrderNumber)
@@ -208,7 +208,7 @@ public sealed class OpenItemsReader
     ];
   }
 
-  private async Task<OpenItemOwnerLookup> OwnersOfAsync(GastronomyAppDbContext dbContext,
+  private async Task<OpenItemOwnerLookup> LoadOwnersAsync(GastronomyAppDbContext dbContext,
                                                         IReadOnlyCollection<OrderItem> items,
                                                         CancellationToken cancellationToken)
   {
@@ -339,7 +339,7 @@ public sealed class OrderItemSettlementHandler
       _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because no festival is running, so nothing was settled.",
                          caller.StaffMemberId);
 
-      return _resultEnvelope.ToResult(_resultEnvelope.Describe(noFestivalIsRunning));
+      return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(noFestivalIsRunning));
     }
 
     return await ApplyAsync(new()
@@ -364,14 +364,14 @@ public sealed class OrderItemSettlementHandler
       await _transactionRunner.RunAsync(_dbContext,
                                         async transactionCancellationToken =>
                                         {
-                                          IReadOnlyList<Guid> ids = _settlementService.SelectedIdsOf(request);
+                                          IReadOnlyList<Guid> ids = _settlementService.ReadSelectedIds(request);
 
                                           List<OrderItem> selected = await _dbContext.OrderItems
                                                                                      .Where(item => ids.Contains(item.Id))
                                                                                      .ToListAsync(transactionCancellationToken);
 
                                           IReadOnlyCollection<SettlementCandidate> candidates =
-                                            await CandidatesOfAsync(selected, transactionCancellationToken);
+                                            await LoadSettlementCandidatesAsync(selected, transactionCancellationToken);
 
                                           Result<SettlementResult, SettlementFailure> outcome =
                                             _settlementService.Settle(request, candidates, _clock.UtcNow);
@@ -393,7 +393,7 @@ public sealed class OrderItemSettlementHandler
     {
       WarnAboutASettlementTheScreenCannotProduce(settlement.Failure, request.SettledByStaffMemberId);
 
-      return _resultEnvelope.ToResult(_resultEnvelope.Describe(settlement.Failure));
+      return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(settlement.Failure));
     }
 
     List<Guid> settledIds = [.. settlement.Value.NewlySettled.Select(item => item.Id)];
@@ -409,7 +409,7 @@ public sealed class OrderItemSettlementHandler
                                          otherPhonesWereTold));
   }
 
-  private async Task<IReadOnlyCollection<SettlementCandidate>> CandidatesOfAsync(
+  private async Task<IReadOnlyCollection<SettlementCandidate>> LoadSettlementCandidatesAsync(
     IReadOnlyCollection<OrderItem> selected,
     CancellationToken cancellationToken)
   {
@@ -454,7 +454,7 @@ public sealed class OrderItemSettlementHandler
   {
     try
     {
-      IReadOnlyList<string> tableNames = await _reader.TableNamesOfAsync(_dbContext, settledIds, cancellationToken);
+      IReadOnlyList<string> tableNames = await _reader.LoadTableNamesForOrderItemsAsync(_dbContext, settledIds, cancellationToken);
       await _dispatcher.PushOrderItemsSettledAsync(new(settledIds, tableNames), cancellationToken);
       return true;
     }

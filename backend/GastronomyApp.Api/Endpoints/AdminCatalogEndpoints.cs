@@ -109,7 +109,7 @@ public sealed class AdminItemHandler
                                                 item.IsActive,
                                                 item.ProductionMinutes,
                                                 item.IsQueueIndependent,
-                                                AtTheFestivalOf(item.Id, menuRows, assignments)))
+                                                BuildItemAtFestivalView(item.Id, menuRows, assignments)))
     ];
 
     return Results.Ok(new AdminItemListView(views));
@@ -153,7 +153,7 @@ public sealed class AdminItemHandler
                                       cancellationToken);
   }
 
-  private AdminItemAtFestivalView? AtTheFestivalOf(Guid itemId,
+  private AdminItemAtFestivalView? BuildItemAtFestivalView(Guid itemId,
                                                    Dictionary<Guid, FestivalCatalogItem> menuRows,
                                                    IReadOnlyCollection<ItemStationAssignment> assignments)
   {

@@ -85,7 +85,7 @@ public sealed class AdminCategoryHandler
                                                        .OrderBy(category => category.SortOrder)
                                                        .ToListAsync(cancellationToken);
 
-    return Results.Ok(ListViewOf(categories));
+    return Results.Ok(BuildCategoryListView(categories));
   }
 
   public Task<IResult> CreateAsync(SaveCategoryRequest request, CancellationToken cancellationToken)
@@ -153,8 +153,8 @@ public sealed class AdminCategoryHandler
     CatalogCategory created = new()
                               {
                                 Id = Guid.NewGuid(),
-                                Name = _naming.Cleaned(request.Name!),
-                                NormalizedName = _naming.Normalized(request.Name!),
+                                Name = _naming.ToCleanedName(request.Name!),
+                                NormalizedName = _naming.ToNormalizedName(request.Name!),
                                 ColourHex = request.ColourHex!,
                                 SortOrder = _ordering.NextSortOrder([.. categories.Select(category => category.SortOrder)]),
                                 IsActive = true
@@ -163,7 +163,7 @@ public sealed class AdminCategoryHandler
     _dbContext.CatalogCategories.Add(created);
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new(Results.Json(ViewOf(created), statusCode: StatusCodes.Status201Created), true);
+    return new(Results.Json(BuildCategoryView(created), statusCode: StatusCodes.Status201Created), true);
   }
 
   private async Task<CatalogWrite> UpdatedAsync(Guid categoryId,
@@ -185,12 +185,12 @@ public sealed class AdminCategoryHandler
       return new(refusal, false);
     }
 
-    category.Name = _naming.Cleaned(request.Name!);
-    category.NormalizedName = _naming.Normalized(request.Name!);
+    category.Name = _naming.ToCleanedName(request.Name!);
+    category.NormalizedName = _naming.ToNormalizedName(request.Name!);
     category.ColourHex = request.ColourHex!;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new(Results.Ok(ViewOf(category)), true);
+    return new(Results.Ok(BuildCategoryView(category)), true);
   }
 
   private async Task<CatalogWrite> MovedAsync(Guid categoryId,
@@ -214,7 +214,7 @@ public sealed class AdminCategoryHandler
 
     if (positions.All(position => categoriesById[position.CategoryId].SortOrder == position.SortOrder))
     {
-      return new(Results.Ok(ListViewOf(reordered)), false);
+      return new(Results.Ok(BuildCategoryListView(reordered)), false);
     }
 
     foreach (var position in positions)
@@ -224,7 +224,7 @@ public sealed class AdminCategoryHandler
 
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new(Results.Ok(ListViewOf(reordered)), true);
+    return new(Results.Ok(BuildCategoryListView(reordered)), true);
   }
 
   private async Task<CatalogWrite> SwitchedOnAsync(Guid categoryId, CancellationToken cancellationToken)
@@ -240,7 +240,7 @@ public sealed class AdminCategoryHandler
     category.IsActive = true;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new(Results.Ok(ViewOf(category)), true);
+    return new(Results.Ok(BuildCategoryView(category)), true);
   }
 
   private async Task<CatalogWrite> SwitchedOffAsync(Guid categoryId, CancellationToken cancellationToken)
@@ -268,7 +268,7 @@ public sealed class AdminCategoryHandler
     category.IsActive = false;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new(Results.Ok(ViewOf(category)), true);
+    return new(Results.Ok(BuildCategoryView(category)), true);
   }
 
   private async Task<IResult> TellingTheOperatorAboutATakenNameAsync(Func<Task<IResult>> write)
@@ -280,7 +280,7 @@ public sealed class AdminCategoryHandler
     catch (InfrastructureException exception)
       when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
     {
-      return NameIsTaken();
+      return BuildNameTakenProblem();
     }
   }
 
@@ -309,24 +309,24 @@ public sealed class AdminCategoryHandler
                                      "admin.categoryColourInvalid");
     }
 
-    var wanted = _naming.Normalized(request.Name);
+    var wanted = _naming.ToNormalizedName(request.Name);
     var taken = categories.Any(category => category.Id != categoryBeingSaved
                                            && string.Equals(category.NormalizedName, wanted, StringComparison.Ordinal));
 
-    return taken ? NameIsTaken() : null;
+    return taken ? BuildNameTakenProblem() : null;
   }
 
-  private IResult NameIsTaken()
+  private IResult BuildNameTakenProblem()
   {
     return _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CategoryNameTaken", "admin.categoryNameTaken");
   }
 
-  private AdminCategoryListView ListViewOf(IReadOnlyCollection<CatalogCategory> categories)
+  private AdminCategoryListView BuildCategoryListView(IReadOnlyCollection<CatalogCategory> categories)
   {
-    return new([.. categories.Select(ViewOf)]);
+    return new([.. categories.Select(BuildCategoryView)]);
   }
 
-  private AdminCategoryView ViewOf(CatalogCategory category)
+  private AdminCategoryView BuildCategoryView(CatalogCategory category)
   {
     return new(category.Id, category.Name, category.ColourHex, category.SortOrder, category.IsActive);
   }

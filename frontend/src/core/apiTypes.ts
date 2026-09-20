@@ -205,14 +205,14 @@ export interface EstimatesResponse {
   stations: StationEstimate[]
 }
 
-export interface StationSliceItem {
+export interface StationOrderItem {
   orderItemId: string
   itemName: string
   note: string | null
   fulfilledAtUtc: string | null
 }
 
-export interface StationSlice {
+export interface StationOrder {
   stationOrderId: string
   globalOrderNumber: number
   stationOrderNumber: number
@@ -223,15 +223,15 @@ export interface StationSlice {
   isHiddenFromAsItComesQueue: boolean
   itemCount: number
   fulfilledItemCount: number
-  items: StationSliceItem[]
+  items: StationOrderItem[]
 }
 
 export interface StationOrdersResponse {
   station: StationIdentity
-  orders: StationSlice[]
-  asItComes: StationSlice[]
+  orders: StationOrder[]
+  asItComes: StationOrder[]
 }
 
 export interface StationFulfilledResponse {
-  slices: StationSlice[]
+  stationOrders: StationOrder[]
 }

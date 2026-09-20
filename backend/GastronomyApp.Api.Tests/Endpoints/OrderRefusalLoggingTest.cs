@@ -33,7 +33,7 @@ public sealed class OrderRefusalLoggingTest
                [new(_context.World.BratwurstItemId, 350, null, null)]);
   }
 
-  private OrderBody WithAnItemTheLaptopNeverHeardOf()
+  private OrderBody BuildOrderBodyWithAnUnknownItem()
   {
     return new(Guid.NewGuid(),
                "Tisch 12",
@@ -41,7 +41,7 @@ public sealed class OrderRefusalLoggingTest
                [new(Guid.NewGuid(), 350, null, null)]);
   }
 
-  private static async Task<string> MessageKeyOfAsync(HttpResponseMessage response)
+  private static async Task<string> ReadMessageKeyAsync(HttpResponseMessage response)
   {
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -52,7 +52,7 @@ public sealed class OrderRefusalLoggingTest
   public async Task PostOrder_SomethingTheScreenAlreadyPrevents_AnswersWithTheOneSharedMessage()
   {
     using var response = await _context.PostOrderAsync(WithoutATableName());
-    var messageKey = await MessageKeyOfAsync(response);
+    var messageKey = await ReadMessageKeyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -76,8 +76,8 @@ public sealed class OrderRefusalLoggingTest
   [Test]
   public async Task PostOrder_ItemThatLeftTheMenu_KeepsTheMessageTheWaiterCanActOn()
   {
-    using var response = await _context.PostOrderAsync(WithAnItemTheLaptopNeverHeardOf());
-    var messageKey = await MessageKeyOfAsync(response);
+    using var response = await _context.PostOrderAsync(BuildOrderBodyWithAnUnknownItem());
+    var messageKey = await ReadMessageKeyAsync(response);
 
     Assert.Multiple(() =>
                     {

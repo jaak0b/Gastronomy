@@ -16,7 +16,7 @@ Flow:
 1. A server opens a web page on their own phone, picks items and quantities, enters a table name, sees
    the running total (a calculation aid only, cash is handled by hand), and places the order. They
    either send it settled, when the guest pays on the spot, or send it open, when the table runs a tab.
-   Before sending, they choose per production location whether that slice is to be produced
+   Before sending, they choose per production location whether that station order is to be produced
    together or handed out item by item as each is ready. That choice is fixed once sent.
 2. The backend splits the order by production location (kitchen, bar indoor, bar outdoor). Each
    location has one tablet, enrolled like a phone. Its station page shows two columns: every order
@@ -26,8 +26,8 @@ Flow:
    confirmation that repeats the table name. A mistaken tap can be put back from the done view.
    Each catalog item may carry a production time in minutes, and an article can be marked as
    prepared independently of its station's queue. The phone shows the server an estimate per item
-   and per slice, computed from the station's current queue plus the item's own time, except for an
-   independent article, which shows its own time alone.
+   and per station order, computed from the station's current queue plus the item's own time, except
+   for an independent article, which shows its own time alone.
 4. A separate screen on the phone lists what each table still has open, so a server can settle a
    table's items later. Settling always names the amount the table actually paid: the full price in
    one tap, or any other amount the server types, which needs a typed reason whenever it falls short.
@@ -88,8 +88,8 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 1. **Lost orders are the defect this product exists to prevent.** Any change that touches ordering,
    routing, the station page, or an item's fulfillment must state what happens when the step fails. A
    silently dropped order is the worst outcome in the system, and a silently duplicated one is the
-   second worst. Every slice carries a global order number and a per-location sequence number so a
-   gap is visible in the station's list without anyone touching software.
+   second worst. Every station order carries a global order number and a per-location sequence
+   number so a gap is visible in the station's list without anyone touching software.
 
 2. **No silently swallowed errors.** A `catch` must surface the error, rethrow, or return a value the
    caller can act on. Empty catch blocks are forbidden. Problems a user can fix (WiFi dropped, unknown
@@ -304,19 +304,20 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
 
 ## The fulfillment model
 
-- **Delivery mode** is chosen per station slice on the review screen before sending: together (the
+- **Delivery mode** is chosen per station order on the review screen before sending: together (the
   default) or as it is ready. It is fixed once the order is sent and no screen may change it later.
 - **An item is open or done.** Done is `OrderItem.FulfilledAtUtc`, set when the station hands the item
   out and cleared again when a mistaken tap is put back. There is no in-between production state and
   no status log.
 - **The station page shows two columns**: every order with open items, and the as-it-comes orders the
   employee has not hidden from that column. A fully done order leaves both and appears in the done
-  view. The hide decision lives on the slice as `StationOrder.IsHiddenFromAsItComesQueue` and only
-  removes the order from the second column.
+  view. The hide decision lives on the station order as `StationOrder.IsHiddenFromAsItComesQueue` and
+  only removes the order from the second column.
 - **Estimates** are computed, never stored. The backend reports per station the minutes still queued,
   counted from open items' production minutes (missing values count as zero) and excluding articles
   that are prepared independently of the queue. The phone adds the item's own minutes, and for an
-  independent article it shows that time alone. A together slice is done when its last item is done.
+  independent article it shows that time alone. A station order set to together is done when its
+  last item is done.
 - **Nobody is notified** when an item becomes done. The card and the confirmation carry the table
   name, and whichever server passes the station takes the tray. That is deliberate.
 
@@ -335,6 +336,25 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     count the kitchen plans production from is not exempt, because a note can change how the article
     is made: `20 x Hotdog` next to `3 x Hotdog · Hinweis: Ohne Ketchup`, never one merged number.
     Grouping by name alone silently merges two instructions and sends the wrong thing to a table.
+
+21. **A name tells a developer what the code does without reading the body.** It states the subject
+    and the result, in the domain's words, in every language and layer. **One concept has one word:**
+    the part of an order that belongs to one station is a `StationOrder` in code, and a collection of
+    them is `stationOrders`, never a second word for the same thing.
+    - Methods start with a verb that says what happens (`Load`, `Find`, `Build`, `Read`, `Count`,
+      `Push`, `Split`), and the name carries the subject, not only the parameters:
+      `LoadOwnersAsync(items)`, never `OwnersOfAsync(items)`.
+    - No `XOf(...)` names. Use `For`, `At`, `In`, or fold the subject into the name:
+      `ItemsAtTable(...)`, `CountForFestival(...)`, `StationName(...)`.
+    - A method that only converts a shape names what it produces: `BuildOpenItemViews(...)`,
+      `ToRequest(...)`. A bare `Describe` that could mean anything tells the reader nothing.
+    - Async methods end in `Async`. Booleans read as statements: `IsRunning`, `HasOpenItems`,
+      `CanBeSettled`.
+    - Properties are nouns (`TableName`, `OpenAmountCents`). C# fields are `_camelCase`, C# methods
+      and properties are PascalCase. TypeScript functions and locals are camelCase, TypeScript types
+      and components are PascalCase.
+    - A name that needs a comment to explain it is wrong: rename until the comment is redundant
+      (rule 7).
 
 ## Verification bar
 

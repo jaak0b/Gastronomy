@@ -28,7 +28,7 @@ const sent = ref({ name: '', startsAtUtc: '', endsAtUtc: '' })
 const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
-const festival = computed(() => festivals.festivalWithId(props.festivalId))
+const festival = computed(() => festivals.findFestivalWithId(props.festivalId))
 const refusalText = useRefusalText(refusal)
 
 watch(

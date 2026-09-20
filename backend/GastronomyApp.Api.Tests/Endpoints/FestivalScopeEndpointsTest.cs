@@ -39,7 +39,7 @@ public sealed class FestivalScopeEndpointsTest
                   .ExecuteDeleteAsync();
   }
 
-  private async Task<JsonDocument> BodyOfAsync(HttpResponseMessage response)
+  private async Task<JsonDocument> ReadBodyAsync(HttpResponseMessage response)
   {
     return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
   }
@@ -48,7 +48,7 @@ public sealed class FestivalScopeEndpointsTest
   public async Task GetCatalog_AFestivalIsRunning_NamesItSoThePhoneCanTellFestivalsApart()
   {
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
     var festival = body.RootElement.GetProperty("festival");
 
     Assert.Multiple(() =>
@@ -64,7 +64,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -82,7 +82,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/estimates");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -102,7 +102,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -122,7 +122,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items/table-names");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -137,7 +137,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -193,7 +193,7 @@ public sealed class FestivalScopeEndpointsTest
                                                   "/api/open-items/settle",
                                                   new SettleItemsBody([.. orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, 350))]));
 
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -211,7 +211,7 @@ public sealed class FestivalScopeEndpointsTest
     await LetTheFestivalEndAsync();
 
     using var response = await _context.SendAsAsync(stationToken, HttpMethod.Get, "/api/station/orders");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -229,7 +229,7 @@ public sealed class FestivalScopeEndpointsTest
     await TakeTheKitchenOffTheFestivalAsync();
 
     using var response = await _context.SendAsAsync(stationToken, HttpMethod.Get, "/api/station/orders");
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     Assert.Multiple(() =>
                     {
@@ -265,7 +265,7 @@ public sealed class FestivalScopeEndpointsTest
                                                     "/api/station/items/fulfill",
                                                     new { orderItemIds });
 
-    var body = await BodyOfAsync(response);
+    var body = await ReadBodyAsync(response);
 
     await using var afterwards = _context.Factory.CreateContext();
     var stillOpen = await afterwards.OrderItems.CountAsync(item => item.FulfilledAtUtc == null);

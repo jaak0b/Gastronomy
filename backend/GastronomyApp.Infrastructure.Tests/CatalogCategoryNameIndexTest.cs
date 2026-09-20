@@ -24,7 +24,7 @@ public sealed class CatalogCategoryNameIndexTest
     Assert.Multiple(() =>
                     {
                       Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
-                      Assert.That(_naming.Normalized("kaffee"), Is.EqualTo(_naming.Normalized("Kaffee")));
+                      Assert.That(_naming.ToNormalizedName("kaffee"), Is.EqualTo(_naming.ToNormalizedName("Kaffee")));
                     });
   }
 
@@ -42,7 +42,7 @@ public sealed class CatalogCategoryNameIndexTest
     Assert.Multiple(() =>
                     {
                       Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
-                      Assert.That(_naming.Normalized(nameInCapitals), Is.EqualTo(_naming.Normalized(name)));
+                      Assert.That(_naming.ToNormalizedName(nameInCapitals), Is.EqualTo(_naming.ToNormalizedName(name)));
                     });
   }
 
@@ -59,7 +59,7 @@ public sealed class CatalogCategoryNameIndexTest
            {
              Id = Guid.NewGuid(),
              Name = name,
-             NormalizedName = _naming.Normalized(name),
+             NormalizedName = _naming.ToNormalizedName(name),
              ColourHex = "#C62828",
              SortOrder = sortOrder,
              IsActive = true

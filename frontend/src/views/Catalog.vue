@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { CatalogCategory, CatalogItem } from '../core/apiTypes'
 import { lineCannotBeOrdered } from '../core/basket'
 import { itemState } from '../core/catalogItemState'
-import { portionsOfCategory } from '../core/categoryPortions'
+import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import {
   pickerEstimateRange,
@@ -86,7 +86,7 @@ function openTheCategory(category: CatalogCategory): void {
   openAStepInsideTheScreen(closeTheOpenCategory)
 }
 
-const itemsOfTheOpenCategory = computed(
+const itemsInTheOpenCategory = computed(
   () =>
     catalog.groups.find(
       (group) => group.category.categoryId === openCategory.value?.categoryId,
@@ -121,7 +121,7 @@ const itemBehindTheStationChoice = computed(() => {
 })
 
 function portionsIn(categoryId: string): number {
-  return portionsOfCategory(order.draft, catalog.catalog.items, categoryId)
+  return countCategoryPortions(order.draft, catalog.catalog.items, categoryId)
 }
 
 function labelFor(category: CatalogCategory): string {
@@ -282,7 +282,7 @@ function chooseStation(stationId: string, note: string | null): void {
         {{ t('estimates.loadFailed') }}
       </v-alert>
       <ItemGrid
-        :items="itemsOfTheOpenCategory"
+        :items="itemsInTheOpenCategory"
         :language="session.language"
         :positions-for="positionsFor"
         :estimate-range-for="estimateRangeFor"

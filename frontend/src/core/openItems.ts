@@ -15,11 +15,11 @@ export interface SettleNotice {
   count: number | null
 }
 
-export function itemIdsOfTable(table: OpenTable): string[] {
+export function itemIdsAtTable(table: OpenTable): string[] {
   return table.items.map((item) => item.orderItemId)
 }
 
-export function selectedItemsOfTable(
+export function selectedItemsAtTable(
   table: OpenTable,
   selectedItemIds: readonly string[],
 ): OpenOrderItem[] {
@@ -30,7 +30,7 @@ export function selectedItems(
   tables: readonly OpenTable[],
   selectedItemIds: readonly string[],
 ): OpenOrderItem[] {
-  return tables.flatMap((table) => selectedItemsOfTable(table, selectedItemIds))
+  return tables.flatMap((table) => selectedItemsAtTable(table, selectedItemIds))
 }
 
 export function selectedAmountCents(
@@ -58,13 +58,13 @@ export function tableHoldingTheSelection(
   selectedItemIds: readonly string[],
 ): string | null {
   const holding = tables.find(
-    (table) => selectedItemsOfTable(table, selectedItemIds).length > 0,
+    (table) => selectedItemsAtTable(table, selectedItemIds).length > 0,
   )
   return holding === undefined ? null : holding.tableName
 }
 
-export function tableOfItem(tables: readonly OpenTable[], orderItemId: string): string | null {
-  const owning = tables.find((table) => itemIdsOfTable(table).includes(orderItemId))
+export function tableForItem(tables: readonly OpenTable[], orderItemId: string): string | null {
+  const owning = tables.find((table) => itemIdsAtTable(table).includes(orderItemId))
   return owning === undefined ? null : owning.tableName
 }
 
@@ -82,7 +82,7 @@ export function withItemToggled(
   tables: readonly OpenTable[],
   orderItemId: string,
 ): string[] {
-  const tableName = tableOfItem(tables, orderItemId)
+  const tableName = tableForItem(tables, orderItemId)
   if (tableName === null || isHeldBackByAnotherTable(tables, selectedItemIds, tableName)) {
     return [...selectedItemIds]
   }
@@ -100,16 +100,16 @@ export function withWholeTable(
   if (isHeldBackByAnotherTable(tables, selectedItemIds, table.tableName)) {
     return [...selectedItemIds]
   }
-  const idsOfTable = itemIdsOfTable(table)
-  const untouched = selectedItemIds.filter((id) => !idsOfTable.includes(id))
-  return isWanted ? [...untouched, ...idsOfTable] : untouched
+  const tableItemIds = itemIdsAtTable(table)
+  const untouched = selectedItemIds.filter((id) => !tableItemIds.includes(id))
+  return isWanted ? [...untouched, ...tableItemIds] : untouched
 }
 
 export function withoutItemsThatAreGone(
   selectedItemIds: readonly string[],
   tables: readonly OpenTable[],
 ): string[] {
-  const stillOpen = tables.flatMap(itemIdsOfTable)
+  const stillOpen = tables.flatMap(itemIdsAtTable)
   return selectedItemIds.filter((id) => stillOpen.includes(id))
 }
 

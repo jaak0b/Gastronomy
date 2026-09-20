@@ -2,15 +2,15 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class CatalogCategoryNaming
 {
-  public string Cleaned(string name)
+  public string ToCleanedName(string name)
   {
     ArgumentNullException.ThrowIfNull(name);
 
     return name.Trim();
   }
 
-  public string Normalized(string name)
+  public string ToNormalizedName(string name)
   {
-    return Cleaned(name).ToUpperInvariant();
+    return ToCleanedName(name).ToUpperInvariant();
   }
 }

@@ -35,7 +35,7 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
 
-  async function readInto(path: string): Promise<void> {
+  async function loadStationsFrom(path: string): Promise<void> {
     loadFailed.value = false
     const result = await request<unknown>(path)
     if (result.kind !== 'ok') {
@@ -52,12 +52,12 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
 
   async function load(): Promise<void> {
     festivalInView.value = null
-    await readInto('/api/admin/stations')
+    await loadStationsFrom('/api/admin/stations')
   }
 
   async function loadAtTheFestival(festivalId: string): Promise<void> {
     festivalInView.value = festivalId
-    await readInto(`/api/admin/stations?festivalId=${festivalId}`)
+    await loadStationsFrom(`/api/admin/stations?festivalId=${festivalId}`)
   }
 
   async function reload(): Promise<void> {

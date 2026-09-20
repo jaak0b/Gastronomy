@@ -23,7 +23,7 @@ public sealed class FestivalRepository : IFestivalRepository
                                            .Where(festival => !festival.IsHidden)
                                            .ToListAsync(cancellationToken);
 
-    return _schedule.RunningAt(shown, nowUtc);
+    return _schedule.FindRunningAt(shown, nowUtc);
   }
 
   public async Task<IReadOnlyCollection<Festival>> FindAllAsync(CancellationToken cancellationToken)

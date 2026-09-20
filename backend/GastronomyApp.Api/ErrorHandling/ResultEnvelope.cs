@@ -11,56 +11,56 @@ public sealed class ResultEnvelope
   private const string CannotBeProcessedKey = "order.cannotBeProcessed";
   private const string SettlementCannotBeProcessedKey = "order.settlementCannotBeProcessed";
 
-  public ProblemDescription Describe(OrderValidationFailure failure)
+  public ProblemDescription BuildProblemDescription(OrderValidationFailure failure)
   {
     return failure.Reason switch
            {
              OrderValidationFailureReason.NoItems =>
-               Validation(CannotBeProcessedKey),
+               BuildValidationProblem(CannotBeProcessedKey),
              OrderValidationFailureReason.TableNameMissing =>
-               Validation(CannotBeProcessedKey),
+               BuildValidationProblem(CannotBeProcessedKey),
              OrderValidationFailureReason.PriceOutOfRange =>
-               Validation(CannotBeProcessedKey),
+               BuildValidationProblem(CannotBeProcessedKey),
              OrderValidationFailureReason.StationRequired =>
-               Unprocessable(CannotBeProcessedKey, null),
+               BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.ItemHasNoStation =>
-               Unprocessable(CannotBeProcessedKey, null),
+               BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.NoRunningFestival =>
-               Unprocessable(CannotBeProcessedKey, null),
+               BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.OrderNumberCouldNotBeAllocated =>
-               Unprocessable(CannotBeProcessedKey, null),
+               BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.SettlementCannotBeProcessed =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              OrderValidationFailureReason.UnknownCatalogItemId =>
-               Unprocessable("order.unknownItem", failure.OffendingCatalogItemId),
+               BuildUnprocessableProblem("order.unknownItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.StationNotAssignedToItem =>
-               Unprocessable("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
+               BuildUnprocessableProblem("order.stationNotAssignedToItem", failure.OffendingCatalogItemId),
              OrderValidationFailureReason.ItemNotAvailable =>
-               UnprocessableWithParameters("catalog.itemSoldOut", SoldOutParameters(failure)),
+               BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", SoldOutParameters(failure)),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
 
-  public ProblemDescription Describe(SettlementFailure failure)
+  public ProblemDescription BuildProblemDescription(SettlementFailure failure)
   {
     return failure.Reason switch
            {
              SettlementFailureReason.NoItemsSelected =>
-               Validation("order.settlementNoItemsSelected"),
+               BuildValidationProblem("order.settlementNoItemsSelected"),
              SettlementFailureReason.PaymentNoticeMissing =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.UnknownOrderItemId =>
-               Unprocessable("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
+               BuildUnprocessableProblem("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
              SettlementFailureReason.AmountPaidMissing =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.AmountPaidNegative =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.DuplicateOrderItemId =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.SelectionSpansSeveralTables =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.NoRunningFestival =>
-               Validation(SettlementCannotBeProcessedKey),
+               BuildValidationProblem(SettlementCannotBeProcessedKey),
              _ => new Never().OfType<ProblemDescription>(failure.Reason)
            };
   }
@@ -86,7 +86,7 @@ public sealed class ResultEnvelope
     return Problem(statusCode, code, messageKey, new Dictionary<string, string>());
   }
 
-  private ProblemDescription Validation(string messageKey)
+  private ProblemDescription BuildValidationProblem(string messageKey)
   {
     return new()
            {
@@ -100,12 +100,12 @@ public sealed class ResultEnvelope
            };
   }
 
-  private ProblemDescription Unprocessable(string messageKey, Guid? offendingCatalogItemId)
+  private ProblemDescription BuildUnprocessableProblem(string messageKey, Guid? offendingCatalogItemId)
   {
-    return Unprocessable(messageKey, "catalogItemId", offendingCatalogItemId);
+    return BuildUnprocessableProblem(messageKey, "catalogItemId", offendingCatalogItemId);
   }
 
-  private ProblemDescription Unprocessable(string messageKey, string parameterName, Guid? offendingId)
+  private ProblemDescription BuildUnprocessableProblem(string messageKey, string parameterName, Guid? offendingId)
   {
     Dictionary<string, string> parameters = [];
     if (offendingId is not null)
@@ -113,10 +113,10 @@ public sealed class ResultEnvelope
       parameters[parameterName] = offendingId.Value.ToString();
     }
 
-    return UnprocessableWithParameters(messageKey, parameters);
+    return BuildUnprocessableProblemWithParameters(messageKey, parameters);
   }
 
-  private ProblemDescription UnprocessableWithParameters(string messageKey, IReadOnlyDictionary<string, string> parameters)
+  private ProblemDescription BuildUnprocessableProblemWithParameters(string messageKey, IReadOnlyDictionary<string, string> parameters)
   {
     return new()
            {

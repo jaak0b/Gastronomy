@@ -40,7 +40,7 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.StationOrdersChanged,
                       new StationOrdersChangedEvent(stationId),
-                      [_groupNames.Devices, _groupNames.Station(stationId), _groupNames.Admin],
+                      [_groupNames.Devices, _groupNames.BuildStationGroupName(stationId), _groupNames.Admin],
                       ct);
   }
 
@@ -48,7 +48,7 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.StationsChanged,
                       new StationsChangedEvent(),
-                      [_groupNames.Devices, _groupNames.Admin, _groupNames.Station(stationId)],
+                      [_groupNames.Devices, _groupNames.Admin, _groupNames.BuildStationGroupName(stationId)],
                       ct);
   }
 
@@ -85,7 +85,7 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.DeviceRevoked,
                       new DeviceRevokedEvent(deviceId),
-                      [_groupNames.Device(deviceId), _groupNames.Admin],
+                      [_groupNames.BuildDeviceGroupName(deviceId), _groupNames.Admin],
                       ct);
   }
 

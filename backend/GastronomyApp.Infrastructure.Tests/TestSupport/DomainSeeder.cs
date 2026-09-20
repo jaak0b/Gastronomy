@@ -98,7 +98,7 @@ public sealed class DomainSeeder
                                     {
                                       Id = seeded.FoodCategoryId,
                                       Name = "Speisen",
-                                      NormalizedName = _naming.Normalized("Speisen"),
+                                      NormalizedName = _naming.ToNormalizedName("Speisen"),
                                       ColourHex = "#C62828",
                                       SortOrder = 1,
                                       IsActive = true
@@ -108,7 +108,7 @@ public sealed class DomainSeeder
                                     {
                                       Id = seeded.DrinkCategoryId,
                                       Name = "Getraenke",
-                                      NormalizedName = _naming.Normalized("Getraenke"),
+                                      NormalizedName = _naming.ToNormalizedName("Getraenke"),
                                       ColourHex = "#1565C0",
                                       SortOrder = 2,
                                       IsActive = true

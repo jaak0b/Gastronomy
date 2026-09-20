@@ -24,17 +24,17 @@ public sealed class OrderNumberIndexTest
   }
 
   [Test]
-  public async Task Save_ASecondSliceWithTheStationOrderNumberOfTheFirstAtTheSameStation_IsRefused()
+  public async Task Save_ASecondStationOrderWithTheStationOrderNumberOfTheFirstAtTheSameStation_IsRefused()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     await using var first = fixture.CreateContext();
-    first.Orders.Add(BuildOrderWithSlice(seeded, 1, 4));
+    first.Orders.Add(BuildOrderWithStationOrder(seeded, 1, 4));
     await first.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var second = fixture.CreateContext();
-    second.Orders.Add(BuildOrderWithSlice(seeded, 2, 4));
+    second.Orders.Add(BuildOrderWithStationOrder(seeded, 2, 4));
 
     Assert.ThrowsAsync<DbUpdateException>(async () => await second.SaveChangesAsync(TestContext.CurrentContext.CancellationToken));
   }
@@ -54,7 +54,7 @@ public sealed class OrderNumberIndexTest
            };
   }
 
-  private Order BuildOrderWithSlice(SeededDomain seeded, int globalOrderNumber, int stationOrderNumber)
+  private Order BuildOrderWithStationOrder(SeededDomain seeded, int globalOrderNumber, int stationOrderNumber)
   {
     var order = BuildOrder(seeded, globalOrderNumber, globalOrderNumber);
 

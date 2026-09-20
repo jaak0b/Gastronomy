@@ -28,7 +28,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function nameOf(line: BasketLineView): string {
+function lineName(line: BasketLineView): string {
   return line.name.length > 0 ? line.name : t('catalog.lineNoLongerOnTheMenu')
 }
 
@@ -36,7 +36,7 @@ function readingOrder(
   left: CollapsedLine<BasketLineView>,
   right: CollapsedLine<BasketLineView>,
 ): number {
-  const byName = nameOf(left.line).localeCompare(nameOf(right.line))
+  const byName = lineName(left.line).localeCompare(lineName(right.line))
   if (byName !== 0) {
     return byName
   }
@@ -46,19 +46,19 @@ function readingOrder(
 const parts = computed<StationPart[]>(() =>
   stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map((delivery) => ({
     ...delivery,
-    entries: collapseLines(delivery.lines, nameOf, (line) => line.note).sort(readingOrder),
+    entries: collapseLines(delivery.lines, lineName, (line) => line.note).sort(readingOrder),
   })),
 )
 
-function countedNameOf(entry: CollapsedLine<BasketLineView>): string {
-  return countedName(entry.quantity, nameOf(entry.line), t)
+function countedNameFor(entry: CollapsedLine<BasketLineView>): string {
+  return countedName(entry.quantity, lineName(entry.line), t)
 }
 
-function deliveryTextOf(deliveryMode: DeliveryMode): string {
+function deliveryTextFor(deliveryMode: DeliveryMode): string {
   return t(deliveryModeKey(deliveryMode))
 }
 
-function priceOf(entry: CollapsedLine<BasketLineView>): string {
+function priceTextFor(entry: CollapsedLine<BasketLineView>): string {
   const cents = collapsedTotalCents(entry)
   return cents === null ? t('review.unknownPrice') : formatPrice(cents, props.language)
 }
@@ -105,10 +105,10 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
           </legend>
           <div class="d-flex align-start">
             <span class="line-name text-body-1 flex-grow-1">
-              {{ countedNameOf(entry) }}
+              {{ countedNameFor(entry) }}
             </span>
             <span class="price text-body-1">
-              {{ priceOf(entry) }}
+              {{ priceTextFor(entry) }}
             </span>
           </div>
           <div
@@ -136,7 +136,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
               size="large"
               :disabled="changesAreRefused"
             >
-              {{ deliveryTextOf('together') }}
+              {{ deliveryTextFor('together') }}
             </v-btn>
             <v-btn
               class="delivery-as-it-comes"
@@ -144,7 +144,7 @@ function choose(stationId: string, deliveryMode: DeliveryMode): void {
               size="large"
               :disabled="changesAreRefused"
             >
-              {{ deliveryTextOf('asItComes') }}
+              {{ deliveryTextFor('asItComes') }}
             </v-btn>
           </v-btn-toggle>
         </div>

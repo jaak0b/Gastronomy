@@ -33,7 +33,7 @@ public sealed class AdminItemCategoryTest
   [Test]
   public async Task GetItems_SeededCatalog_CarriesTheCategoryOfEveryArticle()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.GetAsync("/api/admin/items");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -97,7 +97,7 @@ public sealed class AdminItemCategoryTest
   [Test]
   public async Task PostItem_CategoryThatIsSwitchedOn_CreatesTheArticleInIt()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Essen");
+    var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
                                                               new
@@ -147,7 +147,7 @@ public sealed class AdminItemCategoryTest
   [Test]
   public async Task PostItemActivate_ArticleWhoseCategoryIsSwitchedOff_IsRefused()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
     await SwitchTheBeerOffAsync();
 
@@ -170,7 +170,7 @@ public sealed class AdminItemCategoryTest
   [Test]
   public async Task PutItem_SwitchedOffArticleInASwitchedOffCategory_IsSaved()
   {
-    var categoryId = await _context.CategoryIdOfAsync("Getraenke");
+    var categoryId = await _context.FindCategoryIdAsync("Getraenke");
     await SwitchTheBeerOffAsync();
     using var deactivatedCategory =
       await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);

@@ -22,11 +22,11 @@ function newSubmissionId(): string {
   bytes[8] = (bytes[8] & VARIANT_MASK) | VARIANT_BITS
   const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
   return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20),
+    hex.substring(0, 8),
+    hex.substring(8, 12),
+    hex.substring(12, 16),
+    hex.substring(16, 20),
+    hex.substring(20),
   ].join('-')
 }
 

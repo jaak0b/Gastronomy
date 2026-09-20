@@ -19,7 +19,7 @@ public sealed class SettingsStore : ISettingsStore
 {
   private const string SettingsFileName = "settings.json";
 
-  private readonly JsonSerializerOptions serializerOptions = new()
+  private readonly JsonSerializerOptions _serializerOptions = new()
                                                              {
                                                                PropertyNameCaseInsensitive = true,
                                                                WriteIndented = true
@@ -57,7 +57,7 @@ public sealed class SettingsStore : ISettingsStore
                             };
 
     File.WriteAllText(Path.Combine(_settingsDirectory, SettingsFileName),
-                      JsonSerializer.Serialize(stored, serializerOptions));
+                      JsonSerializer.Serialize(stored, _serializerOptions));
   }
 
   private StoredSettings ReadStoredSettings()
@@ -68,7 +68,7 @@ public sealed class SettingsStore : ISettingsStore
       return new();
     }
 
-    return JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(path), serializerOptions)
+    return JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(path), _serializerOptions)
            ?? new StoredSettings();
   }
 }

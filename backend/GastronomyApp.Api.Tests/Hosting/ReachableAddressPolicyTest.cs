@@ -19,7 +19,7 @@ public sealed class ReachableAddressPolicyTest
 
   private IReadOnlyList<string> AddressesFrom(params CandidateNetworkAddress[] candidates)
   {
-    return [.. _policy.InTheOrderAPhoneShouldTry(candidates).Select(found => found.IPAddress)];
+    return [.. _policy.OrderReachableAddresses(candidates).Select(found => found.IPAddress)];
   }
 
   private CandidateNetworkAddress[] TheLaptopAtTheDemo()

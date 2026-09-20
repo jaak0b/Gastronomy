@@ -179,7 +179,7 @@ public sealed class AdminStationHandler
                                                           station.SortOrder,
                                                           station.IsActive,
                                                           station.DeviceId is not null,
-                                                          LastSeenOf(lastSeenByDeviceId, station.DeviceId),
+                                                          ReadLastSeen(lastSeenByDeviceId, station.DeviceId),
                                                           station.EnrolmentInvitationId is not null
                                                           && outstandingInvitationIds.Contains(station.EnrolmentInvitationId.Value),
                                                           stationIdsAtTheFestival.Contains(station.Id)))
@@ -295,7 +295,7 @@ public sealed class AdminStationHandler
 
     var deviceId = station.DeviceId;
     station.IsActive = false;
-    await ConsumeOutstandingInvitationOfAsync(station, cancellationToken);
+    await ConsumeOutstandingInvitationAsync(station, cancellationToken);
     var somethingChanged = await SaveAsync(cancellationToken);
 
     if (deviceId is not null)
@@ -321,14 +321,14 @@ public sealed class AdminStationHandler
     }
   }
 
-  private DateTime? LastSeenOf(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
+  private DateTime? ReadLastSeen(Dictionary<Guid, DateTime> lastSeenByDeviceId, Guid? deviceId)
   {
     return deviceId is not null && lastSeenByDeviceId.TryGetValue(deviceId.Value, out var lastSeen)
              ? lastSeen
              : null;
   }
 
-  private async Task ConsumeOutstandingInvitationOfAsync(Station station, CancellationToken cancellationToken)
+  private async Task ConsumeOutstandingInvitationAsync(Station station, CancellationToken cancellationToken)
   {
     if (station.EnrolmentInvitationId is null)
     {
@@ -353,8 +353,8 @@ public sealed class AdminStationHandler
   {
     return await _dbContext.StationOrders
                            .AsNoTracking()
-                           .Where(slice => slice.FestivalId == festivalId && slice.StationId == stationId)
-                           .SelectMany(slice => slice.Items)
+                           .Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.StationId == stationId)
+                           .SelectMany(stationOrder => stationOrder.Items)
                            .CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
   }
 }

@@ -47,18 +47,18 @@ public sealed class OrderDeliveryModeTest
     var placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    var kitchenSlice = await database.StationOrders
-                                     .SingleAsync(slice => slice.StationId == _context.World.KitchenStationId);
-    var barSlice = await database.StationOrders
-                                 .SingleAsync(slice => slice.StationId == _context.World.BarStationId);
+    var kitchenStationOrder = await database.StationOrders
+                                            .SingleAsync(stationOrder => stationOrder.StationId == _context.World.KitchenStationId);
+    var barStationOrder = await database.StationOrders
+                                        .SingleAsync(stationOrder => stationOrder.StationId == _context.World.BarStationId);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-                      Assert.That(kitchenSlice.DeliveryMode, Is.EqualTo(DeliveryMode.Together));
-                      Assert.That(barSlice.DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
-                      Assert.That(DeliveryModeOf(placed, _context.World.BarStationId), Is.EqualTo("asItComes"));
-                      Assert.That(DeliveryModeOf(placed, _context.World.KitchenStationId), Is.EqualTo("together"));
+                      Assert.That(kitchenStationOrder.DeliveryMode, Is.EqualTo(DeliveryMode.Together));
+                      Assert.That(barStationOrder.DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
+                      Assert.That(ReadDeliveryMode(placed, _context.World.BarStationId), Is.EqualTo("asItComes"));
+                      Assert.That(ReadDeliveryMode(placed, _context.World.KitchenStationId), Is.EqualTo("together"));
                     });
   }
 
@@ -91,12 +91,12 @@ public sealed class OrderDeliveryModeTest
                     });
   }
 
-  private string DeliveryModeOf(JsonDocument placed, Guid stationId)
+  private string ReadDeliveryMode(JsonDocument placed, Guid stationId)
   {
     return placed.RootElement
                  .GetProperty("stationOrders")
                  .EnumerateArray()
-                 .Single(slice => slice.GetProperty("stationId").GetGuid() == stationId)
+                 .Single(stationOrder => stationOrder.GetProperty("stationId").GetGuid() == stationId)
                  .GetProperty("deliveryMode")
                  .GetString()!;
   }

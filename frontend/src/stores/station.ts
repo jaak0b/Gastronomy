@@ -4,8 +4,8 @@ import { request } from '../api/client'
 import type {
   StationFulfilledResponse,
   StationIdentity,
+  StationOrder,
   StationOrdersResponse,
-  StationSlice,
 } from '../core/apiTypes'
 import { retainOpenItemIds, stationFailureKey } from '../core/stationBoard'
 import { useConnectionStore } from './connection'
@@ -13,9 +13,9 @@ import { useSessionStore } from './session'
 
 export const useStationStore = defineStore('station', () => {
   const station = ref<StationIdentity | null>(null)
-  const orders = ref<StationSlice[]>([])
-  const asItComes = ref<StationSlice[]>([])
-  const fulfilled = ref<StationSlice[]>([])
+  const orders = ref<StationOrder[]>([])
+  const asItComes = ref<StationOrder[]>([])
+  const fulfilled = ref<StationOrder[]>([])
   const selectedItemIds = ref<string[]>([])
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
@@ -71,7 +71,7 @@ export const useStationStore = defineStore('station', () => {
       return
     }
     fulfilledLoadFailed.value = false
-    fulfilled.value = result.data.slices
+    fulfilled.value = result.data.stationOrders
     fulfilledHasLoaded.value = true
   }
 

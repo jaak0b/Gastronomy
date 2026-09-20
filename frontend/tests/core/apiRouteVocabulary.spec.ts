@@ -88,7 +88,7 @@ function pathsThePhoneCalls(): CalledPath[] {
       called.push({
         path: match[1],
         segments: segmentsOf(match[1]),
-        file: file.slice(SOURCE_ROOT.length + 1),
+        file: file.substring(SOURCE_ROOT.length + 1),
       })
     }
   }
@@ -108,7 +108,7 @@ function routesThePhoneCalls(): CalledRoute[] {
       if (enclosing === undefined) {
         continue
       }
-      const callText = source.slice(enclosing.start, enclosing.end)
+      const callText = source.substring(enclosing.start, enclosing.end)
       const methods = methodsIn(callText)
       if (methods.length > 1 || (methods.length === 0 && callText.includes('method'))) {
         continue
@@ -117,7 +117,7 @@ function routesThePhoneCalls(): CalledRoute[] {
         path: match[1],
         segments: segmentsOf(match[1]),
         method: methods[0] ?? 'GET',
-        file: file.slice(SOURCE_ROOT.length + 1),
+        file: file.substring(SOURCE_ROOT.length + 1),
       })
     }
   }
