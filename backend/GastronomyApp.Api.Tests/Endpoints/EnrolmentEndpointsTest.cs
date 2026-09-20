@@ -14,7 +14,7 @@ public sealed class EnrolmentEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactoryBuilder().StartAsync();
     await using var context = _factory.CreateContext();
     _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }
@@ -306,5 +306,3 @@ public sealed class EnrolmentEndpointsTest
                body.RootElement.GetProperty("expiresAtUtc").GetDateTime());
   }
 }
-
-public sealed record RedeemBody(string? Code, string? Name, string UserAgent, string? PreviousDeviceToken = null);

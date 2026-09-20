@@ -8,13 +8,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace GastronomyApp.Api.RateLimiting;
 
-public sealed record RateLimitPolicyNames
-{
-  public string PerDevice { get; } = "per-device";
-
-  public string PerAddress { get; } = "per-address";
-}
-
 public sealed class RateLimitPolicies
 {
   private const int DeviceRequestsPerMinute = 600;

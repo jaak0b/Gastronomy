@@ -8,28 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record OrderItemSettlementBody(int? PaidPriceCents, string? PaymentNotice = null);
-
-public sealed record OrderItemBody(
-  Guid CatalogItemId,
-  int UnitPriceCents,
-  string? Note,
-  Guid? StationId,
-  OrderItemSettlementBody? Settlement = null);
-
-public sealed record OrderBody(
-  Guid ClientOrderId,
-  string TableName,
-  string? Note,
-  IReadOnlyList<OrderItemBody> Items);
-
-public sealed record SettleLineBody(Guid OrderItemId, int? PaidPriceCents, string? PaymentNotice = null);
-
-public sealed record SettleItemsBody(IReadOnlyList<SettleLineBody> Lines);
-
 public sealed class OrderTestContext : IAsyncDisposable
 {
-  private OrderTestContext(ApiTestFactory factory, SeededWorld world, string deviceToken, Guid deviceId)
+  internal OrderTestContext(ApiTestFactory factory, SeededWorld world, string deviceToken, Guid deviceId)
   {
     Factory = factory;
     World = world;
@@ -136,28 +117,5 @@ public sealed class OrderTestContext : IAsyncDisposable
                                         CancellationToken.None);
 
     return issued.PlaintextToken;
-  }
-
-  public sealed class Builder
-  {
-    public async Task<OrderTestContext> StartAsync()
-    {
-      var factory = await new ApiTestFactory.Builder().StartAsync();
-      SeededWorld world;
-
-      await using (var context = factory.CreateContext())
-      {
-        world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
-      }
-
-      using var scope = factory.Services.CreateScope();
-      var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                              .IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId),
-                                          "de",
-                                          "NUnit",
-                                          CancellationToken.None);
-
-      return new(factory, world, issued.PlaintextToken, issued.Device.Id);
-    }
   }
 }

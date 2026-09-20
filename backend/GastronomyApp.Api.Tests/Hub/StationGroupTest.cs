@@ -11,7 +11,7 @@ public sealed class StationGroupTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
     _kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
   }
 

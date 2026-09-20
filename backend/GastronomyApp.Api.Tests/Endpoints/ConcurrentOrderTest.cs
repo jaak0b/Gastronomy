@@ -15,7 +15,7 @@ public sealed class ConcurrentOrderTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
 
     using var scope = _context.Factory.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();

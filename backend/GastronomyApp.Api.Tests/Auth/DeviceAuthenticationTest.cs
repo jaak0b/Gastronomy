@@ -13,7 +13,7 @@ public sealed class DeviceAuthenticationTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactoryBuilder().StartAsync();
     await using var context = _factory.CreateContext();
     _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
   }

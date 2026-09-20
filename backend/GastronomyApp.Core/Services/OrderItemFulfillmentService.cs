@@ -3,11 +3,6 @@ using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed record FulfillmentRequest
-{
-  public required IReadOnlyList<Guid> OrderItemIds { get; init; }
-}
-
 public sealed class OrderItemFulfillmentService
 {
   public Result<FulfillmentResult, FulfillmentFailure> Fulfill(FulfillmentRequest request,

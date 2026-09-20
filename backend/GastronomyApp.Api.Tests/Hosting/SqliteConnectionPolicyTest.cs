@@ -10,7 +10,7 @@ public sealed class SqliteConnectionPolicyTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactoryBuilder().StartAsync();
   }
 
   [TearDown]

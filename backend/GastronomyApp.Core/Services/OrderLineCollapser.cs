@@ -1,7 +1,5 @@
 ﻿namespace GastronomyApp.Core.Services;
 
-public sealed record CollapsedOrderLine<TLine>(TLine Line, int Quantity);
-
 public sealed class OrderLineCollapser
 {
   public IReadOnlyList<CollapsedOrderLine<TLine>> Collapse<TLine>(IReadOnlyList<TLine> lines,

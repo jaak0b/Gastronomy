@@ -4,16 +4,6 @@ using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public enum StationOrderVisibilityFailureReason
-{
-  NotAnAsItComesOrder
-}
-
-public sealed record StationOrderVisibilityFailure
-{
-  public required StationOrderVisibilityFailureReason Reason { get; init; }
-}
-
 public sealed class StationOrderVisibilityService
 {
   public Result<StationOrder, StationOrderVisibilityFailure> HideFromAsItComesQueue(StationOrder stationOrder)

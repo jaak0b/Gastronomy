@@ -10,10 +10,3 @@ public sealed record ApiError
 
   public string? Details { get; init; }
 }
-
-public sealed record ProblemDescription
-{
-  public required int StatusCode { get; init; }
-
-  public required ApiError Error { get; init; }
-}

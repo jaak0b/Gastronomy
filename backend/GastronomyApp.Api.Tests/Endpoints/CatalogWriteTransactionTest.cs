@@ -17,7 +17,7 @@ public sealed class CatalogWriteTransactionTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
     _scope = _context.Factory.Services.CreateScope();
     _dbContext = _scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     _proxy = A.Fake<IClientProxy>();

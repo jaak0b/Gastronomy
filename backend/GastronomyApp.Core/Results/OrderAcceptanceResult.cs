@@ -8,30 +8,3 @@ public sealed record OrderAcceptanceResult
 
   public required bool WasAlreadyAccepted { get; init; }
 }
-
-public sealed record OrderValidationFailure
-{
-  public required OrderValidationFailureReason Reason { get; init; }
-
-  public Guid? OffendingCatalogItemId { get; init; }
-
-  public string? OffendingCatalogItemName { get; init; }
-
-  public SettlementFailureReason? SettlementFailureReason { get; init; }
-}
-
-public enum OrderValidationFailureReason
-{
-  NoItems,
-  TableNameMissing,
-  UnknownCatalogItemId,
-  StationRequired,
-  StationNotAssignedToItem,
-  ItemHasNoStation,
-  PriceOutOfRange,
-  NoRunningFestival,
-  OrderNumberCouldNotBeAllocated,
-  SettlementCannotBeProcessed,
-  ItemNotAvailable,
-  ChosenStationNoLongerPreparesTheItem
-}

@@ -5,15 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record StationItemSelectionBody(IReadOnlyList<Guid> OrderItemIds);
-
 [TestFixture]
 public sealed class StationQueueEndpointsTest
 {
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
     _kitchenToken = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
     _barToken = await _context.IssueStationTokenAsync(_context.World.BarStationId);
   }

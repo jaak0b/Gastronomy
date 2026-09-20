@@ -4,44 +4,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
 
-public sealed record HubGroupNames
-{
-  public string Devices { get; } = "devices";
-
-  public string Stations { get; } = "stations";
-
-  public string Admin { get; } = "admin";
-
-  public string BuildDeviceGroupName(Guid deviceId)
-  {
-    return $"device:{deviceId}";
-  }
-
-  public string BuildStationGroupName(Guid stationId)
-  {
-    return $"station:{stationId}";
-  }
-}
-
-public sealed record HubEventNames
-{
-  public string OrderStatusChanged { get; } = "OrderStatusChanged";
-
-  public string OrderItemsSettled { get; } = "OrderItemsSettled";
-
-  public string StationOrdersChanged { get; } = "StationOrdersChanged";
-
-  public string StationsChanged { get; } = "StationsChanged";
-
-  public string FestivalChanged { get; } = "FestivalChanged";
-
-  public string CatalogChanged { get; } = "CatalogChanged";
-
-  public string EnrolmentCompleted { get; } = "EnrolmentCompleted";
-
-  public string DeviceRevoked { get; } = "DeviceRevoked";
-}
-
 public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 {
   private readonly CallerIdentity _callerIdentity;

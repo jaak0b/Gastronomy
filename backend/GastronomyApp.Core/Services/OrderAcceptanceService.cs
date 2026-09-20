@@ -5,48 +5,6 @@ using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed record OrderAcceptanceItemRequest
-{
-  public required Guid CatalogItemId { get; init; }
-
-  public required int UnitPriceCents { get; init; }
-
-  public string? Note { get; init; }
-
-  public Guid? StationId { get; init; }
-
-  public OrderSettlementLineTerms? Settlement { get; init; }
-}
-
-public sealed record StationDeliveryModeRequest
-{
-  public required Guid StationId { get; init; }
-
-  public required DeliveryMode DeliveryMode { get; init; }
-}
-
-public sealed record OrderSettlementLineTerms
-{
-  public required int? PaidPriceCents { get; init; }
-
-  public string? PaymentNotice { get; init; }
-}
-
-public sealed record OrderAcceptanceRequest
-{
-  public required Guid ClientOrderId { get; init; }
-
-  public required Guid StaffMemberId { get; init; }
-
-  public required string TableName { get; init; }
-
-  public string? Note { get; init; }
-
-  public required IReadOnlyList<OrderAcceptanceItemRequest> Items { get; init; }
-
-  public IReadOnlyList<StationDeliveryModeRequest> DeliveryModes { get; init; } = [];
-}
-
 public sealed class OrderAcceptanceService
 {
   private readonly ICatalogItemRepository _catalogItemRepository;

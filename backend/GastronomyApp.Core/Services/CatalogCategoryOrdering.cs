@@ -2,8 +2,6 @@ using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Core.Services;
 
-public sealed record CatalogCategoryPosition(Guid CategoryId, int SortOrder);
-
 public sealed class CatalogCategoryOrdering
 {
   private const int FirstSortOrder = 1;

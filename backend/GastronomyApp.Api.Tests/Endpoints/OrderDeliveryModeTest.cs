@@ -5,22 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
 
-public sealed record DeliveryModeBody(Guid StationId, string DeliveryMode);
-
-public sealed record OrderWithDeliveryModesBody(
-  Guid ClientOrderId,
-  string TableName,
-  string? Note,
-  IReadOnlyList<OrderItemBody> Items,
-  IReadOnlyList<DeliveryModeBody> DeliveryModes);
-
 [TestFixture]
 public sealed class OrderDeliveryModeTest
 {
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
   }
 
   [TearDown]

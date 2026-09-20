@@ -1,7 +1,5 @@
 namespace GastronomyApp.Core.Services;
 
-public sealed record QueuedWork(double? ProductionMinutes, bool IsQueueIndependent);
-
 public sealed class ProductionEstimateCalculator
 {
   public double SumQueuedMinutes(IEnumerable<QueuedWork> work)

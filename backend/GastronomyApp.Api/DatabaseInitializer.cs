@@ -1,0 +1,15 @@
+using GastronomyApp.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace GastronomyApp.Api;
+
+public sealed class DatabaseInitializer
+{
+  public void Initialize(IServiceProvider services)
+  {
+    using var scope = services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+    context.Database.Migrate();
+  }
+}

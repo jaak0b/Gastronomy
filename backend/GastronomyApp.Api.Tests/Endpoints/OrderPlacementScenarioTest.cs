@@ -11,20 +11,16 @@ public sealed class OrderPlacementScenarioTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactory.Builder().StartAsync();
-
-    await using var context = _factory.CreateContext();
-    _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
+    _context = await new OrderTestContextBuilder().StartAsync();
   }
 
   [TearDown]
   public async Task TearDown()
   {
-    await _factory.DisposeAsync();
+    await _context.DisposeAsync();
   }
 
-  private ApiTestFactory _factory = null!;
-  private SeededWorld _world = null!;
+  private OrderTestContext _context = null!;
 
   [Test]
   public async Task OrderPlacementFlow_EnrolFetchTheCatalogAndSend_SplitsTheOrderPerStation()
@@ -50,26 +46,26 @@ public sealed class OrderPlacementScenarioTest
   public async Task OrderPlacementFlow_TwoStationsWithMixedDeliveryModes_ReachesTheTabletsAndTheOpenItemsList()
   {
     var deviceToken = await EnrolAPhoneAsync();
-    var kitchenToken = await EnrolAStationTabletAsync(_world.KitchenStationId);
+    var kitchenToken = await EnrolAStationTabletAsync(_context.World.KitchenStationId);
 
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
                                            "Tisch 3",
                                            "Ohne Senf",
                                            [
-                                             new(_world.BratwurstItemId, 350, null, null),
-                                             new(_world.BratwurstItemId, 350, null, null),
-                                             new(_world.BeerItemId, 300, null, null)
+                                             new(_context.World.BratwurstItemId, 350, null, null),
+                                             new(_context.World.BratwurstItemId, 350, null, null),
+                                             new(_context.World.BeerItemId, 300, null, null)
                                            ],
-                                           [new(_world.BarStationId, "asItComes")]);
+                                           [new(_context.World.BarStationId, "asItComes")]);
 
-    using (var placed = await SendAsync(HttpMethod.Post, "/api/orders", deviceToken, order))
+    using (var placed = await _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/orders", order))
     {
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
     IReadOnlyList<Guid> kitchenItemIds;
 
-    using (var queue = await SendAsync(HttpMethod.Get, "/api/station/orders", kitchenToken))
+    using (var queue = await _context.SendAsAsync(kitchenToken, HttpMethod.Get, "/api/station/orders"))
     {
       Assert.That(queue.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -92,15 +88,15 @@ public sealed class OrderPlacementScenarioTest
                       });
     }
 
-    using (var fulfilled = await SendAsync(HttpMethod.Post,
-                                           "/api/station/items/fulfill",
-                                           kitchenToken,
-                                           new StationItemSelectionBody(kitchenItemIds)))
+    using (var fulfilled = await _context.SendAsAsync(kitchenToken,
+                                                       HttpMethod.Post,
+                                                       "/api/station/items/fulfill",
+                                                       new StationItemSelectionBody(kitchenItemIds)))
     {
       Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var openItems = await SendAsync(HttpMethod.Get, "/api/open-items", deviceToken);
+    using var openItems = await _context.SendAsAsync(deviceToken, HttpMethod.Get, "/api/open-items");
     var openBody = JsonDocument.Parse(await openItems.Content.ReadAsStringAsync());
     var table = openBody.RootElement.GetProperty("tables")[0];
 
@@ -116,7 +112,7 @@ public sealed class OrderPlacementScenarioTest
   {
     string qrCodeValue;
 
-    using (var invitation = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
                                                                  new { stationId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
@@ -125,7 +121,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                               new RedeemBody(qrCodeValue, null, "NUnit tablet"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -139,8 +135,8 @@ public sealed class OrderPlacementScenarioTest
   {
     string qrCodeValue;
 
-    using (var invitation = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                                 new { staffMemberId = _world.StaffMemberId }))
+    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
+                                                                 new { staffMemberId = _context.World.StaffMemberId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
       var body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());
@@ -148,7 +144,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
                                                               new RedeemBody(qrCodeValue, null, "NUnit"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -160,7 +156,7 @@ public sealed class OrderPlacementScenarioTest
 
   private async Task<CatalogSelection> FetchCatalogAsync(string deviceToken)
   {
-    using var response = await SendAsync(HttpMethod.Get, "/api/catalog", deviceToken);
+    using var response = await _context.SendAsAsync(deviceToken, HttpMethod.Get, "/api/catalog");
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -168,9 +164,9 @@ public sealed class OrderPlacementScenarioTest
     var items = body.RootElement.GetProperty("items");
 
     var bratwurst = items.EnumerateArray()
-                         .First(item => item.GetProperty("id").GetGuid() == _world.BratwurstItemId);
+                         .First(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
     var beer = items.EnumerateArray()
-                    .First(item => item.GetProperty("id").GetGuid() == _world.BeerItemId);
+                    .First(item => item.GetProperty("id").GetGuid() == _context.World.BeerItemId);
 
     Assert.Multiple(() =>
                     {
@@ -178,9 +174,9 @@ public sealed class OrderPlacementScenarioTest
                       Assert.That(beer.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
                     });
 
-    return new(_world.BratwurstItemId,
+    return new(_context.World.BratwurstItemId,
                bratwurst.GetProperty("priceCents").GetInt32(),
-               _world.BeerItemId,
+               _context.World.BeerItemId,
                beer.GetProperty("priceCents").GetInt32());
   }
 
@@ -195,7 +191,7 @@ public sealed class OrderPlacementScenarioTest
                            new(selection.BeerItemId, selection.BeerPriceCents, null, null)
                          ]);
 
-    using var response = await SendAsync(HttpMethod.Post, "/api/orders", deviceToken, body);
+    using var response = await _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/orders", body);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -208,33 +204,4 @@ public sealed class OrderPlacementScenarioTest
                stationOrders.GetArrayLength(),
                [.. stationOrders.EnumerateArray().Select(stationOrder => stationOrder.GetProperty("stationOrderNumber").GetInt32())]);
   }
-
-  private async Task<HttpResponseMessage> SendAsync(HttpMethod method,
-                                                    string path,
-                                                    string deviceToken,
-                                                    object? body = null)
-  {
-    using HttpRequestMessage request = new(method, path);
-    request.Headers.Authorization = new("Bearer", deviceToken);
-
-    if (body is not null)
-    {
-      request.Content = JsonContent.Create(body, body.GetType());
-    }
-
-    return await _factory.Client.SendAsync(request);
-  }
 }
-
-public sealed record CatalogSelection(
-  Guid BratwurstItemId,
-  int BratwurstPriceCents,
-  Guid BeerItemId,
-  int BeerPriceCents);
-
-public sealed record PlacedOrder(
-  Guid OrderId,
-  int GlobalOrderNumber,
-  int TotalCents,
-  int StationOrderCount,
-  IReadOnlyList<int> SequenceNumbers);

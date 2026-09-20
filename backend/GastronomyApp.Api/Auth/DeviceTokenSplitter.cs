@@ -1,7 +1,5 @@
 namespace GastronomyApp.Api.Auth;
 
-public sealed record DeviceTokenParts(string TokenLookupId, string Secret);
-
 public sealed class DeviceTokenSplitter
 {
   private const char LookupIdSeparator = '.';

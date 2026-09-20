@@ -10,7 +10,7 @@ public sealed class EstimateEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
 
     await using var database = _context.Factory.CreateContext();
     var bratwurst = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BratwurstItemId);

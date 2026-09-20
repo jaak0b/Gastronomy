@@ -2,8 +2,6 @@
 
 namespace GastronomyApp.Infrastructure.Security;
 
-public sealed record HashedSecret(byte[] Hash, byte[] Salt, int Iterations, string Algorithm);
-
 public sealed class Pbkdf2SecretHasher
 {
   private const int DefaultIterations = 210_000;

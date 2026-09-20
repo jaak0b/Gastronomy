@@ -12,7 +12,7 @@ public sealed class OrderEndpointsTest
   [SetUp]
   public async Task SetUp()
   {
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
   }
 
   [TearDown]

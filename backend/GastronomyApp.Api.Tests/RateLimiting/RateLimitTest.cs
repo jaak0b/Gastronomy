@@ -15,7 +15,7 @@ public sealed class RateLimitTest
   [SetUp]
   public async Task SetUp()
   {
-    _factory = await new ApiTestFactory.Builder().StartAsync();
+    _factory = await new ApiTestFactoryBuilder().StartAsync();
 
     SeededWorld world;
     await using (var context = _factory.CreateContext())

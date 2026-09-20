@@ -3,12 +3,6 @@ using GastronomyApp.Core.Enums;
 
 namespace GastronomyApp.Api.Auth;
 
-public sealed record DeviceCaller(DeviceOwnerKind OwnerKind, Guid OwnerId, Guid DeviceId, string Language);
-
-public sealed record StaffDeviceCaller(Guid StaffMemberId, Guid DeviceId, string Language);
-
-public sealed record StationDeviceCaller(Guid StationId, Guid DeviceId, string Language);
-
 public sealed class CallerIdentity
 {
   private readonly DeviceClaimTypes _claimTypes = new();

@@ -1,41 +1,6 @@
-﻿using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Auth;
-
-public sealed class LocalAddressSet
-{
-  public bool Contains(IPAddress? address)
-  {
-    if (address is null)
-    {
-      return false;
-    }
-
-    if (IPAddress.IsLoopback(address))
-    {
-      return true;
-    }
-
-    var candidate = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
-
-    foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
-    {
-      foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
-      {
-        if (unicast.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6
-            && unicast.Address.Equals(candidate))
-        {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-}
 
 public sealed class LoopbackAdminAuthorizationMiddleware : IMiddleware
 {

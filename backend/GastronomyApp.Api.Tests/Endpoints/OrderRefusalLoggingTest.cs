@@ -12,7 +12,7 @@ public sealed class OrderRefusalLoggingTest
   public async Task SetUp()
   {
     _log = new();
-    _context = await new OrderTestContext.Builder().StartAsync();
+    _context = await new OrderTestContextBuilder().StartAsync();
   }
 
   [TearDown]
