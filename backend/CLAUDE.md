@@ -51,21 +51,17 @@ reverse proxy.
    short-lived: the first scan consumes the code, so a photographed QR cannot enrol a second device.
    Revoking a device invalidates its token immediately.
 
-7. **While the product has not been installed anywhere, there is exactly one migration and it is
-   called `InitialCreate`.** A schema change is made by editing the model and recreating that
-   migration: delete it and its designer file, delete the local database, regenerate. That is the
-   wanted behaviour, not a favour anybody has to ask for. **Adding a second migration is forbidden**
-   while this holds. A chain of migrations that has only ever run on the owner's own machine
-   protects nothing and costs time, energy and tokens on every change.
-
-   **This flips the day the product is installed on a fire department's laptop, and the owner says
-   when that day is.** From that first install the shipped migrations are history: editing, renaming,
-   reordering, squashing or deleting an existing migration or its designer file desynchronizes the
-   migrations history from the schema and bricks the app on startup. Migrations become append-only
-   and forward-only, and a wrong migration is corrected by a new corrective migration, never by
-   touching the old one.
-
-   The auto-managed model snapshot is the single file EF may regenerate.
+7. **Every schema change is a new migration, and a migration that has run anywhere is never
+   touched again.** The product has been installed since 2026-09-20 (release from commit 49fd605),
+   so the migrations under `backend/GastronomyApp.Infrastructure/Migrations/` are history: editing,
+   renaming, reordering, squashing, deleting or recreating an existing migration or its designer
+   file is **forbidden**, `InitialCreate` included. A schema change is made by editing the model and
+   adding a migration with `dotnet ef migrations add <Name> --project backend/GastronomyApp.Infrastructure`,
+   forward only and append only; a wrong migration is corrected by a new one. Read the generated
+   `Up` before handing back, because SQLite rebuilds a table for most alterations, and prove the
+   change with the released-database upgrade test in `GastronomyApp.Infrastructure.Tests`: a database
+   built by the released schema, rows in it, `MigrateAsync`, rows intact. The auto-managed model
+   snapshot is the single file EF may regenerate.
 
 8. **No positional tuple access.** Never read a tuple by element position (`.Item1`) and never
    destructure one positionally. Every multi-value return is a named `record` or `record struct` read
