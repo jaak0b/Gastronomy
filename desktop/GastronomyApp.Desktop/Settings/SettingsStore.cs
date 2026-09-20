@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Settings;
 

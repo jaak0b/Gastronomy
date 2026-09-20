@@ -184,14 +184,18 @@ above.
   the configuration that compiles them, `Announcers` for the classes that tell the devices, `Responders`
   for the classes that write a response body, `Contracts` for wire records only, `Auth` for
   authentication with `Auth/Filters` for the endpoint filters and `Auth/Callers` for the caller records,
-  and `Hub`, `Hosting`, `ErrorHandling`, `Options` and `RateLimiting` for what their names say. In
+  `Names` for the classes that hold nothing but the constant names of hub events, hub groups, rate limit
+  policies, authentication schemes and device claims, `Values` for the records the Api passes around
+  inside itself rather than over the wire, and `Hub`, `Hosting`, `ErrorHandling`, `Options` and
+  `RateLimiting` for what their names say. In
   `GastronomyApp.Infrastructure`:
   `Persistence` for the context, the connection factory and the transaction runner, `Repositories`,
-  `Configurations`, `Security` and `ErrorHandling`. `Projections` holds the Mapster `IRegister`
+  `Configurations`, `Security`, `ErrorHandling` and `Values` for the records its own classes hand each
+  other. `Projections` holds the Mapster `IRegister`
   classes that declare how entities and query rows become read models, and `QueryRows` holds the
   intermediate records a query materialises on the way there, so `Repositories` keeps to repositories
   alone. In `GastronomyApp.Desktop`: one folder per
   concern (`Hosting`, `Updates`, `Settings`, `Setup`, `Platform`, `Localization`, `Logging`,
-  `ViewModels`, `Views`), with `Enums` for its enums and `Events` for its event argument classes, and
-  never a `Services` catch-all. In a test project a support type that is not
+  `ViewModels`, `Views`), with `Enums` for its enums, `Events` for its event argument classes and `Values` for
+  its records, and never a `Services` catch-all. In a test project a support type that is not
   a fixture lives under `TestSupport` and the fixture folders mirror the production folders.

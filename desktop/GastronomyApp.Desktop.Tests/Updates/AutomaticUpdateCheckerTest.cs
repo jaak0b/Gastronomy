@@ -2,6 +2,7 @@ using FakeItEasy;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Values;
 using Serilog.Events;
 
 namespace GastronomyApp.Desktop.Tests.Updates;

@@ -13,6 +13,7 @@ using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Values;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
 

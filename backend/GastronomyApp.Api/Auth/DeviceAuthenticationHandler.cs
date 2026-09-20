@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
+using GastronomyApp.Api.Names;
 using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;

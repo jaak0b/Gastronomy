@@ -1,3 +1,5 @@
+using GastronomyApp.Api.Values;
+
 namespace GastronomyApp.Api.Auth;
 
 public sealed class DeviceTokenSplitter

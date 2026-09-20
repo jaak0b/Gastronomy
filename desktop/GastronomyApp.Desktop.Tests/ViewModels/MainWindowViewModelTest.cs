@@ -7,6 +7,7 @@ using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Values;
 using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;

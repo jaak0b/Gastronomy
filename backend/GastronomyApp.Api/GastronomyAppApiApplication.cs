@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api;
 

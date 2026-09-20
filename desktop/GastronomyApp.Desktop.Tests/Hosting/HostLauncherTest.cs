@@ -2,6 +2,7 @@ using FakeItEasy;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Setup;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Tests.Hosting;
 

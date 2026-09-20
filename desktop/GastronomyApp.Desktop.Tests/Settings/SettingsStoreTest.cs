@@ -1,4 +1,5 @@
 using GastronomyApp.Desktop.Settings;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Tests.Settings;
 

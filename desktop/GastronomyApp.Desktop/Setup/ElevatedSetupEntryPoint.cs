@@ -1,4 +1,5 @@
 using GastronomyApp.Desktop.Logging;
+using GastronomyApp.Desktop.Values;
 using Serilog;
 
 namespace GastronomyApp.Desktop.Setup;

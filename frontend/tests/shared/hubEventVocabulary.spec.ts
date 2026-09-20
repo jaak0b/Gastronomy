@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { sourceFilesUnder } from '../support/sourceFiles'
 
-const BACKEND_HUB = `${process.cwd()}/../backend/GastronomyApp.Api/Hub/HubEventNames.cs`
+const BACKEND_HUB = `${process.cwd()}/../backend/GastronomyApp.Api/Names/HubEventNames.cs`
 const SOURCE_ROOT = `${process.cwd()}/src`
 
 function eventsTheLaptopCanPush(): string[] {

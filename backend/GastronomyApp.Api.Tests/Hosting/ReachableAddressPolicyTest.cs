@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.NetworkInformation;
 using GastronomyApp.Api.Hosting;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api.Tests.Hosting;
 

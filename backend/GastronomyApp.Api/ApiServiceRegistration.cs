@@ -9,6 +9,7 @@ using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Mapping;
+using GastronomyApp.Api.Names;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Responders;
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api;
 

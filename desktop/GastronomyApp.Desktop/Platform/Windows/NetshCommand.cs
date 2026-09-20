@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Platform.Windows;
 

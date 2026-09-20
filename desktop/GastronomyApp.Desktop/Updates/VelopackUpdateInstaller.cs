@@ -1,3 +1,4 @@
+using GastronomyApp.Desktop.Values;
 using Serilog;
 using Velopack;
 using Velopack.Sources;

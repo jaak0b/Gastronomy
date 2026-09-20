@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.AspNetCore.Http;

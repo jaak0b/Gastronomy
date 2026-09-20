@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Api.Hosting;
+﻿using GastronomyApp.Api.Values;
+
+namespace GastronomyApp.Api.Hosting;
 
 public sealed class OutstandingInvitationCache
 {

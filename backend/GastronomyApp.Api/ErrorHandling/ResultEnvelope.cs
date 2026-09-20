@@ -1,3 +1,4 @@
+using GastronomyApp.Api.Contracts;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;

@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using GastronomyApp.Api;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Setup;
+using GastronomyApp.Desktop.Values;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Serilog;

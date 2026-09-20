@@ -10,6 +10,7 @@ using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Values;
 using Serilog;
 
 namespace GastronomyApp.Desktop.ViewModels;
