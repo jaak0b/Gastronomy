@@ -21,6 +21,7 @@ function stationOrder(overrides: Partial<StationOrder> = {}): StationOrder {
     globalOrderNumber: 40,
     stationOrderNumber: 12,
     tableName: 'Tisch 3',
+    staffMemberName: 'Anna',
     deliveryMode: 'together',
     createdAtUtc: '2026-09-05T18:00:00Z',
     isHiddenFromAsItComesQueue: false,

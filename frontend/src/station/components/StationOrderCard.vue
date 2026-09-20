@@ -24,9 +24,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { deliveryText, deliveryModeColour, orderReference, doneCounter } = useStationOrderHeader(
-  () => props.stationOrder,
-)
+const { deliveryText, deliveryModeColour, orderReference, takenByText, doneCounter } =
+  useStationOrderHeader(() => props.stationOrder)
 
 const isGrouped = ref(false)
 const openItems = computed(() => openItemsIn(props.stationOrder))
@@ -54,6 +53,9 @@ function isSelected(orderItemId: string): boolean {
       </span>
       <span class="station-order-heading text-body-2 text-medium-emphasis">
         {{ orderReference }}
+      </span>
+      <span class="taken-by text-body-2 text-medium-emphasis">
+        {{ takenByText }}
       </span>
       <span class="done-counter text-body-2 ms-auto">{{ doneCounter }}</span>
     </div>

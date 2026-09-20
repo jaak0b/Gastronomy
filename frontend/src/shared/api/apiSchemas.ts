@@ -130,6 +130,7 @@ const stationOrderSchema: z.ZodType<StationOrder> = z.object({
   globalOrderNumber: z.number(),
   stationOrderNumber: z.number(),
   tableName: z.string(),
+  staffMemberName: z.string(),
   deliveryMode: deliveryModeSchema,
   createdAtUtc: z.string(),
   isHiddenFromAsItComesQueue: z.boolean(),

@@ -157,6 +157,7 @@ public sealed class StationQueueServiceTest
              GlobalOrderNumber = stationOrderNumber,
              StationOrderNumber = stationOrderNumber,
              TableName = "Tisch 3",
+             StaffMemberName = "Anna",
              DeliveryMode = deliveryMode,
              CreatedAtUtc = _now.AddMinutes(-5),
              IsHiddenFromAsItComesQueue = isHidden,

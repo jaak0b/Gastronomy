@@ -54,6 +54,7 @@ public sealed class StationOrderRepositoryTest
                     {
                       Assert.That(queue, Has.Count.EqualTo(1));
                       Assert.That(queue[0].TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(queue[0].StaffMemberName, Is.EqualTo("Anna"));
                       Assert.That(queue[0].GlobalOrderNumber, Is.EqualTo(1));
                       Assert.That(queue[0].DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
                       Assert.That(queue[0].ItemCount, Is.EqualTo(2));

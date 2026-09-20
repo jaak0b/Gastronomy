@@ -45,6 +45,7 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(orders[0].GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                      Assert.That(orders[0].GetProperty("staffMemberName").GetString(), Is.EqualTo("Anna"));
                       Assert.That(orders[0].GetProperty("deliveryMode").GetString(), Is.EqualTo("together"));
                       Assert.That(orders[0].GetProperty("itemCount").GetInt32(), Is.EqualTo(2));
                       Assert.That(orders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.Zero);
@@ -327,6 +328,7 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(stationOrders.GetArrayLength(), Is.EqualTo(2));
                       Assert.That(stationOrders[0].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 3"));
+                      Assert.That(stationOrders[0].GetProperty("staffMemberName").GetString(), Is.EqualTo("Anna"));
                       Assert.That(stationOrders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.EqualTo(1));
                       Assert.That(stationOrders[0].GetProperty("items").GetArrayLength(), Is.EqualTo(2));
                       Assert.That(stationOrders[1].GetProperty("tableName").GetString(), Is.EqualTo("Tisch 4"));

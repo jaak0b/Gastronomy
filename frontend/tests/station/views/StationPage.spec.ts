@@ -14,6 +14,7 @@ const TOGETHER_STATION_ORDER = {
   globalOrderNumber: 137,
   stationOrderNumber: 12,
   tableName: '3',
+  staffMemberName: 'Anna',
   deliveryMode: 'together',
   createdAtUtc: '2026-09-05T18:00:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -36,6 +37,7 @@ const AS_IT_COMES_STATION_ORDER = {
   globalOrderNumber: 138,
   stationOrderNumber: 14,
   tableName: '7',
+  staffMemberName: 'Ben',
   deliveryMode: 'asItComes',
   createdAtUtc: '2026-09-05T18:05:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -52,6 +54,7 @@ const NOTED_STATION_ORDER = {
   globalOrderNumber: 140,
   stationOrderNumber: 16,
   tableName: '5',
+  staffMemberName: 'Clara',
   deliveryMode: 'together',
   createdAtUtc: '2026-09-05T18:07:00Z',
   isHiddenFromAsItComesQueue: false,
@@ -232,6 +235,15 @@ describe('the screen at a station', () => {
     expect(page.findAll('.orders-column .station-order-heading')[0].text()).toBe(
       'Bestellung 137 · Nr. 12',
     )
+  })
+
+  it('shows when each order was taken and who took it', async () => {
+    const page = await mountPage()
+
+    expect(page.findAll('.orders-column .taken-by').map((entry) => entry.text())).toEqual([
+      '05.09.2026, 20:00 · Anna',
+      '05.09.2026, 20:05 · Ben',
+    ])
   })
 
   it('shows the table prominently, because that is what goes on the tray', async () => {
@@ -594,6 +606,15 @@ describe('the done view', () => {
     expect(page.get('.done-heading').text()).toBe('Erledigte Bestellungen')
     expect(page.findAll('.station-fulfilled')).toHaveLength(1)
     expect(page.get('.back-to-orders').text()).toBe('Zurück zu den Bestellungen')
+  })
+
+  it('shows on the done card when the order was taken and who took it', async () => {
+    stubTheLaptop({ fulfilled: () => ok({ stationOrders: [DONE_STATION_ORDER] }) })
+    const page = await mountPage()
+    await page.get('.show-done').trigger('click')
+    await flushPromises()
+
+    expect(page.get('.station-fulfilled .taken-by').text()).toBe('05.09.2026, 20:00 · Anna')
   })
 
   it('shows every item and ticks the done ones', async () => {

@@ -106,11 +106,20 @@ public sealed class StationOrderRepository : IStationOrderRepository
     return stationOrders.Join(_dbContext.Orders.AsNoTracking(),
                               stationOrder => stationOrder.OrderId,
                               order => order.Id,
-                              (stationOrder, order) => new QueuedStationOrderRow
+                              (stationOrder, order) => new
                                                        {
                                                          StationOrder = stationOrder,
                                                          Order = order
                                                        })
+                        .Join(_dbContext.StaffMembers.AsNoTracking(),
+                              row => row.Order.StaffMemberId,
+                              staffMember => staffMember.Id,
+                              (row, staffMember) => new QueuedStationOrderRow
+                                                    {
+                                                      StationOrder = row.StationOrder,
+                                                      Order = row.Order,
+                                                      StaffMemberName = staffMember.Name
+                                                    })
                         .Where(row => row.Order.FestivalId == festivalId)
                         .OrderBy(row => row.StationOrder.StationOrderNumber)
                         .ProjectToType<QueuedStationOrder>(_mapperConfig);

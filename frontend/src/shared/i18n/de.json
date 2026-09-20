@@ -301,6 +301,7 @@
     "itemNotAtThisStation": "Laden Sie die Seite neu. Diese Position gehört nicht zu dieser Ausgabestelle.",
     "noItemsSelected": "Tippen Sie eine Position an.",
     "order": "Bestellung {order} · Nr. {sequence}",
+    "takenBy": "{time} · {name}",
     "note": "Hinweis: {note}",
     "doneCounter": "{fulfilled} / {total} erledigt",
     "done": "Erledigen",

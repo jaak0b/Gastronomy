@@ -274,6 +274,7 @@ export interface StationOrder {
   globalOrderNumber: number
   stationOrderNumber: number
   tableName: string
+  staffMemberName: string
   deliveryMode: DeliveryMode
   createdAtUtc: string
   isHiddenFromAsItComesQueue: boolean

@@ -301,6 +301,7 @@
     "itemNotAtThisStation": "Reload the page. This item does not belong to this station.",
     "noItemsSelected": "Tap an item.",
     "order": "Order {order} · No. {sequence}",
+    "takenBy": "{time} · {name}",
     "note": "Note: {note}",
     "doneCounter": "{fulfilled} / {total} done",
     "done": "Done",
