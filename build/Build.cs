@@ -112,6 +112,7 @@ internal class Build : NukeBuild
             + $" --packVersion {ReleaseVersion()}"
             + $" --packDir \"{DesktopPublishDirectory}\""
             + $" --mainExe GastronomyApp.Desktop.exe"
+            + $" --instLocation PerMachine"
             + $" --icon \"{AppIcon}\""
             + $" --releaseNotes \"{notesFile}\""
             + $" --outputDir \"{VelopackDirectory}\"");

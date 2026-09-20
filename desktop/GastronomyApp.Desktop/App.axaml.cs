@@ -92,7 +92,7 @@ public class App : Application
 
   private void CreateTrayIcon()
   {
-    if (_mainWindowViewModel is null)
+    if (_mainWindowViewModel is null || _mainWindow is null)
       return;
 
     NativeMenu menu = new();
@@ -110,6 +110,7 @@ public class App : Application
     _trayIcon = new()
                 {
                   ToolTipText = _mainWindowViewModel.MinimisedText,
+                  Icon = _mainWindow.Icon,
                   IsVisible = true,
                   Menu = menu
                 };
