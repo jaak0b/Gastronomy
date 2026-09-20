@@ -118,6 +118,64 @@ public sealed class QuitConfirmViewModelTest
   }
 
   [Test]
+  public async Task Cancel_AfterTheQuitWasConfirmed_CannotStopTheQuit()
+  {
+    var viewModel = CreateViewModel();
+    viewModel.RequestQuit();
+
+    viewModel.ConfirmCommand.Execute(null);
+    viewModel.Cancel();
+
+    await viewModel.ConfirmAsync();
+
+    Assert.That(_exitRequests, Is.EqualTo(1));
+    A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public void RequestQuit_AfterTheQuitWasConfirmed_DoesNotAskTheQuestionAgain()
+  {
+    var viewModel = CreateViewModel();
+    viewModel.RequestQuit();
+
+    viewModel.ConfirmCommand.Execute(null);
+    viewModel.RequestQuit();
+
+    Assert.That(viewModel.IsConfirmationVisible, Is.False);
+  }
+
+  [Test]
+  public async Task ConfirmAsync_Twice_StopsTheServerAndExitsOnce()
+  {
+    var stopStarted = new TaskCompletionSource();
+    var stopMayFinish = new TaskCompletionSource();
+    var stops = 0;
+    QuitConfirmViewModel viewModel = new(_ =>
+                                         {
+                                           stops++;
+                                           stopStarted.TrySetResult();
+
+                                           return stopMayFinish.Task;
+                                         },
+                                         _text,
+                                         () => _exitRequests++,
+                                         _ => Task.CompletedTask);
+    viewModel.RequestQuit();
+
+    var first = viewModel.ConfirmAsync();
+    await stopStarted.Task;
+    var second = viewModel.ConfirmAsync();
+    stopMayFinish.SetResult();
+    await Task.WhenAll(first, second);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(stops, Is.EqualTo(1));
+                      Assert.That(_exitRequests, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
   public async Task ConfirmAsync_PreparesTheUpdateBeforeStoppingTheServer()
   {
     List<string> order = [];

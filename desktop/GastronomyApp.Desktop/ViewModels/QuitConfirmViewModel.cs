@@ -11,6 +11,8 @@ public sealed class QuitConfirmViewModel : ViewModelBase
   private readonly IDesktopTextProvider _text;
 
   private bool _isConfirmationVisible;
+  private bool _quitIsUnderWay;
+  private bool _quitWasConfirmed;
 
   public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer, IDesktopTextProvider text, Action requestApplicationExit, Func<CancellationToken, Task> prepareUpdateOnQuit)
   {
@@ -30,6 +32,11 @@ public sealed class QuitConfirmViewModel : ViewModelBase
 
   private void OnCloseRequested(bool confirmed)
   {
+    IsConfirmationVisible = false;
+
+    if (confirmed)
+      _quitWasConfirmed = true;
+
     CloseRequested?.Invoke(this, new(confirmed));
   }
 
@@ -49,22 +56,31 @@ public sealed class QuitConfirmViewModel : ViewModelBase
 
   public void RequestQuit()
   {
+    if (_quitWasConfirmed || _quitIsUnderWay)
+      return;
+
     IsConfirmationVisible = true;
   }
 
   public void Cancel()
   {
+    if (_quitWasConfirmed)
+      return;
+
     IsConfirmationVisible = false;
   }
 
   public async Task ConfirmAsync(CancellationToken cancellationToken = default)
   {
-    if (!IsConfirmationVisible)
+    if (_quitIsUnderWay || !_quitWasConfirmed && !IsConfirmationVisible)
       return;
+
+    _quitIsUnderWay = true;
+    IsConfirmationVisible = false;
 
     await _prepareUpdateOnQuit(cancellationToken);
     await _stopServer(cancellationToken);
-    IsConfirmationVisible = false;
+
     _requestApplicationExit();
   }
 }

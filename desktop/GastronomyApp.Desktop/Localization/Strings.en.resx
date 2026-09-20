@@ -93,6 +93,9 @@
     <data name="desktop.quit.cancel" xml:space="preserve">
     <value>Keep it running</value>
   </data>
+    <data name="desktop.error.quitFailed" xml:space="preserve">
+    <value>The program could not stop the server and is still running. Try again.</value>
+  </data>
     <data name="desktop.error.dataFolderRepair" xml:space="preserve">
     <value>Click "Repair the setup". Nothing can be written into the folder {path}. Windows asks you once while it happens.</value>
   </data>

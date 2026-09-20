@@ -93,6 +93,9 @@
     <data name="desktop.quit.cancel" xml:space="preserve">
     <value>Weiterlaufen lassen</value>
   </data>
+    <data name="desktop.error.quitFailed" xml:space="preserve">
+    <value>Das Programm konnte den Server nicht beenden und läuft weiter. Versuchen Sie es noch einmal.</value>
+  </data>
     <data name="desktop.error.dataFolderRepair" xml:space="preserve">
     <value>Klicken Sie auf "Einrichtung reparieren". In den Ordner {path} lässt sich nichts schreiben. Windows fragt dabei einmal nach.</value>
   </data>

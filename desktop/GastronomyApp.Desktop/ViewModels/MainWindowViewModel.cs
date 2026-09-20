@@ -422,6 +422,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     ShowError("desktop.error.instanceCheckFailed");
   }
 
+  public void ShowQuitFailed()
+  {
+    ShowError("desktop.error.quitFailed");
+  }
+
   public void ShowSetupDeclined()
   {
     ShowNotice("desktop.firstRun.declined", NoticeLevel.Warning);

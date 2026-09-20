@@ -8,6 +8,7 @@ using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
+using Serilog;
 
 namespace GastronomyApp.Desktop;
 
@@ -246,7 +247,19 @@ public class App : Application
       return;
     }
 
-    await _mainWindowViewModel.StopAsync();
+    try
+    {
+      await _mainWindowViewModel.StopAsync();
+    }
+    catch (Exception failure)
+    {
+      Log.Error(failure, "The server could not be stopped, so the program stays open.");
+      _mainWindowViewModel.ShowQuitFailed();
+
+      return;
+    }
+
+    Log.Information("The server stopped. The program is being closed.");
 
     if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
       lifetime.Shutdown();
@@ -262,14 +275,27 @@ public class App : Application
     QuitConfirmDialog dialog = new() { DataContext = _quitConfirmViewModel };
     var confirmed = await dialog.ShowDialog<bool>(_mainWindow);
 
-    if (confirmed)
+    if (!confirmed)
     {
-      await _quitConfirmViewModel.ConfirmAsync();
+      _quitConfirmViewModel.Cancel();
 
       return;
     }
 
-    _quitConfirmViewModel.Cancel();
+    try
+    {
+      Log.Information("The operator confirmed the quit. The server is being stopped.");
+      await _quitConfirmViewModel.ConfirmAsync();
+    }
+    catch (Exception failure)
+    {
+      Log.Error(failure, "The server could not be stopped, so the program stays open.");
+      _mainWindowViewModel?.ShowQuitFailed();
+
+      return;
+    }
+
+    Log.Information("The server stopped. The program is being closed.");
   }
 
   private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs eventArgs)

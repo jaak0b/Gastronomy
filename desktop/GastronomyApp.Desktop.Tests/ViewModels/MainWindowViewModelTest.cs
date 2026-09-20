@@ -49,6 +49,16 @@ public sealed class MainWindowViewModelTest
   }
 
   [Test]
+  public void ShowQuitFailed_SaysTheServerCouldNotBeStopped()
+  {
+    var viewModel = CreateViewModel();
+
+    viewModel.ShowQuitFailed();
+
+    Assert.That(viewModel.ErrorMessageKey, Is.EqualTo("desktop.error.quitFailed"));
+  }
+
+  [Test]
   public async Task StartAsync_WhenTheHostStarts_TurnsRunningAndKeepsTheLaptopAwake()
   {
     LauncherReturns(new HostLaunchResult.Started(null!));

@@ -3,11 +3,15 @@ using GastronomyApp.Api;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Setup;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
+using Serilog;
 
 namespace GastronomyApp.Desktop.Hosting;
 
 public sealed class HostLauncher : IHostLauncher
 {
+  private const int ShutdownTimeoutSeconds = 3;
+
   private readonly Func<string, IDataFolderSetup> _dataFolderSetupFactory;
   private readonly INetworkAddressProvider _networkAddressProvider;
 
@@ -59,12 +63,35 @@ public sealed class HostLauncher : IHostLauncher
 
   public async Task StopAsync(CancellationToken cancellationToken = default)
   {
-    if (Application is null)
+    var running = Application;
+
+    if (running is null)
       return;
 
-    await Application.StopAsync(cancellationToken);
-    await Application.DisposeAsync();
-    Application = null;
+    Log.Information("The server is being stopped.");
+
+    try
+    {
+      await Task.Run(async () =>
+                     {
+                       try
+                       {
+                         await running.StopAsync(TimeSpan.FromSeconds(ShutdownTimeoutSeconds));
+                       }
+                       catch (OperationCanceledException)
+                       {
+                         Log.Warning("The server did not stop within {Seconds} seconds, so its open connections are being cut.", ShutdownTimeoutSeconds);
+                       }
+
+                       await running.DisposeAsync();
+                     },
+                     cancellationToken);
+    } finally
+    {
+      Application = null;
+    }
+
+    Log.Information("The server has stopped.");
   }
 
   private bool IsPortAlreadyBound(Exception failure)
