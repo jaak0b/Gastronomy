@@ -5,7 +5,7 @@ using Serilog.Events;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class ActivationPipeListenerTests
+public sealed class ActivationPipeListenerTest
 {
 
   private static string UnusedPipeName()

@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Input;
+
 namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class TechnicalDetailViewModel : ViewModelBase
@@ -7,6 +9,7 @@ public sealed class TechnicalDetailViewModel : ViewModelBase
     Title = title;
     Detail = detail;
     CloseLabel = closeLabel;
+    CloseCommand = new RelayCommand(OnCloseRequested);
   }
 
   public string Title { get; }
@@ -14,4 +17,13 @@ public sealed class TechnicalDetailViewModel : ViewModelBase
   public string Detail { get; }
 
   public string CloseLabel { get; }
+
+  public IRelayCommand CloseCommand { get; }
+
+  public event EventHandler? CloseRequested;
+
+  private void OnCloseRequested()
+  {
+    CloseRequested?.Invoke(this, EventArgs.Empty);
+  }
 }

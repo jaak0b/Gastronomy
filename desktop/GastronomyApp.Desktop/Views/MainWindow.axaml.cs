@@ -20,22 +20,22 @@ public partial class MainWindow : Window
     Activate();
   }
 
-  private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+  private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
   {
-    if (!eventArgs.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+    if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
     {
       return;
     }
 
-    if (ClickLandsOnAButtonOrDropdown(eventArgs.Source))
+    if (ClickLandsOnAButtonOrDropdown(e.Source))
     {
       return;
     }
 
-    BeginMoveDrag(eventArgs);
+    BeginMoveDrag(e);
   }
 
-  private static bool ClickLandsOnAButtonOrDropdown(object? source)
+  private bool ClickLandsOnAButtonOrDropdown(object? source)
   {
     for (var visual = source as Visual; visual is not null; visual = visual.GetVisualParent())
     {
@@ -48,14 +48,14 @@ public partial class MainWindow : Window
     return false;
   }
 
-  private void OnClosingMinimisesInstead(object? sender, WindowClosingEventArgs eventArgs)
+  private void OnClosingMinimisesInstead(object? sender, WindowClosingEventArgs e)
   {
-    if (eventArgs.IsProgrammatic)
+    if (e.IsProgrammatic)
     {
       return;
     }
 
-    eventArgs.Cancel = true;
+    e.Cancel = true;
     WindowState = WindowState.Minimized;
   }
 }

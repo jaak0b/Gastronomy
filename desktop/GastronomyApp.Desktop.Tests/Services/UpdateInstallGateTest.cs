@@ -7,7 +7,7 @@ using GastronomyApp.Desktop.Services;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class UpdateInstallGateTests
+public sealed class UpdateInstallGateTest
 {
   private readonly DateTime _now = new(2026, 9, 12, 12, 0, 0, DateTimeKind.Utc);
 

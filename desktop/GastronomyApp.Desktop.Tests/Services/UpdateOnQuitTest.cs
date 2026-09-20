@@ -4,7 +4,7 @@ using GastronomyApp.Desktop.Services;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class UpdateOnQuitTests
+public sealed class UpdateOnQuitTest
 {
   [SetUp]
   public void SetUp()

@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Desktop.Services;
+﻿using CommunityToolkit.Mvvm.Input;
+using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop.ViewModels;
 
@@ -20,6 +21,19 @@ public sealed class QuitConfirmViewModel : ViewModelBase
     _text = text;
     _requestApplicationExit = requestApplicationExit;
     _prepareUpdateOnQuit = prepareUpdateOnQuit;
+    CancelCommand = new RelayCommand(() => OnCloseRequested(confirmed: false));
+    ConfirmCommand = new RelayCommand(() => OnCloseRequested(confirmed: true));
+  }
+
+  public IRelayCommand CancelCommand { get; }
+
+  public IRelayCommand ConfirmCommand { get; }
+
+  public event EventHandler<DialogClosedEventArgs>? CloseRequested;
+
+  private void OnCloseRequested(bool confirmed)
+  {
+    CloseRequested?.Invoke(this, new(confirmed));
   }
 
   public string Title => _text.Get("desktop.quit.title");

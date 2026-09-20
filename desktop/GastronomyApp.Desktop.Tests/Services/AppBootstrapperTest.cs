@@ -9,7 +9,7 @@ using Serilog.Events;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class AppBootstrapperTests
+public sealed class AppBootstrapperTest
 {
 
   [SetUp]
@@ -46,7 +46,7 @@ public sealed class AppBootstrapperTests
 
     var settingsStore = A.Fake<ISettingsStore>();
     A.CallTo(() => settingsStore.Load())
-     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null));
+     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
 
     return new(_launcher,
                A.Fake<IPowerManager>(),
@@ -112,7 +112,7 @@ public sealed class AppBootstrapperTests
     var bootstrapper = CreateBootstrapper();
     bootstrapper.Start();
 
-    _singleInstance.ActivationRequested += Raise.FreeForm<Action>.With();
+    _singleInstance.ActivationRequested += Raise.With(A.Dummy<object>(), EventArgs.Empty);
 
     Assert.Multiple(() =>
                     {
@@ -130,7 +130,7 @@ public sealed class AppBootstrapperTests
     bootstrapper.Start();
     _dispatchImmediately = false;
 
-    _singleInstance.ActivationRequested += Raise.FreeForm<Action>.With();
+    _singleInstance.ActivationRequested += Raise.With(A.Dummy<object>(), EventArgs.Empty);
 
     Assert.Multiple(() =>
                     {
@@ -196,7 +196,7 @@ public sealed class AppBootstrapperTests
     var bootstrapper = CreateBootstrapper();
     bootstrapper.Start();
 
-    _singleInstance.ActivationRequested += Raise.FreeForm<Action>.With();
+    _singleInstance.ActivationRequested += Raise.With(A.Dummy<object>(), EventArgs.Empty);
 
     Assert.That(_windowsBroughtToFront, Is.Zero);
   }

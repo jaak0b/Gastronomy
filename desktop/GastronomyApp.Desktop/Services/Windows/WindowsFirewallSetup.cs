@@ -59,15 +59,3 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
     return _netsh.Run($"advfirewall firewall show rule name=\"{RuleName}\"{profileFilter}");
   }
 }
-
-public sealed class NoFirewallSetup : IFirewallSetup
-{
-  public bool IsRuleConfigured()
-  {
-    return true;
-  }
-
-  public void EnsureRuleConfigured()
-  {
-  }
-}

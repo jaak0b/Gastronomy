@@ -1,5 +1,5 @@
-﻿using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Avalonia.Controls;
+using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Views;
 
@@ -9,15 +9,24 @@ public partial class FirstRunDialog : Window
   {
     InitializeComponent();
 
-    var continueButton = this.FindControl<Button>("ContinueButton");
-    if (continueButton is not null)
+    DataContextChanged += OnDataContextChanged;
+  }
+
+  private void OnDataContextChanged(object? sender, EventArgs e)
+  {
+    if (DataContext is FirstRunViewModel viewModel)
     {
-      continueButton.Click += OnContinueClicked;
+      viewModel.CloseRequested += OnCloseRequested;
     }
   }
 
-  private void OnContinueClicked(object? sender, RoutedEventArgs eventArgs)
+  private void OnCloseRequested(object? sender, EventArgs e)
   {
+    if (DataContext is FirstRunViewModel viewModel)
+    {
+      viewModel.CloseRequested -= OnCloseRequested;
+    }
+
     Close(true);
   }
 }

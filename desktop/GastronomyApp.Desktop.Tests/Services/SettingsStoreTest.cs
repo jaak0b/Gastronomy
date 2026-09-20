@@ -3,7 +3,7 @@
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class SettingsStoreTests
+public sealed class SettingsStoreTest
 {
 
   [SetUp]
@@ -61,11 +61,11 @@ public sealed class SettingsStoreTests
   {
     var store = CreateStore();
 
-    store.Save(new(8080, _settingsDirectory, "Festival", null));
+    store.Save(new(8080, _settingsDirectory, "Festival", null, null));
 
     var reloaded = CreateStore().Load();
 
-    Assert.That(reloaded, Is.EqualTo(new DesktopSettings(8080, _settingsDirectory, "Festival", null)));
+    Assert.That(reloaded, Is.EqualTo(new DesktopSettings(8080, _settingsDirectory, "Festival", null, null)));
   }
 
   [Test]

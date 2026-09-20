@@ -3,13 +3,6 @@ using System.Runtime.Versioning;
 
 namespace GastronomyApp.Desktop.Services.Windows;
 
-public sealed record NetshResult(int ExitCode, string ErrorOutput);
-
-public interface INetshCommand
-{
-  public NetshResult Run(string arguments);
-}
-
 [SupportedOSPlatform("windows")]
 public sealed class NetshCommand : INetshCommand
 {

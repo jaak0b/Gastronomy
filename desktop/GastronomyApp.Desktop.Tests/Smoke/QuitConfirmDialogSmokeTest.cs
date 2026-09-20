@@ -10,9 +10,11 @@ using GastronomyApp.Desktop.Views;
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
 [TestFixture]
-public sealed class QuitConfirmDialogSmokeTests
+public sealed class QuitConfirmDialogSmokeTest
 {
   private readonly IDesktopTextProvider _text = new DesktopTextProvider();
+  private readonly RenderedColourReader _colours = new();
+  private readonly HeadlessButtonClick _clicks = new();
 
   private QuitConfirmViewModel CreateQuitConfirmViewModel()
   {
@@ -30,11 +32,11 @@ public sealed class QuitConfirmDialogSmokeTests
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(RenderedColours.ReadLabelBackground(confirm),
+                      Assert.That(_colours.ReadLabelBackground(confirm),
                                   Is.EqualTo(Color.Parse("#C94F4F")));
-                      Assert.That(RenderedColours.LabelBackgroundWhile(confirm, ":pointerover"),
+                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pointerover"),
                                   Is.EqualTo(Color.Parse("#D96060")));
-                      Assert.That(RenderedColours.LabelBackgroundWhile(confirm, ":pressed"),
+                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pressed"),
                                   Is.EqualTo(Color.Parse("#A83E3E")));
                     });
   }
@@ -47,5 +49,25 @@ public sealed class QuitConfirmDialogSmokeTests
     Dispatcher.UIThread.RunJobs();
 
     Assert.That(TextOptions.GetTextRenderingMode(dialog), Is.EqualTo(TextRenderingMode.Antialias));
+  }
+
+  [AvaloniaTest]
+  public async Task QuitConfirmDialog_ShowsTheOutcomeOfTheClickedButton()
+  {
+    Window owner = new();
+    owner.Show();
+    var viewModel = CreateQuitConfirmViewModel();
+
+    QuitConfirmDialog cancelDialog = new() { DataContext = viewModel };
+    var cancelResult = cancelDialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+    _clicks.Click(cancelDialog, cancelDialog.FindControl<Button>("CancelButton")!);
+    Assert.That(await cancelResult, Is.False);
+
+    QuitConfirmDialog confirmDialog = new() { DataContext = viewModel };
+    var confirmResult = confirmDialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+    _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
+    Assert.That(await confirmResult, Is.True);
   }
 }

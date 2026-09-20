@@ -5,7 +5,7 @@ using GastronomyApp.Desktop.Services;
 namespace GastronomyApp.Desktop.Tests.Localization;
 
 [TestFixture]
-public sealed class DesktopTextProviderTests
+public sealed class DesktopTextProviderTest
 {
 
   [SetUp]

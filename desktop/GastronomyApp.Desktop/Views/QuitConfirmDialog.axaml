@@ -13,8 +13,8 @@
     <StackPanel Margin="24" Spacing="18">
         <TextBlock Text="{Binding Body}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Name="CancelButton" Content="{Binding CancelLabel}" IsDefault="True" />
-            <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Classes="danger" />
+            <Button Name="CancelButton" Content="{Binding CancelLabel}" Command="{Binding CancelCommand}" IsDefault="True" />
+            <Button Name="ConfirmButton" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" Classes="danger" />
         </StackPanel>
     </StackPanel>
 

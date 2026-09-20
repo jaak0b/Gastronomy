@@ -1,4 +1,5 @@
-﻿using Avalonia.Headless.NUnit;
+﻿using Avalonia.Controls;
+using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FakeItEasy;
@@ -10,9 +11,10 @@ using GastronomyApp.Desktop.Views;
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
 [TestFixture]
-public sealed class FirstRunDialogSmokeTests
+public sealed class FirstRunDialogSmokeTest
 {
   private readonly IDesktopTextProvider _text = new DesktopTextProvider();
+  private readonly HeadlessButtonClick _clicks = new();
 
   private FirstRunViewModel CreateFirstRunViewModel()
   {
@@ -30,5 +32,20 @@ public sealed class FirstRunDialogSmokeTests
     Dispatcher.UIThread.RunJobs();
 
     Assert.That(TextOptions.GetTextRenderingMode(dialog), Is.EqualTo(TextRenderingMode.Antialias));
+  }
+
+  [AvaloniaTest]
+  public async Task FirstRunDialog_WhenTheContinueButtonIsClicked_ClosesWithTrue()
+  {
+    Window owner = new();
+    owner.Show();
+    FirstRunDialog dialog = new() { DataContext = CreateFirstRunViewModel() };
+
+    var result = dialog.ShowDialog<bool>(owner);
+    Dispatcher.UIThread.RunJobs();
+
+    _clicks.Click(dialog, dialog.FindControl<Button>("ContinueButton")!);
+
+    Assert.That(await result, Is.True);
   }
 }

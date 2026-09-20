@@ -1,7 +1,5 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -10,26 +8,16 @@ using FakeItEasy;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services;
-using GastronomyApp.Desktop.Tests.Smoke;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
 
-[assembly: AvaloniaTestApplication(typeof(HeadlessAppBuilder))]
-
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
-public sealed class HeadlessAppBuilder
-{
-  public static AppBuilder BuildAvaloniaApp()
-  {
-    return AppBuilder.Configure<App>().UseHeadless(new());
-  }
-}
-
 [TestFixture]
-public sealed class MainWindowSmokeTests
+public sealed class MainWindowSmokeTest
 {
   private readonly IDesktopTextProvider _text = new DesktopTextProvider();
+  private readonly RenderedColourReader _colours = new();
 
   private const string CurrentVersion = "1.2.3";
 
@@ -38,7 +26,7 @@ public sealed class MainWindowSmokeTests
   {
     var settingsStore = A.Fake<ISettingsStore>();
     A.CallTo(() => settingsStore.Load())
-     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null));
+     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
 
     return new(launcher ?? A.Fake<IHostLauncher>(),
                A.Fake<IPowerManager>(),
@@ -82,7 +70,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar, Is.Not.Null);
-                      Assert.That(RenderedColours.ToColour(statusBar!.Background),
+                      Assert.That(_colours.ToColour(statusBar!.Background),
                                   Is.EqualTo(Color.Parse("#9CA3AF")));
                       Assert.That(statusMessage!.IsVisible, Is.False);
                     });
@@ -102,7 +90,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar!.Classes, Does.Contain("running"));
-                      Assert.That(RenderedColours.ToColour(statusBar.Background),
+                      Assert.That(_colours.ToColour(statusBar.Background),
                                   Is.EqualTo(Color.Parse("#2E8B57")));
                     });
   }
@@ -193,7 +181,7 @@ public sealed class MainWindowSmokeTests
     Assert.Multiple(() =>
                     {
                       Assert.That(secondary, Has.Count.EqualTo(3));
-                      Assert.That(secondary.Select(RenderedColours.ReadLabelForeground),
+                      Assert.That(secondary.Select(_colours.ReadLabelForeground),
                                   Is.All.EqualTo(Color.Parse("#1F2937")));
                       Assert.That(TextOptions.GetTextRenderingMode(window),
                                   Is.EqualTo(TextRenderingMode.Antialias));
@@ -213,8 +201,8 @@ public sealed class MainWindowSmokeTests
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(RenderedColours.ReadLabelForeground(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
-                      Assert.That(RenderedColours.ReadLabelBackground(accent), Is.EqualTo(Color.Parse("#1F2937")));
+                      Assert.That(_colours.ReadLabelForeground(accent), Is.EqualTo(Color.Parse("#FFFFFF")));
+                      Assert.That(_colours.ReadLabelBackground(accent), Is.EqualTo(Color.Parse("#1F2937")));
                     });
   }
 

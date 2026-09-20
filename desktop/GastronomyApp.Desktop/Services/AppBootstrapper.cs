@@ -4,13 +4,6 @@ using Serilog;
 
 namespace GastronomyApp.Desktop.Services;
 
-public enum BootstrapOutcome
-{
-  ProceedToWindow,
-  ProceedToWindowWithoutServer,
-  ExitImmediately
-}
-
 public sealed class AppBootstrapper
 {
   private readonly Action _bringExistingWindowToFront;
@@ -76,7 +69,7 @@ public sealed class AppBootstrapper
     _singleInstance.Release();
   }
 
-  private void OnActivationRequested()
+  private void OnActivationRequested(object? sender, EventArgs e)
   {
     if (!_holdsTheInstance)
     {

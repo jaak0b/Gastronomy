@@ -13,8 +13,8 @@
 
     <DockPanel Margin="24">
         <Button DockPanel.Dock="Bottom"
-                Name="CloseButton"
                 Content="{Binding CloseLabel}"
+                Command="{Binding CloseCommand}"
                 IsDefault="True"
                 HorizontalAlignment="Right"
                 Margin="0,16,0,0" />

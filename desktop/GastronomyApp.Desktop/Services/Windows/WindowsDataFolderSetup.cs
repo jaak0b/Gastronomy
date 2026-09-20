@@ -4,10 +4,10 @@ using System.Security.Principal;
 
 namespace GastronomyApp.Desktop.Services.Windows;
 
-public sealed class DataFolderSetup : IDataFolderSetup
+public sealed class WindowsDataFolderSetup : IDataFolderSetup
 {
 
-  public DataFolderSetup(string dataDirectoryPath)
+  public WindowsDataFolderSetup(string dataDirectoryPath)
   {
     this.DataDirectoryPath = dataDirectoryPath;
   }

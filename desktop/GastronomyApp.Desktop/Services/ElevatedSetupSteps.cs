@@ -1,9 +1,6 @@
-namespace GastronomyApp.Desktop.Services;
+using Serilog;
 
-public sealed record ElevatedSetupStepReport(Exception? NetworkAccessFailure, Exception? DataFolderFailure)
-{
-  public bool EveryStepSucceeded => NetworkAccessFailure is null && DataFolderFailure is null;
-}
+namespace GastronomyApp.Desktop.Services;
 
 public sealed class ElevatedSetupSteps
 {
@@ -18,10 +15,17 @@ public sealed class ElevatedSetupSteps
 
   public ElevatedSetupStepReport RunAll()
   {
-    var networkAccessFailure = Attempt(_firewall.EnsureRuleConfigured);
-    var dataFolderFailure = Attempt(MakeTheDataFolderWritableForEveryone);
+    var networkAccessSucceeded = Attempt(_firewall.EnsureRuleConfigured,
+                                         "The one-time setup could not allow incoming connections through "
+                                         + "the Windows firewall, so the phones may not be able to reach "
+                                         + "this laptop.");
 
-    return new(networkAccessFailure, dataFolderFailure);
+    var dataFolderSucceeded = Attempt(MakeTheDataFolderWritableForEveryone,
+                                      "The one-time setup could not give every user of this laptop write "
+                                      + "access to the data folder, so orders may fail for anybody who did "
+                                      + "not set this laptop up.");
+
+    return new(networkAccessSucceeded, dataFolderSucceeded);
   }
 
   private void MakeTheDataFolderWritableForEveryone()
@@ -36,16 +40,18 @@ public sealed class ElevatedSetupSteps
     _dataFolder.CreateWithUsersModifyGrant();
   }
 
-  private Exception? Attempt(Action step)
+  private bool Attempt(Action step, string failureLogMessage)
   {
     try
     {
       step();
 
-      return null;
+      return true;
     } catch (Exception failure)
     {
-      return failure;
+      Log.Error(failure, failureLogMessage);
+
+      return false;
     }
   }
 }

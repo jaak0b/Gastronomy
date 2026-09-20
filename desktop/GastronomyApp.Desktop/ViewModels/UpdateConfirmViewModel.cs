@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop.ViewModels;
@@ -10,6 +11,8 @@ public sealed class UpdateConfirmViewModel : ViewModelBase
     Body = text.Format("desktop.update.confirmBody", new TextPlaceholder("version", version));
     ConfirmLabel = text.Get("desktop.update.confirmRestart");
     CancelLabel = text.Get("desktop.update.confirmLater");
+    CancelCommand = new RelayCommand(() => OnCloseRequested(confirmed: false));
+    ConfirmCommand = new RelayCommand(() => OnCloseRequested(confirmed: true));
   }
 
   public string Title { get; }
@@ -19,4 +22,15 @@ public sealed class UpdateConfirmViewModel : ViewModelBase
   public string ConfirmLabel { get; }
 
   public string CancelLabel { get; }
+
+  public IRelayCommand CancelCommand { get; }
+
+  public IRelayCommand ConfirmCommand { get; }
+
+  public event EventHandler<DialogClosedEventArgs>? CloseRequested;
+
+  private void OnCloseRequested(bool confirmed)
+  {
+    CloseRequested?.Invoke(this, new(confirmed));
+  }
 }

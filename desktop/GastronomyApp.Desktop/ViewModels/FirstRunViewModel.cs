@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Core.Services;
+﻿using CommunityToolkit.Mvvm.Input;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop.ViewModels;
@@ -25,6 +26,16 @@ public sealed class FirstRunViewModel : ViewModelBase
     _dataFolder = dataFolder;
     _elevatedSetup = elevatedSetup;
     _text = text;
+    ContinueCommand = new RelayCommand(OnCloseRequested);
+  }
+
+  public IRelayCommand ContinueCommand { get; }
+
+  public event EventHandler? CloseRequested;
+
+  private void OnCloseRequested()
+  {
+    CloseRequested?.Invoke(this, EventArgs.Empty);
   }
 
   public string Title => _text.Get("desktop.firstRun.title");

@@ -6,24 +6,24 @@ using Avalonia.VisualTree;
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
-internal static class RenderedColours
+internal sealed class RenderedColourReader
 {
-  public static Color ToColour(IBrush? brush)
+  public Color ToColour(IBrush? brush)
   {
     return ((ISolidColorBrush)brush!).Color;
   }
 
-  public static Color ReadLabelForeground(Button button)
+  public Color ReadLabelForeground(Button button)
   {
     return ToColour(Label(button).Foreground);
   }
 
-  public static Color ReadLabelBackground(Button button)
+  public Color ReadLabelBackground(Button button)
   {
     return ToColour(Label(button).Background);
   }
 
-  public static Color LabelBackgroundWhile(Button button, string pseudoClass)
+  public Color LabelBackgroundWhile(Button button, string pseudoClass)
   {
     var pseudoClasses = (IPseudoClasses)button.Classes;
     pseudoClasses.Add(pseudoClass);
@@ -35,7 +35,7 @@ internal static class RenderedColours
     return colour;
   }
 
-  private static ContentPresenter Label(Button button)
+  private ContentPresenter Label(Button button)
   {
     return button.GetVisualDescendants()
                  .OfType<ContentPresenter>()

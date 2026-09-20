@@ -35,19 +35,9 @@ public sealed class ElevatedSetupEntryPoint
 
   private int ExitCodeFor(ElevatedSetupStepReport report)
   {
-    if (report.NetworkAccessFailure is not null)
+    if (!report.DataFolderSucceeded)
     {
-      Log.Error(report.NetworkAccessFailure,
-                "The one-time setup could not allow incoming connections through the Windows firewall, "
-                + "so the phones may not be able to reach this laptop.");
-    }
-
-    if (report.DataFolderFailure is not null)
-    {
-      Log.Error(report.DataFolderFailure,
-                "The one-time setup could not give every user of this laptop write access to {DataDirectory}, "
-                + "so orders may fail for anybody who did not set this laptop up.",
-                _dataDirectoryPath);
+      Log.Error("The data folder that failed to become writable is {DataDirectory}.", _dataDirectoryPath);
     }
 
     if (!report.EveryStepSucceeded)

@@ -5,7 +5,7 @@ using GastronomyApp.Desktop.Services;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class HostLauncherTests
+public sealed class HostLauncherTest
 {
 
   [SetUp]

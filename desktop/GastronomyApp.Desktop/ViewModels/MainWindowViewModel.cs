@@ -8,26 +8,6 @@ using Serilog;
 
 namespace GastronomyApp.Desktop.ViewModels;
 
-public enum HostStatus
-{
-  Stopped,
-  Running
-}
-
-public enum StatusLevel
-{
-  Starting,
-  Running,
-  Warning,
-  Down
-}
-
-public enum NoticeLevel
-{
-  Informational,
-  Warning
-}
-
 public sealed class MainWindowViewModel : ViewModelBase
 {
 
@@ -83,10 +63,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     _appLanguage.Current = _selectedLanguage.Code;
     text.LanguageChanged += OnLanguageChanged;
 
-    OpenAdminPagesCommand = new RelayCommand(() => AdminPagesRequested?.Invoke(AdminUrl));
-    OpenDataFolderCommand = new RelayCommand(() => DataFolderRequested?.Invoke());
-    RepairSetupCommand = new RelayCommand(() => RepairRequested?.Invoke());
-    RequestQuitCommand = new RelayCommand(() => QuitRequested?.Invoke());
+    OpenAdminPagesCommand = new RelayCommand(() => OnAdminPagesRequested(AdminUrl));
+    OpenDataFolderCommand = new RelayCommand(OnDataFolderRequested);
+    RepairSetupCommand = new RelayCommand(OnRepairRequested);
+    RequestQuitCommand = new RelayCommand(OnQuitRequested);
     ShowFailureDetailCommand = new RelayCommand(ShowFailureDetail);
     CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesAsync, () => !IsUpdateCheckRunning);
   }
@@ -207,19 +187,54 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public bool HasStatusText => StatusText is not null;
 
-  public event Action<string>? AdminPagesRequested;
+  public event EventHandler<AdminPagesRequestedEventArgs>? AdminPagesRequested;
 
-  public event Action? DataFolderRequested;
+  public event EventHandler? DataFolderRequested;
 
-  public event Action? RepairRequested;
+  public event EventHandler? RepairRequested;
 
-  public event Action? QuitRequested;
+  public event EventHandler? QuitRequested;
 
-  public event Action? FailureDetailRequested;
+  public event EventHandler? FailureDetailRequested;
 
-  public event Action<string>? UpdateReadyRequested;
+  public event EventHandler<UpdateReadyRequestedEventArgs>? UpdateReadyRequested;
 
-  public event Action<Exception>? UpdateFailureRequested;
+  public event EventHandler<UpdateFailureRequestedEventArgs>? UpdateFailureRequested;
+
+  private void OnAdminPagesRequested(string url)
+  {
+    AdminPagesRequested?.Invoke(this, new(url));
+  }
+
+  private void OnDataFolderRequested()
+  {
+    DataFolderRequested?.Invoke(this, EventArgs.Empty);
+  }
+
+  private void OnRepairRequested()
+  {
+    RepairRequested?.Invoke(this, EventArgs.Empty);
+  }
+
+  private void OnQuitRequested()
+  {
+    QuitRequested?.Invoke(this, EventArgs.Empty);
+  }
+
+  private void OnFailureDetailRequested()
+  {
+    FailureDetailRequested?.Invoke(this, EventArgs.Empty);
+  }
+
+  private void OnUpdateReadyRequested(string version)
+  {
+    UpdateReadyRequested?.Invoke(this, new(version));
+  }
+
+  private void OnUpdateFailureRequested(string failureDetail)
+  {
+    UpdateFailureRequested?.Invoke(this, new(failureDetail));
+  }
 
   private void OnLanguageChanged()
   {
@@ -353,12 +368,12 @@ public sealed class MainWindowViewModel : ViewModelBase
       switch (preparation)
       {
         case UpdatePreparation.Ready ready:
-          UpdateReadyRequested?.Invoke(ready.Version);
+          OnUpdateReadyRequested(ready.Version);
 
           break;
 
         case UpdatePreparation.Failed failed:
-          UpdateFailureRequested?.Invoke(failed.Failure);
+          OnUpdateFailureRequested(failed.FailureDetail);
 
           break;
 
@@ -459,7 +474,7 @@ public sealed class MainWindowViewModel : ViewModelBase
       return;
     }
 
-    FailureDetailRequested?.Invoke();
+    OnFailureDetailRequested();
   }
 
   private void RaiseFailureDetailChanged()

@@ -8,7 +8,7 @@ using GastronomyApp.Desktop.ViewModels;
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 
 [TestFixture]
-public sealed class MainWindowViewModelTests
+public sealed class MainWindowViewModelTest
 {
 
   [SetUp]
@@ -23,7 +23,7 @@ public sealed class MainWindowViewModelTests
     A.CallTo(() => _freePorts.Reserve()).Returns(51234);
 
     A.CallTo(() => _settingsStore.Load())
-     .Returns(new(5000, DataFolder, null, null));
+     .Returns(new(5000, DataFolder, null, null, null));
   }
 
   private IHostLauncher _launcher = null!;
@@ -140,7 +140,7 @@ public sealed class MainWindowViewModelTests
     var viewModel = CreateViewModel();
     await viewModel.StartAsync();
     var requests = 0;
-    viewModel.FailureDetailRequested += () => requests++;
+    viewModel.FailureDetailRequested += (_, _) => requests++;
 
     viewModel.ShowFailureDetailCommand.Execute(null);
 
@@ -159,7 +159,7 @@ public sealed class MainWindowViewModelTests
     var viewModel = CreateViewModel();
     await viewModel.StartAsync();
     var requests = 0;
-    viewModel.FailureDetailRequested += () => requests++;
+    viewModel.FailureDetailRequested += (_, _) => requests++;
 
     viewModel.ShowFailureDetailCommand.Execute(null);
 
@@ -209,10 +209,10 @@ public sealed class MainWindowViewModelTests
   public void OpenAdminPagesCommand_OpensTheAdminPageOnLoopbackWithTheConfiguredPort()
   {
     A.CallTo(() => _settingsStore.Load())
-     .Returns(new(8080, DataFolder, null, null));
+     .Returns(new(8080, DataFolder, null, null, null));
     var viewModel = CreateViewModel();
     string? opened = null;
-    viewModel.AdminPagesRequested += url => opened = url;
+    viewModel.AdminPagesRequested += (_, e) => opened = e.Url;
 
     viewModel.OpenAdminPagesCommand.Execute(null);
 
@@ -224,7 +224,7 @@ public sealed class MainWindowViewModelTests
   {
     var viewModel = CreateViewModel();
     string? opened = null;
-    viewModel.AdminPagesRequested += url => opened = url;
+    viewModel.AdminPagesRequested += (_, e) => opened = e.Url;
 
     viewModel.OpenAdminPagesCommand.Execute(null);
 
@@ -267,7 +267,7 @@ public sealed class MainWindowViewModelTests
     var original = CultureInfo.CurrentUICulture;
     CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
     A.CallTo(() => _settingsStore.Load())
-     .Returns(new(5000, DataFolder, null, "de"));
+     .Returns(new(5000, DataFolder, null, "de", null));
 
     try
     {
@@ -317,7 +317,7 @@ public sealed class MainWindowViewModelTests
 
     viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
 
-    A.CallTo(() => _settingsStore.Save(new(5000, DataFolder, null, "de")))
+    A.CallTo(() => _settingsStore.Save(new(5000, DataFolder, null, "de", null)))
      .MustHaveHappenedOnceExactly();
   }
 
@@ -326,7 +326,7 @@ public sealed class MainWindowViewModelTests
   public async Task StartAsync_WithNoPortWrittenDownYet_AsksWindowsForOneAndWritesItDown()
   {
     A.CallTo(() => _settingsStore.Load())
-     .Returns(new(null, DataFolder, null, null));
+     .Returns(new(null, DataFolder, null, null, null));
     LauncherReturns(new HostLaunchResult.Started(null!));
     var viewModel = CreateViewModel();
 
@@ -664,7 +664,7 @@ public sealed class MainWindowViewModelTests
      .Returns(new UpdatePreparation.Ready("2.0.0"));
     var viewModel = CreateViewModel(updateInstaller);
     string? requestedVersion = null;
-    viewModel.UpdateReadyRequested += version => requestedVersion = version;
+    viewModel.UpdateReadyRequested += (_, e) => requestedVersion = e.Version;
 
     await viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
 
@@ -675,16 +675,16 @@ public sealed class MainWindowViewModelTests
   public async Task CheckForUpdatesCommand_WhenTheCheckFails_AsksForTheTechnicalDetail()
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();
-    var failure = new InvalidOperationException("The network is down.");
+    const string failureDetail = "System.InvalidOperationException: The network is down.";
     A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.Failed(failure));
+     .Returns(new UpdatePreparation.Failed(failureDetail));
     var viewModel = CreateViewModel(updateInstaller);
-    Exception? requestedFailure = null;
-    viewModel.UpdateFailureRequested += exception => requestedFailure = exception;
+    string? requestedFailureDetail = null;
+    viewModel.UpdateFailureRequested += (_, e) => requestedFailureDetail = e.FailureDetail;
 
     await viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
 
-    Assert.That(requestedFailure, Is.SameAs(failure));
+    Assert.That(requestedFailureDetail, Is.EqualTo(failureDetail));
   }
 
   [Test]

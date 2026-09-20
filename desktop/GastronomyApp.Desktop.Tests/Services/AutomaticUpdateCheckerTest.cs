@@ -6,7 +6,7 @@ using Serilog.Events;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class AutomaticUpdateCheckerTests
+public sealed class AutomaticUpdateCheckerTest
 {
   private const string DataFolder = @"C:\ProgramData\GastronomyApp";
 
@@ -15,7 +15,7 @@ public sealed class AutomaticUpdateCheckerTests
   {
     _installer = A.Fake<IUpdateInstaller>();
     _settingsStore = A.Fake<ISettingsStore>();
-    _settings = new DesktopSettings(5000, DataFolder, null, null);
+    _settings = new DesktopSettings(5000, DataFolder, null, null, null);
     A.CallTo(() => _installer.IsInstalled).Returns(true);
     A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._))
      .Returns(new UpdatePreparation.UpToDate());
@@ -76,7 +76,7 @@ public sealed class AutomaticUpdateCheckerTests
   {
     _settings = _settings with { LastUpdateCheckUtc = DateTimeOffset.UtcNow.AddHours(-2) };
     A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.Failed(new InvalidOperationException("The network is down.")));
+     .Returns(new UpdatePreparation.Failed("The network is down."));
     var checker = CreateChecker();
 
     await checker.CheckOnStartupAsync(CancellationToken.None);

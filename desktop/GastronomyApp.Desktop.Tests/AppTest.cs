@@ -7,7 +7,7 @@ using FakeItEasy;
 namespace GastronomyApp.Desktop.Tests;
 
 [TestFixture]
-public sealed class AppExitTests
+public sealed class AppTest
 {
   [AvaloniaTest]
   public void ExitOnceTheDispatcherRuns_HoldsTheShutdownUntilTheMainLoopProcessesIt()

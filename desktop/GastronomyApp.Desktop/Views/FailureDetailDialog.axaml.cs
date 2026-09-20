@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Interactivity;
+using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Views;
 
@@ -9,15 +9,24 @@ public partial class FailureDetailDialog : Window
   {
     InitializeComponent();
 
-    var closeButton = this.FindControl<Button>("CloseButton");
-    if (closeButton is not null)
+    DataContextChanged += OnDataContextChanged;
+  }
+
+  private void OnDataContextChanged(object? sender, EventArgs e)
+  {
+    if (DataContext is TechnicalDetailViewModel viewModel)
     {
-      closeButton.Click += OnCloseClicked;
+      viewModel.CloseRequested += OnCloseRequested;
     }
   }
 
-  private void OnCloseClicked(object? sender, RoutedEventArgs eventArgs)
+  private void OnCloseRequested(object? sender, EventArgs e)
   {
+    if (DataContext is TechnicalDetailViewModel viewModel)
+    {
+      viewModel.CloseRequested -= OnCloseRequested;
+    }
+
     Close();
   }
 }

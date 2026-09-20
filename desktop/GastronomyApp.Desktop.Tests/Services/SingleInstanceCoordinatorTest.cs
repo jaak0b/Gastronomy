@@ -6,7 +6,7 @@ using Serilog.Events;
 namespace GastronomyApp.Desktop.Tests.Services;
 
 [TestFixture]
-public sealed class SingleInstanceCoordinatorTests
+public sealed class SingleInstanceCoordinatorTest
 {
 
   private static string UnusedName()
@@ -73,7 +73,7 @@ public sealed class SingleInstanceCoordinatorTests
     using SingleInstanceCoordinator primary = new(instanceName, pipeName);
     primary.AcquireOrSignalExisting();
     using ManualResetEventSlim activationArrived = new();
-    primary.ActivationRequested += activationArrived.Set;
+    primary.ActivationRequested += (_, _) => activationArrived.Set();
     primary.StartListeningForActivation();
 
     using SingleInstanceCoordinator second = new(instanceName, pipeName);

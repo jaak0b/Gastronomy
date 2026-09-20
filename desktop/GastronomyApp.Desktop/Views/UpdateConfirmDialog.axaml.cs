@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Interactivity;
+using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop.Views;
 
@@ -9,26 +9,24 @@ public partial class UpdateConfirmDialog : Window
   {
     InitializeComponent();
 
-    var cancelButton = this.FindControl<Button>("CancelButton");
-    if (cancelButton is not null)
-    {
-      cancelButton.Click += OnCancelClicked;
-    }
+    DataContextChanged += OnDataContextChanged;
+  }
 
-    var confirmButton = this.FindControl<Button>("ConfirmButton");
-    if (confirmButton is not null)
+  private void OnDataContextChanged(object? sender, EventArgs e)
+  {
+    if (DataContext is UpdateConfirmViewModel viewModel)
     {
-      confirmButton.Click += OnConfirmClicked;
+      viewModel.CloseRequested += OnCloseRequested;
     }
   }
 
-  private void OnCancelClicked(object? sender, RoutedEventArgs eventArgs)
+  private void OnCloseRequested(object? sender, DialogClosedEventArgs e)
   {
-    Close(false);
-  }
+    if (DataContext is UpdateConfirmViewModel viewModel)
+    {
+      viewModel.CloseRequested -= OnCloseRequested;
+    }
 
-  private void OnConfirmClicked(object? sender, RoutedEventArgs eventArgs)
-  {
-    Close(true);
+    Close(e.Confirmed);
   }
 }

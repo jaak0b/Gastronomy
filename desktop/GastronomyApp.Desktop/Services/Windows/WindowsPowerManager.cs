@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace GastronomyApp.Desktop.Services.Windows;
@@ -21,15 +21,4 @@ public sealed class WindowsPowerManager : IPowerManager
 
   [DllImport("kernel32.dll", SetLastError = true)]
   private extern static uint SetThreadExecutionState(uint executionState);
-}
-
-public sealed class NoOpPowerManager : IPowerManager
-{
-  public void PreventSleep()
-  {
-  }
-
-  public void AllowSleep()
-  {
-  }
 }

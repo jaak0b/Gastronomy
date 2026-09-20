@@ -7,9 +7,11 @@ using GastronomyApp.Infrastructure;
 
 namespace GastronomyApp.Desktop.Services;
 
-public sealed class DesktopComposition
+public sealed class DesktopComposition : IDisposable
 {
   private const string ProductFolderName = "GastronomyApp";
+
+  private bool _disposed;
 
   public DesktopComposition()
   {
@@ -18,11 +20,11 @@ public sealed class DesktopComposition
     Version = ResolveVersion();
 
     Text = new DesktopTextProvider();
-    DataFolderSetup = new DataFolderSetup(DataDirectoryPath);
+    DataFolderSetup = new WindowsDataFolderSetup(DataDirectoryPath);
     SettingsStore = new SettingsStore(DataDirectoryPath);
     FreePorts = new FreePortProvider();
     NetworkAddressProvider = new NetworkAddressProvider();
-    HostLauncher = new(NetworkAddressProvider, path => new DataFolderSetup(path));
+    HostLauncher = new(NetworkAddressProvider, path => new WindowsDataFolderSetup(path));
     SingleInstance = new SingleInstanceCoordinator();
 
     PowerManager = OperatingSystem.IsWindows()
@@ -134,5 +136,26 @@ public sealed class DesktopComposition
                  : Environment.SpecialFolder.LocalApplicationData;
 
     return Path.Combine(Environment.GetFolderPath(root), ProductFolderName);
+  }
+
+  public void Dispose()
+  {
+    Dispose(true);
+    GC.SuppressFinalize(this);
+  }
+
+  private void Dispose(bool disposing)
+  {
+    if (_disposed)
+    {
+      return;
+    }
+
+    if (disposing && UpdateInstaller is IDisposable disposableUpdateInstaller)
+    {
+      disposableUpdateInstaller.Dispose();
+    }
+
+    _disposed = true;
   }
 }

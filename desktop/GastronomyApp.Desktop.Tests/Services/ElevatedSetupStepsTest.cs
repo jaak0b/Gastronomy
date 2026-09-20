@@ -54,8 +54,8 @@ public sealed class ElevatedSetupStepsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(report.NetworkAccessFailure, Is.SameAs(firewallFailure));
-                      Assert.That(report.DataFolderFailure, Is.Null);
+                      Assert.That(report.NetworkAccessSucceeded, Is.False);
+                      Assert.That(report.DataFolderSucceeded, Is.True);
                       Assert.That(report.EveryStepSucceeded, Is.False);
                     });
     A.CallTo(() => _dataFolder.CreateWithUsersModifyGrant()).MustHaveHappenedOnceExactly();
@@ -72,8 +72,8 @@ public sealed class ElevatedSetupStepsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(report.NetworkAccessFailure, Is.Null);
-                      Assert.That(report.DataFolderFailure, Is.SameAs(dataFolderFailure));
+                      Assert.That(report.NetworkAccessSucceeded, Is.True);
+                      Assert.That(report.DataFolderSucceeded, Is.False);
                       Assert.That(report.EveryStepSucceeded, Is.False);
                     });
     A.CallTo(() => _firewall.EnsureRuleConfigured()).MustHaveHappenedOnceExactly();
@@ -92,8 +92,8 @@ public sealed class ElevatedSetupStepsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(report.NetworkAccessFailure, Is.SameAs(firewallFailure));
-                      Assert.That(report.DataFolderFailure, Is.SameAs(dataFolderFailure));
+                      Assert.That(report.NetworkAccessSucceeded, Is.False);
+                      Assert.That(report.DataFolderSucceeded, Is.False);
                     });
   }
 }

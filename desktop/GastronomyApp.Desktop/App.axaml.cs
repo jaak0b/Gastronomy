@@ -186,16 +186,16 @@ public class App : Application
     _ = _composition.AutomaticUpdateChecker.CheckOnStartupAsync();
   }
 
-  private void OpenAdminPages(string adminUrl)
+  private void OpenAdminPages(object? sender, AdminPagesRequestedEventArgs e)
   {
     Process.Start(new ProcessStartInfo
                   {
-                    FileName = adminUrl,
+                    FileName = e.Url,
                     UseShellExecute = true
                   });
   }
 
-  private async void RepairSetupAsync()
+  private async void RepairSetupAsync(object? sender, EventArgs e)
   {
     if (_composition is null || _mainWindowViewModel is null)
     {
@@ -207,7 +207,7 @@ public class App : Application
     _mainWindowViewModel.ShowRepairOutcome(outcome);
   }
 
-  private void OpenDataFolder()
+  private void OpenDataFolder(object? sender, EventArgs e)
   {
     if (_composition is null)
     {
@@ -221,7 +221,7 @@ public class App : Application
                   });
   }
 
-  private void ShowFailureDetail()
+  private void ShowFailureDetail(object? sender, EventArgs e)
   {
     if (_mainWindowViewModel?.FailureDetail is not { } detail)
     {
@@ -231,9 +231,9 @@ public class App : Application
     _ = ShowTechnicalDetailAsync(detail);
   }
 
-  private async void ShowUpdateFailureAsync(Exception failure)
+  private async void ShowUpdateFailureAsync(object? sender, UpdateFailureRequestedEventArgs e)
   {
-    await ShowTechnicalDetailAsync(failure.ToString());
+    await ShowTechnicalDetailAsync(e.FailureDetail);
   }
 
   private async Task ShowTechnicalDetailAsync(string detail)
@@ -250,14 +250,14 @@ public class App : Application
     await dialog.ShowDialog(_mainWindow);
   }
 
-  private async void ShowUpdateConfirmationAsync(string version)
+  private async void ShowUpdateConfirmationAsync(object? sender, UpdateReadyRequestedEventArgs e)
   {
     if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
     {
       return;
     }
 
-    UpdateConfirmViewModel confirm = _composition.CreateUpdateConfirmViewModel(version);
+    UpdateConfirmViewModel confirm = _composition.CreateUpdateConfirmViewModel(e.Version);
     UpdateConfirmDialog dialog = new() { DataContext = confirm };
     var accepted = await dialog.ShowDialog<bool>(_mainWindow);
 
@@ -287,7 +287,7 @@ public class App : Application
     }
   }
 
-  private async void AskWhetherToQuitAsync()
+  private async void AskWhetherToQuitAsync(object? sender, EventArgs e)
   {
     if (_quitConfirmViewModel is null || _mainWindow is null)
     {
@@ -313,5 +313,6 @@ public class App : Application
   {
     _trayIcon?.Dispose();
     _bootstrapper?.Release();
+    _composition?.Dispose();
   }
 }

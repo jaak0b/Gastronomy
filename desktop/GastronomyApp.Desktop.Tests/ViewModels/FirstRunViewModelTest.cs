@@ -6,7 +6,7 @@ using GastronomyApp.Desktop.ViewModels;
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 
 [TestFixture]
-public sealed class FirstRunViewModelTests
+public sealed class FirstRunViewModelTest
 {
 
   [SetUp]

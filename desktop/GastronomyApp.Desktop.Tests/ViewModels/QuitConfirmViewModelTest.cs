@@ -6,7 +6,7 @@ using GastronomyApp.Desktop.ViewModels;
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 
 [TestFixture]
-public sealed class QuitConfirmViewModelTests
+public sealed class QuitConfirmViewModelTest
 {
 
   [SetUp]
@@ -27,7 +27,7 @@ public sealed class QuitConfirmViewModelTests
   {
     var settingsStore = A.Fake<ISettingsStore>();
     A.CallTo(() => settingsStore.Load())
-     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null));
+     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
 
     return new(_launcher,
                _power,

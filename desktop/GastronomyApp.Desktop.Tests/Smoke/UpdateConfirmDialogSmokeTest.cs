@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
-using Avalonia.Interactivity;
 using Avalonia.Threading;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services;
@@ -10,11 +9,12 @@ using GastronomyApp.Desktop.Views;
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
 [TestFixture]
-public sealed class UpdateConfirmDialogSmokeTests
+public sealed class UpdateConfirmDialogSmokeTest
 {
   private const string Version = "9.9.9";
 
   private readonly IDesktopTextProvider _text = new DesktopTextProvider();
+  private readonly HeadlessButtonClick _clicks = new();
 
   [AvaloniaTest]
   public async Task UpdateConfirmDialog_ShowsTheVersionAndReturnsThePressedChoice()
@@ -38,15 +38,13 @@ public sealed class UpdateConfirmDialogSmokeTests
                       Assert.That(viewModel.Body, Does.Contain(Version));
                     });
 
-    cancelDialog.FindControl<Button>("CancelButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    Dispatcher.UIThread.RunJobs();
+    _clicks.Click(cancelDialog, cancelDialog.FindControl<Button>("CancelButton")!);
     Assert.That(await cancelResult, Is.False);
 
     UpdateConfirmDialog confirmDialog = new() { DataContext = viewModel };
     var confirmResult = confirmDialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
-    confirmDialog.FindControl<Button>("ConfirmButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    Dispatcher.UIThread.RunJobs();
+    _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
     Assert.That(await confirmResult, Is.True);
   }
 }
