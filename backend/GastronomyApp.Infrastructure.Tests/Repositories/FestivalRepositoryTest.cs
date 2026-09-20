@@ -36,7 +36,7 @@ public sealed class FestivalRepositoryTest
     await AddFestivalAsync(fixture.DbContext, "Fruehlingsfest", _start.AddMonths(-3), _start.AddMonths(-3).AddDays(2), false);
     var wantedId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     var found = await repository.FindRunningAsync(_start.AddHours(6), TestContext.CurrentContext.CancellationToken);
 
@@ -49,7 +49,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), true);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     var found = await repository.FindRunningAsync(_start.AddHours(6), TestContext.CurrentContext.CancellationToken);
 
@@ -62,7 +62,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     var found = await repository.FindRunningAsync(_start.AddHours(6), TestContext.CurrentContext.CancellationToken);
 
@@ -79,7 +79,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     Assert.Multiple(async () =>
                     {
@@ -96,7 +96,7 @@ public sealed class FestivalRepositoryTest
     await AddFestivalAsync(fixture.DbContext, "Verstecktes Fest", _start, _start.AddDays(1), true);
     var wantedId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     IReadOnlyList<Guid> found = await repository.FindIdsNotEndedAsync(_start.AddHours(6), TestContext.CurrentContext.CancellationToken);
 
@@ -109,7 +109,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -120,7 +120,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest", _start, _start.AddDays(1), false);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     IReadOnlyList<FestivalContentCounts> counts = await repository.FindContentCountsAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -139,7 +139,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
 
     IReadOnlyList<FestivalContentCounts> counts = await repository.FindContentCountsAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -159,7 +159,7 @@ public sealed class FestivalRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
     var newFestivalId = Guid.NewGuid();
 
     await repository.AddAsync(new()
@@ -198,7 +198,7 @@ public sealed class FestivalRepositoryTest
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    FestivalRepository repository = new(fixture.DbContext, new());
+    FestivalRepository repository = new(fixture.DbContext, new(), new ProjectionConfiguration().Build());
     var newFestivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest 2027", _start.AddYears(1), _start.AddYears(1).AddDays(1), false);
 
     await repository.CopyContentsAsync(seeded.FestivalId, newFestivalId, TestContext.CurrentContext.CancellationToken);

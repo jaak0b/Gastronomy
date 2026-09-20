@@ -16,7 +16,7 @@ public sealed class OpenItemRepositoryTest
   public void FindForSettlementAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(async () => await repository.FindForSettlementAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
@@ -25,7 +25,7 @@ public sealed class OpenItemRepositoryTest
   public void FindOwnersAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(async () => await repository.FindOwnersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
@@ -38,7 +38,7 @@ public sealed class OpenItemRepositoryTest
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
     await SettleAsync(fixture, items[0], 350, _orderedAtUtc.AddMinutes(5));
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -54,7 +54,7 @@ public sealed class OpenItemRepositoryTest
     await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
     await PlaceOrderAsync(fixture, lastYearFestivalId, seeded.KitchenStationId, "Tisch 1", 1);
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -68,7 +68,7 @@ public sealed class OpenItemRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 4);
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyDictionary<Guid, OrderItemOwner> owners = await repository.FindOwnersAsync(items, TestContext.CurrentContext.CancellationToken);
 
@@ -90,7 +90,7 @@ public sealed class OpenItemRepositoryTest
     await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 2);
     await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 3", 3);
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<string> tableNames = await repository.FindTableNamesAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -109,7 +109,7 @@ public sealed class OpenItemRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
 
-    OpenItemRepository repository = new(fixture.DbContext);
+    OpenItemRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderItem> selected = await repository.FindForSettlementAsync([items[0]], TestContext.CurrentContext.CancellationToken);
     selected[0].SettledAtUtc = _orderedAtUtc.AddMinutes(5);

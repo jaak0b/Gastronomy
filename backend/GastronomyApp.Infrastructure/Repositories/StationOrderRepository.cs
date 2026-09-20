@@ -2,6 +2,8 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.QueryRows;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -9,10 +11,12 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class StationOrderRepository : IStationOrderRepository
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
 
-  public StationOrderRepository(GastronomyAppDbContext dbContext)
+  public StationOrderRepository(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<IReadOnlyList<QueuedStationOrder>> FindUnfinishedAtStationAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
@@ -60,15 +64,7 @@ public sealed class StationOrderRepository : IStationOrderRepository
 
     List<Guid> ids = orderIds.ToList();
 
-    return await _dbContext.Orders.AsNoTracking()
-                           .Where(order => ids.Contains(order.Id))
-                           .Select(order => new OrderFulfillmentCounts
-                                            {
-                                              OrderId = order.Id,
-                                              ItemCount = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(),
-                                              FulfilledItemCount = order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(item => item.FulfilledAtUtc != null)
-                                            })
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.Orders.AsNoTracking().Where(order => ids.Contains(order.Id)).ProjectToType<OrderFulfillmentCounts>(_mapperConfig).ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyList<StationQueuedWork>> FindQueuedWorkAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -86,11 +82,12 @@ public sealed class StationOrderRepository : IStationOrderRepository
                            .Join(_dbContext.CatalogItems.AsNoTracking(),
                                  joined => joined.Item.CatalogItemId,
                                  catalogItem => catalogItem.Id,
-                                 (joined, catalogItem) => new StationQueuedWork
+                                 (joined, catalogItem) => new StationQueuedWorkRow
                                                           {
-                                                            StationId = joined.StationOrder.StationId,
-                                                            Work = new(catalogItem.ProductionMinutes, catalogItem.IsQueueIndependent)
+                                                            StationOrder = joined.StationOrder,
+                                                            CatalogItem = catalogItem
                                                           })
+                           .ProjectToType<StationQueuedWork>(_mapperConfig)
                            .ToListAsync(cancellationToken);
   }
 
@@ -109,36 +106,13 @@ public sealed class StationOrderRepository : IStationOrderRepository
     return stationOrders.Join(_dbContext.Orders.AsNoTracking(),
                               stationOrder => stationOrder.OrderId,
                               order => order.Id,
-                              (stationOrder, order) => new
+                              (stationOrder, order) => new QueuedStationOrderRow
                                                        {
                                                          StationOrder = stationOrder,
                                                          Order = order
                                                        })
-                        .Where(joined => joined.Order.FestivalId == festivalId)
-                        .OrderBy(joined => joined.StationOrder.StationOrderNumber)
-                        .Select(joined => new QueuedStationOrder
-                                          {
-                                            StationOrderId = joined.StationOrder.Id,
-                                            GlobalOrderNumber = joined.Order.GlobalOrderNumber,
-                                            StationOrderNumber = joined.StationOrder.StationOrderNumber,
-                                            TableName = joined.Order.TableName,
-                                            Note = joined.Order.Note,
-                                            DeliveryMode = joined.StationOrder.DeliveryMode,
-                                            CreatedAtUtc = joined.Order.CreatedAtUtc,
-                                            IsHiddenFromAsItComesQueue = joined.StationOrder.IsHiddenFromAsItComesQueue,
-                                            ItemCount = joined.StationOrder.Items.Count,
-                                            FulfilledItemCount = joined.StationOrder.Items.Count(item => item.FulfilledAtUtc != null),
-                                            Items = joined.StationOrder.Items.OrderBy(item => item.ItemName)
-                                                          .ThenBy(item => item.Note)
-                                                          .ThenBy(item => item.Id)
-                                                          .Select(item => new QueuedOrderItem
-                                                                          {
-                                                                            OrderItemId = item.Id,
-                                                                            ItemName = item.ItemName,
-                                                                            Note = item.Note,
-                                                                            FulfilledAtUtc = item.FulfilledAtUtc
-                                                                          })
-                                                          .ToList()
-                                          });
+                        .Where(row => row.Order.FestivalId == festivalId)
+                        .OrderBy(row => row.StationOrder.StationOrderNumber)
+                        .ProjectToType<QueuedStationOrder>(_mapperConfig);
   }
 }

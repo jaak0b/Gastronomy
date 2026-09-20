@@ -12,7 +12,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     var order = BuildOrder(seeded, Guid.NewGuid());
 
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
@@ -35,7 +35,7 @@ public sealed class OrderRepositoryTest
   public async Task FindByClientOrderIdAsync_UnknownId_ReturnsNull()
   {
     using SqliteInMemoryFixture fixture = new();
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     var found = await repository.FindByClientOrderIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
 
@@ -46,7 +46,7 @@ public sealed class OrderRepositoryTest
   public async Task FindPlacedAsync_AnOrderThatIsNotThere_ReturnsNull()
   {
     using SqliteInMemoryFixture fixture = new();
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(await repository.FindPlacedAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -56,7 +56,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     var order = BuildOrder(seeded, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
@@ -79,7 +79,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     var order = BuildOrder(seeded, Guid.NewGuid());
     order.StationOrders[0].Items[0].FulfilledAtUtc = new(2026, 8, 27, 18, 45, 0, DateTimeKind.Utc);
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
@@ -94,7 +94,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     var order = BuildOrderForTwoStations(seeded, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
@@ -113,7 +113,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext);
+    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     var order = BuildOrderWithItems(seeded, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 

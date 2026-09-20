@@ -2,6 +2,8 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.QueryRows;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -9,10 +11,12 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class OrderRepository : IOrderRepository
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
 
-  public OrderRepository(GastronomyAppDbContext dbContext)
+  public OrderRepository(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<Order?> FindByClientOrderIdAsync(Guid clientOrderId, CancellationToken cancellationToken)
@@ -49,34 +53,15 @@ public sealed class OrderRepository : IOrderRepository
                            .Join(_dbContext.Stations.AsNoTracking(),
                                  stationOrder => stationOrder.StationId,
                                  station => station.Id,
-                                 (stationOrder, station) => new
+                                 (stationOrder, station) => new PlacedStationOrderRow
                                                             {
                                                               StationOrder = stationOrder,
                                                               Station = station
                                                             })
-                           .OrderBy(joined => joined.Station.SortOrder)
-                           .ThenBy(joined => joined.Station.Name)
-                           .ThenBy(joined => joined.StationOrder.Id)
-                           .Select(joined => new PlacedStationOrder
-                                             {
-                                               StationOrderId = joined.StationOrder.Id,
-                                               StationId = joined.StationOrder.StationId,
-                                               StationName = joined.Station.Name,
-                                               StationOrderNumber = joined.StationOrder.StationOrderNumber,
-                                               DeliveryMode = joined.StationOrder.DeliveryMode,
-                                               Items = _dbContext.OrderItems.AsNoTracking()
-                                                                  .Where(item => item.StationOrderId == joined.StationOrder.Id)
-                                                                  .OrderBy(item => item.ItemName)
-                                                                  .ThenBy(item => item.Note)
-                                                                  .ThenBy(item => item.Id)
-                                                                  .Select(item => new PlacedOrderItem
-                                                                                 {
-                                                                                   OrderItemId = item.Id,
-                                                                                   UnitPriceCents = item.UnitPriceCents,
-                                                                                   IsFulfilled = item.FulfilledAtUtc != null
-                                                                                 })
-                                                                 .ToList()
-                                             })
+                           .OrderBy(row => row.Station.SortOrder)
+                           .ThenBy(row => row.Station.Name)
+                           .ThenBy(row => row.StationOrder.Id)
+                           .ProjectToType<PlacedStationOrder>(_mapperConfig)
                            .ToListAsync(cancellationToken);
   }
 }

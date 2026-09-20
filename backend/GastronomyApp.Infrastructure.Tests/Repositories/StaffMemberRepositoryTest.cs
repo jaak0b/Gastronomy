@@ -16,7 +16,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext);
+    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
@@ -37,7 +37,7 @@ public sealed class StaffMemberRepositoryTest
     var lastSeenAtUtc = _now.AddMinutes(-2);
     await GiveAnnaAPhoneAsync(fixture, seeded, lastSeenAtUtc);
 
-    StaffMemberRepository repository = new(fixture.DbContext);
+    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
@@ -55,7 +55,7 @@ public sealed class StaffMemberRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, _now.AddMinutes(-1));
 
-    StaffMemberRepository repository = new(fixture.DbContext);
+    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
@@ -68,7 +68,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext);
+    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -79,7 +79,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext);
+    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     var anna = (await repository.FindByIdAsync(seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken))!;
     anna.Name = "Anne Marie";

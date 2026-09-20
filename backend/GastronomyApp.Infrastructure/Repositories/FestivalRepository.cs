@@ -3,6 +3,8 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.QueryRows;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -12,12 +14,14 @@ public sealed class FestivalRepository : IFestivalRepository
   private const int FirstNumber = 1;
 
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
   private readonly FestivalSchedule _schedule;
 
-  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule)
+  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
     _schedule = schedule;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<Festival?> FindRunningAsync(DateTime nowUtc, CancellationToken cancellationToken)
@@ -50,10 +54,14 @@ public sealed class FestivalRepository : IFestivalRepository
   public async Task<IReadOnlyList<FestivalContentCounts>> FindContentCountsAsync(CancellationToken cancellationToken)
   {
     return await _dbContext.Festivals.AsNoTracking()
-                           .Select(festival => new FestivalContentCounts(festival.Id,
-                                                                         _dbContext.FestivalStations.Count(link => link.FestivalId == festival.Id),
-                                                                         _dbContext.FestivalCatalogItems.Count(menuRow => menuRow.FestivalId == festival.Id),
-                                                                         _dbContext.Orders.Count(order => order.FestivalId == festival.Id)))
+                           .Select(festival => new FestivalContentCountsRow
+                                               {
+                                                 Festival = festival,
+                                                 StationCount = _dbContext.FestivalStations.Count(link => link.FestivalId == festival.Id),
+                                                 MenuItemCount = _dbContext.FestivalCatalogItems.Count(menuRow => menuRow.FestivalId == festival.Id),
+                                                 OrderCount = _dbContext.Orders.Count(order => order.FestivalId == festival.Id)
+                                               })
+                           .ProjectToType<FestivalContentCounts>(_mapperConfig)
                            .ToListAsync(cancellationToken);
   }
 

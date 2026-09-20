@@ -3,6 +3,7 @@ using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -10,10 +11,12 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class DeviceOwnerStore : IDeviceOwnerStore
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
 
-  public DeviceOwnerStore(GastronomyAppDbContext dbContext)
+  public DeviceOwnerStore(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<DeviceOwnerRecord?> FindAsync(DeviceOwner owner, CancellationToken cancellationToken)
@@ -28,28 +31,14 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
         if (staffMember is null)
           return null;
 
-        return new()
-               {
-                 Owner = owner,
-                 Name = staffMember.Name,
-                 IsActive = staffMember.IsActive,
-                 DeviceId = staffMember.DeviceId,
-                 EnrolmentInvitationId = staffMember.EnrolmentInvitationId
-               };
+        return staffMember.Adapt<DeviceOwnerRecord>(_mapperConfig);
       case DeviceOwnerKind.Station:
         var station = await _dbContext.Stations.FirstOrDefaultAsync(candidate => candidate.Id == owner.Id, cancellationToken);
 
         if (station is null)
           return null;
 
-        return new()
-               {
-                 Owner = owner,
-                 Name = station.Name,
-                 IsActive = station.IsActive,
-                 DeviceId = station.DeviceId,
-                 EnrolmentInvitationId = station.EnrolmentInvitationId
-               };
+        return station.Adapt<DeviceOwnerRecord>(_mapperConfig);
       default:
         return new UnreachableCase().Throw<DeviceOwnerRecord?>(owner.Kind);
     }

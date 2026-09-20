@@ -272,7 +272,7 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     AdjustableClock clock = new();
     Pbkdf2SecretHasher secretHasher = new();
-    DeviceOwnerStore ownerStore = new(fixture.DbContext);
+    DeviceOwnerStore ownerStore = new(fixture.DbContext, new ProjectionConfiguration().Build());
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
     EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
 
@@ -371,7 +371,7 @@ public sealed class EnrolmentInvitationStoreTest
   private EnrolmentInvitationStore CreateStore(GastronomyAppDbContext dbContext, AdjustableClock clock)
   {
     Pbkdf2SecretHasher secretHasher = new();
-    DeviceOwnerStore ownerStore = new(dbContext);
+    DeviceOwnerStore ownerStore = new(dbContext, new ProjectionConfiguration().Build());
 
     return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
   }

@@ -16,7 +16,7 @@ public sealed class StationOrderRepositoryTest
   public void FindItemsAtStationAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(async () => await repository.FindItemsAtStationAsync(null!, Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
@@ -25,7 +25,7 @@ public sealed class StationOrderRepositoryTest
   public void FindOrderIdsOfStationOrdersAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(async () => await repository.FindOrderIdsOfStationOrdersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
@@ -34,7 +34,7 @@ public sealed class StationOrderRepositoryTest
   public void FindFulfillmentCountsAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     Assert.That(async () => await repository.FindFulfillmentCountsAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
@@ -46,7 +46,7 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.AsItComes);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -74,7 +74,7 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -146,7 +146,7 @@ public sealed class StationOrderRepositoryTest
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, items);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -160,7 +160,7 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await PlaceOrderAsync(fixture, seeded, seeded.BarStationId, "Tisch 12", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -175,7 +175,7 @@ public sealed class StationOrderRepositoryTest
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 2, DeliveryMode.Together);
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 3", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -195,7 +195,7 @@ public sealed class StationOrderRepositoryTest
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, [items[0]]);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> fulfilled = await repository.FindFulfilledAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -214,7 +214,7 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<QueuedStationOrder> fulfilled = await repository.FindFulfilledAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -229,7 +229,7 @@ public sealed class StationOrderRepositoryTest
     IReadOnlyList<Guid> kitchenItems = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     IReadOnlyList<Guid> barItems = await PlaceOrderAsync(fixture, seeded, seeded.BarStationId, "Tisch 12", 2, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderItem> items = await repository.FindItemsAtStationAsync(kitchenItems.Concat(barItems).ToList(), seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
@@ -243,7 +243,7 @@ public sealed class StationOrderRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderItem> found = await repository.FindItemsAtStationAsync([items[0]], seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     found[0].FulfilledAtUtc = _orderedAtUtc.AddMinutes(5);
@@ -263,7 +263,7 @@ public sealed class StationOrderRepositoryTest
     await PlaceOrderAsync(fixture, seeded, seeded.BarStationId, "Tisch 12", 1, DeliveryMode.AsItComes);
     var barStationOrderId = await StationOrderIdAsync(fixture, seeded.BarStationId);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     var found = await repository.FindAtStationAsync(barStationOrderId, seeded.KitchenStationId, seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -278,7 +278,7 @@ public sealed class StationOrderRepositoryTest
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.AsItComes);
     var stationOrderId = await StationOrderIdAsync(fixture, seeded.KitchenStationId);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     var found = await repository.FindAtStationAsync(stationOrderId, seeded.KitchenStationId, seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
     found!.IsHiddenFromAsItComesQueue = true;
@@ -299,7 +299,7 @@ public sealed class StationOrderRepositoryTest
     var orderId = await OnlyOrderIdAsync(fixture);
     await AddStationOrderAsync(fixture, seeded, orderId, seeded.BarStationId);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
     List<Guid> stationOrderIds = await StationOrderIdsAsync(fixture);
 
     IReadOnlyList<Guid> orderIds = await repository.FindOrderIdsOfStationOrdersAsync(stationOrderIds, TestContext.CurrentContext.CancellationToken);
@@ -317,7 +317,7 @@ public sealed class StationOrderRepositoryTest
     await AddStationOrderAsync(fixture, seeded, orderId, seeded.BarStationId);
     await FulfillAsync(fixture, [kitchenItems[0]]);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([orderId], TestContext.CurrentContext.CancellationToken);
 
@@ -335,7 +335,7 @@ public sealed class StationOrderRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
 
@@ -350,7 +350,7 @@ public sealed class StationOrderRepositoryTest
     await GiveTheSausageAProductionTimeAsync(fixture, seeded);
     await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<StationQueuedWork> queuedWork = await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -375,7 +375,7 @@ public sealed class StationOrderRepositoryTest
     IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, items);
 
-    StationOrderRepository repository = new(fixture.DbContext);
+    StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
     IReadOnlyList<StationQueuedWork> queuedWork = await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -526,6 +526,6 @@ public sealed class StationOrderRepositoryTest
     fixture.DbContext.Orders.Add(order);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    return new(fixture.DbContext);
+    return new(fixture.DbContext, new ProjectionConfiguration().Build());
   }
 }

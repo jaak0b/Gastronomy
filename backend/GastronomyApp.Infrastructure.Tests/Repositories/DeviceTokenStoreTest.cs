@@ -184,7 +184,7 @@ public sealed class DeviceTokenStoreTest
 
   private DeviceTokenStore CreateStore(SqliteInMemoryFixture fixture)
   {
-    return new(fixture.DbContext, new DeviceOwnerStore(fixture.DbContext), new(), new SystemClock());
+    return new(fixture.DbContext, new DeviceOwnerStore(fixture.DbContext, new ProjectionConfiguration().Build()), new(), new SystemClock());
   }
 
   private sealed record TokenParts(string TokenLookupId, string Secret);

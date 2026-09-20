@@ -2,6 +2,8 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.QueryRows;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -9,10 +11,12 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class OpenItemRepository : IOpenItemRepository
 {
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly TypeAdapterConfig _mapperConfig;
 
-  public OpenItemRepository(GastronomyAppDbContext dbContext)
+  public OpenItemRepository(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
   {
     _dbContext = dbContext;
+    _mapperConfig = mapperConfig;
   }
 
   public async Task<IReadOnlyList<OrderItem>> FindOpenAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -35,33 +39,27 @@ public sealed class OpenItemRepository : IOpenItemRepository
 
     List<Guid> ids = orderItemIds.ToList();
 
-    return await _dbContext.OrderItems.AsNoTracking()
-                           .Where(item => ids.Contains(item.Id))
-                           .Join(_dbContext.StationOrders.AsNoTracking(),
-                                 item => item.StationOrderId,
-                                 stationOrder => stationOrder.Id,
-                                 (item, stationOrder) => new
-                                                         {
-                                                           Item = item,
-                                                           StationOrder = stationOrder
-                                                         })
-                           .Join(_dbContext.Orders.AsNoTracking(),
-                                 joined => joined.StationOrder.OrderId,
-                                 order => order.Id,
-                                 (joined, order) => new
-                                                    {
-                                                      joined.Item,
-                                                      Order = order
-                                                    })
-                           .ToDictionaryAsync(joined => joined.Item.Id,
-                                              joined => new OrderItemOwner
-                                                        {
-                                                          OrderId = joined.Order.Id,
-                                                          TableName = joined.Order.TableName,
-                                                          GlobalOrderNumber = joined.Order.GlobalOrderNumber,
-                                                          OrderedAtUtc = joined.Order.CreatedAtUtc
-                                                        },
-                                              cancellationToken);
+    List<OrderItemOwnerRow> rows = await _dbContext.OrderItems.AsNoTracking()
+                                                   .Where(item => ids.Contains(item.Id))
+                                                   .Join(_dbContext.StationOrders.AsNoTracking(),
+                                                         item => item.StationOrderId,
+                                                         stationOrder => stationOrder.Id,
+                                                         (item, stationOrder) => new
+                                                                                 {
+                                                                                   Item = item,
+                                                                                   StationOrder = stationOrder
+                                                                                 })
+                                                   .Join(_dbContext.Orders.AsNoTracking(),
+                                                         joined => joined.StationOrder.OrderId,
+                                                         order => order.Id,
+                                                         (joined, order) => new OrderItemOwnerRow
+                                                                            {
+                                                                              OrderItemId = joined.Item.Id,
+                                                                              Order = order
+                                                                            })
+                                                   .ToListAsync(cancellationToken);
+
+    return rows.ToDictionary(row => row.OrderItemId, row => row.Adapt<OrderItemOwner>(_mapperConfig));
   }
 
   public async Task<IReadOnlyList<string>> FindTableNamesAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)

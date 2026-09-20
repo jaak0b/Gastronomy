@@ -1,4 +1,4 @@
-using GastronomyApp.Infrastructure.Repositories;
+using GastronomyApp.Infrastructure.Projections;
 using Mapster;
 
 namespace GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -9,7 +9,7 @@ public sealed class ProjectionConfiguration
   {
     TypeAdapterConfig config = new() { RequireDestinationMemberSource = true };
 
-    new CatalogProjection().Register(config);
+    config.Scan(typeof(CatalogProjection).Assembly);
     config.Compile();
 
     return config;

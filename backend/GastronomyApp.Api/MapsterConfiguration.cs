@@ -1,4 +1,4 @@
-using GastronomyApp.Infrastructure.Repositories;
+using GastronomyApp.Infrastructure.Projections;
 using Mapster;
 
 namespace GastronomyApp.Api;

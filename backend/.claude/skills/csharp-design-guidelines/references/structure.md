@@ -181,7 +181,10 @@ above.
   responders, `Contracts` for wire records only, and `Auth`, `Hub`, `Hosting`, `ErrorHandling`,
   `Options` and `RateLimiting` for what their names say. In `GastronomyApp.Infrastructure`:
   `Persistence` for the context, the connection factory and the transaction runner, `Repositories`,
-  `Configurations`, `Security` and `ErrorHandling`. In `GastronomyApp.Desktop`: one folder per
+  `Configurations`, `Security` and `ErrorHandling`. `Projections` holds the Mapster `IRegister`
+  classes that declare how entities and query rows become read models, and `QueryRows` holds the
+  intermediate records a query materialises on the way there, so `Repositories` keeps to repositories
+  alone. In `GastronomyApp.Desktop`: one folder per
   concern (`Hosting`, `Updates`, `Settings`, `Setup`, `Platform`, `Localization`, `Logging`,
   `ViewModels`, `Views`), never a `Services` catch-all. In a test project a support type that is not
   a fixture lives under `TestSupport` and the fixture folders mirror the production folders.
