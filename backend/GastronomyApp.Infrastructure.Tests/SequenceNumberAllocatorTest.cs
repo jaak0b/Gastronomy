@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Infrastructure.Repositories;
+﻿using GastronomyApp.Core.Enums;
+using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 
@@ -122,6 +123,60 @@ public sealed class SequenceNumberAllocatorTest
   }
 
   [Test]
+  public async Task FindNextStationOrderNumberAsync_ThreeStationOrdersAtOneStation_ReturnsFour()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    SequenceNumberAllocator allocator = new(fixture.DbContext);
+    var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
+    var stationId = await AddStationAsync(fixture.DbContext, festivalId, "Kueche");
+    await AddStationOrderAsync(fixture.DbContext, festivalId, stationId, 1);
+    await AddStationOrderAsync(fixture.DbContext, festivalId, stationId, 2);
+    await AddStationOrderAsync(fixture.DbContext, festivalId, stationId, 3);
+
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId,
+                                                                     stationId,
+                                                                     TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(nextNumber, Is.EqualTo(4));
+  }
+
+  [Test]
+  public async Task FindNextStationOrderNumberAsync_NoStationOrdersYet_ReturnsOne()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    SequenceNumberAllocator allocator = new(fixture.DbContext);
+    var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
+    var stationId = await AddStationAsync(fixture.DbContext, festivalId, "Kueche");
+
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId,
+                                                                     stationId,
+                                                                     TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(nextNumber, Is.EqualTo(1));
+  }
+
+  [Test]
+  public async Task FindNextStationOrderNumberAsync_StationOrdersOfAnotherStationAndAnotherFestival_AreIgnored()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    SequenceNumberAllocator allocator = new(fixture.DbContext);
+    var firstFestivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
+    var secondFestivalId = await AddFestivalAsync(fixture.DbContext, "Herbstfest");
+    var stationId = await AddStationAsync(fixture.DbContext, firstFestivalId, "Kueche");
+    var otherStationId = await AddStationAsync(fixture.DbContext, firstFestivalId, "Theke");
+    await LinkStationAsync(fixture.DbContext, secondFestivalId, stationId);
+    await AddStationOrderAsync(fixture.DbContext, firstFestivalId, stationId, 1);
+    await AddStationOrderAsync(fixture.DbContext, firstFestivalId, otherStationId, 5);
+    await AddStationOrderAsync(fixture.DbContext, secondFestivalId, stationId, 7);
+
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(firstFestivalId,
+                                                                     stationId,
+                                                                     TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(nextNumber, Is.EqualTo(2));
+  }
+
+  [Test]
   public async Task AllocateGlobalOrderNumberAsync_TwoContextsThatBothReadTheCounterBeforeEitherSaves_RefusesTheSecondSave()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -219,6 +274,37 @@ public sealed class SequenceNumberAllocatorTest
                                      StationId = stationId,
                                      NextStationOrderNumber = 1
                                    });
+
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task AddStationOrderAsync(GastronomyAppDbContext dbContext,
+                                          Guid festivalId,
+                                          Guid stationId,
+                                          int stationOrderNumber)
+  {
+    var orderId = Guid.NewGuid();
+
+    dbContext.Orders.Add(new()
+                         {
+                           Id = orderId,
+                           ClientOrderId = Guid.NewGuid(),
+                           FestivalId = festivalId,
+                           GlobalOrderNumber = stationOrderNumber,
+                           StaffMemberId = Guid.NewGuid(),
+                           TableName = $"Tisch {stationOrderNumber}",
+                           CreatedAtUtc = DateTime.UtcNow
+                         });
+
+    dbContext.StationOrders.Add(new()
+                               {
+                                 Id = Guid.NewGuid(),
+                                 OrderId = orderId,
+                                 FestivalId = festivalId,
+                                 StationId = stationId,
+                                 StationOrderNumber = stationOrderNumber,
+                                 DeliveryMode = DeliveryMode.Together
+                               });
 
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }

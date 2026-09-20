@@ -73,11 +73,20 @@ public sealed class AdminFestivalEndpointsTest
 
   private async Task LetTheFestivalEndAsync()
   {
+    await SetTheFestivalEndAsync(DateTime.UtcNow.AddMinutes(-1));
+  }
+
+  private async Task LetTheFestivalRunAgainAsync()
+  {
+    await SetTheFestivalEndAsync(DateTime.UtcNow.AddYears(1));
+  }
+
+  private async Task SetTheFestivalEndAsync(DateTime endsAtUtc)
+  {
     await using var database = _context.Factory.CreateContext();
     await database.Festivals
                   .Where(festival => festival.Id == _context.World.FestivalId)
-                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc,
-                                                                        DateTime.UtcNow.AddMinutes(-1)));
+                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc, endsAtUtc));
   }
 
   [Test]
@@ -547,6 +556,49 @@ public sealed class AdminFestivalEndpointsTest
   }
 
   [Test]
+  public async Task PutFestivalStation_AfterTheStationWasRemovedAndComesBack_ContinuesTheStationOrderNumber()
+  {
+    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
+    {
+      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+    }
+
+    await LetTheFestivalEndAsync();
+    await AssignTheBratwurstToTheBarAsync();
+
+    using (var removed =
+             await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}"))
+    {
+      Assert.That(removed.StatusCode,
+                  Is.EqualTo(HttpStatusCode.NoContent),
+                  $"Body: {await removed.Content.ReadAsStringAsync()}");
+    }
+
+    await LetTheFestivalRunAgainAsync();
+
+    using (var added =
+             await _context.Client.PutAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}", null))
+    {
+      Assert.That(added.StatusCode,
+                  Is.EqualTo(HttpStatusCode.OK),
+                  $"Body: {await added.Content.ReadAsStringAsync()}");
+    }
+
+    await AssignTheBratwurstToTheKitchenAsync();
+
+    using var secondPlaced = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
+    var raw = await secondPlaced.Content.ReadAsStringAsync();
+
+    Assert.That(secondPlaced.StatusCode, Is.EqualTo(HttpStatusCode.Created), $"Body: {raw}");
+
+    var kitchenStationOrder =
+      JsonDocument.Parse(raw).RootElement.GetProperty("stationOrders").EnumerateArray()
+                   .Single(stationOrder => stationOrder.GetProperty("stationId").GetGuid() == _context.World.KitchenStationId);
+
+    Assert.That(kitchenStationOrder.GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(2));
+  }
+
+  [Test]
   public async Task DeleteFestivalStation_AStationThatNeverServed_TakesItOffTheFestival()
   {
     var stationId = await AddStationToTheFestivalAsync("Kuchenbuffet", 3);
@@ -646,6 +698,18 @@ public sealed class AdminFestivalEndpointsTest
                                                       {
                                                         priceCents = 350,
                                                         stationIds = new[] { _context.World.BarStationId }
+                                                      });
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+  }
+
+  private async Task AssignTheBratwurstToTheKitchenAsync()
+  {
+    using var response = await _context.Client
+                                      .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                      new
+                                                      {
+                                                        priceCents = 350,
+                                                        stationIds = new[] { _context.World.KitchenStationId }
                                                       });
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }

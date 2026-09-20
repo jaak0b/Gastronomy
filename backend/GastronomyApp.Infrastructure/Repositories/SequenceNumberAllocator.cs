@@ -39,4 +39,19 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
     return allocatedValue;
   }
+
+  public async Task<int> FindNextStationOrderNumberAsync(Guid festivalId,
+                                                         Guid stationId,
+                                                         CancellationToken cancellationToken)
+  {
+    var highestUsedNumber = await _dbContext.StationOrders
+                                            .AsNoTracking()
+                                            .Where(stationOrder => stationOrder.FestivalId == festivalId
+                                                                   && stationOrder.StationId == stationId)
+                                            .Select(stationOrder => stationOrder.StationOrderNumber)
+                                            .OrderByDescending(number => number)
+                                            .FirstOrDefaultAsync(cancellationToken);
+
+    return highestUsedNumber + 1;
+  }
 }

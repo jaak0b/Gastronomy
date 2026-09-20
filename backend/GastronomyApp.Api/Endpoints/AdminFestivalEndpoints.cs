@@ -734,11 +734,10 @@ public sealed class AdminFestivalMenuHandler
 
 public sealed class AdminFestivalStationHandler
 {
-  private const int FirstNumber = 1;
-
   private readonly StationChangeAnnouncer _announcer;
   private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly INumberAllocator _numberAllocator;
   private readonly OrderableItems _orderableItems;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalSchedule _schedule;
@@ -747,6 +746,7 @@ public sealed class AdminFestivalStationHandler
   public AdminFestivalStationHandler(GastronomyAppDbContext dbContext,
                                      StationChangeAnnouncer announcer,
                                      OrderableItems orderableItems,
+                                     INumberAllocator numberAllocator,
                                      ResultEnvelope resultEnvelope,
                                      FestivalSchedule schedule,
                                      IClock clock)
@@ -754,6 +754,7 @@ public sealed class AdminFestivalStationHandler
     _dbContext = dbContext;
     _announcer = announcer;
     _orderableItems = orderableItems;
+    _numberAllocator = numberAllocator;
     _resultEnvelope = resultEnvelope;
     _schedule = schedule;
     _clock = clock;
@@ -826,12 +827,14 @@ public sealed class AdminFestivalStationHandler
       return new(Results.Ok(new SavedStationView(stationId)), false);
     }
 
+    var nextStationOrderNumber = await _numberAllocator.FindNextStationOrderNumberAsync(festivalId, stationId, cancellationToken);
+
     _dbContext.FestivalStations.Add(new()
                                     {
                                       Id = Guid.NewGuid(),
                                       FestivalId = festivalId,
                                       StationId = stationId,
-                                      NextStationOrderNumber = FirstNumber
+                                      NextStationOrderNumber = nextStationOrderNumber
                                     });
 
     await _dbContext.SaveChangesAsync(cancellationToken);
