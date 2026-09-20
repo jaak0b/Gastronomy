@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using GastronomyApp.Infrastructure;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +11,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class ConcurrentOrderTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -30,8 +29,7 @@ public sealed class ConcurrentOrderTest
                               });
     await database.SaveChangesAsync();
 
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(new(DeviceOwnerKind.StaffMember, secondStaffMemberId), "de", "NUnit second phone", CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, secondStaffMemberId), "de", "NUnit second phone", CancellationToken.None);
     _secondDeviceToken = issued.PlaintextToken;
   }
 
@@ -51,25 +49,24 @@ public sealed class ConcurrentOrderTest
     Task<HttpResponseMessage> second = SendOrderAsync(_secondDeviceToken);
 
     HttpResponseMessage[] responses = await Task.WhenAll(first, second);
-    IReadOnlyList<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
+    IReadOnlyList<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
 
     foreach (var response in responses)
-    {
       response.Dispose();
-    }
 
     await using var database = _context.Factory.CreateContext();
-    List<int> orderNumbers = await database.Orders
-                                           .Select(order => order.GlobalOrderNumber)
-                                           .OrderBy(number => number)
-                                           .ToListAsync();
+    List<int> orderNumbers = await database.Orders.Select(order => order.GlobalOrderNumber).OrderBy(number => number).ToListAsync();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(statuses,
-                                  Is.All.EqualTo(HttpStatusCode.Created),
-                                  "Two servers sending at the same moment must both be accepted.");
-                      Assert.That(orderNumbers, Is.EqualTo(new[] { 1, 2 }), "Each order keeps its own global number.");
+                      Assert.That(statuses, Is.All.EqualTo(HttpStatusCode.Created), "Two servers sending at the same moment must both be accepted.");
+                      Assert.That(orderNumbers,
+                                  Is.EqualTo(new[]
+                                             {
+                                               1,
+                                               2
+                                             }),
+                                  "Each order keeps its own global number.");
                     });
   }
 
@@ -82,5 +79,3 @@ public sealed class ConcurrentOrderTest
     return _context.Client.SendAsync(request);
   }
 }
-
-

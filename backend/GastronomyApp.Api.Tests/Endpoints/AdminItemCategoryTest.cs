@@ -50,22 +50,21 @@ public sealed class AdminItemCategoryTest
   public async Task PostItem_CategoryThatDoesNotExist_IsRefused()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = Guid.NewGuid(),
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId }
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = Guid.NewGuid(),
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId }
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemCategoryUnknown"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemCategoryUnknown"));
                     });
   }
 
@@ -75,22 +74,21 @@ public sealed class AdminItemCategoryTest
     var categoryId = await SwitchedOffCategoryIdAsync();
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId }
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId,
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId }
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemCategoryIsOff"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemCategoryIsOff"));
                     });
   }
 
@@ -100,14 +98,14 @@ public sealed class AdminItemCategoryTest
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId }
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId,
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId }
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var itemId = body.RootElement.GetProperty("itemId").GetGuid();
@@ -139,8 +137,7 @@ public sealed class AdminItemCategoryTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemCategoryIsOff"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemCategoryIsOff"));
                     });
   }
 
@@ -151,19 +148,16 @@ public sealed class AdminItemCategoryTest
 
     await SwitchTheBeerOffAsync();
 
-    using var deactivatedCategory =
-      await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
+    using var deactivatedCategory = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     Assert.That(deactivatedCategory.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/activate",
-                                                        null);
+    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BeerItemId}/activate", null);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemCategoryIsOff"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemCategoryIsOff"));
                     });
   }
 
@@ -172,8 +166,7 @@ public sealed class AdminItemCategoryTest
   {
     var categoryId = await _context.FindCategoryIdAsync("Getraenke");
     await SwitchTheBeerOffAsync();
-    using var deactivatedCategory =
-      await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
+    using var deactivatedCategory = await _context.Client.PostAsync($"/api/admin/categories/{categoryId}/deactivate", null);
     Assert.That(deactivatedCategory.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/items/{_context.World.BeerItemId}",
@@ -186,9 +179,7 @@ public sealed class AdminItemCategoryTest
 
     using var items = await _context.Client.GetAsync("/api/admin/items");
     var body = JsonDocument.Parse(await items.Content.ReadAsStringAsync());
-    var stored = body.RootElement.GetProperty("items")
-                     .EnumerateArray()
-                     .First(item => item.GetProperty("itemId").GetGuid() == _context.World.BeerItemId);
+    var stored = body.RootElement.GetProperty("items").EnumerateArray().First(item => item.GetProperty("itemId").GetGuid() == _context.World.BeerItemId);
 
     Assert.Multiple(() =>
                     {
@@ -216,7 +207,11 @@ public sealed class AdminItemCategoryTest
   private async Task<Guid> SwitchedOffCategoryIdAsync()
   {
     using var created = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "Kaffee", colourHex = "#6D4C41" });
+                                                              new
+                                                              {
+                                                                name = "Kaffee",
+                                                                colourHex = "#6D4C41"
+                                                              });
     Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
     var categoryId = body.RootElement.GetProperty("categoryId").GetGuid();

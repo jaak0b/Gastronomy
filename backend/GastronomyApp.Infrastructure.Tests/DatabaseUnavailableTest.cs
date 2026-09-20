@@ -32,12 +32,8 @@ public sealed class DatabaseUnavailableTest
       using var readOnlyContext = ContextOn(readOnlyConnection);
       var transaction = new OrderAcceptanceComposition().Create(readOnlyContext);
 
-      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded),
-                                                            TestContext.CurrentContext.CancellationToken),
-                  Throws.InstanceOf<InfrastructureException>()
-                        .With.Property(nameof(InfrastructureException.Reason))
-                        .EqualTo(InfrastructureFailureReason.DatabaseUnavailable)
-                        .And.InnerException.InstanceOf<SqliteException>());
+      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken),
+                  Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
     } finally
     {
       SqliteConnection.ClearAllPools();
@@ -63,11 +59,7 @@ public sealed class DatabaseUnavailableTest
       await ExecuteAsync(blockedContext.Database.GetDbConnection(), "PRAGMA busy_timeout = 200");
       var transaction = new OrderAcceptanceComposition().Create(blockedContext);
 
-      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded),
-                                                            TestContext.CurrentContext.CancellationToken),
-                  Throws.InstanceOf<InfrastructureException>()
-                        .With.Property(nameof(InfrastructureException.Reason))
-                        .EqualTo(InfrastructureFailureReason.DatabaseUnavailable));
+      Assert.That(async () => await transaction.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable));
     } finally
     {
       await ExecuteAsync(blockingConnection, "ROLLBACK");
@@ -83,9 +75,7 @@ public sealed class DatabaseUnavailableTest
 
   private GastronomyAppDbContext ContextOn(SqliteConnection connection)
   {
-    return new(new DbContextOptionsBuilder<GastronomyAppDbContext>()
-              .UseSqlite(connection)
-              .Options);
+    return new(new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(connection).Options);
   }
 
   private OrderAcceptanceRequest BuildRequest(SeededDomain seeded)
@@ -100,7 +90,8 @@ public sealed class DatabaseUnavailableTest
              [
                new()
                {
-                 CatalogItemId = seeded.SausageItemId, Note = null,
+                 CatalogItemId = seeded.SausageItemId,
+                 Note = null,
                  UnitPriceCents = 350
                }
              ]

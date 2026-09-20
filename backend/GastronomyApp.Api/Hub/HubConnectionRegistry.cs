@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace GastronomyApp.Api.Hub;
 
@@ -20,6 +20,6 @@ public sealed class HubConnectionRegistry
 
   public IReadOnlyList<TrackedHubConnection> FindByDevice(Guid deviceId)
   {
-    return [.. _connections.Values.Where(connection => connection.DeviceId == deviceId)];
+    return _connections.Values.Where(connection => connection.DeviceId == deviceId).ToList();
   }
 }

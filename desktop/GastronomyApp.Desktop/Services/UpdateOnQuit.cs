@@ -23,16 +23,12 @@ public sealed class UpdateOnQuit
   public async Task PrepareAsync(CancellationToken cancellationToken)
   {
     if (!_installer.HasDownloadedUpdate)
-    {
       return;
-    }
 
     try
     {
       if (_installDespiteFestival || await _gate.CanInstallNowAsync(cancellationToken))
-      {
-        _installer.InstallOnQuit(restart: false);
-      }
+        _installer.InstallOnQuit(false);
     }
     catch (Exception failure)
     {

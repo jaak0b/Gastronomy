@@ -18,18 +18,15 @@ public sealed class StationEstimateServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _stationRepository.FindAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([Station(_kitchenId, "Kueche"),
-                                                             Station(_barId, "Theke")]));
-    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<StationQueuedWork>>([]));
+   .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
+                                                            Station(_kitchenId, "Kueche"),
+                                                            Station(_barId, "Theke")
+                                                          ]));
+    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<StationQueuedWork>>([]));
 
-    _service = new(_stationRepository,
-                   _stationOrderRepository,
-                   new RunningFestivalLookup(_festivalRepository, new(), _clock),
-                   new());
+    _service = new(_stationRepository, _stationOrderRepository, new(_festivalRepository, new(), _clock), new());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -46,8 +43,7 @@ public sealed class StationEstimateServiceTest
   [Test]
   public async Task ReadAsync_NoFestivalIsRunning_ReportsNoStation()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
     Assert.That(await _service.ReadAsync(TestContext.CurrentContext.CancellationToken), Is.Empty);
   }
@@ -55,13 +51,16 @@ public sealed class StationEstimateServiceTest
   [Test]
   public async Task ReadAsync_NoOrdersYet_ReportsEveryStationAtTheFestivalAsEmpty()
   {
-    IReadOnlyList<StationEstimate> estimates =
-      await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StationEstimate> estimates = await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(estimates.Select(estimate => estimate.StationId),
-                                  Is.EqualTo(new[] { _kitchenId, _barId }));
+                                  Is.EqualTo(new[]
+                                             {
+                                               _kitchenId,
+                                               _barId
+                                             }));
                       Assert.That(estimates.Select(estimate => estimate.QueuedMinutes), Is.All.Zero);
                     });
   }
@@ -71,8 +70,7 @@ public sealed class StationEstimateServiceTest
   {
     GivenQueuedWork(QueuedWorkAt(_kitchenId, 4, false), QueuedWorkAt(_kitchenId, 4, false));
 
-    IReadOnlyList<StationEstimate> estimates =
-      await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StationEstimate> estimates = await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -86,8 +84,7 @@ public sealed class StationEstimateServiceTest
   {
     GivenQueuedWork(QueuedWorkAt(_kitchenId, 4, false), QueuedWorkAt(_kitchenId, 30, true));
 
-    IReadOnlyList<StationEstimate> estimates =
-      await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StationEstimate> estimates = await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(estimates[0].QueuedMinutes, Is.EqualTo(4));
   }
@@ -97,14 +94,12 @@ public sealed class StationEstimateServiceTest
   {
     await _service.ReadAsync(TestContext.CurrentContext.CancellationToken);
 
-    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .MustHaveHappened();
+    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(_festivalId, A<CancellationToken>._)).MustHaveHappened();
   }
 
   private void GivenQueuedWork(params StationQueuedWork[] work)
   {
-    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<StationQueuedWork>>([.. work]));
+    A.CallTo(() => _stationOrderRepository.FindQueuedWorkAtFestivalAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<StationQueuedWork>>(work.ToList()));
   }
 
   private StationQueuedWork QueuedWorkAt(Guid stationId, double? productionMinutes, bool isQueueIndependent)

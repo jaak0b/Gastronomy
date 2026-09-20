@@ -6,7 +6,6 @@ namespace GastronomyApp.Api.Tests.Hub;
 [TestFixture]
 public sealed class HubGroupMembershipTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -33,9 +32,6 @@ public sealed class HubGroupMembershipTest
 
   private HubConnection Connect(string deviceToken)
   {
-    return new HubConnectionBuilder()
-          .WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}"))
-          .Build();
+    return new HubConnectionBuilder().WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}")).Build();
   }
 }
-

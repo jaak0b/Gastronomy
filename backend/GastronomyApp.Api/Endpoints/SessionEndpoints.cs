@@ -11,26 +11,17 @@ public static class SessionEndpoints
 {
   public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder routes)
   {
-    var group = routes.MapGroup("/api/session")
-                      .RequireAuthorization()
-                      .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    var group = routes.MapGroup("/api/session").RequireAuthorization().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
     group.MapGet(string.Empty,
-                 async (HttpContext httpContext,
-                        CallerIdentity callerIdentity,
-                        SessionHandler handler,
-                        CancellationToken cancellationToken) =>
+                 async (HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
                    return await handler.ReadAsync(caller, cancellationToken);
                  });
 
     group.MapPut("/language",
-                 async (LanguageChangeRequest request,
-                        HttpContext httpContext,
-                        CallerIdentity callerIdentity,
-                        SessionHandler handler,
-                        CancellationToken cancellationToken) =>
+                 async (LanguageChangeRequest request, HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
                    return await handler.ChangeLanguageAsync(request, caller, cancellationToken);

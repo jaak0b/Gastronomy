@@ -6,7 +6,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class OrderIdempotencyTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -67,10 +66,7 @@ public sealed class OrderIdempotencyTest
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    OrderBody different = new(clientOrderId,
-                              "Tisch 99",
-                              null,
-                              [new(_context.World.BratwurstItemId, 350, null, null)]);
+    OrderBody different = new(clientOrderId, "Tisch 99", null, [new(_context.World.BratwurstItemId, 350, null, null)]);
 
     string secondBody;
     using (var second = await _context.PostOrderAsync(different))
@@ -93,4 +89,3 @@ public sealed class OrderIdempotencyTest
                     });
   }
 }
-

@@ -33,12 +33,10 @@ public sealed class StationGroupTest
     TaskCompletionSource<Guid> heardByThePhone = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var tablet = Connect(_kitchenToken);
-    tablet.On<JsonElement>("StationOrdersChanged",
-                           payload => heardByTheTablet.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    tablet.On<JsonElement>("StationOrdersChanged", payload => heardByTheTablet.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await using var phone = Connect(_context.DeviceToken);
-    phone.On<JsonElement>("StationOrdersChanged",
-                          payload => heardByThePhone.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    phone.On<JsonElement>("StationOrdersChanged", payload => heardByThePhone.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await tablet.StartAsync();
     await phone.StartAsync();
@@ -48,7 +46,7 @@ public sealed class StationGroupTest
       Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
-    var heardByBoth = Task.WhenAll(heardByTheTablet.Task, heardByThePhone.Task);
+    Task<Guid[]> heardByBoth = Task.WhenAll(heardByTheTablet.Task, heardByThePhone.Task);
     var received = await Task.WhenAny(heardByBoth, Task.Delay(_patience));
 
     Assert.That(received, Is.SameAs(heardByBoth), "The tablet of the station and the waiter phones must be told about its new station order.");
@@ -73,15 +71,11 @@ public sealed class StationGroupTest
     IReadOnlyList<Guid> orderItemIds = await KitchenItemIdsAsync();
 
     await using var tablet = Connect(_kitchenToken);
-    tablet.On<JsonElement>("StationOrdersChanged",
-                           payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    tablet.On<JsonElement>("StationOrdersChanged", payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await tablet.StartAsync();
 
-    using (var fulfilled = await _context.SendAsAsync(_kitchenToken,
-                                                      HttpMethod.Post,
-                                                      "/api/station/items/fulfill",
-                                                      new StationItemSelectionBody(orderItemIds)))
+    using (var fulfilled = await _context.SendAsAsync(_kitchenToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(orderItemIds)))
     {
       Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -109,24 +103,18 @@ public sealed class StationGroupTest
     IReadOnlyList<Guid> orderItemIds = await KitchenItemIdsAsync();
 
     await using var phone = Connect(_context.DeviceToken);
-    phone.On<JsonElement>("OrderStatusChanged",
-                          payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
+    phone.On<JsonElement>("OrderStatusChanged", payload => heard.TrySetResult(payload.GetProperty("orderId").GetGuid()));
 
     await phone.StartAsync();
 
-    using (var fulfilled = await _context.SendAsAsync(_kitchenToken,
-                                                      HttpMethod.Post,
-                                                      "/api/station/items/fulfill",
-                                                      new StationItemSelectionBody(orderItemIds)))
+    using (var fulfilled = await _context.SendAsAsync(_kitchenToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(orderItemIds)))
     {
       Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "The waiter who sent the order must learn that the station has finished it.");
+    Assert.That(received, Is.SameAs(heard.Task), "The waiter who sent the order must learn that the station has finished it.");
 
     Assert.That(await heard.Task, Is.EqualTo(orderId));
   }
@@ -136,20 +124,11 @@ public sealed class StationGroupTest
     using var response = await _context.SendAsAsync(_kitchenToken, HttpMethod.Get, "/api/station/orders");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return
-    [
-      .. body.RootElement
-             .GetProperty("orders")[0]
-             .GetProperty("items")
-             .EnumerateArray()
-             .Select(item => item.GetProperty("orderItemId").GetGuid())
-    ];
+    return body.RootElement.GetProperty("orders")[0].GetProperty("items").EnumerateArray().Select(item => item.GetProperty("orderItemId").GetGuid()).ToList();
   }
 
   private HubConnection Connect(string deviceToken)
   {
-    return new HubConnectionBuilder()
-          .WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}"))
-          .Build();
+    return new HubConnectionBuilder().WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}")).Build();
   }
 }

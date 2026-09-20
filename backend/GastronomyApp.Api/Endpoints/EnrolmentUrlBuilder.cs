@@ -36,15 +36,14 @@ public sealed class EnrolmentUrlBuilder
   private int ResolvePort()
   {
     if (_hostOptions.Port != 0)
-    {
       return _hostOptions.Port;
-    }
 
     var addresses = _server.Features.Get<IServerAddressesFeature>();
     var boundAddress = addresses?.Addresses.FirstOrDefault();
 
-    return boundAddress is not null && Uri.TryCreate(boundAddress, UriKind.Absolute, out var uri)
-             ? uri.Port
-             : _hostOptions.Port;
+    if (boundAddress is not null && Uri.TryCreate(boundAddress, UriKind.Absolute, out var uri))
+      return uri.Port;
+
+    return _hostOptions.Port;
   }
 }

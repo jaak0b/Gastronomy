@@ -5,7 +5,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class SinglePageAppShellTest
 {
-
   [SetUp]
   public async Task SetUp()
   {

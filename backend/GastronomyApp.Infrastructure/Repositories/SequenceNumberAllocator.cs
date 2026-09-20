@@ -14,8 +14,7 @@ public sealed class SequenceNumberAllocator : INumberAllocator
 
   public async Task<int> AllocateGlobalOrderNumberAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    var festival = await _dbContext.Festivals
-                                   .FirstAsync(candidate => candidate.Id == festivalId, cancellationToken);
+    var festival = await _dbContext.Festivals.FirstAsync(candidate => candidate.Id == festivalId, cancellationToken);
 
     var allocatedValue = festival.NextOrderNumber;
     festival.NextOrderNumber = allocatedValue + 1;
@@ -24,14 +23,9 @@ public sealed class SequenceNumberAllocator : INumberAllocator
     return allocatedValue;
   }
 
-  public async Task<int> AllocateStationOrderNumberAsync(Guid festivalId,
-                                                         Guid stationId,
-                                                         CancellationToken cancellationToken)
+  public async Task<int> AllocateStationOrderNumberAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    var link = await _dbContext.FestivalStations
-                               .FirstAsync(candidate => candidate.FestivalId == festivalId
-                                                        && candidate.StationId == stationId,
-                                           cancellationToken);
+    var link = await _dbContext.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId && candidate.StationId == stationId, cancellationToken);
 
     var allocatedValue = link.NextStationOrderNumber;
     link.NextStationOrderNumber = allocatedValue + 1;
@@ -40,14 +34,10 @@ public sealed class SequenceNumberAllocator : INumberAllocator
     return allocatedValue;
   }
 
-  public async Task<int> FindNextStationOrderNumberAsync(Guid festivalId,
-                                                         Guid stationId,
-                                                         CancellationToken cancellationToken)
+  public async Task<int> FindNextStationOrderNumberAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    var highestUsedNumber = await _dbContext.StationOrders
-                                            .AsNoTracking()
-                                            .Where(stationOrder => stationOrder.FestivalId == festivalId
-                                                                   && stationOrder.StationId == stationId)
+    var highestUsedNumber = await _dbContext.StationOrders.AsNoTracking()
+                                            .Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.StationId == stationId)
                                             .Select(stationOrder => stationOrder.StationOrderNumber)
                                             .OrderByDescending(number => number)
                                             .FirstOrDefaultAsync(cancellationToken);

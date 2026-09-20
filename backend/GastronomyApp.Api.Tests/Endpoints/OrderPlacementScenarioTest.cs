@@ -7,7 +7,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class OrderPlacementScenarioTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -36,7 +35,11 @@ public sealed class OrderPlacementScenarioTest
                       Assert.That(placed.GlobalOrderNumber, Is.EqualTo(1), "A fresh session numbers from one.");
                       Assert.That(placed.StationOrderCount, Is.EqualTo(2), "The order spans the kitchen and the bar.");
                       Assert.That(placed.SequenceNumbers,
-                                  Is.EqualTo(new[] { 1, 1 }),
+                                  Is.EqualTo(new[]
+                                             {
+                                               1,
+                                               1
+                                             }),
                                   "Each station keeps its own independent run of sequence numbers.");
                       Assert.That(placed.TotalCents, Is.EqualTo(1000));
                     });
@@ -72,12 +75,7 @@ public sealed class OrderPlacementScenarioTest
       var body = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
       var stationOrder = body.RootElement.GetProperty("orders")[0];
 
-      kitchenItemIds =
-      [
-        .. stationOrder.GetProperty("items")
-                       .EnumerateArray()
-                       .Select(item => item.GetProperty("orderItemId").GetGuid())
-      ];
+      kitchenItemIds = stationOrder.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("orderItemId").GetGuid()).ToList();
 
       Assert.Multiple(() =>
                       {
@@ -88,10 +86,7 @@ public sealed class OrderPlacementScenarioTest
                       });
     }
 
-    using (var fulfilled = await _context.SendAsAsync(kitchenToken,
-                                                       HttpMethod.Post,
-                                                       "/api/station/items/fulfill",
-                                                       new StationItemSelectionBody(kitchenItemIds)))
+    using (var fulfilled = await _context.SendAsAsync(kitchenToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(kitchenItemIds)))
     {
       Assert.That(fulfilled.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -112,8 +107,7 @@ public sealed class OrderPlacementScenarioTest
   {
     string qrCodeValue;
 
-    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                                 new { stationId }))
+    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { stationId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
       var body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());
@@ -121,8 +115,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                              new RedeemBody(qrCodeValue, null, "NUnit tablet"));
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null, "NUnit tablet"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -135,8 +128,7 @@ public sealed class OrderPlacementScenarioTest
   {
     string qrCodeValue;
 
-    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                                 new { staffMemberId = _context.World.StaffMemberId }))
+    using (var invitation = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId }))
     {
       Assert.That(invitation.StatusCode, Is.EqualTo(HttpStatusCode.Created));
       var body = JsonDocument.Parse(await invitation.Content.ReadAsStringAsync());
@@ -144,8 +136,7 @@ public sealed class OrderPlacementScenarioTest
       qrCodeValue = qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
     }
 
-    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                              new RedeemBody(qrCodeValue, null, "NUnit"));
+    using var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(qrCodeValue, null, "NUnit"));
 
     Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -163,10 +154,8 @@ public sealed class OrderPlacementScenarioTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var items = body.RootElement.GetProperty("items");
 
-    var bratwurst = items.EnumerateArray()
-                         .First(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
-    var beer = items.EnumerateArray()
-                    .First(item => item.GetProperty("id").GetGuid() == _context.World.BeerItemId);
+    var bratwurst = items.EnumerateArray().First(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
+    var beer = items.EnumerateArray().First(item => item.GetProperty("id").GetGuid() == _context.World.BeerItemId);
 
     Assert.Multiple(() =>
                     {
@@ -174,10 +163,7 @@ public sealed class OrderPlacementScenarioTest
                       Assert.That(beer.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
                     });
 
-    return new(_context.World.BratwurstItemId,
-               bratwurst.GetProperty("priceCents").GetInt32(),
-               _context.World.BeerItemId,
-               beer.GetProperty("priceCents").GetInt32());
+    return new(_context.World.BratwurstItemId, bratwurst.GetProperty("priceCents").GetInt32(), _context.World.BeerItemId, beer.GetProperty("priceCents").GetInt32());
   }
 
   private async Task<PlacedOrder> SendOrderAsync(string deviceToken, CatalogSelection selection)
@@ -202,6 +188,6 @@ public sealed class OrderPlacementScenarioTest
                placed.RootElement.GetProperty("globalOrderNumber").GetInt32(),
                placed.RootElement.GetProperty("totalCents").GetInt32(),
                stationOrders.GetArrayLength(),
-               [.. stationOrders.EnumerateArray().Select(stationOrder => stationOrder.GetProperty("stationOrderNumber").GetInt32())]);
+               stationOrders.EnumerateArray().Select(stationOrder => stationOrder.GetProperty("stationOrderNumber").GetInt32()).ToList());
   }
 }

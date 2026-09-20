@@ -13,8 +13,7 @@ public sealed class PlacedOrderReaderTest
   public void SetUp()
   {
     _orderRepository = A.Fake<IOrderRepository>();
-    A.CallTo(() => _orderRepository.FindPlacedAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<PlacedOrder?>(null));
+    A.CallTo(() => _orderRepository.FindPlacedAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<PlacedOrder?>(null));
 
     _reader = new(_orderRepository, new(), new());
   }
@@ -36,7 +35,7 @@ public sealed class PlacedOrderReaderTest
   {
     GivenTheOrderHolds(Item(350, false), Item(400, false));
 
-    PlacedOrderReport report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
+    var report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
 
     Assert.Multiple(() =>
                     {
@@ -51,7 +50,7 @@ public sealed class PlacedOrderReaderTest
   {
     GivenTheOrderHolds(Item(350, true), Item(400, false));
 
-    PlacedOrderReport report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
+    var report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
 
     Assert.That(report.Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
@@ -61,7 +60,7 @@ public sealed class PlacedOrderReaderTest
   {
     GivenTheOrderHolds(Item(350, true), Item(400, true));
 
-    PlacedOrderReport report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
+    var report = (await _reader.FindAsync(_orderId, CancellationToken.None))!;
 
     Assert.That(report.Status, Is.EqualTo(OrderStatus.Fulfilled));
   }
@@ -87,8 +86,7 @@ public sealed class PlacedOrderReaderTest
                                 ]
                               };
 
-    A.CallTo(() => _orderRepository.FindPlacedAsync(_orderId, A<CancellationToken>._))
-     .Returns(Task.FromResult<PlacedOrder?>(placedOrder));
+    A.CallTo(() => _orderRepository.FindPlacedAsync(_orderId, A<CancellationToken>._)).Returns(Task.FromResult<PlacedOrder?>(placedOrder));
   }
 
   private PlacedOrderItem Item(int unitPriceCents, bool isFulfilled)

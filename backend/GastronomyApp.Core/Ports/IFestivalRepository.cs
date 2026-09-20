@@ -19,9 +19,7 @@ public interface IFestivalRepository
 
   public Task AddAsync(Festival festival, CancellationToken cancellationToken);
 
-  public Task CopyContentsAsync(Guid copiedFromFestivalId,
-                                Guid newFestivalId,
-                                CancellationToken cancellationToken);
+  public Task CopyContentsAsync(Guid copiedFromFestivalId, Guid newFestivalId, CancellationToken cancellationToken);
 
   public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

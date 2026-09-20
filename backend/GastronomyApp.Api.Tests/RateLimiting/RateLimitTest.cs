@@ -11,7 +11,6 @@ namespace GastronomyApp.Api.Tests.RateLimiting;
 [TestFixture]
 public sealed class RateLimitTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -24,8 +23,7 @@ public sealed class RateLimitTest
     }
 
     using var scope = _factory.Services.CreateScope();
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId), "de", "NUnit", CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId), "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }
 
@@ -48,22 +46,21 @@ public sealed class RateLimitTest
 
     var allowed = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
     var refused = responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
-    var firstRefusal = responses
-     .FirstOrDefault(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+    var firstRefusal = responses.FirstOrDefault(response => response.StatusCode == HttpStatusCode.TooManyRequests);
 
-    var refusalBody = firstRefusal is null ? string.Empty : await firstRefusal.Content.ReadAsStringAsync();
+    var refusalBody = string.Empty;
+
+    if (firstRefusal is not null)
+      refusalBody = await firstRefusal.Content.ReadAsStringAsync();
 
     foreach (var response in responses)
-    {
       response.Dispose();
-    }
 
     Assert.Multiple(() =>
                     {
                       Assert.That(allowed, Is.EqualTo(DeviceRequestsPerMinute), "The window grants exactly its permit count.");
                       Assert.That(refused, Is.EqualTo(1));
-                      Assert.That(JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("session.tooManyRequests"));
+                      Assert.That(JsonDocument.Parse(refusalBody).RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("session.tooManyRequests"));
                     });
   }
 
@@ -101,8 +98,7 @@ public sealed class RateLimitTest
 
   private Task<HttpResponseMessage> SendRedeemRequestAsync()
   {
-    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                          new RedeemBody("not-a-real-code", null, "NUnit"));
+    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody("not-a-real-code", null, "NUnit"));
   }
 
   private async Task<HttpResponseMessage> SendSessionRequestAsync()
@@ -113,4 +109,3 @@ public sealed class RateLimitTest
     return await _factory.Client.SendAsync(request);
   }
 }
-

@@ -8,7 +8,6 @@ namespace GastronomyApp.Desktop.Tests.ViewModels;
 [TestFixture]
 public sealed class QuitConfirmViewModelTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -26,16 +25,9 @@ public sealed class QuitConfirmViewModelTest
   private MainWindowViewModel CreateHostViewModel()
   {
     var settingsStore = A.Fake<ISettingsStore>();
-    A.CallTo(() => settingsStore.Load())
-     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
+    A.CallTo(() => settingsStore.Load()).Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
 
-    return new(_launcher,
-               _power,
-               settingsStore,
-               _text,
-               A.Fake<IFreePortProvider>(),
-               A.Fake<IUpdateInstaller>(),
-               "1.2.3");
+    return new(_launcher, _power, settingsStore, _text, A.Fake<IFreePortProvider>(), A.Fake<IUpdateInstaller>(), "1.2.3");
   }
 
   private QuitConfirmViewModel CreateViewModel()
@@ -84,9 +76,7 @@ public sealed class QuitConfirmViewModelTest
   {
     var viewModel = CreateViewModel();
     var exitsSeenWhenStopping = -1;
-    A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._))
-     .Invokes(() => exitsSeenWhenStopping = _exitRequests)
-     .Returns(Task.CompletedTask);
+    A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).Invokes(() => exitsSeenWhenStopping = _exitRequests).Returns(Task.CompletedTask);
     viewModel.RequestQuit();
 
     await viewModel.ConfirmAsync();
@@ -144,6 +134,11 @@ public sealed class QuitConfirmViewModelTest
 
     await viewModel.ConfirmAsync();
 
-    Assert.That(order, Is.EqualTo(new List<string> { "update", "stop" }));
+    Assert.That(order,
+                Is.EqualTo(new List<string>
+                           {
+                             "update",
+                             "stop"
+                           }));
   }
 }

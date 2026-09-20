@@ -22,19 +22,13 @@ public sealed class FestivalSchedule
   {
     ArgumentNullException.ThrowIfNull(festivals);
 
-    return festivals.Any(festival => festival.StartsAtUtc > nowUtc
-                                     && festival.StartsAtUtc <= nowUtc + window);
+    return festivals.Any(festival => festival.StartsAtUtc > nowUtc && festival.StartsAtUtc <= nowUtc + window);
   }
 
-  public Festival? FindOverlapping(Guid candidateId,
-                               DateTime startsAtUtc,
-                               DateTime endsAtUtc,
-                               IReadOnlyCollection<Festival> others)
+  public Festival? FindOverlapping(Guid candidateId, DateTime startsAtUtc, DateTime endsAtUtc, IReadOnlyCollection<Festival> others)
   {
     ArgumentNullException.ThrowIfNull(others);
 
-    return others.FirstOrDefault(other => other.Id != candidateId
-                                          && startsAtUtc < other.EndsAtUtc
-                                          && other.StartsAtUtc < endsAtUtc);
+    return others.FirstOrDefault(other => other.Id != candidateId && startsAtUtc < other.EndsAtUtc && other.StartsAtUtc < endsAtUtc);
   }
 }

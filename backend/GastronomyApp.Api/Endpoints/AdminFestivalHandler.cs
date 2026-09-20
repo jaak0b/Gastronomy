@@ -15,10 +15,7 @@ public sealed class AdminFestivalHandler
   private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalAdministrationService _service;
 
-  public AdminFestivalHandler(FestivalAdministrationService service,
-                              FestivalChangeAnnouncer announcer,
-                              ResultEnvelope resultEnvelope,
-                              ILogger<AdminFestivalHandler> logger)
+  public AdminFestivalHandler(FestivalAdministrationService service, FestivalChangeAnnouncer announcer, ResultEnvelope resultEnvelope, ILogger<AdminFestivalHandler> logger)
   {
     _service = service;
     _announcer = announcer;
@@ -30,59 +27,46 @@ public sealed class AdminFestivalHandler
   {
     IReadOnlyList<AdministeredFestival> festivals = await _service.ListAsync(cancellationToken);
 
-    return Results.Ok(new AdminFestivalListView([.. festivals.Select(BuildFestivalView)]));
+    return Results.Ok(new AdminFestivalListView(festivals.Select(BuildFestivalView).ToList()));
   }
 
   public async Task<IResult> CreateAsync(SaveFestivalRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> created =
-      await _service.CreateAsync(BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest(request), cancellationToken);
 
-    return await AnsweredAsync(created,
-                               festivalId => Results.Json(new SavedFestivalView(festivalId),
-                                                          statusCode: StatusCodes.Status201Created));
+    return await AnsweredAsync(created, festivalId => Results.Json(new SavedFestivalView(festivalId), statusCode: StatusCodes.Status201Created));
   }
 
-  public async Task<IResult> UpdateAsync(Guid festivalId,
-                                         SaveFestivalRequest request,
-                                         CancellationToken cancellationToken)
+  public async Task<IResult> UpdateAsync(Guid festivalId, SaveFestivalRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> updated =
-      await _service.UpdateAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
 
     return await AnsweredAsync(updated, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
   }
 
-  public async Task<IResult> CopyAsync(Guid festivalId,
-                                       SaveFestivalRequest request,
-                                       CancellationToken cancellationToken)
+  public async Task<IResult> CopyAsync(Guid festivalId, SaveFestivalRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> copied =
-      await _service.CopyAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(festivalId, BuildPeriodRequest(request), cancellationToken);
 
-    return await AnsweredAsync(copied,
-                               newFestivalId => Results.Json(new SavedFestivalView(newFestivalId),
-                                                             statusCode: StatusCodes.Status201Created));
+    return await AnsweredAsync(copied, newFestivalId => Results.Json(new SavedFestivalView(newFestivalId), statusCode: StatusCodes.Status201Created));
   }
 
   public async Task<IResult> HideAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    Result<SavedFestival, FestivalAdministrationFailure> hidden =
-      await _service.HideAsync(festivalId, cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> hidden = await _service.HideAsync(festivalId, cancellationToken);
 
     return await AnsweredAsync(hidden, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
   }
 
   public async Task<IResult> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    Result<SavedFestival, FestivalAdministrationFailure> shown =
-      await _service.ShowAsync(festivalId, cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> shown = await _service.ShowAsync(festivalId, cancellationToken);
 
     return await AnsweredAsync(shown, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
   }
@@ -99,29 +83,16 @@ public sealed class AdminFestivalHandler
 
   private AdminFestivalView BuildFestivalView(AdministeredFestival festival)
   {
-    return new(festival.FestivalId,
-               festival.Name,
-               festival.StartsAtUtc,
-               festival.EndsAtUtc,
-               festival.IsHidden,
-               festival.IsRunning,
-               festival.StationCount,
-               festival.MenuItemCount,
-               festival.OrderCount);
+    return new(festival.FestivalId, festival.Name, festival.StartsAtUtc, festival.EndsAtUtc, festival.IsHidden, festival.IsRunning, festival.StationCount, festival.MenuItemCount, festival.OrderCount);
   }
 
-  private async Task<IResult> AnsweredAsync(Result<SavedFestival, FestivalAdministrationFailure> written,
-                                            Func<Guid, IResult> buildResponse)
+  private async Task<IResult> AnsweredAsync(Result<SavedFestival, FestivalAdministrationFailure> written, Func<Guid, IResult> buildResponse)
   {
     if (!written.IsSuccess)
-    {
       return RefusalFor(written.Failure);
-    }
 
     if (written.Value.SomethingChanged)
-    {
       await _announcer.AnnounceAsync();
-    }
 
     return buildResponse(written.Value.FestivalId);
   }
@@ -131,24 +102,10 @@ public sealed class AdminFestivalHandler
     return failure.Reason switch
            {
              FestivalAdministrationFailureReason.FestivalNotFound => Results.NotFound(),
-             FestivalAdministrationFailureReason.NameMissing =>
-               _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                       "ValidationFailed",
-                                       "admin.festivalNameMissing"),
-             FestivalAdministrationFailureReason.PeriodInvalid =>
-               _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                       "ValidationFailed",
-                                       "admin.festivalPeriodInvalid"),
-             FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival =>
-               _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                       "FestivalOverlaps",
-                                       "admin.festivalOverlaps",
-                                       new Dictionary<string, string>
-                                       {
-                                         ["name"] = failure.OverlappingFestivalName ?? string.Empty
-                                       }),
-             FestivalAdministrationFailureReason.FestivalIsRunning =>
-               RefusedHidingARunningFestival(failure.OffendingFestivalId),
+             FestivalAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.festivalNameMissing"),
+             FestivalAdministrationFailureReason.PeriodInvalid => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.festivalPeriodInvalid"),
+             FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "FestivalOverlaps", "admin.festivalOverlaps", new Dictionary<string, string> { ["name"] = failure.OverlappingFestivalName ?? string.Empty }),
+             FestivalAdministrationFailureReason.FestivalIsRunning => RefusedHidingARunningFestival(failure.OffendingFestivalId),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)
            };
   }

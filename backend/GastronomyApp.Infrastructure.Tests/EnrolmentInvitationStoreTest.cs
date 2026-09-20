@@ -18,8 +18,7 @@ public sealed class EnrolmentInvitationStoreTest
     var store = CreateStore(fixture, new());
 
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de-DE,de;q=0.9"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de-DE,de;q=0.9"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -40,8 +39,7 @@ public sealed class EnrolmentInvitationStoreTest
     var store = CreateStore(fixture, new());
 
     var created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, "Bernd", "Test agent", "de-DE,de;q=0.9"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, "Bernd", "Test agent", "de-DE,de;q=0.9"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -62,8 +60,7 @@ public sealed class EnrolmentInvitationStoreTest
     var store = CreateStore(fixture, new());
 
     var created = await store.CreateAsync(null, TestContext.CurrentContext.CancellationToken);
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, "   ", "Test agent", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, "   ", "Test agent", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -82,10 +79,9 @@ public sealed class EnrolmentInvitationStoreTest
 
     var created = await store.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken);
     var kitchenBeforeRedemption = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
-    var pointedAtTheInvitation = kitchenBeforeRedemption.EnrolmentInvitationId;
+    Guid? pointedAtTheInvitation = kitchenBeforeRedemption.EnrolmentInvitationId;
 
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Tablet", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Tablet", "de"), TestContext.CurrentContext.CancellationToken);
     var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
@@ -112,8 +108,7 @@ public sealed class EnrolmentInvitationStoreTest
     kitchen.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Tablet", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Tablet", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -134,8 +129,7 @@ public sealed class EnrolmentInvitationStoreTest
     anna.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Phone", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Phone", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList));
   }
@@ -150,10 +144,8 @@ public sealed class EnrolmentInvitationStoreTest
     var first = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
     var second = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
 
-    var firstRow = await fixture.DbContext.EnrolmentInvitations
-                                .SingleAsync(invitation => invitation.Id == first.InvitationId, TestContext.CurrentContext.CancellationToken);
-    var secondRow = await fixture.DbContext.EnrolmentInvitations
-                                 .SingleAsync(invitation => invitation.Id == second.InvitationId, TestContext.CurrentContext.CancellationToken);
+    var firstRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == first.InvitationId, TestContext.CurrentContext.CancellationToken);
+    var secondRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == second.InvitationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -194,8 +186,7 @@ public sealed class EnrolmentInvitationStoreTest
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
     clock.Advance(TimeSpan.FromMinutes(6));
 
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeExpired));
   }
@@ -209,18 +200,15 @@ public sealed class EnrolmentInvitationStoreTest
     var store = CreateStore(fixture, clock);
 
     var firstInvitation = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var firstRedemption = await store.RedeemAsync(new(firstInvitation.QRCodeValue, null, "Old phone", "de"),
-                                                  TestContext.CurrentContext.CancellationToken);
+    var firstRedemption = await store.RedeemAsync(new(firstInvitation.QRCodeValue, null, "Old phone", "de"), TestContext.CurrentContext.CancellationToken);
 
     var staffMemberId = firstRedemption.StaffMember!.Id;
     var oldDeviceId = firstRedemption.Device!.Id;
 
     var secondInvitation = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var secondRedemption = await store.RedeemAsync(new(secondInvitation.QRCodeValue, null, "New phone", "de"),
-                                                   TestContext.CurrentContext.CancellationToken);
+    var secondRedemption = await store.RedeemAsync(new(secondInvitation.QRCodeValue, null, "New phone", "de"), TestContext.CurrentContext.CancellationToken);
 
-    var staffMember = await fixture.DbContext.StaffMembers
-                                   .SingleAsync(candidate => candidate.Id == staffMemberId, TestContext.CurrentContext.CancellationToken);
+    var staffMember = await fixture.DbContext.StaffMembers.SingleAsync(candidate => candidate.Id == staffMemberId, TestContext.CurrentContext.CancellationToken);
     var deviceCount = await fixture.DbContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
@@ -243,13 +231,10 @@ public sealed class EnrolmentInvitationStoreTest
     var firstStore = CreateStore(fixture.CreateContext(), clock);
     var secondStore = CreateStore(fixture.CreateContext(), clock);
 
-    await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken)),
-                       Task.Run(() => secondStore.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken)));
+    await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken)), Task.Run(() => secondStore.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken)));
 
     var verificationContext = fixture.CreateContext();
-    var outstandingCount = await verificationContext.EnrolmentInvitations
-                                                    .CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.UtcNow,
-                                                                TestContext.CurrentContext.CancellationToken);
+    var outstandingCount = await verificationContext.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.UtcNow, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(outstandingCount, Is.EqualTo(1));
   }
@@ -261,25 +246,20 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
     AdjustableClock clock = new();
 
-    var created = await CreateStore(fixture.CreateContext(), clock)
-                   .CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await CreateStore(fixture.CreateContext(), clock).CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
 
     var firstStore = CreateStore(fixture.CreateContext(), clock);
     var secondStore = CreateStore(fixture.CreateContext(), clock);
 
-    EnrolmentRedemptionResult[] results = await Task.WhenAll(Task.Run(() => firstStore.RedeemAsync(new(created.QRCodeValue, null, "First phone", "de"),
-                                                                                                   TestContext.CurrentContext.CancellationToken)),
-                                                             Task.Run(() => secondStore.RedeemAsync(new(created.QRCodeValue, null, "Second phone", "de"),
-                                                                                                    TestContext.CurrentContext.CancellationToken)));
+    EnrolmentRedemptionResult[] results = await Task.WhenAll(Task.Run(() => firstStore.RedeemAsync(new(created.QRCodeValue, null, "First phone", "de"), TestContext.CurrentContext.CancellationToken)),
+                                                             Task.Run(() => secondStore.RedeemAsync(new(created.QRCodeValue, null, "Second phone", "de"), TestContext.CurrentContext.CancellationToken)));
 
     var verificationContext = fixture.CreateContext();
-    var deviceCount = await verificationContext.Devices
-                                               .CountAsync(TestContext.CurrentContext.CancellationToken);
+    var deviceCount = await verificationContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(results.Count(result => result.Outcome == EnrolmentRedemptionOutcome.Redeemed),
-                                  Is.EqualTo(1));
+                      Assert.That(results.Count(result => result.Outcome == EnrolmentRedemptionOutcome.Redeemed), Is.EqualTo(1));
                       Assert.That(deviceCount, Is.EqualTo(1));
                     });
   }
@@ -293,23 +273,15 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(fixture.DbContext);
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
-    EnrolmentInvitationStore store = new(fixture.DbContext,
-                                        ownerStore,
-                                        secretHasher,
-                                        deviceTokenStore,
-                                        new ImmediateTransactionRunner(fixture.DbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance),
-                                        clock);
+    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
 
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(redemption.PlaintextToken, Is.Not.Null);
 
     var separatorIndex = redemption.PlaintextToken!.IndexOf('.', StringComparison.Ordinal);
-    var verification = await deviceTokenStore.VerifyAsync(redemption.PlaintextToken[..separatorIndex],
-                                                          redemption.PlaintextToken[(separatorIndex + 1)..],
-                                                          TestContext.CurrentContext.CancellationToken);
+    var verification = await deviceTokenStore.VerifyAsync(redemption.PlaintextToken[..separatorIndex], redemption.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -326,8 +298,7 @@ public sealed class EnrolmentInvitationStoreTest
     var store = CreateStore(fixture, new());
 
     await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var redemption = await store.RedeemAsync(new("not-the-right-code", null, "Test agent", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new("not-the-right-code", null, "Test agent", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -347,8 +318,7 @@ public sealed class EnrolmentInvitationStoreTest
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
     clock.Advance(TimeSpan.FromMinutes(6));
 
-    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"),
-                                             TestContext.CurrentContext.CancellationToken);
+    var redemption = await store.RedeemAsync(new(created.QRCodeValue, null, "Test agent", "de"), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -365,27 +335,19 @@ public sealed class EnrolmentInvitationStoreTest
     AdjustableClock clock = new();
     var store = CreateStore(fixture, clock);
 
-    var yesterday =
-      await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var yesterday = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
 
     clock.Advance(TimeSpan.FromDays(1));
 
-    var today =
-      await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var today = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
 
-    var expiredRow = await fixture.DbContext.EnrolmentInvitations
-                                  .SingleAsync(invitation => invitation.Id == yesterday.InvitationId,
-                                               TestContext.CurrentContext.CancellationToken);
+    var expiredRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == yesterday.InvitationId, TestContext.CurrentContext.CancellationToken);
 
-    var currentRow = await fixture.DbContext.EnrolmentInvitations
-                                  .SingleAsync(invitation => invitation.Id == today.InvitationId,
-                                               TestContext.CurrentContext.CancellationToken);
+    var currentRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == today.InvitationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(expiredRow.ConsumedAtUtc,
-                                  Is.Not.Null,
-                                  "An expired invitation still holds the single outstanding marker until it is consumed.");
+                      Assert.That(expiredRow.ConsumedAtUtc, Is.Not.Null, "An expired invitation still holds the single outstanding marker until it is consumed.");
                       Assert.That(currentRow.ConsumedAtUtc, Is.Null);
                     });
   }
@@ -410,11 +372,6 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(dbContext);
 
-    return new(dbContext,
-               ownerStore,
-               secretHasher,
-               new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock),
-               new ImmediateTransactionRunner(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance),
-               clock);
+    return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
   }
 }

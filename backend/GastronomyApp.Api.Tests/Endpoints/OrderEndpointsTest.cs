@@ -8,7 +8,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class OrderEndpointsTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -74,7 +73,8 @@ public sealed class OrderEndpointsTest
                                 "Tisch 12",
                                 null,
                                 [
-                                  new(_context.World.BratwurstItemId, 350, null, null), new(_context.World.BratwurstItemId, 350, null, null),
+                                  new(_context.World.BratwurstItemId, 350, null, null),
+                                  new(_context.World.BratwurstItemId, 350, null, null),
                                   new(_context.World.BeerItemId, 350, null, null)
                                 ]);
 
@@ -91,10 +91,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_UnknownItemId_IsRefusedAsUnprocessable()
   {
-    OrderBody unknownItem = new(Guid.NewGuid(),
-                                "Tisch 12",
-                                null,
-                                [new(Guid.NewGuid(), 350, null, null)]);
+    OrderBody unknownItem = new(Guid.NewGuid(), "Tisch 12", null, [new(Guid.NewGuid(), 350, null, null)]);
 
     using var response = await _context.PostOrderAsync(unknownItem);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -121,8 +118,7 @@ public sealed class OrderEndpointsTest
   {
     await using (var seeding = _context.Factory.CreateContext())
     {
-      var item = await seeding.FestivalCatalogItems
-                              .FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId);
+      var item = await seeding.FestivalCatalogItems.FirstAsync(menuRow => menuRow.CatalogItemId == _context.World.BratwurstItemId);
       item.IsAvailable = false;
       await seeding.SaveChangesAsync();
     }
@@ -139,10 +135,8 @@ public sealed class OrderEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
                       Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
-                                  Is.EqualTo("Bratwurst mit Brot"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
-                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
                       Assert.That(storedItems, Is.Zero);
                     });
@@ -153,8 +147,7 @@ public sealed class OrderEndpointsTest
   {
     await using (var seeding = _context.Factory.CreateContext())
     {
-      var item = await seeding.CatalogItems
-                              .FirstAsync(catalogItem => catalogItem.Id == _context.World.BratwurstItemId);
+      var item = await seeding.CatalogItems.FirstAsync(catalogItem => catalogItem.Id == _context.World.BratwurstItemId);
       item.IsActive = false;
       await seeding.SaveChangesAsync();
     }
@@ -169,10 +162,8 @@ public sealed class OrderEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
-                                  Is.EqualTo("Bratwurst mit Brot"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
-                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
                     });
   }
@@ -194,10 +185,7 @@ public sealed class OrderEndpointsTest
       await seeding.SaveChangesAsync();
     }
 
-    OrderBody body = new(Guid.NewGuid(),
-                         "Tisch 12",
-                         null,
-                         [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
+    OrderBody body = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BratwurstItemId, 350, null, _context.World.KitchenStationId)]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -209,12 +197,9 @@ public sealed class OrderEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("catalog.itemSoldOut"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(),
-                                  Is.EqualTo("Bratwurst mit Brot"));
-                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(),
-                                  Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.itemSoldOut"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("name").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(error.RootElement.GetProperty("parameters").GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
                       Assert.That(storedOrders, Is.Zero);
                       Assert.That(storedItems, Is.Zero);
                     });
@@ -226,7 +211,10 @@ public sealed class OrderEndpointsTest
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",
                          null,
-                         [new(_context.World.BratwurstItemId, 399, null, null), new(_context.World.BratwurstItemId, 399, null, null)]);
+                         [
+                           new(_context.World.BratwurstItemId, 399, null, null),
+                           new(_context.World.BratwurstItemId, 399, null, null)
+                         ]);
 
     using var response = await _context.PostOrderAsync(body);
     var placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -245,10 +233,7 @@ public sealed class OrderEndpointsTest
   [Test]
   public async Task PostOrder_SettlementBelowTheItemPriceWithoutANotice_IsRefusedWithWordingThePhoneCanShow()
   {
-    OrderBody body = new(Guid.NewGuid(),
-                         "Tisch 12",
-                         null,
-                         [new(_context.World.BratwurstItemId, 350, null, null, new(100))]);
+    OrderBody body = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BratwurstItemId, 350, null, null, new(100))]);
 
     using var response = await _context.PostOrderAsync(body);
     var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -261,8 +246,7 @@ public sealed class OrderEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(error.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
-                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(error.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
                       Assert.That(orderCount, Is.Zero);
                       Assert.That(itemCount, Is.Zero);
                     });

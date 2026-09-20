@@ -7,9 +7,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Gas
 {
   public GastronomyAppDbContext CreateDbContext(string[] args)
   {
-    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>()
-                                                      .UseSqlite("Data Source=gastronomyapp-design-time.db")
-                                                      .Options;
+    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite("Data Source=gastronomyapp-design-time.db").Options;
 
     return new(options);
   }

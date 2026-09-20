@@ -39,7 +39,7 @@ public sealed class AdminItemHandler
       return RefusalFor(listed.Failure);
     }
 
-    return Results.Ok(new AdminItemListView([.. listed.Value.Select(BuildItemView)]));
+    return Results.Ok(new AdminItemListView(listed.Value.Select(BuildItemView).ToList()));
   }
 
   public async Task<IResult> CreateAsync(SaveItemRequest request, CancellationToken cancellationToken)
@@ -100,11 +100,17 @@ public sealed class AdminItemHandler
                item.IsActive,
                item.ProductionMinutes,
                item.IsQueueIndependent,
-               item.AtTheFestival is { } atTheFestival
-                 ? new AdminItemAtFestivalView(atTheFestival.PriceCents,
-                                               atTheFestival.IsAvailable,
-                                               atTheFestival.StationIds)
-                 : null);
+               BuildItemAtFestivalView(item));
+  }
+
+  private AdminItemAtFestivalView? BuildItemAtFestivalView(AdministeredCatalogItem item)
+  {
+    if (item.AtTheFestival is not { } atTheFestival)
+    {
+      return null;
+    }
+
+    return new(atTheFestival.PriceCents, atTheFestival.IsAvailable, atTheFestival.StationIds);
   }
 
   private async Task<IResult> AnsweredAsync(Result<Guid, CatalogItemAdministrationFailure> written,

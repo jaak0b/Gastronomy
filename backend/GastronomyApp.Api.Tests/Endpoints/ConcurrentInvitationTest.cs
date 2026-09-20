@@ -8,7 +8,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class ConcurrentInvitationTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -30,22 +29,17 @@ public sealed class ConcurrentInvitationTest
     Task<HttpResponseMessage> second = CreateInvitationAsync();
 
     HttpResponseMessage[] responses = await Task.WhenAll(first, second);
-    IReadOnlyList<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
+    IReadOnlyList<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
 
     foreach (var response in responses)
-    {
       response.Dispose();
-    }
 
     await using var database = _context.Factory.CreateContext();
-    var stillOutstanding = await database.EnrolmentInvitations
-                                         .CountAsync(invitation => invitation.ConsumedAtUtc == null);
+    var stillOutstanding = await database.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(statuses,
-                                  Has.None.EqualTo(HttpStatusCode.InternalServerError),
-                                  "A unique collision must never reach the caller as a crash.");
+                      Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError), "A unique collision must never reach the caller as a crash.");
                       Assert.That(statuses, Has.Some.EqualTo(HttpStatusCode.Created));
                       Assert.That(stillOutstanding, Is.EqualTo(1), "Exactly one invitation may be outstanding.");
                     });
@@ -73,9 +67,6 @@ public sealed class ConcurrentInvitationTest
 
   private Task<HttpResponseMessage> CreateInvitationAsync()
   {
-    return _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                          new { staffMemberId = _context.World.StaffMemberId });
+    return _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId });
   }
 }
-
-

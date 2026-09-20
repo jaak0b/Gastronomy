@@ -15,14 +15,13 @@ public sealed class FestivalStationConfiguration : IEntityTypeConfiguration<Fest
     builder.Property(link => link.FestivalId).IsRequired();
     builder.Property(link => link.StationId).IsRequired();
     builder.Property(link => link.NextStationOrderNumber).IsRequired().IsConcurrencyToken();
-    builder.HasIndex(link => new { link.FestivalId, link.StationId }).IsUnique();
-    builder.HasOne<Festival>()
-           .WithMany()
-           .HasForeignKey(link => link.FestivalId)
-           .OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<Station>()
-           .WithMany()
-           .HasForeignKey(link => link.StationId)
-           .OnDelete(DeleteBehavior.Restrict);
+    builder.HasIndex(link => new
+                             {
+                               link.FestivalId,
+                               link.StationId
+                             })
+           .IsUnique();
+    builder.HasOne<Festival>().WithMany().HasForeignKey(link => link.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne<Station>().WithMany().HasForeignKey(link => link.StationId).OnDelete(DeleteBehavior.Restrict);
   }
 }

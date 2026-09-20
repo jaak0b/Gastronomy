@@ -15,11 +15,8 @@ public sealed class OrderStatusReaderTest
   {
     _repository = A.Fake<IStationOrderRepository>();
 
-    A.CallTo(() => _repository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                 A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
-    A.CallTo(() => _repository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([]));
+    A.CallTo(() => _repository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
+    A.CallTo(() => _repository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([]));
 
     _reader = new(_repository, new());
   }
@@ -35,9 +32,7 @@ public sealed class OrderStatusReaderTest
   {
     GivenCounts(4, 2);
 
-    IReadOnlyList<OrderStatusChange> statuses =
-      await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId],
-                                                      TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderStatusChange> statuses = await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -52,9 +47,7 @@ public sealed class OrderStatusReaderTest
   {
     GivenCounts(4, 4);
 
-    IReadOnlyList<OrderStatusChange> statuses =
-      await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId],
-                                                      TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderStatusChange> statuses = await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(statuses[0].Status, Is.EqualTo(OrderStatus.Fulfilled));
   }
@@ -62,22 +55,17 @@ public sealed class OrderStatusReaderTest
   [Test]
   public async Task ReadStatusesOfStationOrdersAsync_NoStationOrders_ReadsNothingAndReportsNothing()
   {
-    IReadOnlyList<OrderStatusChange> statuses =
-      await _reader.ReadStatusesOfStationOrdersAsync([], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderStatusChange> statuses = await _reader.ReadStatusesOfStationOrdersAsync([], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(statuses, Is.Empty);
 
-    A.CallTo(() => _repository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                 A<CancellationToken>._))
-     .MustNotHaveHappened();
+    A.CallTo(() => _repository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
   public async Task ReadStatusesOfStationOrdersAsync_AnOrderThatIsNoLongerThere_ReportsNothingForIt()
   {
-    IReadOnlyList<OrderStatusChange> statuses =
-      await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId],
-                                                      TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderStatusChange> statuses = await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(statuses, Is.Empty);
   }
@@ -87,32 +75,31 @@ public sealed class OrderStatusReaderTest
   {
     GivenCounts(4, 1);
 
-    await _reader.ReadStatusesOfStationOrdersAsync([_stationOrderId, Guid.NewGuid()],
-                                                    TestContext.CurrentContext.CancellationToken);
+    await _reader.ReadStatusesOfStationOrdersAsync([
+                                                     _stationOrderId,
+                                                     Guid.NewGuid()
+                                                   ],
+                                                   TestContext.CurrentContext.CancellationToken);
 
-    A.CallTo(() => _repository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _repository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
   public void ReadStatusesOfStationOrdersAsync_NullStationOrderIds_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _reader.ReadStatusesOfStationOrdersAsync(null!,
-                                                                            TestContext.CurrentContext
-                                                                                       .CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _reader.ReadStatusesOfStationOrdersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   private void GivenCounts(int itemCount, int fulfilledItemCount)
   {
     A.CallTo(() => _repository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([
-                                                                       new()
-                                                                       {
-                                                                         OrderId = _orderId,
-                                                                         ItemCount = itemCount,
-                                                                         FulfilledItemCount = fulfilledItemCount
-                                                                       }
-                                                                     ]));
+   .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([
+                                                                     new()
+                                                                     {
+                                                                       OrderId = _orderId,
+                                                                       ItemCount = itemCount,
+                                                                       FulfilledItemCount = fulfilledItemCount
+                                                                     }
+                                                                   ]));
   }
 }

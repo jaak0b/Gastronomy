@@ -18,21 +18,15 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
     {
       await next(context);
     }
-    catch (InfrastructureException exception)
-      when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
+    catch (InfrastructureException exception) when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
     {
-      var problem = _resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable,
-                                           "DatabaseUnavailable",
-                                           "review.sendFailedDatabase");
+      var problem = _resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable, "DatabaseUnavailable", "review.sendFailedDatabase");
 
       await problem.ExecuteAsync(context);
     }
-    catch (InfrastructureException exception)
-      when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
+    catch (InfrastructureException exception) when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
     {
-      var problem = _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                           "ConflictingChange",
-                                           "review.conflictingChange");
+      var problem = _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ConflictingChange", "review.conflictingChange");
 
       await problem.ExecuteAsync(context);
     }

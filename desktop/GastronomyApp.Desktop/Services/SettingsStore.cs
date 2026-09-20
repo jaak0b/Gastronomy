@@ -7,10 +7,10 @@ public sealed class SettingsStore : ISettingsStore
   private const string SettingsFileName = "settings.json";
 
   private readonly JsonSerializerOptions _serializerOptions = new()
-                                                             {
-                                                               PropertyNameCaseInsensitive = true,
-                                                               WriteIndented = true
-                                                             };
+                                                              {
+                                                                PropertyNameCaseInsensitive = true,
+                                                                WriteIndented = true
+                                                              };
 
   private readonly string _settingsDirectory;
 
@@ -23,11 +23,7 @@ public sealed class SettingsStore : ISettingsStore
   {
     var stored = ReadStoredSettings();
 
-    return new(stored.Port,
-               stored.DataDirectory ?? _settingsDirectory,
-               stored.SelectedNetworkInterface,
-               stored.Language,
-               stored.LastUpdateCheckUtc);
+    return new(stored.Port, stored.DataDirectory ?? _settingsDirectory, stored.SelectedNetworkInterface, stored.Language, stored.LastUpdateCheckUtc);
   }
 
   public void Save(DesktopSettings settings)
@@ -43,19 +39,15 @@ public sealed class SettingsStore : ISettingsStore
                               LastUpdateCheckUtc = settings.LastUpdateCheckUtc
                             };
 
-    File.WriteAllText(Path.Combine(_settingsDirectory, SettingsFileName),
-                      JsonSerializer.Serialize(stored, _serializerOptions));
+    File.WriteAllText(Path.Combine(_settingsDirectory, SettingsFileName), JsonSerializer.Serialize(stored, _serializerOptions));
   }
 
   private StoredSettings ReadStoredSettings()
   {
     var path = Path.Combine(_settingsDirectory, SettingsFileName);
     if (!File.Exists(path))
-    {
       return new();
-    }
 
-    return JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(path), _serializerOptions)
-           ?? new StoredSettings();
+    return JsonSerializer.Deserialize<StoredSettings>(File.ReadAllText(path), _serializerOptions) ?? new StoredSettings();
   }
 }

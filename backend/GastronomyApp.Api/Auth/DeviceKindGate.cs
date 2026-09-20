@@ -21,10 +21,9 @@ public sealed class DeviceKindGate
 
     var caller = _callerIdentity.ReadDevice(httpContext.User);
 
-    return caller is not null && caller.OwnerKind == requiredKind
-             ? null
-             : _resultEnvelope.Problem(StatusCodes.Status403Forbidden,
-                                      "WrongDeviceKind",
-                                      "auth.wrongDeviceKind");
+    if (caller is not null && caller.OwnerKind == requiredKind)
+      return null;
+
+    return _resultEnvelope.Problem(StatusCodes.Status403Forbidden, "WrongDeviceKind", "auth.wrongDeviceKind");
   }
 }

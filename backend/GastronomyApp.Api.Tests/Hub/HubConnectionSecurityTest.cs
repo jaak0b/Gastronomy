@@ -9,7 +9,6 @@ namespace GastronomyApp.Api.Tests.Hub;
 [TestFixture]
 public sealed class HubConnectionSecurityTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -32,8 +31,7 @@ public sealed class HubConnectionSecurityTest
     TaskCompletionSource<Guid> heard = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     await using var connection = Connect("hub");
-    connection.On<JsonElement>("StationOrdersChanged",
-                               payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
+    connection.On<JsonElement>("StationOrdersChanged", payload => heard.TrySetResult(payload.GetProperty("stationId").GetGuid()));
 
     await connection.StartAsync();
 
@@ -62,12 +60,9 @@ public sealed class HubConnectionSecurityTest
 
     var beforeRevocation = await Task.WhenAny(heardBeforeRevocation.Task, Task.Delay(_patience));
 
-    Assert.That(beforeRevocation,
-                Is.SameAs(heardBeforeRevocation.Task),
-                "The phone must receive live pushes before it is revoked.");
+    Assert.That(beforeRevocation, Is.SameAs(heardBeforeRevocation.Task), "The phone must receive live pushes before it is revoked.");
 
-    using (var revocation = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate",
-                                                           null))
+    using (var revocation = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate", null))
     {
       Assert.That(revocation.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -83,9 +78,7 @@ public sealed class HubConnectionSecurityTest
 
   private async Task ChangeTheCatalogAsync()
   {
-    using var response =
-      await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability",
-                                            new { isAvailable = false });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability", new { isAvailable = false });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
@@ -104,9 +97,7 @@ public sealed class HubConnectionSecurityTest
     while (DateTime.UtcNow < deadline)
     {
       if (condition())
-      {
         return true;
-      }
 
       await Task.Delay(100);
     }
@@ -116,9 +107,6 @@ public sealed class HubConnectionSecurityTest
 
   private HubConnection Connect(string relativeUrl)
   {
-    return new HubConnectionBuilder()
-          .WithUrl(new Uri(_context.Factory.BaseAddress, relativeUrl))
-          .Build();
+    return new HubConnectionBuilder().WithUrl(new Uri(_context.Factory.BaseAddress, relativeUrl)).Build();
   }
 }
-

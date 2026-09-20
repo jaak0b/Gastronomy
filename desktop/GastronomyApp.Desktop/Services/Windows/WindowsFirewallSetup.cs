@@ -26,27 +26,27 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 
   public void EnsureRuleConfigured()
   {
-    var ruleSettings =
-      $"action=allow program=\"{_executablePath}\" "
-      + $"protocol=TCP profile={CoveredProfiles} remoteip=localsubnet enable=yes";
+    var ruleSettings = $"action=allow program=\"{_executablePath}\" " + $"protocol=TCP profile={CoveredProfiles} remoteip=localsubnet enable=yes";
 
-    var result = RuleExists()
-                   ? _netsh.Run($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}")
-                   : _netsh.Run($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
+    NetshResult result;
+
+    if (RuleExists())
+      result = _netsh.Run($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}");
+    else
+      result = _netsh.Run($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
 
     if (result.ExitCode != 0)
-    {
       throw new InvalidOperationException(BuildFailureText(result));
-    }
   }
 
   private string BuildFailureText(NetshResult result)
   {
     var reportedProblem = result.ErrorOutput.Trim();
 
-    return reportedProblem.Length == 0
-             ? $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}."
-             : $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}: {reportedProblem}";
+    if (reportedProblem.Length == 0)
+      return $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}.";
+
+    return $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}: {reportedProblem}";
   }
 
   private bool RuleExists()

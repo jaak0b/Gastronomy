@@ -1,10 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Endpoints;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -41,10 +39,10 @@ public sealed class AdminCatalogConcurrencyTest
   [Test]
   public async Task PostCategory_TheSameNameTwiceAtTheSameMoment_RefusesTheSecondOneInWords()
   {
-    List<Task<HttpResponseMessage>> attempts = [.. Enumerable.Range(0, SimultaneousCreates).Select(_ => CreateColdDrinksCategoryAsync())];
+    List<Task<HttpResponseMessage>> attempts = Enumerable.Range(0, SimultaneousCreates).Select(_ => CreateColdDrinksCategoryAsync()).ToList();
 
     HttpResponseMessage[] responses = await Task.WhenAll(attempts);
-    List<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
+    List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
     List<string?> messageKeys = [];
 
     foreach (var response in responses)
@@ -59,13 +57,9 @@ public sealed class AdminCatalogConcurrencyTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(statuses,
-                                  Has.None.EqualTo(HttpStatusCode.InternalServerError),
-                                  "A name collision must never reach the operator as a crash.");
+                      Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError), "A name collision must never reach the operator as a crash.");
                       Assert.That(statuses, Has.One.EqualTo(HttpStatusCode.Created));
-                      Assert.That(messageKeys.Where(key => key is not null),
-                                  Is.All.EqualTo("admin.categoryNameTaken"),
-                                  "Every refused attempt must say that the name is taken.");
+                      Assert.That(messageKeys.Where(key => key is not null), Is.All.EqualTo("admin.categoryNameTaken"), "Every refused attempt must say that the name is taken.");
                       Assert.That(stored, Is.EqualTo(1));
                     });
   }
@@ -75,7 +69,7 @@ public sealed class AdminCatalogConcurrencyTest
   {
     using var scope = _context.Factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
-    dbContext.CatalogCategories.Add(new CatalogCategory
+    dbContext.CatalogCategories.Add(new()
                                     {
                                       Id = Guid.NewGuid(),
                                       Name = ColdDrinksName,
@@ -86,13 +80,14 @@ public sealed class AdminCatalogConcurrencyTest
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     var result = await scope.ServiceProvider.GetRequiredService<AdminCategoryHandler>()
-                            .CreateAsync(new SaveCategoryRequest
-                                         {
-                                           Name = ColdDrinksNameWithTheUmlautInCapitals, ColourHex = "#1565C0"
-                                         },
-                                         CancellationToken.None);
+                .CreateAsync(new()
+                             {
+                               Name = ColdDrinksNameWithTheUmlautInCapitals,
+                               ColourHex = "#1565C0"
+                             },
+                             CancellationToken.None);
 
-    var refusal = (JsonHttpResult<ApiError>)result;
+    JsonHttpResult<ApiError> refusal = (JsonHttpResult<ApiError>)result;
 
     Assert.Multiple(() =>
                     {
@@ -114,12 +109,10 @@ public sealed class AdminCatalogConcurrencyTest
       Task<HttpResponseMessage> activation = SendAsync($"/api/admin/items/{_context.World.BeerItemId}/activate");
 
       HttpResponseMessage[] responses = await Task.WhenAll(deactivation, activation);
-      List<HttpStatusCode> statuses = [.. responses.Select(response => response.StatusCode)];
+      List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
 
       foreach (var response in responses)
-      {
         response.Dispose();
-      }
 
       await using (var database = _context.Factory.CreateContext())
       {
@@ -129,9 +122,7 @@ public sealed class AdminCatalogConcurrencyTest
         Assert.Multiple(() =>
                         {
                           Assert.That(statuses, Has.None.EqualTo(HttpStatusCode.InternalServerError));
-                          Assert.That(category.IsActive || !beer.IsActive,
-                                      Is.True,
-                                      "A switched-on article may never sit in a switched-off category, or the phone drops it without telling anyone.");
+                          Assert.That(category.IsActive || !beer.IsActive, Is.True, "A switched-on article may never sit in a switched-off category, or the phone drops it without telling anyone.");
                         });
       }
 
@@ -156,13 +147,14 @@ public sealed class AdminCatalogConcurrencyTest
   private async Task<string?> ReadMessageKeyAsync(HttpResponseMessage response)
   {
     if (response.IsSuccessStatusCode)
-    {
       return null;
-    }
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return body.RootElement.TryGetProperty("messageKey", out var messageKey) ? messageKey.GetString() : null;
+    if (body.RootElement.TryGetProperty("messageKey", out var messageKey))
+      return messageKey.GetString();
+
+    return null;
   }
 
   private Task<HttpResponseMessage> SendAsync(string path)
@@ -173,6 +165,10 @@ public sealed class AdminCatalogConcurrencyTest
   private Task<HttpResponseMessage> CreateColdDrinksCategoryAsync()
   {
     return _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                           new { name = ColdDrinksName, colourHex = "#1565C0" });
+                                           new
+                                           {
+                                             name = ColdDrinksName,
+                                             colourHex = "#1565C0"
+                                           });
   }
 }

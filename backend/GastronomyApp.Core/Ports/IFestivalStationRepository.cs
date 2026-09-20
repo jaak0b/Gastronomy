@@ -6,9 +6,7 @@ public interface IFestivalStationRepository
 {
   public Task<FestivalStation?> FindLinkAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken);
 
-  public Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAtStationAsync(Guid festivalId,
-                                                                                  Guid stationId,
-                                                                                  CancellationToken cancellationToken);
+  public Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAtStationAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken);
 
   public Task<int> CountUnfulfilledItemsAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken);
 

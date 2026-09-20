@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Endpoints;
@@ -35,12 +36,9 @@ public sealed class ApiServiceRegistration
     SqliteConnectionFactory connectionFactory = new();
     services.AddSingleton(connectionFactory);
 
-    services.AddDbContextFactory<GastronomyAppDbContext>(builder => builder
-                                                                   .UseSqlite($"Data Source={databasePath}")
-                                                                   .AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
+    services.AddDbContextFactory<GastronomyAppDbContext>(builder => builder.UseSqlite($"Data Source={databasePath}").AddInterceptors(new SqliteConnectionPolicyInterceptor(connectionFactory)));
 
-    services.AddScoped(provider =>
-                         provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
+    services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
 
     services.AddSingleton<IClock, SystemClock>();
     services.AddSingleton<Pbkdf2SecretHasher>();
@@ -145,35 +143,25 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueHandler>();
     services.AddScoped<StationFulfillmentHandler>();
 
-    services.AddSignalR()
-            .AddJsonProtocol(protocolOptions =>
-                               protocolOptions.PayloadSerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
+    services.AddSignalR().AddJsonProtocol(protocolOptions => protocolOptions.PayloadSerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
     services.AddSingleton<HubConnectionRegistry>();
     services.AddSingleton<DeviceConnectionTerminator>();
     services.AddSingleton<HubNotificationDispatcher>();
 
-    services.ConfigureHttpJsonOptions(jsonOptions =>
-                                        jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
+    services.ConfigureHttpJsonOptions(jsonOptions => jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
 
     services.AddSingleton(options.Language);
 
     services.AddRateLimiter(limiterOptions => new RateLimitPolicies().Configure(limiterOptions));
 
     AuthenticationSchemeNames schemeNames = new();
-    services.AddAuthentication(schemeNames.Device)
-            .AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(schemeNames.Device,
-                                                                                       null);
+    services.AddAuthentication(schemeNames.Device).AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(schemeNames.Device, null);
 
-    services.AddAuthorization(authorization =>
-                              {
-                                authorization.DefaultPolicy = new AuthorizationPolicyBuilder(schemeNames.Device)
-                                                             .RequireAuthenticatedUser()
-                                                             .Build();
-                              });
+    services.AddAuthorization(authorization => { authorization.DefaultPolicy = new AuthorizationPolicyBuilder(schemeNames.Device).RequireAuthenticatedUser().Build(); });
   }
 
   private JsonStringEnumConverter EnumsAsCamelCaseText()
   {
-    return new(System.Text.Json.JsonNamingPolicy.CamelCase);
+    return new(JsonNamingPolicy.CamelCase);
   }
 }

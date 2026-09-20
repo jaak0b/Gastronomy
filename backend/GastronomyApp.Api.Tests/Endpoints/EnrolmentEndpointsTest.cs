@@ -10,7 +10,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class EnrolmentEndpointsTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -41,8 +40,7 @@ public sealed class EnrolmentEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
                       Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.Not.EqualTo(Guid.Empty));
-                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(),
-                                  Is.EqualTo("Anna"));
+                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(), Is.EqualTo("Anna"));
                       Assert.That(body.RootElement.GetProperty("language").GetString(), Is.Not.Empty);
                     });
   }
@@ -68,8 +66,7 @@ public sealed class EnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("enrolment.nameMissing"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("enrolment.nameMissing"));
                     });
   }
 
@@ -85,8 +82,7 @@ public sealed class EnrolmentEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("staffMember"));
-                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(),
-                                  Is.EqualTo("Bernd"));
+                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(), Is.EqualTo("Bernd"));
                       Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
                     });
   }
@@ -136,9 +132,7 @@ public sealed class EnrolmentEndpointsTest
 
     using (var whileTheCodeIsOnScreen = await GetSessionAsync(firstToken))
     {
-      Assert.That(whileTheCodeIsOnScreen.StatusCode,
-                  Is.EqualTo(HttpStatusCode.Unauthorized),
-                  "Asking for a new code hands the phone over, so the old one is signed out at once.");
+      Assert.That(whileTheCodeIsOnScreen.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "Asking for a new code hands the phone over, so the old one is signed out at once.");
     }
 
     using var secondRedemption = await RedeemAsync(secondInvitation.QRCodeValue);
@@ -151,13 +145,9 @@ public sealed class EnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(secondRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(secondBody.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(staffMemberId),
-                                  "The replacement phone belongs to the same staff member.");
+                      Assert.That(secondBody.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(), Is.EqualTo(staffMemberId), "The replacement phone belongs to the same staff member.");
                       Assert.That(secondPhone.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(firstPhoneAfterTheScan.StatusCode,
-                                  Is.EqualTo(HttpStatusCode.Unauthorized),
-                                  "The replaced phone stays signed out.");
+                      Assert.That(firstPhoneAfterTheScan.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "The replaced phone stays signed out.");
                     });
   }
 
@@ -186,9 +176,7 @@ public sealed class EnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(secondRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(theSetupItHeld.StatusCode,
-                                  Is.EqualTo(HttpStatusCode.Unauthorized),
-                                  "The setup the browser handed over is retired the moment it scans somebody else's code.");
+                      Assert.That(theSetupItHeld.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "The setup the browser handed over is retired the moment it scans somebody else's code.");
                       Assert.That(theSetupItScanned.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                     });
   }
@@ -238,15 +226,11 @@ public sealed class EnrolmentEndpointsTest
   [TestCase("en-US", "en")]
   [TestCase("fr-FR", "en")]
   [TestCase("", "en")]
-  public async Task PostRedeem_TheBrowserLanguage_BecomesTheDeviceLanguage(string acceptLanguage,
-                                                                           string expectedLanguage)
+  public async Task PostRedeem_TheBrowserLanguage_BecomesTheDeviceLanguage(string acceptLanguage, string expectedLanguage)
   {
     var invitation = await CreateInvitationAsync();
 
-    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem")
-                        {
-                          Content = JsonContent.Create(new RedeemBody(invitation.QRCodeValue, null, "NUnit")),
-                        };
+    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem") { Content = JsonContent.Create(new RedeemBody(invitation.QRCodeValue, null, "NUnit")) };
     request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
 
     using var response = await _factory.Client.SendAsync(request);
@@ -259,12 +243,9 @@ public sealed class EnrolmentEndpointsTest
                     });
   }
 
-  private Task<HttpResponseMessage> RedeemAsync(string? code,
-                                                string? name = null,
-                                                string? previousDeviceToken = null)
+  private Task<HttpResponseMessage> RedeemAsync(string? code, string? name = null, string? previousDeviceToken = null)
   {
-    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                          new RedeemBody(code, name, "NUnit", previousDeviceToken));
+    return _factory.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, name, "NUnit", previousDeviceToken));
   }
 
   private Task<HttpResponseMessage> GetSessionAsync(string deviceToken)
@@ -279,30 +260,25 @@ public sealed class EnrolmentEndpointsTest
   {
     using var scope = _factory.Services.CreateScope();
 
-    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>()
-                      .CreateAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), CancellationToken.None);
+    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), CancellationToken.None);
   }
 
   private async Task<EnrolmentInvitationCreated> CreateInvitationForNobodyAsync()
   {
     using var scope = _factory.Services.CreateScope();
 
-    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>()
-                      .CreateAsync(null, CancellationToken.None);
+    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(null, CancellationToken.None);
   }
 
   private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid staffMemberId)
   {
-    using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId });
+    using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
 
-    return new(body.RootElement.GetProperty("invitationId").GetGuid(),
-               qrUrl[(qrUrl.LastIndexOf('/') + 1)..],
-               body.RootElement.GetProperty("expiresAtUtc").GetDateTime());
+    return new(body.RootElement.GetProperty("invitationId").GetGuid(), qrUrl[(qrUrl.LastIndexOf('/') + 1)..], body.RootElement.GetProperty("expiresAtUtc").GetDateTime());
   }
 }

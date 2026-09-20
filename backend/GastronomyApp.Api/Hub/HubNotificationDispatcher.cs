@@ -19,7 +19,10 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.OrderStatusChanged,
                       new OrderStatusChangedEvent(orderId, newStatus),
-                      [_groupNames.Devices, _groupNames.Admin],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
@@ -27,7 +30,11 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.StationOrdersChanged,
                       new StationOrdersChangedEvent(stationId),
-                      [_groupNames.Devices, _groupNames.BuildStationGroupName(stationId), _groupNames.Admin],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.BuildStationGroupName(stationId),
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
@@ -35,7 +42,11 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.StationsChanged,
                       new StationsChangedEvent(),
-                      [_groupNames.Devices, _groupNames.Admin, _groupNames.BuildStationGroupName(stationId)],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.Admin,
+                        _groupNames.BuildStationGroupName(stationId)
+                      ],
                       ct);
   }
 
@@ -43,7 +54,10 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.OrderItemsSettled,
                       payload,
-                      [_groupNames.Devices, _groupNames.Admin],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
@@ -51,7 +65,11 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.FestivalChanged,
                       new FestivalChangedEvent(),
-                      [_groupNames.Devices, _groupNames.Stations, _groupNames.Admin],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.Stations,
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
@@ -59,7 +77,10 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.CatalogChanged,
                       new CatalogChangedEvent(),
-                      [_groupNames.Devices, _groupNames.Admin],
+                      [
+                        _groupNames.Devices,
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
@@ -72,20 +93,18 @@ public sealed class HubNotificationDispatcher
   {
     await SendToAsync(_eventNames.DeviceRevoked,
                       new DeviceRevokedEvent(deviceId),
-                      [_groupNames.BuildDeviceGroupName(deviceId), _groupNames.Admin],
+                      [
+                        _groupNames.BuildDeviceGroupName(deviceId),
+                        _groupNames.Admin
+                      ],
                       ct);
   }
 
-  private async Task SendToAsync(string eventName,
-                                 object payload,
-                                 IReadOnlyList<string> groups,
-                                 CancellationToken ct)
+  private async Task SendToAsync(string eventName, object payload, IReadOnlyList<string> groups, CancellationToken ct)
   {
     ct.ThrowIfCancellationRequested();
 
     foreach (var group in groups)
-    {
       await _hubContext.Clients.Group(group).SendAsync(eventName, payload, ct);
-    }
   }
 }

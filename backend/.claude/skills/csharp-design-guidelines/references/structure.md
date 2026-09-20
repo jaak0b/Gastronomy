@@ -166,3 +166,7 @@ above.
   rules in [type-design.md](type-design.md), section Static class design, say to use static classes
   sparingly and never as a miscellaneous bucket. A stateless operation that a service needs becomes a
   method on that service, or a small class the service takes as a dependency.
+- **Do not** use the conditional operator (`condition ? a : b`); write an `if` with an `else`, or two
+  early returns. `??`, `??=` and `?.` stay. **Do** build a list from a query with `.ToList()` or
+  `.ToArray()`, never with a spread collection expression (`[.. items.Select(...)]`); a collection
+  expression is only for a literal list of values. Neither of these can be enforced by the cleanup.

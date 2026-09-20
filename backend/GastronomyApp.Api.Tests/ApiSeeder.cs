@@ -10,14 +10,7 @@ public sealed class ApiSeeder
   {
     ArgumentNullException.ThrowIfNull(context);
 
-    SeededWorld world = new(Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid(),
-                            Guid.NewGuid());
+    SeededWorld world = new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
 
     context.Festivals.Add(new()
                           {
@@ -50,11 +43,7 @@ public sealed class ApiSeeder
     return world;
   }
 
-  private void AddStation(GastronomyAppDbContext context,
-                          SeededWorld world,
-                          Guid stationId,
-                          string name,
-                          int sortOrder)
+  private void AddStation(GastronomyAppDbContext context, SeededWorld world, Guid stationId, string name, int sortOrder)
   {
     context.Stations.Add(new()
                          {
@@ -73,11 +62,7 @@ public sealed class ApiSeeder
                                  });
   }
 
-  private void AddCategory(GastronomyAppDbContext context,
-                           Guid categoryId,
-                           string name,
-                           string colourHex,
-                           int sortOrder)
+  private void AddCategory(GastronomyAppDbContext context, Guid categoryId, string name, string colourHex, int sortOrder)
   {
     context.CatalogCategories.Add(new()
                                   {
@@ -89,14 +74,7 @@ public sealed class ApiSeeder
                                   });
   }
 
-  private void AddItem(GastronomyAppDbContext context,
-                       SeededWorld world,
-                       Guid itemId,
-                       string name,
-                       Guid categoryId,
-                       int priceCents,
-                       int sortOrder,
-                       Guid stationId)
+  private void AddItem(GastronomyAppDbContext context, SeededWorld world, Guid itemId, string name, Guid categoryId, int priceCents, int sortOrder, Guid stationId)
   {
     context.CatalogItems.Add(new()
                              {

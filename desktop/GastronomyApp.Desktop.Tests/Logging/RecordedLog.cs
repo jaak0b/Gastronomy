@@ -13,9 +13,7 @@ public sealed class RecordedLog : IDisposable
   public RecordedLog()
   {
     _previousLogger = Log.Logger;
-    _logger = new LoggerConfiguration().MinimumLevel.Verbose()
-                                       .WriteTo.Sink(_recorder)
-                                       .CreateLogger();
+    _logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(_recorder).CreateLogger();
     Log.Logger = _logger;
   }
 

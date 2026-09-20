@@ -20,6 +20,7 @@ public sealed class ItemStationAssignmentConfiguration : IEntityTypeConfiguratio
                                      assignment.FestivalId,
                                      assignment.CatalogItemId,
                                      assignment.StationId
-                                   }).IsUnique();
+                                   })
+           .IsUnique();
   }
 }

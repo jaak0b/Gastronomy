@@ -29,9 +29,7 @@ public class App : Application
   override public void OnFrameworkInitializationCompleted()
   {
     if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
-    {
       StartDesktop(lifetime);
-    }
 
     base.OnFrameworkInitializationCompleted();
   }
@@ -39,10 +37,7 @@ public class App : Application
   private void StartDesktop(IClassicDesktopStyleApplicationLifetime lifetime)
   {
     _composition = new();
-    _bootstrapper = new(_composition.SingleInstance,
-                       _composition.CreateMainWindowViewModel,
-                       BringMainWindowToFront,
-                       work => Dispatcher.UIThread.Post(work));
+    _bootstrapper = new(_composition.SingleInstance, _composition.CreateMainWindowViewModel, BringMainWindowToFront, work => Dispatcher.UIThread.Post(work));
 
     var outcome = _bootstrapper.Start();
 
@@ -57,8 +52,7 @@ public class App : Application
     lifetime.ShutdownRequested += OnShutdownRequested;
 
     _mainWindowViewModel = _bootstrapper.MainWindowViewModel!;
-    _quitConfirmViewModel = _composition.CreateQuitConfirmViewModel(_mainWindowViewModel,
-                                                                  () => lifetime.Shutdown());
+    _quitConfirmViewModel = _composition.CreateQuitConfirmViewModel(_mainWindowViewModel, () => lifetime.Shutdown());
 
     _mainWindowViewModel.AdminPagesRequested += OpenAdminPages;
     _mainWindowViewModel.DataFolderRequested += OpenDataFolder;
@@ -71,9 +65,7 @@ public class App : Application
     _mainWindow = new() { DataContext = _mainWindowViewModel };
 
     if (ServesTheOrderPages(outcome))
-    {
       _mainWindow.Opened += OnMainWindowOpenedAsync;
-    }
 
     lifetime.MainWindow = _mainWindow;
 
@@ -101,9 +93,7 @@ public class App : Application
   private void CreateTrayIcon()
   {
     if (_mainWindowViewModel is null)
-    {
       return;
-    }
 
     NativeMenu menu = new();
     menu.Items.Add(new NativeMenuItem
@@ -118,11 +108,11 @@ public class App : Application
                    });
 
     _trayIcon = new()
-               {
-                 ToolTipText = _mainWindowViewModel.MinimisedText,
-                 IsVisible = true,
-                 Menu = menu
-               };
+                {
+                  ToolTipText = _mainWindowViewModel.MinimisedText,
+                  IsVisible = true,
+                  Menu = menu
+                };
 
     _trayIcon.Clicked += OnTrayIconClicked;
     TrayIcon.SetIcons(this, [_trayIcon]);
@@ -141,9 +131,7 @@ public class App : Application
   private async void OnMainWindowOpenedAsync(object? sender, EventArgs eventArgs)
   {
     if (_mainWindow is not null)
-    {
       _mainWindow.Opened -= OnMainWindowOpenedAsync;
-    }
 
     await RunFirstRunThenStartAsync();
   }
@@ -151,9 +139,7 @@ public class App : Application
   private async Task RunFirstRunThenStartAsync()
   {
     if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
-    {
       return;
-    }
 
     var firstRun = _composition.CreateFirstRunViewModel();
     firstRun.Evaluate();
@@ -164,22 +150,14 @@ public class App : Application
       var accepted = await dialog.ShowDialog<bool>(_mainWindow);
 
       if (accepted)
-      {
         await firstRun.RunSetupAsync();
-      }
       else
-      {
         firstRun.Decline();
-      }
 
       if (firstRun.SetupFailed)
-      {
         _mainWindowViewModel.ShowSetupFailed();
-      }
       else if (firstRun.DeclinedText is not null)
-      {
         _mainWindowViewModel.ShowSetupDeclined();
-      }
     }
 
     await _mainWindowViewModel.StartAsync();
@@ -198,9 +176,7 @@ public class App : Application
   private async void RepairSetupAsync(object? sender, EventArgs e)
   {
     if (_composition is null || _mainWindowViewModel is null)
-    {
       return;
-    }
 
     var outcome = await _composition.ElevatedSetupLauncher.RunElevatedSetupAsync();
 
@@ -210,9 +186,7 @@ public class App : Application
   private void OpenDataFolder(object? sender, EventArgs e)
   {
     if (_composition is null)
-    {
       return;
-    }
 
     Process.Start(new ProcessStartInfo
                   {
@@ -224,9 +198,7 @@ public class App : Application
   private void ShowFailureDetail(object? sender, EventArgs e)
   {
     if (_mainWindowViewModel?.FailureDetail is not { } detail)
-    {
       return;
-    }
 
     _ = ShowTechnicalDetailAsync(detail);
   }
@@ -239,13 +211,9 @@ public class App : Application
   private async Task ShowTechnicalDetailAsync(string detail)
   {
     if (_mainWindow is null || _mainWindowViewModel is null)
-    {
       return;
-    }
 
-    TechnicalDetailViewModel viewModel = new(_mainWindowViewModel.FailureDetailTitle,
-                                             detail,
-                                             _mainWindowViewModel.FailureDetailCloseLabel);
+    TechnicalDetailViewModel viewModel = new(_mainWindowViewModel.FailureDetailTitle, detail, _mainWindowViewModel.FailureDetailCloseLabel);
     FailureDetailDialog dialog = new() { DataContext = viewModel };
     await dialog.ShowDialog(_mainWindow);
   }
@@ -253,11 +221,9 @@ public class App : Application
   private async void ShowUpdateConfirmationAsync(object? sender, UpdateReadyRequestedEventArgs e)
   {
     if (_composition is null || _mainWindowViewModel is null || _mainWindow is null)
-    {
       return;
-    }
 
-    UpdateConfirmViewModel confirm = _composition.CreateUpdateConfirmViewModel(e.Version);
+    var confirm = _composition.CreateUpdateConfirmViewModel(e.Version);
     UpdateConfirmDialog dialog = new() { DataContext = confirm };
     var accepted = await dialog.ShowDialog<bool>(_mainWindow);
 
@@ -270,7 +236,7 @@ public class App : Application
 
     try
     {
-      _composition.UpdateInstaller.InstallOnQuit(restart: true);
+      _composition.UpdateInstaller.InstallOnQuit(true);
     }
     catch (Exception failure)
     {
@@ -282,17 +248,13 @@ public class App : Application
     await _mainWindowViewModel.StopAsync();
 
     if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
-    {
       lifetime.Shutdown();
-    }
   }
 
   private async void AskWhetherToQuitAsync(object? sender, EventArgs e)
   {
     if (_quitConfirmViewModel is null || _mainWindow is null)
-    {
       return;
-    }
 
     _quitConfirmViewModel.RequestQuit();
 

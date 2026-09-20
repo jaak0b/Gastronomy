@@ -23,32 +23,17 @@ public sealed class FestivalStationServiceTest
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
-    A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(BuildFestival(false)));
+    A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(false)));
     A.CallTo(() => _stationRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
-    A.CallTo(() => _repository.FindLinkAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(null));
-    A.CallTo(() => _repository.FindAssignmentsAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<ItemStationAssignment>>([]));
+    A.CallTo(() => _repository.FindLinkAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
+    A.CallTo(() => _repository.FindAssignmentsAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<ItemStationAssignment>>([]));
     A.CallTo(() => _repository.CountUnfulfilledItemsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(0);
-    A.CallTo(() => _numberAllocator.FindNextStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(7);
-    A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
-    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(A<Guid>._,
-                                                                      A<IReadOnlyCollection<Guid>>._,
-                                                                      A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
-    A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
+    A.CallTo(() => _numberAllocator.FindNextStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(7);
+    A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
+    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(A<Guid>._, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
+    A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    _service = new(_repository,
-                   _festivalRepository,
-                   _stationRepository,
-                   new(_orderabilityRepository, _festivalRepository, _clock),
-                   _numberAllocator,
-                   new RunningFestivalLookup(_festivalRepository, new(), _clock),
-                   _transactionRunner);
+    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, new(_festivalRepository, new(), _clock), _transactionRunner);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -70,8 +55,7 @@ public sealed class FestivalStationServiceTest
   {
     A.CallTo(() => _stationRepository.ExistsAsync(_kitchenId, A<CancellationToken>._)).Returns(false);
 
-    Result<SavedFestivalStation, FestivalStationFailure> added =
-      await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -83,11 +67,9 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task AddAsync_AStationAlreadyAtTheFestival_ChangesNothingAndRollsBack()
   {
-    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(BuildLink()));
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
 
-    Result<SavedFestivalStation, FestivalStationFailure> added =
-      await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -100,8 +82,7 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task AddAsync_AStationComingBackToTheFestival_ContinuesTheNumberingWhereItStopped()
   {
-    Result<SavedFestivalStation, FestivalStationFailure> added =
-      await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -109,41 +90,33 @@ public sealed class FestivalStationServiceTest
                       Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
-    A.CallTo(() => _repository.AddLinkAsync(A<FestivalStation>.That.Matches(link => link.NextStationOrderNumber == 7),
-                                            A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _repository.AddLinkAsync(A<FestivalStation>.That.Matches(link => link.NextStationOrderNumber == 7), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
   public async Task RemoveAsync_AStationThatIsNotAtTheFestival_FailsBecauseTheLinkIsNotFound()
   {
-    Result<SavedFestivalStation, FestivalStationFailure> removed =
-      await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(removed.IsSuccess, Is.False);
-                      Assert.That(removed.Failure.Reason,
-                                  Is.EqualTo(FestivalStationFailureReason.StationLinkNotFound));
+                      Assert.That(removed.Failure.Reason, Is.EqualTo(FestivalStationFailureReason.StationLinkNotFound));
                     });
   }
 
   [Test]
   public async Task RemoveAsync_AStationWithOpenItemsAtTheRunningFestival_KeepsTheStationAtTheFestival()
   {
-    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(BuildLink()));
-    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(3);
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
+    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed =
-      await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(removed.IsSuccess, Is.False);
-                      Assert.That(removed.Failure.Reason,
-                                  Is.EqualTo(FestivalStationFailureReason.StationHasUnfulfilledItems));
+                      Assert.That(removed.Failure.Reason, Is.EqualTo(FestivalStationFailureReason.StationHasUnfulfilledItems));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
@@ -151,16 +124,12 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task RemoveAsync_AStationWithOpenItemsAtAFestivalThatIsOver_RemovesItAnyway()
   {
-    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(BuildFestival(true)));
-    FestivalStation link = BuildLink();
-    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(link));
-    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(3);
+    A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
+    var link = BuildLink();
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(link));
+    A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed =
-      await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.That(removed.IsSuccess, Is.True);
 
@@ -170,24 +139,16 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task RemoveAsync_AStationTheLastItemNeeds_CountsTheItemsThatWouldBeStranded()
   {
-    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(BuildLink()));
-    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(_festivalId,
-                                                                      A<IReadOnlyCollection<Guid>>.That.Matches(stationIds =>
-                                                                                                                   stationIds.Contains(_kitchenId)),
-                                                                      A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
-    A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
+    A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
+    A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>.That.Matches(stationIds => stationIds.Contains(_kitchenId)), A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
+    A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed =
-      await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(removed.IsSuccess, Is.False);
-                      Assert.That(removed.Failure.Reason,
-                                  Is.EqualTo(FestivalStationFailureReason.ItemsWouldHaveNoStation));
+                      Assert.That(removed.Failure.Reason, Is.EqualTo(FestivalStationFailureReason.ItemsWouldHaveNoStation));
                       Assert.That(removed.Failure.StrandedItemCount, Is.EqualTo(1));
                     });
   }
@@ -210,9 +171,17 @@ public sealed class FestivalStationServiceTest
              Id = _festivalId,
              Name = "Sommerfest",
              StartsAtUtc = _now.AddHours(-5),
-             EndsAtUtc = hasEnded ? _now.AddHours(-1) : _now.AddHours(5),
+             EndsAtUtc = EndOfTheFestival(hasEnded),
              NextOrderNumber = 1,
              IsHidden = false
            };
+  }
+
+  private DateTime EndOfTheFestival(bool hasEnded)
+  {
+    if (hasEnded)
+      return _now.AddHours(-1);
+
+    return _now.AddHours(5);
   }
 }

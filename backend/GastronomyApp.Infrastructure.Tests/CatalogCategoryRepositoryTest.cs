@@ -16,11 +16,14 @@ public sealed class CatalogCategoryRepositoryTest
 
     CatalogCategoryRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<CatalogCategory> found =
-      await repository.FindAllOrderedAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<CatalogCategory> found = await repository.FindAllOrderedAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found.Select(category => category.Id),
-                Is.EqualTo(new[] { seeded.FoodCategoryId, seeded.DrinkCategoryId }));
+                Is.EqualTo(new[]
+                           {
+                             seeded.FoodCategoryId,
+                             seeded.DrinkCategoryId
+                           }));
   }
 
   [Test]
@@ -31,19 +34,13 @@ public sealed class CatalogCategoryRepositoryTest
 
     CatalogCategoryRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.HoldsActiveItemsAsync(seeded.FoodCategoryId,
-                                                       TestContext.CurrentContext.CancellationToken),
-                Is.True);
+    Assert.That(await repository.HoldsActiveItemsAsync(seeded.FoodCategoryId, TestContext.CurrentContext.CancellationToken), Is.True);
 
-    var sausage = await fixture.DbContext.CatalogItems
-                               .FirstAsync(item => item.Id == seeded.SausageItemId,
-                                           TestContext.CurrentContext.CancellationToken);
+    var sausage = await fixture.DbContext.CatalogItems.FirstAsync(item => item.Id == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
     sausage.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(await repository.HoldsActiveItemsAsync(seeded.FoodCategoryId,
-                                                       TestContext.CurrentContext.CancellationToken),
-                Is.False);
+    Assert.That(await repository.HoldsActiveItemsAsync(seeded.FoodCategoryId, TestContext.CurrentContext.CancellationToken), Is.False);
   }
 
   [Test]
@@ -68,9 +65,7 @@ public sealed class CatalogCategoryRepositoryTest
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.CatalogCategories.AnyAsync(category => category.Id == categoryId,
-                                                             TestContext.CurrentContext.CancellationToken),
-                Is.True);
+    Assert.That(await readContext.CatalogCategories.AnyAsync(category => category.Id == categoryId, TestContext.CurrentContext.CancellationToken), Is.True);
   }
 
   [Test]
@@ -81,7 +76,6 @@ public sealed class CatalogCategoryRepositoryTest
 
     CatalogCategoryRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken),
-                Is.Null);
+    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 }

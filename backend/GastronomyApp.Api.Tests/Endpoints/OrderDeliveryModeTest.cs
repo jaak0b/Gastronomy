@@ -38,10 +38,8 @@ public sealed class OrderDeliveryModeTest
     var placed = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
-    var kitchenStationOrder = await database.StationOrders
-                                            .SingleAsync(stationOrder => stationOrder.StationId == _context.World.KitchenStationId);
-    var barStationOrder = await database.StationOrders
-                                        .SingleAsync(stationOrder => stationOrder.StationId == _context.World.BarStationId);
+    var kitchenStationOrder = await database.StationOrders.SingleAsync(stationOrder => stationOrder.StationId == _context.World.KitchenStationId);
+    var barStationOrder = await database.StationOrders.SingleAsync(stationOrder => stationOrder.StationId == _context.World.BarStationId);
 
     Assert.Multiple(() =>
                     {
@@ -56,11 +54,7 @@ public sealed class OrderDeliveryModeTest
   [Test]
   public async Task PostOrder_TheSameSubmissionSentTwice_StillAnswersWithTheOriginalOrder()
   {
-    OrderWithDeliveryModesBody body = new(Guid.NewGuid(),
-                                          "Tisch 3",
-                                          null,
-                                          [new(_context.World.BeerItemId, 300, null, null)],
-                                          [new(_context.World.BarStationId, "asItComes")]);
+    OrderWithDeliveryModesBody body = new(Guid.NewGuid(), "Tisch 3", null, [new(_context.World.BeerItemId, 300, null, null)], [new(_context.World.BarStationId, "asItComes")]);
 
     string firstBody;
     using (var first = await _context.SendAsync(HttpMethod.Post, "/api/orders", body))
@@ -84,11 +78,6 @@ public sealed class OrderDeliveryModeTest
 
   private string ReadDeliveryMode(JsonDocument placed, Guid stationId)
   {
-    return placed.RootElement
-                 .GetProperty("stationOrders")
-                 .EnumerateArray()
-                 .Single(stationOrder => stationOrder.GetProperty("stationId").GetGuid() == stationId)
-                 .GetProperty("deliveryMode")
-                 .GetString()!;
+    return placed.RootElement.GetProperty("stationOrders").EnumerateArray().Single(stationOrder => stationOrder.GetProperty("stationId").GetGuid() == stationId).GetProperty("deliveryMode").GetString()!;
   }
 }

@@ -14,21 +14,17 @@ public sealed class WindowsFirewallSetupTest
 
   private const string ShowRuleForBothProfiles = ShowRule + " profile=private,public";
 
-  private const string RuleSettings =
-    "action=allow program=\"" + ExecutablePath + "\" "
-    + "protocol=TCP profile=private,public remoteip=localsubnet enable=yes";
+  private const string RuleSettings = "action=allow program=\"" + ExecutablePath + "\" " + "protocol=TCP profile=private,public remoteip=localsubnet enable=yes";
 
-  private const string AddRule =
-    "advfirewall firewall add rule name=\"GastronomyApp ordering system\" dir=in " + RuleSettings;
+  private const string AddRule = "advfirewall firewall add rule name=\"GastronomyApp ordering system\" dir=in " + RuleSettings;
 
-  private const string SetRule =
-    "advfirewall firewall set rule name=\"GastronomyApp ordering system\" dir=in new " + RuleSettings;
+  private const string SetRule = "advfirewall firewall set rule name=\"GastronomyApp ordering system\" dir=in new " + RuleSettings;
 
   [SetUp]
   public void SetUp()
   {
     _netsh = A.Fake<INetshCommand>();
-    A.CallTo(() => _netsh.Run(A<string>._)).Returns(new NetshResult(0, string.Empty));
+    A.CallTo(() => _netsh.Run(A<string>._)).Returns(new(0, string.Empty));
   }
 
   private INetshCommand _netsh = null!;
@@ -40,7 +36,7 @@ public sealed class WindowsFirewallSetupTest
 
   private void NetshAnswers(string arguments, int exitCode, string errorOutput = "")
   {
-    A.CallTo(() => _netsh.Run(arguments)).Returns(new NetshResult(exitCode, errorOutput));
+    A.CallTo(() => _netsh.Run(arguments)).Returns(new(exitCode, errorOutput));
   }
 
   [Test]

@@ -21,10 +21,8 @@ public sealed class StaffMemberAdministrationServiceTest
     _transactionRunner = new();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<StaffMember?>(null));
-    A.CallTo(() => _repository.FindAdministeredAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<AdministeredStaffMember>>([]));
+    A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(null));
+    A.CallTo(() => _repository.FindAdministeredAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<AdministeredStaffMember>>([]));
 
     _service = new(_repository, new(_invitationStore, _deviceTokenStore, _clock), _transactionRunner, _clock);
   }
@@ -52,14 +50,12 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task RenameAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
-      await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(renamed.IsSuccess, Is.False);
-                      Assert.That(renamed.Failure.Reason,
-                                  Is.EqualTo(StaffMemberAdministrationFailureReason.NameMissing));
+                      Assert.That(renamed.Failure.Reason, Is.EqualTo(StaffMemberAdministrationFailureReason.NameMissing));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
@@ -67,26 +63,22 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task RenameAsync_ASomebodyWhoIsNotOnTheList_FailsBecauseThePersonIsNotFound()
   {
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
-      await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(renamed.IsSuccess, Is.False);
-                      Assert.That(renamed.Failure.Reason,
-                                  Is.EqualTo(StaffMemberAdministrationFailureReason.StaffMemberNotFound));
+                      Assert.That(renamed.Failure.Reason, Is.EqualTo(StaffMemberAdministrationFailureReason.StaffMemberNotFound));
                     });
   }
 
   [Test]
   public async Task RenameAsync_ANewName_KeepsExactlyWhatWasTypedAndCommits()
   {
-    StaffMember staffMember = BuildStaffMember(true, null, null);
-    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
-     .Returns(Task.FromResult<StaffMember?>(staffMember));
+    var staffMember = BuildStaffMember(true, null, null);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed =
-      await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> renamed = await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -100,12 +92,10 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task ActivateAsync_ASomebodyWhoWasTakenOffTheList_PutsThemBackOnIt()
   {
-    StaffMember staffMember = BuildStaffMember(false, null, null);
-    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
-     .Returns(Task.FromResult<StaffMember?>(staffMember));
+    var staffMember = BuildStaffMember(false, null, null);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOn =
-      await _service.ActivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOn = await _service.ActivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -117,12 +107,10 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task DeactivateAsync_ASomebodyHoldingAPhone_WithdrawsTheInvitationAndRevokesThePhone()
   {
-    StaffMember staffMember = BuildStaffMember(true, _deviceId, _invitationId);
-    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
-     .Returns(Task.FromResult<StaffMember?>(staffMember));
+    var staffMember = BuildStaffMember(true, _deviceId, _invitationId);
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff =
-      await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -133,20 +121,16 @@ public sealed class StaffMemberAdministrationServiceTest
                       Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
-    A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
-    A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
   public async Task DeactivateAsync_ASomebodyWithoutAPhone_RevokesNothing()
   {
-    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._))
-     .Returns(Task.FromResult<StaffMember?>(BuildStaffMember(true, null, null)));
+    A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(BuildStaffMember(true, null, null)));
 
-    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff =
-      await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    Result<SavedStaffMember, StaffMemberAdministrationFailure> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.That(switchedOff.Value.RevokedDeviceId, Is.Null);
 

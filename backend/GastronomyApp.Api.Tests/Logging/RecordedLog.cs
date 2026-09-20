@@ -13,9 +13,7 @@ public sealed class RecordedLog : IDisposable
   public RecordedLog()
   {
     _previousLogger = Log.Logger;
-    _logger = new LoggerConfiguration().MinimumLevel.Verbose()
-                                       .WriteTo.Sink(_recorder)
-                                       .CreateLogger();
+    _logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(_recorder).CreateLogger();
     Log.Logger = _logger;
   }
 
@@ -26,7 +24,7 @@ public sealed class RecordedLog : IDisposable
 
   public IReadOnlyList<string> ReadRenderedMessages()
   {
-    return [.. ReadEntries().Select(entry => entry.RenderMessage())];
+    return ReadEntries().Select(entry => entry.RenderMessage()).ToList();
   }
 
   public void Dispose()
@@ -51,7 +49,7 @@ public sealed class RecordedLog : IDisposable
     {
       lock (_entries)
       {
-        return [.. _entries];
+        return _entries.ToList();
       }
     }
   }

@@ -21,13 +21,13 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     builder.Property(order => order.CreatedAtUtc).IsRequired();
     builder.HasIndex(order => order.ClientOrderId).IsUnique();
     builder.HasIndex(order => order.FestivalId);
-    builder.HasIndex(order => new { order.FestivalId, order.GlobalOrderNumber }).IsUnique();
-    builder.HasOne<Festival>()
-           .WithMany()
-           .HasForeignKey(order => order.FestivalId)
-           .OnDelete(DeleteBehavior.Restrict);
-    builder.HasMany(order => order.StationOrders)
-           .WithOne()
-           .HasForeignKey(stationOrder => stationOrder.OrderId);
+    builder.HasIndex(order => new
+                              {
+                                order.FestivalId,
+                                order.GlobalOrderNumber
+                              })
+           .IsUnique();
+    builder.HasOne<Festival>().WithMany().HasForeignKey(order => order.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasMany(order => order.StationOrders).WithOne().HasForeignKey(stationOrder => stationOrder.OrderId);
   }
 }

@@ -5,7 +5,6 @@ namespace GastronomyApp.Desktop.Tests.Services;
 [TestFixture]
 public sealed class SettingsStoreTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -44,8 +43,7 @@ public sealed class SettingsStoreTest
   [Test]
   public void Load_WithASettingsFile_ReadsThePortThatWasWrittenDown()
   {
-    File.WriteAllText(Path.Combine(_settingsDirectory, "settings.json"),
-                      """{"Port":8080,"SelectedNetworkInterface":"Festival"}""");
+    File.WriteAllText(Path.Combine(_settingsDirectory, "settings.json"), """{"Port":8080,"SelectedNetworkInterface":"Festival"}""");
 
     var settings = CreateStore().Load();
 

@@ -29,10 +29,9 @@ public sealed class RunningFestivalLookupTest
   [Test]
   public async Task FindAsync_AFestivalCoversThisMoment_AnswersWithThatFestival()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(_now, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(Festival(_now.AddHours(-2), _now.AddHours(5), false)));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(_now, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(Festival(_now.AddHours(-2), _now.AddHours(5), false)));
 
-    Festival? found = await _lookup.FindAsync(TestContext.CurrentContext.CancellationToken);
+    var found = await _lookup.FindAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found?.Id, Is.EqualTo(_festivalId));
   }
@@ -40,10 +39,9 @@ public sealed class RunningFestivalLookupTest
   [Test]
   public async Task FindAsync_NoFestivalCoversThisMoment_AnswersWithNothing()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Festival? found = await _lookup.FindAsync(TestContext.CurrentContext.CancellationToken);
+    var found = await _lookup.FindAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.Null);
   }

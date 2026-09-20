@@ -22,40 +22,25 @@ public sealed class StationQueueChangeServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Station?>(Kitchen()));
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(Link()));
-    A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                   A<Guid>._,
-                                                                   A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _stationOrderRepository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
-    A.CallTo(() => _stationOrderRepository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                            A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
-    A.CallTo(() => _stationOrderRepository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                      A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([
-                                                                       new()
-                                                                       {
-                                                                         OrderId = _orderId,
-                                                                         ItemCount = 2,
-                                                                         FulfilledItemCount = 1
-                                                                       }
-                                                                     ]));
+    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
+    A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
+    A.CallTo(() => _stationOrderRepository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
+    A.CallTo(() => _stationOrderRepository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
+    A.CallTo(() => _stationOrderRepository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
+   .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([
+                                                                     new()
+                                                                     {
+                                                                       OrderId = _orderId,
+                                                                       ItemCount = 2,
+                                                                       FulfilledItemCount = 1
+                                                                     }
+                                                                   ]));
 
-    StationAtFestivalLookup lookup = new(_stationRepository,
-                                        _festivalStationRepository,
-                                        new RunningFestivalLookup(_festivalRepository, new(), _clock));
+    StationAtFestivalLookup lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
 
-    _service = new(lookup,
-                   new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock),
-                   new(lookup, _stationOrderRepository),
-                   new(_stationOrderRepository, new()));
+    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository, new()));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -73,11 +58,10 @@ public sealed class StationQueueChangeServiceTest
   [Test]
   public async Task FulfillAsync_AnOpenItem_AnswersWithTheFreshQueueAndTheNewStatusOfItsOrder()
   {
-    OrderItem bratwurst = OpenItem();
+    var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -85,20 +69,18 @@ public sealed class StationQueueChangeServiceTest
                       Assert.That(change.Value.Queue.StationId, Is.EqualTo(_stationId));
                       Assert.That(change.Value.OrderStatusChanges, Has.Count.EqualTo(1));
                       Assert.That(change.Value.OrderStatusChanges[0].OrderId, Is.EqualTo(_orderId));
-                      Assert.That(change.Value.OrderStatusChanges[0].Status,
-                                  Is.EqualTo(OrderStatus.PartiallyFulfilled));
+                      Assert.That(change.Value.OrderStatusChanges[0].Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
                     });
   }
 
   [Test]
   public async Task FulfillAsync_AnItemAnotherTapHadAlreadyFinished_StillReportsTheStatusOfThatOrder()
   {
-    OrderItem bratwurst = OpenItem();
+    var bratwurst = OpenItem();
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -110,11 +92,9 @@ public sealed class StationQueueChangeServiceTest
   [Test]
   public async Task FulfillAsync_NoFestivalIsRunning_RefusesAndWritesNothing()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -128,21 +108,17 @@ public sealed class StationQueueChangeServiceTest
   [Test]
   public void FulfillAsync_NullSelection_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.FulfillAsync(null!,
-                                                         _stationId,
-                                                         TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _service.FulfillAsync(null!, _stationId, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task UnfulfillAsync_AnItemTheStationHandedOut_AnswersWithTheStatusOfItsOrder()
   {
-    OrderItem bratwurst = OpenItem();
+    var bratwurst = OpenItem();
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -154,26 +130,16 @@ public sealed class StationQueueChangeServiceTest
   [Test]
   public void UnfulfillAsync_NullSelection_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.UnfulfillAsync(null!,
-                                                           _stationId,
-                                                           TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _service.UnfulfillAsync(null!, _stationId, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task HideFromAsItComesQueueAsync_AnAsItComesOrder_AnswersWithTheQueueAndNoStatusChange()
   {
-    StationOrder stationOrder = AsItComesStationOrder();
-    A.CallTo(() => _stationOrderRepository.FindAtStationAsync(stationOrder.Id,
-                                                               _stationId,
-                                                               _festivalId,
-                                                               A<CancellationToken>._))
-     .Returns(Task.FromResult<StationOrder?>(stationOrder));
+    var stationOrder = AsItComesStationOrder();
+    A.CallTo(() => _stationOrderRepository.FindAtStationAsync(stationOrder.Id, _stationId, _festivalId, A<CancellationToken>._)).Returns(Task.FromResult<StationOrder?>(stationOrder));
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.HideFromAsItComesQueueAsync(stationOrder.Id,
-                                                  _stationId,
-                                                  TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -186,34 +152,22 @@ public sealed class StationQueueChangeServiceTest
   [Test]
   public async Task HideFromAsItComesQueueAsync_TheStationIsNotAtTheRunningFestival_RefusesBeforeItReadsTheOrder()
   {
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(null));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
 
-    Result<StationQueueChange, StationQueueFailure> change =
-      await _service.HideFromAsItComesQueueAsync(Guid.NewGuid(),
-                                                  _stationId,
-                                                  TestContext.CurrentContext.CancellationToken);
+    Result<StationQueueChange, StationQueueFailure> change = await _service.HideFromAsItComesQueueAsync(Guid.NewGuid(), _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(change.IsSuccess, Is.False);
-                      Assert.That(change.Failure.Reason,
-                                  Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
+                      Assert.That(change.Failure.Reason, Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
                     });
 
-    A.CallTo(() => _stationOrderRepository.FindAtStationAsync(A<Guid>._,
-                                                              A<Guid>._,
-                                                              A<Guid>._,
-                                                              A<CancellationToken>._))
-     .MustNotHaveHappened();
+    A.CallTo(() => _stationOrderRepository.FindAtStationAsync(A<Guid>._, A<Guid>._, A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   private void GivenItemsAtThisStation(params OrderItem[] items)
   {
-    A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._,
-                                                                   _stationId,
-                                                                   A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([.. items]));
+    A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
   }
 
   private OrderItem OpenItem()

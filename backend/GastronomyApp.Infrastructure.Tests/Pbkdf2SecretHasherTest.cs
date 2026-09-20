@@ -18,8 +18,7 @@ public sealed class Pbkdf2SecretHasherTest
     Pbkdf2SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify(null!, hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm),
-                Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify(null!, hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -28,8 +27,7 @@ public sealed class Pbkdf2SecretHasherTest
     Pbkdf2SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", null!, hashed.Salt, hashed.Iterations, hashed.Algorithm),
-                Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", null!, hashed.Salt, hashed.Iterations, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -38,8 +36,7 @@ public sealed class Pbkdf2SecretHasherTest
     Pbkdf2SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, null!, hashed.Iterations, hashed.Algorithm),
-                Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, null!, hashed.Iterations, hashed.Algorithm), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -48,8 +45,7 @@ public sealed class Pbkdf2SecretHasherTest
     Pbkdf2SecretHasher hasher = new();
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, null!),
-                Throws.ArgumentNullException);
+    Assert.That(() => hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, null!), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -59,8 +55,7 @@ public sealed class Pbkdf2SecretHasherTest
 
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm),
-                Is.True);
+    Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm), Is.True);
   }
 
   [Test]
@@ -70,8 +65,7 @@ public sealed class Pbkdf2SecretHasherTest
 
     var hashed = hasher.Hash("the-secret");
 
-    Assert.That(hasher.Verify("another-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm),
-                Is.False);
+    Assert.That(hasher.Verify("another-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm), Is.False);
   }
 
   [Test]
@@ -97,12 +91,9 @@ public sealed class Pbkdf2SecretHasherTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm),
-                                  Is.True);
-                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations + 1, hashed.Algorithm),
-                                  Is.False);
-                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, "PBKDF2-HMAC-SHA256"),
-                                  Is.False);
+                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, hashed.Algorithm), Is.True);
+                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations + 1, hashed.Algorithm), Is.False);
+                      Assert.That(hasher.Verify("the-secret", hashed.Hash, hashed.Salt, hashed.Iterations, "PBKDF2-HMAC-SHA256"), Is.False);
                     });
   }
 }

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using GastronomyApp.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -34,8 +35,7 @@ public sealed class EstimateEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("queuedMinutes").GetDouble()),
-                                  Is.All.Zero);
+                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("queuedMinutes").GetDouble()), Is.All.Zero);
                     });
   }
 
@@ -62,12 +62,10 @@ public sealed class EstimateEndpointsTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      var items = await database.OrderItems.ToListAsync();
+      List<OrderItem> items = await database.OrderItems.ToListAsync();
 
       foreach (var item in items)
-      {
         item.FulfilledAtUtc = DateTime.UtcNow;
-      }
 
       await database.SaveChangesAsync();
     }
@@ -80,10 +78,7 @@ public sealed class EstimateEndpointsTest
   [Test]
   public async Task GetEstimates_AnItemWithoutAStatedDuration_CountsAsNoTimeAtAll()
   {
-    OrderBody beerOnly = new(Guid.NewGuid(),
-                             "Tisch 12",
-                             null,
-                             [new(_context.World.BeerItemId, 300, null, null)]);
+    OrderBody beerOnly = new(Guid.NewGuid(), "Tisch 12", null, [new(_context.World.BeerItemId, 300, null, null)]);
 
     using (var placed = await _context.PostOrderAsync(beerOnly))
     {
@@ -109,8 +104,10 @@ public sealed class EstimateEndpointsTest
     OrderBody both = new(Guid.NewGuid(),
                          "Tisch 12",
                          null,
-                         [new(_context.World.BratwurstItemId, 350, null, null),
-                          new(_context.World.BeerItemId, 300, null, null)]);
+                         [
+                           new(_context.World.BratwurstItemId, 350, null, null),
+                           new(_context.World.BeerItemId, 300, null, null)
+                         ]);
 
     using (var placed = await _context.PostOrderAsync(both))
     {
@@ -148,10 +145,7 @@ public sealed class EstimateEndpointsTest
 
   private double ReadQueuedMinutes(JsonElement stations, Guid stationId)
   {
-    return stations.EnumerateArray()
-                   .Single(station => station.GetProperty("stationId").GetGuid() == stationId)
-                   .GetProperty("queuedMinutes")
-                   .GetDouble();
+    return stations.EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == stationId).GetProperty("queuedMinutes").GetDouble();
   }
 
   private async Task<JsonElement> ReadEstimatesAsync()

@@ -45,18 +45,14 @@ public sealed class ActivationPipeListener
       return;
     }
 
-    Log.Error(failure,
-              "The listener for a second start stopped. Starting the program again will no longer "
-              + "bring the open window to the front.");
+    Log.Error(failure, "The listener for a second start stopped. Starting the program again will no longer " + "bring the open window to the front.");
   }
 
   private async Task ReceiveActivationSignalsAsync(CancellationToken cancellationToken)
   {
     while (!cancellationToken.IsCancellationRequested)
     {
-      using NamedPipeServerStream server = new(_pipeName,
-                                               PipeDirection.In,
-                                               NamedPipeServerStream.MaxAllowedServerInstances);
+      using NamedPipeServerStream server = new(_pipeName, PipeDirection.In, NamedPipeServerStream.MaxAllowedServerInstances);
 
       await server.WaitForConnectionAsync(cancellationToken);
 
@@ -64,9 +60,7 @@ public sealed class ActivationPipeListener
       var signal = await reader.ReadLineAsync(cancellationToken);
 
       if (signal == ActivationSignal)
-      {
         OnActivationRequested();
-      }
     }
   }
 }

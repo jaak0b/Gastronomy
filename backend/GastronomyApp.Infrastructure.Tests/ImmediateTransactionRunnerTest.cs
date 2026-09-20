@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -19,8 +19,7 @@ public sealed class ImmediateTransactionRunnerTest
     using SqliteInMemoryFixture fixture = new();
     var runner = RunnerOn(fixture.DbContext);
 
-    Assert.That(() => runner.RunAsync<int>(null!, TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(() => runner.RunAsync<int>(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -31,13 +30,10 @@ public sealed class ImmediateTransactionRunnerTest
     var seeded = await new DomainSeeder().SeedAsync(dbContext, TestContext.CurrentContext.CancellationToken);
     var runner = RunnerOn(dbContext);
 
-    Assert.That(async () => await runner.RunAsync<int>(_ => throw new InvalidOperationException("The body failed."),
-                                                       TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<InvalidOperationException>());
+    Assert.That(async () => await runner.RunAsync<int>(_ => throw new InvalidOperationException("The body failed."), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -50,13 +46,16 @@ public sealed class ImmediateTransactionRunnerTest
 
     Assert.That(async () => await runner.RunAsync(async _ => new TransactionOutcome<int>
                                                              {
-                                                               Value = await runner.RunAsync(_ => Task.FromResult(new TransactionOutcome<int> { Value = 1, ShouldCommit = true }),
+                                                               Value = await runner.RunAsync(_ => Task.FromResult(new TransactionOutcome<int>
+                                                                                                                  {
+                                                                                                                    Value = 1,
+                                                                                                                    ShouldCommit = true
+                                                                                                                  }),
                                                                                              TestContext.CurrentContext.CancellationToken),
                                                                ShouldCommit = true
                                                              },
                                                   TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<InvalidOperationException>()
-                      .With.Message.Contains("already inside"));
+                Throws.InstanceOf<InvalidOperationException>().With.Message.Contains("already inside"));
   }
 
   [Test]
@@ -67,17 +66,11 @@ public sealed class ImmediateTransactionRunnerTest
     var seeded = await new DomainSeeder().SeedAsync(dbContext, TestContext.CurrentContext.CancellationToken);
     var runner = RunnerOn(dbContext);
 
-    Assert.That(async () => await runner.RunAsync<int>(_ => throw new DbUpdateException("An error occurred while saving the entity changes.",
-                                                                                        new SqliteException("attempt to write a readonly database", 8)),
-                                                       TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<InfrastructureException>()
-                      .With.Property(nameof(InfrastructureException.Reason))
-                      .EqualTo(InfrastructureFailureReason.DatabaseUnavailable)
-                      .And.InnerException.InstanceOf<SqliteException>());
+    Assert.That(async () => await runner.RunAsync<int>(_ => throw new DbUpdateException("An error occurred while saving the entity changes.", new SqliteException("attempt to write a readonly database", 8)), TestContext.CurrentContext.CancellationToken),
+                Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -95,7 +88,11 @@ public sealed class ImmediateTransactionRunnerTest
                                                                                                   fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
                                                                                                   await fixture.DbContext.SaveChangesAsync(transactionCancellationToken);
 
-                                                                                                  return new TransactionOutcome<bool> { Value = true, ShouldCommit = true };
+                                                                                                  return new TransactionOutcome<bool>
+                                                                                                         {
+                                                                                                           Value = true,
+                                                                                                           ShouldCommit = true
+                                                                                                         };
                                                                                                 },
                                                                                                 TestContext.CurrentContext.CancellationToken))!;
 
@@ -132,9 +129,14 @@ public sealed class ImmediateTransactionRunnerTest
                                       {
                                         attempts++;
 
-                                        return attempts == 1
-                                                 ? throw new DbUpdateConcurrencyException()
-                                                 : Task.FromResult(new TransactionOutcome<int> { Value = 7, ShouldCommit = true });
+                                        if (attempts == 1)
+                                          throw new DbUpdateConcurrencyException();
+
+                                        return Task.FromResult(new TransactionOutcome<int>
+                                                               {
+                                                                 Value = 7,
+                                                                 ShouldCommit = true
+                                                               });
                                       },
                                       TestContext.CurrentContext.CancellationToken);
 
@@ -149,17 +151,12 @@ public sealed class ImmediateTransactionRunnerTest
   public void RunAsync_AnAttemptLosesTheRowsItRead_WritesAWarningNamingTheAttempt()
   {
     using SqliteInMemoryFixture fixture = new();
-    var logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
+    ILogger<ImmediateTransactionRunner> logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
     ImmediateTransactionRunner runner = new(fixture.DbContext, new(), logger);
 
-    Assert.That(async () => await runner.RunAsync<int>(_ => throw new DbUpdateConcurrencyException(),
-                                                       TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<ConcurrentWriteException>());
+    Assert.That(async () => await runner.RunAsync<int>(_ => throw new DbUpdateConcurrencyException(), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<ConcurrentWriteException>());
 
-    A.CallTo(logger)
-     .Where(call => call.Method.Name == nameof(ILogger.Log)
-                    && call.GetArgument<LogLevel>(0) == LogLevel.Warning)
-     .MustHaveHappened(4, Times.Exactly);
+    A.CallTo(logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Warning).MustHaveHappened(4, Times.Exactly);
   }
 
   private ImmediateTransactionRunner RunnerOn(GastronomyAppDbContext dbContext)
@@ -179,7 +176,8 @@ public sealed class ImmediateTransactionRunnerTest
              [
                new()
                {
-                 CatalogItemId = seeded.SausageItemId, Note = null,
+                 CatalogItemId = seeded.SausageItemId,
+                 Note = null,
                  UnitPriceCents = 350
                }
              ]

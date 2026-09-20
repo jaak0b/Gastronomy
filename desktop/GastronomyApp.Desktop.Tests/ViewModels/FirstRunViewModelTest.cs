@@ -8,7 +8,6 @@ namespace GastronomyApp.Desktop.Tests.ViewModels;
 [TestFixture]
 public sealed class FirstRunViewModelTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -124,8 +123,7 @@ public sealed class FirstRunViewModelTest
   [Test]
   public async Task RunSetupAsync_WhenTheElevationIsAccepted_ClosesTheOfferAndStarts()
   {
-    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._))
-     .Returns(ElevatedSetupOutcome.Completed);
+    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._)).Returns(ElevatedSetupOutcome.Completed);
     var viewModel = CreateViewModel(false, false);
     viewModel.Evaluate();
 
@@ -142,8 +140,7 @@ public sealed class FirstRunViewModelTest
   [Test]
   public async Task RunSetupAsync_WhenTheElevationIsDeclined_SaysWhatStillWorksAndStartsAnyway()
   {
-    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._))
-     .Returns(ElevatedSetupOutcome.ElevationDeclined);
+    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._)).Returns(ElevatedSetupOutcome.ElevationDeclined);
     var viewModel = CreateViewModel(false, false);
     viewModel.Evaluate();
 
@@ -161,8 +158,7 @@ public sealed class FirstRunViewModelTest
   [Test]
   public async Task RunSetupAsync_WhenAStepOfTheSetupFailed_SaysSoInsteadOfBlamingTheOperator()
   {
-    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._))
-     .Returns(ElevatedSetupOutcome.SetupStepFailed);
+    A.CallTo(() => _elevatedSetup.RunElevatedSetupAsync(A<CancellationToken>._)).Returns(ElevatedSetupOutcome.SetupStepFailed);
     var viewModel = CreateViewModel(false, false);
     viewModel.Evaluate();
 

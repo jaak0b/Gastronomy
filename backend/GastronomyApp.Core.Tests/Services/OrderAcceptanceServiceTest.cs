@@ -10,7 +10,6 @@ namespace GastronomyApp.Core.Tests.Services;
 [TestFixture]
 public sealed class OrderAcceptanceServiceTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -22,21 +21,16 @@ public sealed class OrderAcceptanceServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Order?>(null));
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
-                                                              BuildStation(_kitchenId, "Kueche", 1),
-                                                              BuildStation(_barIndoorId, "Theke innen", 2)
-                                                            ]));
-    A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult(137));
-    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult(42));
-    A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalCatalogItem?>(null));
+   .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
+                                                            BuildStation(_kitchenId, "Kueche", 1),
+                                                            BuildStation(_barIndoorId, "Theke innen", 2)
+                                                          ]));
+    A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult(137));
+    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult(42));
+    A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(null));
 
     GivenCatalogItem(_bratwurstId, "Bratwurst", [_kitchenId]);
     GivenCatalogItem(_beerId, "Bier", [_barIndoorId]);
@@ -44,17 +38,11 @@ public sealed class OrderAcceptanceServiceTest
     _transactionRunner = A.Fake<ITransactionRunner>();
     A.CallTo(_transactionRunner)
      .WithReturnType<Task<Result<OrderAcceptanceResult, OrderValidationFailure>>>()
-     .ReturnsLazily(async call =>
-                      (await call.GetArgument<Func<CancellationToken, Task<TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>>>>(0)!
-                         (call.GetArgument<CancellationToken>(1))).Value);
+     .ReturnsLazily(async call => (await call.GetArgument<Func<CancellationToken, Task<TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>>>>(0)!(call.GetArgument<CancellationToken>(1))).Value);
 
-    _service = new(_orderRepository,
-                   _festivalRepository,
-                   _numberAllocator,
-                   new(_catalogItemRepository, _stationRepository, new()),
-                   new(A.Fake<IOpenItemRepository>(), _festivalRepository, _transactionRunner, _clock),
-                   _transactionRunner,
-                   _clock);
+    RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
+
+    _service = new(_orderRepository, runningFestival, _numberAllocator, new(_catalogItemRepository, _stationRepository, new()), new(A.Fake<IOpenItemRepository>(), runningFestival, _transactionRunner, _clock), _transactionRunner, _clock);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -113,30 +101,25 @@ public sealed class OrderAcceptanceServiceTest
                          IsActive = true
                        };
 
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(id, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(item));
+    A.CallTo(() => _catalogItemRepository.FindByIdAsync(id, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(item));
     GivenAssignments(id, stationIds);
   }
 
   private void GivenAssignments(Guid catalogItemId, IReadOnlyCollection<Guid> stationIds)
   {
-    List<ItemStationAssignment> assignments = stationIds
-                                             .Select(stationId => new ItemStationAssignment
-                                                                  {
-                                                                    Id = Guid.NewGuid(),
-                                                                    FestivalId = _festivalId,
-                                                                    CatalogItemId = catalogItemId,
-                                                                    StationId = stationId
-                                                                  })
-                                             .ToList();
+    List<ItemStationAssignment> assignments = stationIds.Select(stationId => new ItemStationAssignment
+                                                                             {
+                                                                               Id = Guid.NewGuid(),
+                                                                               FestivalId = _festivalId,
+                                                                               CatalogItemId = catalogItemId,
+                                                                               StationId = stationId
+                                                                             })
+                                                        .ToList();
 
-    A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(A<Guid>._, catalogItemId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
+    A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(A<Guid>._, catalogItemId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
   }
 
-  private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items,
-                                             string tableName = "Tisch 12",
-                                             IReadOnlyList<StationDeliveryModeRequest>? deliveryModes = null)
+  private OrderAcceptanceRequest RequestWith(IReadOnlyList<OrderAcceptanceItemRequest> items, string tableName = "Tisch 12", IReadOnlyList<StationDeliveryModeRequest>? deliveryModes = null)
   {
     return new()
            {
@@ -149,10 +132,7 @@ public sealed class OrderAcceptanceServiceTest
            };
   }
 
-  private OrderAcceptanceItemRequest ItemFor(Guid catalogItemId,
-                                             Guid? stationId = null,
-                                             int unitPriceCents = 350,
-                                             OrderSettlementLineTerms? settlement = null)
+  private OrderAcceptanceItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null, int unitPriceCents = 350, OrderSettlementLineTerms? settlement = null)
   {
     return new()
            {
@@ -166,7 +146,7 @@ public sealed class OrderAcceptanceServiceTest
 
   private static List<OrderItem> ReadOrderItems(Order order)
   {
-    return [.. order.StationOrders.SelectMany(stationOrder => stationOrder.Items)];
+    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
   }
 
   private void AssertNothingWasAllocatedOrStored()
@@ -178,15 +158,13 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public void AcceptAsync_NullRequest_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.AcceptAsync(null!, CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _service.AcceptAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task AcceptAsync_EmptyLines_FailsWithNoLinesAndAllocatesNothing()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([]), CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([]), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -199,7 +177,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_TheSameItemTwice_StoresOneRowPerItem()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_bratwurstId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_bratwurstId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     Assert.That(ReadOrderItems(result.Value.Order), Has.Count.EqualTo(2));
@@ -208,8 +189,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_EmptyTableName_FailsWithTableNameMissing()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], string.Empty),
-                                                                                              CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], string.Empty), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -222,8 +202,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_WhitespaceTableName_FailsWithTableNameMissing()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], "   "),
-                                                                                              CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], "   "), CancellationToken.None);
 
     Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameMissing));
   }
@@ -231,7 +210,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_FirstTimeClientOrderId_AllocatesNumbersAndStoresTheOrderOnce()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     var order = result.Value.Order;
@@ -247,10 +229,8 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(order.ClientOrderId, Is.EqualTo(_clientOrderId));
                     });
 
-    A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
-    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .MustHaveHappenedTwiceExactly();
+    A.CallTo(() => _numberAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).MustHaveHappenedTwiceExactly();
     A.CallTo(() => _orderRepository.AddAsync(order, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
@@ -259,7 +239,10 @@ public sealed class OrderAcceptanceServiceTest
   {
     GivenCatalogItem(_beerId, "Bier", [_kitchenId]);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     var order = result.Value.Order;
@@ -271,19 +254,19 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(ReadOrderItems(order).Select(item => item.StationOrderId).Distinct().Count(), Is.EqualTo(1));
                       Assert.That(ReadOrderItems(order)[0].StationOrderId, Is.EqualTo(order.StationOrders[0].Id));
                     });
-    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _kitchenId, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _kitchenId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
   public async Task AcceptAsync_LinesAtTwoStations_CreatesOneTicketPerStationWithItsOwnSequenceNumber()
   {
-    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _kitchenId, A<CancellationToken>._))
-     .Returns(Task.FromResult(42));
-    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _barIndoorId, A<CancellationToken>._))
-     .Returns(Task.FromResult(7));
+    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult(42));
+    A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _barIndoorId, A<CancellationToken>._)).Returns(Task.FromResult(7));
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     var order = result.Value.Order;
@@ -310,11 +293,9 @@ public sealed class OrderAcceptanceServiceTest
                        TableName = "Tisch 12",
                        CreatedAtUtc = _now
                      };
-    A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Order?>(existing));
+    A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -328,7 +309,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_GivesEveryCreatedRowItsOwnNonEmptyIdentifier()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     var order = result.Value.Order;
@@ -351,7 +335,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_StampsEveryCreatedRowWithTheClocksTime()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     var order = result.Value.Order;
@@ -362,7 +349,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_LeavesEveryItemOpen()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     Assert.That(ReadOrderItems(result.Value.Order).Select(item => item.FulfilledAtUtc), Is.All.Null);
@@ -371,12 +361,11 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([
-                                               ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                               ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
-                                             ]),
-                                 CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                                                                                            ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
+                                                                                                          ]),
+                                                                                              CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value.Order);
     var bratwurstLine = items.Single(item => item.CatalogItemId == _bratwurstId);
@@ -397,12 +386,11 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([
-                                               ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                               ItemFor(_beerId, unitPriceCents: 400)
-                                             ]),
-                                 CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                                                                                            ItemFor(_beerId, unitPriceCents: 400)
+                                                                                                          ]),
+                                                                                              CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value.Order);
     var settledLine = items.Single(item => item.CatalogItemId == _bratwurstId);
@@ -424,12 +412,11 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([
-                                               ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
-                                               ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
-                                             ]),
-                                 CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
+                                                                                                            ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
+                                                                                                          ]),
+                                                                                              CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -443,38 +430,43 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementSendingOnePricePerLine_StoresExactlyThePricesThePhoneSent()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(RequestWith([
-                                               ItemFor(_bratwurstId,
-                                                       unitPriceCents: 333,
-                                                       settlement: new()
-                                                                   {
-                                                                     PaidPriceCents = 167,
-                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                   }),
-                                               ItemFor(_bratwurstId,
-                                                       unitPriceCents: 333,
-                                                       settlement: new()
-                                                                   {
-                                                                     PaidPriceCents = 167,
-                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                   }),
-                                               ItemFor(_bratwurstId,
-                                                       unitPriceCents: 333,
-                                                       settlement: new()
-                                                                   {
-                                                                     PaidPriceCents = 166,
-                                                                     PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                   })
-                                             ]),
-                                 CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId,
+                                                                                                                    unitPriceCents: 333,
+                                                                                                                    settlement: new()
+                                                                                                                                {
+                                                                                                                                  PaidPriceCents = 167,
+                                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                                                                }),
+                                                                                                            ItemFor(_bratwurstId,
+                                                                                                                    unitPriceCents: 333,
+                                                                                                                    settlement: new()
+                                                                                                                                {
+                                                                                                                                  PaidPriceCents = 167,
+                                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                                                                }),
+                                                                                                            ItemFor(_bratwurstId,
+                                                                                                                    unitPriceCents: 333,
+                                                                                                                    settlement: new()
+                                                                                                                                {
+                                                                                                                                  PaidPriceCents = 166,
+                                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                                                                })
+                                                                                                          ]),
+                                                                                              CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value.Order);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(items.Select(item => item.ChargedPriceCents), Is.EqualTo(new[] { 167, 167, 166 }));
+                      Assert.That(items.Select(item => item.ChargedPriceCents),
+                                  Is.EqualTo(new[]
+                                             {
+                                               167,
+                                               167,
+                                               166
+                                             }));
                       Assert.That(items.Select(item => item.PaymentNotice), Is.All.EqualTo("Der Tisch zahlt den Rest spaeter"));
                     });
   }
@@ -482,7 +474,10 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_NoSettlement_LeavesEveryItemUnsettled()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value.Order);
@@ -500,18 +495,30 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_NoDeliveryModeNamed_SendsEveryStationOrderTogether()
   {
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)]),
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+                                                                                                            ItemFor(_bratwurstId),
+                                                                                                            ItemFor(_beerId)
+                                                                                                          ]),
                                                                                               CancellationToken.None);
 
-    Assert.That(result.Value.Order.StationOrders.Select(stationOrder => stationOrder.DeliveryMode),
-                Is.All.EqualTo(DeliveryMode.Together));
+    Assert.That(result.Value.Order.StationOrders.Select(stationOrder => stationOrder.DeliveryMode), Is.All.EqualTo(DeliveryMode.Together));
   }
 
   [Test]
   public async Task AcceptAsync_DeliveryModeNamedForOneStation_AppliesItToThatStationOrderOnly()
   {
-    var request = RequestWith([ItemFor(_bratwurstId), ItemFor(_beerId)],
-                              deliveryModes: [new() { StationId = _barIndoorId, DeliveryMode = DeliveryMode.AsItComes }]);
+    var request = RequestWith([
+                                ItemFor(_bratwurstId),
+                                ItemFor(_beerId)
+                              ],
+                              deliveryModes:
+                              [
+                                new()
+                                {
+                                  StationId = _barIndoorId,
+                                  DeliveryMode = DeliveryMode.AsItComes
+                                }
+                              ]);
 
     Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(request, CancellationToken.None);
 
@@ -555,28 +562,20 @@ public sealed class OrderAcceptanceServiceTest
     var request = scenario switch
                   {
                     OrderValidationFailureReason.NoItems => RequestWith([]),
-                    OrderValidationFailureReason.PriceOutOfRange =>
-                      RequestWith([ItemFor(_bratwurstId, unitPriceCents: -1)]),
-                    OrderValidationFailureReason.TableNameMissing =>
-                      RequestWith([ItemFor(_bratwurstId)], string.Empty),
+                    OrderValidationFailureReason.PriceOutOfRange => RequestWith([ItemFor(_bratwurstId, unitPriceCents: -1)]),
+                    OrderValidationFailureReason.TableNameMissing => RequestWith([ItemFor(_bratwurstId)], string.Empty),
                     OrderValidationFailureReason.UnknownCatalogItemId => RequestWith([ItemFor(UnknownItemId())]),
                     OrderValidationFailureReason.StationRequired => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
-                    OrderValidationFailureReason.StationNotAssignedToItem =>
-                      RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
-                    OrderValidationFailureReason.ItemHasNoStation =>
-                      RequestWith([ItemFor(ItemWithNoActiveStationId())]),
-                    OrderValidationFailureReason.ItemNotAvailable =>
-                      RequestWith([ItemFor(SoldOutItemId())]),
-                    OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem =>
-                      RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
+                    OrderValidationFailureReason.StationNotAssignedToItem => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
+                    OrderValidationFailureReason.ItemHasNoStation => RequestWith([ItemFor(ItemWithNoActiveStationId())]),
+                    OrderValidationFailureReason.ItemNotAvailable => RequestWith([ItemFor(SoldOutItemId())]),
+                    OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
                     OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
-                    OrderValidationFailureReason.SettlementCannotBeProcessed =>
-                      RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
+                    OrderValidationFailureReason.SettlementCannotBeProcessed => RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
                     _ => throw new InvalidOperationException($"No scenario covers {scenario}")
                   };
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await _service.AcceptAsync(request, CancellationToken.None);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await _service.AcceptAsync(request, CancellationToken.None);
 
     Assert.That(result.IsSuccess, Is.False, $"{scenario} should have been rejected");
 
@@ -585,8 +584,7 @@ public sealed class OrderAcceptanceServiceTest
 
   private OrderAcceptanceRequest RequestWhileNoFestivalRuns()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
     return RequestWith([ItemFor(_bratwurstId)]);
   }
@@ -594,20 +592,23 @@ public sealed class OrderAcceptanceServiceTest
   private Guid UnknownItemId()
   {
     var unknownId = Guid.Parse("bbbbbbbb-0000-0000-0000-0000000000ff");
-    A.CallTo(() => _catalogItemRepository.FindByIdAsync(unknownId, A<CancellationToken>._))
-     .Returns(Task.FromResult<CatalogItem?>(null));
+    A.CallTo(() => _catalogItemRepository.FindByIdAsync(unknownId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
 
     return unknownId;
   }
 
   private Guid AmbiguouslyRoutedItemId()
   {
-    GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
+    GivenAssignments(_beerId,
+                     [
+                       _barIndoorId,
+                       _barOutdoorId
+                     ]);
     A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
-                                                              BuildStation(_barIndoorId, "Theke innen", 2),
-                                                              BuildStation(_barOutdoorId, "Theke aussen", 3)
-                                                            ]));
+   .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
+                                                            BuildStation(_barIndoorId, "Theke innen", 2),
+                                                            BuildStation(_barOutdoorId, "Theke aussen", 3)
+                                                          ]));
 
     return _beerId;
   }
@@ -615,17 +616,19 @@ public sealed class OrderAcceptanceServiceTest
   private Guid ItemWithNoActiveStationId()
   {
     GivenAssignments(_beerId, [_barIndoorId]);
-    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([]));
+    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Station>>([]));
 
     return _beerId;
   }
 
   private Guid ItemWithAStaleStationChoiceId()
   {
-    GivenAssignments(_beerId, [_barIndoorId, _barOutdoorId]);
-    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Station>>([BuildStation(_barIndoorId, "Theke innen", 2)]));
+    GivenAssignments(_beerId,
+                     [
+                       _barIndoorId,
+                       _barOutdoorId
+                     ]);
+    A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Station>>([BuildStation(_barIndoorId, "Theke innen", 2)]));
 
     return _beerId;
   }
@@ -633,14 +636,14 @@ public sealed class OrderAcceptanceServiceTest
   private Guid SoldOutItemId()
   {
     A.CallTo(() => _catalogItemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalCatalogItem?>(new()
-                                                    {
-                                                      Id = Guid.NewGuid(),
-                                                      FestivalId = _festivalId,
-                                                      CatalogItemId = _bratwurstId,
-                                                      PriceCents = 350,
-                                                      IsAvailable = false
-                                                    }));
+   .Returns(Task.FromResult<FestivalCatalogItem?>(new()
+                                                  {
+                                                    Id = Guid.NewGuid(),
+                                                    FestivalId = _festivalId,
+                                                    CatalogItemId = _bratwurstId,
+                                                    PriceCents = 350,
+                                                    IsAvailable = false
+                                                  }));
 
     return _bratwurstId;
   }
@@ -648,16 +651,13 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_EveryValidationFailureReasonThisServiceDecides_IsProducedByARealRequest()
   {
-    OrderValidationFailureReason[] reasonsDecidedByTheAcceptanceTransaction =
-      [OrderValidationFailureReason.OrderNumberCouldNotBeAllocated];
+    OrderValidationFailureReason[] reasonsDecidedByTheAcceptanceTransaction = [OrderValidationFailureReason.OrderNumberCouldNotBeAllocated];
 
-    foreach (var reason in Enum.GetValues<OrderValidationFailureReason>()
-                               .Except(reasonsDecidedByTheAcceptanceTransaction))
+    foreach (var reason in Enum.GetValues<OrderValidationFailureReason>().Except(reasonsDecidedByTheAcceptanceTransaction))
     {
       SetUp();
 
       Assert.That(await ReasonProducedByAsync(reason), Is.EqualTo(reason));
     }
   }
-
 }

@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
@@ -35,64 +34,46 @@ public sealed class StationAdministrationService
     _clock = clock;
   }
 
-  public async Task<Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>> ListAsync(
-    Guid? festivalId,
-    CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    if (festivalId is { } askedFestivalId
-        && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
+    if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
     {
-      return Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>
-        .Failed(new() { Reason = StationAdministrationFailureReason.FestivalNotFound });
+      return Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>.Failed(new() { Reason = StationAdministrationFailureReason.FestivalNotFound });
     }
 
-    IReadOnlyList<AdministeredStation> stations =
-      await _repository.FindAdministeredAsync(festivalId, _clock.UtcNow, cancellationToken);
+    IReadOnlyList<AdministeredStation> stations = await _repository.FindAdministeredAsync(festivalId, _clock.UtcNow, cancellationToken);
 
     return Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>.Success(stations);
   }
 
-  public Task<Result<SavedStation, StationAdministrationFailure>> CreateAsync(SaveStationNameRequest request,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<SavedStation, StationAdministrationFailure>> CreateAsync(SaveStationDetailsRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStation, StationAdministrationFailure>> UpdateAsync(Guid stationId,
-                                                                              SaveStationNameRequest request,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<SavedStation, StationAdministrationFailure>> UpdateAsync(Guid stationId, SaveStationDetailsRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => UpdatedAsync(stationId, request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(stationId, request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStation, StationAdministrationFailure>> ActivateAsync(Guid stationId,
-                                                                                CancellationToken cancellationToken)
+  public Task<Result<SavedStation, StationAdministrationFailure>> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOnAsync(stationId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => SwitchedOnAsync(stationId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStation, StationAdministrationFailure>> DeactivateAsync(Guid stationId,
-                                                                                  CancellationToken cancellationToken)
+  public Task<Result<SavedStation, StationAdministrationFailure>> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOffAsync(stationId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => SwitchedOffAsync(stationId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> CreatedAsync(
-    SaveStationNameRequest request,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> CreatedAsync(SaveStationDetailsRequest request, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
-    {
       return Failed(StationAdministrationFailureReason.NameMissing);
-    }
 
     var stationId = Guid.NewGuid();
 
@@ -110,22 +91,15 @@ public sealed class StationAdministrationService
     return Saved(stationId, true, null);
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> UpdatedAsync(
-    Guid stationId,
-    SaveStationNameRequest request,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> UpdatedAsync(Guid stationId, SaveStationDetailsRequest request, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
-    {
       return Failed(StationAdministrationFailureReason.NameMissing);
-    }
 
-    Station? station = await _repository.FindByIdAsync(stationId, cancellationToken);
+    var station = await _repository.FindByIdAsync(stationId, cancellationToken);
 
     if (station is null)
-    {
       return Failed(StationAdministrationFailureReason.StationNotFound);
-    }
 
     var somethingChanged = station.Name != request.Name || station.SortOrder != request.SortOrder;
 
@@ -136,16 +110,12 @@ public sealed class StationAdministrationService
     return Saved(stationId, somethingChanged, null);
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> SwitchedOnAsync(
-    Guid stationId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> SwitchedOnAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Station? station = await _repository.FindByIdAsync(stationId, cancellationToken);
+    var station = await _repository.FindByIdAsync(stationId, cancellationToken);
 
     if (station is null)
-    {
       return Failed(StationAdministrationFailureReason.StationNotFound);
-    }
 
     var somethingChanged = !station.IsActive;
 
@@ -155,41 +125,30 @@ public sealed class StationAdministrationService
     return Saved(stationId, somethingChanged, null);
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> SwitchedOffAsync(
-    Guid stationId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> SwitchedOffAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Station? station = await _repository.FindByIdAsync(stationId, cancellationToken);
+    var station = await _repository.FindByIdAsync(stationId, cancellationToken);
 
     if (station is null)
-    {
       return Failed(StationAdministrationFailureReason.StationNotFound);
-    }
 
-    Festival? runningFestival = await _runningFestival.FindAsync(cancellationToken);
+    var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
-    if (runningFestival is not null
-        && await _festivalStationRepository.CountUnfulfilledItemsAsync(runningFestival.Id,
-                                                                       stationId,
-                                                                       cancellationToken) > 0)
-    {
+    if (runningFestival is not null && await _festivalStationRepository.CountUnfulfilledItemsAsync(runningFestival.Id, stationId, cancellationToken) > 0)
       return Failed(StationAdministrationFailureReason.StationHasUnfulfilledItems);
-    }
 
-    IReadOnlyList<Guid> strandedItemIds =
-      await _orderability.FindItemsStrandedBySwitchingOffStationAsync(stationId, cancellationToken);
+    IReadOnlyList<Guid> strandedItemIds = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(stationId, cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {
-      return Result<SavedStation, StationAdministrationFailure>
-        .Failed(new()
-                {
-                  Reason = StationAdministrationFailureReason.ItemsWouldHaveNoStation,
-                  StrandedItemCount = strandedItemIds.Count
-                });
+      return Result<SavedStation, StationAdministrationFailure>.Failed(new()
+                                                                       {
+                                                                         Reason = StationAdministrationFailureReason.ItemsWouldHaveNoStation,
+                                                                         StrandedItemCount = strandedItemIds.Count
+                                                                       });
     }
 
-    var deviceId = station.DeviceId;
+    Guid? deviceId = station.DeviceId;
     var somethingChanged = station.IsActive || station.EnrolmentInvitationId is not null;
 
     station.IsActive = false;
@@ -197,18 +156,14 @@ public sealed class StationAdministrationService
     station.EnrolmentInvitationId = null;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    var revokedDeviceId = await _retirement.RevokeDeviceAsync(deviceId, cancellationToken);
+    Guid? revokedDeviceId = await _retirement.RevokeDeviceAsync(deviceId, cancellationToken);
 
     return Saved(stationId, somethingChanged, revokedDeviceId);
   }
 
-  private Result<SavedStation, StationAdministrationFailure> Saved(Guid stationId,
-                                                                    bool somethingChanged,
-                                                                    Guid? revokedDeviceId)
+  private Result<SavedStation, StationAdministrationFailure> Saved(Guid stationId, bool somethingChanged, Guid? revokedDeviceId)
   {
-    return Result<SavedStation, StationAdministrationFailure>.Success(new(stationId,
-                                                                          somethingChanged,
-                                                                          revokedDeviceId));
+    return Result<SavedStation, StationAdministrationFailure>.Success(new(stationId, somethingChanged, revokedDeviceId));
   }
 
   private Result<SavedStation, StationAdministrationFailure> Failed(StationAdministrationFailureReason reason)
@@ -216,14 +171,11 @@ public sealed class StationAdministrationService
     return Result<SavedStation, StationAdministrationFailure>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> RunAsync(
-    Func<CancellationToken, Task<Result<SavedStation, StationAdministrationFailure>>> write,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> RunAsync(Func<CancellationToken, Task<Result<SavedStation, StationAdministrationFailure>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<SavedStation, StationAdministrationFailure> written =
-                                                 await write(transactionCancellationToken);
+                                               Result<SavedStation, StationAdministrationFailure> written = await write(transactionCancellationToken);
 
                                                return new TransactionOutcome<Result<SavedStation, StationAdministrationFailure>>
                                                       {

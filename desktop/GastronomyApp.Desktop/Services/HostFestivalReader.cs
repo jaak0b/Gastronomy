@@ -18,9 +18,7 @@ public sealed class HostFestivalReader : IFestivalReader
     var application = _launcher.Application;
 
     if (application is null)
-    {
       throw new InvalidOperationException("The server is not running, so the festival list cannot be read.");
-    }
 
     using var scope = application.Services.CreateScope();
     var festivals = scope.ServiceProvider.GetRequiredService<IFestivalRepository>();

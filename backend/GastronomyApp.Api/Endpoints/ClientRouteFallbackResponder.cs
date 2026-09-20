@@ -18,11 +18,8 @@ public sealed class ClientRouteFallbackResponder
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    if (httpContext.Request.Path.StartsWithSegments(ApiPrefix)
-        || httpContext.Request.Path.StartsWithSegments(HubPrefix))
-    {
+    if (httpContext.Request.Path.StartsWithSegments(ApiPrefix) || httpContext.Request.Path.StartsWithSegments(HubPrefix))
       return Results.NotFound();
-    }
 
     return _shellResponder.Respond(httpContext);
   }

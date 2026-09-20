@@ -15,28 +15,16 @@ public sealed class ResultEnvelope
   {
     return failure.Reason switch
            {
-             OrderValidationFailureReason.NoItems =>
-               BuildValidationProblem(CannotBeProcessedKey),
-             OrderValidationFailureReason.TableNameMissing =>
-               BuildValidationProblem(CannotBeProcessedKey),
-             OrderValidationFailureReason.PriceOutOfRange =>
-               BuildValidationProblem(CannotBeProcessedKey),
-             OrderValidationFailureReason.StationRequired =>
-               BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.ItemHasNoStation =>
-               BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.NoRunningFestival =>
-               BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.OrderNumberCouldNotBeAllocated =>
-               BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.SettlementCannotBeProcessed =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             OrderValidationFailureReason.UnknownCatalogItemId =>
-               BuildUnprocessableProblem("order.unknownItem", failure.OffendingCatalogItemId),
-             OrderValidationFailureReason.ItemNotAvailable or
-             OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem or
-             OrderValidationFailureReason.StationNotAssignedToItem =>
-               BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", OffendingItemParameters(failure)),
+             OrderValidationFailureReason.NoItems => BuildValidationProblem(CannotBeProcessedKey),
+             OrderValidationFailureReason.TableNameMissing => BuildValidationProblem(CannotBeProcessedKey),
+             OrderValidationFailureReason.PriceOutOfRange => BuildValidationProblem(CannotBeProcessedKey),
+             OrderValidationFailureReason.StationRequired => BuildUnprocessableProblem(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.ItemHasNoStation => BuildUnprocessableProblem(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.NoRunningFestival => BuildUnprocessableProblem(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.OrderNumberCouldNotBeAllocated => BuildUnprocessableProblem(CannotBeProcessedKey, null),
+             OrderValidationFailureReason.SettlementCannotBeProcessed => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             OrderValidationFailureReason.UnknownCatalogItemId => BuildUnprocessableProblem("order.unknownItem", failure.OffendingCatalogItemId),
+             OrderValidationFailureReason.ItemNotAvailable or OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem or OrderValidationFailureReason.StationNotAssignedToItem => BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", OffendingItemParameters(failure)),
              _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
            };
   }
@@ -45,22 +33,14 @@ public sealed class ResultEnvelope
   {
     return failure.Reason switch
            {
-             SettlementFailureReason.NoItemsSelected =>
-               BuildValidationProblem("order.settlementNoItemsSelected"),
-             SettlementFailureReason.PaymentNoticeMissing =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.UnknownOrderItemId =>
-               BuildUnprocessableProblem("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
-             SettlementFailureReason.AmountPaidMissing =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.AmountPaidNegative =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.DuplicateOrderItemId =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.SelectionSpansSeveralTables =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.NoRunningFestival =>
-               BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.NoItemsSelected => BuildValidationProblem("order.settlementNoItemsSelected"),
+             SettlementFailureReason.PaymentNoticeMissing => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.UnknownOrderItemId => BuildUnprocessableProblem("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
+             SettlementFailureReason.AmountPaidMissing => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.AmountPaidNegative => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.DuplicateOrderItemId => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.SelectionSpansSeveralTables => BuildValidationProblem(SettlementCannotBeProcessedKey),
+             SettlementFailureReason.NoRunningFestival => BuildValidationProblem(SettlementCannotBeProcessedKey),
              _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
            };
   }
@@ -109,9 +89,7 @@ public sealed class ResultEnvelope
   {
     Dictionary<string, string> parameters = [];
     if (offendingId is not null)
-    {
       parameters[parameterName] = offendingId.Value.ToString();
-    }
 
     return BuildUnprocessableProblemWithParameters(messageKey, parameters);
   }
@@ -134,13 +112,9 @@ public sealed class ResultEnvelope
   {
     Dictionary<string, string> parameters = [];
     if (failure.OffendingCatalogItemId is { } catalogItemId)
-    {
       parameters["catalogItemId"] = catalogItemId.ToString();
-    }
     if (failure.OffendingCatalogItemName is { } itemName)
-    {
       parameters["name"] = itemName;
-    }
 
     return parameters;
   }

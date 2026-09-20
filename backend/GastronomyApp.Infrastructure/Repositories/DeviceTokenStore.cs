@@ -15,10 +15,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
   private readonly IDeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
 
-  public DeviceTokenStore(GastronomyAppDbContext dbContext,
-                          IDeviceOwnerStore ownerStore,
-                          Pbkdf2SecretHasher secretHasher,
-                          IClock clock)
+  public DeviceTokenStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IClock clock)
   {
     _dbContext = dbContext;
     _ownerStore = ownerStore;
@@ -26,24 +23,17 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     _clock = clock;
   }
 
-  public async Task<IssuedDeviceToken> IssueAsync(DeviceOwner owner,
-                                                  string language,
-                                                  string userAgentSnapshot,
-                                                  CancellationToken cancellationToken)
+  public async Task<IssuedDeviceToken> IssueAsync(DeviceOwner owner, string language, string userAgentSnapshot, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(owner);
 
     var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
 
     if (ownerRecord is null)
-    {
       throw new InvalidOperationException($"A device cannot be issued to the {owner.Kind} {owner.Id}, because no such row exists.");
-    }
 
     if (ownerRecord.DeviceId is not null)
-    {
       await RemoveDeviceAsync(ownerRecord.DeviceId.Value, cancellationToken);
-    }
 
     var tokenLookupId = Guid.NewGuid().ToString("N");
     var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(SecretLengthBytes));
@@ -70,35 +60,22 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     return new(device, $"{tokenLookupId}.{secret}");
   }
 
-  public async Task<DeviceVerificationResult> VerifyAsync(string tokenLookupId,
-                                                          string secret,
-                                                          CancellationToken cancellationToken)
+  public async Task<DeviceVerificationResult> VerifyAsync(string tokenLookupId, string secret, CancellationToken cancellationToken)
   {
-    var device = await _dbContext.Devices
-                                 .FirstOrDefaultAsync(candidate => candidate.TokenLookupId == tokenLookupId, cancellationToken);
+    var device = await _dbContext.Devices.FirstOrDefaultAsync(candidate => candidate.TokenLookupId == tokenLookupId, cancellationToken);
 
     if (device is null)
-    {
       return new(false, null, null);
-    }
 
-    var secretMatches = _secretHasher.Verify(secret,
-                                             device.TokenHash,
-                                             device.TokenSalt,
-                                             device.TokenIterations,
-                                             device.TokenAlgorithm);
+    var secretMatches = _secretHasher.Verify(secret, device.TokenHash, device.TokenSalt, device.TokenIterations, device.TokenAlgorithm);
 
     if (!secretMatches)
-    {
       return new(false, null, null);
-    }
 
     var owner = await _ownerStore.FindByDeviceAsync(device.Id, cancellationToken);
 
     if (owner is null)
-    {
       return new(false, null, null);
-    }
 
     device.LastSeenAtUtc = _clock.UtcNow;
     await _dbContext.SaveChangesAsync(cancellationToken);
@@ -111,27 +88,20 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     var removed = await RemoveDeviceAsync(deviceId, cancellationToken);
 
     if (removed)
-    {
       await _dbContext.SaveChangesAsync(cancellationToken);
-    }
   }
 
   private async Task<bool> RemoveDeviceAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    var device = await _dbContext.Devices
-                                 .FirstOrDefaultAsync(candidate => candidate.Id == deviceId, cancellationToken);
+    var device = await _dbContext.Devices.FirstOrDefaultAsync(candidate => candidate.Id == deviceId, cancellationToken);
 
     if (device is null)
-    {
       return false;
-    }
 
     var owner = await _ownerStore.FindByDeviceAsync(deviceId, cancellationToken);
 
     if (owner is not null)
-    {
       await _ownerStore.PointDeviceAsync(owner, null, cancellationToken);
-    }
 
     _dbContext.Devices.Remove(device);
 

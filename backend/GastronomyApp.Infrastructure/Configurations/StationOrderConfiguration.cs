@@ -18,7 +18,12 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
     builder.Property(stationOrder => stationOrder.StationOrderNumber).IsRequired();
     builder.Property(stationOrder => stationOrder.DeliveryMode).IsRequired();
     builder.Property(stationOrder => stationOrder.IsHiddenFromAsItComesQueue).IsRequired();
-    builder.HasIndex(stationOrder => new { stationOrder.OrderId, stationOrder.StationId }).IsUnique();
+    builder.HasIndex(stationOrder => new
+                                     {
+                                       stationOrder.OrderId,
+                                       stationOrder.StationId
+                                     })
+           .IsUnique();
     builder.HasIndex(stationOrder => new
                                      {
                                        stationOrder.FestivalId,
@@ -26,16 +31,8 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
                                        stationOrder.StationOrderNumber
                                      })
            .IsUnique();
-    builder.HasOne<Festival>()
-           .WithMany()
-           .HasForeignKey(stationOrder => stationOrder.FestivalId)
-           .OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<Station>()
-           .WithMany()
-           .HasForeignKey(stationOrder => stationOrder.StationId)
-           .OnDelete(DeleteBehavior.Restrict);
-    builder.HasMany(stationOrder => stationOrder.Items)
-           .WithOne()
-           .HasForeignKey(item => item.StationOrderId);
+    builder.HasOne<Festival>().WithMany().HasForeignKey(stationOrder => stationOrder.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne<Station>().WithMany().HasForeignKey(stationOrder => stationOrder.StationId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasMany(stationOrder => stationOrder.Items).WithOne().HasForeignKey(item => item.StationOrderId);
   }
 }

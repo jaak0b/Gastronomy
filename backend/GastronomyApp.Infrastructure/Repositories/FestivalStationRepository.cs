@@ -13,36 +13,19 @@ public sealed class FestivalStationRepository : IFestivalStationRepository
     _dbContext = dbContext;
   }
 
-  public async Task<FestivalStation?> FindLinkAsync(Guid festivalId,
-                                                    Guid stationId,
-                                                    CancellationToken cancellationToken)
+  public async Task<FestivalStation?> FindLinkAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _dbContext.FestivalStations
-                           .FirstOrDefaultAsync(link => link.FestivalId == festivalId && link.StationId == stationId,
-                                                cancellationToken);
+    return await _dbContext.FestivalStations.FirstOrDefaultAsync(link => link.FestivalId == festivalId && link.StationId == stationId, cancellationToken);
   }
 
-  public async Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAtStationAsync(
-    Guid festivalId,
-    Guid stationId,
-    CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAtStationAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _dbContext.ItemStationAssignments
-                           .Where(assignment => assignment.FestivalId == festivalId
-                                                && assignment.StationId == stationId)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.ItemStationAssignments.Where(assignment => assignment.FestivalId == festivalId && assignment.StationId == stationId).ToListAsync(cancellationToken);
   }
 
-  public async Task<int> CountUnfulfilledItemsAsync(Guid festivalId,
-                                                    Guid stationId,
-                                                    CancellationToken cancellationToken)
+  public async Task<int> CountUnfulfilledItemsAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _dbContext.StationOrders
-                           .AsNoTracking()
-                           .Where(stationOrder => stationOrder.FestivalId == festivalId
-                                                  && stationOrder.StationId == stationId)
-                           .SelectMany(stationOrder => stationOrder.Items)
-                           .CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
+    return await _dbContext.StationOrders.AsNoTracking().Where(stationOrder => stationOrder.FestivalId == festivalId && stationOrder.StationId == stationId).SelectMany(stationOrder => stationOrder.Items).CountAsync(item => item.FulfilledAtUtc == null, cancellationToken);
   }
 
   public async Task AddLinkAsync(FestivalStation link, CancellationToken cancellationToken)

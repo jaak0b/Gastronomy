@@ -7,7 +7,6 @@ namespace GastronomyApp.Core.Tests.Services;
 [TestFixture]
 public sealed class OrderRoutingResolverTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -46,24 +45,19 @@ public sealed class OrderRoutingResolverTest
   [Test]
   public void Resolve_NullAssignments_ThrowsArgumentNullException()
   {
-    Assert.That(() => _resolver.Resolve(_catalogItemId, null!, [BuildStation(_kitchenId, "Kueche", 1)], null),
-                Throws.ArgumentNullException);
+    Assert.That(() => _resolver.Resolve(_catalogItemId, null!, [BuildStation(_kitchenId, "Kueche", 1)], null), Throws.ArgumentNullException);
   }
 
   [Test]
   public void Resolve_NullActiveStations_ThrowsArgumentNullException()
   {
-    Assert.That(() => _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], null!, null),
-                Throws.ArgumentNullException);
+    Assert.That(() => _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], null!, null), Throws.ArgumentNullException);
   }
 
   [Test]
   public void Resolve_SingleCandidateAndNoChoice_RoutesThereWithoutStationControl()
   {
-    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_kitchenId)],
-                                                                       [BuildStation(_kitchenId, "Kueche", 1)],
-                                                                       null);
+    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], [BuildStation(_kitchenId, "Kueche", 1)], null);
 
     Assert.Multiple(() =>
                     {
@@ -76,8 +70,14 @@ public sealed class OrderRoutingResolverTest
   public void Resolve_MoreThanOneCandidateAndNoChoice_FailsWithStationRequired()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-                                                                       [BuildStation(_barIndoorId, "Theke innen", 1), BuildStation(_barOutdoorId, "Theke aussen", 2)],
+                                                                       [
+                                                                         AssignmentTo(_barIndoorId),
+                                                                         AssignmentTo(_barOutdoorId)
+                                                                       ],
+                                                                       [
+                                                                         BuildStation(_barIndoorId, "Theke innen", 1),
+                                                                         BuildStation(_barOutdoorId, "Theke aussen", 2)
+                                                                       ],
                                                                        null);
 
     Assert.Multiple(() =>
@@ -91,7 +91,10 @@ public sealed class OrderRoutingResolverTest
   public void Resolve_ChoiceNotAssignedToItem_FailsWithStationNotAssignedToItem()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
+                                                                       [
+                                                                         AssignmentTo(_barIndoorId),
+                                                                         AssignmentTo(_barOutdoorId)
+                                                                       ],
                                                                        [
                                                                          BuildStation(_barIndoorId, "Theke innen", 1),
                                                                          BuildStation(_barOutdoorId, "Theke aussen", 2),
@@ -110,8 +113,14 @@ public sealed class OrderRoutingResolverTest
   public void Resolve_ValidActiveChoice_RoutesThereAndEchoesTheChoice()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId)],
-                                                                       [BuildStation(_barIndoorId, "Theke innen", 1), BuildStation(_barOutdoorId, "Theke aussen", 2)],
+                                                                       [
+                                                                         AssignmentTo(_barIndoorId),
+                                                                         AssignmentTo(_barOutdoorId)
+                                                                       ],
+                                                                       [
+                                                                         BuildStation(_barIndoorId, "Theke innen", 1),
+                                                                         BuildStation(_barOutdoorId, "Theke aussen", 2)
+                                                                       ],
                                                                        _barOutdoorId);
 
     Assert.Multiple(() =>
@@ -125,27 +134,28 @@ public sealed class OrderRoutingResolverTest
   public void Resolve_ChoiceNoLongerActive_IsRefusedInsteadOfGoingSomewhereTheWaiterDidNotPick()
   {
     Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_barIndoorId), AssignmentTo(_barOutdoorId), AssignmentTo(_kitchenId)],
-                                                                       [BuildStation(_kitchenId, "Kueche", 7), BuildStation(_barIndoorId, "Theke innen", 3)],
+                                                                       [
+                                                                         AssignmentTo(_barIndoorId),
+                                                                         AssignmentTo(_barOutdoorId),
+                                                                         AssignmentTo(_kitchenId)
+                                                                       ],
+                                                                       [
+                                                                         BuildStation(_kitchenId, "Kueche", 7),
+                                                                         BuildStation(_barIndoorId, "Theke innen", 3)
+                                                                       ],
                                                                        _barOutdoorId);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(result.IsSuccess,
-                                  Is.False,
-                                  "a station the waiter chose and that is switched off must never be replaced by another one");
-                      Assert.That(result.Failure.Reason,
-                                  Is.EqualTo(RoutingFailureReason.ChosenStationNoLongerPreparesTheItem));
+                      Assert.That(result.IsSuccess, Is.False, "a station the waiter chose and that is switched off must never be replaced by another one");
+                      Assert.That(result.Failure.Reason, Is.EqualTo(RoutingFailureReason.ChosenStationNoLongerPreparesTheItem));
                     });
   }
 
   [Test]
   public void Resolve_SingleCandidateAndAChoiceNamingIt_RoutesThereAndEchoesTheChoice()
   {
-    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_kitchenId)],
-                                                                       [BuildStation(_kitchenId, "Kueche", 1)],
-                                                                       _kitchenId);
+    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], [BuildStation(_kitchenId, "Kueche", 1)], _kitchenId);
 
     Assert.Multiple(() =>
                     {
@@ -157,10 +167,7 @@ public sealed class OrderRoutingResolverTest
   [Test]
   public void Resolve_NoActiveCandidate_RefusesWithAStatedReasonRatherThanThrowing()
   {
-    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId,
-                                                                       [AssignmentTo(_kitchenId)],
-                                                                       [],
-                                                                       null);
+    Result<RoutingDecision, RoutingFailure> result = _resolver.Resolve(_catalogItemId, [AssignmentTo(_kitchenId)], [], null);
 
     Assert.Multiple(() =>
                     {

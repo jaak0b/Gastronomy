@@ -40,9 +40,7 @@ public sealed class StationChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "A phone must be told that a production location was renamed, or it keeps offering the old name.");
+    Assert.That(received, Is.SameAs(heard.Task), "A phone must be told that a production location was renamed, or it keeps offering the old name.");
   }
 
   [Test]
@@ -58,9 +56,7 @@ public sealed class StationChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "The tablet standing at a production location must be told when that location is renamed.");
+    Assert.That(received, Is.SameAs(heard.Task), "The tablet standing at a production location must be told when that location is renamed.");
   }
 
   [Test]
@@ -79,7 +75,11 @@ public sealed class StationChangeAnnouncementTest
     await phone.StartAsync();
 
     using (var response = await _context.Client.PutAsJsonAsync($"/api/admin/stations/{_context.World.BarStationId}",
-                                                               new { name = "Bar im Hof", sortOrder = 2 }))
+                                                               new
+                                                               {
+                                                                 name = "Bar im Hof",
+                                                                 sortOrder = 2
+                                                               }))
     {
       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -88,9 +88,7 @@ public sealed class StationChangeAnnouncementTest
 
     Assert.That(received, Is.SameAs(heardByThePhone.Task), "Every phone offers every production location.");
 
-    Assert.That(heardByTheKitchen.Task.IsCompleted,
-                Is.False,
-                "A tablet has no use for a change to a production location it does not stand at.");
+    Assert.That(heardByTheKitchen.Task.IsCompleted, Is.False, "A tablet has no use for a change to a production location it does not stand at.");
   }
 
   [Test]
@@ -111,16 +109,17 @@ public sealed class StationChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "A phone must be told that a production location was switched off, or it keeps offering it.");
+    Assert.That(received, Is.SameAs(heard.Task), "A phone must be told that a production location was switched off, or it keeps offering it.");
   }
 
   private async Task RenameTheKitchenAsync(string newName)
   {
-    using var response = await _context.Client
-                                       .PutAsJsonAsync($"/api/admin/stations/{_context.World.KitchenStationId}",
-                                                       new { name = newName, sortOrder = 1 });
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/stations/{_context.World.KitchenStationId}",
+                                                              new
+                                                              {
+                                                                name = newName,
+                                                                sortOrder = 1
+                                                              });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
@@ -128,7 +127,11 @@ public sealed class StationChangeAnnouncementTest
   private async Task<Guid> CreateAStationNoItemNeedsAsync()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/stations",
-                                                               new { name = "Kuchenbuffet", sortOrder = 3 });
+                                                               new
+                                                               {
+                                                                 name = "Kuchenbuffet",
+                                                                 sortOrder = 3
+                                                               });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
@@ -139,8 +142,6 @@ public sealed class StationChangeAnnouncementTest
 
   private HubConnection Connect(string deviceToken)
   {
-    return new HubConnectionBuilder()
-          .WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}"))
-          .Build();
+    return new HubConnectionBuilder().WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}")).Build();
   }
 }

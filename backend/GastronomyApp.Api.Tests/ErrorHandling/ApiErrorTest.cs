@@ -17,13 +17,8 @@ public sealed class ApiErrorTest
                        Details = null
                      };
 
-    var json = JsonSerializer.Serialize(error,
-                                        new JsonSerializerOptions
-                                        {
-                                          PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                                        });
+    var json = JsonSerializer.Serialize(error, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
-    Assert.That(json,
-                Is.EqualTo("{\"code\":\"StationHasUnfinishedItems\",\"messageKey\":\"admin.stationHasUnfinishedItems\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
+    Assert.That(json, Is.EqualTo("{\"code\":\"StationHasUnfinishedItems\",\"messageKey\":\"admin.stationHasUnfinishedItems\",\"parameters\":{\"station\":\"K\\u00FCche\"},\"details\":null}"));
   }
 }

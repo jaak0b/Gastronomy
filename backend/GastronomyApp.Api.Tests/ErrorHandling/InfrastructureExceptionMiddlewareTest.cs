@@ -17,13 +17,10 @@ public sealed class InfrastructureExceptionMiddlewareTest
     using MemoryStream body = new();
     context.Response.Body = body;
 
-    await middleware.InvokeAsync(context,
-                                 _ => throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable,
-                                                                        "The database file could not be written."));
+    await middleware.InvokeAsync(context, _ => throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, "The database file could not be written."));
 
     body.Position = 0;
-    var error = await JsonSerializer.DeserializeAsync<ApiError>(body,
-                                                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    var error = await JsonSerializer.DeserializeAsync<ApiError>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
     Assert.Multiple(() =>
                     {
@@ -41,13 +38,10 @@ public sealed class InfrastructureExceptionMiddlewareTest
     using MemoryStream body = new();
     context.Response.Body = body;
 
-    await middleware.InvokeAsync(context,
-                                 _ => throw new InfrastructureException(InfrastructureFailureReason.ConflictingChange,
-                                                                        "Another write reached the same unique row first."));
+    await middleware.InvokeAsync(context, _ => throw new InfrastructureException(InfrastructureFailureReason.ConflictingChange, "Another write reached the same unique row first."));
 
     body.Position = 0;
-    var error = await JsonSerializer.DeserializeAsync<ApiError>(body,
-                                                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    var error = await JsonSerializer.DeserializeAsync<ApiError>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
     Assert.Multiple(() =>
                     {
@@ -63,8 +57,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
     InfrastructureExceptionMiddleware middleware = new(new());
     DefaultHttpContext context = new();
 
-    Assert.That(async () => await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("unclassified")),
-                Throws.TypeOf<InvalidOperationException>());
+    Assert.That(async () => await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("unclassified")), Throws.TypeOf<InvalidOperationException>());
   }
 
   private ServiceProvider BuildRequestServices()

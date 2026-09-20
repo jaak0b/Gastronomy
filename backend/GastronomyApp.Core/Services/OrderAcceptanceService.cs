@@ -8,24 +8,18 @@ namespace GastronomyApp.Core.Services;
 public sealed class OrderAcceptanceService
 {
   private readonly IClock _clock;
-  private readonly IFestivalRepository _festivalRepository;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
 
   private readonly IOrderRepository _orderRepository;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly OrderItemSettlementService _settlementService;
   private readonly ITransactionRunner _transactionRunner;
 
-  public OrderAcceptanceService(IOrderRepository orderRepository,
-                                IFestivalRepository festivalRepository,
-                                INumberAllocator numberAllocator,
-                                OrderItemResolutionService itemResolutionService,
-                                OrderItemSettlementService settlementService,
-                                ITransactionRunner transactionRunner,
-                                IClock clock)
+  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, OrderItemSettlementService settlementService, ITransactionRunner transactionRunner, IClock clock)
   {
     _orderRepository = orderRepository;
-    _festivalRepository = festivalRepository;
+    _runningFestival = runningFestival;
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
     _settlementService = settlementService;
@@ -33,8 +27,7 @@ public sealed class OrderAcceptanceService
     _clock = clock;
   }
 
-  public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(OrderAcceptanceRequest request,
-                                                                                       CancellationToken cancellationToken)
+  public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(OrderAcceptanceRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
@@ -42,8 +35,7 @@ public sealed class OrderAcceptanceService
     {
       return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                                {
-                                                 Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
-                                                   await AcceptInsideTransactionAsync(request, transactionCancellationToken);
+                                                 Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await AcceptInsideTransactionAsync(request, transactionCancellationToken);
 
                                                  return new TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>
                                                         {
@@ -55,24 +47,17 @@ public sealed class OrderAcceptanceService
     }
     catch (ConcurrentWriteException)
     {
-      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
-                                                                          {
-                                                                            Reason = OrderValidationFailureReason.OrderNumberCouldNotBeAllocated
-                                                                          });
+      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.OrderNumberCouldNotBeAllocated });
     }
   }
 
-  private async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptInsideTransactionAsync(OrderAcceptanceRequest request,
-                                                                                                         CancellationToken cancellationToken)
+  private async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptInsideTransactionAsync(OrderAcceptanceRequest request, CancellationToken cancellationToken)
   {
     var shapeFailure = ValidateShape(request);
     if (shapeFailure is not null)
-    {
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(shapeFailure);
-    }
 
-    var existingOrder =
-      await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
+    var existingOrder = await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
     if (existingOrder is not null)
     {
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Success(new()
@@ -82,22 +67,16 @@ public sealed class OrderAcceptanceService
                                                                            });
     }
 
-    var festival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+    var festival = await _runningFestival.FindAsync(cancellationToken);
     if (festival is null)
     {
-      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new()
-                                                                          {
-                                                                            Reason = OrderValidationFailureReason.NoRunningFestival
-                                                                          });
+      return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.NoRunningFestival });
     }
 
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution =
-      await _itemResolutionService.ResolveAsync(festival.Id, request.Items, cancellationToken);
+    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution = await _itemResolutionService.ResolveAsync(festival.Id, request.Items, cancellationToken);
 
     if (!resolution.IsSuccess)
-    {
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(resolution.Failure);
-    }
 
     IReadOnlyList<ResolvedOrderItem> resolvedItems = resolution.Value;
 
@@ -105,9 +84,7 @@ public sealed class OrderAcceptanceService
 
     var settlementFailure = SettleAtAcceptance(request.StaffMemberId, builtOrder);
     if (settlementFailure is not null)
-    {
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(settlementFailure);
-    }
 
     await _orderRepository.AddAsync(builtOrder.Order, cancellationToken);
 
@@ -121,17 +98,12 @@ public sealed class OrderAcceptanceService
   private OrderValidationFailure? ValidateShape(OrderAcceptanceRequest request)
   {
     if (request.Items.Count == 0)
-    {
       return new() { Reason = OrderValidationFailureReason.NoItems };
-    }
 
     if (string.IsNullOrWhiteSpace(request.TableName))
-    {
       return new() { Reason = OrderValidationFailureReason.TableNameMissing };
-    }
 
     foreach (var item in request.Items)
-    {
       if (item.UnitPriceCents < 0)
       {
         return new()
@@ -140,47 +112,39 @@ public sealed class OrderAcceptanceService
                  OffendingCatalogItemId = item.CatalogItemId
                };
       }
-    }
 
     return null;
   }
 
   private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, BuiltOrder builtOrder)
   {
-    List<SettlementLine> lines =
-    [
-      .. builtOrder.Items
-                .Where(item => item.Settlement is not null)
-                .Select(item => new SettlementLine
-                                {
-                                  OrderItemId = item.OrderItem.Id,
-                                  PaidPriceCents = item.Settlement!.PaidPriceCents,
-                                  PaymentNotice = item.Settlement!.PaymentNotice
-                                })
-    ];
+    List<SettlementLine> lines = builtOrder.Items.Where(item => item.Settlement is not null)
+                                           .Select(item => new SettlementLine
+                                                           {
+                                                             OrderItemId = item.OrderItem.Id,
+                                                             PaidPriceCents = item.Settlement!.PaidPriceCents,
+                                                             PaymentNotice = item.Settlement!.PaymentNotice
+                                                           })
+                                           .ToList();
 
     if (lines.Count == 0)
-    {
       return null;
-    }
 
-    Result<SettlementResult, SettlementFailure> settlement =
-      _settlementService.Settle(new()
-                                {
-                                  Lines = lines,
-                                  SettledByStaffMemberId = staffMemberId
-                                },
-                                [.. builtOrder.Items.Select(item => new SettlementCandidate
-                                                                    {
-                                                                      Item = item.OrderItem,
-                                                                      TableName = builtOrder.Order.TableName
-                                                                    })],
-                                builtOrder.Order.CreatedAtUtc);
+    Result<SettlementResult, SettlementFailure> settlement = _settlementService.Settle(new()
+                                                                                       {
+                                                                                         Lines = lines,
+                                                                                         SettledByStaffMemberId = staffMemberId
+                                                                                       },
+                                                                                       builtOrder.Items.Select(item => new SettlementCandidate
+                                                                                                                       {
+                                                                                                                         Item = item.OrderItem,
+                                                                                                                         TableName = builtOrder.Order.TableName
+                                                                                                                       })
+                                                                                                 .ToList(),
+                                                                                       builtOrder.Order.CreatedAtUtc);
 
     if (settlement.IsSuccess)
-    {
       return null;
-    }
 
     return new()
            {
@@ -189,14 +153,10 @@ public sealed class OrderAcceptanceService
            };
   }
 
-  private async Task<BuiltOrder> BuildOrderAsync(OrderAcceptanceRequest request,
-                                                 Guid festivalId,
-                                                 IReadOnlyCollection<ResolvedOrderItem> resolvedItems,
-                                                 CancellationToken cancellationToken)
+  private async Task<BuiltOrder> BuildOrderAsync(OrderAcceptanceRequest request, Guid festivalId, IReadOnlyCollection<ResolvedOrderItem> resolvedItems, CancellationToken cancellationToken)
   {
     var createdAtUtc = _clock.UtcNow;
-    var globalOrderNumber =
-      await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
+    var globalOrderNumber = await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
 
     Order order = new()
                   {
@@ -211,9 +171,7 @@ public sealed class OrderAcceptanceService
                   };
 
     Dictionary<Guid, StationOrder> stationOrdersByStationId = [];
-    Dictionary<Guid, DeliveryMode> deliveryModesByStationId = request.DeliveryModes
-                                                                    .GroupBy(mode => mode.StationId)
-                                                                    .ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
+    Dictionary<Guid, DeliveryMode> deliveryModesByStationId = request.DeliveryModes.GroupBy(mode => mode.StationId).ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 
     List<BuiltOrderItem> createdItems = [];
 
@@ -223,9 +181,7 @@ public sealed class OrderAcceptanceService
 
       if (!stationOrdersByStationId.TryGetValue(resolvedStationId, out var stationOrder))
       {
-        var stationOrderNumber = await _numberAllocator.AllocateStationOrderNumberAsync(festivalId,
-                                                                                        resolvedStationId,
-                                                                                        cancellationToken);
+        var stationOrderNumber = await _numberAllocator.AllocateStationOrderNumberAsync(festivalId, resolvedStationId, cancellationToken);
 
         stationOrder = new()
                        {
@@ -234,9 +190,7 @@ public sealed class OrderAcceptanceService
                          FestivalId = festivalId,
                          StationId = resolvedStationId,
                          StationOrderNumber = stationOrderNumber,
-                         DeliveryMode = deliveryModesByStationId.TryGetValue(resolvedStationId, out var chosenMode)
-                                          ? chosenMode
-                                          : DeliveryMode.Together
+                         DeliveryMode = DeliveryModeFor(deliveryModesByStationId, resolvedStationId)
                        };
 
         stationOrdersByStationId.Add(resolvedStationId, stationOrder);
@@ -266,6 +220,14 @@ public sealed class OrderAcceptanceService
              Order = order,
              Items = createdItems
            };
+  }
+
+  private DeliveryMode DeliveryModeFor(IReadOnlyDictionary<Guid, DeliveryMode> deliveryModesByStationId, Guid stationId)
+  {
+    if (deliveryModesByStationId.TryGetValue(stationId, out var chosenMode))
+      return chosenMode;
+
+    return DeliveryMode.Together;
   }
 
   private sealed record BuiltOrderItem

@@ -19,17 +19,14 @@ public sealed class OpenItemQueryHandler
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    OpenItemsReport report = await _service.ReadAsync(cancellationToken);
+    var report = await _service.ReadAsync(cancellationToken);
 
     if (report.OrderItemIdsWithoutAnOrder.Count > 0)
     {
-      _logger.LogError("{ItemCount} order items cannot be traced back to an order and are therefore missing from the open items list. Order item ids: {OrderItemIds}.",
-                       report.OrderItemIdsWithoutAnOrder.Count,
-                       report.OrderItemIdsWithoutAnOrder);
+      _logger.LogError("{ItemCount} order items cannot be traced back to an order and are therefore missing from the open items list. Order item ids: {OrderItemIds}.", report.OrderItemIdsWithoutAnOrder.Count, report.OrderItemIdsWithoutAnOrder);
     }
 
-    return Results.Ok(new OpenItemsView([.. report.Tables.Select(BuildOpenTableView)],
-                                        report.OrderItemIdsWithoutAnOrder.Count));
+    return Results.Ok(new OpenItemsView(report.Tables.Select(BuildOpenTableView).ToList(), report.OrderItemIdsWithoutAnOrder.Count));
   }
 
   public async Task<IResult> ListTableNamesAsync(CancellationToken cancellationToken)
@@ -41,32 +38,16 @@ public sealed class OpenItemQueryHandler
 
   private OpenTableView BuildOpenTableView(OpenTable table)
   {
-    return new(table.TableName,
-               table.OpenAmountCents,
-               table.GivenAwayAmountCents,
-               [.. table.Items.Select(BuildOpenOrderItemView)],
-               [.. table.GivenAwayItems.Select(BuildGivenAwayOrderItemView)]);
+    return new(table.TableName, table.OpenAmountCents, table.GivenAwayAmountCents, table.Items.Select(BuildOpenOrderItemView).ToList(), table.GivenAwayItems.Select(BuildGivenAwayOrderItemView).ToList());
   }
 
   private OpenOrderItemView BuildOpenOrderItemView(OpenOrderItem item)
   {
-    return new(item.OrderItemId,
-               item.OrderId,
-               item.GlobalOrderNumber,
-               item.ItemName,
-               item.Note,
-               item.UnitPriceCents,
-               item.OrderedAtUtc);
+    return new(item.OrderItemId, item.OrderId, item.GlobalOrderNumber, item.ItemName, item.Note, item.UnitPriceCents, item.OrderedAtUtc);
   }
 
   private GivenAwayOrderItemView BuildGivenAwayOrderItemView(GivenAwayOrderItem item)
   {
-    return new(item.OrderItemId,
-               item.OrderId,
-               item.GlobalOrderNumber,
-               item.ItemName,
-               item.WaivedAmountCents,
-               item.PaymentNotice,
-               item.SettledAtUtc);
+    return new(item.OrderItemId, item.OrderId, item.GlobalOrderNumber, item.ItemName, item.WaivedAmountCents, item.PaymentNotice, item.SettledAtUtc);
   }
 }

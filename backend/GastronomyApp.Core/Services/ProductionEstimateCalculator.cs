@@ -6,8 +6,7 @@ public sealed class ProductionEstimateCalculator
   {
     ArgumentNullException.ThrowIfNull(work);
 
-    var queuedMinutes = work.Where(item => !item.IsQueueIndependent)
-                            .Sum(item => item.ProductionMinutes ?? 0);
+    var queuedMinutes = work.Where(item => !item.IsQueueIndependent).Sum(item => item.ProductionMinutes ?? 0);
 
     return Math.Round(queuedMinutes, 1);
   }

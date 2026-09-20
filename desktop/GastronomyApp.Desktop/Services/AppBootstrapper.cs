@@ -14,10 +14,7 @@ public sealed class AppBootstrapper
 
   private bool _holdsTheInstance;
 
-  public AppBootstrapper(ISingleInstance singleInstance,
-                         Func<MainWindowViewModel> mainWindowViewModelFactory,
-                         Action bringExistingWindowToFront,
-                         Action<Action> dispatchToUserInterface)
+  public AppBootstrapper(ISingleInstance singleInstance, Func<MainWindowViewModel> mainWindowViewModelFactory, Action bringExistingWindowToFront, Action<Action> dispatchToUserInterface)
   {
     _singleInstance = singleInstance;
     _mainWindowViewModelFactory = mainWindowViewModelFactory;
@@ -38,8 +35,7 @@ public sealed class AppBootstrapper
     }
     catch (Exception failure) when (failure is IOException or TimeoutException or UnauthorizedAccessException)
     {
-      Log.Error(failure,
-                "Whether the program is already running could not be checked, so no server was started.");
+      Log.Error(failure, "Whether the program is already running could not be checked, so no server was started.");
       MainWindowViewModel = _mainWindowViewModelFactory();
       MainWindowViewModel.ShowInstanceCheckFailed();
 
@@ -72,9 +68,7 @@ public sealed class AppBootstrapper
   private void OnActivationRequested(object? sender, EventArgs e)
   {
     if (!_holdsTheInstance)
-    {
       return;
-    }
 
     _dispatchToUserInterface(_bringExistingWindowToFront);
   }

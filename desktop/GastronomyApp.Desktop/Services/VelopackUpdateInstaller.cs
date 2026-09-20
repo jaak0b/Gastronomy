@@ -21,15 +21,12 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
 
   public bool IsInstalled => _manager.IsInstalled;
 
-  public bool HasDownloadedUpdate => _downloadedRelease is not null
-                                     || (IsInstalled && _manager.UpdatePendingRestart is not null);
+  public bool HasDownloadedUpdate => _downloadedRelease is not null || IsInstalled && _manager.UpdatePendingRestart is not null;
 
   public async Task<UpdatePreparation> CheckAndDownloadAsync(CancellationToken cancellationToken)
   {
     if (!IsInstalled)
-    {
       return new UpdatePreparation.UpToDate();
-    }
 
     await _oneTransferAtATime.WaitAsync(cancellationToken);
 
@@ -38,9 +35,7 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
       var update = await _manager.CheckForUpdatesAsync();
 
       if (update is null)
-      {
         return new UpdatePreparation.UpToDate();
-      }
 
       await _manager.DownloadUpdatesAsync(update, cancelToken: cancellationToken);
       _downloadedRelease = update.TargetFullRelease;
@@ -55,8 +50,7 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
     {
       Log.Error(failure, "Checking for or downloading an update failed.");
       return new UpdatePreparation.Failed(failure.ToString());
-    }
-    finally
+    } finally
     {
       _oneTransferAtATime.Release();
     }
@@ -65,21 +59,16 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
   public void InstallOnQuit(bool restart)
   {
     if (_installScheduled)
-    {
       return;
-    }
 
     var release = _downloadedRelease ?? (IsInstalled ? _manager.UpdatePendingRestart : null);
 
     if (release is null)
-    {
       return;
-    }
 
-    _manager.WaitExitThenApplyUpdates(release, silent: true, restart: restart);
+    _manager.WaitExitThenApplyUpdates(release, true, restart);
     _installScheduled = true;
-    Log.Information("A downloaded update is applied when the program exits. Restart requested: {Restart}.",
-                    restart);
+    Log.Information("A downloaded update is applied when the program exits. Restart requested: {Restart}.", restart);
   }
 
   public void Dispose()
@@ -91,14 +80,10 @@ public sealed class VelopackUpdateInstaller : IUpdateInstaller, IDisposable
   private void Dispose(bool disposing)
   {
     if (_disposed)
-    {
       return;
-    }
 
     if (disposing)
-    {
       _oneTransferAtATime.Dispose();
-    }
 
     _disposed = true;
   }

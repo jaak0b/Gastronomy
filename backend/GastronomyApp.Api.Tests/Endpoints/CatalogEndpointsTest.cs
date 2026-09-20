@@ -11,7 +11,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class CatalogEndpointsTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -20,8 +19,7 @@ public sealed class CatalogEndpointsTest
     _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
 
     using var scope = _factory.Services.CreateScope();
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), "de", "NUnit", CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }
 
@@ -88,8 +86,7 @@ public sealed class CatalogEndpointsTest
   {
     await SwitchTheBeerOffAsync();
 
-    using var deactivatedCategory =
-      await _factory.Client.PostAsync($"/api/admin/categories/{_world.DrinkCategoryId}/deactivate", null);
+    using var deactivatedCategory = await _factory.Client.PostAsync($"/api/admin/categories/{_world.DrinkCategoryId}/deactivate", null);
     Assert.That(deactivatedCategory.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
     var body = await GetCatalogAsync();
@@ -97,11 +94,9 @@ public sealed class CatalogEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(body.RootElement.GetProperty("categories").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("categories")[0].GetProperty("categoryId").GetGuid(),
-                                  Is.EqualTo(_world.FoodCategoryId));
+                      Assert.That(body.RootElement.GetProperty("categories")[0].GetProperty("categoryId").GetGuid(), Is.EqualTo(_world.FoodCategoryId));
                       Assert.That(body.RootElement.GetProperty("items").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_world.BratwurstItemId));
+                      Assert.That(body.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid(), Is.EqualTo(_world.BratwurstItemId));
                     });
   }
 
@@ -120,8 +115,7 @@ public sealed class CatalogEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(body.RootElement.GetProperty("items").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_world.BratwurstItemId));
+                      Assert.That(body.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid(), Is.EqualTo(_world.BratwurstItemId));
                     });
   }
 
@@ -136,8 +130,7 @@ public sealed class CatalogEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(categories.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(categories[0].GetProperty("categoryId").GetGuid(),
-                                  Is.EqualTo(_world.FoodCategoryId));
+                      Assert.That(categories[0].GetProperty("categoryId").GetGuid(), Is.EqualTo(_world.FoodCategoryId));
                     });
   }
 
@@ -145,7 +138,11 @@ public sealed class CatalogEndpointsTest
   public async Task GetCatalog_CategoryWithoutAnyArticles_LeavesTheCategoryOut()
   {
     using var created = await _factory.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "Kaffee", colourHex = "#6D4C41" });
+                                                              new
+                                                              {
+                                                                name = "Kaffee",
+                                                                colourHex = "#6D4C41"
+                                                              });
     Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var body = await GetCatalogAsync();
@@ -154,18 +151,15 @@ public sealed class CatalogEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(categories.GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(categories[0].GetProperty("categoryId").GetGuid(),
-                                  Is.EqualTo(_world.FoodCategoryId));
-                      Assert.That(categories[1].GetProperty("categoryId").GetGuid(),
-                                  Is.EqualTo(_world.DrinkCategoryId));
+                      Assert.That(categories[0].GetProperty("categoryId").GetGuid(), Is.EqualTo(_world.FoodCategoryId));
+                      Assert.That(categories[1].GetProperty("categoryId").GetGuid(), Is.EqualTo(_world.DrinkCategoryId));
                     });
   }
 
   [Test]
   public async Task GetCatalog_CategoriesMoved_FollowsThePositionsTheLaptopChose()
   {
-    using var moved = await _factory.Client.PostAsJsonAsync($"/api/admin/categories/{_world.DrinkCategoryId}/move",
-                                                            new { direction = "up" });
+    using var moved = await _factory.Client.PostAsJsonAsync($"/api/admin/categories/{_world.DrinkCategoryId}/move", new { direction = "up" });
     Assert.That(moved.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
     var body = await GetCatalogAsync();
@@ -183,8 +177,7 @@ public sealed class CatalogEndpointsTest
   {
     await using (var context = _factory.CreateContext())
     {
-      var bratwurst = await context.FestivalCatalogItems
-                                   .FirstAsync(menuRow => menuRow.CatalogItemId == _world.BratwurstItemId);
+      var bratwurst = await context.FestivalCatalogItems.FirstAsync(menuRow => menuRow.CatalogItemId == _world.BratwurstItemId);
       bratwurst.IsAvailable = false;
 
       var beer = await context.CatalogItems.FirstAsync(item => item.Id == _world.BeerItemId);

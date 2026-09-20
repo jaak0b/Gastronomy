@@ -6,7 +6,7 @@ using Avalonia.VisualTree;
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 
-internal sealed class RenderedColourReader
+sealed internal class RenderedColourReader
 {
   public Color ToColour(IBrush? brush)
   {
@@ -37,8 +37,6 @@ internal sealed class RenderedColourReader
 
   private ContentPresenter Label(Button button)
   {
-    return button.GetVisualDescendants()
-                 .OfType<ContentPresenter>()
-                 .Single(presenter => presenter.Name == "PART_ContentPresenter");
+    return button.GetVisualDescendants().OfType<ContentPresenter>().Single(presenter => presenter.Name == "PART_ContentPresenter");
   }
 }

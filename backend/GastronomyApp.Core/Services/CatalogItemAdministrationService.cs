@@ -11,105 +11,73 @@ public sealed class CatalogItemAdministrationService
   private const double LongestProductionMinutes = 600;
 
   private readonly ICatalogCategoryRepository _categoryRepository;
-  private readonly IClock _clock;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ICatalogItemRepository _itemRepository;
+  private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
-  public CatalogItemAdministrationService(ICatalogItemRepository itemRepository,
-                                          ICatalogCategoryRepository categoryRepository,
-                                          IFestivalRepository festivalRepository,
-                                          ITransactionRunner transactionRunner,
-                                          IClock clock)
+  public CatalogItemAdministrationService(ICatalogItemRepository itemRepository, ICatalogCategoryRepository categoryRepository, IFestivalRepository festivalRepository, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
   {
     _itemRepository = itemRepository;
     _categoryRepository = categoryRepository;
     _festivalRepository = festivalRepository;
+    _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
-    _clock = clock;
   }
 
-  public async Task<Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>> ListAsync(
-    Guid? festivalId,
-    CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    if (festivalId is { } askedFestivalId
-        && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
+    if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
     {
       return Failed<IReadOnlyList<AdministeredCatalogItem>>(CatalogItemAdministrationFailureReason.FestivalNotFound);
     }
 
     IReadOnlyList<CatalogItem> items = await _itemRepository.FindAllOrderedAsync(cancellationToken);
 
-    IReadOnlyList<FestivalCatalogItem> menuRows = festivalId is null
-                                                    ? []
-                                                    : await _itemRepository.FindMenuRowsAtFestivalAsync(festivalId.Value,
-                                                                                                        cancellationToken);
+    IReadOnlyList<FestivalCatalogItem> menuRows = [];
+    IReadOnlyList<ItemStationAssignment> assignments = [];
 
-    IReadOnlyList<ItemStationAssignment> assignments =
-      festivalId is null
-        ? []
-        : await _itemRepository.FindAssignmentsAtFestivalAsync(festivalId.Value, cancellationToken);
+    if (festivalId is not null)
+    {
+      menuRows = await _itemRepository.FindMenuRowsAtFestivalAsync(festivalId.Value, cancellationToken);
+      assignments = await _itemRepository.FindAssignmentsAtFestivalAsync(festivalId.Value, cancellationToken);
+    }
 
     Dictionary<Guid, FestivalCatalogItem> menuRowsByItemId = menuRows.ToDictionary(menuRow => menuRow.CatalogItemId);
 
-    IReadOnlyList<AdministeredCatalogItem> administered =
-    [
-      .. items.Select(item => new AdministeredCatalogItem(item.Id,
-                                                          item.Name,
-                                                          item.CategoryId,
-                                                          item.SortOrder,
-                                                          item.IsActive,
-                                                          item.ProductionMinutes,
-                                                          item.IsQueueIndependent,
-                                                          BuildItemAtFestival(item.Id, menuRowsByItemId, assignments)))
-    ];
+    IReadOnlyList<AdministeredCatalogItem> administered = items.Select(item => new AdministeredCatalogItem(item.Id, item.Name, item.CategoryId, item.SortOrder, item.IsActive, item.ProductionMinutes, item.IsQueueIndependent, BuildItemAtFestival(item.Id, menuRowsByItemId, assignments))).ToList();
 
     return Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>.Success(administered);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> CreateAsync(SaveCatalogItemRequest request,
-                                                                          CancellationToken cancellationToken)
+  public Task<Result<Guid, CatalogItemAdministrationFailure>> CreateAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId,
-                                                                          SaveCatalogItemRequest request,
-                                                                          CancellationToken cancellationToken)
+  public Task<Result<Guid, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId,
-                                                                            CancellationToken cancellationToken)
+  public Task<Result<Guid, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> DeactivateAsync(Guid itemId,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<Guid, CatalogItemAdministrationFailure>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request,
-                                                                                  CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
-    CatalogItemAdministrationFailure? refusal =
-      Validate(request)
-      ?? (await _itemRepository.IsNameTakenAsync(request.Name!, null, cancellationToken)
-            ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken }
-            : null)
-      ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
+    var refusal = Validate(request)
+                  ?? (await _itemRepository.IsNameTakenAsync(request.Name!, null, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
 
     if (refusal is not null)
     {
@@ -135,23 +103,17 @@ public sealed class CatalogItemAdministrationService
     return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId,
-                                                                                  SaveCatalogItemRequest request,
-                                                                                  CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, SaveCatalogItemRequest request, CancellationToken cancellationToken)
   {
-    CatalogItem? item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
+    var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
     {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
     }
 
-    CatalogItemAdministrationFailure? refusal =
-      Validate(request)
-      ?? (await _itemRepository.IsNameTakenAsync(request.Name!, itemId, cancellationToken)
-            ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken }
-            : null)
-      ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
+    var refusal = Validate(request)
+                  ?? (await _itemRepository.IsNameTakenAsync(request.Name!, itemId, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
     {
@@ -169,18 +131,16 @@ public sealed class CatalogItemAdministrationService
     return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOnAsync(Guid itemId,
-                                                                                     CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    CatalogItem? item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
+    var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
     {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
     }
 
-    CatalogItemAdministrationFailure? categoryRefusal =
-      await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
+    var categoryRefusal = await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
 
     if (categoryRefusal is not null)
     {
@@ -193,20 +153,18 @@ public sealed class CatalogItemAdministrationService
     return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOffAsync(Guid itemId,
-                                                                                      CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    CatalogItem? item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
+    var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
     {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
     }
 
-    Festival? runningFestival = await _festivalRepository.FindRunningAsync(_clock.UtcNow, cancellationToken);
+    var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
-    if (runningFestival is not null
-        && await _itemRepository.FindMenuRowAsync(runningFestival.Id, itemId, cancellationToken) is not null)
+    if (runningFestival is not null && await _itemRepository.FindMenuRowAsync(runningFestival.Id, itemId, cancellationToken) is not null)
     {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemIsOnTheRunningFestivalsMenu);
     }
@@ -217,25 +175,26 @@ public sealed class CatalogItemAdministrationService
     return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
   }
 
-  private async Task<CatalogItemAdministrationFailure?> CategoryRefusalAsync(Guid? categoryId,
-                                                                             bool theArticleIsSwitchedOn,
-                                                                             CancellationToken cancellationToken)
+  private async Task<CatalogItemAdministrationFailure?> CategoryRefusalAsync(Guid? categoryId, bool theArticleIsSwitchedOn, CancellationToken cancellationToken)
   {
-    CatalogCategory? category = categoryId is null
-                                  ? null
-                                  : await _categoryRepository.FindByIdAsync(categoryId.Value, cancellationToken);
+    CatalogCategory? category = null;
+
+    if (categoryId is not null)
+    {
+      category = await _categoryRepository.FindByIdAsync(categoryId.Value, cancellationToken);
+    }
 
     if (category is null)
     {
       return new() { Reason = CatalogItemAdministrationFailureReason.CategoryUnknown };
     }
 
-    return category.IsActive || !theArticleIsSwitchedOn
-             ? null
-             : new CatalogItemAdministrationFailure
-               {
-                 Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff
-               };
+    if (category.IsActive || !theArticleIsSwitchedOn)
+    {
+      return null;
+    }
+
+    return new() { Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff };
   }
 
   private CatalogItemAdministrationFailure? Validate(SaveCatalogItemRequest request)
@@ -245,35 +204,22 @@ public sealed class CatalogItemAdministrationService
       return new() { Reason = CatalogItemAdministrationFailureReason.NameMissing };
     }
 
-    if (request.ProductionMinutes is { } minutes
-        && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes
-            || Math.Round(minutes, 1) != minutes))
+    if (request.ProductionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
     {
-      return new()
-             {
-               Reason = CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange,
-               OffendingProductionMinutes = minutes
-             };
+      return new() { Reason = CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange, OffendingProductionMinutes = minutes };
     }
 
     return null;
   }
 
-  private CatalogItemAtFestival? BuildItemAtFestival(Guid itemId,
-                                                     IReadOnlyDictionary<Guid, FestivalCatalogItem> menuRowsByItemId,
-                                                     IReadOnlyCollection<ItemStationAssignment> assignments)
+  private CatalogItemAtFestival? BuildItemAtFestival(Guid itemId, IReadOnlyDictionary<Guid, FestivalCatalogItem> menuRowsByItemId, IReadOnlyCollection<ItemStationAssignment> assignments)
   {
     if (!menuRowsByItemId.TryGetValue(itemId, out var menuRow))
     {
       return null;
     }
 
-    return new(menuRow.PriceCents,
-               menuRow.IsAvailable,
-               [
-                 .. assignments.Where(assignment => assignment.CatalogItemId == itemId)
-                               .Select(assignment => assignment.StationId)
-               ]);
+    return new(menuRow.PriceCents, menuRow.IsAvailable, assignments.Where(assignment => assignment.CatalogItemId == itemId).Select(assignment => assignment.StationId).ToList());
   }
 
   private Result<TValue, CatalogItemAdministrationFailure> Failed<TValue>(CatalogItemAdministrationFailureReason reason)
@@ -281,20 +227,13 @@ public sealed class CatalogItemAdministrationService
     return Result<TValue, CatalogItemAdministrationFailure>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> RunAsync(
-    Func<CancellationToken, Task<Result<Guid, CatalogItemAdministrationFailure>>> write,
-    CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> RunAsync(Func<CancellationToken, Task<Result<Guid, CatalogItemAdministrationFailure>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<Guid, CatalogItemAdministrationFailure> written =
-                                                 await write(transactionCancellationToken);
+                                               Result<Guid, CatalogItemAdministrationFailure> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<Guid, CatalogItemAdministrationFailure>>
-                                                      {
-                                                        Value = written,
-                                                        ShouldCommit = written.IsSuccess
-                                                      };
+                                               return new TransactionOutcome<Result<Guid, CatalogItemAdministrationFailure>> { Value = written, ShouldCommit = written.IsSuccess };
                                              },
                                              cancellationToken);
   }

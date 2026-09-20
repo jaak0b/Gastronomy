@@ -14,17 +14,16 @@ public sealed class ApiTestFactoryBuilder
 
     AppLanguage language = new();
     var application = new GastronomyAppApiApplication().Build(new()
-                                                             {
-                                                               DataDirectory = dataDirectory,
-                                                               Port = 0,
-                                                               BindAddress = "127.0.0.1",
-                                                               Language = language
-                                                             });
+                                                              {
+                                                                DataDirectory = dataDirectory,
+                                                                Port = 0,
+                                                                BindAddress = "127.0.0.1",
+                                                                Language = language
+                                                              });
 
     await application.StartAsync();
 
-    var addresses =
-      application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+    var addresses = application.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
     Uri baseAddress = new(addresses.Addresses.First());
 
     return new(application, dataDirectory, baseAddress, language);

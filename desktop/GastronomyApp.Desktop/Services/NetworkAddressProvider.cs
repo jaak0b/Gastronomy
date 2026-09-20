@@ -8,10 +8,6 @@ public sealed class NetworkAddressProvider : INetworkAddressProvider
 
   public IReadOnlyList<NetworkAddressOption> GetAvailableAddresses()
   {
-    return
-    [
-      .. _reachableAddresses.FindReachableAddresses()
-                            .Select(address => new NetworkAddressOption(address.InterfaceName, address.IPAddress))
-    ];
+    return _reachableAddresses.FindReachableAddresses().Select(address => new NetworkAddressOption(address.InterfaceName, address.IPAddress)).ToList();
   }
 }

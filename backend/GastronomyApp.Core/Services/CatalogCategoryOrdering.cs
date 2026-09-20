@@ -10,22 +10,26 @@ public sealed class CatalogCategoryOrdering
   {
     ArgumentNullException.ThrowIfNull(takenSortOrders);
 
-    return takenSortOrders.Count == 0 ? FirstSortOrder : takenSortOrders.Max() + 1;
+    if (takenSortOrders.Count == 0)
+      return FirstSortOrder;
+
+    return takenSortOrders.Max() + 1;
   }
 
   public IReadOnlyList<CatalogCategoryPosition> Move(IReadOnlyList<Guid> orderedCategoryIds, Guid categoryId, CategoryMoveDirection direction)
   {
     ArgumentNullException.ThrowIfNull(orderedCategoryIds);
 
-    List<Guid> reordered = [.. orderedCategoryIds];
+    List<Guid> reordered = orderedCategoryIds.ToList();
     var position = reordered.IndexOf(categoryId);
-    var target = direction == CategoryMoveDirection.Up ? position - 1 : position + 1;
+    var target = position + 1;
+
+    if (direction == CategoryMoveDirection.Up)
+      target = position - 1;
 
     if (position >= 0 && target >= 0 && target < reordered.Count)
-    {
       (reordered[position], reordered[target]) = (reordered[target], reordered[position]);
-    }
 
-    return [.. reordered.Select((id, index) => new CatalogCategoryPosition(id, index + FirstSortOrder))];
+    return reordered.Select((id, index) => new CatalogCategoryPosition(id, index + FirstSortOrder)).ToList();
   }
 }

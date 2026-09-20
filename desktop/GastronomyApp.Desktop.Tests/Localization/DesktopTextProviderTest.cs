@@ -7,7 +7,6 @@ namespace GastronomyApp.Desktop.Tests.Localization;
 [TestFixture]
 public sealed class DesktopTextProviderTest
 {
-
   [SetUp]
   public void SetUp()
   {

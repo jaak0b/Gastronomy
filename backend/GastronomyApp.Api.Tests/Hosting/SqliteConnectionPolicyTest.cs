@@ -6,7 +6,6 @@ namespace GastronomyApp.Api.Tests.Hosting;
 [TestFixture]
 public sealed class SqliteConnectionPolicyTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -26,9 +25,7 @@ public sealed class SqliteConnectionPolicyTest
   {
     var busyTimeout = await ReadPragmaAsync("busy_timeout");
 
-    Assert.That(busyTimeout,
-                Is.EqualTo("5000"),
-                "The composition root must apply the busy timeout the transaction runner sizes its BEGIN IMMEDIATE from.");
+    Assert.That(busyTimeout, Is.EqualTo("5000"), "The composition root must apply the busy timeout the transaction runner sizes its BEGIN IMMEDIATE from.");
   }
 
   [Test]

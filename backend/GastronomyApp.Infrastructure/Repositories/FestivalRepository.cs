@@ -21,56 +21,38 @@ public sealed class FestivalRepository : IFestivalRepository
 
   public async Task<Festival?> FindRunningAsync(DateTime nowUtc, CancellationToken cancellationToken)
   {
-    List<Festival> shown = await _dbContext.Festivals
-                                           .AsNoTracking()
-                                           .Where(festival => !festival.IsHidden)
-                                           .ToListAsync(cancellationToken);
+    List<Festival> shown = await _dbContext.Festivals.AsNoTracking().Where(festival => !festival.IsHidden).ToListAsync(cancellationToken);
 
     return _schedule.FindRunningAt(shown, nowUtc);
   }
 
   public async Task<IReadOnlyCollection<Festival>> FindAllAsync(CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals
-                           .AsNoTracking()
-                           .OrderByDescending(festival => festival.StartsAtUtc)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.Festivals.AsNoTracking().OrderByDescending(festival => festival.StartsAtUtc).ToListAsync(cancellationToken);
   }
 
   public async Task<Festival?> FindByIdAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals
-                           .FirstOrDefaultAsync(festival => festival.Id == festivalId, cancellationToken);
+    return await _dbContext.Festivals.FirstOrDefaultAsync(festival => festival.Id == festivalId, cancellationToken);
   }
 
   public async Task<bool> ExistsAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals
-                           .AsNoTracking()
-                           .AnyAsync(festival => festival.Id == festivalId, cancellationToken);
+    return await _dbContext.Festivals.AsNoTracking().AnyAsync(festival => festival.Id == festivalId, cancellationToken);
   }
 
   public async Task<IReadOnlyList<Guid>> FindIdsNotEndedAsync(DateTime nowUtc, CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals
-                           .AsNoTracking()
-                           .Where(festival => !festival.IsHidden && festival.EndsAtUtc > nowUtc)
-                           .Select(festival => festival.Id)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.Festivals.AsNoTracking().Where(festival => !festival.IsHidden && festival.EndsAtUtc > nowUtc).Select(festival => festival.Id).ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyList<FestivalContentCounts>> FindContentCountsAsync(CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals
-                           .AsNoTracking()
-                           .Select(festival =>
-                                     new FestivalContentCounts(festival.Id,
-                                                               _dbContext.FestivalStations
-                                                                         .Count(link => link.FestivalId == festival.Id),
-                                                               _dbContext.FestivalCatalogItems
-                                                                         .Count(menuRow => menuRow.FestivalId == festival.Id),
-                                                               _dbContext.Orders
-                                                                         .Count(order => order.FestivalId == festival.Id)))
+    return await _dbContext.Festivals.AsNoTracking()
+                           .Select(festival => new FestivalContentCounts(festival.Id,
+                                                                         _dbContext.FestivalStations.Count(link => link.FestivalId == festival.Id),
+                                                                         _dbContext.FestivalCatalogItems.Count(menuRow => menuRow.FestivalId == festival.Id),
+                                                                         _dbContext.Orders.Count(order => order.FestivalId == festival.Id)))
                            .ToListAsync(cancellationToken);
   }
 
@@ -79,17 +61,11 @@ public sealed class FestivalRepository : IFestivalRepository
     await _dbContext.Festivals.AddAsync(festival, cancellationToken);
   }
 
-  public async Task CopyContentsAsync(Guid copiedFromFestivalId,
-                                      Guid newFestivalId,
-                                      CancellationToken cancellationToken)
+  public async Task CopyContentsAsync(Guid copiedFromFestivalId, Guid newFestivalId, CancellationToken cancellationToken)
   {
-    List<FestivalStation> stationLinks = await _dbContext.FestivalStations
-                                                         .AsNoTracking()
-                                                         .Where(link => link.FestivalId == copiedFromFestivalId)
-                                                         .ToListAsync(cancellationToken);
+    List<FestivalStation> stationLinks = await _dbContext.FestivalStations.AsNoTracking().Where(link => link.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
 
     foreach (var link in stationLinks)
-    {
       _dbContext.FestivalStations.Add(new()
                                       {
                                         Id = Guid.NewGuid(),
@@ -97,15 +73,10 @@ public sealed class FestivalRepository : IFestivalRepository
                                         StationId = link.StationId,
                                         NextStationOrderNumber = FirstNumber
                                       });
-    }
 
-    List<FestivalCatalogItem> menuRows = await _dbContext.FestivalCatalogItems
-                                                         .AsNoTracking()
-                                                         .Where(menuRow => menuRow.FestivalId == copiedFromFestivalId)
-                                                         .ToListAsync(cancellationToken);
+    List<FestivalCatalogItem> menuRows = await _dbContext.FestivalCatalogItems.AsNoTracking().Where(menuRow => menuRow.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
 
     foreach (var menuRow in menuRows)
-    {
       _dbContext.FestivalCatalogItems.Add(new()
                                           {
                                             Id = Guid.NewGuid(),
@@ -114,15 +85,10 @@ public sealed class FestivalRepository : IFestivalRepository
                                             PriceCents = menuRow.PriceCents,
                                             IsAvailable = true
                                           });
-    }
 
-    List<ItemStationAssignment> assignments = await _dbContext.ItemStationAssignments
-                                                              .AsNoTracking()
-                                                              .Where(assignment => assignment.FestivalId == copiedFromFestivalId)
-                                                              .ToListAsync(cancellationToken);
+    List<ItemStationAssignment> assignments = await _dbContext.ItemStationAssignments.AsNoTracking().Where(assignment => assignment.FestivalId == copiedFromFestivalId).ToListAsync(cancellationToken);
 
     foreach (var assignment in assignments)
-    {
       _dbContext.ItemStationAssignments.Add(new()
                                             {
                                               Id = Guid.NewGuid(),
@@ -130,7 +96,6 @@ public sealed class FestivalRepository : IFestivalRepository
                                               CatalogItemId = assignment.CatalogItemId,
                                               StationId = assignment.StationId
                                             });
-    }
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)

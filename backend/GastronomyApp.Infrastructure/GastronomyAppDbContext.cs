@@ -5,8 +5,7 @@ namespace GastronomyApp.Infrastructure;
 
 public sealed class GastronomyAppDbContext : DbContext
 {
-  public GastronomyAppDbContext(DbContextOptions<GastronomyAppDbContext> options)
-    : base(options)
+  public GastronomyAppDbContext(DbContextOptions<GastronomyAppDbContext> options) : base(options)
   {
   }
 

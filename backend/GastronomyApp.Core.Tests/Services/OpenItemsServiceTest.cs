@@ -17,21 +17,15 @@ public sealed class OpenItemsServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
-    A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(_owners));
-    A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<string>>([]));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
+    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
+    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(_owners));
+    A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
 
-    _service = new(_repository,
-                   _festivalRepository,
-                   new(_repository, _festivalRepository, A.Fake<ITransactionRunner>(), _clock),
-                   _clock);
+    RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
+
+    _service = new(_repository, runningFestival, new(_repository, runningFestival, A.Fake<ITransactionRunner>(), _clock), _clock);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -48,10 +42,9 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadAsync_NoFestivalIsRunning_ReportsNoTables()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    OpenItemsReport report = await _service.ReadAsync(CancellationToken.None);
+    var report = await _service.ReadAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -63,16 +56,18 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadAsync_OpenItemsAtTwoTables_ReportsEachTableWithWhatItStillOwes()
   {
-    GivenOpenItems(At("Tisch 3", OpenItem("Bier", 400)),
-                   At("Tisch 12", OpenItem("Bratwurst", 350)),
-                   At("Tisch 12", OpenItem("Limonade", 250)));
+    GivenOpenItems(At("Tisch 3", OpenItem("Bier", 400)), At("Tisch 12", OpenItem("Bratwurst", 350)), At("Tisch 12", OpenItem("Limonade", 250)));
 
-    OpenItemsReport report = await _service.ReadAsync(CancellationToken.None);
+    var report = await _service.ReadAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(report.Tables.Select(table => table.TableName),
-                                  Is.EqualTo(new[] { "Tisch 12", "Tisch 3" }));
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Tisch 12",
+                                               "Tisch 3"
+                                             }));
                       Assert.That(report.Tables[0].OpenAmountCents, Is.EqualTo(600));
                       Assert.That(report.Tables[1].OpenAmountCents, Is.EqualTo(400));
                     });
@@ -81,18 +76,15 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadAsync_AnItemTheTableDidNotPayInFull_ReportsWhatWasGivenAway()
   {
-    OrderItem bier = At("Tisch 12", OpenItem("Bier", 400));
+    var bier = At("Tisch 12", OpenItem("Bier", 400));
     bier.SettledAtUtc = _now.AddMinutes(-10);
     bier.SettledByStaffMemberId = _settlingWaiter;
     bier.ChargedPriceCents = 150;
     bier.PaymentNotice = "Kapelle";
 
-    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(_festivalId,
-                                                                 A<DateTime>._,
-                                                                 A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bier]));
+    A.CallTo(() => _repository.FindGivenAwayAtFestivalSinceAsync(_festivalId, A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bier]));
 
-    OpenItemsReport report = await _service.ReadAsync(CancellationToken.None);
+    var report = await _service.ReadAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -106,10 +98,10 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadAsync_AnItemWhoseOrderCannotBeFound_LeavesItOutOfTheTablesAndNamesIt()
   {
-    OrderItem stray = OpenItem("Bratwurst", 350);
+    var stray = OpenItem("Bratwurst", 350);
     GivenOpenItems(stray);
 
-    OpenItemsReport report = await _service.ReadAsync(CancellationToken.None);
+    var report = await _service.ReadAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -121,11 +113,11 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadAsync_ItemsOfOneOrder_CarryTheNoteTheWaiterTypedForThem()
   {
-    OrderItem bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
+    var bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
     bratwurst.Note = "Ohne Ketchup";
     GivenOpenItems(bratwurst);
 
-    OpenItemsReport report = await _service.ReadAsync(CancellationToken.None);
+    var report = await _service.ReadAsync(CancellationToken.None);
 
     Assert.That(report.Tables[0].Items[0].Note, Is.EqualTo("Ohne Ketchup"));
   }
@@ -133,8 +125,7 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadTableNamesAsync_NoFestivalIsRunning_ReportsNoNames()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
     Assert.That(await _service.ReadTableNamesAsync(CancellationToken.None), Is.Empty);
   }
@@ -143,16 +134,22 @@ public sealed class OpenItemsServiceTest
   public async Task ReadTableNamesAsync_AFestivalIsRunning_ReportsTheNamesUsedAtThatFestival()
   {
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<string>>(["Tisch 12", "Tisch 3"]));
+   .Returns(Task.FromResult<IReadOnlyList<string>>([
+                                                     "Tisch 12",
+                                                     "Tisch 3"
+                                                   ]));
 
     Assert.That(await _service.ReadTableNamesAsync(CancellationToken.None),
-                Is.EqualTo(new[] { "Tisch 12", "Tisch 3" }));
+                Is.EqualTo(new[]
+                           {
+                             "Tisch 12",
+                             "Tisch 3"
+                           }));
   }
 
   private void GivenOpenItems(params OrderItem[] items)
   {
-    A.CallTo(() => _repository.FindOpenAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<OrderItem>>([.. items]));
+    A.CallTo(() => _repository.FindOpenAtFestivalAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
   }
 
   private OrderItem At(string tableName, OrderItem item)

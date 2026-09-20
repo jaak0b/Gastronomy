@@ -13,17 +13,13 @@ public sealed class ItemOrderabilityRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    var bar = await fixture.DbContext.Stations
-                           .FirstAsync(station => station.Id == seeded.BarStationId,
-                                       TestContext.CurrentContext.CancellationToken);
+    var bar = await fixture.DbContext.Stations.FirstAsync(station => station.Id == seeded.BarStationId, TestContext.CurrentContext.CancellationToken);
     bar.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     ItemOrderabilityRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Guid> found =
-      await repository.FindActiveStationIdsAtFestivalAsync(seeded.FestivalId,
-                                                           TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> found = await repository.FindActiveStationIdsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.EqualTo(new[] { seeded.KitchenStationId }));
   }
@@ -36,10 +32,7 @@ public sealed class ItemOrderabilityRepositoryTest
 
     ItemOrderabilityRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Guid> found =
-      await repository.FindItemIdsPreparedByAsync(seeded.FestivalId,
-                                                  [seeded.KitchenStationId],
-                                                  TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> found = await repository.FindItemIdsPreparedByAsync(seeded.FestivalId, [seeded.KitchenStationId], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.EqualTo(new[] { seeded.SausageItemId }));
   }
@@ -52,10 +45,7 @@ public sealed class ItemOrderabilityRepositoryTest
 
     ItemOrderabilityRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Guid> found =
-      await repository.FindItemIdsPreparedByAsync(seeded.FestivalId,
-                                                  [],
-                                                  TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> found = await repository.FindItemIdsPreparedByAsync(seeded.FestivalId, [], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.Empty);
   }
@@ -66,10 +56,7 @@ public sealed class ItemOrderabilityRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     ItemOrderabilityRepository repository = new(fixture.DbContext);
 
-    Assert.That(async () => await repository.FindItemIdsPreparedByAsync(Guid.NewGuid(),
-                                                                        null!,
-                                                                        TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindItemIdsPreparedByAsync(Guid.NewGuid(), null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -78,16 +65,13 @@ public sealed class ItemOrderabilityRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    var lemonade = await fixture.DbContext.CatalogItems
-                                .FirstAsync(item => item.Id == seeded.LemonadeItemId,
-                                            TestContext.CurrentContext.CancellationToken);
+    var lemonade = await fixture.DbContext.CatalogItems.FirstAsync(item => item.Id == seeded.LemonadeItemId, TestContext.CurrentContext.CancellationToken);
     lemonade.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     ItemOrderabilityRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Guid> found =
-      await repository.FindActiveMenuItemIdsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> found = await repository.FindActiveMenuItemIdsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.EqualTo(new[] { seeded.SausageItemId }));
   }

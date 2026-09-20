@@ -11,29 +11,14 @@ public static class OpenItemEndpoints
 {
   public static IEndpointRouteBuilder MapOpenItemEndpoints(this IEndpointRouteBuilder routes)
   {
-    var group = routes.MapGroup("/api/open-items")
-                      .RequireAuthorization()
-                      .RequireStaffDevice()
-                      .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
-    group.MapGet(string.Empty,
-                 async (OpenItemQueryHandler handler, CancellationToken cancellationToken) =>
-                 {
-                   return await handler.ListAsync(cancellationToken);
-                 });
+    group.MapGet(string.Empty, async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => { return await handler.ListAsync(cancellationToken); });
 
-    group.MapGet("/table-names",
-                 async (OpenItemQueryHandler handler, CancellationToken cancellationToken) =>
-                 {
-                   return await handler.ListTableNamesAsync(cancellationToken);
-                 });
+    group.MapGet("/table-names", async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => { return await handler.ListTableNamesAsync(cancellationToken); });
 
     group.MapPost("/settle",
-                  async (SettleItemsRequest request,
-                         HttpContext httpContext,
-                         CallerIdentity callerIdentity,
-                         OrderItemSettlementHandler handler,
-                         CancellationToken cancellationToken) =>
+                  async (SettleItemsRequest request, HttpContext httpContext, CallerIdentity callerIdentity, OrderItemSettlementHandler handler, CancellationToken cancellationToken) =>
                   {
                     var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
                     return await handler.SettleAsync(request, caller, cancellationToken);

@@ -24,8 +24,19 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = OpenItem();
     var beer = OpenItem();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [bratwurst.Id, beer.Id] }, [bratwurst, beer], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new()
+                                                                             {
+                                                                               OrderItemIds =
+                                                                               [
+                                                                                 bratwurst.Id,
+                                                                                 beer.Id
+                                                                               ]
+                                                                             },
+                                                                             [
+                                                                               bratwurst,
+                                                                               beer
+                                                                             ],
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -43,8 +54,19 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = FulfilledItem(_earlier);
     var beer = OpenItem();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [bratwurst.Id, beer.Id] }, [bratwurst, beer], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new()
+                                                                             {
+                                                                               OrderItemIds =
+                                                                               [
+                                                                                 bratwurst.Id,
+                                                                                 beer.Id
+                                                                               ]
+                                                                             },
+                                                                             [
+                                                                               bratwurst,
+                                                                               beer
+                                                                             ],
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -62,8 +84,16 @@ public sealed class OrderItemFulfillmentServiceTest
   {
     var bratwurst = OpenItem();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [bratwurst.Id, bratwurst.Id] }, [bratwurst], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new()
+                                                                             {
+                                                                               OrderItemIds =
+                                                                               [
+                                                                                 bratwurst.Id,
+                                                                                 bratwurst.Id
+                                                                               ]
+                                                                             },
+                                                                             [bratwurst],
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -78,8 +108,16 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = OpenItem();
     var strangerId = Guid.NewGuid();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [bratwurst.Id, strangerId] }, [bratwurst], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new()
+                                                                             {
+                                                                               OrderItemIds =
+                                                                               [
+                                                                                 bratwurst.Id,
+                                                                                 strangerId
+                                                                               ]
+                                                                             },
+                                                                             [bratwurst],
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -93,8 +131,7 @@ public sealed class OrderItemFulfillmentServiceTest
   [Test]
   public void Fulfill_NothingSelected_IsRefused()
   {
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [] }, [], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new() { OrderItemIds = [] }, [], _now);
 
     Assert.Multiple(() =>
                     {
@@ -108,8 +145,7 @@ public sealed class OrderItemFulfillmentServiceTest
   {
     var bratwurst = FulfilledItem(_earlier);
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Fulfill(new() { OrderItemIds = [bratwurst.Id] }, [bratwurst], _now);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Fulfill(new() { OrderItemIds = [bratwurst.Id] }, [bratwurst], _now);
 
     Assert.Multiple(() =>
                     {
@@ -126,8 +162,18 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = FulfilledItem(_earlier);
     var beer = FulfilledItem(_now);
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Unfulfill(new() { OrderItemIds = [bratwurst.Id, beer.Id] }, [bratwurst, beer]);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Unfulfill(new()
+                                                                               {
+                                                                                 OrderItemIds =
+                                                                                 [
+                                                                                   bratwurst.Id,
+                                                                                   beer.Id
+                                                                                 ]
+                                                                               },
+                                                                               [
+                                                                                 bratwurst,
+                                                                                 beer
+                                                                               ]);
 
     Assert.Multiple(() =>
                     {
@@ -145,8 +191,18 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = FulfilledItem(_earlier);
     var beer = OpenItem();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Unfulfill(new() { OrderItemIds = [bratwurst.Id, beer.Id] }, [bratwurst, beer]);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Unfulfill(new()
+                                                                               {
+                                                                                 OrderItemIds =
+                                                                                 [
+                                                                                   bratwurst.Id,
+                                                                                   beer.Id
+                                                                                 ]
+                                                                               },
+                                                                               [
+                                                                                 bratwurst,
+                                                                                 beer
+                                                                               ]);
 
     Assert.Multiple(() =>
                     {
@@ -163,8 +219,15 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = FulfilledItem(_earlier);
     var strangerId = Guid.NewGuid();
 
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Unfulfill(new() { OrderItemIds = [bratwurst.Id, strangerId] }, [bratwurst]);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Unfulfill(new()
+                                                                               {
+                                                                                 OrderItemIds =
+                                                                                 [
+                                                                                   bratwurst.Id,
+                                                                                   strangerId
+                                                                                 ]
+                                                                               },
+                                                                               [bratwurst]);
 
     Assert.Multiple(() =>
                     {
@@ -178,8 +241,7 @@ public sealed class OrderItemFulfillmentServiceTest
   [Test]
   public void Unfulfill_NothingSelected_IsRefused()
   {
-    Result<FulfillmentResult, FulfillmentFailure> outcome =
-      _service.Unfulfill(new() { OrderItemIds = [] }, []);
+    Result<FulfillmentResult, FulfillmentFailure> outcome = _service.Unfulfill(new() { OrderItemIds = [] }, []);
 
     Assert.Multiple(() =>
                     {

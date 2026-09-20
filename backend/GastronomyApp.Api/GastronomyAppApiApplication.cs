@@ -10,10 +10,7 @@ public sealed class GastronomyAppApiApplication
 {
   public WebApplication Build(ApiHostOptions options)
   {
-    var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-                                               {
-                                                 ContentRootPath = AppContext.BaseDirectory
-                                               });
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory });
 
     builder.WebHost.UseUrls($"http://{options.BindAddress}:{options.Port}");
     builder.Logging.ClearProviders();

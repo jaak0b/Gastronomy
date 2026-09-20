@@ -38,7 +38,10 @@ public sealed class OrderTestContext : IAsyncDisposable
     return new(clientOrderId,
                "Tisch 12",
                null,
-               [new(World.BratwurstItemId, 350, null, null), new(World.BratwurstItemId, 350, null, null)]);
+               [
+                 new(World.BratwurstItemId, 350, null, null),
+                 new(World.BratwurstItemId, 350, null, null)
+               ]);
   }
 
   public Task<HttpResponseMessage> PostOrderAsync(OrderBody body)
@@ -51,17 +54,12 @@ public sealed class OrderTestContext : IAsyncDisposable
     return SendAsAsync(DeviceToken, method, path, body);
   }
 
-  public async Task<HttpResponseMessage> SendAsAsync(string deviceToken,
-                                                     HttpMethod method,
-                                                     string path,
-                                                     object? body = null)
+  public async Task<HttpResponseMessage> SendAsAsync(string deviceToken, HttpMethod method, string path, object? body = null)
   {
     using HttpRequestMessage request = new(method, path);
     request.Headers.Authorization = new("Bearer", deviceToken);
     if (body is not null)
-    {
       request.Content = JsonContent.Create(body, body.GetType());
-    }
 
     return await Client.SendAsync(request);
   }
@@ -73,12 +71,8 @@ public sealed class OrderTestContext : IAsyncDisposable
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     foreach (var category in body.RootElement.GetProperty("categories").EnumerateArray())
-    {
       if (category.GetProperty("name").GetString() == name)
-      {
         return category.GetProperty("categoryId").GetGuid();
-      }
-    }
 
     throw new AssertionException($"The seeded catalog has no category named {name}.");
   }
@@ -86,11 +80,7 @@ public sealed class OrderTestContext : IAsyncDisposable
   public async Task<string> IssueStationTokenAsync(Guid stationId)
   {
     using var scope = Factory.Services.CreateScope();
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(new(DeviceOwnerKind.Station, stationId),
-                                        "de",
-                                        "NUnit tablet",
-                                        CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.Station, stationId), "de", "NUnit tablet", CancellationToken.None);
 
     return issued.PlaintextToken;
   }
@@ -110,11 +100,7 @@ public sealed class OrderTestContext : IAsyncDisposable
                               });
     await database.SaveChangesAsync();
 
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>()
-                            .IssueAsync(new(DeviceOwnerKind.StaffMember, staffMemberId),
-                                        "de",
-                                        "NUnit second phone",
-                                        CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, staffMemberId), "de", "NUnit second phone", CancellationToken.None);
 
     return issued.PlaintextToken;
   }

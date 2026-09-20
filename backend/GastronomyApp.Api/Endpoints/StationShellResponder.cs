@@ -19,9 +19,7 @@ public sealed class StationShellResponder
     var shellPath = Path.Combine(_environment.WebRootPath ?? string.Empty, "index.html");
 
     if (!File.Exists(shellPath))
-    {
       return Results.NotFound();
-    }
 
     httpContext.Response.Headers.CacheControl = "no-cache";
 

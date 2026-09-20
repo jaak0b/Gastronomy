@@ -9,7 +9,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class InvitationQREndpointTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -42,8 +41,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.enrol.qrUnavailable"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrUnavailable"));
                     });
   }
 
@@ -63,9 +61,7 @@ public sealed class InvitationQREndpointTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("image/svg+xml"));
                       Assert.That(svg, Does.Contain("<svg"));
-                      Assert.That(side,
-                                  Is.GreaterThanOrEqualTo(smallestSideThatHolds),
-                                  $"A QR carrying {invitation.QRUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
+                      Assert.That(side, Is.GreaterThanOrEqualTo(smallestSideThatHolds), $"A QR carrying {invitation.QRUrl.Length} characters cannot be smaller than {smallestSideThatHolds} pixels a side.");
                       Assert.That(side % PixelsPerModule, Is.EqualTo(0), "The QR must be drawn in whole modules.");
                     });
   }
@@ -88,12 +84,8 @@ public sealed class InvitationQREndpointTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(second.InvitationId,
-                                  Is.Not.EqualTo(first.InvitationId),
-                                  "Each invitation must be addressable on its own, so the picture and the address it carries cannot drift apart.");
-                      Assert.That(secondSvg,
-                                  Is.Not.EqualTo(firstSvg),
-                                  "The rendered QR must encode the invitation it was asked for.");
+                      Assert.That(second.InvitationId, Is.Not.EqualTo(first.InvitationId), "Each invitation must be addressable on its own, so the picture and the address it carries cannot drift apart.");
+                      Assert.That(secondSvg, Is.Not.EqualTo(firstSvg), "The rendered QR must encode the invitation it was asked for.");
                     });
   }
 
@@ -109,8 +101,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.enrol.qrReplaced"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrReplaced"));
                     });
   }
 
@@ -134,8 +125,7 @@ public sealed class InvitationQREndpointTest
     var invitation = await CreateInvitationAsync();
     var code = invitation.QRUrl[(invitation.QRUrl.LastIndexOf('/') + 1)..];
 
-    using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem",
-                                                               new RedeemBody(code, null, "NUnit")))
+    using (var redeemed = await _context.Client.PostAsJsonAsync("/api/enrolment/redeem", new RedeemBody(code, null, "NUnit")))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
@@ -146,8 +136,7 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.enrol.qrAlreadyUsed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
                     });
   }
 
@@ -158,8 +147,7 @@ public sealed class InvitationQREndpointTest
 
     await using (var database = _context.Factory.CreateContext())
     {
-      var row = await database.EnrolmentInvitations
-                              .SingleAsync(candidate => candidate.Id == invitation.InvitationId);
+      var row = await database.EnrolmentInvitations.SingleAsync(candidate => candidate.Id == invitation.InvitationId);
       row.ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
       await database.SaveChangesAsync();
     }
@@ -170,22 +158,19 @@ public sealed class InvitationQREndpointTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.enrol.expired"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.enrol.expired"));
                     });
   }
 
   private async Task<CreatedInvitation> CreateInvitationAsync()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = _context.World.StaffMemberId });
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return new(body.RootElement.GetProperty("invitationId").GetGuid(),
-               body.RootElement.GetProperty("qrUrl").GetString()!);
+    return new(body.RootElement.GetProperty("invitationId").GetGuid(), body.RootElement.GetProperty("qrUrl").GetString()!);
   }
 
   private int ReadDeclaredSide(string svg)
@@ -199,8 +184,9 @@ public sealed class InvitationQREndpointTest
 
   private int SmallestModuleCountFor(int payloadCharacters)
   {
-    return payloadCharacters <= 32 ? 21 : 25;
+    if (payloadCharacters <= 32)
+      return 21;
+
+    return 25;
   }
 }
-
-

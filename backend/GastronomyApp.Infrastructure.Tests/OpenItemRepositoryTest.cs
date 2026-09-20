@@ -18,9 +18,7 @@ public sealed class OpenItemRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    Assert.That(async () => await repository.FindForSettlementAsync(null!,
-                                                                    TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindForSettlementAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -29,9 +27,7 @@ public sealed class OpenItemRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    Assert.That(async () => await repository.FindOwnersAsync(null!,
-                                                              TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindOwnersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -39,13 +35,12 @@ public sealed class OpenItemRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
     await SettleAsync(fixture, items[0], 350, _orderedAtUtc.AddMinutes(5));
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<OrderItem> open =
-      await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(open.Select(item => item.Id), Is.EqualTo(new[] { items[1] }));
   }
@@ -61,8 +56,7 @@ public sealed class OpenItemRepositoryTest
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<OrderItem> open =
-      await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> open = await repository.FindOpenAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(open, Has.Count.EqualTo(2));
   }
@@ -72,17 +66,14 @@ public sealed class OpenItemRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
     var settledAtUtc = _orderedAtUtc.AddMinutes(5);
     await SettleAsync(fixture, items[0], 350, settledAtUtc);
     await SettleAsync(fixture, items[1], 100, settledAtUtc);
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<OrderItem> givenAway =
-      await repository.FindGivenAwayAtFestivalSinceAsync(seeded.FestivalId,
-                                                         _orderedAtUtc,
-                                                         TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> givenAway = await repository.FindGivenAwayAtFestivalSinceAsync(seeded.FestivalId, _orderedAtUtc, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(givenAway.Select(item => item.Id), Is.EqualTo(new[] { items[1] }));
   }
@@ -92,15 +83,12 @@ public sealed class OpenItemRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
     await SettleAsync(fixture, items[0], 0, _orderedAtUtc.AddMinutes(5));
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<OrderItem> givenAway =
-      await repository.FindGivenAwayAtFestivalSinceAsync(seeded.FestivalId,
-                                                         _orderedAtUtc.AddHours(1),
-                                                         TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> givenAway = await repository.FindGivenAwayAtFestivalSinceAsync(seeded.FestivalId, _orderedAtUtc.AddHours(1), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(givenAway, Is.Empty);
   }
@@ -110,12 +98,11 @@ public sealed class OpenItemRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 4);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 4);
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyDictionary<Guid, OrderItemOwner> owners =
-      await repository.FindOwnersAsync(items, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyDictionary<Guid, OrderItemOwner> owners = await repository.FindOwnersAsync(items, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -137,11 +124,14 @@ public sealed class OpenItemRepositoryTest
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<string> tableNames =
-      await repository.FindTableNamesAtFestivalAsync(seeded.FestivalId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<string> tableNames = await repository.FindTableNamesAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(tableNames, Is.EqualTo(new[] { "Tisch 12", "Tisch 3" }));
+    Assert.That(tableNames,
+                Is.EqualTo(new[]
+                           {
+                             "Tisch 12",
+                             "Tisch 3"
+                           }));
   }
 
   [Test]
@@ -149,20 +139,17 @@ public sealed class OpenItemRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded.FestivalId, seeded.KitchenStationId, "Tisch 12", 1);
 
     OpenItemRepository repository = new(fixture.DbContext, new());
 
-    IReadOnlyList<OrderItem> selected =
-      await repository.FindForSettlementAsync([items[0]], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> selected = await repository.FindForSettlementAsync([items[0]], TestContext.CurrentContext.CancellationToken);
     selected[0].SettledAtUtc = _orderedAtUtc.AddMinutes(5);
     selected[0].ChargedPriceCents = 350;
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
-    OrderItem stored = await readContext.OrderItems
-                                        .FirstAsync(item => item.Id == items[0],
-                                                    TestContext.CurrentContext.CancellationToken);
+    var stored = await readContext.OrderItems.FirstAsync(item => item.Id == items[0], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -190,11 +177,7 @@ public sealed class OpenItemRepositoryTest
     return festivalId;
   }
 
-  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(SqliteInMemoryFixture fixture,
-                                                          Guid festivalId,
-                                                          Guid stationId,
-                                                          string tableName,
-                                                          int globalOrderNumber)
+  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(SqliteInMemoryFixture fixture, Guid festivalId, Guid stationId, string tableName, int globalOrderNumber)
   {
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
@@ -228,7 +211,7 @@ public sealed class OpenItemRepositoryTest
     fixture.DbContext.Orders.Add(order);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    return [.. stationOrder.Items.Select(item => item.Id)];
+    return stationOrder.Items.Select(item => item.Id).ToList();
   }
 
   private OrderItem BuildItem(Guid stationOrderId, string itemName, int unitPriceCents)
@@ -244,14 +227,9 @@ public sealed class OpenItemRepositoryTest
            };
   }
 
-  private async Task SettleAsync(SqliteInMemoryFixture fixture,
-                                 Guid orderItemId,
-                                 int chargedPriceCents,
-                                 DateTime settledAtUtc)
+  private async Task SettleAsync(SqliteInMemoryFixture fixture, Guid orderItemId, int chargedPriceCents, DateTime settledAtUtc)
   {
-    OrderItem item = await fixture.DbContext.OrderItems
-                                  .FirstAsync(candidate => candidate.Id == orderItemId,
-                                              TestContext.CurrentContext.CancellationToken);
+    var item = await fixture.DbContext.OrderItems.FirstAsync(candidate => candidate.Id == orderItemId, TestContext.CurrentContext.CancellationToken);
 
     item.SettledAtUtc = settledAtUtc;
     item.SettledByStaffMemberId = Guid.NewGuid();

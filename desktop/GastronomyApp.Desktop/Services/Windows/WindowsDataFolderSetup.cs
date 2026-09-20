@@ -6,10 +6,9 @@ namespace GastronomyApp.Desktop.Services.Windows;
 
 public sealed class WindowsDataFolderSetup : IDataFolderSetup
 {
-
   public WindowsDataFolderSetup(string dataDirectoryPath)
   {
-    this.DataDirectoryPath = dataDirectoryPath;
+    DataDirectoryPath = dataDirectoryPath;
   }
 
   public string DataDirectoryPath { get; }
@@ -22,9 +21,7 @@ public sealed class WindowsDataFolderSetup : IDataFolderSetup
   public bool CurrentUserCanWrite()
   {
     if (!Exists())
-    {
       return false;
-    }
 
     var probe = Path.Combine(DataDirectoryPath, $"write-probe-{Guid.NewGuid():N}.tmp");
 
@@ -54,9 +51,7 @@ public sealed class WindowsDataFolderSetup : IDataFolderSetup
   public void GrantUsersModifyOnExisting()
   {
     if (!OperatingSystem.IsWindows())
-    {
       return;
-    }
 
     GrantOnWindows();
   }
@@ -67,11 +62,7 @@ public sealed class WindowsDataFolderSetup : IDataFolderSetup
     DirectoryInfo directory = new(DataDirectoryPath);
     var security = directory.GetAccessControl();
 
-    security.AddAccessRule(new(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
-                               FileSystemRights.Modify,
-                               InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                               PropagationFlags.None,
-                               AccessControlType.Allow));
+    security.AddAccessRule(new(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null), FileSystemRights.Modify, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
 
     directory.SetAccessControl(security);
   }

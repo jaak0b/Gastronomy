@@ -18,11 +18,7 @@ public sealed class OrderPlacementHandler
   private readonly PlacedOrderReader _placedOrderReader;
   private readonly ResultEnvelope _resultEnvelope;
 
-  public OrderPlacementHandler(OrderAcceptanceService acceptanceService,
-                               PlacedOrderReader placedOrderReader,
-                               HubNotificationDispatcher dispatcher,
-                               ResultEnvelope resultEnvelope,
-                               ILogger<OrderPlacementHandler> log)
+  public OrderPlacementHandler(OrderAcceptanceService acceptanceService, PlacedOrderReader placedOrderReader, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderPlacementHandler> log)
   {
     _acceptanceService = acceptanceService;
     _placedOrderReader = placedOrderReader;
@@ -31,15 +27,12 @@ public sealed class OrderPlacementHandler
     _log = log;
   }
 
-  public async Task<IResult> PlaceAsync(PlaceOrderRequest request,
-                                        StaffDeviceCaller caller,
-                                        CancellationToken cancellationToken)
+  public async Task<IResult> PlaceAsync(PlaceOrderRequest request, StaffDeviceCaller caller, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance =
-      await _acceptanceService.AcceptAsync(BuildAcceptanceRequest(request, caller), cancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await _acceptanceService.AcceptAsync(BuildAcceptanceRequest(request, caller), cancellationToken);
 
     if (!acceptance.IsSuccess)
     {
@@ -48,16 +41,15 @@ public sealed class OrderPlacementHandler
       return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(acceptance.Failure));
     }
 
-    PlacedOrderReport report =
-      (await _placedOrderReader.FindAsync(acceptance.Value.Order.Id, cancellationToken))!;
+    var report = (await _placedOrderReader.FindAsync(acceptance.Value.Order.Id, cancellationToken))!;
     var view = BuildPlacedOrderView(report);
 
     await TellEveryStationWithAStationOrderAsync(view, cancellationToken);
 
-    return Results.Json(view,
-                        statusCode: acceptance.Value.WasAlreadyAccepted
-                                      ? StatusCodes.Status200OK
-                                      : StatusCodes.Status201Created);
+    if (acceptance.Value.WasAlreadyAccepted)
+      return Results.Json(view, statusCode: StatusCodes.Status200OK);
+
+    return Results.Json(view, statusCode: StatusCodes.Status201Created);
   }
 
   private OrderAcceptanceRequest BuildAcceptanceRequest(PlaceOrderRequest request, StaffDeviceCaller caller)
@@ -68,15 +60,13 @@ public sealed class OrderPlacementHandler
              StaffMemberId = caller.StaffMemberId,
              TableName = request.TableName ?? string.Empty,
              Note = request.Note,
-             Items = [.. (request.Items ?? []).Select(BuildAcceptanceItem)],
-             DeliveryModes =
-             [
-               .. (request.DeliveryModes ?? []).Select(mode => new StationDeliveryModeRequest
-                                                               {
-                                                                 StationId = mode.StationId,
-                                                                 DeliveryMode = mode.DeliveryMode
-                                                               })
-             ]
+             Items = (request.Items ?? []).Select(BuildAcceptanceItem).ToList(),
+             DeliveryModes = (request.DeliveryModes ?? []).Select(mode => new StationDeliveryModeRequest
+                                                                          {
+                                                                            StationId = mode.StationId,
+                                                                            DeliveryMode = mode.DeliveryMode
+                                                                          })
+                                                          .ToList()
            };
   }
 
@@ -88,61 +78,45 @@ public sealed class OrderPlacementHandler
              UnitPriceCents = item.UnitPriceCents,
              Note = item.Note,
              StationId = item.StationId,
-             Settlement = item.Settlement is null
-                            ? null
-                            : new OrderSettlementLineTerms
-                              {
-                                PaidPriceCents = item.Settlement.PaidPriceCents,
-                                PaymentNotice = item.Settlement.PaymentNotice
-                              }
+             Settlement = BuildSettlementTerms(item)
+           };
+  }
+
+  private OrderSettlementLineTerms? BuildSettlementTerms(OrderItemRequest item)
+  {
+    if (item.Settlement is null)
+      return null;
+
+    return new()
+           {
+             PaidPriceCents = item.Settlement.PaidPriceCents,
+             PaymentNotice = item.Settlement.PaymentNotice
            };
   }
 
   private PlacedOrderView BuildPlacedOrderView(PlacedOrderReport report)
   {
-    return new(report.Order.OrderId,
-               report.Order.GlobalOrderNumber,
-               report.Status,
-               report.TotalCents,
-               report.Order.CreatedAtUtc,
-               [.. report.Order.StationOrders.Select(BuildStationOrderView)]);
+    return new(report.Order.OrderId, report.Order.GlobalOrderNumber, report.Status, report.TotalCents, report.Order.CreatedAtUtc, report.Order.StationOrders.Select(BuildStationOrderView).ToList());
   }
 
   private StationOrderView BuildStationOrderView(PlacedStationOrder stationOrder)
   {
-    return new(stationOrder.StationOrderId,
-               stationOrder.StationId,
-               stationOrder.StationName,
-               stationOrder.StationOrderNumber,
-               stationOrder.DeliveryMode,
-               [.. stationOrder.Items.Select(item => item.OrderItemId)]);
+    return new(stationOrder.StationOrderId, stationOrder.StationId, stationOrder.StationName, stationOrder.StationOrderNumber, stationOrder.DeliveryMode, stationOrder.Items.Select(item => item.OrderItemId).ToList());
   }
 
-  private void WarnAboutTheRefusal(PlaceOrderRequest request,
-                                   StaffDeviceCaller caller,
-                                   OrderValidationFailure failure)
+  private void WarnAboutTheRefusal(PlaceOrderRequest request, StaffDeviceCaller caller, OrderValidationFailure failure)
   {
-    _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. "
-                    + "The catalog item it names is {CatalogItemId}.",
-                    request.ClientOrderId,
-                    caller.StaffMemberId,
-                    failure.Reason,
-                    failure.OffendingCatalogItemId);
+    _log.LogWarning("The order {ClientOrderId} from staff member {StaffMemberId} was refused because {Reason}. " + "The catalog item it names is {CatalogItemId}.", request.ClientOrderId, caller.StaffMemberId, failure.Reason, failure.OffendingCatalogItemId);
 
     if (failure.SettlementFailureReason is { } settlementFailureReason)
     {
-      _log.LogWarning("The settlement of the order {ClientOrderId} from staff member {StaffMemberId} was refused because {SettlementFailureReason}.",
-                      request.ClientOrderId,
-                      caller.StaffMemberId,
-                      settlementFailureReason);
+      _log.LogWarning("The settlement of the order {ClientOrderId} from staff member {StaffMemberId} was refused because {SettlementFailureReason}.", request.ClientOrderId, caller.StaffMemberId, settlementFailureReason);
     }
   }
 
   private async Task TellEveryStationWithAStationOrderAsync(PlacedOrderView view, CancellationToken cancellationToken)
   {
     foreach (var stationId in view.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
-    {
       await _dispatcher.PushStationOrdersChangedAsync(stationId, cancellationToken);
-    }
   }
 }

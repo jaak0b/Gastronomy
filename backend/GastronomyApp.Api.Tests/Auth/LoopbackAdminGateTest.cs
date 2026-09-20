@@ -17,11 +17,11 @@ public sealed class LoopbackAdminGateTest
     var reachedTheEndpoint = false;
 
     await _middleware.InvokeAsync(context,
-                                 _ =>
-                                 {
-                                   reachedTheEndpoint = true;
-                                   return Task.CompletedTask;
-                                 });
+                                  _ =>
+                                  {
+                                    reachedTheEndpoint = true;
+                                    return Task.CompletedTask;
+                                  });
 
     Assert.That(reachedTheEndpoint, Is.True);
   }
@@ -33,11 +33,11 @@ public sealed class LoopbackAdminGateTest
     var reachedTheEndpoint = false;
 
     await _middleware.InvokeAsync(context,
-                                 _ =>
-                                 {
-                                   reachedTheEndpoint = true;
-                                   return Task.CompletedTask;
-                                 });
+                                  _ =>
+                                  {
+                                    reachedTheEndpoint = true;
+                                    return Task.CompletedTask;
+                                  });
 
     Assert.Multiple(() =>
                     {
@@ -53,11 +53,11 @@ public sealed class LoopbackAdminGateTest
     var reachedTheEndpoint = false;
 
     await _middleware.InvokeAsync(context,
-                                 _ =>
-                                 {
-                                   reachedTheEndpoint = true;
-                                   return Task.CompletedTask;
-                                 });
+                                  _ =>
+                                  {
+                                    reachedTheEndpoint = true;
+                                    return Task.CompletedTask;
+                                  });
 
     Assert.That(reachedTheEndpoint, Is.True);
   }

@@ -27,18 +27,14 @@ public sealed class CatalogQueueIndependenceTest
   {
     await using (var database = _context.Factory.CreateContext())
     {
-      var bratwurst = await database.CatalogItems
-                                    .FirstAsync(item => item.Id == _context.World.BratwurstItemId);
+      var bratwurst = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BratwurstItemId);
       bratwurst.IsQueueIndependent = true;
       await database.SaveChangesAsync();
     }
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var item = body.RootElement
-                   .GetProperty("items")
-                   .EnumerateArray()
-                   .Single(candidate => candidate.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
+    var item = body.RootElement.GetProperty("items").EnumerateArray().Single(candidate => candidate.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
 
     Assert.That(item.GetProperty("isQueueIndependent").GetBoolean(), Is.True);
   }
@@ -65,10 +61,7 @@ public sealed class CatalogQueueIndependenceTest
 
     using var response = await _context.Client.GetAsync("/api/admin/items");
     var list = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var item = list.RootElement
-                   .GetProperty("items")
-                   .EnumerateArray()
-                   .Single(candidate => candidate.GetProperty("itemId").GetGuid() == itemId);
+    var item = list.RootElement.GetProperty("items").EnumerateArray().Single(candidate => candidate.GetProperty("itemId").GetGuid() == itemId);
 
     Assert.That(item.GetProperty("isQueueIndependent").GetBoolean(), Is.True);
   }
@@ -91,17 +84,11 @@ public sealed class CatalogQueueIndependenceTest
 
     using var adminResponse = await _context.Client.GetAsync("/api/admin/items");
     var adminBody = JsonDocument.Parse(await adminResponse.Content.ReadAsStringAsync());
-    var adminItem = adminBody.RootElement
-                             .GetProperty("items")
-                             .EnumerateArray()
-                             .Single(item => item.GetProperty("itemId").GetGuid() == _context.World.BratwurstItemId);
+    var adminItem = adminBody.RootElement.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("itemId").GetGuid() == _context.World.BratwurstItemId);
 
     using var catalogResponse = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
     var catalogBody = JsonDocument.Parse(await catalogResponse.Content.ReadAsStringAsync());
-    var catalogItem = catalogBody.RootElement
-                                 .GetProperty("items")
-                                 .EnumerateArray()
-                                 .Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
+    var catalogItem = catalogBody.RootElement.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
 
     Assert.Multiple(() =>
                     {

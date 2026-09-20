@@ -33,8 +33,7 @@ public sealed class SqliteConnectionFactoryTest
   {
     SqliteConnectionFactory factory = new();
 
-    Assert.That(() => factory.ApplyConnectionPolicyAsync(null!, CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(() => factory.ApplyConnectionPolicyAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]

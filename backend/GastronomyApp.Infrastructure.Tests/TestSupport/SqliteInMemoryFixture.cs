@@ -5,7 +5,6 @@ namespace GastronomyApp.Infrastructure.Tests.TestSupport;
 
 public sealed class SqliteInMemoryFixture : IDisposable
 {
-
   public SqliteInMemoryFixture()
   {
     Connection = new("Data Source=:memory:");
@@ -26,9 +25,7 @@ public sealed class SqliteInMemoryFixture : IDisposable
 
   public GastronomyAppDbContext CreateContext()
   {
-    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>()
-                                                      .UseSqlite(Connection)
-                                                      .Options;
+    DbContextOptions<GastronomyAppDbContext> options = new DbContextOptionsBuilder<GastronomyAppDbContext>().UseSqlite(Connection).Options;
 
     return new(options);
   }

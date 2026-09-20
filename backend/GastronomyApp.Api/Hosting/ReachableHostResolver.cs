@@ -19,24 +19,24 @@ public sealed class ReachableHostResolver
   {
     var bindAddress = _hostOptions.BindAddress;
 
-    return string.IsNullOrWhiteSpace(bindAddress)
-           || bindAddress is "0.0.0.0" or "::" or "*" or "+";
+    return string.IsNullOrWhiteSpace(bindAddress) || bindAddress is "0.0.0.0" or "::" or "*" or "+";
   }
 
   public string ResolveHost()
   {
     if (!BindsEveryAddress())
-    {
       return _hostOptions.BindAddress;
-    }
 
     IReadOnlyList<string> addresses = ReachableAddresses();
 
-    return addresses.Count == 0 ? LoopbackHost : addresses[0];
+    if (addresses.Count == 0)
+      return LoopbackHost;
+
+    return addresses[0];
   }
 
   public IReadOnlyList<string> ReachableAddresses()
   {
-    return [.. _addressProvider.FindReachableAddresses().Select(address => address.IPAddress)];
+    return _addressProvider.FindReachableAddresses().Select(address => address.IPAddress).ToList();
   }
 }

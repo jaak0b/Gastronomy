@@ -21,20 +21,12 @@ public sealed class MainWindowSmokeTest
 
   private const string CurrentVersion = "1.2.3";
 
-  private MainWindowViewModel CreateMainWindowViewModel(IHostLauncher? launcher = null,
-                                                       IUpdateInstaller? updateInstaller = null)
+  private MainWindowViewModel CreateMainWindowViewModel(IHostLauncher? launcher = null, IUpdateInstaller? updateInstaller = null)
   {
     var settingsStore = A.Fake<ISettingsStore>();
-    A.CallTo(() => settingsStore.Load())
-     .Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
+    A.CallTo(() => settingsStore.Load()).Returns(new(5000, @"C:\ProgramData\GastronomyApp", null, null, null));
 
-    return new(launcher ?? A.Fake<IHostLauncher>(),
-               A.Fake<IPowerManager>(),
-               settingsStore,
-               _text,
-               A.Fake<IFreePortProvider>(),
-               updateInstaller ?? A.Fake<IUpdateInstaller>(),
-               CurrentVersion);
+    return new(launcher ?? A.Fake<IHostLauncher>(), A.Fake<IPowerManager>(), settingsStore, _text, A.Fake<IFreePortProvider>(), updateInstaller ?? A.Fake<IUpdateInstaller>(), CurrentVersion);
   }
 
   private static IHostLauncher LauncherThat(HostLaunchResult result)
@@ -70,8 +62,7 @@ public sealed class MainWindowSmokeTest
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar, Is.Not.Null);
-                      Assert.That(_colours.ToColour(statusBar!.Background),
-                                  Is.EqualTo(Color.Parse("#9CA3AF")));
+                      Assert.That(_colours.ToColour(statusBar!.Background), Is.EqualTo(Color.Parse("#9CA3AF")));
                       Assert.That(statusMessage!.IsVisible, Is.False);
                     });
   }
@@ -90,8 +81,7 @@ public sealed class MainWindowSmokeTest
     Assert.Multiple(() =>
                     {
                       Assert.That(statusBar!.Classes, Does.Contain("running"));
-                      Assert.That(_colours.ToColour(statusBar.Background),
-                                  Is.EqualTo(Color.Parse("#2E8B57")));
+                      Assert.That(_colours.ToColour(statusBar.Background), Is.EqualTo(Color.Parse("#2E8B57")));
                     });
   }
 
@@ -161,10 +151,7 @@ public sealed class MainWindowSmokeTest
 
   private static IReadOnlyList<Button> ActionButtons(MainWindow window)
   {
-    return window.FindControl<StackPanel>("Actions")!
-                 .GetVisualDescendants()
-                 .OfType<Button>()
-                 .ToList();
+    return window.FindControl<StackPanel>("Actions")!.GetVisualDescendants().OfType<Button>().ToList();
   }
 
   [AvaloniaTest]
@@ -176,15 +163,13 @@ public sealed class MainWindowSmokeTest
     window.Show();
     Dispatcher.UIThread.RunJobs();
 
-    var secondary = ActionButtons(window).Where(button => !button.Classes.Contains("accent")).ToList();
+    List<Button> secondary = ActionButtons(window).Where(button => !button.Classes.Contains("accent")).ToList();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(secondary, Has.Count.EqualTo(3));
-                      Assert.That(secondary.Select(_colours.ReadLabelForeground),
-                                  Is.All.EqualTo(Color.Parse("#1F2937")));
-                      Assert.That(TextOptions.GetTextRenderingMode(window),
-                                  Is.EqualTo(TextRenderingMode.Antialias));
+                      Assert.That(secondary.Select(_colours.ReadLabelForeground), Is.All.EqualTo(Color.Parse("#1F2937")));
+                      Assert.That(TextOptions.GetTextRenderingMode(window), Is.EqualTo(TextRenderingMode.Antialias));
                     });
   }
 
@@ -216,8 +201,7 @@ public sealed class MainWindowSmokeTest
 
     var versionText = window.FindControl<TextBlock>("VersionText");
 
-    Assert.That(versionText!.Text,
-                Is.EqualTo(_text.Format("desktop.version", new TextPlaceholder("version", CurrentVersion))));
+    Assert.That(versionText!.Text, Is.EqualTo(_text.Format("desktop.version", new TextPlaceholder("version", CurrentVersion))));
   }
 
   [AvaloniaTest]
@@ -276,7 +260,7 @@ public sealed class MainWindowSmokeTest
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();
     A.CallTo(() => updateInstaller.IsInstalled).Returns(true);
-    var pending = new TaskCompletionSource<UpdatePreparation>();
+    TaskCompletionSource<UpdatePreparation> pending = new();
     A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(pending.Task);
     var viewModel = CreateMainWindowViewModel(updateInstaller: updateInstaller);
 

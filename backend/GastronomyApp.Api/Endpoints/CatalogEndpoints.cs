@@ -9,12 +9,7 @@ public static class CatalogEndpoints
 {
   public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder routes)
   {
-    routes.MapGet("/api/catalog",
-                  async (CatalogHandler handler,
-                         CancellationToken cancellationToken) => await handler.ReadAsync(cancellationToken))
-          .RequireAuthorization()
-          .RequireStaffDevice()
-          .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    routes.MapGet("/api/catalog", async (CatalogHandler handler, CancellationToken cancellationToken) => await handler.ReadAsync(cancellationToken)).RequireAuthorization().RequireStaffDevice().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
     return routes;
   }

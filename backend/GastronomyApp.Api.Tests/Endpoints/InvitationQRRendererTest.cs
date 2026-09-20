@@ -26,9 +26,8 @@ public sealed class InvitationQRRendererTest
   [Test]
   public void RenderAsync_NullHttpContext_ThrowsArgumentNullException()
   {
-    InvitationQRRenderer renderer = _scope.ServiceProvider.GetRequiredService<InvitationQRRenderer>();
+    var renderer = _scope.ServiceProvider.GetRequiredService<InvitationQRRenderer>();
 
-    Assert.That(async () => await renderer.RenderAsync(Guid.NewGuid(), null!, CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await renderer.RenderAsync(Guid.NewGuid(), null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 }

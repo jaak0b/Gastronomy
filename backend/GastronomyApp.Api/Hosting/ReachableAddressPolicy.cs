@@ -40,40 +40,37 @@ public sealed class ReachableAddressPolicy
     foreach (var candidate in candidates)
     {
       if (!APhoneCouldReach(candidate))
-      {
         continue;
-      }
 
-      reachable.Add(new(new(candidate.InterfaceName, candidate.Address.ToString()),
-                        IsPrivateSiteAddress(candidate.Address) ? PreferredRank : RemainingRank,
-                        _interfacesCarryingTheSiteNetwork.Contains(candidate.InterfaceType)
-                          ? PreferredRank
-                          : RemainingRank,
-                        ToNumericValue(candidate.Address)));
+      reachable.Add(new(new(candidate.InterfaceName, candidate.Address.ToString()), RankOfAddress(candidate.Address), RankOfInterface(candidate.InterfaceType), ToNumericValue(candidate.Address)));
     }
 
-    return
-    [
-      .. reachable.OrderBy(ranked => ranked.AddressRank)
-                  .ThenBy(ranked => ranked.InterfaceRank)
-                  .ThenBy(ranked => ranked.NumericValue)
-                  .Select(ranked => ranked.Address)
-    ];
+    return reachable.OrderBy(ranked => ranked.AddressRank).ThenBy(ranked => ranked.InterfaceRank).ThenBy(ranked => ranked.NumericValue).Select(ranked => ranked.Address).ToList();
+  }
+
+  private int RankOfAddress(IPAddress address)
+  {
+    if (IsPrivateSiteAddress(address))
+      return PreferredRank;
+
+    return RemainingRank;
+  }
+
+  private int RankOfInterface(NetworkInterfaceType interfaceType)
+  {
+    if (_interfacesCarryingTheSiteNetwork.Contains(interfaceType))
+      return PreferredRank;
+
+    return RemainingRank;
   }
 
   private bool APhoneCouldReach(CandidateNetworkAddress candidate)
   {
-    if (candidate.InterfaceStatus != OperationalStatus.Up
-        || _interfacesNoPhoneCanReach.Contains(candidate.InterfaceType))
-    {
+    if (candidate.InterfaceStatus != OperationalStatus.Up || _interfacesNoPhoneCanReach.Contains(candidate.InterfaceType))
       return false;
-    }
 
-    if (candidate.Address.AddressFamily != AddressFamily.InterNetwork
-        || IPAddress.IsLoopback(candidate.Address))
-    {
+    if (candidate.Address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(candidate.Address))
       return false;
-    }
 
     return !IsLinkLocal(candidate.Address);
   }
@@ -89,23 +86,15 @@ public sealed class ReachableAddressPolicy
   {
     var octets = address.GetAddressBytes();
 
-    return octets[0] == PrivateTenFirstOctet
-           || (octets[0] == PrivateOneSevenTwoFirstOctet
-               && octets[1] >= PrivateOneSevenTwoLowestSecondOctet
-               && octets[1] <= PrivateOneSevenTwoHighestSecondOctet)
-           || (octets[0] == PrivateOneNineTwoFirstOctet && octets[1] == PrivateOneNineTwoSecondOctet);
+    return octets[0] == PrivateTenFirstOctet || octets[0] == PrivateOneSevenTwoFirstOctet && octets[1] >= PrivateOneSevenTwoLowestSecondOctet && octets[1] <= PrivateOneSevenTwoHighestSecondOctet || octets[0] == PrivateOneNineTwoFirstOctet && octets[1] == PrivateOneNineTwoSecondOctet;
   }
 
   private uint ToNumericValue(IPAddress address)
   {
     var octets = address.GetAddressBytes();
 
-    return ((uint)octets[0] << 24) | ((uint)octets[1] << 16) | ((uint)octets[2] << 8) | octets[3];
+    return (uint)octets[0] << 24 | (uint)octets[1] << 16 | (uint)octets[2] << 8 | octets[3];
   }
 
-  private sealed record RankedNetworkAddress(
-    LocalNetworkAddress Address,
-    int AddressRank,
-    int InterfaceRank,
-    uint NumericValue);
+  private sealed record RankedNetworkAddress(LocalNetworkAddress Address, int AddressRank, int InterfaceRank, uint NumericValue);
 }

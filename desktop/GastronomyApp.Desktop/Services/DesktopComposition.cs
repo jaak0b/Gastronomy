@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Services.Windows;
 using GastronomyApp.Desktop.ViewModels;
@@ -27,25 +26,24 @@ public sealed class DesktopComposition : IDisposable
     HostLauncher = new(NetworkAddressProvider, path => new WindowsDataFolderSetup(path));
     SingleInstance = new SingleInstanceCoordinator();
 
-    PowerManager = OperatingSystem.IsWindows()
-                     ? new WindowsPowerManager()
-                     : new NoOpPowerManager();
+    PowerManager = new NoOpPowerManager();
+    FirewallSetup = new NoFirewallSetup();
+    ElevatedSetupLauncher = new UnavailableElevatedSetupLauncher();
 
-    FirewallSetup = OperatingSystem.IsWindows()
-                      ? new WindowsFirewallSetup(ExecutablePath, new NetshCommand())
-                      : new NoFirewallSetup();
-
-    ElevatedSetupLauncher = OperatingSystem.IsWindows()
-                              ? new WindowsElevatedSetupLauncher(ExecutablePath)
-                              : new UnavailableElevatedSetupLauncher();
+    if (OperatingSystem.IsWindows())
+    {
+      PowerManager = new WindowsPowerManager();
+      FirewallSetup = new WindowsFirewallSetup(ExecutablePath, new NetshCommand());
+      ElevatedSetupLauncher = new WindowsElevatedSetupLauncher(ExecutablePath);
+    }
 
     ElevatedSetupSteps = new(FirewallSetup, DataFolderSetup);
 
     UpdateInstaller = new VelopackUpdateInstaller();
     FestivalReader = new HostFestivalReader(HostLauncher);
-    UpdateInstallGate = new UpdateInstallGate(FestivalReader, new FestivalSchedule(), new SystemClock());
-    UpdateOnQuit = new UpdateOnQuit(UpdateInstaller, UpdateInstallGate);
-    AutomaticUpdateChecker = new AutomaticUpdateChecker(UpdateInstaller, SettingsStore);
+    UpdateInstallGate = new(FestivalReader, new(), new SystemClock());
+    UpdateOnQuit = new(UpdateInstaller, UpdateInstallGate);
+    AutomaticUpdateChecker = new(UpdateInstaller, SettingsStore);
   }
 
   public string ExecutablePath { get; }
@@ -88,13 +86,7 @@ public sealed class DesktopComposition : IDisposable
 
   public MainWindowViewModel CreateMainWindowViewModel()
   {
-    return new(HostLauncher,
-               PowerManager,
-               SettingsStore,
-               Text,
-               FreePorts,
-               UpdateInstaller,
-               Version);
+    return new(HostLauncher, PowerManager, SettingsStore, Text, FreePorts, UpdateInstaller, Version);
   }
 
   public FirstRunViewModel CreateFirstRunViewModel()
@@ -102,8 +94,7 @@ public sealed class DesktopComposition : IDisposable
     return new(FirewallSetup, DataFolderSetup, ElevatedSetupLauncher, Text);
   }
 
-  public QuitConfirmViewModel CreateQuitConfirmViewModel(MainWindowViewModel mainWindowViewModel,
-                                                         Action requestApplicationExit)
+  public QuitConfirmViewModel CreateQuitConfirmViewModel(MainWindowViewModel mainWindowViewModel, Action requestApplicationExit)
   {
     return new(mainWindowViewModel.StopAsync, Text, requestApplicationExit, UpdateOnQuit.PrepareAsync);
   }
@@ -115,25 +106,25 @@ public sealed class DesktopComposition : IDisposable
 
   private string ResolveVersion()
   {
-    var informational = typeof(DesktopComposition).Assembly
-                                                 .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                                                 ?.InformationalVersion;
+    var informational = typeof(DesktopComposition).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
     if (informational is null)
-    {
       return "0.0.0";
-    }
 
     var buildMetadataIndex = informational.IndexOf('+', StringComparison.Ordinal);
 
-    return buildMetadataIndex < 0 ? informational : informational[..buildMetadataIndex];
+    if (buildMetadataIndex < 0)
+      return informational;
+
+    return informational[..buildMetadataIndex];
   }
 
   private string ResolveDataDirectory()
   {
-    var root = OperatingSystem.IsWindows()
-                 ? Environment.SpecialFolder.CommonApplicationData
-                 : Environment.SpecialFolder.LocalApplicationData;
+    var root = Environment.SpecialFolder.LocalApplicationData;
+
+    if (OperatingSystem.IsWindows())
+      root = Environment.SpecialFolder.CommonApplicationData;
 
     return Path.Combine(Environment.GetFolderPath(root), ProductFolderName);
   }
@@ -147,14 +138,10 @@ public sealed class DesktopComposition : IDisposable
   private void Dispose(bool disposing)
   {
     if (_disposed)
-    {
       return;
-    }
 
     if (disposing && UpdateInstaller is IDisposable disposableUpdateInstaller)
-    {
       disposableUpdateInstaller.Dispose();
-    }
 
     _disposed = true;
   }

@@ -38,18 +38,25 @@ public sealed class OrderItemSettlementNotificationTest
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync();
     using var scope = _context.Factory.Services.CreateScope();
 
-    var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider,
-                                                           NullLogger<OrderItemSettlementHandler>.Instance)
-                   .SettleAsync(new()
-                                {
-                                  Lines =
-                                  [
-                                    new() { OrderItemId = itemIds[0], PaidPriceCents = 350 },
-                                    new() { OrderItemId = itemIds[1], PaidPriceCents = 350 }
-                                  ]
-                                },
-                                new(_context.World.StaffMemberId, _context.DeviceId, "de"),
-                                CancellationToken.None);
+    var result = await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider, NullLogger<OrderItemSettlementHandler>.Instance)
+                .SettleAsync(new()
+                             {
+                               Lines =
+                               [
+                                 new()
+                                 {
+                                   OrderItemId = itemIds[0],
+                                   PaidPriceCents = 350
+                                 },
+                                 new()
+                                 {
+                                   OrderItemId = itemIds[1],
+                                   PaidPriceCents = 350
+                                 }
+                               ]
+                             },
+                             new(_context.World.StaffMemberId, _context.DeviceId, "de"),
+                             CancellationToken.None);
 
     var view = ((Ok<SettlementView>)result).Value!;
     await using var database = _context.Factory.CreateContext();
@@ -71,19 +78,27 @@ public sealed class OrderItemSettlementNotificationTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync();
     using var scope = _context.Factory.Services.CreateScope();
-    var logger = A.Fake<ILogger<OrderItemSettlementHandler>>();
+    ILogger<OrderItemSettlementHandler> logger = A.Fake<ILogger<OrderItemSettlementHandler>>();
 
     await HandlerThatCannotReachTheOtherPhones(scope.ServiceProvider, logger)
-      .SettleAsync(new()
-                   {
-                     Lines =
-                     [
-                       new() { OrderItemId = itemIds[0], PaidPriceCents = 350 },
-                       new() { OrderItemId = itemIds[1], PaidPriceCents = 350 }
-                     ]
-                   },
-                   new(_context.World.StaffMemberId, _context.DeviceId, "de"),
-                   CancellationToken.None);
+   .SettleAsync(new()
+                {
+                  Lines =
+                  [
+                    new()
+                    {
+                      OrderItemId = itemIds[0],
+                      PaidPriceCents = 350
+                    },
+                    new()
+                    {
+                      OrderItemId = itemIds[1],
+                      PaidPriceCents = 350
+                    }
+                  ]
+                },
+                new(_context.World.StaffMemberId, _context.DeviceId, "de"),
+                CancellationToken.None);
 
     A.CallTo(logger)
      .Where(call => call.Method.Name == nameof(ILogger.Log)
@@ -97,9 +112,7 @@ public sealed class OrderItemSettlementNotificationTest
   private object? ValueNamed(object? state, string name)
   {
     if (state is not IReadOnlyList<KeyValuePair<string, object?>> values)
-    {
       return null;
-    }
 
     return values.FirstOrDefault(value => value.Key == name).Value;
   }
@@ -109,18 +122,12 @@ public sealed class OrderItemSettlementNotificationTest
     return ValueNamed(state, "SettledOrderItemIds") as IReadOnlyList<Guid> ?? [];
   }
 
-  private OrderItemSettlementHandler HandlerThatCannotReachTheOtherPhones(
-    IServiceProvider services,
-    ILogger<OrderItemSettlementHandler> logger)
+  private OrderItemSettlementHandler HandlerThatCannotReachTheOtherPhones(IServiceProvider services, ILogger<OrderItemSettlementHandler> logger)
   {
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
     A.CallTo(() => hubContext.Clients).Throws(new InvalidOperationException("the hub is not answering"));
 
-    return new(services.GetRequiredService<OrderItemSettlementService>(),
-               services.GetRequiredService<SavedChangeAnnouncement>(),
-               new(hubContext),
-               services.GetRequiredService<ResultEnvelope>(),
-               logger);
+    return new(services.GetRequiredService<OrderItemSettlementService>(), services.GetRequiredService<SavedChangeAnnouncement>(), new(hubContext), services.GetRequiredService<ResultEnvelope>(), logger);
   }
 
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync()
@@ -128,13 +135,6 @@ public sealed class OrderItemSettlementNotificationTest
     using var response = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return
-    [
-      .. body.RootElement
-             .GetProperty("stationOrders")
-             .EnumerateArray()
-             .SelectMany(stationOrder => stationOrder.GetProperty("itemIds").EnumerateArray())
-             .Select(itemId => itemId.GetGuid())
-    ];
+    return body.RootElement.GetProperty("stationOrders").EnumerateArray().SelectMany(stationOrder => stationOrder.GetProperty("itemIds").EnumerateArray()).Select(itemId => itemId.GetGuid()).ToList();
   }
 }

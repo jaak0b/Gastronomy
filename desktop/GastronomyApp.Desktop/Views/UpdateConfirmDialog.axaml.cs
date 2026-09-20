@@ -15,17 +15,13 @@ public partial class UpdateConfirmDialog : Window
   private void OnDataContextChanged(object? sender, EventArgs e)
   {
     if (DataContext is UpdateConfirmViewModel viewModel)
-    {
       viewModel.CloseRequested += OnCloseRequested;
-    }
   }
 
   private void OnCloseRequested(object? sender, DialogClosedEventArgs e)
   {
     if (DataContext is UpdateConfirmViewModel viewModel)
-    {
       viewModel.CloseRequested -= OnCloseRequested;
-    }
 
     Close(e.Confirmed);
   }

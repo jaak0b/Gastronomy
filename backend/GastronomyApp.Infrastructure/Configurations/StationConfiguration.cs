@@ -19,13 +19,7 @@ public sealed class StationConfiguration : IEntityTypeConfiguration<Station>
     builder.Property(station => station.EnrolmentInvitationId).IsRequired(false);
     builder.HasIndex(station => station.DeviceId).IsUnique();
     builder.HasIndex(station => station.EnrolmentInvitationId).IsUnique();
-    builder.HasOne<Device>()
-           .WithOne()
-           .HasForeignKey<Station>(station => station.DeviceId)
-           .OnDelete(DeleteBehavior.SetNull);
-    builder.HasOne<EnrolmentInvitation>()
-           .WithOne()
-           .HasForeignKey<Station>(station => station.EnrolmentInvitationId)
-           .OnDelete(DeleteBehavior.SetNull);
+    builder.HasOne<Device>().WithOne().HasForeignKey<Station>(station => station.DeviceId).OnDelete(DeleteBehavior.SetNull);
+    builder.HasOne<EnrolmentInvitation>().WithOne().HasForeignKey<Station>(station => station.EnrolmentInvitationId).OnDelete(DeleteBehavior.SetNull);
   }
 }

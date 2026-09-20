@@ -16,13 +16,8 @@ public sealed class CallerIdentity
     var deviceId = principal.FindFirstValue(_claimTypes.DeviceId);
     var language = principal.FindFirstValue(_claimTypes.Language);
 
-    if (ownerId is null
-        || deviceId is null
-        || language is null
-        || !Enum.TryParse(ownerKind, out DeviceOwnerKind parsedOwnerKind))
-    {
+    if (ownerId is null || deviceId is null || language is null || !Enum.TryParse(ownerKind, out DeviceOwnerKind parsedOwnerKind))
       return null;
-    }
 
     return new(parsedOwnerKind, Guid.Parse(ownerId), Guid.Parse(deviceId), language);
   }
@@ -31,17 +26,19 @@ public sealed class CallerIdentity
   {
     var caller = ReadDevice(principal);
 
-    return caller is null || caller.OwnerKind != DeviceOwnerKind.StaffMember
-             ? null
-             : new(caller.OwnerId, caller.DeviceId, caller.Language);
+    if (caller is null || caller.OwnerKind != DeviceOwnerKind.StaffMember)
+      return null;
+
+    return new(caller.OwnerId, caller.DeviceId, caller.Language);
   }
 
   public StationDeviceCaller? ReadStationDevice(ClaimsPrincipal principal)
   {
     var caller = ReadDevice(principal);
 
-    return caller is null || caller.OwnerKind != DeviceOwnerKind.Station
-             ? null
-             : new(caller.OwnerId, caller.DeviceId, caller.Language);
+    if (caller is null || caller.OwnerKind != DeviceOwnerKind.Station)
+      return null;
+
+    return new(caller.OwnerId, caller.DeviceId, caller.Language);
   }
 }

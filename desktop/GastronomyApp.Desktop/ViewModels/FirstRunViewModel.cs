@@ -17,10 +17,7 @@ public sealed class FirstRunViewModel : ViewModelBase
   private bool _readyToStart;
   private bool _setupFailed;
 
-  public FirstRunViewModel(IFirewallSetup firewall,
-                           IDataFolderSetup dataFolder,
-                           IElevatedSetupLauncher elevatedSetup,
-                           IDesktopTextProvider text)
+  public FirstRunViewModel(IFirewallSetup firewall, IDataFolderSetup dataFolder, IElevatedSetupLauncher elevatedSetup, IDesktopTextProvider text)
   {
     _firewall = firewall;
     _dataFolder = dataFolder;

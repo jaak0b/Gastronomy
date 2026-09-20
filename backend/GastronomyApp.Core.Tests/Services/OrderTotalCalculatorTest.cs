@@ -29,7 +29,12 @@ public sealed class OrderTotalCalculatorTest
   [Test]
   public void SumTotalCents_SeveralItems_AddsThePricesThePhoneDisplayed()
   {
-    Assert.That(_calculator.SumTotalCents([Item(350), Item(400), Item(250)]), Is.EqualTo(1000));
+    Assert.That(_calculator.SumTotalCents([
+                                            Item(350),
+                                            Item(400),
+                                            Item(250)
+                                          ]),
+                Is.EqualTo(1000));
   }
 
   private PlacedOrderItem Item(int unitPriceCents)

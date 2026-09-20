@@ -32,12 +32,9 @@ public sealed class AdminCategoryMoveAnnouncementTest
   public async Task Move_UpFromTheFirstPosition_TellsTheDevicesNothingBecauseNothingMoved()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
-    await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .MoveAsync(_context.World.FoodCategoryId,
-                 new() { Direction = CategoryMoveDirection.Up },
-                 CancellationToken.None);
+    await HandlerTalkingTo(scope.ServiceProvider, hubContext).MoveAsync(_context.World.FoodCategoryId, new() { Direction = CategoryMoveDirection.Up }, CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
   }
@@ -46,25 +43,17 @@ public sealed class AdminCategoryMoveAnnouncementTest
   public async Task Move_DownFromTheFirstPosition_TellsTheDevicesTheCatalogChanged()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
-    await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .MoveAsync(_context.World.FoodCategoryId,
-                 new() { Direction = CategoryMoveDirection.Down },
-                 CancellationToken.None);
+    await HandlerTalkingTo(scope.ServiceProvider, hubContext).MoveAsync(_context.World.FoodCategoryId, new() { Direction = CategoryMoveDirection.Down }, CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustHaveHappened();
   }
 
   private AdminCategoryHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
   {
-    CatalogChangeAnnouncer announcer =
-      new(new(hubContext));
+    CatalogChangeAnnouncer announcer = new(new(hubContext));
 
-    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(),
-               announcer,
-               new(services.GetRequiredService<IHostApplicationLifetime>(),
-                   A.Fake<ILogger<SavedChangeAnnouncement>>()),
-               services.GetRequiredService<ResultEnvelope>());
+    return new(services.GetRequiredService<CatalogCategoryAdministrationService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()), services.GetRequiredService<ResultEnvelope>());
   }
 }

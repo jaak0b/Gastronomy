@@ -20,36 +20,14 @@ public sealed class StationQueueRefusalResponder
 
     return failure.Reason switch
            {
-             StationQueueFailureReason.StationUnknown =>
-               Results.Unauthorized(),
-             StationQueueFailureReason.NoRunningFestival =>
-               _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                       "NoRunningFestival",
-                                       "station.noFestivalIsRunning"),
-             StationQueueFailureReason.StationNotAtTheFestival =>
-               _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                       "StationNotAtTheFestival",
-                                       "station.notPartOfTheFestival"),
-             StationQueueFailureReason.NoItemsSelected =>
-               _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                       "ValidationFailed",
-                                       "station.noItemsSelected"),
-             StationQueueFailureReason.UnknownOrderItemId =>
-               _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
-                                       "UnprocessableEntity",
-                                       "station.itemNotAtThisStation"),
-             StationQueueFailureReason.ItemNotFulfilled =>
-               _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                       "ItemNotFulfilled",
-                                       "station.changeNotSaved"),
-             StationQueueFailureReason.OrderNotAtThisStation =>
-               _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity,
-                                       "UnprocessableEntity",
-                                       "station.orderNotAtThisStation"),
-             StationQueueFailureReason.NotAnAsItComesOrder =>
-               _resultEnvelope.Problem(StatusCodes.Status409Conflict,
-                                       "CannotHideTogetherOrder",
-                                       "station.changeNotSaved"),
+             StationQueueFailureReason.StationUnknown => Results.Unauthorized(),
+             StationQueueFailureReason.NoRunningFestival => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "NoRunningFestival", "station.noFestivalIsRunning"),
+             StationQueueFailureReason.StationNotAtTheFestival => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "StationNotAtTheFestival", "station.notPartOfTheFestival"),
+             StationQueueFailureReason.NoItemsSelected => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "station.noItemsSelected"),
+             StationQueueFailureReason.UnknownOrderItemId => _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity, "UnprocessableEntity", "station.itemNotAtThisStation"),
+             StationQueueFailureReason.ItemNotFulfilled => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemNotFulfilled", "station.changeNotSaved"),
+             StationQueueFailureReason.OrderNotAtThisStation => _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity, "UnprocessableEntity", "station.orderNotAtThisStation"),
+             StationQueueFailureReason.NotAnAsItComesOrder => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CannotHideTogetherOrder", "station.changeNotSaved"),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)
            };
   }

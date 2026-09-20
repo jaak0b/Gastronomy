@@ -8,16 +8,12 @@ public sealed class ColorFormatValidator
   public bool IsWellFormed(string? colourHex)
   {
     if (colourHex is null || colourHex.Length != WellFormedLength || colourHex[0] != '#')
-    {
       return false;
-    }
 
     for (var position = 1; position < WellFormedLength; position++)
     {
       if (!Uri.IsHexDigit(colourHex[position]))
-      {
         return false;
-      }
     }
 
     return true;

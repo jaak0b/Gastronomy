@@ -77,8 +77,7 @@ public sealed class DeviceTokenStoreTest
     using SqliteInMemoryFixture fixture = new();
     var store = CreateStore(fixture);
 
-    Assert.That(async () => await store.IssueAsync(new(DeviceOwnerKind.StaffMember, Guid.NewGuid()), "de", "Test agent", TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<InvalidOperationException>());
+    Assert.That(async () => await store.IssueAsync(new(DeviceOwnerKind.StaffMember, Guid.NewGuid()), "de", "Test agent", TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>());
   }
 
   [Test]
@@ -180,8 +179,7 @@ public sealed class DeviceTokenStoreTest
   {
     var separatorIndex = plaintextToken.IndexOf('.', StringComparison.Ordinal);
 
-    return new(plaintextToken[..separatorIndex],
-               plaintextToken[(separatorIndex + 1)..]);
+    return new(plaintextToken[..separatorIndex], plaintextToken[(separatorIndex + 1)..]);
   }
 
   private DeviceTokenStore CreateStore(SqliteInMemoryFixture fixture)

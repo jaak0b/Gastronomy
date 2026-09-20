@@ -15,17 +15,13 @@ public partial class FailureDetailDialog : Window
   private void OnDataContextChanged(object? sender, EventArgs e)
   {
     if (DataContext is TechnicalDetailViewModel viewModel)
-    {
       viewModel.CloseRequested += OnCloseRequested;
-    }
   }
 
   private void OnCloseRequested(object? sender, EventArgs e)
   {
     if (DataContext is TechnicalDetailViewModel viewModel)
-    {
       viewModel.CloseRequested -= OnCloseRequested;
-    }
 
     Close();
   }

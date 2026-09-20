@@ -18,9 +18,7 @@ public sealed class DeviceConnectionTerminator
     foreach (var connection in _registry.FindByDevice(deviceId))
     {
       foreach (var group in connection.Groups)
-      {
         await _hubContext.Groups.RemoveFromGroupAsync(connection.ConnectionId, group, cancellationToken);
-      }
 
       _registry.Remove(connection.ConnectionId);
       connection.CallerContext.Abort();

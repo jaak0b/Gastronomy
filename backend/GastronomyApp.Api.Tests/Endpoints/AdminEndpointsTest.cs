@@ -8,7 +8,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class AdminEndpointsTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -26,10 +25,7 @@ public sealed class AdminEndpointsTest
   private async Task LetTheFestivalEndAsync()
   {
     await using var database = _context.Factory.CreateContext();
-    await database.Festivals
-                  .Where(festival => festival.Id == _context.World.FestivalId)
-                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc,
-                                                                        DateTime.UtcNow.AddMinutes(-1)));
+    await database.Festivals.Where(festival => festival.Id == _context.World.FestivalId).ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc, DateTime.UtcNow.AddMinutes(-1)));
   }
 
   [Test]
@@ -52,7 +48,11 @@ public sealed class AdminEndpointsTest
   public async Task PostStation_NewStation_CreatesItSwitchedOn()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/stations",
-                                                              new { name = "Zelt", sortOrder = 3 });
+                                                               new
+                                                               {
+                                                                 name = "Zelt",
+                                                                 sortOrder = 3
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var stationId = body.RootElement.GetProperty("stationId").GetGuid();
@@ -71,7 +71,11 @@ public sealed class AdminEndpointsTest
   public async Task PutStation_RenamedStation_StoresTheNewName()
   {
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/stations/{_context.World.KitchenStationId}",
-                                                             new { name = "Kueche innen", sortOrder = 1 });
+                                                              new
+                                                              {
+                                                                name = "Kueche innen",
+                                                                sortOrder = 1
+                                                              });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -85,12 +89,12 @@ public sealed class AdminEndpointsTest
   public async Task PostItem_ValidRequest_CreatesTheItemWithoutAnyPriceOrStation()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                sortOrder = 3
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 sortOrder = 3
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var itemId = body.RootElement.GetProperty("itemId").GetGuid();
@@ -108,16 +112,12 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task PostAvailability_SoldOutToggle_IsNeverRefused()
   {
-    using var response =
-      await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability",
-                                            new { isAvailable = false });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}/availability", new { isAvailable = false });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
     await using var database = _context.Factory.CreateContext();
-    var menuRow = await database.FestivalCatalogItems
-                                .FirstAsync(candidate => candidate.FestivalId == _context.World.FestivalId
-                                                         && candidate.CatalogItemId == _context.World.BratwurstItemId);
+    var menuRow = await database.FestivalCatalogItems.FirstAsync(candidate => candidate.FestivalId == _context.World.FestivalId && candidate.CatalogItemId == _context.World.BratwurstItemId);
 
     Assert.That(menuRow.IsAvailable, Is.False);
   }
@@ -140,8 +140,7 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task PutStaffMember_Rename_KeepsTheirIdentity()
   {
-    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}",
-                                                             new { name = "Anna Maria" });
+    using var response = await _context.Client.PutAsJsonAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}", new { name = "Anna Maria" });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -154,8 +153,7 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task Deactivate_StaffMemberWithAPhone_InvalidatesTheirTokenImmediately()
   {
-    using var response = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate",
-                                                        null);
+    using var response = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate", null);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -167,8 +165,7 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task PostEnrolmentInvitation_ForAPersonOnTheList_ReturnsTheCodesAndTheirExpiry()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = _context.World.StaffMemberId });
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -182,8 +179,7 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task PostEnrolmentInvitation_AnyBind_CarriesAnAddressAPhoneCanOpen()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = _context.World.StaffMemberId });
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
@@ -192,8 +188,8 @@ public sealed class AdminEndpointsTest
                     {
                       Assert.That(qrUrl, Does.Not.Contain("0.0.0.0"), "A bind wildcard is not an address a phone can open.");
                       Assert.That(qrUrl, Does.Not.Contain(":0/"), "Port zero is not an address a phone can open.");
-                      Assert.That(Uri.TryCreate(qrUrl, UriKind.Absolute, out var _), Is.True);
-                      Assert.That(body.RootElement.TryGetProperty("availableAddresses", out var _), Is.True);
+                      Assert.That(Uri.TryCreate(qrUrl, UriKind.Absolute, out _), Is.True);
+                      Assert.That(body.RootElement.TryGetProperty("availableAddresses", out _), Is.True);
                     });
   }
 
@@ -202,14 +198,12 @@ public sealed class AdminEndpointsTest
   {
     await LetTheFestivalEndAsync();
 
-    using (var takenOff = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/deactivate",
-                                                         null))
+    using (var takenOff = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/deactivate", null))
     {
       Assert.That(takenOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/activate",
-                                                        null);
+    using var response = await _context.Client.PostAsync($"/api/admin/items/{_context.World.BratwurstItemId}/activate", null);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -233,10 +227,8 @@ public sealed class AdminEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(body.RootElement.GetProperty("code").GetString(),
-                                  Is.EqualTo("ItemIsOnTheRunningFestivalsMenu"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ItemIsOnTheRunningFestivalsMenu"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
                       Assert.That(item.IsActive, Is.True);
                     });
   }
@@ -291,14 +283,12 @@ public sealed class AdminEndpointsTest
   [Test]
   public async Task Activate_StaffMemberTakenOffTheList_PutsThemBackOnTheList()
   {
-    using (var takenOff = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate",
-                                                         null))
+    using (var takenOff = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/deactivate", null))
     {
       Assert.That(takenOff.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var response = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/activate",
-                                                        null);
+    using var response = await _context.Client.PostAsync($"/api/admin/staff-members/{_context.World.StaffMemberId}/activate", null);
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -308,5 +298,3 @@ public sealed class AdminEndpointsTest
     Assert.That(staffMember.IsActive, Is.True);
   }
 }
-
-

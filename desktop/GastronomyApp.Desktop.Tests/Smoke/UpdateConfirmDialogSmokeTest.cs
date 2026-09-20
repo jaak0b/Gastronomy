@@ -25,16 +25,14 @@ public sealed class UpdateConfirmDialogSmokeTest
     owner.Show();
 
     UpdateConfirmDialog cancelDialog = new() { DataContext = viewModel };
-    var cancelResult = cancelDialog.ShowDialog<bool>(owner);
+    Task<bool> cancelResult = cancelDialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(cancelDialog.Title, Is.EqualTo(_text.Get("desktop.update.confirmTitle")));
                       Assert.That(viewModel.Title, Is.EqualTo(_text.Get("desktop.update.confirmTitle")));
-                      Assert.That(viewModel.Body,
-                                  Is.EqualTo(_text.Format("desktop.update.confirmBody",
-                                                          new TextPlaceholder("version", Version))));
+                      Assert.That(viewModel.Body, Is.EqualTo(_text.Format("desktop.update.confirmBody", new TextPlaceholder("version", Version))));
                       Assert.That(viewModel.Body, Does.Contain(Version));
                     });
 
@@ -42,7 +40,7 @@ public sealed class UpdateConfirmDialogSmokeTest
     Assert.That(await cancelResult, Is.False);
 
     UpdateConfirmDialog confirmDialog = new() { DataContext = viewModel };
-    var confirmResult = confirmDialog.ShowDialog<bool>(owner);
+    Task<bool> confirmResult = confirmDialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
     _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
     Assert.That(await confirmResult, Is.True);

@@ -37,10 +37,7 @@ public sealed class CatalogItemRepositoryTest
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyCollection<ItemStationAssignment> found =
-      await repository.FindAssignmentsAsync(seeded.FestivalId,
-                                            seeded.SausageItemId,
-                                            TestContext.CurrentContext.CancellationToken);
+    IReadOnlyCollection<ItemStationAssignment> found = await repository.FindAssignmentsAsync(seeded.FestivalId, seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -57,10 +54,14 @@ public sealed class CatalogItemRepositoryTest
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<CatalogItem> found =
-      await repository.FindAllOrderedAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<CatalogItem> found = await repository.FindAllOrderedAsync(TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(found.Select(item => item.Id), Is.EqualTo(new[] { seeded.SausageItemId, seeded.LemonadeItemId }));
+    Assert.That(found.Select(item => item.Id),
+                Is.EqualTo(new[]
+                           {
+                             seeded.SausageItemId,
+                             seeded.LemonadeItemId
+                           }));
   }
 
   [Test]
@@ -73,14 +74,8 @@ public sealed class CatalogItemRepositoryTest
 
     Assert.Multiple(async () =>
                     {
-                      Assert.That(await repository.IsNameTakenAsync("Bratwurst",
-                                                                    null,
-                                                                    TestContext.CurrentContext.CancellationToken),
-                                  Is.True);
-                      Assert.That(await repository.IsNameTakenAsync("Bratwurst",
-                                                                    seeded.SausageItemId,
-                                                                    TestContext.CurrentContext.CancellationToken),
-                                  Is.False);
+                      Assert.That(await repository.IsNameTakenAsync("Bratwurst", null, TestContext.CurrentContext.CancellationToken), Is.True);
+                      Assert.That(await repository.IsNameTakenAsync("Bratwurst", seeded.SausageItemId, TestContext.CurrentContext.CancellationToken), Is.False);
                     });
   }
 
@@ -92,14 +87,12 @@ public sealed class CatalogItemRepositoryTest
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<FestivalCatalogItem> found =
-      await repository.FindMenuRowsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<FestivalCatalogItem> found = await repository.FindMenuRowsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(found, Has.Count.EqualTo(2));
-                      Assert.That(found.Single(menuRow => menuRow.CatalogItemId == seeded.SausageItemId).PriceCents,
-                                  Is.EqualTo(350));
+                      Assert.That(found.Single(menuRow => menuRow.CatalogItemId == seeded.SausageItemId).PriceCents, Is.EqualTo(350));
                     });
   }
 
@@ -111,11 +104,14 @@ public sealed class CatalogItemRepositoryTest
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ItemStationAssignment> found =
-      await repository.FindAssignmentsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ItemStationAssignment> found = await repository.FindAssignmentsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found.Select(assignment => assignment.StationId),
-                Is.EquivalentTo(new[] { seeded.KitchenStationId, seeded.BarStationId }));
+                Is.EquivalentTo(new[]
+                                {
+                                  seeded.KitchenStationId,
+                                  seeded.BarStationId
+                                }));
   }
 
   [Test]
@@ -140,8 +136,6 @@ public sealed class CatalogItemRepositoryTest
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.CatalogItems.AnyAsync(item => item.Id == itemId,
-                                                        TestContext.CurrentContext.CancellationToken),
-                Is.True);
+    Assert.That(await readContext.CatalogItems.AnyAsync(item => item.Id == itemId, TestContext.CurrentContext.CancellationToken), Is.True);
   }
 }

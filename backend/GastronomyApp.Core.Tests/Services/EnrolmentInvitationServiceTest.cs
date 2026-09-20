@@ -20,18 +20,11 @@ public sealed class EnrolmentInvitationServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _store.CreateAsync(A<DeviceOwner?>._, A<CancellationToken>._))
-     .Returns(new EnrolmentInvitationCreated(_invitationId, "ABCDEF", _now.AddMinutes(5)));
-    A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwner>._!, A<CancellationToken>._))
-     .Returns(Task.FromResult<DeviceOwnerRecord?>(null));
-    A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<EnrolmentInvitation?>(null));
+    A.CallTo(() => _store.CreateAsync(A<DeviceOwner?>._, A<CancellationToken>._)).Returns(new EnrolmentInvitationCreated(_invitationId, "ABCDEF", _now.AddMinutes(5)));
+    A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwner>._!, A<CancellationToken>._)).Returns(Task.FromResult<DeviceOwnerRecord?>(null));
+    A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(null));
 
-    _service = new(_store,
-                   _ownerStore,
-                   _deviceTokenStore,
-                   new(_store, _deviceTokenStore, _clock),
-                   _clock);
+    _service = new(_store, _ownerStore, _deviceTokenStore, new(_store, _deviceTokenStore, _clock), _clock);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -49,21 +42,18 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public void RedeemAsync_NullRequest_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.RedeemAsync(null!, CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _service.RedeemAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task CreateAsync_BothAWaiterAndAStation_FailsBecauseOnlyOneOwnerIsAllowed()
   {
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued =
-      await _service.CreateAsync(_staffMemberId, _stationId, CancellationToken.None);
+    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(_staffMemberId, _stationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(issued.IsSuccess, Is.False);
-                      Assert.That(issued.Failure.Reason,
-                                  Is.EqualTo(EnrolmentInvitationFailureReason.AtMostOneOwner));
+                      Assert.That(issued.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.AtMostOneOwner));
                     });
 
     A.CallTo(() => _store.CreateAsync(A<DeviceOwner?>._, A<CancellationToken>._)).MustNotHaveHappened();
@@ -72,22 +62,19 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task CreateAsync_AnOwnerWhoIsNotOnTheList_FailsBecauseTheOwnerIsNotFound()
   {
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued =
-      await _service.CreateAsync(_staffMemberId, null, CancellationToken.None);
+    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(_staffMemberId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(issued.IsSuccess, Is.False);
-                      Assert.That(issued.Failure.Reason,
-                                  Is.EqualTo(EnrolmentInvitationFailureReason.OwnerNotFound));
+                      Assert.That(issued.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.OwnerNotFound));
                     });
   }
 
   [Test]
   public async Task CreateAsync_NobodyNamed_IssuesAnInvitationWithoutAnOwner()
   {
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued =
-      await _service.CreateAsync(null, null, CancellationToken.None);
+    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(null, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -101,19 +88,17 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task CreateAsync_AStationThatAlreadyHoldsATablet_RevokesThatTabletsToken()
   {
-    A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwner>.That.Matches(owner => owner.Id == _stationId),
-                                         A<CancellationToken>._))
-     .Returns(Task.FromResult<DeviceOwnerRecord?>(new()
-                                                  {
-                                                    Owner = new(DeviceOwnerKind.Station, _stationId),
-                                                    Name = "Kueche",
-                                                    IsActive = true,
-                                                    DeviceId = _deviceId,
-                                                    EnrolmentInvitationId = null
-                                                  }));
+    A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwner>.That.Matches(owner => owner.Id == _stationId), A<CancellationToken>._))
+   .Returns(Task.FromResult<DeviceOwnerRecord?>(new()
+                                                {
+                                                  Owner = new(DeviceOwnerKind.Station, _stationId),
+                                                  Name = "Kueche",
+                                                  IsActive = true,
+                                                  DeviceId = _deviceId,
+                                                  EnrolmentInvitationId = null
+                                                }));
 
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued =
-      await _service.CreateAsync(null, _stationId, CancellationToken.None);
+    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(null, _stationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -128,38 +113,31 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
   {
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
-      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(stillOpen.IsSuccess, Is.False);
-                      Assert.That(stillOpen.Failure.Reason,
-                                  Is.EqualTo(EnrolmentInvitationFailureReason.InvitationUnknown));
+                      Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationUnknown));
                     });
   }
 
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationAPhoneAlreadyUsed_SaysItWasAlreadyUsed()
   {
-    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), _deviceId, _now.AddMinutes(4))));
+    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), _deviceId, _now.AddMinutes(4))));
 
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
-      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.Failure.Reason,
-                Is.EqualTo(EnrolmentInvitationFailureReason.InvitationAlreadyUsed));
+    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationAlreadyUsed));
   }
 
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationANewerOneReplaced_SaysItWasReplaced()
   {
-    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), null, _now.AddMinutes(4))));
+    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), null, _now.AddMinutes(4))));
 
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
-      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationReplaced));
   }
@@ -167,11 +145,9 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationWhoseTimeRanOut_SaysItExpired()
   {
-    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now)));
+    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now)));
 
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
-      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationExpired));
   }
@@ -179,11 +155,9 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationThatIsStillOutstanding_AnswersWithIt()
   {
-    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
+    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
 
-    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen =
-      await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -196,10 +170,9 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task RetireHandedOverDeviceAsync_ATokenThatDoesNotVerify_RevokesNothing()
   {
-    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._))
-     .Returns(new DeviceVerificationResult(false, null, null));
+    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(new DeviceVerificationResult(false, null, null));
 
-    var retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
+    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
 
     Assert.That(retired, Is.Null);
 
@@ -209,10 +182,9 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task RetireHandedOverDeviceAsync_TheDeviceThatWasJustSetUp_RevokesNothing()
   {
-    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._))
-     .Returns(new DeviceVerificationResult(true, BuildDevice(_deviceId), null));
+    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(new DeviceVerificationResult(true, BuildDevice(_deviceId), null));
 
-    var retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
+    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
 
     Assert.That(retired, Is.Null);
   }
@@ -221,20 +193,16 @@ public sealed class EnrolmentInvitationServiceTest
   public async Task RetireHandedOverDeviceAsync_AnotherDeviceTheBrowserStillHeld_SignsThatOneOut()
   {
     var handedOverDeviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
-    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._))
-     .Returns(new DeviceVerificationResult(true, BuildDevice(handedOverDeviceId), null));
+    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(new DeviceVerificationResult(true, BuildDevice(handedOverDeviceId), null));
 
-    var retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
+    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
 
     Assert.That(retired, Is.EqualTo(handedOverDeviceId));
 
-    A.CallTo(() => _deviceTokenStore.RevokeAsync(handedOverDeviceId, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(handedOverDeviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
-  private EnrolmentInvitation BuildInvitation(DateTime? consumedAtUtc,
-                                              Guid? consumedByDeviceId,
-                                              DateTime expiresAtUtc)
+  private EnrolmentInvitation BuildInvitation(DateTime? consumedAtUtc, Guid? consumedByDeviceId, DateTime expiresAtUtc)
   {
     return new()
            {

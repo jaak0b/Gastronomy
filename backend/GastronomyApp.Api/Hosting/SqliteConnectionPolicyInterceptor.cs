@@ -20,9 +20,7 @@ public sealed class SqliteConnectionPolicyInterceptor : DbConnectionInterceptor
     base.ConnectionOpened(connection, eventData);
   }
 
-  override public async Task ConnectionOpenedAsync(DbConnection connection,
-                                                   ConnectionEndEventData eventData,
-                                                   CancellationToken cancellationToken = default)
+  override public async Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
   {
     await _connectionFactory.ApplyConnectionPolicyAsync(connection, cancellationToken);
 

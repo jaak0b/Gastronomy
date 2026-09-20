@@ -1,3 +1,4 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
@@ -21,33 +22,33 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
     switch (owner.Kind)
     {
       case DeviceOwnerKind.StaffMember:
-        var staffMember = await _dbContext.StaffMembers
-                                          .FirstOrDefaultAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var staffMember = await _dbContext.StaffMembers.FirstOrDefaultAsync(candidate => candidate.Id == owner.Id, cancellationToken);
 
-        return staffMember is null
-                 ? null
-                 : new()
-                   {
-                     Owner = owner,
-                     Name = staffMember.Name,
-                     IsActive = staffMember.IsActive,
-                     DeviceId = staffMember.DeviceId,
-                     EnrolmentInvitationId = staffMember.EnrolmentInvitationId
-                   };
+        if (staffMember is null)
+          return null;
+
+        return new()
+               {
+                 Owner = owner,
+                 Name = staffMember.Name,
+                 IsActive = staffMember.IsActive,
+                 DeviceId = staffMember.DeviceId,
+                 EnrolmentInvitationId = staffMember.EnrolmentInvitationId
+               };
       case DeviceOwnerKind.Station:
-        var station = await _dbContext.Stations
-                                      .FirstOrDefaultAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var station = await _dbContext.Stations.FirstOrDefaultAsync(candidate => candidate.Id == owner.Id, cancellationToken);
 
-        return station is null
-                 ? null
-                 : new()
-                   {
-                     Owner = owner,
-                     Name = station.Name,
-                     IsActive = station.IsActive,
-                     DeviceId = station.DeviceId,
-                     EnrolmentInvitationId = station.EnrolmentInvitationId
-                   };
+        if (station is null)
+          return null;
+
+        return new()
+               {
+                 Owner = owner,
+                 Name = station.Name,
+                 IsActive = station.IsActive,
+                 DeviceId = station.DeviceId,
+                 EnrolmentInvitationId = station.EnrolmentInvitationId
+               };
       default:
         return new UnreachableCase().Throw<DeviceOwnerRecord?>(owner.Kind);
     }
@@ -55,42 +56,32 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
 
   public async Task<DeviceOwner?> FindByDeviceAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    var staffMemberId = await _dbContext.StaffMembers
-                                        .Where(staffMember => staffMember.DeviceId == deviceId)
-                                        .Select(staffMember => (Guid?)staffMember.Id)
-                                        .FirstOrDefaultAsync(cancellationToken);
+    Guid? staffMemberId = await _dbContext.StaffMembers.Where(staffMember => staffMember.DeviceId == deviceId).Select(staffMember => (Guid?)staffMember.Id).FirstOrDefaultAsync(cancellationToken);
 
     if (staffMemberId is not null)
-    {
       return new(DeviceOwnerKind.StaffMember, staffMemberId.Value);
-    }
 
-    var stationId = await _dbContext.Stations
-                                    .Where(station => station.DeviceId == deviceId)
-                                    .Select(station => (Guid?)station.Id)
-                                    .FirstOrDefaultAsync(cancellationToken);
+    Guid? stationId = await _dbContext.Stations.Where(station => station.DeviceId == deviceId).Select(station => (Guid?)station.Id).FirstOrDefaultAsync(cancellationToken);
 
-    return stationId is null ? null : new(DeviceOwnerKind.Station, stationId.Value);
+    if (stationId is null)
+      return null;
+
+    return new(DeviceOwnerKind.Station, stationId.Value);
   }
 
   public async Task<DeviceOwner?> FindByInvitationAsync(Guid invitationId, CancellationToken cancellationToken)
   {
-    var staffMemberId = await _dbContext.StaffMembers
-                                        .Where(staffMember => staffMember.EnrolmentInvitationId == invitationId)
-                                        .Select(staffMember => (Guid?)staffMember.Id)
-                                        .FirstOrDefaultAsync(cancellationToken);
+    Guid? staffMemberId = await _dbContext.StaffMembers.Where(staffMember => staffMember.EnrolmentInvitationId == invitationId).Select(staffMember => (Guid?)staffMember.Id).FirstOrDefaultAsync(cancellationToken);
 
     if (staffMemberId is not null)
-    {
       return new(DeviceOwnerKind.StaffMember, staffMemberId.Value);
-    }
 
-    var stationId = await _dbContext.Stations
-                                    .Where(station => station.EnrolmentInvitationId == invitationId)
-                                    .Select(station => (Guid?)station.Id)
-                                    .FirstOrDefaultAsync(cancellationToken);
+    Guid? stationId = await _dbContext.Stations.Where(station => station.EnrolmentInvitationId == invitationId).Select(station => (Guid?)station.Id).FirstOrDefaultAsync(cancellationToken);
 
-    return stationId is null ? null : new(DeviceOwnerKind.Station, stationId.Value);
+    if (stationId is null)
+      return null;
+
+    return new(DeviceOwnerKind.Station, stationId.Value);
   }
 
   public async Task PointDeviceAsync(DeviceOwner owner, Guid? deviceId, CancellationToken cancellationToken)
@@ -100,13 +91,11 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
     switch (owner.Kind)
     {
       case DeviceOwnerKind.StaffMember:
-        var staffMember = await _dbContext.StaffMembers
-                                          .SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var staffMember = await _dbContext.StaffMembers.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
         staffMember.DeviceId = deviceId;
         return;
       case DeviceOwnerKind.Station:
-        var station = await _dbContext.Stations
-                                      .SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var station = await _dbContext.Stations.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
         station.DeviceId = deviceId;
         return;
       default:
@@ -122,13 +111,11 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
     switch (owner.Kind)
     {
       case DeviceOwnerKind.StaffMember:
-        var staffMember = await _dbContext.StaffMembers
-                                          .SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var staffMember = await _dbContext.StaffMembers.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
         staffMember.EnrolmentInvitationId = invitationId;
         return;
       case DeviceOwnerKind.Station:
-        var station = await _dbContext.Stations
-                                      .SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+        var station = await _dbContext.Stations.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
         station.EnrolmentInvitationId = invitationId;
         return;
       default:
@@ -141,31 +128,19 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
   {
     ArgumentNullException.ThrowIfNull(invitationIds);
 
-    List<Guid> ids = [.. invitationIds];
+    List<Guid> ids = invitationIds.ToList();
 
     if (ids.Count == 0)
-    {
       return;
-    }
 
-    var staffMembers = await _dbContext.StaffMembers
-                                       .Where(staffMember => staffMember.EnrolmentInvitationId != null
-                                                             && ids.Contains(staffMember.EnrolmentInvitationId.Value))
-                                       .ToListAsync(cancellationToken);
+    List<StaffMember> staffMembers = await _dbContext.StaffMembers.Where(staffMember => staffMember.EnrolmentInvitationId != null && ids.Contains(staffMember.EnrolmentInvitationId.Value)).ToListAsync(cancellationToken);
 
     foreach (var staffMember in staffMembers)
-    {
       staffMember.EnrolmentInvitationId = null;
-    }
 
-    var stations = await _dbContext.Stations
-                                   .Where(station => station.EnrolmentInvitationId != null
-                                                     && ids.Contains(station.EnrolmentInvitationId.Value))
-                                   .ToListAsync(cancellationToken);
+    List<Station> stations = await _dbContext.Stations.Where(station => station.EnrolmentInvitationId != null && ids.Contains(station.EnrolmentInvitationId.Value)).ToListAsync(cancellationToken);
 
     foreach (var station in stations)
-    {
       station.EnrolmentInvitationId = null;
-    }
   }
 }

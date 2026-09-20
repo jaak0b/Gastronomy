@@ -14,14 +14,7 @@ public sealed class LocalNetworkAddressProvider
   private IEnumerable<CandidateNetworkAddress> EnumerateReportedAddresses()
   {
     foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
-    {
-      foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
-      {
-        yield return new(networkInterface.Name,
-                         networkInterface.NetworkInterfaceType,
-                         networkInterface.OperationalStatus,
-                         unicast.Address);
-      }
-    }
+    foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
+      yield return new(networkInterface.Name, networkInterface.NetworkInterfaceType, networkInterface.OperationalStatus, unicast.Address);
   }
 }

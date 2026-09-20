@@ -3,8 +3,4 @@ using System.Net.NetworkInformation;
 
 namespace GastronomyApp.Api.Hosting;
 
-public sealed record CandidateNetworkAddress(
-  string InterfaceName,
-  NetworkInterfaceType InterfaceType,
-  OperationalStatus InterfaceStatus,
-  IPAddress Address);
+public sealed record CandidateNetworkAddress(string InterfaceName, NetworkInterfaceType InterfaceType, OperationalStatus InterfaceStatus, IPAddress Address);

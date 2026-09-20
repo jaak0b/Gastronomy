@@ -5,7 +5,6 @@ namespace GastronomyApp.Core.Tests.Services;
 [TestFixture]
 public sealed class OrderLineCollapserTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -24,8 +23,7 @@ public sealed class OrderLineCollapserTest
   [Test]
   public void Collapse_IdenticalLinesWithoutANote_CountsThemAsOne()
   {
-    IReadOnlyList<CollapsedOrderLine<Line>> collapsed =
-      Collapse(new Line("Bier", null), new Line("Bier", null), new Line("Bier", null));
+    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", null), new Line("Bier", null), new Line("Bier", null));
 
     Assert.Multiple(() =>
                     {
@@ -38,9 +36,7 @@ public sealed class OrderLineCollapserTest
   [Test]
   public void Collapse_SameItemWithADifferentNote_StaysASeparateLine()
   {
-    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", null),
-                                                                 new Line("Bier", "ohne Schaum"),
-                                                                 new Line("Bier", null));
+    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", null), new Line("Bier", "ohne Schaum"), new Line("Bier", null));
 
     Assert.Multiple(() =>
                     {
@@ -55,8 +51,7 @@ public sealed class OrderLineCollapserTest
   [Test]
   public void Collapse_LinesWithTheSameNote_CountThemTogether()
   {
-    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", "ohne Schaum"),
-                                                                 new Line("Bier", "ohne Schaum"));
+    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", "ohne Schaum"), new Line("Bier", "ohne Schaum"));
 
     Assert.Multiple(() =>
                     {
@@ -68,9 +63,7 @@ public sealed class OrderLineCollapserTest
   [Test]
   public void Collapse_DifferentItems_KeepsTheOrderTheyWereAddedIn()
   {
-    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Schnitzel", null),
-                                                                 new Line("Bier", null),
-                                                                 new Line("Schnitzel", null));
+    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Schnitzel", null), new Line("Bier", null), new Line("Schnitzel", null));
 
     Assert.Multiple(() =>
                     {
@@ -84,8 +77,7 @@ public sealed class OrderLineCollapserTest
   [Test]
   public void Collapse_AnEmptyNoteAndNoNote_AreTheSameLine()
   {
-    IReadOnlyList<CollapsedOrderLine<Line>> collapsed =
-      Collapse(new Line("Bier", null), new Line("Bier", string.Empty));
+    IReadOnlyList<CollapsedOrderLine<Line>> collapsed = Collapse(new Line("Bier", null), new Line("Bier", string.Empty));
 
     Assert.Multiple(() =>
                     {

@@ -1,5 +1,3 @@
 namespace GastronomyApp.Api.Contracts;
 
-public sealed record OpenItemsView(
-  IReadOnlyList<OpenTableView> Tables,
-  int ItemsWithoutAnOrderCount);
+public sealed record OpenItemsView(IReadOnlyList<OpenTableView> Tables, int ItemsWithoutAnOrderCount);

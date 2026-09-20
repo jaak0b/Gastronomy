@@ -41,9 +41,7 @@ public sealed class FestivalChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "The tablet standing at a production location must be told when a festival is shown, or it keeps saying that no festival is running.");
+    Assert.That(received, Is.SameAs(heard.Task), "The tablet standing at a production location must be told when a festival is shown, or it keeps saying that no festival is running.");
   }
 
   [Test]
@@ -60,9 +58,7 @@ public sealed class FestivalChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "A phone must be told when a festival is shown, or it keeps showing the menu it loaded before.");
+    Assert.That(received, Is.SameAs(heard.Task), "A phone must be told when a festival is shown, or it keeps showing the menu it loaded before.");
   }
 
   [Test]
@@ -81,13 +77,9 @@ public sealed class FestivalChangeAnnouncementTest
 
     var received = await Task.WhenAny(heardTheFestivalChanged.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heardTheFestivalChanged.Task),
-                "A phone must be told when a festival is shown, or it keeps showing the menu it loaded before.");
+    Assert.That(received, Is.SameAs(heardTheFestivalChanged.Task), "A phone must be told when a festival is shown, or it keeps showing the menu it loaded before.");
 
-    Assert.That(heardTheCatalogChanged.Task.IsCompleted,
-                Is.False,
-                "Showing a festival changes no item and no price, so a phone has no reason to fetch the catalog again.");
+    Assert.That(heardTheCatalogChanged.Task.IsCompleted, Is.False, "Showing a festival changes no item and no price, so a phone has no reason to fetch the catalog again.");
   }
 
   [Test]
@@ -104,9 +96,7 @@ public sealed class FestivalChangeAnnouncementTest
 
     var received = await Task.WhenAny(heard.Task, Task.Delay(_patience));
 
-    Assert.That(received,
-                Is.SameAs(heard.Task),
-                "The tablet standing at a production location must be told when a festival is hidden, or it keeps taking orders for an event that is not running.");
+    Assert.That(received, Is.SameAs(heard.Task), "The tablet standing at a production location must be told when a festival is hidden, or it keeps taking orders for an event that is not running.");
   }
 
   private async Task<Guid> CreateFestivalInTheFutureAsync()
@@ -119,8 +109,7 @@ public sealed class FestivalChangeAnnouncementTest
                                                                {
                                                                  name = "Herbstfest",
                                                                  startsAtUtc = startsAtUtc.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                                                                 endsAtUtc = startsAtUtc.AddHours(24)
-                                                                                        .ToString("yyyy-MM-ddTHH:mm:ssZ")
+                                                                 endsAtUtc = startsAtUtc.AddHours(24).ToString("yyyy-MM-ddTHH:mm:ssZ")
                                                                }))
     {
       Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
@@ -157,8 +146,6 @@ public sealed class FestivalChangeAnnouncementTest
 
   private HubConnection Connect(string deviceToken)
   {
-    return new HubConnectionBuilder()
-          .WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}"))
-          .Build();
+    return new HubConnectionBuilder().WithUrl(new Uri(_context.Factory.BaseAddress, $"hub?access_token={deviceToken}")).Build();
   }
 }

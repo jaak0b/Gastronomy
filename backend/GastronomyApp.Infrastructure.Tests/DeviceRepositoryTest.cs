@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +15,7 @@ public sealed class DeviceRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     DeviceRepository repository = new(fixture.DbContext);
 
-    Device? device = await repository.FindByIdAsync(Guid.NewGuid(),
-                                                    TestContext.CurrentContext.CancellationToken);
+    var device = await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
 
     Assert.That(device, Is.Null);
   }
@@ -30,7 +28,7 @@ public sealed class DeviceRepositoryTest
 
     DeviceRepository repository = new(fixture.DbContext);
 
-    Device? device = await repository.FindByIdAsync(deviceId, TestContext.CurrentContext.CancellationToken);
+    var device = await repository.FindByIdAsync(deviceId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(device?.Language, Is.EqualTo("de"));
   }
@@ -42,14 +40,12 @@ public sealed class DeviceRepositoryTest
     var deviceId = await EnrolDeviceAsync(fixture, "de");
 
     DeviceRepository repository = new(fixture.DbContext);
-    Device device = (await repository.FindByIdAsync(deviceId, TestContext.CurrentContext.CancellationToken))!;
+    var device = (await repository.FindByIdAsync(deviceId, TestContext.CurrentContext.CancellationToken))!;
     device.Language = "en";
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
-    Device stored = await readContext.Devices
-                                     .FirstAsync(candidate => candidate.Id == deviceId,
-                                                 TestContext.CurrentContext.CancellationToken);
+    var stored = await readContext.Devices.FirstAsync(candidate => candidate.Id == deviceId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stored.Language, Is.EqualTo("en"));
   }

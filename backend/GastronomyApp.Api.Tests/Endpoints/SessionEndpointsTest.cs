@@ -30,10 +30,8 @@ public sealed class SessionEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(),
-                                  Is.EqualTo(_context.DeviceId));
-                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_context.World.StaffMemberId));
+                      Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.EqualTo(_context.DeviceId));
+                      Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid(), Is.EqualTo(_context.World.StaffMemberId));
                     });
   }
 
@@ -64,8 +62,7 @@ public sealed class SessionEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("session.unsupportedLanguage"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("session.unsupportedLanguage"));
                       Assert.That(device.Language, Is.EqualTo("de"));
                     });
   }

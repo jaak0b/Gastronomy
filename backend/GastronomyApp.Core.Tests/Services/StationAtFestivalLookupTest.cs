@@ -19,16 +19,11 @@ public sealed class StationAtFestivalLookupTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Station?>(Kitchen()));
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(Link()));
+    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
 
-    _lookup = new(_stationRepository,
-                  _festivalStationRepository,
-                  new RunningFestivalLookup(_festivalRepository, new(), _clock));
+    _lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -44,8 +39,7 @@ public sealed class StationAtFestivalLookupTest
   [Test]
   public async Task FindAsync_TheStationTakesPartInTheRunningFestival_NamesTheStationAndTheFestival()
   {
-    Result<StationAtFestival, StationQueueFailure> stationAtFestival =
-      await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationAtFestival, StationQueueFailure> stationAtFestival = await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -58,11 +52,9 @@ public sealed class StationAtFestivalLookupTest
   [Test]
   public async Task FindAsync_AnUnknownStation_RefusesBecauseTheStationIsUnknown()
   {
-    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Station?>(null));
+    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(null));
 
-    Result<StationAtFestival, StationQueueFailure> stationAtFestival =
-      await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationAtFestival, StationQueueFailure> stationAtFestival = await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -74,11 +66,9 @@ public sealed class StationAtFestivalLookupTest
   [Test]
   public async Task FindAsync_NoFestivalIsRunning_RefusesBecauseNoFestivalIsRunning()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Result<StationAtFestival, StationQueueFailure> stationAtFestival =
-      await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationAtFestival, StationQueueFailure> stationAtFestival = await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -90,17 +80,14 @@ public sealed class StationAtFestivalLookupTest
   [Test]
   public async Task FindAsync_TheStationIsNotAtTheRunningFestival_RefusesBecauseItDoesNotTakePart()
   {
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(null));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
 
-    Result<StationAtFestival, StationQueueFailure> stationAtFestival =
-      await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationAtFestival, StationQueueFailure> stationAtFestival = await _lookup.FindAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(stationAtFestival.IsSuccess, Is.False);
-                      Assert.That(stationAtFestival.Failure.Reason,
-                                  Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
+                      Assert.That(stationAtFestival.Failure.Reason, Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
                     });
   }
 

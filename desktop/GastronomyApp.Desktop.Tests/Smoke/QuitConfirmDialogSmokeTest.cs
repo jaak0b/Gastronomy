@@ -32,12 +32,9 @@ public sealed class QuitConfirmDialogSmokeTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(_colours.ReadLabelBackground(confirm),
-                                  Is.EqualTo(Color.Parse("#C94F4F")));
-                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pointerover"),
-                                  Is.EqualTo(Color.Parse("#D96060")));
-                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pressed"),
-                                  Is.EqualTo(Color.Parse("#A83E3E")));
+                      Assert.That(_colours.ReadLabelBackground(confirm), Is.EqualTo(Color.Parse("#C94F4F")));
+                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pointerover"), Is.EqualTo(Color.Parse("#D96060")));
+                      Assert.That(_colours.LabelBackgroundWhile(confirm, ":pressed"), Is.EqualTo(Color.Parse("#A83E3E")));
                     });
   }
 
@@ -59,13 +56,13 @@ public sealed class QuitConfirmDialogSmokeTest
     var viewModel = CreateQuitConfirmViewModel();
 
     QuitConfirmDialog cancelDialog = new() { DataContext = viewModel };
-    var cancelResult = cancelDialog.ShowDialog<bool>(owner);
+    Task<bool> cancelResult = cancelDialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
     _clicks.Click(cancelDialog, cancelDialog.FindControl<Button>("CancelButton")!);
     Assert.That(await cancelResult, Is.False);
 
     QuitConfirmDialog confirmDialog = new() { DataContext = viewModel };
-    var confirmResult = confirmDialog.ShowDialog<bool>(owner);
+    Task<bool> confirmResult = confirmDialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
     _clicks.Click(confirmDialog, confirmDialog.FindControl<Button>("ConfirmButton")!);
     Assert.That(await confirmResult, Is.True);

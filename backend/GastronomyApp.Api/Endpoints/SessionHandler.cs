@@ -15,9 +15,7 @@ public sealed class SessionHandler
   private readonly IDeviceOwnerStore _ownerStore;
   private readonly ResultEnvelope _resultEnvelope;
 
-  public SessionHandler(IDeviceOwnerStore ownerStore,
-                        DeviceLanguageService languageService,
-                        ResultEnvelope resultEnvelope)
+  public SessionHandler(IDeviceOwnerStore ownerStore, DeviceLanguageService languageService, ResultEnvelope resultEnvelope)
   {
     _ownerStore = ownerStore;
     _languageService = languageService;
@@ -28,46 +26,43 @@ public sealed class SessionHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    DeviceOwnerRecord? owner =
-      await _ownerStore.FindAsync(new(caller.OwnerKind, caller.OwnerId), cancellationToken);
+    var owner = await _ownerStore.FindAsync(new(caller.OwnerKind, caller.OwnerId), cancellationToken);
 
     if (owner is null)
-    {
       return Results.Unauthorized();
-    }
 
-    return Results.Ok(new SessionView(caller.DeviceId,
-                                      caller.OwnerKind,
-                                      caller.OwnerKind == DeviceOwnerKind.StaffMember
-                                        ? new StaffMemberView(caller.OwnerId, owner.Name)
-                                        : null,
-                                      caller.OwnerKind == DeviceOwnerKind.Station
-                                        ? new StationSummaryView(caller.OwnerId, owner.Name)
-                                        : null,
-                                      caller.Language));
+    return Results.Ok(new SessionView(caller.DeviceId, caller.OwnerKind, BuildStaffMemberView(caller, owner), BuildStationSummaryView(caller, owner), caller.Language));
   }
 
-  public async Task<IResult> ChangeLanguageAsync(LanguageChangeRequest request,
-                                                 DeviceCaller caller,
-                                                 CancellationToken cancellationToken)
+  private StaffMemberView? BuildStaffMemberView(DeviceCaller caller, DeviceOwnerRecord owner)
+  {
+    if (caller.OwnerKind != DeviceOwnerKind.StaffMember)
+      return null;
+
+    return new(caller.OwnerId, owner.Name);
+  }
+
+  private StationSummaryView? BuildStationSummaryView(DeviceCaller caller, DeviceOwnerRecord owner)
+  {
+    if (caller.OwnerKind != DeviceOwnerKind.Station)
+      return null;
+
+    return new(caller.OwnerId, owner.Name);
+  }
+
+  public async Task<IResult> ChangeLanguageAsync(LanguageChangeRequest request, DeviceCaller caller, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed =
-      await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
+    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
 
     if (changed.IsSuccess)
-    {
       return Results.NoContent();
-    }
 
     return changed.Failure.Reason switch
            {
-             DeviceLanguageFailureReason.UnsupportedLanguage =>
-               _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                       "ValidationFailed",
-                                       "session.unsupportedLanguage"),
+             DeviceLanguageFailureReason.UnsupportedLanguage => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "session.unsupportedLanguage"),
              DeviceLanguageFailureReason.DeviceNotFound => Results.Unauthorized(),
              _ => new UnreachableCase().Throw<IResult>(changed.Failure.Reason)
            };

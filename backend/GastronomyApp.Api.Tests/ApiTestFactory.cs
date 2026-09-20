@@ -11,10 +11,7 @@ public sealed class ApiTestFactory : IAsyncDisposable
 {
   private readonly WebApplication _application;
 
-  internal ApiTestFactory(WebApplication application,
-                          string dataDirectory,
-                          Uri baseAddress,
-                          AppLanguage language)
+  internal ApiTestFactory(WebApplication application, string dataDirectory, Uri baseAddress, AppLanguage language)
   {
     _application = application;
     DataDirectory = dataDirectory;

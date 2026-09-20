@@ -10,8 +10,7 @@ public sealed class HostLauncher : IHostLauncher
   private readonly Func<string, IDataFolderSetup> _dataFolderSetupFactory;
   private readonly INetworkAddressProvider _networkAddressProvider;
 
-  public HostLauncher(INetworkAddressProvider networkAddressProvider,
-                      Func<string, IDataFolderSetup> dataFolderSetupFactory)
+  public HostLauncher(INetworkAddressProvider networkAddressProvider, Func<string, IDataFolderSetup> dataFolderSetupFactory)
   {
     _networkAddressProvider = networkAddressProvider;
     _dataFolderSetupFactory = dataFolderSetupFactory;
@@ -21,20 +20,15 @@ public sealed class HostLauncher : IHostLauncher
 
   public bool IsRunning => Application is not null;
 
-  public async Task<HostLaunchResult> StartAsync(ApiHostOptions options,
-                                                 CancellationToken cancellationToken = default)
+  public async Task<HostLaunchResult> StartAsync(ApiHostOptions options, CancellationToken cancellationToken = default)
   {
     if (_networkAddressProvider.GetAvailableAddresses().Count == 0)
-    {
       return new HostLaunchResult.NoNetworkAvailable();
-    }
 
     var configuredFolder = _dataFolderSetupFactory(options.DataDirectory);
 
     if (!configuredFolder.Exists() || !configuredFolder.CurrentUserCanWrite())
-    {
       return new HostLaunchResult.DataFolderNotWritable(options.DataDirectory);
-    }
 
     WebApplication? built = null;
 
@@ -46,19 +40,13 @@ public sealed class HostLauncher : IHostLauncher
     catch (Exception failure)
     {
       if (built is not null)
-      {
         await built.DisposeAsync();
-      }
 
       if (failure is IOException bindFailure && IsPortAlreadyBound(bindFailure))
-      {
         return new HostLaunchResult.PortInUse(options.Port);
-      }
 
       if (failure is UnauthorizedAccessException)
-      {
         return new HostLaunchResult.DataFolderNotWritable(options.DataDirectory);
-      }
 
       return new HostLaunchResult.StartFailed(failure);
     }
@@ -71,9 +59,7 @@ public sealed class HostLauncher : IHostLauncher
   public async Task StopAsync(CancellationToken cancellationToken = default)
   {
     if (Application is null)
-    {
       return;
-    }
 
     await Application.StopAsync(cancellationToken);
     await Application.DisposeAsync();
@@ -85,9 +71,7 @@ public sealed class HostLauncher : IHostLauncher
     for (var candidate = failure; candidate is not null; candidate = candidate.InnerException)
     {
       if (candidate is SocketException)
-      {
         return true;
-      }
     }
 
     return false;

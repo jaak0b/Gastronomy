@@ -27,23 +27,22 @@ public sealed class CatalogProductionMinutesTest
   public async Task PostItem_ADurationOutsideTheAllowedRange_IsRefused(int productionMinutes)
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId },
-                                                                productionMinutes
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId },
+                                                                 productionMinutes
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.productionMinutesOutOfRange"));
                     });
   }
 
@@ -52,15 +51,15 @@ public sealed class CatalogProductionMinutesTest
   public async Task PostItem_ADurationAtTheEdgeOfTheAllowedRange_IsStored(int productionMinutes)
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId },
-                                                                productionMinutes
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId },
+                                                                 productionMinutes
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var itemId = body.RootElement.GetProperty("itemId").GetGuid();
@@ -79,23 +78,22 @@ public sealed class CatalogProductionMinutesTest
   public async Task PostItem_ADurationFinerThanOneDecimalPlace_IsRefused()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Pommes",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                priceCents = 250,
-                                                                sortOrder = 3,
-                                                                stationIds = new[] { _context.World.KitchenStationId },
-                                                                productionMinutes = 1.25
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Pommes",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 priceCents = 250,
+                                                                 sortOrder = 3,
+                                                                 stationIds = new[] { _context.World.KitchenStationId },
+                                                                 productionMinutes = 1.25
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("catalog.productionMinutesOutOfRange"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("catalog.productionMinutesOutOfRange"));
                     });
   }
 
@@ -118,17 +116,11 @@ public sealed class CatalogProductionMinutesTest
 
     using var adminResponse = await _context.Client.GetAsync("/api/admin/items");
     var adminBody = JsonDocument.Parse(await adminResponse.Content.ReadAsStringAsync());
-    var adminItem = adminBody.RootElement
-                             .GetProperty("items")
-                             .EnumerateArray()
-                             .Single(item => item.GetProperty("itemId").GetGuid() == _context.World.BratwurstItemId);
+    var adminItem = adminBody.RootElement.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("itemId").GetGuid() == _context.World.BratwurstItemId);
 
     using var catalogResponse = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
     var catalogBody = JsonDocument.Parse(await catalogResponse.Content.ReadAsStringAsync());
-    var catalogItem = catalogBody.RootElement
-                                 .GetProperty("items")
-                                 .EnumerateArray()
-                                 .Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
+    var catalogItem = catalogBody.RootElement.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
 
     Assert.Multiple(() =>
                     {
@@ -142,10 +134,7 @@ public sealed class CatalogProductionMinutesTest
   {
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/catalog");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    var item = body.RootElement
-                   .GetProperty("items")
-                   .EnumerateArray()
-                   .Single(candidate => candidate.GetProperty("id").GetGuid() == _context.World.BeerItemId);
+    var item = body.RootElement.GetProperty("items").EnumerateArray().Single(candidate => candidate.GetProperty("id").GetGuid() == _context.World.BeerItemId);
 
     Assert.That(item.GetProperty("productionMinutes").ValueKind, Is.EqualTo(JsonValueKind.Null));
   }

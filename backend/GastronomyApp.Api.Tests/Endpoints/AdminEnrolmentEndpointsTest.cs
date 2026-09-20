@@ -31,10 +31,8 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-                      Assert.That(body.RootElement.GetProperty("staffMember").ValueKind,
-                                  Is.EqualTo(JsonValueKind.Null));
-                      Assert.That(body.RootElement.GetProperty("station").ValueKind,
-                                  Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(body.RootElement.GetProperty("staffMember").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(body.RootElement.GetProperty("station").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 
@@ -51,8 +49,7 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("enrolment.atMostOneOwner"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("enrolment.atMostOneOwner"));
                     });
   }
 
@@ -66,8 +63,7 @@ public sealed class AdminEnrolmentEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(body.RootElement.GetProperty("ownerKind").GetString(), Is.EqualTo("station"));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(),
-                                  Is.EqualTo("Kueche"));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(), Is.EqualTo("Kueche"));
                     });
   }
 
@@ -86,12 +82,10 @@ public sealed class AdminEnrolmentEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("station"));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_context.World.KitchenStationId));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
                       Assert.That(body.RootElement.TryGetProperty("staffMember", out var staffMember), Is.True);
                       Assert.That(staffMember.ValueKind, Is.EqualTo(JsonValueKind.Null));
-                      Assert.That(station.DeviceId,
-                                  Is.EqualTo(body.RootElement.GetProperty("deviceId").GetGuid()));
+                      Assert.That(station.DeviceId, Is.EqualTo(body.RootElement.GetProperty("deviceId").GetGuid()));
                     });
   }
 
@@ -113,8 +107,7 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("enrolment.stationIsOffTheList"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("enrolment.stationIsOffTheList"));
                     });
   }
 
@@ -122,7 +115,7 @@ public sealed class AdminEnrolmentEndpointsTest
   public async Task PostInvitation_ForAStationThatAlreadyHasATablet_RevokesTheOldTabletImmediately()
   {
     var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
-    var idOfTheOldTablet = await FindKitchenDeviceIdAsync();
+    Guid? idOfTheOldTablet = await FindKitchenDeviceIdAsync();
 
     using (var invitation = await CreateInvitationAsync(new { stationId = _context.World.KitchenStationId }))
     {
@@ -145,7 +138,7 @@ public sealed class AdminEnrolmentEndpointsTest
   public async Task PostRedeem_ForAStationThatAlreadyHasATablet_ReplacesItAndTheOldTokenStopsWorking()
   {
     var tokenOfTheOldTablet = await _context.IssueStationTokenAsync(_context.World.KitchenStationId);
-    var idOfTheOldTablet = await FindKitchenDeviceIdAsync();
+    Guid? idOfTheOldTablet = await FindKitchenDeviceIdAsync();
     var code = await CreateInvitationAndReadCodeAsync(new { stationId = _context.World.KitchenStationId });
 
     using var redeemed = await RedeemAsync(code);
@@ -170,10 +163,7 @@ public sealed class AdminEnrolmentEndpointsTest
   {
     await using var database = _context.Factory.CreateContext();
 
-    return await database.Stations
-                         .Where(candidate => candidate.Id == _context.World.KitchenStationId)
-                         .Select(candidate => candidate.DeviceId)
-                         .SingleAsync();
+    return await database.Stations.Where(candidate => candidate.Id == _context.World.KitchenStationId).Select(candidate => candidate.DeviceId).SingleAsync();
   }
 
   private Task<HttpResponseMessage> CreateInvitationAsync(object body)

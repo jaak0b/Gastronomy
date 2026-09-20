@@ -1,3 +1,4 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using Serilog;
@@ -21,13 +22,11 @@ public sealed class UpdateInstallGate : IUpdateInstallGate
   {
     try
     {
-      var festivals = await _festivals.ReadAllAsync(cancellationToken);
+      IReadOnlyCollection<Festival> festivals = await _festivals.ReadAllAsync(cancellationToken);
       var now = _clock.UtcNow;
 
       if (_schedule.FindRunningAt(festivals, now) is not null)
-      {
         return false;
-      }
 
       return !_schedule.HasStartWithin(festivals, now, TimeSpan.FromHours(24));
     }

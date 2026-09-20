@@ -23,9 +23,7 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
     builder.Property(invitation => invitation.ConsumedAtUtc).IsRequired(false);
     builder.Property(invitation => invitation.ConsumedByDeviceId).IsRequired(false);
 
-    builder.Property<int?>(OutstandingMarkerColumnName)
-           .HasColumnType("INTEGER")
-           .HasComputedColumnSql("CASE WHEN ConsumedAtUtc IS NULL THEN 1 END", true);
+    builder.Property<int?>(OutstandingMarkerColumnName).HasColumnType("INTEGER").HasComputedColumnSql("CASE WHEN ConsumedAtUtc IS NULL THEN 1 END", true);
 
     builder.HasIndex(OutstandingMarkerColumnName).IsUnique();
   }

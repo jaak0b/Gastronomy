@@ -1,7 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Services;
 
 namespace GastronomyApp.Desktop.Tests.Services;
@@ -17,8 +16,7 @@ public sealed class UpdateInstallGateTest
     _festivals = A.Fake<IFestivalReader>();
     _clock = A.Fake<IClock>();
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Festival>>([]));
+    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([]));
   }
 
   private IFestivalReader _festivals = null!;
@@ -26,7 +24,7 @@ public sealed class UpdateInstallGateTest
 
   private UpdateInstallGate CreateGate()
   {
-    return new(_festivals, new FestivalSchedule(), _clock);
+    return new(_festivals, new(), _clock);
   }
 
   private Festival BuildFestival(DateTime startsAtUtc, DateTime endsAtUtc, bool isHidden = false)
@@ -44,8 +42,7 @@ public sealed class UpdateInstallGateTest
 
   private void FestivalsAre(params Festival[] festivals)
   {
-    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyCollection<Festival>>(festivals));
+    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>(festivals));
   }
 
   [Test]
@@ -83,8 +80,7 @@ public sealed class UpdateInstallGateTest
   [Test]
   public async Task CanInstallNowAsync_WhenTheFestivalListCannotBeRead_IsFalse()
   {
-    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._))
-     .ThrowsAsync(new InvalidOperationException("The server is not running."));
+    A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._)).ThrowsAsync(new InvalidOperationException("The server is not running."));
 
     Assert.That(await CreateGate().CanInstallNowAsync(CancellationToken.None), Is.False);
   }

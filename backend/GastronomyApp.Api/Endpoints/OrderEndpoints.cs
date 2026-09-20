@@ -11,17 +11,10 @@ public static class OrderEndpoints
 {
   public static IEndpointRouteBuilder MapOrderEndpoints(this IEndpointRouteBuilder routes)
   {
-    var group = routes.MapGroup("/api/orders")
-                      .RequireAuthorization()
-                      .RequireStaffDevice()
-                      .RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    var group = routes.MapGroup("/api/orders").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
 
     group.MapPost(string.Empty,
-                  async (PlaceOrderRequest request,
-                         HttpContext httpContext,
-                         CallerIdentity callerIdentity,
-                         OrderPlacementHandler handler,
-                         CancellationToken cancellationToken) =>
+                  async (PlaceOrderRequest request, HttpContext httpContext, CallerIdentity callerIdentity, OrderPlacementHandler handler, CancellationToken cancellationToken) =>
                   {
                     var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
                     return await handler.PlaceAsync(request, caller, cancellationToken);

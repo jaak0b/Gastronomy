@@ -20,12 +20,10 @@ public sealed class NetshCommand : INetshCommand
 
     using var process = Process.Start(startInfo);
     if (process is null)
-    {
       throw new InvalidOperationException("The netsh command could not be started.");
-    }
 
-    var standardOutput = process.StandardOutput.ReadToEndAsync();
-    var standardError = process.StandardError.ReadToEndAsync();
+    Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+    Task<string> standardError = process.StandardError.ReadToEndAsync();
 
     Task.WaitAll(standardOutput, standardError);
     process.WaitForExit();

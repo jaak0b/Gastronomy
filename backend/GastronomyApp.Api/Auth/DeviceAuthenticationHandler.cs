@@ -17,12 +17,7 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly DeviceTokenSplitter _tokenSplitter;
 
-  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options,
-                                     ILoggerFactory logger,
-                                     UrlEncoder encoder,
-                                     IDeviceTokenStore deviceTokenStore,
-                                     DeviceTokenSplitter tokenSplitter)
-    : base(options, logger, encoder)
+  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IDeviceTokenStore deviceTokenStore, DeviceTokenSplitter tokenSplitter) : base(options, logger, encoder)
   {
     _deviceTokenStore = deviceTokenStore;
     _tokenSplitter = tokenSplitter;
@@ -32,23 +27,16 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   {
     var presentedToken = ReadPresentedToken();
     if (presentedToken is null)
-    {
       return AuthenticateResult.NoResult();
-    }
 
     var tokenParts = _tokenSplitter.Split(presentedToken);
     if (tokenParts is null)
-    {
       return AuthenticateResult.Fail("The device token is not in the form TokenLookupId.secret.");
-    }
 
-    var verification =
-      await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
+    var verification = await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
 
     if (!verification.IsValid || verification.Device is null || verification.Owner is null)
-    {
       return AuthenticateResult.Fail("The device token was not accepted.");
-    }
 
     var device = verification.Device;
     var owner = verification.Owner;
@@ -67,17 +55,13 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   {
     var header = Request.Headers.Authorization.ToString();
     if (!string.IsNullOrWhiteSpace(header) && header.StartsWith(BearerPrefix, StringComparison.Ordinal))
-    {
       return header[BearerPrefix.Length..].Trim();
-    }
 
     if (Request.Path.StartsWithSegments(HubPathPrefix))
     {
       string? queryToken = Request.Query[AccessTokenQueryKey];
       if (!string.IsNullOrWhiteSpace(queryToken))
-      {
         return queryToken;
-      }
     }
 
     return null;

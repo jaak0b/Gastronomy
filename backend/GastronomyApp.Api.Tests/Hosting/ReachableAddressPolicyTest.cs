@@ -9,17 +9,14 @@ public sealed class ReachableAddressPolicyTest
 {
   private readonly ReachableAddressPolicy _policy = new();
 
-  private CandidateNetworkAddress On(string interfaceName,
-                                     NetworkInterfaceType interfaceType,
-                                     string address,
-                                     OperationalStatus status = OperationalStatus.Up)
+  private CandidateNetworkAddress On(string interfaceName, NetworkInterfaceType interfaceType, string address, OperationalStatus status = OperationalStatus.Up)
   {
     return new(interfaceName, interfaceType, status, IPAddress.Parse(address));
   }
 
   private IReadOnlyList<string> OrderAddresses(params CandidateNetworkAddress[] candidates)
   {
-    return [.. _policy.OrderReachableAddresses(candidates).Select(found => found.IPAddress)];
+    return _policy.OrderReachableAddresses(candidates).Select(found => found.IPAddress).ToList();
   }
 
   private CandidateNetworkAddress[] BuildTheLaptopAtTheDemo()
@@ -42,7 +39,7 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_TheLaptopAtTheDemoEnumeratedTheOtherWayRound_YieldsTheSameAddress()
   {
-    CandidateNetworkAddress[] reversed = [.. Enumerable.Reverse(BuildTheLaptopAtTheDemo())];
+    CandidateNetworkAddress[] reversed = BuildTheLaptopAtTheDemo().Reverse().ToArray();
 
     Assert.That(OrderAddresses(reversed), Is.EqualTo(OrderAddresses(BuildTheLaptopAtTheDemo())));
   }
@@ -50,8 +47,7 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_LinkLocalAddress_IsLeftOutBecauseNoPhoneCanReachIt()
   {
-    Assert.That(OrderAddresses(On("Wi-Fi Direct", NetworkInterfaceType.Wireless80211, "169.254.1.1")),
-                Is.Empty);
+    Assert.That(OrderAddresses(On("Wi-Fi Direct", NetworkInterfaceType.Wireless80211, "169.254.1.1")), Is.Empty);
   }
 
   [Test]
@@ -69,11 +65,7 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_InterfaceThatIsDown_IsLeftOut()
   {
-    Assert.That(OrderAddresses(On("Ethernet",
-                                 NetworkInterfaceType.Ethernet,
-                                 "192.168.1.20",
-                                 OperationalStatus.Down)),
-                Is.Empty);
+    Assert.That(OrderAddresses(On("Ethernet", NetworkInterfaceType.Ethernet, "192.168.1.20", OperationalStatus.Down)), Is.Empty);
   }
 
   [Test]
@@ -85,10 +77,14 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_PrivateAndPublicAddress_PutsThePrivateOneFirst()
   {
-    IReadOnlyList<string> addresses = OrderAddresses(On("Ethernet", NetworkInterfaceType.Ethernet, "203.0.113.9"),
-                                                    On("Wi-Fi", NetworkInterfaceType.Wireless80211, "192.168.1.20"));
+    IReadOnlyList<string> addresses = OrderAddresses(On("Ethernet", NetworkInterfaceType.Ethernet, "203.0.113.9"), On("Wi-Fi", NetworkInterfaceType.Wireless80211, "192.168.1.20"));
 
-    Assert.That(addresses, Is.EqualTo(new[] { "192.168.1.20", "203.0.113.9" }));
+    Assert.That(addresses,
+                Is.EqualTo(new[]
+                           {
+                             "192.168.1.20",
+                             "203.0.113.9"
+                           }));
   }
 
   [TestCase("10.0.0.12")]
@@ -97,8 +93,7 @@ public sealed class ReachableAddressPolicyTest
   [TestCase("192.168.1.20")]
   public void Order_EveryPrivateRange_CountsAsTheSiteNetwork(string privateAddress)
   {
-    IReadOnlyList<string> addresses = OrderAddresses(On("Ethernet", NetworkInterfaceType.Ethernet, "203.0.113.9"),
-                                                    On("Wi-Fi", NetworkInterfaceType.Wireless80211, privateAddress));
+    IReadOnlyList<string> addresses = OrderAddresses(On("Ethernet", NetworkInterfaceType.Ethernet, "203.0.113.9"), On("Wi-Fi", NetworkInterfaceType.Wireless80211, privateAddress));
 
     Assert.That(addresses[0], Is.EqualTo(privateAddress));
   }
@@ -106,10 +101,14 @@ public sealed class ReachableAddressPolicyTest
   [Test]
   public void Order_PrivateAddressOnACellularInterface_ComesAfterTheOneOnWiFi()
   {
-    IReadOnlyList<string> addresses = OrderAddresses(On("Cellular", NetworkInterfaceType.Wwanpp, "10.0.0.5"),
-                                                    On("Wi-Fi", NetworkInterfaceType.Wireless80211, "10.0.0.12"));
+    IReadOnlyList<string> addresses = OrderAddresses(On("Cellular", NetworkInterfaceType.Wwanpp, "10.0.0.5"), On("Wi-Fi", NetworkInterfaceType.Wireless80211, "10.0.0.12"));
 
-    Assert.That(addresses, Is.EqualTo(new[] { "10.0.0.12", "10.0.0.5" }));
+    Assert.That(addresses,
+                Is.EqualTo(new[]
+                           {
+                             "10.0.0.12",
+                             "10.0.0.5"
+                           }));
   }
 
   [Test]

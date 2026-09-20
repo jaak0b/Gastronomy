@@ -10,30 +10,24 @@ public sealed class OrderItemResolutionService
   private readonly OrderRoutingResolver _routingResolver;
   private readonly IStationRepository _stationRepository;
 
-  public OrderItemResolutionService(ICatalogItemRepository catalogItemRepository,
-                                    IStationRepository stationRepository,
-                                    OrderRoutingResolver routingResolver)
+  public OrderItemResolutionService(ICatalogItemRepository catalogItemRepository, IStationRepository stationRepository, OrderRoutingResolver routingResolver)
   {
     _catalogItemRepository = catalogItemRepository;
     _stationRepository = stationRepository;
     _routingResolver = routingResolver;
   }
 
-  public async Task<Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>> ResolveAsync(Guid festivalId,
-                                                                                                   IReadOnlyList<OrderAcceptanceItemRequest> itemRequests,
-                                                                                                   CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>> ResolveAsync(Guid festivalId, IReadOnlyList<OrderAcceptanceItemRequest> itemRequests, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(itemRequests);
 
-    IReadOnlyCollection<Station> stationsAtTheFestival =
-      await _stationRepository.FindAtFestivalAsync(festivalId, cancellationToken);
+    IReadOnlyCollection<Station> stationsAtTheFestival = await _stationRepository.FindAtFestivalAsync(festivalId, cancellationToken);
 
     List<ResolvedOrderItem> resolvedItems = [];
 
     foreach (var itemRequest in itemRequests)
     {
-      var catalogItem =
-        await _catalogItemRepository.FindByIdAsync(itemRequest.CatalogItemId, cancellationToken);
+      var catalogItem = await _catalogItemRepository.FindByIdAsync(itemRequest.CatalogItemId, cancellationToken);
       if (catalogItem is null)
       {
         return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Failed(new()
@@ -43,8 +37,7 @@ public sealed class OrderItemResolutionService
                                                                                        });
       }
 
-      var menuRow =
-        await _catalogItemRepository.FindMenuRowAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
+      var menuRow = await _catalogItemRepository.FindMenuRowAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
       if (!catalogItem.IsActive || menuRow is { IsAvailable: false })
       {
         return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Failed(new()
@@ -55,13 +48,9 @@ public sealed class OrderItemResolutionService
                                                                                        });
       }
 
-      IReadOnlyCollection<ItemStationAssignment> assignments =
-        await _catalogItemRepository.FindAssignmentsAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
+      IReadOnlyCollection<ItemStationAssignment> assignments = await _catalogItemRepository.FindAssignmentsAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
 
-      Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(itemRequest.CatalogItemId,
-                                                                                 assignments,
-                                                                                 stationsAtTheFestival,
-                                                                                 itemRequest.StationId);
+      Result<RoutingDecision, RoutingFailure> routing = _routingResolver.Resolve(itemRequest.CatalogItemId, assignments, stationsAtTheFestival, itemRequest.StationId);
 
       if (!routing.IsSuccess)
       {
@@ -91,8 +80,7 @@ public sealed class OrderItemResolutionService
              RoutingFailureReason.ItemHasNoStation => OrderValidationFailureReason.ItemHasNoStation,
              RoutingFailureReason.StationRequired => OrderValidationFailureReason.StationRequired,
              RoutingFailureReason.StationNotAssignedToItem => OrderValidationFailureReason.StationNotAssignedToItem,
-             RoutingFailureReason.ChosenStationNoLongerPreparesTheItem =>
-               OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem,
+             RoutingFailureReason.ChosenStationNoLongerPreparesTheItem => OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem,
              _ => new UnreachableCase().Throw<OrderValidationFailureReason>(routingFailureReason)
            };
   }

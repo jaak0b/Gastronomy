@@ -8,8 +8,7 @@ public sealed class SavedChangeAnnouncement
   private readonly IHostApplicationLifetime _applicationLifetime;
   private readonly ILogger<SavedChangeAnnouncement> _logger;
 
-  public SavedChangeAnnouncement(IHostApplicationLifetime applicationLifetime,
-                                 ILogger<SavedChangeAnnouncement> logger)
+  public SavedChangeAnnouncement(IHostApplicationLifetime applicationLifetime, ILogger<SavedChangeAnnouncement> logger)
   {
     _applicationLifetime = applicationLifetime;
     _logger = logger;
@@ -19,7 +18,7 @@ public sealed class SavedChangeAnnouncement
   {
     ArgumentNullException.ThrowIfNull(tellTheDevices);
 
-    CancellationToken tokenOutlivingTheAdminsRequest = _applicationLifetime.ApplicationStopping;
+    var tokenOutlivingTheAdminsRequest = _applicationLifetime.ApplicationStopping;
 
     try
     {
@@ -35,8 +34,7 @@ public sealed class SavedChangeAnnouncement
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception,
-                       "The change was saved, but the phones and station tablets could not be told about it, so they keep showing what they loaded before until they load it again.");
+      _logger.LogError(exception, "The change was saved, but the phones and station tablets could not be told about it, so they keep showing what they loaded before until they load it again.");
 
       return false;
     }

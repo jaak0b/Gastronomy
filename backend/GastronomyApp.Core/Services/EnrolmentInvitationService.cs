@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
@@ -14,11 +13,7 @@ public sealed class EnrolmentInvitationService
   private readonly DeviceOwnerRetirement _retirement;
   private readonly IEnrolmentInvitationStore _store;
 
-  public EnrolmentInvitationService(IEnrolmentInvitationStore store,
-                                    IDeviceOwnerStore ownerStore,
-                                    IDeviceTokenStore deviceTokenStore,
-                                    DeviceOwnerRetirement retirement,
-                                    IClock clock)
+  public EnrolmentInvitationService(IEnrolmentInvitationStore store, IDeviceOwnerStore ownerStore, IDeviceTokenStore deviceTokenStore, DeviceOwnerRetirement retirement, IClock clock)
   {
     _store = store;
     _ownerStore = ownerStore;
@@ -27,30 +22,24 @@ public sealed class EnrolmentInvitationService
     _clock = clock;
   }
 
-  public async Task<Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure>> CreateAsync(
-    Guid? staffMemberId,
-    Guid? stationId,
-    CancellationToken cancellationToken)
+  public async Task<Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure>> CreateAsync(Guid? staffMemberId, Guid? stationId, CancellationToken cancellationToken)
   {
     if (staffMemberId is not null && stationId is not null)
-    {
       return Failed(EnrolmentInvitationFailureReason.AtMostOneOwner);
-    }
 
-    DeviceOwner? owner = ReadOwner(staffMemberId, stationId);
-    DeviceOwnerRecord? ownerRecord = owner is null
-                                       ? null
-                                       : await _ownerStore.FindAsync(owner, cancellationToken);
+    var owner = ReadOwner(staffMemberId, stationId);
+    DeviceOwnerRecord? ownerRecord = null;
+
+    if (owner is not null)
+      ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
 
     if (owner is not null && ownerRecord is null)
-    {
       return Failed(EnrolmentInvitationFailureReason.OwnerNotFound);
-    }
 
-    var deviceToReplace = ownerRecord?.DeviceId;
+    Guid? deviceToReplace = ownerRecord?.DeviceId;
 
-    EnrolmentInvitationCreated created = await _store.CreateAsync(owner, cancellationToken);
-    var revokedDeviceId = await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
+    var created = await _store.CreateAsync(owner, cancellationToken);
+    Guid? revokedDeviceId = await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
 
     return Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure>.Success(new()
                                                                                  {
@@ -63,75 +52,61 @@ public sealed class EnrolmentInvitationService
                                                                                  });
   }
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
-                                                     CancellationToken cancellationToken)
+  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
     return _store.RedeemAsync(request, cancellationToken);
   }
 
-  public async Task<Guid?> RetireHandedOverDeviceAsync(string tokenLookupId,
-                                                       string secret,
-                                                       Guid newDeviceId,
-                                                       CancellationToken cancellationToken)
+  public async Task<Guid?> RetireHandedOverDeviceAsync(string tokenLookupId, string secret, Guid newDeviceId, CancellationToken cancellationToken)
   {
-    DeviceVerificationResult verification =
-      await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, cancellationToken);
+    var verification = await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, cancellationToken);
 
     if (!verification.IsValid || verification.Device is null || verification.Device.Id == newDeviceId)
-    {
       return null;
-    }
 
     return await _retirement.RevokeDeviceAsync(verification.Device.Id, cancellationToken);
   }
 
-  public async Task<Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>> EnsureStillOpenAsync(
-    Guid invitationId,
-    CancellationToken cancellationToken)
+  public async Task<Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>> EnsureStillOpenAsync(Guid invitationId, CancellationToken cancellationToken)
   {
-    EnrolmentInvitation? invitation = await _store.FindByIdAsync(invitationId, cancellationToken);
+    var invitation = await _store.FindByIdAsync(invitationId, cancellationToken);
 
     if (invitation is null)
-    {
       return Refused(EnrolmentInvitationFailureReason.InvitationUnknown);
-    }
 
     if (invitation.ConsumedAtUtc is not null)
     {
-      return Refused(invitation.ConsumedByDeviceId is null
-                       ? EnrolmentInvitationFailureReason.InvitationReplaced
-                       : EnrolmentInvitationFailureReason.InvitationAlreadyUsed);
+      if (invitation.ConsumedByDeviceId is null)
+        return Refused(EnrolmentInvitationFailureReason.InvitationReplaced);
+
+      return Refused(EnrolmentInvitationFailureReason.InvitationAlreadyUsed);
     }
 
     if (invitation.ExpiresAtUtc <= _clock.UtcNow)
-    {
       return Refused(EnrolmentInvitationFailureReason.InvitationExpired);
-    }
 
-    return Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>
-      .Success(new(invitation.Id, invitation.ExpiresAtUtc));
+    return Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>.Success(new(invitation.Id, invitation.ExpiresAtUtc));
   }
 
   private DeviceOwner? ReadOwner(Guid? staffMemberId, Guid? stationId)
   {
     if (staffMemberId is not null)
-    {
       return new(DeviceOwnerKind.StaffMember, staffMemberId.Value);
-    }
 
-    return stationId is null ? null : new DeviceOwner(DeviceOwnerKind.Station, stationId.Value);
+    if (stationId is null)
+      return null;
+
+    return new(DeviceOwnerKind.Station, stationId.Value);
   }
 
-  private Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> Failed(
-    EnrolmentInvitationFailureReason reason)
+  private Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> Failed(EnrolmentInvitationFailureReason reason)
   {
     return Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure>.Failed(new() { Reason = reason });
   }
 
-  private Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> Refused(
-    EnrolmentInvitationFailureReason reason)
+  private Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure> Refused(EnrolmentInvitationFailureReason reason)
   {
     return Result<OpenEnrolmentInvitation, EnrolmentInvitationFailure>.Failed(new() { Reason = reason });
   }

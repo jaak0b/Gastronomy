@@ -8,10 +8,7 @@ public sealed class StatusLevelConverter : IValueConverter
 {
   public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
   {
-    return value is StatusLevel level
-           && parameter is string wantedName
-           && Enum.TryParse(wantedName, out StatusLevel wanted)
-           && level == wanted;
+    return value is StatusLevel level && parameter is string wantedName && Enum.TryParse(wantedName, out StatusLevel wanted) && level == wanted;
   }
 
   public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

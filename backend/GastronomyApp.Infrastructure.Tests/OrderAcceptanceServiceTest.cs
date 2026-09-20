@@ -18,8 +18,7 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -39,10 +38,8 @@ public sealed class OrderAcceptanceServiceTest
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
     var clientOrderId = Guid.NewGuid();
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> first =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken);
-    Result<OrderAcceptanceResult, OrderValidationFailure> second =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken);
 
     var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -67,10 +64,8 @@ public sealed class OrderAcceptanceServiceTest
     var firstService = composition.Create(fixture.CreateContext());
     var secondService = composition.Create(fixture.CreateContext());
 
-    Task<Result<OrderAcceptanceResult, OrderValidationFailure>> firstCall =
-      Task.Run(() => firstService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken));
-    Task<Result<OrderAcceptanceResult, OrderValidationFailure>> secondCall =
-      Task.Run(() => secondService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken));
+    Task<Result<OrderAcceptanceResult, OrderValidationFailure>> firstCall = Task.Run(() => firstService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken));
+    Task<Result<OrderAcceptanceResult, OrderValidationFailure>> secondCall = Task.Run(() => secondService.AcceptAsync(BuildRequest(seeded, clientOrderId), TestContext.CurrentContext.CancellationToken));
 
     Result<OrderAcceptanceResult, OrderValidationFailure>[] results = await Task.WhenAll(firstCall, secondCall);
 
@@ -95,8 +90,7 @@ public sealed class OrderAcceptanceServiceTest
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
     await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
-    Result<OrderAcceptanceResult, OrderValidationFailure> second =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
     var kitchenTicket = second.Value.Order.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.KitchenStationId);
     var barTicket = second.Value.Order.StationOrders.Single(stationOrder => stationOrder.StationId == seeded.BarStationId);
@@ -117,19 +111,16 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(seedContext, TestContext.CurrentContext.CancellationToken);
 
     var acceptanceContext = fixture.CreateContext();
-    await acceptanceContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId,
-                                                 TestContext.CurrentContext.CancellationToken);
+    await acceptanceContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     var competingContext = fixture.CreateContext();
-    var competingFestival = await competingContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId,
-                                                                        TestContext.CurrentContext.CancellationToken);
+    var competingFestival = await competingContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
     competingFestival.NextOrderNumber = 5;
     await competingContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     var acceptanceService = new OrderAcceptanceComposition().Create(acceptanceContext);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -145,13 +136,11 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var alwaysContendedAllocator = A.Fake<INumberAllocator>();
-    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
-     .ThrowsAsync(new DbUpdateConcurrencyException());
+    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new DbUpdateConcurrencyException());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
     var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -160,8 +149,7 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(result.IsSuccess, Is.False);
                       Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.OrderNumberCouldNotBeAllocated));
                       Assert.That(orderCount, Is.EqualTo(0));
-                      A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
-                       .MustHaveHappened(5, Times.Exactly);
+                      A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).MustHaveHappened(5, Times.Exactly);
                     });
   }
 
@@ -172,18 +160,14 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var alwaysContendedAllocator = A.Fake<INumberAllocator>();
-    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._))
-     .ThrowsAsync(new DbUpdateConcurrencyException());
+    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new DbUpdateConcurrencyException());
 
-    var logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
+    ILogger<ImmediateTransactionRunner> logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator, logger);
 
     await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), TestContext.CurrentContext.CancellationToken);
 
-    A.CallTo(logger)
-     .Where(call => call.Method.Name == nameof(ILogger.Log)
-                    && call.GetArgument<LogLevel>(0) == LogLevel.Warning)
-     .MustHaveHappened(4, Times.Exactly);
+    A.CallTo(logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Warning).MustHaveHappened(4, Times.Exactly);
   }
 
   [Test]
@@ -193,15 +177,9 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded,
-                                                       Guid.NewGuid(),
-                                                       new() { PaidPriceCents = 350 },
-                                                       new() { PaidPriceCents = 350 }),
-                                          TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 350 }, new() { PaidPriceCents = 350 }), TestContext.CurrentContext.CancellationToken);
 
-    List<OrderItem> storedItems = await fixture.DbContext.OrderItems
-                                                         .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> storedItems = await fixture.DbContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -221,12 +199,9 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 350 }),
-                                          TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 350 }), TestContext.CurrentContext.CancellationToken);
 
-    List<OrderItem> storedItems = await fixture.DbContext.OrderItems
-                                                         .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> storedItems = await fixture.DbContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
     var settledLine = storedItems.Single(item => item.CatalogItemId == seeded.SausageItemId);
     var openLine = storedItems.Single(item => item.CatalogItemId == seeded.LemonadeItemId);
 
@@ -249,19 +224,12 @@ public sealed class OrderAcceptanceServiceTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> result =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded,
-                                                       Guid.NewGuid(),
-                                                       new() { PaidPriceCents = 250 },
-                                                       new() { PaidPriceCents = 250 }),
-                                          TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 250 }, new() { PaidPriceCents = 250 }), TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
     var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
     var itemCount = await verificationContext.OrderItems.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var nextOrderNumber = await verificationContext.Festivals
-                                                   .Select(festival => festival.NextOrderNumber)
-                                                   .SingleAsync(TestContext.CurrentContext.CancellationToken);
+    var nextOrderNumber = await verificationContext.Festivals.Select(festival => festival.NextOrderNumber).SingleAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -283,21 +251,14 @@ public sealed class OrderAcceptanceServiceTest
     OrderSettlementLineTerms sausageSettlement = new() { PaidPriceCents = 350 };
     OrderSettlementLineTerms lemonadeSettlement = new() { PaidPriceCents = 350 };
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> first =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement),
-                                          TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> first = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement), TestContext.CurrentContext.CancellationToken);
     fixture.DbContext.ChangeTracker.Clear();
-    Result<OrderAcceptanceResult, OrderValidationFailure> second =
-      await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement),
-                                          TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> second = await acceptanceService.AcceptAsync(BuildRequest(seeded, clientOrderId, sausageSettlement, lemonadeSettlement), TestContext.CurrentContext.CancellationToken);
 
     using var verificationContext = fixture.CreateContext();
-    List<OrderItem> storedItems = await verificationContext.OrderItems
-                                                           .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<OrderItem> storedItems = await verificationContext.OrderItems.ToListAsync(TestContext.CurrentContext.CancellationToken);
     var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var nextOrderNumber = await verificationContext.Festivals
-                                                   .Select(festival => festival.NextOrderNumber)
-                                                   .SingleAsync(TestContext.CurrentContext.CancellationToken);
+    var nextOrderNumber = await verificationContext.Festivals.Select(festival => festival.NextOrderNumber).SingleAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -312,10 +273,7 @@ public sealed class OrderAcceptanceServiceTest
                     });
   }
 
-  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded,
-                                              Guid clientOrderId,
-                                              OrderSettlementLineTerms? sausageSettlement = null,
-                                              OrderSettlementLineTerms? lemonadeSettlement = null)
+  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded, Guid clientOrderId, OrderSettlementLineTerms? sausageSettlement = null, OrderSettlementLineTerms? lemonadeSettlement = null)
   {
     return new()
            {
@@ -327,13 +285,17 @@ public sealed class OrderAcceptanceServiceTest
              [
                new()
                {
-                 CatalogItemId = seeded.SausageItemId, Note = null,
-                 UnitPriceCents = 350, Settlement = sausageSettlement
+                 CatalogItemId = seeded.SausageItemId,
+                 Note = null,
+                 UnitPriceCents = 350,
+                 Settlement = sausageSettlement
                },
                new()
                {
-                 CatalogItemId = seeded.LemonadeItemId, Note = null,
-                 UnitPriceCents = 350, Settlement = lemonadeSettlement
+                 CatalogItemId = seeded.LemonadeItemId,
+                 Note = null,
+                 UnitPriceCents = 350,
+                 Settlement = lemonadeSettlement
                }
              ]
            };

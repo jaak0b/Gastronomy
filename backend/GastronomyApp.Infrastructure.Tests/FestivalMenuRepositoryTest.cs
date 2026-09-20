@@ -16,9 +16,7 @@ public sealed class FestivalMenuRepositoryTest
 
     FestivalMenuRepository repository = new(fixture.DbContext);
 
-    FestivalCatalogItem? menuRow = await repository.FindMenuRowAsync(seeded.FestivalId,
-                                                                     seeded.SausageItemId,
-                                                                     TestContext.CurrentContext.CancellationToken);
+    var menuRow = await repository.FindMenuRowAsync(seeded.FestivalId, seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(menuRow?.PriceCents, Is.EqualTo(350));
   }
@@ -31,10 +29,7 @@ public sealed class FestivalMenuRepositoryTest
 
     FestivalMenuRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.FindMenuRowAsync(seeded.FestivalId,
-                                                  Guid.NewGuid(),
-                                                  TestContext.CurrentContext.CancellationToken),
-                Is.Null);
+    Assert.That(await repository.FindMenuRowAsync(seeded.FestivalId, Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 
   [Test]
@@ -47,12 +42,8 @@ public sealed class FestivalMenuRepositoryTest
 
     Assert.Multiple(async () =>
                     {
-                      Assert.That(await repository.CatalogItemExistsAsync(seeded.SausageItemId,
-                                                                          TestContext.CurrentContext.CancellationToken),
-                                  Is.True);
-                      Assert.That(await repository.CatalogItemExistsAsync(Guid.NewGuid(),
-                                                                          TestContext.CurrentContext.CancellationToken),
-                                  Is.False);
+                      Assert.That(await repository.CatalogItemExistsAsync(seeded.SausageItemId, TestContext.CurrentContext.CancellationToken), Is.True);
+                      Assert.That(await repository.CatalogItemExistsAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.False);
                     });
   }
 
@@ -64,11 +55,14 @@ public sealed class FestivalMenuRepositoryTest
 
     FestivalMenuRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<Guid> stationIds =
-      await repository.FindStationIdsAtFestivalAsync(seeded.FestivalId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> stationIds = await repository.FindStationIdsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stationIds, Is.EquivalentTo(new[] { seeded.KitchenStationId, seeded.BarStationId }));
+    Assert.That(stationIds,
+                Is.EquivalentTo(new[]
+                                {
+                                  seeded.KitchenStationId,
+                                  seeded.BarStationId
+                                }));
   }
 
   [Test]
@@ -79,18 +73,14 @@ public sealed class FestivalMenuRepositoryTest
 
     FestivalMenuRepository repository = new(fixture.DbContext);
 
-    FestivalCatalogItem menuRow = (await repository.FindMenuRowAsync(seeded.FestivalId,
-                                                                     seeded.SausageItemId,
-                                                                     TestContext.CurrentContext.CancellationToken))!;
+    var menuRow = (await repository.FindMenuRowAsync(seeded.FestivalId, seeded.SausageItemId, TestContext.CurrentContext.CancellationToken))!;
 
     repository.RemoveMenuRow(menuRow);
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.FestivalCatalogItems.AnyAsync(row => row.Id == menuRow.Id,
-                                                                TestContext.CurrentContext.CancellationToken),
-                Is.False);
+    Assert.That(await readContext.FestivalCatalogItems.AnyAsync(row => row.Id == menuRow.Id, TestContext.CurrentContext.CancellationToken), Is.False);
   }
 
   [Test]
@@ -101,20 +91,14 @@ public sealed class FestivalMenuRepositoryTest
 
     FestivalMenuRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ItemStationAssignment> assignments =
-      await repository.FindAssignmentsAsync(seeded.FestivalId,
-                                            seeded.SausageItemId,
-                                            TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ItemStationAssignment> assignments = await repository.FindAssignmentsAsync(seeded.FestivalId, seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
 
     repository.RemoveAssignments(assignments);
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.ItemStationAssignments
-                                 .AnyAsync(assignment => assignment.CatalogItemId == seeded.SausageItemId,
-                                           TestContext.CurrentContext.CancellationToken),
-                Is.False);
+    Assert.That(await readContext.ItemStationAssignments.AnyAsync(assignment => assignment.CatalogItemId == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken), Is.False);
   }
 
   [Test]
@@ -148,8 +132,6 @@ public sealed class FestivalMenuRepositoryTest
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.ItemStationAssignments.AnyAsync(assignment => assignment.Id == assignmentId,
-                                                                  TestContext.CurrentContext.CancellationToken),
-                Is.True);
+    Assert.That(await readContext.ItemStationAssignments.AnyAsync(assignment => assignment.Id == assignmentId, TestContext.CurrentContext.CancellationToken), Is.True);
   }
 }

@@ -18,10 +18,7 @@ public sealed class FirstRunDialogSmokeTest
 
   private FirstRunViewModel CreateFirstRunViewModel()
   {
-    return new(A.Fake<IFirewallSetup>(),
-               A.Fake<IDataFolderSetup>(),
-               A.Fake<IElevatedSetupLauncher>(),
-               _text);
+    return new(A.Fake<IFirewallSetup>(), A.Fake<IDataFolderSetup>(), A.Fake<IElevatedSetupLauncher>(), _text);
   }
 
   [AvaloniaTest]
@@ -41,7 +38,7 @@ public sealed class FirstRunDialogSmokeTest
     owner.Show();
     FirstRunDialog dialog = new() { DataContext = CreateFirstRunViewModel() };
 
-    var result = dialog.ShowDialog<bool>(owner);
+    Task<bool> result = dialog.ShowDialog<bool>(owner);
     Dispatcher.UIThread.RunJobs();
 
     _clicks.Click(dialog, dialog.FindControl<Button>("ContinueButton")!);

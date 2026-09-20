@@ -15,17 +15,14 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
   private readonly SqliteFailureTranslator _failureTranslator;
   private readonly ILogger<ImmediateTransactionRunner> _logger;
 
-  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext,
-                                    SqliteFailureTranslator failureTranslator,
-                                    ILogger<ImmediateTransactionRunner> logger)
+  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext, SqliteFailureTranslator failureTranslator, ILogger<ImmediateTransactionRunner> logger)
   {
     _dbContext = dbContext;
     _failureTranslator = failureTranslator;
     _logger = logger;
   }
 
-  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
-                                             CancellationToken cancellationToken)
+  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(body);
 
@@ -44,25 +41,19 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
 
         if (attempt < AttemptsBeforeGivingUp)
         {
-          _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to write inside an immediate transaction lost a row to another writer, so it is being tried again.",
-                             attempt,
-                             AttemptsBeforeGivingUp);
+          _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to write inside an immediate transaction lost a row to another writer, so it is being tried again.", attempt, AttemptsBeforeGivingUp);
         }
       }
     }
 
-    throw new ConcurrentWriteException("Another writer took the rows this transaction had read, and every attempt to write them lost that race.",
-                                       lostRace!);
+    throw new ConcurrentWriteException("Another writer took the rows this transaction had read, and every attempt to write them lost that race.", lostRace!);
   }
 
-  private async Task<TValue> RunOnceAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
-                                                  CancellationToken cancellationToken)
+  private async Task<TValue> RunOnceAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
   {
     var previousBehavior = _dbContext.Database.AutoTransactionBehavior;
     if (previousBehavior == AutoTransactionBehavior.Never)
-    {
       throw new InvalidOperationException("This context is already inside an immediate transaction, and SQLite cannot nest one inside another.");
-    }
 
     await _dbContext.Database.OpenConnectionAsync(cancellationToken);
     var connection = _dbContext.Database.GetDbConnection();
@@ -77,7 +68,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
 
       TransactionOutcome<TValue> outcome = await body(cancellationToken);
 
-      await ExecuteAsync(connection, outcome.ShouldCommit ? "COMMIT" : "ROLLBACK", null, cancellationToken);
+      await ExecuteAsync(connection, ClosingStatementFor(outcome.ShouldCommit), null, cancellationToken);
       transactionIsOpen = false;
 
       return outcome.Value;
@@ -86,22 +77,17 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     {
       throw _failureTranslator.Translate(exception);
     }
-    catch (DbUpdateException exception)
-      when (exception.InnerException is SqliteException inner && _failureTranslator.IsDatabaseUnavailable(inner))
+    catch (DbUpdateException exception) when (exception.InnerException is SqliteException inner && _failureTranslator.IsDatabaseUnavailable(inner))
     {
       throw _failureTranslator.Translate(inner);
     }
-    catch (DbUpdateException exception)
-      when (exception.InnerException is SqliteException inner
-            && _failureTranslator.IsUniqueConstraintViolation(inner))
+    catch (DbUpdateException exception) when (exception.InnerException is SqliteException inner && _failureTranslator.IsUniqueConstraintViolation(inner))
     {
       throw _failureTranslator.TranslateConflict(inner);
     } finally
     {
       if (transactionIsOpen)
-      {
         await RollbackAbandonedTransactionAsync(connection);
-      }
 
       _dbContext.Database.AutoTransactionBehavior = previousBehavior;
       await _dbContext.Database.CloseConnectionAsync();
@@ -116,25 +102,26 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     }
     catch (SqliteException rollbackException)
     {
-      throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable,
-                                        "The transaction could not be rolled back after the operation failed.",
-                                        rollbackException);
+      throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, "The transaction could not be rolled back after the operation failed.", rollbackException);
     }
   }
 
-  private async Task ExecuteAsync(DbConnection connection,
-                                  string statement,
-                                  int? commandTimeoutSeconds,
-                                  CancellationToken cancellationToken)
+  private async Task ExecuteAsync(DbConnection connection, string statement, int? commandTimeoutSeconds, CancellationToken cancellationToken)
   {
     await using var command = connection.CreateCommand();
     command.CommandText = statement;
     if (commandTimeoutSeconds is not null)
-    {
       command.CommandTimeout = commandTimeoutSeconds.Value;
-    }
 
     await command.ExecuteNonQueryAsync(cancellationToken);
+  }
+
+  private string ClosingStatementFor(bool shouldCommit)
+  {
+    if (shouldCommit)
+      return "COMMIT";
+
+    return "ROLLBACK";
   }
 
   private int ReadBusyTimeoutSeconds(DbConnection connection)
@@ -142,7 +129,10 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     using var command = connection.CreateCommand();
     command.CommandText = "PRAGMA busy_timeout";
     var value = command.ExecuteScalar();
-    var milliseconds = value is null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    var milliseconds = 0d;
+
+    if (value is not null)
+      milliseconds = Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
     return Math.Max(1, (int)Math.Ceiling(milliseconds / 1000d));
   }

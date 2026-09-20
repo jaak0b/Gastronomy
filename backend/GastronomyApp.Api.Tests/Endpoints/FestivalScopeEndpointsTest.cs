@@ -24,19 +24,13 @@ public sealed class FestivalScopeEndpointsTest
   private async Task LetTheFestivalEndAsync()
   {
     await using var database = _context.Factory.CreateContext();
-    await database.Festivals
-                  .Where(festival => festival.Id == _context.World.FestivalId)
-                  .ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc,
-                                                                        DateTime.UtcNow.AddMinutes(-1)));
+    await database.Festivals.Where(festival => festival.Id == _context.World.FestivalId).ExecuteUpdateAsync(festival => festival.SetProperty(entry => entry.EndsAtUtc, DateTime.UtcNow.AddMinutes(-1)));
   }
 
   private async Task TakeTheKitchenOffTheFestivalAsync()
   {
     await using var database = _context.Factory.CreateContext();
-    await database.FestivalStations
-                  .Where(link => link.FestivalId == _context.World.FestivalId
-                                 && link.StationId == _context.World.KitchenStationId)
-                  .ExecuteDeleteAsync();
+    await database.FestivalStations.Where(link => link.FestivalId == _context.World.FestivalId && link.StationId == _context.World.KitchenStationId).ExecuteDeleteAsync();
   }
 
   private async Task<JsonDocument> ReadBodyAsync(HttpResponseMessage response)
@@ -143,8 +137,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.cannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.cannotBeProcessed"));
                     });
   }
 
@@ -189,9 +182,7 @@ public sealed class FestivalScopeEndpointsTest
 
     await LetTheFestivalEndAsync();
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  new SettleItemsBody([.. orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, 350))]));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody(orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, 350)).ToList()));
 
     var body = await ReadBodyAsync(response);
 
@@ -199,8 +190,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
                     });
   }
 
@@ -217,8 +207,7 @@ public sealed class FestivalScopeEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("NoRunningFestival"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noFestivalIsRunning"));
                     });
   }
 
@@ -234,10 +223,8 @@ public sealed class FestivalScopeEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("code").GetString(),
-                                  Is.EqualTo("StationNotAtTheFestival"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("StationNotAtTheFestival"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.notPartOfTheFestival"));
                     });
   }
 
@@ -260,10 +247,7 @@ public sealed class FestivalScopeEndpointsTest
 
     await LetTheFestivalEndAsync();
 
-    using var response = await _context.SendAsAsync(stationToken,
-                                                    HttpMethod.Post,
-                                                    "/api/station/items/fulfill",
-                                                    new { orderItemIds });
+    using var response = await _context.SendAsAsync(stationToken, HttpMethod.Post, "/api/station/items/fulfill", new { orderItemIds });
 
     var body = await ReadBodyAsync(response);
 
@@ -273,8 +257,7 @@ public sealed class FestivalScopeEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noFestivalIsRunning"));
                       Assert.That(stillOpen, Is.EqualTo(orderItemIds.Count));
                     });
   }

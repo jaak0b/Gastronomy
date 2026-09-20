@@ -10,7 +10,6 @@ namespace GastronomyApp.Desktop.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-
   private const int MaximumPortAttempts = 10;
   private const string EveryNetworkInterface = "0.0.0.0";
   private readonly AppLanguage _appLanguage = new();
@@ -23,22 +22,14 @@ public sealed class MainWindowViewModel : ViewModelBase
   private readonly IDesktopTextProvider _text;
   private readonly IUpdateInstaller _updateInstaller;
   private int _adminPort;
-  private string? _errorMessageKey;
   private TextPlaceholder[] _errorPlaceholders = [];
-  private string? _failureDetail;
   private bool _isUpdateCheckRunning;
   private StatusNotice? _notice;
   private LanguageOption? _selectedLanguage;
 
   private HostStatus _status = HostStatus.Stopped;
 
-  public MainWindowViewModel(IHostLauncher launcher,
-                             IPowerManager power,
-                             ISettingsStore settingsStore,
-                             IDesktopTextProvider text,
-                             IFreePortProvider freePorts,
-                             IUpdateInstaller updateInstaller,
-                             string currentVersion)
+  public MainWindowViewModel(IHostLauncher launcher, IPowerManager power, ISettingsStore settingsStore, IDesktopTextProvider text, IFreePortProvider freePorts, IUpdateInstaller updateInstaller, string currentVersion)
   {
     _launcher = launcher;
     _power = power;
@@ -54,11 +45,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     var startupSettings = settingsStore.Load();
     _adminPort = startupSettings.Port ?? 0;
 
-    var storedLanguage = startupSettings.Language
-                         ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var storedLanguage = startupSettings.Language ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
-    _selectedLanguage = Languages.FirstOrDefault(language => language.Code == storedLanguage)
-                       ?? Languages.Single(language => language.Code == "en");
+    _selectedLanguage = Languages.FirstOrDefault(language => language.Code == storedLanguage) ?? Languages.Single(language => language.Code == "en");
     text.UseLanguage(_selectedLanguage.Code);
     _appLanguage.Current = _selectedLanguage.Code;
     text.LanguageChanged += OnLanguageChanged;
@@ -99,9 +88,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     set
     {
       if (value is null || !SetProperty(ref _selectedLanguage, value))
-      {
         return;
-      }
 
       _text.UseLanguage(value.Code);
       _appLanguage.Current = value.Code;
@@ -125,9 +112,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private set
     {
       if (SetProperty(ref _status, value))
-      {
         RaiseStatusChanged();
-      }
     }
   }
 
@@ -137,23 +122,28 @@ public sealed class MainWindowViewModel : ViewModelBase
     private set
     {
       if (SetProperty(ref _isUpdateCheckRunning, value))
-      {
         CheckForUpdatesCommand.NotifyCanExecuteChanged();
-      }
     }
   }
 
-  public string? ErrorMessageKey => _errorMessageKey;
+  public string? ErrorMessageKey { get; private set; }
 
-  public string? ErrorMessage => _errorMessageKey is null
-                                  ? null
-                                  : _text.Format(_errorMessageKey, _errorPlaceholders);
+  public string? ErrorMessage
+  {
+    get
+    {
+      if (ErrorMessageKey is null)
+        return null;
 
-  public bool HasError => _errorMessageKey is not null;
+      return _text.Format(ErrorMessageKey, _errorPlaceholders);
+    }
+  }
 
-  public string? FailureDetail => _failureDetail;
+  public bool HasError => ErrorMessageKey is not null;
 
-  public bool CanShowFailureDetail => _failureDetail is not null;
+  public string? FailureDetail { get; private set; }
+
+  public bool CanShowFailureDetail => FailureDetail is not null;
 
   public string FailureDetailButtonLabel => _text.Get("desktop.error.showFailureDetail");
 
@@ -161,7 +151,16 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   public string FailureDetailCloseLabel => _text.Get("desktop.error.failureDetailClose");
 
-  public string? NoticeText => _notice is null ? null : _text.Get(_notice.Key);
+  public string? NoticeText
+  {
+    get
+    {
+      if (_notice is null)
+        return null;
+
+      return _text.Get(_notice.Key);
+    }
+  }
 
   public bool HasNotice => _notice is not null;
 
@@ -170,20 +169,28 @@ public sealed class MainWindowViewModel : ViewModelBase
     get
     {
       if (HasError)
-      {
         return StatusLevel.Down;
-      }
 
       if (_notice?.Level is NoticeLevel.Warning)
-      {
         return StatusLevel.Warning;
-      }
 
-      return Status is HostStatus.Running ? StatusLevel.Running : StatusLevel.Starting;
+      if (Status is HostStatus.Running)
+        return StatusLevel.Running;
+
+      return StatusLevel.Starting;
     }
   }
 
-  public string? StatusText => CurrentStatus is StatusLevel.Down ? ErrorMessage : NoticeText;
+  public string? StatusText
+  {
+    get
+    {
+      if (CurrentStatus is StatusLevel.Down)
+        return ErrorMessage;
+
+      return NoticeText;
+    }
+  }
 
   public bool HasStatusText => StatusText is not null;
 
@@ -249,8 +256,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     for (var attempt = 0; attempt < MaximumPortAttempts; attempt++)
     {
-      var result = await _launcher.StartAsync(OptionsFor(settings, port),
-                                             cancellationToken);
+      var result = await _launcher.StartAsync(OptionsFor(settings, port), cancellationToken);
 
       if (result is HostLaunchResult.PortInUse)
       {
@@ -261,9 +267,7 @@ public sealed class MainWindowViewModel : ViewModelBase
       }
 
       if (result is HostLaunchResult.StartFailed failed)
-      {
         Log.Error(failed.Failure, "The server could not be started on port {Port}.", port);
-      }
 
       Apply(result, settings, writtenDownPort, port);
 
@@ -290,9 +294,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     switch (result)
     {
       case HostLaunchResult.Started:
-        Log.Information("The server is answering on port {Port} in {DataDirectory}.",
-                        port,
-                        settings.DataDirectory);
+        Log.Information("The server is answering on port {Port} in {DataDirectory}.", port, settings.DataDirectory);
         RememberPort(settings, writtenDownPort, port);
         ClearError();
         Status = HostStatus.Running;
@@ -301,8 +303,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       case HostLaunchResult.DataFolderNotWritable notWritable:
-        ShowError("desktop.error.dataFolderRepair",
-                  new TextPlaceholder("path", notWritable.Path));
+        ShowError("desktop.error.dataFolderRepair", new TextPlaceholder("path", notWritable.Path));
 
         break;
 
@@ -330,17 +331,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     OnPropertyChanged(nameof(AdminUrl));
 
     if (writtenDownPort == port)
-    {
       return;
-    }
 
     _settingsStore.Save(settings with { Port = port });
 
     if (writtenDownPort is not null)
     {
-      Log.Warning("The port changed from {PreviousPort} to {Port}. Every phone has to be set up again.",
-                  writtenDownPort,
-                  port);
+      Log.Warning("The port changed from {PreviousPort} to {Port}. Every phone has to be set up again.", writtenDownPort, port);
       ShowNotice("desktop.notice.addressChanged", NoticeLevel.Warning);
     }
   }
@@ -355,9 +352,7 @@ public sealed class MainWindowViewModel : ViewModelBase
   private async Task CheckForUpdatesAsync()
   {
     if (IsUpdateCheckRunning)
-    {
       return;
-    }
 
     IsUpdateCheckRunning = true;
 
@@ -442,14 +437,14 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   private void ShowError(string key, params TextPlaceholder[] placeholders)
   {
-    _errorMessageKey = key;
+    ErrorMessageKey = key;
     _errorPlaceholders = placeholders;
     RaiseErrorChanged();
   }
 
   private void ClearError()
   {
-    _errorMessageKey = null;
+    ErrorMessageKey = null;
     _errorPlaceholders = [];
     ForgetFailureDetail();
     RaiseErrorChanged();
@@ -457,22 +452,20 @@ public sealed class MainWindowViewModel : ViewModelBase
 
   private void KeepFailureDetail(Exception failure)
   {
-    _failureDetail = failure.ToString();
+    FailureDetail = failure.ToString();
     RaiseFailureDetailChanged();
   }
 
   private void ForgetFailureDetail()
   {
-    _failureDetail = null;
+    FailureDetail = null;
     RaiseFailureDetailChanged();
   }
 
   private void ShowFailureDetail()
   {
-    if (_failureDetail is null)
-    {
+    if (FailureDetail is null)
       return;
-    }
 
     OnFailureDetailRequested();
   }

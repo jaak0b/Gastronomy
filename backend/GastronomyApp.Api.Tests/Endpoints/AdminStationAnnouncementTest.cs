@@ -33,12 +33,16 @@ public sealed class AdminStationAnnouncementTest
   public async Task Update_ANameTheStationDidNotHaveBefore_TellsTheDevices()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
     await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .UpdateAsync(_context.World.KitchenStationId,
-                   new() { Name = "Kueche am Zelt", SortOrder = 1 },
-                   CancellationToken.None);
+   .UpdateAsync(_context.World.KitchenStationId,
+                new()
+                {
+                  Name = "Kueche am Zelt",
+                  SortOrder = 1
+                },
+                CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustHaveHappened();
   }
@@ -47,12 +51,16 @@ public sealed class AdminStationAnnouncementTest
   public async Task Update_TheNameAndPlaceTheStationAlreadyHad_TellsTheDevicesNothingBecauseNothingChanged()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
     await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .UpdateAsync(_context.World.KitchenStationId,
-                   new() { Name = "Kueche", SortOrder = 1 },
-                   CancellationToken.None);
+   .UpdateAsync(_context.World.KitchenStationId,
+                new()
+                {
+                  Name = "Kueche",
+                  SortOrder = 1
+                },
+                CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
   }
@@ -61,7 +69,7 @@ public sealed class AdminStationAnnouncementTest
   public async Task Deactivate_AStationNoItemNeeds_TellsTheDevices()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
     var stationId = await AddAStationNoItemNeedsAsync(scope.ServiceProvider);
 
     await HandlerTalkingTo(scope.ServiceProvider, hubContext).DeactivateAsync(stationId, CancellationToken.None);
@@ -73,10 +81,9 @@ public sealed class AdminStationAnnouncementTest
   public async Task Activate_AStationThatWasAlreadySwitchedOn_TellsTheDevicesNothingBecauseNothingChanged()
   {
     using var scope = _context.Factory.Services.CreateScope();
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
-    await HandlerTalkingTo(scope.ServiceProvider, hubContext)
-      .ActivateAsync(_context.World.KitchenStationId, CancellationToken.None);
+    await HandlerTalkingTo(scope.ServiceProvider, hubContext).ActivateAsync(_context.World.KitchenStationId, CancellationToken.None);
 
     A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
   }
@@ -107,14 +114,8 @@ public sealed class AdminStationAnnouncementTest
 
   private AdminStationHandler HandlerTalkingTo(IServiceProvider services, IHubContext<GastronomyHub> hubContext)
   {
-    StationChangeAnnouncer announcer =
-      new(new(hubContext),
-          new(services.GetRequiredService<IHostApplicationLifetime>(),
-              A.Fake<ILogger<SavedChangeAnnouncement>>()));
+    StationChangeAnnouncer announcer = new(new(hubContext), new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()));
 
-    return new(services.GetRequiredService<StationAdministrationService>(),
-               announcer,
-               services.GetRequiredService<DeviceRevocationAnnouncer>(),
-               services.GetRequiredService<ResultEnvelope>());
+    return new(services.GetRequiredService<StationAdministrationService>(), announcer, services.GetRequiredService<DeviceRevocationAnnouncer>(), services.GetRequiredService<ResultEnvelope>());
   }
 }

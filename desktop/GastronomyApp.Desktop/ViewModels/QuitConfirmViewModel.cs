@@ -12,17 +12,14 @@ public sealed class QuitConfirmViewModel : ViewModelBase
 
   private bool _isConfirmationVisible;
 
-  public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer,
-                              IDesktopTextProvider text,
-                              Action requestApplicationExit,
-                              Func<CancellationToken, Task> prepareUpdateOnQuit)
+  public QuitConfirmViewModel(Func<CancellationToken, Task> stopServer, IDesktopTextProvider text, Action requestApplicationExit, Func<CancellationToken, Task> prepareUpdateOnQuit)
   {
     _stopServer = stopServer;
     _text = text;
     _requestApplicationExit = requestApplicationExit;
     _prepareUpdateOnQuit = prepareUpdateOnQuit;
-    CancelCommand = new RelayCommand(() => OnCloseRequested(confirmed: false));
-    ConfirmCommand = new RelayCommand(() => OnCloseRequested(confirmed: true));
+    CancelCommand = new RelayCommand(() => OnCloseRequested(false));
+    ConfirmCommand = new RelayCommand(() => OnCloseRequested(true));
   }
 
   public IRelayCommand CancelCommand { get; }
@@ -63,9 +60,7 @@ public sealed class QuitConfirmViewModel : ViewModelBase
   public async Task ConfirmAsync(CancellationToken cancellationToken = default)
   {
     if (!IsConfirmationVisible)
-    {
       return;
-    }
 
     await _prepareUpdateOnQuit(cancellationToken);
     await _stopServer(cancellationToken);

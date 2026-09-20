@@ -12,17 +12,17 @@ public sealed class DesktopTextProvider : IDesktopTextProvider
 
   public DesktopTextProvider()
   {
-    _resourceManager = new("GastronomyApp.Desktop.Localization.Strings",
-                          typeof(DesktopTextProvider).Assembly);
+    _resourceManager = new("GastronomyApp.Desktop.Localization.Strings", typeof(DesktopTextProvider).Assembly);
   }
 
   public event Action? LanguageChanged;
 
   public void UseLanguage(string? languageCode)
   {
-    _chosenCulture = languageCode is null
-                      ? null
-                      : CultureInfo.GetCultureInfo(languageCode);
+    _chosenCulture = null;
+
+    if (languageCode is not null)
+      _chosenCulture = CultureInfo.GetCultureInfo(languageCode);
 
     LanguageChanged?.Invoke();
   }
@@ -31,9 +31,7 @@ public sealed class DesktopTextProvider : IDesktopTextProvider
   {
     var value = _resourceManager.GetString(key, _chosenCulture ?? CultureInfo.CurrentUICulture);
     if (value is null)
-    {
       throw new MissingManifestResourceException($"Desktop string '{key}' is missing.");
-    }
 
     return value;
   }
@@ -43,9 +41,7 @@ public sealed class DesktopTextProvider : IDesktopTextProvider
     var value = Get(key);
 
     foreach (var placeholder in placeholders)
-    {
       value = value.Replace($"{{{placeholder.Name}}}", placeholder.Value, StringComparison.Ordinal);
-    }
 
     return value;
   }

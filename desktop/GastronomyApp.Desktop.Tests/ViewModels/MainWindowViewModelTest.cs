@@ -10,7 +10,6 @@ namespace GastronomyApp.Desktop.Tests.ViewModels;
 [TestFixture]
 public sealed class MainWindowViewModelTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -22,8 +21,7 @@ public sealed class MainWindowViewModelTest
     _updateInstaller = A.Fake<IUpdateInstaller>();
     A.CallTo(() => _freePorts.Reserve()).Returns(51234);
 
-    A.CallTo(() => _settingsStore.Load())
-     .Returns(new(5000, DataFolder, null, null, null));
+    A.CallTo(() => _settingsStore.Load()).Returns(new(5000, DataFolder, null, null, null));
   }
 
   private IHostLauncher _launcher = null!;
@@ -38,13 +36,7 @@ public sealed class MainWindowViewModelTest
 
   private MainWindowViewModel CreateViewModel(IUpdateInstaller? updateInstaller = null)
   {
-    return new(_launcher,
-               _power,
-               _settingsStore,
-               _text,
-               _freePorts,
-               updateInstaller ?? _updateInstaller,
-               CurrentVersion);
+    return new(_launcher, _power, _settingsStore, _text, _freePorts, updateInstaller ?? _updateInstaller, CurrentVersion);
   }
 
   private void LauncherReturns(HostLaunchResult result)
@@ -197,10 +189,7 @@ public sealed class MainWindowViewModelTest
 
     await viewModel.StopAsync();
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped));
-                    });
+    Assert.Multiple(() => { Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped)); });
     A.CallTo(() => _launcher.StopAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _power.AllowSleep()).MustHaveHappenedOnceExactly();
   }
@@ -208,8 +197,7 @@ public sealed class MainWindowViewModelTest
   [Test]
   public void OpenAdminPagesCommand_OpensTheAdminPageOnLoopbackWithTheConfiguredPort()
   {
-    A.CallTo(() => _settingsStore.Load())
-     .Returns(new(8080, DataFolder, null, null, null));
+    A.CallTo(() => _settingsStore.Load()).Returns(new(8080, DataFolder, null, null, null));
     var viewModel = CreateViewModel();
     string? opened = null;
     viewModel.AdminPagesRequested += (_, e) => opened = e.Url;
@@ -241,7 +229,11 @@ public sealed class MainWindowViewModelTest
     var viewModel = CreateViewModel();
 
     Assert.That(viewModel.Languages.Select(language => language.Name),
-                Is.EqualTo(new List<string> { "Deutsch", "English" }));
+                Is.EqualTo(new List<string>
+                           {
+                             "Deutsch",
+                             "English"
+                           }));
   }
 
   [Test]
@@ -266,8 +258,7 @@ public sealed class MainWindowViewModelTest
   {
     var original = CultureInfo.CurrentUICulture;
     CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-    A.CallTo(() => _settingsStore.Load())
-     .Returns(new(5000, DataFolder, null, "de", null));
+    A.CallTo(() => _settingsStore.Load()).Returns(new(5000, DataFolder, null, "de", null));
 
     try
     {
@@ -317,26 +308,20 @@ public sealed class MainWindowViewModelTest
 
     viewModel.SelectedLanguage = viewModel.Languages.Single(language => language.Code == "de");
 
-    A.CallTo(() => _settingsStore.Save(new(5000, DataFolder, null, "de", null)))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _settingsStore.Save(new(5000, DataFolder, null, "de", null))).MustHaveHappenedOnceExactly();
   }
-
 
   [Test]
   public async Task StartAsync_WithNoPortWrittenDownYet_AsksWindowsForOneAndWritesItDown()
   {
-    A.CallTo(() => _settingsStore.Load())
-     .Returns(new(null, DataFolder, null, null, null));
+    A.CallTo(() => _settingsStore.Load()).Returns(new(null, DataFolder, null, null, null));
     LauncherReturns(new HostLaunchResult.Started(null!));
     var viewModel = CreateViewModel();
 
     await viewModel.StartAsync();
 
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
-                                        A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
-    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234)))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234))).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -352,21 +337,15 @@ public sealed class MainWindowViewModelTest
                       Assert.That(viewModel.HasNotice, Is.False);
                       Assert.That(viewModel.ErrorMessageKey, Is.Null);
                     });
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
-                                        A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _freePorts.Reserve()).MustNotHaveHappened();
   }
 
   [Test]
   public async Task StartAsync_WhenTheWrittenDownPortIsTaken_MovesToAFreeOneAndWritesItDown()
   {
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.PortInUse(5000));
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.Started(null!));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000), A<CancellationToken>._)).Returns(new HostLaunchResult.PortInUse(5000));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234), A<CancellationToken>._)).Returns(new HostLaunchResult.Started(null!));
     var viewModel = CreateViewModel();
 
     await viewModel.StartAsync();
@@ -376,19 +355,14 @@ public sealed class MainWindowViewModelTest
                       Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Running));
                       Assert.That(viewModel.ErrorMessageKey, Is.Null);
                     });
-    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234)))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>.That.Matches(saved => saved.Port == 51234))).MustHaveHappenedOnceExactly();
   }
 
   [Test]
   public async Task StartAsync_WhenThePortChanged_TellsTheOperatorEverybodyMustSetTheirPhoneUpAgain()
   {
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.PortInUse(5000));
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.Started(null!));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000), A<CancellationToken>._)).Returns(new HostLaunchResult.PortInUse(5000));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234), A<CancellationToken>._)).Returns(new HostLaunchResult.Started(null!));
     var viewModel = CreateViewModel();
 
     await viewModel.StartAsync();
@@ -413,8 +387,7 @@ public sealed class MainWindowViewModelTest
                       Assert.That(viewModel.Status, Is.EqualTo(HostStatus.Stopped));
                       Assert.That(viewModel.ErrorMessageKey, Is.EqualTo("desktop.error.noPortAvailable"));
                     });
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._))
-     .MustHaveHappened(10, Times.Exactly);
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._)).MustHaveHappened(10, Times.Exactly);
   }
 
   [Test]
@@ -425,8 +398,7 @@ public sealed class MainWindowViewModelTest
 
     await viewModel.StartAsync();
 
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _freePorts.Reserve()).MustNotHaveHappened();
   }
 
@@ -438,9 +410,7 @@ public sealed class MainWindowViewModelTest
 
     await viewModel.StartAsync();
 
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.BindAddress == "0.0.0.0"),
-                                        A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.BindAddress == "0.0.0.0"), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -564,12 +534,8 @@ public sealed class MainWindowViewModelTest
   [Test]
   public async Task CurrentStatus_WhenTheAddressChanged_WarnsAndCarriesTheNoticeText()
   {
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.PortInUse(5000));
-    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234),
-                                        A<CancellationToken>._))
-     .Returns(new HostLaunchResult.Started(null!));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 5000), A<CancellationToken>._)).Returns(new HostLaunchResult.PortInUse(5000));
+    A.CallTo(() => _launcher.StartAsync(A<ApiHostOptions>.That.Matches(options => options.Port == 51234), A<CancellationToken>._)).Returns(new HostLaunchResult.Started(null!));
     var viewModel = CreateViewModel();
 
     await viewModel.StartAsync();
@@ -660,8 +626,7 @@ public sealed class MainWindowViewModelTest
   public async Task CheckForUpdatesCommand_WhenAnUpdateIsReady_AsksForTheConfirmationWithTheVersion()
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();
-    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.Ready("2.0.0"));
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(new UpdatePreparation.Ready("2.0.0"));
     var viewModel = CreateViewModel(updateInstaller);
     string? requestedVersion = null;
     viewModel.UpdateReadyRequested += (_, e) => requestedVersion = e.Version;
@@ -676,8 +641,7 @@ public sealed class MainWindowViewModelTest
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();
     const string failureDetail = "System.InvalidOperationException: The network is down.";
-    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.Failed(failureDetail));
+    A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(new UpdatePreparation.Failed(failureDetail));
     var viewModel = CreateViewModel(updateInstaller);
     string? requestedFailureDetail = null;
     viewModel.UpdateFailureRequested += (_, e) => requestedFailureDetail = e.FailureDetail;
@@ -691,7 +655,7 @@ public sealed class MainWindowViewModelTest
   public async Task CheckForUpdatesCommand_WhileTheCheckRuns_ReportsThatItIsRunning()
   {
     var updateInstaller = A.Fake<IUpdateInstaller>();
-    var pending = new TaskCompletionSource<UpdatePreparation>();
+    TaskCompletionSource<UpdatePreparation> pending = new();
     A.CallTo(() => updateInstaller.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(pending.Task);
     var viewModel = CreateViewModel(updateInstaller);
 

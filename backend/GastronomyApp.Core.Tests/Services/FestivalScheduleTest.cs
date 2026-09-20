@@ -51,7 +51,13 @@ public sealed class FestivalScheduleTest
     var now = BuildFestival("Sommerfest", _start, _end);
     var later = BuildFestival("Herbstfest", _start.AddMonths(2), _end.AddMonths(2));
 
-    Assert.That(_schedule.FindRunningAt([earlier, now, later], _start.AddHours(3)), Is.SameAs(now));
+    Assert.That(_schedule.FindRunningAt([
+                                          earlier,
+                                          now,
+                                          later
+                                        ],
+                                        _start.AddHours(3)),
+                Is.SameAs(now));
   }
 
   [Test]
@@ -105,10 +111,7 @@ public sealed class FestivalScheduleTest
   {
     var standing = BuildFestival("Sommerfest", _start, _end);
 
-    var inTheWay = _schedule.FindOverlapping(Guid.Empty,
-                                         _start.AddHours(2),
-                                         _start.AddHours(4),
-                                         [standing]);
+    var inTheWay = _schedule.FindOverlapping(Guid.Empty, _start.AddHours(2), _start.AddHours(4), [standing]);
 
     Assert.That(inTheWay, Is.SameAs(standing));
   }
@@ -129,7 +132,13 @@ public sealed class FestivalScheduleTest
     var candidate = BuildFestival("Herbstfest", _start, _end, true);
     var standing = BuildFestival("Sommerfest", _start, _end);
 
-    var inTheWay = _schedule.FindOverlapping(candidate.Id, _start, _end, [candidate, standing]);
+    var inTheWay = _schedule.FindOverlapping(candidate.Id,
+                                             _start,
+                                             _end,
+                                             [
+                                               candidate,
+                                               standing
+                                             ]);
 
     Assert.That(inTheWay, Is.SameAs(standing));
   }
@@ -149,10 +158,7 @@ public sealed class FestivalScheduleTest
   {
     var beingEdited = BuildFestival("Sommerfest", _start, _end);
 
-    var inTheWay = _schedule.FindOverlapping(beingEdited.Id,
-                                         _start.AddHours(1),
-                                         _end.AddHours(1),
-                                         [beingEdited]);
+    var inTheWay = _schedule.FindOverlapping(beingEdited.Id, _start.AddHours(1), _end.AddHours(1), [beingEdited]);
 
     Assert.That(inTheWay, Is.Null);
   }

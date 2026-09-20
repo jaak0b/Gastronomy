@@ -17,9 +17,7 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    FestivalStation? link = await repository.FindLinkAsync(seeded.FestivalId,
-                                                           seeded.KitchenStationId,
-                                                           TestContext.CurrentContext.CancellationToken);
+    var link = await repository.FindLinkAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(link?.NextStationOrderNumber, Is.EqualTo(1));
   }
@@ -32,10 +30,7 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.FindLinkAsync(seeded.FestivalId,
-                                               Guid.NewGuid(),
-                                               TestContext.CurrentContext.CancellationToken),
-                Is.Null);
+    Assert.That(await repository.FindLinkAsync(seeded.FestivalId, Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 
   [Test]
@@ -47,10 +42,7 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.CountUnfulfilledItemsAsync(seeded.FestivalId,
-                                                            seeded.KitchenStationId,
-                                                            TestContext.CurrentContext.CancellationToken),
-                Is.EqualTo(1));
+    Assert.That(await repository.CountUnfulfilledItemsAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken), Is.EqualTo(1));
   }
 
   [Test]
@@ -61,10 +53,7 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.CountUnfulfilledItemsAsync(seeded.FestivalId,
-                                                            seeded.BarStationId,
-                                                            TestContext.CurrentContext.CancellationToken),
-                Is.EqualTo(0));
+    Assert.That(await repository.CountUnfulfilledItemsAsync(seeded.FestivalId, seeded.BarStationId, TestContext.CurrentContext.CancellationToken), Is.EqualTo(0));
   }
 
   [Test]
@@ -75,18 +64,14 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    FestivalStation link = (await repository.FindLinkAsync(seeded.FestivalId,
-                                                           seeded.BarStationId,
-                                                           TestContext.CurrentContext.CancellationToken))!;
+    var link = (await repository.FindLinkAsync(seeded.FestivalId, seeded.BarStationId, TestContext.CurrentContext.CancellationToken))!;
 
     repository.RemoveLink(link);
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.FestivalStations.AnyAsync(candidate => candidate.Id == link.Id,
-                                                            TestContext.CurrentContext.CancellationToken),
-                Is.False);
+    Assert.That(await readContext.FestivalStations.AnyAsync(candidate => candidate.Id == link.Id, TestContext.CurrentContext.CancellationToken), Is.False);
   }
 
   [Test]
@@ -97,13 +82,9 @@ public sealed class FestivalStationRepositoryTest
 
     FestivalStationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ItemStationAssignment> assignments =
-      await repository.FindAssignmentsAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<ItemStationAssignment> assignments = await repository.FindAssignmentsAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(assignments.Select(assignment => assignment.CatalogItemId),
-                Is.EqualTo(new[] { seeded.SausageItemId }));
+    Assert.That(assignments.Select(assignment => assignment.CatalogItemId), Is.EqualTo(new[] { seeded.SausageItemId }));
   }
 
   [Test]

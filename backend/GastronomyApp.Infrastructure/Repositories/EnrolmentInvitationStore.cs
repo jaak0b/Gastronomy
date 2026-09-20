@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,12 +22,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private readonly Pbkdf2SecretHasher _secretHasher;
   private readonly ITransactionRunner _transactionRunner;
 
-  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext,
-                                  IDeviceOwnerStore ownerStore,
-                                  Pbkdf2SecretHasher secretHasher,
-                                  IDeviceTokenStore deviceTokenStore,
-                                  ITransactionRunner transactionRunner,
-                                  IClock clock)
+  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IDeviceTokenStore deviceTokenStore, ITransactionRunner transactionRunner, IClock clock)
   {
     _dbContext = dbContext;
     _transactionRunner = transactionRunner;
@@ -80,67 +76,46 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                        cancellationToken);
   }
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request,
-                                                     CancellationToken cancellationToken)
+  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(request, transactionCancellationToken),
-                                       cancellationToken);
+    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(request, transactionCancellationToken), cancellationToken);
   }
 
   public async Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken)
   {
-    return await _dbContext.EnrolmentInvitations
-                           .AsNoTracking()
-                           .FirstOrDefaultAsync(invitation => invitation.Id == invitationId, cancellationToken);
+    return await _dbContext.EnrolmentInvitations.AsNoTracking().FirstOrDefaultAsync(invitation => invitation.Id == invitationId, cancellationToken);
   }
 
   public async Task ConsumeAsync(Guid invitationId, DateTime consumedAtUtc, CancellationToken cancellationToken)
   {
-    var invitation = await _dbContext.EnrolmentInvitations
-                                     .FirstOrDefaultAsync(candidate => candidate.Id == invitationId,
-                                                          cancellationToken);
+    var invitation = await _dbContext.EnrolmentInvitations.FirstOrDefaultAsync(candidate => candidate.Id == invitationId, cancellationToken);
 
     if (invitation is not null && invitation.ConsumedAtUtc is null)
-    {
       invitation.ConsumedAtUtc = consumedAtUtc;
-    }
   }
 
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(EnrolmentRedemptionRequest request,
-                                                                                                 CancellationToken cancellationToken)
+  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
   {
     var now = _clock.UtcNow;
     var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
 
     if (invitation is null)
-    {
       return Rejected(EnrolmentRedemptionOutcome.NoInvitationOutstanding, null);
-    }
 
     if (invitation.ExpiresAtUtc <= now)
-    {
       return Rejected(EnrolmentRedemptionOutcome.CodeExpired, invitation.Id);
-    }
 
-    var qrCodeMatches = _secretHasher.Verify(request.Code,
-                                             invitation.QRCodeHash,
-                                             invitation.QRCodeSalt,
-                                             invitation.QRCodeIterations,
-                                             invitation.QRCodeAlgorithm);
+    var qrCodeMatches = _secretHasher.Verify(request.Code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeIterations, invitation.QRCodeAlgorithm);
 
     if (!qrCodeMatches)
-    {
       return Rejected(EnrolmentRedemptionOutcome.CodeInvalid, invitation.Id);
-    }
 
     var owner = await _ownerStore.FindByInvitationAsync(invitation.Id, cancellationToken);
 
     if (owner is null)
     {
       if (string.IsNullOrWhiteSpace(request.Name))
-      {
         return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
-      }
 
       owner = await CreateStaffMemberAsync(request.Name, now, cancellationToken);
     }
@@ -149,9 +124,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       var ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
 
       if (ownerRecord is null || !ownerRecord.IsActive)
-      {
         return Rejected(OffTheListOutcomeFor(owner.Kind), invitation.Id);
-      }
     }
 
     return await CompleteRedemptionAsync(invitation, owner, request, now, cancellationToken);
@@ -163,28 +136,26 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
            {
              DeviceOwnerKind.StaffMember => EnrolmentRedemptionOutcome.StaffMemberIsOffTheList,
              DeviceOwnerKind.Station => EnrolmentRedemptionOutcome.StationIsOffTheList,
-             _ => new Core.Services.UnreachableCase().Throw<EnrolmentRedemptionOutcome>(kind)
+             _ => new UnreachableCase().Throw<EnrolmentRedemptionOutcome>(kind)
            };
   }
 
   private async Task<EnrolmentInvitation?> LoadUnconsumedInvitationAsync(CancellationToken cancellationToken)
   {
-    var invitation = await _dbContext.EnrolmentInvitations
-                                     .FirstOrDefaultAsync(candidate => candidate.ConsumedAtUtc == null,
-                                                          cancellationToken);
+    var invitation = await _dbContext.EnrolmentInvitations.FirstOrDefaultAsync(candidate => candidate.ConsumedAtUtc == null, cancellationToken);
 
     if (invitation is null)
-    {
       return null;
-    }
 
     await _dbContext.Entry(invitation).ReloadAsync(cancellationToken);
 
-    return invitation.ConsumedAtUtc is null ? invitation : null;
+    if (invitation.ConsumedAtUtc is null)
+      return invitation;
+
+    return null;
   }
 
-  private TransactionOutcome<EnrolmentRedemptionResult> Rejected(EnrolmentRedemptionOutcome outcome,
-                                                                 Guid? invitationId)
+  private TransactionOutcome<EnrolmentRedemptionResult> Rejected(EnrolmentRedemptionOutcome outcome, Guid? invitationId)
   {
     return new()
            {
@@ -193,58 +164,41 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
            };
   }
 
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation,
-                                                                                            DeviceOwner owner,
-                                                                                            EnrolmentRedemptionRequest request,
-                                                                                            DateTime now,
-                                                                                            CancellationToken cancellationToken)
+  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation, DeviceOwner owner, EnrolmentRedemptionRequest request, DateTime now, CancellationToken cancellationToken)
   {
-    var issued = await _deviceTokenStore.IssueAsync(owner,
-                                                    ResolveLanguage(request.AcceptLanguageHeader),
-                                                    request.UserAgent,
-                                                    cancellationToken);
+    var issued = await _deviceTokenStore.IssueAsync(owner, ResolveLanguage(request.AcceptLanguageHeader), request.UserAgent, cancellationToken);
 
     invitation.ConsumedAtUtc = now;
     invitation.ConsumedByDeviceId = issued.Device.Id;
     await _ownerStore.PointInvitationAsync(owner, null, cancellationToken);
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    var staffMember = owner.Kind == DeviceOwnerKind.StaffMember
-                        ? await _dbContext.StaffMembers.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken)
-                        : null;
-    var station = owner.Kind == DeviceOwnerKind.Station
-                    ? await _dbContext.Stations.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken)
-                    : null;
+    StaffMember? staffMember = null;
+    Station? station = null;
+
+    if (owner.Kind == DeviceOwnerKind.StaffMember)
+      staffMember = await _dbContext.StaffMembers.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
+
+    if (owner.Kind == DeviceOwnerKind.Station)
+      station = await _dbContext.Stations.SingleAsync(candidate => candidate.Id == owner.Id, cancellationToken);
 
     return new()
            {
-             Value = new(EnrolmentRedemptionOutcome.Redeemed,
-                         owner.Kind,
-                         issued.Device,
-                         staffMember,
-                         station,
-                         issued.PlaintextToken,
-                         invitation.Id),
+             Value = new(EnrolmentRedemptionOutcome.Redeemed, owner.Kind, issued.Device, staffMember, station, issued.PlaintextToken, invitation.Id),
              ShouldCommit = true
            };
   }
 
-  private async Task ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(DateTime now,
-                                                                                CancellationToken cancellationToken)
+  private async Task ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(DateTime now, CancellationToken cancellationToken)
   {
-    List<EnrolmentInvitation> unconsumedPredecessors = await _dbContext.EnrolmentInvitations
-                                                                       .Where(invitation => invitation.ConsumedAtUtc == null)
-                                                                       .ToListAsync(cancellationToken);
+    List<EnrolmentInvitation> unconsumedPredecessors = await _dbContext.EnrolmentInvitations.Where(invitation => invitation.ConsumedAtUtc == null).ToListAsync(cancellationToken);
 
     foreach (var predecessor in unconsumedPredecessors)
-    {
       predecessor.ConsumedAtUtc = now;
-    }
 
     if (unconsumedPredecessors.Count > 0)
     {
-      await _ownerStore.ForgetInvitationsAsync([.. unconsumedPredecessors.Select(predecessor => predecessor.Id)],
-                                               cancellationToken);
+      await _ownerStore.ForgetInvitationsAsync(unconsumedPredecessors.Select(predecessor => predecessor.Id).ToList(), cancellationToken);
       await _dbContext.SaveChangesAsync(cancellationToken);
     }
   }
@@ -267,12 +221,11 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   private string ResolveLanguage(string acceptLanguageHeader)
   {
-    var firstTag = acceptLanguageHeader
-                  .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                  .FirstOrDefault(string.Empty);
+    var firstTag = acceptLanguageHeader.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault(string.Empty);
 
-    return firstTag.StartsWith(GermanLanguage, StringComparison.OrdinalIgnoreCase)
-             ? GermanLanguage
-             : EnglishLanguage;
+    if (firstTag.StartsWith(GermanLanguage, StringComparison.OrdinalIgnoreCase))
+      return GermanLanguage;
+
+    return EnglishLanguage;
   }
 }

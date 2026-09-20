@@ -8,10 +8,7 @@ public static class AdminEnrolmentEndpoints
 {
   public static IEndpointRouteBuilder MapAdminEnrolmentEndpoints(this IEndpointRouteBuilder routes)
   {
-    routes.MapPost("/api/admin/enrolment/invitations",
-                   async (CreateInvitationRequest request,
-                          AdminEnrolmentHandler handler,
-                          CancellationToken cancellationToken) => await handler.CreateInvitationAsync(request, cancellationToken));
+    routes.MapPost("/api/admin/enrolment/invitations", async (CreateInvitationRequest request, AdminEnrolmentHandler handler, CancellationToken cancellationToken) => await handler.CreateInvitationAsync(request, cancellationToken));
 
     return routes;
   }

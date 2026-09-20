@@ -6,8 +6,7 @@ public sealed class RecordingTransactionRunner : ITransactionRunner
 {
   public bool? Committed { get; private set; }
 
-  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body,
-                                             CancellationToken cancellationToken)
+  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(body);
 

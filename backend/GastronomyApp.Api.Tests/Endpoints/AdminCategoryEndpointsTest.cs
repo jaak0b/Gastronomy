@@ -56,7 +56,11 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NewCategory_TakesTheLastPosition()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "Kaffee", colourHex = "#6D4C41" });
+                                                               new
+                                                               {
+                                                                 name = "Kaffee",
+                                                                 colourHex = "#6D4C41"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -75,15 +79,18 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_BlankName_NamesTheNameAsTheMissingPart()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "   ", colourHex = "#6D4C41" });
+                                                               new
+                                                               {
+                                                                 name = "   ",
+                                                                 colourHex = "#6D4C41"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryNameMissing"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameMissing"));
                     });
   }
 
@@ -91,15 +98,18 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NameAnotherCategoryAlreadyHasInAnotherCasing_IsRefused()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "essen", colourHex = "#6D4C41" });
+                                                               new
+                                                               {
+                                                                 name = "essen",
+                                                                 colourHex = "#6D4C41"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
                     });
   }
 
@@ -107,7 +117,11 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NameTypedWithSpacesAroundIt_StoresOnlyTheName()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = " Kaffee ", colourHex = "#6D4C41" });
+                                                               new
+                                                               {
+                                                                 name = " Kaffee ",
+                                                                 colourHex = "#6D4C41"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -122,19 +136,26 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NameThatOnlyDiffersBySpacesAroundIt_IsRefused()
   {
     using var first = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                            new { name = "Kaffee", colourHex = "#6D4C41" });
+                                                            new
+                                                            {
+                                                              name = "Kaffee",
+                                                              colourHex = "#6D4C41"
+                                                            });
     Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = " Kaffee ", colourHex = "#6D4C41" });
+                                                               new
+                                                               {
+                                                                 name = " Kaffee ",
+                                                                 colourHex = "#6D4C41"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
                     });
   }
 
@@ -142,19 +163,26 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NameAnotherCategoryAlreadyHasWithAnUmlautInAnotherCasing_IsRefused()
   {
     using var first = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                            new { name = $"Getr{SmallUmlautA}nke", colourHex = "#1565C0" });
+                                                            new
+                                                            {
+                                                              name = $"Getr{SmallUmlautA}nke",
+                                                              colourHex = "#1565C0"
+                                                            });
     Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = $"GETR{CapitalUmlautA}NKE", colourHex = "#1565C0" });
+                                                               new
+                                                               {
+                                                                 name = $"GETR{CapitalUmlautA}NKE",
+                                                                 colourHex = "#1565C0"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
                     });
   }
 
@@ -162,7 +190,11 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_NameTypedWithCapitalsInsideIt_KeepsTheCapitalisationTheAdminTyped()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = " KalteGetraenke ", colourHex = "#1565C0" });
+                                                               new
+                                                               {
+                                                                 name = " KalteGetraenke ",
+                                                                 colourHex = "#1565C0"
+                                                               });
 
     var created = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -182,15 +214,18 @@ public sealed class AdminCategoryEndpointsTest
   public async Task PostCategory_ColourThatIsNotSixHexDigits_IsRefused()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
-                                                              new { name = "Kaffee", colourHex = "braun" });
+                                                               new
+                                                               {
+                                                                 name = "Kaffee",
+                                                                 colourHex = "braun"
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryColourInvalid"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryColourInvalid"));
                     });
   }
 
@@ -200,7 +235,11 @@ public sealed class AdminCategoryEndpointsTest
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
-                                                              new { name = "Speisen", colourHex = "#2E7D32" });
+                                                              new
+                                                              {
+                                                                name = "Speisen",
+                                                                colourHex = "#2E7D32"
+                                                              });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -219,15 +258,18 @@ public sealed class AdminCategoryEndpointsTest
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
-                                                              new { name = "Getraenke", colourHex = "#2E7D32" });
+                                                              new
+                                                              {
+                                                                name = "Getraenke",
+                                                                colourHex = "#2E7D32"
+                                                              });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryNameTaken"));
                     });
   }
 
@@ -237,7 +279,11 @@ public sealed class AdminCategoryEndpointsTest
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
     using var response = await _context.Client.PutAsJsonAsync($"/api/admin/categories/{categoryId}",
-                                                              new { name = "Essen", colourHex = "#2E7D32" });
+                                                              new
+                                                              {
+                                                                name = "Essen",
+                                                                colourHex = "#2E7D32"
+                                                              });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
   }
@@ -247,8 +293,7 @@ public sealed class AdminCategoryEndpointsTest
   {
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
-                                                              new { direction = "down" });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move", new { direction = "down" });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var categories = body.RootElement.GetProperty("categories");
@@ -268,8 +313,7 @@ public sealed class AdminCategoryEndpointsTest
   {
     var categoryId = await _context.FindCategoryIdAsync("Essen");
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
-                                                              new { direction = "up" });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move", new { direction = "up" });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var categories = body.RootElement.GetProperty("categories");
@@ -287,8 +331,7 @@ public sealed class AdminCategoryEndpointsTest
   {
     var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
-                                                              new { direction = "up" });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move", new { direction = "up" });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var categories = body.RootElement.GetProperty("categories");
@@ -306,8 +349,7 @@ public sealed class AdminCategoryEndpointsTest
   {
     var categoryId = await _context.FindCategoryIdAsync("Getraenke");
 
-    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move",
-                                                              new { direction = "down" });
+    using var response = await _context.Client.PostAsJsonAsync($"/api/admin/categories/{categoryId}/move", new { direction = "down" });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var categories = body.RootElement.GetProperty("categories");
@@ -331,8 +373,7 @@ public sealed class AdminCategoryEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.categoryHasActiveItems"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.categoryHasActiveItems"));
                     });
   }
 

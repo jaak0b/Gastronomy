@@ -8,12 +8,7 @@ public static class AdminInvitationQREndpoints
 {
   public static IEndpointRouteBuilder MapAdminInvitationQREndpoints(this IEndpointRouteBuilder routes)
   {
-    routes.MapGet("/api/admin/enrolment/invitations/{invitationId:guid}/qr.svg",
-                  async (Guid invitationId,
-                         HttpContext httpContext,
-                         InvitationQRRenderer renderer,
-                         CancellationToken cancellationToken) =>
-                    await renderer.RenderAsync(invitationId, httpContext, cancellationToken));
+    routes.MapGet("/api/admin/enrolment/invitations/{invitationId:guid}/qr.svg", async (Guid invitationId, HttpContext httpContext, InvitationQRRenderer renderer, CancellationToken cancellationToken) => await renderer.RenderAsync(invitationId, httpContext, cancellationToken));
 
     return routes;
   }

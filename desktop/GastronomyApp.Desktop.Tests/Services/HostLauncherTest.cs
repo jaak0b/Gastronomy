@@ -7,7 +7,6 @@ namespace GastronomyApp.Desktop.Tests.Services;
 [TestFixture]
 public sealed class HostLauncherTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -15,8 +14,7 @@ public sealed class HostLauncherTest
     _networkAddressProvider = A.Fake<INetworkAddressProvider>();
     _dataFolderSetup = A.Fake<IDataFolderSetup>();
 
-    A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
-     .Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
+    A.CallTo(() => _networkAddressProvider.GetAvailableAddresses()).Returns(new List<NetworkAddressOption> { new("WiFi", "192.168.1.20") });
     A.CallTo(() => _dataFolderSetup.Exists()).Returns(true);
     A.CallTo(() => _dataFolderSetup.CurrentUserCanWrite()).Returns(true);
   }
@@ -51,8 +49,7 @@ public sealed class HostLauncherTest
   [Test]
   public async Task StartAsync_WithNoNetworkAdapterUp_ReportsNoNetworkWithoutTouchingTheFolder()
   {
-    A.CallTo(() => _networkAddressProvider.GetAvailableAddresses())
-     .Returns(new List<NetworkAddressOption>());
+    A.CallTo(() => _networkAddressProvider.GetAvailableAddresses()).Returns(new List<NetworkAddressOption>());
 
     var result = await CreateLauncher().StartAsync(ConfiguredOptions());
 
@@ -74,8 +71,7 @@ public sealed class HostLauncherTest
                     {
                       Assert.That(_foldersAskedAbout, Is.EqualTo(new List<string> { ConfiguredFolder }));
                       Assert.That(result, Is.InstanceOf<HostLaunchResult.DataFolderNotWritable>());
-                      Assert.That(((HostLaunchResult.DataFolderNotWritable)result).Path,
-                                  Is.EqualTo(ConfiguredFolder));
+                      Assert.That(((HostLaunchResult.DataFolderNotWritable)result).Path, Is.EqualTo(ConfiguredFolder));
                     });
   }
 

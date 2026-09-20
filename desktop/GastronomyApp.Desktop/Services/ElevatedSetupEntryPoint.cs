@@ -25,7 +25,8 @@ public sealed class ElevatedSetupEntryPoint
       _log.Start(_dataDirectoryPath);
 
       return ExitCodeFor(_steps.RunAll());
-    } catch (Exception failure)
+    }
+    catch (Exception failure)
     {
       Log.Error(failure, "The one-time setup stopped before it could report what it managed to do.");
 
@@ -36,18 +37,12 @@ public sealed class ElevatedSetupEntryPoint
   private int ExitCodeFor(ElevatedSetupStepReport report)
   {
     if (!report.DataFolderSucceeded)
-    {
       Log.Error("The data folder that failed to become writable is {DataDirectory}.", _dataDirectoryPath);
-    }
 
     if (!report.EveryStepSucceeded)
-    {
       return AStepFailed;
-    }
 
-    Log.Information("The one-time setup finished. Incoming connections are allowed through the Windows "
-                    + "firewall and every user of this laptop can write into {DataDirectory}.",
-                    _dataDirectoryPath);
+    Log.Information("The one-time setup finished. Incoming connections are allowed through the Windows " + "firewall and every user of this laptop can write into {DataDirectory}.", _dataDirectoryPath);
 
     return EverythingSucceeded;
   }

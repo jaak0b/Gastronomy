@@ -15,19 +15,28 @@ public sealed class ItemOrderabilityTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_festivalId]));
+    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_festivalId]));
     A.CallTo(() => _repository.FindActiveStationIdsAtFestivalAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId, _barId]));
+   .Returns(Task.FromResult<IReadOnlyList<Guid>>([
+                                                   _kitchenId,
+                                                   _barId
+                                                 ]));
     A.CallTo(() => _repository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId, _beerId]));
+   .Returns(Task.FromResult<IReadOnlyList<Guid>>([
+                                                   _bratwurstId,
+                                                   _beerId
+                                                 ]));
 
-    A.CallTo(() => _repository.FindItemIdsPreparedByAsync(A<Guid>._,
-                                                          A<IReadOnlyCollection<Guid>>._,
-                                                          A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
+    A.CallTo(() => _repository.FindItemIdsPreparedByAsync(A<Guid>._, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    GivenStationsPrepare([_kitchenId, _barId], [_bratwurstId, _beerId]);
+    GivenStationsPrepare([
+                           _kitchenId,
+                           _barId
+                         ],
+                         [
+                           _bratwurstId,
+                           _beerId
+                         ]);
     GivenStationsPrepare([_kitchenId], [_bratwurstId]);
     GivenStationsPrepare([_barId], [_beerId]);
 
@@ -49,48 +58,52 @@ public sealed class ItemOrderabilityTest
   [Test]
   public void AnyOfTheseStationsPreparesAtAsync_NullStationIds_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId,
-                                                                                  null!,
-                                                                                  CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
   public void FindItemsStrandedByRemovingStationsAsync_NullStationIds_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId,
-                                                                                          null!,
-                                                                                          CancellationToken.None),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task FindOrderableItemIdsAsync_EveryItemPreparedAtAnActiveStation_ReturnsThemAll()
   {
-    IReadOnlyList<Guid> orderable =
-      await _orderability.FindOrderableItemIdsAsync(_festivalId, CancellationToken.None);
+    IReadOnlyList<Guid> orderable = await _orderability.FindOrderableItemIdsAsync(_festivalId, CancellationToken.None);
 
-    Assert.That(orderable, Is.EqualTo(new[] { _bratwurstId, _beerId }));
+    Assert.That(orderable,
+                Is.EqualTo(new[]
+                           {
+                             _bratwurstId,
+                             _beerId
+                           }));
   }
 
   [Test]
   public async Task FindOrderableItemIdsAsync_ItemOnTheMenuThatNoStationPrepares_LeavesItOut()
   {
     A.CallTo(() => _repository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId, _beerId, Guid.NewGuid()]));
+   .Returns(Task.FromResult<IReadOnlyList<Guid>>([
+                                                   _bratwurstId,
+                                                   _beerId,
+                                                   Guid.NewGuid()
+                                                 ]));
 
-    IReadOnlyList<Guid> orderable =
-      await _orderability.FindOrderableItemIdsAsync(_festivalId, CancellationToken.None);
+    IReadOnlyList<Guid> orderable = await _orderability.FindOrderableItemIdsAsync(_festivalId, CancellationToken.None);
 
-    Assert.That(orderable, Is.EqualTo(new[] { _bratwurstId, _beerId }));
+    Assert.That(orderable,
+                Is.EqualTo(new[]
+                           {
+                             _bratwurstId,
+                             _beerId
+                           }));
   }
 
   [Test]
   public async Task AnyOfTheseStationsPreparesAtAsync_AStationThatIsNotAtTheFestival_AnswersFalse()
   {
-    var answer = await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId,
-                                                                      [Guid.NewGuid()],
-                                                                      CancellationToken.None);
+    var answer = await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId, [Guid.NewGuid()], CancellationToken.None);
 
     Assert.That(answer, Is.False);
   }
@@ -98,9 +111,7 @@ public sealed class ItemOrderabilityTest
   [Test]
   public async Task AnyOfTheseStationsPreparesAtAsync_AnActiveStationOfTheFestival_AnswersTrue()
   {
-    var answer = await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId,
-                                                                      [_kitchenId],
-                                                                      CancellationToken.None);
+    var answer = await _orderability.AnyOfTheseStationsPreparesAtAsync(_festivalId, [_kitchenId], CancellationToken.None);
 
     Assert.That(answer, Is.True);
   }
@@ -108,10 +119,7 @@ public sealed class ItemOrderabilityTest
   [Test]
   public async Task FindItemsStrandedByRemovingStationsAsync_TheOnlyStationOfAnItem_NamesThatItem()
   {
-    IReadOnlyList<Guid> stranded =
-      await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId,
-                                                                   [_kitchenId],
-                                                                   CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, [_kitchenId], CancellationToken.None);
 
     Assert.That(stranded, Is.EqualTo(new[] { _bratwurstId }));
   }
@@ -119,12 +127,13 @@ public sealed class ItemOrderabilityTest
   [Test]
   public async Task FindItemsStrandedByRemovingStationsAsync_AStationThatSharesTheItem_NamesNothing()
   {
-    GivenStationsPrepare([_barId], [_beerId, _bratwurstId]);
+    GivenStationsPrepare([_barId],
+                         [
+                           _beerId,
+                           _bratwurstId
+                         ]);
 
-    IReadOnlyList<Guid> stranded =
-      await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId,
-                                                                   [_kitchenId],
-                                                                   CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedByRemovingStationsAsync(_festivalId, [_kitchenId], CancellationToken.None);
 
     Assert.That(stranded, Is.Empty);
   }
@@ -132,8 +141,7 @@ public sealed class ItemOrderabilityTest
   [Test]
   public async Task FindItemsStrandedBySwitchingOffStationAsync_AFestivalStillToCome_NamesTheItemsOfThatFestival()
   {
-    IReadOnlyList<Guid> stranded =
-      await _orderability.FindItemsStrandedBySwitchingOffStationAsync(_kitchenId, CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(_kitchenId, CancellationToken.None);
 
     Assert.That(stranded, Is.EqualTo(new[] { _bratwurstId }));
   }
@@ -141,21 +149,15 @@ public sealed class ItemOrderabilityTest
   [Test]
   public async Task FindItemsStrandedBySwitchingOffStationAsync_NoFestivalStillToCome_NamesNothing()
   {
-    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
+    A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    IReadOnlyList<Guid> stranded =
-      await _orderability.FindItemsStrandedBySwitchingOffStationAsync(_kitchenId, CancellationToken.None);
+    IReadOnlyList<Guid> stranded = await _orderability.FindItemsStrandedBySwitchingOffStationAsync(_kitchenId, CancellationToken.None);
 
     Assert.That(stranded, Is.Empty);
   }
 
   private void GivenStationsPrepare(IReadOnlyList<Guid> stationIds, IReadOnlyList<Guid> itemIds)
   {
-    A.CallTo(() => _repository.FindItemIdsPreparedByAsync(_festivalId,
-                                                          A<IReadOnlyCollection<Guid>>.That.Matches(stations => stations.Count == stationIds.Count
-                                                                                                                && stations.All(stationIds.Contains)),
-                                                          A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<Guid>>([.. itemIds]));
+    A.CallTo(() => _repository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>.That.Matches(stations => stations.Count == stationIds.Count && stations.All(stationIds.Contains)), A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>(itemIds.ToList()));
   }
 }

@@ -7,7 +7,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class OrderRefusalLoggingTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -27,21 +26,15 @@ public sealed class OrderRefusalLoggingTest
 
   private OrderBody WithoutATableName()
   {
-    return new(Guid.NewGuid(),
-               string.Empty,
-               null,
-               [new(_context.World.BratwurstItemId, 350, null, null)]);
+    return new(Guid.NewGuid(), string.Empty, null, [new(_context.World.BratwurstItemId, 350, null, null)]);
   }
 
   private OrderBody BuildOrderBodyWithAnUnknownItem()
   {
-    return new(Guid.NewGuid(),
-               "Tisch 12",
-               null,
-               [new(Guid.NewGuid(), 350, null, null)]);
+    return new(Guid.NewGuid(), "Tisch 12", null, [new(Guid.NewGuid(), 350, null, null)]);
   }
 
-  private static async Task<string> ReadMessageKeyAsync(HttpResponseMessage response)
+  private async static Task<string> ReadMessageKeyAsync(HttpResponseMessage response)
   {
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 

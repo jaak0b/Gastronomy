@@ -13,8 +13,7 @@ public sealed class DeviceLanguageServiceTest
   public void SetUp()
   {
     _repository = A.Fake<IDeviceRepository>();
-    A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Device?>(null));
+    A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Device?>(null));
 
     _service = new(_repository);
   }
@@ -27,14 +26,12 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ALanguageTheAppDoesNotSpeak_RefusesItAndSavesNothing()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed =
-      await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
+    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason,
-                                  Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
+                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -43,38 +40,33 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_NoLanguageAtAll_RefusesItAsUnsupported()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed =
-      await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
+    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason,
-                                  Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
+                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
                     });
   }
 
   [Test]
   public async Task ChangeAsync_ADeviceThatWasSetUpAgainElsewhere_RefusesBecauseTheDeviceIsGone()
   {
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed =
-      await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason,
-                                  Is.EqualTo(DeviceLanguageFailureReason.DeviceNotFound));
+                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.DeviceNotFound));
                     });
   }
 
   [Test]
   public async Task ChangeAsync_ALanguageTheAppSpeaks_StoresItOnTheDevice()
   {
-    Device device = GivenTheDeviceSpeaks("de");
+    var device = GivenTheDeviceSpeaks("de");
 
-    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed =
-      await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<ChangedDeviceLanguage, DeviceLanguageFailure> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -102,8 +94,7 @@ public sealed class DeviceLanguageServiceTest
                       LastSeenAtUtc = new(2026, 9, 5, 19, 0, 0, DateTimeKind.Utc)
                     };
 
-    A.CallTo(() => _repository.FindByIdAsync(_deviceId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Device?>(device));
+    A.CallTo(() => _repository.FindByIdAsync(_deviceId, A<CancellationToken>._)).Returns(Task.FromResult<Device?>(device));
 
     return device;
   }

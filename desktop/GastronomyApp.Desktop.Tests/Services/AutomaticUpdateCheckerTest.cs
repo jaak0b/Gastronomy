@@ -15,13 +15,11 @@ public sealed class AutomaticUpdateCheckerTest
   {
     _installer = A.Fake<IUpdateInstaller>();
     _settingsStore = A.Fake<ISettingsStore>();
-    _settings = new DesktopSettings(5000, DataFolder, null, null, null);
+    _settings = new(5000, DataFolder, null, null, null);
     A.CallTo(() => _installer.IsInstalled).Returns(true);
-    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.UpToDate());
+    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(new UpdatePreparation.UpToDate());
     A.CallTo(() => _settingsStore.Load()).ReturnsLazily(() => _settings);
-    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>._))
-     .Invokes(call => _settings = call.GetArgument<DesktopSettings>(0)!);
+    A.CallTo(() => _settingsStore.Save(A<DesktopSettings>._)).Invokes(call => _settings = call.GetArgument<DesktopSettings>(0)!);
   }
 
   private IUpdateInstaller _installer = null!;
@@ -75,8 +73,7 @@ public sealed class AutomaticUpdateCheckerTest
   public async Task CheckOnStartupAsync_WhenThePreparationFails_DoesNotTryAgainWithinTheHour()
   {
     _settings = _settings with { LastUpdateCheckUtc = DateTimeOffset.UtcNow.AddHours(-2) };
-    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._))
-     .Returns(new UpdatePreparation.Failed("The network is down."));
+    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._)).Returns(new UpdatePreparation.Failed("The network is down."));
     var checker = CreateChecker();
 
     await checker.CheckOnStartupAsync(CancellationToken.None);
@@ -89,8 +86,7 @@ public sealed class AutomaticUpdateCheckerTest
   public async Task CheckOnStartupAsync_WhenTheCheckThrowsUnexpectedly_StillStoresTheMoment()
   {
     _settings = _settings with { LastUpdateCheckUtc = DateTimeOffset.UtcNow.AddHours(-2) };
-    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._))
-     .ThrowsAsync(new InvalidOperationException("The network is down."));
+    A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._)).ThrowsAsync(new InvalidOperationException("The network is down."));
 
     await CreateChecker().CheckOnStartupAsync(CancellationToken.None);
 
@@ -106,9 +102,7 @@ public sealed class AutomaticUpdateCheckerTest
 
     Assert.DoesNotThrowAsync(() => CreateChecker().CheckOnStartupAsync(CancellationToken.None));
 
-    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error
-                                           && ReferenceEquals(entry.Exception, failure)),
-                Is.Not.Empty);
+    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error && ReferenceEquals(entry.Exception, failure)), Is.Not.Empty);
   }
 
   [Test]
@@ -120,9 +114,7 @@ public sealed class AutomaticUpdateCheckerTest
 
     Assert.DoesNotThrowAsync(() => CreateChecker().CheckOnStartupAsync(CancellationToken.None));
 
-    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error
-                                           && ReferenceEquals(entry.Exception, failure)),
-                Is.Not.Empty);
+    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error && ReferenceEquals(entry.Exception, failure)), Is.Not.Empty);
     A.CallTo(() => _installer.CheckAndDownloadAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 }

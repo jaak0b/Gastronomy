@@ -2,9 +2,7 @@
 
 public sealed class OrderLineCollapser
 {
-  public IReadOnlyList<CollapsedOrderLine<TLine>> Collapse<TLine>(IReadOnlyList<TLine> lines,
-                                                                  Func<TLine, string> readItemName,
-                                                                  Func<TLine, string?> readNote)
+  public IReadOnlyList<CollapsedOrderLine<TLine>> Collapse<TLine>(IReadOnlyList<TLine> lines, Func<TLine, string> readItemName, Func<TLine, string?> readNote)
   {
     Dictionary<LineKey, int> countByKey = [];
     List<LineKey> order = [];
@@ -24,7 +22,7 @@ public sealed class OrderLineCollapser
       order.Add(key);
     }
 
-    return [.. order.Select(key => new CollapsedOrderLine<TLine>(firstLineByKey[key], countByKey[key]))];
+    return order.Select(key => new CollapsedOrderLine<TLine>(firstLineByKey[key], countByKey[key])).ToList();
   }
 
   private sealed record LineKey(string ItemName, string Note);

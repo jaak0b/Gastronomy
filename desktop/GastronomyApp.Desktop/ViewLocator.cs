@@ -5,8 +5,7 @@ using GastronomyApp.Desktop.ViewModels;
 
 namespace GastronomyApp.Desktop;
 
-[RequiresUnreferencedCode("Default implementation of ViewLocator involves reflection which may be trimmed away.",
-                          Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
+[RequiresUnreferencedCode("Default implementation of ViewLocator involves reflection which may be trimmed away.", Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
 public class ViewLocator : IDataTemplate
 {
   public Control? Build(object? param)
@@ -18,9 +17,7 @@ public class ViewLocator : IDataTemplate
     var type = Type.GetType(name);
 
     if (type != null)
-    {
       return (Control)Activator.CreateInstance(type)!;
-    }
 
     return new TextBlock { Text = "Not Found: " + name };
   }

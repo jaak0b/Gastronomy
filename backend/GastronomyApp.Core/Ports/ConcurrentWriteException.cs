@@ -6,13 +6,11 @@ public sealed class ConcurrentWriteException : Exception
   {
   }
 
-  public ConcurrentWriteException(string message)
-    : base(message)
+  public ConcurrentWriteException(string message) : base(message)
   {
   }
 
-  public ConcurrentWriteException(string message, Exception innerException)
-    : base(message, innerException)
+  public ConcurrentWriteException(string message, Exception innerException) : base(message, innerException)
   {
   }
 }

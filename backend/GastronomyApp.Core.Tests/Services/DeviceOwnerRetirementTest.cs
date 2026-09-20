@@ -33,8 +33,7 @@ public sealed class DeviceOwnerRetirementTest
   {
     await _retirement.WithdrawOutstandingInvitationAsync(null, CancellationToken.None);
 
-    A.CallTo(() => _invitationStore.ConsumeAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._))
-     .MustNotHaveHappened();
+    A.CallTo(() => _invitationStore.ConsumeAsync(A<Guid>._, A<DateTime>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -42,8 +41,7 @@ public sealed class DeviceOwnerRetirementTest
   {
     await _retirement.WithdrawOutstandingInvitationAsync(_invitationId, CancellationToken.None);
 
-    A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]

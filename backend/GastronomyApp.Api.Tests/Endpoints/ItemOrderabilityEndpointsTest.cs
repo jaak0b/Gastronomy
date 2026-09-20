@@ -12,7 +12,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class ItemOrderabilityEndpointsTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -41,12 +40,9 @@ public sealed class ItemOrderabilityEndpointsTest
 
     await using var readContext = _context.Factory.CreateContext();
     var clock = _context.Factory.Services.GetRequiredService<IClock>();
-    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext),
-                                        new FestivalRepository(readContext, new()),
-                                        clock);
+    ItemOrderability orderability = new(new ItemOrderabilityRepository(readContext), new FestivalRepository(readContext, new()), clock);
 
-    IReadOnlyList<Guid> itemIds = await orderability.FindOrderableItemIdsAsync(_context.World.FestivalId,
-                                                                              CancellationToken.None);
+    IReadOnlyList<Guid> itemIds = await orderability.FindOrderableItemIdsAsync(_context.World.FestivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -84,18 +80,15 @@ public sealed class ItemOrderabilityEndpointsTest
 
     await PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate");
 
-    using (var copied = await _context.Client
-                                      .PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/copy",
-                                                       new
-                                                       {
-                                                         name = "Sommerfest dieses Jahr",
-                                                         startsAtUtc = DateTime.UtcNow.AddHours(-1),
-                                                         endsAtUtc = DateTime.UtcNow.AddDays(1)
-                                                       }))
+    using (var copied = await _context.Client.PostAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/copy",
+                                                              new
+                                                              {
+                                                                name = "Sommerfest dieses Jahr",
+                                                                startsAtUtc = DateTime.UtcNow.AddHours(-1),
+                                                                endsAtUtc = DateTime.UtcNow.AddDays(1)
+                                                              }))
     {
-      Assert.That(copied.StatusCode,
-                  Is.EqualTo(HttpStatusCode.Created),
-                  await copied.Content.ReadAsStringAsync());
+      Assert.That(copied.StatusCode, Is.EqualTo(HttpStatusCode.Created), await copied.Content.ReadAsStringAsync());
     }
 
     IReadOnlyList<Guid> itemIds = await ItemIdsInTheCatalogAsync();
@@ -110,17 +103,16 @@ public sealed class ItemOrderabilityEndpointsTest
   [Test]
   public async Task GetCatalog_ArticleWithOneActiveAndOneSwitchedOffStation_KeepsItAtTheActiveStation()
   {
-    using (var assigned = await _context.Client
-                                        .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
-                                                        new
-                                                        {
-                                                          priceCents = 350,
-                                                          stationIds = new[]
-                                                                       {
-                                                                         _context.World.KitchenStationId,
-                                                                         _context.World.BarStationId
-                                                                       }
-                                                        }))
+    using (var assigned = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                               new
+                                                               {
+                                                                 priceCents = 350,
+                                                                 stationIds = new[]
+                                                                              {
+                                                                                _context.World.KitchenStationId,
+                                                                                _context.World.BarStationId
+                                                                              }
+                                                               }))
     {
       Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK), await assigned.Content.ReadAsStringAsync());
     }
@@ -128,15 +120,12 @@ public sealed class ItemOrderabilityEndpointsTest
     await PostAsync($"/api/admin/stations/{_context.World.KitchenStationId}/deactivate");
 
     var body = await GetCatalogAsync();
-    JsonElement bratwurst = body.RootElement.GetProperty("items")
-                                .EnumerateArray()
-                                .Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
+    var bratwurst = body.RootElement.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == _context.World.BratwurstItemId);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(bratwurst.GetProperty("stationIds").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(bratwurst.GetProperty("stationIds")[0].GetGuid(),
-                                  Is.EqualTo(_context.World.BarStationId));
+                      Assert.That(bratwurst.GetProperty("stationIds")[0].GetGuid(), Is.EqualTo(_context.World.BarStationId));
                     });
   }
 
@@ -145,29 +134,25 @@ public sealed class ItemOrderabilityEndpointsTest
   {
     var switchedOffStationId = await StationSwitchedOffAtTheFestivalAsync();
 
-    using (var response = await _context.Client
-                                        .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
-                                                        new
-                                                        {
-                                                          priceCents = 350,
-                                                          stationIds = new[] { switchedOffStationId }
-                                                        }))
+    using (var response = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                               new
+                                                               {
+                                                                 priceCents = 350,
+                                                                 stationIds = new[] { switchedOffStationId }
+                                                               }))
     {
       var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
       Assert.Multiple(() =>
                       {
                         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                    Is.EqualTo("admin.itemNeedsAStation"));
+                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNeedsAStation"));
                       });
     }
 
     using var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
-    Assert.That(placed.StatusCode,
-                Is.EqualTo(HttpStatusCode.Created),
-                $"The refused menu change must leave the item at its station. Body: {await placed.Content.ReadAsStringAsync()}");
+    Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created), $"The refused menu change must leave the item at its station. Body: {await placed.Content.ReadAsStringAsync()}");
   }
 
   [Test]
@@ -175,26 +160,21 @@ public sealed class ItemOrderabilityEndpointsTest
   {
     await StationSwitchedOffAtTheFestivalAsync(_context.World.KitchenStationId);
 
-    using (var response = await _context.Client
-                                        .DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}"))
+    using (var response = await _context.Client.DeleteAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{_context.World.KitchenStationId}"))
     {
       var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
       Assert.Multiple(() =>
                       {
                         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                    Is.EqualTo("admin.itemsWouldHaveNoStation"));
-                        Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(),
-                                    Is.EqualTo("1"));
+                        Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemsWouldHaveNoStation"));
+                        Assert.That(body.RootElement.GetProperty("parameters").GetProperty("count").GetString(), Is.EqualTo("1"));
                       });
     }
 
     using var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid()));
 
-    Assert.That(placed.StatusCode,
-                Is.EqualTo(HttpStatusCode.Created),
-                $"The refused removal must leave the item at its station. Body: {await placed.Content.ReadAsStringAsync()}");
+    Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created), $"The refused removal must leave the item at its station. Body: {await placed.Content.ReadAsStringAsync()}");
   }
 
   private async Task<Guid> StationSwitchedOffAtTheFestivalAsync(Guid? alsoPreparingWith = null)
@@ -202,41 +182,40 @@ public sealed class ItemOrderabilityEndpointsTest
     Guid stationId;
 
     using (var created = await _context.Client.PostAsJsonAsync("/api/admin/stations",
-                                                               new { name = "Zelt", sortOrder = 3 }))
+                                                               new
+                                                               {
+                                                                 name = "Zelt",
+                                                                 sortOrder = 3
+                                                               }))
     {
       Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-      stationId = JsonDocument.Parse(await created.Content.ReadAsStringAsync())
-                              .RootElement.GetProperty("stationId")
-                              .GetGuid();
+      stationId = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement.GetProperty("stationId").GetGuid();
     }
 
-    using (var added = await _context.Client
-                                     .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{stationId}",
-                                                     new { }))
+    using (var added = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/stations/{stationId}", new { }))
     {
       Assert.That(added.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     if (alsoPreparingWith is { } partnerStationId)
     {
-      using var assigned = await _context.Client
-                                         .PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
-                                                         new
-                                                         {
-                                                           priceCents = 350,
-                                                           stationIds = new[] { partnerStationId, stationId }
-                                                         });
+      using var assigned = await _context.Client.PutAsJsonAsync($"/api/admin/festivals/{_context.World.FestivalId}/items/{_context.World.BratwurstItemId}",
+                                                                new
+                                                                {
+                                                                  priceCents = 350,
+                                                                  stationIds = new[]
+                                                                               {
+                                                                                 partnerStationId,
+                                                                                 stationId
+                                                                               }
+                                                                });
 
-      Assert.That(assigned.StatusCode,
-                  Is.EqualTo(HttpStatusCode.OK),
-                  await assigned.Content.ReadAsStringAsync());
+      Assert.That(assigned.StatusCode, Is.EqualTo(HttpStatusCode.OK), await assigned.Content.ReadAsStringAsync());
     }
 
     using (var switchedOff = await _context.Client.PostAsync($"/api/admin/stations/{stationId}/deactivate", null))
     {
-      Assert.That(switchedOff.StatusCode,
-                  Is.EqualTo(HttpStatusCode.OK),
-                  await switchedOff.Content.ReadAsStringAsync());
+      Assert.That(switchedOff.StatusCode, Is.EqualTo(HttpStatusCode.OK), await switchedOff.Content.ReadAsStringAsync());
     }
 
     return stationId;
@@ -253,12 +232,7 @@ public sealed class ItemOrderabilityEndpointsTest
   {
     var body = await GetCatalogAsync();
 
-    return
-    [
-      .. body.RootElement.GetProperty("items")
-             .EnumerateArray()
-             .Select(item => item.GetProperty("id").GetGuid())
-    ];
+    return body.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToList();
   }
 
   private async Task<JsonDocument> GetCatalogAsync()

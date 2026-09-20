@@ -14,13 +14,7 @@ public sealed class FestivalStationService
   private readonly IStationRepository _stationRepository;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalStationService(IFestivalStationRepository repository,
-                                IFestivalRepository festivalRepository,
-                                IStationRepository stationRepository,
-                                ItemOrderability orderability,
-                                INumberAllocator numberAllocator,
-                                RunningFestivalLookup runningFestival,
-                                ITransactionRunner transactionRunner)
+  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
@@ -31,44 +25,28 @@ public sealed class FestivalStationService
     _transactionRunner = transactionRunner;
   }
 
-  public Task<Result<SavedFestivalStation, FestivalStationFailure>> AddAsync(Guid festivalId,
-                                                                             Guid stationId,
-                                                                             CancellationToken cancellationToken)
+  public Task<Result<SavedFestivalStation, FestivalStationFailure>> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => AddedAsync(festivalId, stationId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => AddedAsync(festivalId, stationId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestivalStation, FestivalStationFailure>> RemoveAsync(Guid festivalId,
-                                                                                Guid stationId,
-                                                                                CancellationToken cancellationToken)
+  public Task<Result<SavedFestivalStation, FestivalStationFailure>> RemoveAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => RemovedAsync(festivalId, stationId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => RemovedAsync(festivalId, stationId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> AddedAsync(
-    Guid festivalId,
-    Guid stationId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> AddedAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
     if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
-    {
       return Failed(FestivalStationFailureReason.FestivalNotFound);
-    }
 
     if (!await _stationRepository.ExistsAsync(stationId, cancellationToken))
-    {
       return Failed(FestivalStationFailureReason.StationNotFound);
-    }
 
     if (await _repository.FindLinkAsync(festivalId, stationId, cancellationToken) is not null)
-    {
       return Saved(stationId, false);
-    }
 
-    var nextStationOrderNumber =
-      await _numberAllocator.FindNextStationOrderNumberAsync(festivalId, stationId, cancellationToken);
+    var nextStationOrderNumber = await _numberAllocator.FindNextStationOrderNumberAsync(festivalId, stationId, cancellationToken);
 
     await _repository.AddLinkAsync(new()
                                    {
@@ -84,46 +62,33 @@ public sealed class FestivalStationService
     return Saved(stationId, true);
   }
 
-  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> RemovedAsync(
-    Guid festivalId,
-    Guid stationId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> RemovedAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    FestivalStation? link = await _repository.FindLinkAsync(festivalId, stationId, cancellationToken);
+    var link = await _repository.FindLinkAsync(festivalId, stationId, cancellationToken);
 
     if (link is null)
-    {
       return Failed(FestivalStationFailureReason.StationLinkNotFound);
-    }
 
-    Festival? festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
+    var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
-    {
       return Failed(FestivalStationFailureReason.FestivalNotFound);
-    }
 
-    if (_runningFestival.IsRunning(festival)
-        && await _repository.CountUnfulfilledItemsAsync(festivalId, stationId, cancellationToken) > 0)
-    {
+    if (_runningFestival.IsRunning(festival) && await _repository.CountUnfulfilledItemsAsync(festivalId, stationId, cancellationToken) > 0)
       return Failed(FestivalStationFailureReason.StationHasUnfulfilledItems);
-    }
 
-    IReadOnlyList<Guid> strandedItemIds =
-      await _orderability.FindItemsStrandedByRemovingStationsAsync(festivalId, [stationId], cancellationToken);
+    IReadOnlyList<Guid> strandedItemIds = await _orderability.FindItemsStrandedByRemovingStationsAsync(festivalId, [stationId], cancellationToken);
 
     if (strandedItemIds.Count > 0)
     {
-      return Result<SavedFestivalStation, FestivalStationFailure>
-        .Failed(new()
-                {
-                  Reason = FestivalStationFailureReason.ItemsWouldHaveNoStation,
-                  StrandedItemCount = strandedItemIds.Count
-                });
+      return Result<SavedFestivalStation, FestivalStationFailure>.Failed(new()
+                                                                         {
+                                                                           Reason = FestivalStationFailureReason.ItemsWouldHaveNoStation,
+                                                                           StrandedItemCount = strandedItemIds.Count
+                                                                         });
     }
 
-    IReadOnlyList<ItemStationAssignment> assignmentsHere =
-      await _repository.FindAssignmentsAtStationAsync(festivalId, stationId, cancellationToken);
+    IReadOnlyList<ItemStationAssignment> assignmentsHere = await _repository.FindAssignmentsAtStationAsync(festivalId, stationId, cancellationToken);
 
     _repository.RemoveAssignments(assignmentsHere);
     _repository.RemoveLink(link);
@@ -143,14 +108,11 @@ public sealed class FestivalStationService
     return Result<SavedFestivalStation, FestivalStationFailure>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> RunAsync(
-    Func<CancellationToken, Task<Result<SavedFestivalStation, FestivalStationFailure>>> write,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestivalStation, FestivalStationFailure>> RunAsync(Func<CancellationToken, Task<Result<SavedFestivalStation, FestivalStationFailure>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<SavedFestivalStation, FestivalStationFailure> written =
-                                                 await write(transactionCancellationToken);
+                                               Result<SavedFestivalStation, FestivalStationFailure> written = await write(transactionCancellationToken);
 
                                                return new TransactionOutcome<Result<SavedFestivalStation, FestivalStationFailure>>
                                                       {

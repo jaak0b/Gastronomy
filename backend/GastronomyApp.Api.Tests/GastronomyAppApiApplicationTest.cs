@@ -8,7 +8,6 @@ namespace GastronomyApp.Api.Tests;
 [TestFixture]
 public sealed class GastronomyAppApiApplicationTest
 {
-
   [SetUp]
   public void SetUp()
   {
@@ -22,9 +21,7 @@ public sealed class GastronomyAppApiApplicationTest
     SqliteConnection.ClearAllPools();
 
     if (Directory.Exists(_dataDirectory))
-    {
       Directory.Delete(_dataDirectory, true);
-    }
   }
 
   private string _dataDirectory = null!;

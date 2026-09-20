@@ -1,7 +1,8 @@
 using Avalonia;
 using Avalonia.Headless;
+using GastronomyApp.Desktop.Tests.Smoke;
 
-[assembly: AvaloniaTestApplication(typeof(GastronomyApp.Desktop.Tests.Smoke.HeadlessAppBuilder))]
+[assembly: AvaloniaTestApplication(typeof(HeadlessAppBuilder))]
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 

@@ -19,11 +19,9 @@ public sealed class RateLimitPolicies
 
   public void Configure(RateLimiterOptions options)
   {
-    options.AddPolicy(_policyNames.PerDevice,
-                      httpContext => Partition(DevicePartitionKeyFor(httpContext), DeviceRequestsPerMinute));
+    options.AddPolicy(_policyNames.PerDevice, httpContext => Partition(DevicePartitionKeyFor(httpContext), DeviceRequestsPerMinute));
 
-    options.AddPolicy(_policyNames.PerAddress,
-                      httpContext => Partition(AddressPartitionKeyFor(httpContext), AddressRequestsPerMinute));
+    options.AddPolicy(_policyNames.PerAddress, httpContext => Partition(AddressPartitionKeyFor(httpContext), AddressRequestsPerMinute));
 
     options.OnRejected = async (context, cancellationToken) =>
                          {
@@ -37,12 +35,7 @@ public sealed class RateLimitPolicies
                                               Parameters = new Dictionary<string, string>()
                                             };
 
-                           await context.HttpContext.Response.WriteAsync(JsonSerializer.Serialize(error,
-                                                                                                  new JsonSerializerOptions
-                                                                                                  {
-                                                                                                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                                                                                                  }),
-                                                                         cancellationToken);
+                           await context.HttpContext.Response.WriteAsync(JsonSerializer.Serialize(error, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }), cancellationToken);
                          };
   }
 
@@ -68,7 +61,6 @@ public sealed class RateLimitPolicies
 
   private string AddressPartitionKeyFor(HttpContext httpContext)
   {
-    return httpContext.Connection.RemoteIpAddress?.ToString()
-           ?? string.Create(CultureInfo.InvariantCulture, $"{UnknownPartitionKey}");
+    return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Create(CultureInfo.InvariantCulture, $"{UnknownPartitionKey}");
   }
 }

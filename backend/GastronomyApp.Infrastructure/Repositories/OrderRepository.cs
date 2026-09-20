@@ -16,22 +16,15 @@ public sealed class OrderRepository : IOrderRepository
 
   public async Task<Order?> FindByClientOrderIdAsync(Guid clientOrderId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Orders
-                           .Include(order => order.StationOrders)
-                           .ThenInclude(stationOrder => stationOrder.Items)
-                           .FirstOrDefaultAsync(order => order.ClientOrderId == clientOrderId, cancellationToken);
+    return await _dbContext.Orders.Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).FirstOrDefaultAsync(order => order.ClientOrderId == clientOrderId, cancellationToken);
   }
 
   public async Task<PlacedOrder?> FindPlacedAsync(Guid orderId, CancellationToken cancellationToken)
   {
-    Order? order = await _dbContext.Orders
-                                   .AsNoTracking()
-                                   .FirstOrDefaultAsync(candidate => candidate.Id == orderId, cancellationToken);
+    var order = await _dbContext.Orders.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == orderId, cancellationToken);
 
     if (order is null)
-    {
       return null;
-    }
 
     return new()
            {
@@ -48,16 +41,18 @@ public sealed class OrderRepository : IOrderRepository
     await _dbContext.SaveChangesAsync(cancellationToken);
   }
 
-  private async Task<IReadOnlyList<PlacedStationOrder>> FindStationOrdersAsync(Guid orderId,
-                                                                               CancellationToken cancellationToken)
+  private async Task<IReadOnlyList<PlacedStationOrder>> FindStationOrdersAsync(Guid orderId, CancellationToken cancellationToken)
   {
-    return await _dbContext.StationOrders
-                           .AsNoTracking()
+    return await _dbContext.StationOrders.AsNoTracking()
                            .Where(stationOrder => stationOrder.OrderId == orderId)
                            .Join(_dbContext.Stations.AsNoTracking(),
                                  stationOrder => stationOrder.StationId,
                                  station => station.Id,
-                                 (stationOrder, station) => new { StationOrder = stationOrder, Station = station })
+                                 (stationOrder, station) => new
+                                                            {
+                                                              StationOrder = stationOrder,
+                                                              Station = station
+                                                            })
                            .OrderBy(joined => joined.StationOrder.StationOrderNumber)
                            .ThenBy(joined => joined.StationOrder.Id)
                            .Select(joined => new PlacedStationOrder
@@ -67,8 +62,7 @@ public sealed class OrderRepository : IOrderRepository
                                                StationName = joined.Station.Name,
                                                StationOrderNumber = joined.StationOrder.StationOrderNumber,
                                                DeliveryMode = joined.StationOrder.DeliveryMode,
-                                               Items = _dbContext.OrderItems
-                                                                 .AsNoTracking()
+                                               Items = _dbContext.OrderItems.AsNoTracking()
                                                                  .Where(item => item.StationOrderId == joined.StationOrder.Id)
                                                                  .OrderBy(item => item.Id)
                                                                  .Select(item => new PlacedOrderItem

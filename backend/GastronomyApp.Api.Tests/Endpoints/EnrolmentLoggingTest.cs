@@ -9,7 +9,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class EnrolmentLoggingTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -31,16 +30,14 @@ public sealed class EnrolmentLoggingTest
 
   private async Task<CreatedInvitation> CreateInvitationAsync()
   {
-    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations",
-                                                              new { staffMemberId = _context.World.StaffMemberId });
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId = _context.World.StaffMemberId });
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
 
-    return new(body.RootElement.GetProperty("invitationId").GetGuid(),
-               qrUrl[(qrUrl.LastIndexOf('/') + 1)..]);
+    return new(body.RootElement.GetProperty("invitationId").GetGuid(), qrUrl[(qrUrl.LastIndexOf('/') + 1)..]);
   }
 
   private Task<HttpResponseMessage> RedeemAsync(string code)
@@ -51,8 +48,7 @@ public sealed class EnrolmentLoggingTest
   private async Task AgeTheInvitationAsync(Guid invitationId)
   {
     await using var database = _context.Factory.CreateContext();
-    var invitation = await database.EnrolmentInvitations
-                                   .SingleAsync(candidate => candidate.Id == invitationId);
+    var invitation = await database.EnrolmentInvitations.SingleAsync(candidate => candidate.Id == invitationId);
     invitation.ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
     await database.SaveChangesAsync();
   }
@@ -62,8 +58,7 @@ public sealed class EnrolmentLoggingTest
   {
     var invitation = await CreateInvitationAsync();
 
-    Assert.That(_log.ReadRenderedMessages(),
-                Has.Some.Contains("Enrolment invitation").And.Some.Contains(invitation.InvitationId.ToString()));
+    Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("Enrolment invitation").And.Some.Contains(invitation.InvitationId.ToString()));
   }
 
   [Test]
@@ -76,10 +71,7 @@ public sealed class EnrolmentLoggingTest
     var deviceId = body.RootElement.GetProperty("deviceId").GetGuid();
     var staffMemberId = body.RootElement.GetProperty("staffMember").GetProperty("id").GetGuid();
 
-    Assert.That(_log.ReadRenderedMessages(),
-                Has.Some.Contains(invitation.InvitationId.ToString())
-                        .And.Contains(deviceId.ToString())
-                        .And.Contains(staffMemberId.ToString()));
+    Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains(invitation.InvitationId.ToString()).And.Contains(deviceId.ToString()).And.Contains(staffMemberId.ToString()));
   }
 
   [Test]
@@ -94,12 +86,8 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(deviceToken, Is.Not.Empty);
-                      Assert.That(_log.ReadRenderedMessages(),
-                                  Has.None.Contains(deviceToken),
-                                  "A device token is a credential and must never reach the log file.");
-                      Assert.That(_log.ReadRenderedMessages(),
-                                  Has.None.Contains(invitation.Code),
-                                  "The enrolment code is a credential and must never reach the log file.");
+                      Assert.That(_log.ReadRenderedMessages(), Has.None.Contains(deviceToken), "A device token is a credential and must never reach the log file.");
+                      Assert.That(_log.ReadRenderedMessages(), Has.None.Contains(invitation.Code), "The enrolment code is a credential and must never reach the log file.");
                     });
   }
 
@@ -151,5 +139,3 @@ public sealed class EnrolmentLoggingTest
                     });
   }
 }
-
-

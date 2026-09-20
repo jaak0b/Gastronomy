@@ -38,10 +38,8 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_context.World.KitchenStationId));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(),
-                                  Is.EqualTo("Kueche"));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(), Is.EqualTo("Kueche"));
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
@@ -50,10 +48,8 @@ public sealed class StationQueueEndpointsTest
                       Assert.That(orders[0].GetProperty("itemCount").GetInt32(), Is.EqualTo(2));
                       Assert.That(orders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.Zero);
                       Assert.That(orders[0].GetProperty("items").GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("itemName").GetString(),
-                                  Is.EqualTo("Bratwurst mit Brot"));
-                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("fulfilledAtUtc").ValueKind,
-                                  Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("itemName").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
                     });
   }
 
@@ -68,16 +64,14 @@ public sealed class StationQueueEndpointsTest
     var orders = body.RootElement.GetProperty("orders");
     var asItComes = body.RootElement.GetProperty("asItComes");
 
-    var asItComesStationOrder = orders.EnumerateArray()
-                               .Single(stationOrder => stationOrder.GetProperty("tableName").GetString() == "Tisch 3");
+    var asItComesStationOrder = orders.EnumerateArray().Single(stationOrder => stationOrder.GetProperty("tableName").GetString() == "Tisch 3");
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(2));
                       Assert.That(asItComes.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(asItComes[0].GetProperty("stationOrderId").GetGuid(),
-                                  Is.EqualTo(asItComesStationOrder.GetProperty("stationOrderId").GetGuid()));
+                      Assert.That(asItComes[0].GetProperty("stationOrderId").GetGuid(), Is.EqualTo(asItComesStationOrder.GetProperty("stationOrderId").GetGuid()));
                       Assert.That(orders[0].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(1));
                       Assert.That(orders[1].GetProperty("stationOrderNumber").GetInt32(), Is.EqualTo(2));
                     });
@@ -95,8 +89,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("itemName").GetString(),
-                                  Is.EqualTo("Bier"));
+                      Assert.That(orders[0].GetProperty("items")[0].GetProperty("itemName").GetString(), Is.EqualTo("Bier"));
                     });
   }
 
@@ -115,8 +108,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(),
-                                  Is.EqualTo(_context.World.KitchenStationId));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
                       Assert.That(orders.GetArrayLength(), Is.EqualTo(1));
                       Assert.That(orders[0].GetProperty("itemCount").GetInt32(), Is.EqualTo(2));
                       Assert.That(orders[0].GetProperty("fulfilledItemCount").GetInt32(), Is.EqualTo(1));
@@ -127,7 +119,7 @@ public sealed class StationQueueEndpointsTest
   [Test]
   public async Task PostItemFulfill_EveryItemOfAStationOrder_LeavesItOutOfBothLists()
   {
-    Guid orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.KitchenStationId);
+    var orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.KitchenStationId);
     IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(orderId);
 
     using var response = await FulfillAsync(_kitchenToken, kitchenItemIds);
@@ -152,8 +144,7 @@ public sealed class StationQueueEndpointsTest
     }
 
     using var response = await _context.SendAsAsync(_kitchenToken, HttpMethod.Get, "/api/station/orders");
-    var stationOrder = JsonDocument.Parse(await response.Content.ReadAsStringAsync())
-                                   .RootElement.GetProperty("orders")[0];
+    var stationOrder = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("orders")[0];
 
     Assert.Multiple(() =>
                     {
@@ -182,8 +173,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("orders")[0].GetProperty("fulfilledItemCount").GetInt32(),
-                                  Is.Zero);
+                      Assert.That(body.RootElement.GetProperty("orders")[0].GetProperty("fulfilledItemCount").GetInt32(), Is.Zero);
                       Assert.That(stored.FulfilledAtUtc, Is.Null);
                     });
   }
@@ -200,8 +190,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ItemNotFulfilled"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.changeNotSaved"));
                     });
   }
 
@@ -212,7 +201,7 @@ public sealed class StationQueueEndpointsTest
     IReadOnlyList<Guid> kitchenItemIds = await ReadKitchenItemIdsAsync(placed);
     IReadOnlyList<Guid> barItemIds = await ReadBarItemIdsAsync(placed);
 
-    using var response = await FulfillAsync(_kitchenToken, [.. kitchenItemIds, .. barItemIds]);
+    using var response = await FulfillAsync(_kitchenToken, kitchenItemIds.Concat(barItemIds).ToList());
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     await using var database = _context.Factory.CreateContext();
@@ -221,8 +210,7 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.itemNotAtThisStation"));
                       Assert.That(stored.Select(item => item.FulfilledAtUtc), Is.All.Null);
                     });
   }
@@ -238,16 +226,15 @@ public sealed class StationQueueEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.noItemsSelected"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.noItemsSelected"));
                     });
   }
 
   [Test]
   public async Task PostHide_AnAsItComesStationOrder_LeavesItInOrdersAndOutOfAsItComes()
   {
-    Guid orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.KitchenStationId);
-    Guid stationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.KitchenStationId);
+    var orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.KitchenStationId);
+    var stationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.KitchenStationId);
 
     using var response = await HideAsync(_kitchenToken, stationOrderId);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -256,9 +243,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("orders")[0]
-                                      .GetProperty("isHiddenFromAsItComesQueue").GetBoolean(),
-                                  Is.True);
+                      Assert.That(body.RootElement.GetProperty("orders")[0].GetProperty("isHiddenFromAsItComesQueue").GetBoolean(), Is.True);
                       Assert.That(body.RootElement.GetProperty("asItComes").GetArrayLength(), Is.Zero);
                     });
 
@@ -275,8 +260,8 @@ public sealed class StationQueueEndpointsTest
   [Test]
   public async Task PostHide_ATogetherStationOrder_IsRefusedAndLeavesTheFlagOff()
   {
-    Guid orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3");
-    Guid stationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.KitchenStationId);
+    var orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3");
+    var stationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.KitchenStationId);
 
     using var response = await HideAsync(_kitchenToken, stationOrderId);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -288,8 +273,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("CannotHideTogetherOrder"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.changeNotSaved"));
                       Assert.That(stored.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }
@@ -297,8 +281,8 @@ public sealed class StationQueueEndpointsTest
   [Test]
   public async Task PostHide_AStationOrderOfAnotherStation_IsRefusedAndLeavesItAlone()
   {
-    Guid orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.BarStationId);
-    Guid barStationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.BarStationId);
+    var orderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3", _context.World.BarStationId);
+    var barStationOrderId = await LoadStationOrderIdAsync(orderId, _context.World.BarStationId);
 
     using var response = await HideAsync(_kitchenToken, barStationOrderId);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -310,8 +294,7 @@ public sealed class StationQueueEndpointsTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
                       Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("UnprocessableEntity"));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("station.orderNotAtThisStation"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("station.orderNotAtThisStation"));
                       Assert.That(stored.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }
@@ -319,8 +302,8 @@ public sealed class StationQueueEndpointsTest
   [Test]
   public async Task GetFulfilledOrders_APartialAndACompleteStationOrder_ListsBothWithEveryLine()
   {
-    Guid partialOrderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3");
-    Guid completeOrderId = await PlaceOrderAcrossBothStationsAsync("Tisch 4");
+    var partialOrderId = await PlaceOrderAcrossBothStationsAsync("Tisch 3");
+    var completeOrderId = await PlaceOrderAcrossBothStationsAsync("Tisch 4");
     IReadOnlyList<Guid> partialItemIds = await ReadKitchenItemIdsAsync(partialOrderId);
     IReadOnlyList<Guid> completeItemIds = await ReadKitchenItemIdsAsync(completeOrderId);
 
@@ -352,18 +335,12 @@ public sealed class StationQueueEndpointsTest
 
   private Task<HttpResponseMessage> FulfillAsync(string deviceToken, IReadOnlyList<Guid> orderItemIds)
   {
-    return _context.SendAsAsync(deviceToken,
-                                HttpMethod.Post,
-                                "/api/station/items/fulfill",
-                                new StationItemSelectionBody(orderItemIds));
+    return _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/station/items/fulfill", new StationItemSelectionBody(orderItemIds));
   }
 
   private Task<HttpResponseMessage> UnfulfillAsync(string deviceToken, IReadOnlyList<Guid> orderItemIds)
   {
-    return _context.SendAsAsync(deviceToken,
-                                HttpMethod.Post,
-                                "/api/station/items/unfulfill",
-                                new StationItemSelectionBody(orderItemIds));
+    return _context.SendAsAsync(deviceToken, HttpMethod.Post, "/api/station/items/unfulfill", new StationItemSelectionBody(orderItemIds));
   }
 
   private Task<HttpResponseMessage> HideAsync(string deviceToken, Guid stationOrderId)
@@ -373,9 +350,10 @@ public sealed class StationQueueEndpointsTest
 
   private async Task<Guid> PlaceOrderAcrossBothStationsAsync(string tableName, Guid? asItComesStationId = null)
   {
-    IReadOnlyList<DeliveryModeBody> deliveryModes = asItComesStationId is null
-                                                      ? []
-                                                      : [new(asItComesStationId.Value, "asItComes")];
+    IReadOnlyList<DeliveryModeBody> deliveryModes = [];
+
+    if (asItComesStationId is not null)
+      deliveryModes = [new(asItComesStationId.Value, "asItComes")];
 
     OrderWithDeliveryModesBody order = new(Guid.NewGuid(),
                                            tableName,
@@ -412,19 +390,13 @@ public sealed class StationQueueEndpointsTest
 
     var stationOrderId = await LoadStationOrderIdAsync(orderId, stationId);
 
-    return await database.OrderItems
-                         .Where(item => item.StationOrderId == stationOrderId)
-                         .Select(item => item.Id)
-                         .ToListAsync();
+    return await database.OrderItems.Where(item => item.StationOrderId == stationOrderId).Select(item => item.Id).ToListAsync();
   }
 
   private async Task<Guid> LoadStationOrderIdAsync(Guid orderId, Guid stationId)
   {
     await using var database = _context.Factory.CreateContext();
 
-    return await database.StationOrders
-                         .Where(stationOrder => stationOrder.OrderId == orderId && stationOrder.StationId == stationId)
-                         .Select(stationOrder => stationOrder.Id)
-                         .SingleAsync();
+    return await database.StationOrders.Where(stationOrder => stationOrder.OrderId == orderId && stationOrder.StationId == stationId).Select(stationOrder => stationOrder.Id).SingleAsync();
   }
 }

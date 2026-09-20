@@ -18,12 +18,7 @@ public sealed class AdminEnrolmentHandler
   private readonly EnrolmentInvitationService _service;
   private readonly EnrolmentUrlBuilder _urlBuilder;
 
-  public AdminEnrolmentHandler(EnrolmentInvitationService service,
-                               EnrolmentUrlBuilder urlBuilder,
-                               OutstandingInvitationCache invitationCache,
-                               DeviceRevocationAnnouncer revocationAnnouncer,
-                               ResultEnvelope resultEnvelope,
-                               ILogger<AdminEnrolmentHandler> log)
+  public AdminEnrolmentHandler(EnrolmentInvitationService service, EnrolmentUrlBuilder urlBuilder, OutstandingInvitationCache invitationCache, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope, ILogger<AdminEnrolmentHandler> log)
   {
     _service = service;
     _urlBuilder = urlBuilder;
@@ -33,29 +28,20 @@ public sealed class AdminEnrolmentHandler
     _log = log;
   }
 
-  public async Task<IResult> CreateInvitationAsync(CreateInvitationRequest request,
-                                                   CancellationToken cancellationToken)
+  public async Task<IResult> CreateInvitationAsync(CreateInvitationRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued =
-      await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken);
+    Result<IssuedEnrolmentInvitation, EnrolmentInvitationFailure> issued = await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken);
 
     if (!issued.IsSuccess)
-    {
       return RefusalFor(issued.Failure);
-    }
 
-    IssuedEnrolmentInvitation invitation = issued.Value;
+    var invitation = issued.Value;
     var qrUrl = _urlBuilder.BuildEnrolmentUrl(invitation.QRCodeValue);
-    _invitationCache.Remember(new(invitation.InvitationId,
-                                  invitation.QRCodeValue,
-                                  qrUrl,
-                                  invitation.ExpiresAtUtc));
+    _invitationCache.Remember(new(invitation.InvitationId, invitation.QRCodeValue, qrUrl, invitation.ExpiresAtUtc));
 
-    _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} "
-                        + "at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter "
-                        + "who types their name when they scan it.",
+    _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} " + "at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter " + "who types their name when they scan it.",
                         invitation.InvitationId,
                         invitation.Owner?.Kind,
                         invitation.Owner?.Id,
@@ -69,27 +55,30 @@ public sealed class AdminEnrolmentHandler
 
   private InvitationView BuildInvitationView(IssuedEnrolmentInvitation invitation, string qrUrl)
   {
-    return new(invitation.InvitationId,
-               qrUrl,
-               invitation.ExpiresAtUtc,
-               invitation.Owner?.Kind,
-               invitation.Owner?.Kind == DeviceOwnerKind.StaffMember
-                 ? new StaffMemberView(invitation.Owner.Id, invitation.OwnerName!)
-                 : null,
-               invitation.Owner?.Kind == DeviceOwnerKind.Station
-                 ? new StationSummaryView(invitation.Owner.Id, invitation.OwnerName!)
-                 : null,
-               _urlBuilder.ReachableAddresses());
+    return new(invitation.InvitationId, qrUrl, invitation.ExpiresAtUtc, invitation.Owner?.Kind, BuildStaffMemberView(invitation), BuildStationSummaryView(invitation), _urlBuilder.ReachableAddresses());
+  }
+
+  private StaffMemberView? BuildStaffMemberView(IssuedEnrolmentInvitation invitation)
+  {
+    if (invitation.Owner?.Kind != DeviceOwnerKind.StaffMember)
+      return null;
+
+    return new(invitation.Owner.Id, invitation.OwnerName!);
+  }
+
+  private StationSummaryView? BuildStationSummaryView(IssuedEnrolmentInvitation invitation)
+  {
+    if (invitation.Owner?.Kind != DeviceOwnerKind.Station)
+      return null;
+
+    return new(invitation.Owner.Id, invitation.OwnerName!);
   }
 
   private IResult RefusalFor(EnrolmentInvitationFailure failure)
   {
     return failure.Reason switch
            {
-             EnrolmentInvitationFailureReason.AtMostOneOwner =>
-               _resultEnvelope.Problem(StatusCodes.Status400BadRequest,
-                                       "ValidationFailed",
-                                       "enrolment.atMostOneOwner"),
+             EnrolmentInvitationFailureReason.AtMostOneOwner => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "enrolment.atMostOneOwner"),
              EnrolmentInvitationFailureReason.OwnerNotFound => Results.NotFound(),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)
            };

@@ -9,16 +9,14 @@ public sealed class StationQueueViewBuilder
   {
     ArgumentNullException.ThrowIfNull(queue);
 
-    return new(new(queue.StationId, queue.StationName),
-               BuildStationOrders(queue.Orders),
-               BuildStationOrders(queue.AsItComesOrders));
+    return new(new(queue.StationId, queue.StationName), BuildStationOrders(queue.Orders), BuildStationOrders(queue.AsItComesOrders));
   }
 
   public IReadOnlyList<StationOrderQueueView> BuildStationOrders(IReadOnlyCollection<QueuedStationOrder> stationOrders)
   {
     ArgumentNullException.ThrowIfNull(stationOrders);
 
-    return [.. stationOrders.Select(BuildStationOrder)];
+    return stationOrders.Select(BuildStationOrder).ToList();
   }
 
   private StationOrderQueueView BuildStationOrder(QueuedStationOrder stationOrder)
@@ -33,11 +31,6 @@ public sealed class StationQueueViewBuilder
                stationOrder.IsHiddenFromAsItComesQueue,
                stationOrder.ItemCount,
                stationOrder.FulfilledItemCount,
-               [
-                 .. stationOrder.Items.Select(item => new StationQueueItemView(item.OrderItemId,
-                                                                               item.ItemName,
-                                                                               item.Note,
-                                                                               item.FulfilledAtUtc))
-               ]);
+               stationOrder.Items.Select(item => new StationQueueItemView(item.OrderItemId, item.ItemName, item.Note, item.FulfilledAtUtc)).ToList());
   }
 }

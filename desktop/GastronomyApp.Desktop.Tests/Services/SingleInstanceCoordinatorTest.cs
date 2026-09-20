@@ -8,7 +8,6 @@ namespace GastronomyApp.Desktop.Tests.Services;
 [TestFixture]
 public sealed class SingleInstanceCoordinatorTest
 {
-
   private static string UnusedName()
   {
     return $"GastronomyApp.Desktop.Tests.{Guid.NewGuid():N}";
@@ -34,9 +33,7 @@ public sealed class SingleInstanceCoordinatorTest
 
     coordinator.AcquireOrSignalExisting();
 
-    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error
-                                           && entry.Exception is not null),
-                Is.Not.Empty);
+    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error && entry.Exception is not null), Is.Not.Empty);
   }
 
   [Test]
@@ -49,8 +46,7 @@ public sealed class SingleInstanceCoordinatorTest
 
     coordinator.AcquireOrSignalExisting();
 
-    Assert.That(log.Entries.Select(entry => entry.RenderMessage()),
-                Has.Some.Contains("front"));
+    Assert.That(log.Entries.Select(entry => entry.RenderMessage()), Has.Some.Contains("front"));
   }
 
   [Test]
@@ -78,8 +74,7 @@ public sealed class SingleInstanceCoordinatorTest
 
     using SingleInstanceCoordinator second = new(instanceName, pipeName);
 
-    Assert.That(second.AcquireOrSignalExisting(),
-                Is.EqualTo(SingleInstanceOutcome.SignaledExistingAndShouldExit));
+    Assert.That(second.AcquireOrSignalExisting(), Is.EqualTo(SingleInstanceOutcome.SignaledExistingAndShouldExit));
     Assert.That(activationArrived.Wait(TimeSpan.FromSeconds(10)), Is.True);
   }
 }

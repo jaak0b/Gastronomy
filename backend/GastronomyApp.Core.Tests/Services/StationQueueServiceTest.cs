@@ -21,20 +21,13 @@ public sealed class StationQueueServiceTest
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
-    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<Station?>(Kitchen()));
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(RunningFestival()));
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(Link()));
-    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
-    A.CallTo(() => _repository.FindFulfilledAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
+    A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
+    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
+    A.CallTo(() => _repository.FindFulfilledAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
 
-    StationAtFestivalLookup lookup = new(_stationRepository,
-                                        _festivalStationRepository,
-                                        new RunningFestivalLookup(_festivalRepository, new(), _clock));
+    StationAtFestivalLookup lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
 
     _service = new(lookup, _repository);
   }
@@ -55,8 +48,7 @@ public sealed class StationQueueServiceTest
   {
     GivenUnfinished(StationOrder(1, DeliveryMode.Together, false), StationOrder(2, DeliveryMode.AsItComes, false));
 
-    Result<StationQueue, StationQueueFailure> queue =
-      await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueue, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -64,7 +56,11 @@ public sealed class StationQueueServiceTest
                       Assert.That(queue.Value.StationId, Is.EqualTo(_stationId));
                       Assert.That(queue.Value.StationName, Is.EqualTo("Kueche"));
                       Assert.That(queue.Value.Orders.Select(stationOrder => stationOrder.StationOrderNumber),
-                                  Is.EqualTo(new[] { 1, 2 }));
+                                  Is.EqualTo(new[]
+                                             {
+                                               1,
+                                               2
+                                             }));
                     });
   }
 
@@ -73,11 +69,9 @@ public sealed class StationQueueServiceTest
   {
     GivenUnfinished(StationOrder(1, DeliveryMode.Together, false), StationOrder(2, DeliveryMode.AsItComes, false));
 
-    Result<StationQueue, StationQueueFailure> queue =
-      await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueue, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(queue.Value.AsItComesOrders.Select(stationOrder => stationOrder.StationOrderNumber),
-                Is.EqualTo(new[] { 2 }));
+    Assert.That(queue.Value.AsItComesOrders.Select(stationOrder => stationOrder.StationOrderNumber), Is.EqualTo(new[] { 2 }));
   }
 
   [Test]
@@ -85,8 +79,7 @@ public sealed class StationQueueServiceTest
   {
     GivenUnfinished(StationOrder(1, DeliveryMode.AsItComes, true));
 
-    Result<StationQueue, StationQueueFailure> queue =
-      await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueue, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -98,11 +91,9 @@ public sealed class StationQueueServiceTest
   [Test]
   public async Task ReadQueueAsync_NoFestivalIsRunning_RefusesWithTheReasonOfTheLookup()
   {
-    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._))
-     .Returns(Task.FromResult<Festival?>(null));
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Result<StationQueue, StationQueueFailure> queue =
-      await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<StationQueue, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -116,25 +107,21 @@ public sealed class StationQueueServiceTest
   {
     await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
-    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .MustHaveHappened();
+    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(_festivalId, _stationId, A<CancellationToken>._)).MustHaveHappened();
   }
 
   [Test]
   public void ReadQueueAtAsync_NoStation_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.ReadQueueAtAsync(null!, TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _service.ReadQueueAtAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task ReadFulfilledAsync_TheStationHandedItemsOut_ListsThoseStationOrders()
   {
-    A.CallTo(() => _repository.FindFulfilledAtStationAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([StationOrder(1, DeliveryMode.Together, false)]));
+    A.CallTo(() => _repository.FindFulfilledAtStationAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([StationOrder(1, DeliveryMode.Together, false)]));
 
-    Result<IReadOnlyList<QueuedStationOrder>, StationQueueFailure> fulfilled =
-      await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<QueuedStationOrder>, StationQueueFailure> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -146,24 +133,20 @@ public sealed class StationQueueServiceTest
   [Test]
   public async Task ReadFulfilledAsync_TheStationIsNotAtTheRunningFestival_RefusesWithTheReasonOfTheStanding()
   {
-    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<FestivalStation?>(null));
+    A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
 
-    Result<IReadOnlyList<QueuedStationOrder>, StationQueueFailure> fulfilled =
-      await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<QueuedStationOrder>, StationQueueFailure> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(fulfilled.IsSuccess, Is.False);
-                      Assert.That(fulfilled.Failure.Reason,
-                                  Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
+                      Assert.That(fulfilled.Failure.Reason, Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
                     });
   }
 
   private void GivenUnfinished(params QueuedStationOrder[] stationOrders)
   {
-    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(_festivalId, _stationId, A<CancellationToken>._))
-     .Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([.. stationOrders]));
+    A.CallTo(() => _repository.FindUnfinishedAtStationAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>(stationOrders.ToList()));
   }
 
   private QueuedStationOrder StationOrder(int stationOrderNumber, DeliveryMode deliveryMode, bool isHidden)

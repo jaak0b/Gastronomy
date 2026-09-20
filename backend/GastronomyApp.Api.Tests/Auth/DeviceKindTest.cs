@@ -34,8 +34,7 @@ public sealed class DeviceKindTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("auth.wrongDeviceKind"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("auth.wrongDeviceKind"));
                     });
   }
 
@@ -48,18 +47,14 @@ public sealed class DeviceKindTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("auth.wrongDeviceKind"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("auth.wrongDeviceKind"));
                     });
   }
 
   [Test]
   public async Task Post_OrderPlacementWithAStationTablet_IsRefusedAsTheWrongKindOfDevice()
   {
-    using var response = await _context.SendAsAsync(_stationToken,
-                                                    HttpMethod.Post,
-                                                    "/api/orders",
-                                                    _context.BuildOrder(Guid.NewGuid()));
+    using var response = await _context.SendAsAsync(_stationToken, HttpMethod.Post, "/api/orders", _context.BuildOrder(Guid.NewGuid()));
 
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
   }
@@ -74,8 +69,7 @@ public sealed class DeviceKindTest
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("station"));
-                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(),
-                                  Is.EqualTo("Kueche"));
+                      Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(), Is.EqualTo("Kueche"));
                     });
   }
 }

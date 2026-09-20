@@ -9,9 +9,7 @@ public sealed class PlacedOrderReader
   private readonly OrderStatusCalculator _statusCalculator;
   private readonly OrderTotalCalculator _totalCalculator;
 
-  public PlacedOrderReader(IOrderRepository orderRepository,
-                           OrderStatusCalculator statusCalculator,
-                           OrderTotalCalculator totalCalculator)
+  public PlacedOrderReader(IOrderRepository orderRepository, OrderStatusCalculator statusCalculator, OrderTotalCalculator totalCalculator)
   {
     _orderRepository = orderRepository;
     _statusCalculator = statusCalculator;
@@ -20,14 +18,12 @@ public sealed class PlacedOrderReader
 
   public async Task<PlacedOrderReport?> FindAsync(Guid orderId, CancellationToken cancellationToken)
   {
-    PlacedOrder? placedOrder = await _orderRepository.FindPlacedAsync(orderId, cancellationToken);
+    var placedOrder = await _orderRepository.FindPlacedAsync(orderId, cancellationToken);
 
     if (placedOrder is null)
-    {
       return null;
-    }
 
-    List<PlacedOrderItem> items = [.. placedOrder.StationOrders.SelectMany(stationOrder => stationOrder.Items)];
+    List<PlacedOrderItem> items = placedOrder.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
 
     return new()
            {

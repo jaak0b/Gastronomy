@@ -18,8 +18,7 @@ public sealed class StaffMemberRepositoryTest
 
     StaffMemberRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers =
-      await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -40,8 +39,7 @@ public sealed class StaffMemberRepositoryTest
 
     StaffMemberRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers =
-      await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -59,8 +57,7 @@ public sealed class StaffMemberRepositoryTest
 
     StaffMemberRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers =
-      await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(staffMembers[0].HasOutstandingInvitation, Is.False);
   }
@@ -73,8 +70,7 @@ public sealed class StaffMemberRepositoryTest
 
     StaffMemberRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken),
-                Is.Null);
+    Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 
   [Test]
@@ -85,21 +81,16 @@ public sealed class StaffMemberRepositoryTest
 
     StaffMemberRepository repository = new(fixture.DbContext);
 
-    var anna = (await repository.FindByIdAsync(seeded.StaffMemberId,
-                                               TestContext.CurrentContext.CancellationToken))!;
+    var anna = (await repository.FindByIdAsync(seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken))!;
     anna.Name = "Anne Marie";
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That((await readContext.StaffMembers.FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId,
-                                                           TestContext.CurrentContext.CancellationToken)).Name,
-                Is.EqualTo("Anne Marie"));
+    Assert.That((await readContext.StaffMembers.FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken)).Name, Is.EqualTo("Anne Marie"));
   }
 
-  private async Task GiveAnnaAPhoneAsync(SqliteInMemoryFixture fixture,
-                                         SeededDomain seeded,
-                                         DateTime lastSeenAtUtc)
+  private async Task GiveAnnaAPhoneAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime lastSeenAtUtc)
   {
     fixture.DbContext.Devices.Add(new()
                                   {
@@ -114,9 +105,7 @@ public sealed class StaffMemberRepositoryTest
                                     LastSeenAtUtc = lastSeenAtUtc
                                   });
 
-    var anna = await fixture.DbContext.StaffMembers
-                            .FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId,
-                                        TestContext.CurrentContext.CancellationToken);
+    var anna = await fixture.DbContext.StaffMembers.FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     anna.DeviceId = seeded.DeviceId;
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
@@ -139,9 +128,7 @@ public sealed class StaffMemberRepositoryTest
                                                  ConsumedByDeviceId = null
                                                });
 
-    var anna = await fixture.DbContext.StaffMembers
-                            .FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId,
-                                        TestContext.CurrentContext.CancellationToken);
+    var anna = await fixture.DbContext.StaffMembers.FirstAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     anna.EnrolmentInvitationId = invitationId;
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);

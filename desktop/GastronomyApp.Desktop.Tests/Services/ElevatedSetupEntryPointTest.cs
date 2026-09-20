@@ -24,14 +24,10 @@ public sealed class ElevatedSetupEntryPointTest
     Log.CloseAndFlush();
 
     if (Directory.Exists(_dataDirectory))
-    {
       Directory.Delete(_dataDirectory, true);
-    }
 
     if (File.Exists(_dataDirectory))
-    {
       File.Delete(_dataDirectory);
-    }
   }
 
   private string _dataDirectory = null!;
@@ -42,7 +38,7 @@ public sealed class ElevatedSetupEntryPointTest
   {
     ElevatedSetupSteps steps = new(_firewall, _dataFolder);
 
-    return new ElevatedSetupEntryPoint(new ApplicationLog(), _dataDirectory, steps).Run();
+    return new ElevatedSetupEntryPoint(new(), _dataDirectory, steps).Run();
   }
 
   private string ReadWhatWasLogged()
@@ -65,9 +61,7 @@ public sealed class ElevatedSetupEntryPointTest
   [Test]
   public void Run_WhenTheFirewallStepFails_ReportsTheFailureAndLogsWhatWindowsSaid()
   {
-    A.CallTo(() => _firewall.EnsureRuleConfigured())
-     .Throws(new InvalidOperationException("Configuring the inbound firewall rule failed with exit code 5: "
-                                           + "The requested operation requires elevation."));
+    A.CallTo(() => _firewall.EnsureRuleConfigured()).Throws(new InvalidOperationException("Configuring the inbound firewall rule failed with exit code 5: " + "The requested operation requires elevation."));
     A.CallTo(() => _dataFolder.Exists()).Returns(false);
 
     var exitCode = Run();
@@ -83,8 +77,7 @@ public sealed class ElevatedSetupEntryPointTest
   public void Run_WhenOnlyTheDataFolderStepFails_ReportsTheFailureAndNamesTheFolder()
   {
     A.CallTo(() => _dataFolder.Exists()).Returns(true);
-    A.CallTo(() => _dataFolder.GrantUsersModifyOnExisting())
-     .Throws(new UnauthorizedAccessException("The folder rights could not be changed."));
+    A.CallTo(() => _dataFolder.GrantUsersModifyOnExisting()).Throws(new UnauthorizedAccessException("The folder rights could not be changed."));
 
     var exitCode = Run();
     var logged = ReadWhatWasLogged();

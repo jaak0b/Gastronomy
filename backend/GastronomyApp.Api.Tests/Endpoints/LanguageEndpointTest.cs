@@ -6,7 +6,6 @@ namespace GastronomyApp.Api.Tests.Endpoints;
 [TestFixture]
 public sealed class LanguageEndpointTest
 {
-
   [SetUp]
   public async Task SetUp()
   {
@@ -45,4 +44,3 @@ public sealed class LanguageEndpointTest
     Assert.That(body.RootElement.GetProperty("language").GetString(), Is.EqualTo("en"));
   }
 }
-

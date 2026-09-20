@@ -33,15 +33,14 @@ public sealed class SavedChangeAnnouncementTest
   [Test]
   public void TellTheDevicesWithoutFailingTheSavedChangeAsync_NullCallback_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(null!),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(null!), Throws.ArgumentNullException);
   }
 
   [Test]
   public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync_TheAdminsBrowserGoesAway_TellsThemWithATokenOfItsOwn()
   {
     using CancellationTokenSource adminRequest = new();
-    CancellationToken tokenUsedForThePush = adminRequest.Token;
+    var tokenUsedForThePush = adminRequest.Token;
 
     await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(async cancellationToken =>
                                                                         {
@@ -55,25 +54,15 @@ public sealed class SavedChangeAnnouncementTest
   [Test]
   public void TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_DoesNotFailTheSavedChange()
   {
-    Assert.That(async () => await _announcement
-                  .TellTheDevicesWithoutFailingTheSavedChangeAsync(_ =>
-                                                                     throw new InvalidOperationException("The connection to the station tablets broke.")),
-                Throws.Nothing);
+    Assert.That(async () => await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke.")), Throws.Nothing);
   }
 
   [Test]
   public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_WritesTheReasonToTheLogAsAnError()
   {
-    await _announcement
-      .TellTheDevicesWithoutFailingTheSavedChangeAsync(_ =>
-                                                         throw new InvalidOperationException("The connection to the station tablets broke."));
+    await _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke."));
 
-    A.CallTo(_logger)
-     .Where(call => call.Method.Name == nameof(ILogger.Log)
-                    && call.GetArgument<LogLevel>(0) == LogLevel.Error
-                    && call.GetArgument<Exception?>(3) != null
-                    && Rendered(call.GetArgument<object>(2)).Contains("station tablets", StringComparison.Ordinal))
-     .MustHaveHappened();
+    A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error && call.GetArgument<Exception?>(3) != null && Rendered(call.GetArgument<object>(2)).Contains("station tablets", StringComparison.Ordinal)).MustHaveHappened();
   }
 
   [Test]
@@ -81,9 +70,7 @@ public sealed class SavedChangeAnnouncementTest
   {
     await QuitTheProgramWhileTheDevicesAreBeingToldAsync();
 
-    A.CallTo(_logger)
-     .Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error)
-     .MustNotHaveHappened();
+    A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Error).MustNotHaveHappened();
   }
 
   [Test]
@@ -91,11 +78,7 @@ public sealed class SavedChangeAnnouncementTest
   {
     await QuitTheProgramWhileTheDevicesAreBeingToldAsync();
 
-    A.CallTo(_logger)
-     .Where(call => call.Method.Name == nameof(ILogger.Log)
-                    && call.GetArgument<LogLevel>(0) == LogLevel.Information
-                    && Rendered(call.GetArgument<object>(2)).Contains("was quitting", StringComparison.Ordinal))
-     .MustHaveHappenedOnceExactly();
+    A.CallTo(_logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Information && Rendered(call.GetArgument<object>(2)).Contains("was quitting", StringComparison.Ordinal)).MustHaveHappenedOnceExactly();
   }
 
   private async Task QuitTheProgramWhileTheDevicesAreBeingToldAsync()

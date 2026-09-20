@@ -75,6 +75,14 @@ reverse proxy.
    `.Join`, `.OrderBy`), never query-comprehension syntax (`from ... in ...`). The whole codebase
    keeps one query style, and a join stays a chain instead of a block of SQL pasted into C#.
 
+10. **Every touched C# file is run through the ReSharper cleanup before hand-back.** Line width,
+    wrapping, alignment, initializer layout and braces are settings in the repository
+    `.editorconfig`; nobody wraps or formats by hand, and a diff that only a formatter could have
+    made is a review finding. The cleanup is `mcp__resharper__format_file` in `cleanup` mode
+    (Rider's Code Cleanup on the same profile), run on every file an agent created or edited, in
+    the same turn as the edit. This binds the main agent and every subagent, and it binds
+    `desktop/` as well.
+
 ## Code style
 
 - Two spaces per level, never tabs, and no trailing whitespace.

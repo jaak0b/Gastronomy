@@ -42,7 +42,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetOpenItems_AnOrderSentAndSettled_LeavesTheTableOut()
   {
-    await PlaceOrderAsync("Tisch 12", settled: true);
+    await PlaceOrderAsync("Tisch 12", true);
 
     var body = await ReadOpenItemsAsync();
 
@@ -52,15 +52,12 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task GetTableNames_AnOrderSentAndSettled_StillOffersTheNameForTheNextOrder()
   {
-    await PlaceOrderAsync("Tisch 12", settled: true);
+    await PlaceOrderAsync("Tisch 12", true);
 
     using var response = await _context.SendAsync(HttpMethod.Get, "/api/open-items/table-names");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    Assert.That(body.RootElement.GetProperty("tableNames")
-                    .EnumerateArray()
-                    .Select(name => name.GetString()),
-                Is.EqualTo(new[] { "Tisch 12" }));
+    Assert.That(body.RootElement.GetProperty("tableNames").EnumerateArray().Select(name => name.GetString()), Is.EqualTo(new[] { "Tisch 12" }));
   }
 
   [Test]
@@ -68,9 +65,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var given = await _context.SendAsync(HttpMethod.Post,
-                                               "/api/open-items/settle",
-                                               SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
+    using var given = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
     var body = await ReadOpenItemsAsync();
     var table = body.RootElement.GetProperty("tables")[0];
 
@@ -82,10 +77,8 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(table.GetProperty("items").GetArrayLength(), Is.Zero);
                       Assert.That(table.GetProperty("givenAwayAmountCents").GetInt32(), Is.EqualTo(700));
                       Assert.That(table.GetProperty("givenAwayItems").GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("paymentNotice").GetString(),
-                                  Is.EqualTo("Essen fuer die Kapelle"));
-                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("waivedAmountCents").GetInt32(),
-                                  Is.EqualTo(350));
+                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("paymentNotice").GetString(), Is.EqualTo("Essen fuer die Kapelle"));
+                      Assert.That(table.GetProperty("givenAwayItems")[0].GetProperty("waivedAmountCents").GetInt32(), Is.EqualTo(350));
                     });
   }
 
@@ -94,9 +87,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var settled = await _context.SendAsync(HttpMethod.Post,
-                                                 "/api/open-items/settle",
-                                                 SettleBodyFor(itemIds, 350));
+    using var settled = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
     var body = await ReadOpenItemsAsync();
 
     Assert.Multiple(() =>
@@ -119,7 +110,7 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostOrder_SentAndSettled_ChargesTheDisplayedPriceOnEveryItem()
   {
-    await PlaceOrderAsync("Tisch 12", settled: true);
+    await PlaceOrderAsync("Tisch 12", true);
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -136,13 +127,12 @@ public sealed class OpenItemEndpointsTest
   [Test]
   public async Task PostOrder_SentAndSettled_RecordsTheSendingWaiterAsTheOneWhoCollectedTheMoney()
   {
-    await PlaceOrderAsync("Tisch 12", settled: true);
+    await PlaceOrderAsync("Tisch 12", true);
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
 
-    Assert.That(stored.Select(item => item.SettledByStaffMemberId),
-                Is.All.EqualTo(_context.World.StaffMemberId));
+    Assert.That(stored.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_context.World.StaffMemberId));
   }
 
   [Test]
@@ -161,9 +151,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 350));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -171,8 +159,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(stored.Select(item => item.SettledByStaffMemberId),
-                                  Is.All.EqualTo(_context.World.StaffMemberId));
+                      Assert.That(stored.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_context.World.StaffMemberId));
                     });
   }
 
@@ -181,9 +168,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -191,8 +176,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(stored.Select(item => item.SettledByStaffMemberId),
-                                  Is.All.EqualTo(_context.World.StaffMemberId));
+                      Assert.That(stored.Select(item => item.SettledByStaffMemberId), Is.All.EqualTo(_context.World.StaffMemberId));
                     });
   }
 
@@ -201,9 +185,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 350));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
     await using var database = _context.Factory.CreateContext();
@@ -214,8 +196,7 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("settledOrderItemIds").GetArrayLength(), Is.EqualTo(2));
                       Assert.That(body.RootElement.GetProperty("reappliedOrderItemIds").GetArrayLength(), Is.Zero);
-                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(),
-                                  Is.Zero);
+                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(), Is.Zero);
                       Assert.That(body.RootElement.GetProperty("otherPhonesWereTold").GetBoolean(), Is.True);
                       Assert.That(open.RootElement.GetProperty("tables").GetArrayLength(), Is.Zero);
                       Assert.That(stored.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
@@ -241,17 +222,11 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(stored.Single(item => item.Id == itemIds[0]).ChargedPriceCents,
-                                  Is.EqualTo(100));
-                      Assert.That(stored.Single(item => item.Id == itemIds[1]).ChargedPriceCents,
-                                  Is.EqualTo(200));
+                      Assert.That(stored.Single(item => item.Id == itemIds[0]).ChargedPriceCents, Is.EqualTo(100));
+                      Assert.That(stored.Single(item => item.Id == itemIds[1]).ChargedPriceCents, Is.EqualTo(200));
                       Assert.That(stored.Select(item => item.UnitPriceCents), Is.All.EqualTo(350));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.Zero);
-                      Assert.That(open.RootElement.GetProperty("tables")[0]
-                                      .GetProperty("givenAwayAmountCents")
-                                      .GetInt32(),
-                                  Is.EqualTo(400));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.Zero);
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("givenAwayAmountCents").GetInt32(), Is.EqualTo(400));
                     });
   }
 
@@ -262,7 +237,10 @@ public sealed class OpenItemEndpointsTest
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
-                                                  new SettleItemsBody([new(itemIds[0], 500), new(itemIds[1], 350)]));
+                                                  new SettleItemsBody([
+                                                                        new(itemIds[0], 500),
+                                                                        new(itemIds[1], 350)
+                                                                      ]));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -270,10 +248,8 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(stored.Single(item => item.Id == itemIds[0]).ChargedPriceCents,
-                                  Is.EqualTo(500));
-                      Assert.That(stored.Single(item => item.Id == itemIds[1]).ChargedPriceCents,
-                                  Is.EqualTo(350));
+                      Assert.That(stored.Single(item => item.Id == itemIds[0]).ChargedPriceCents, Is.EqualTo(500));
+                      Assert.That(stored.Single(item => item.Id == itemIds[1]).ChargedPriceCents, Is.EqualTo(350));
                     });
   }
 
@@ -282,19 +258,15 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, null));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, null));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
@@ -303,19 +275,15 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, -100));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, -100));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
@@ -326,33 +294,31 @@ public sealed class OpenItemEndpointsTest
 
     using var response = await _context.SendAsync(HttpMethod.Post,
                                                   "/api/open-items/settle",
-                                                  new SettleItemsBody([new(itemIds[0], 350), new(itemIds[0], 350)]));
+                                                  new SettleItemsBody([
+                                                                        new(itemIds[0], 350),
+                                                                        new(itemIds[0], 350)
+                                                                      ]));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
   [Test]
   public async Task PostSettle_NothingSelected_IsRefusedWithWordingThePhoneCanShow()
   {
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  new SettleItemsBody([]));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([]));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementNoItemsSelected"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementNoItemsSelected"));
                     });
   }
 
@@ -361,12 +327,8 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var first = await _context.SendAsync(HttpMethod.Post,
-                                               "/api/open-items/settle",
-                                               SettleBodyFor(itemIds, 350));
-    using var second = await _context.SendAsync(HttpMethod.Post,
-                                                "/api/open-items/settle",
-                                                SettleBodyFor(itemIds, 350));
+    using var first = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
+    using var second = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
     var body = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -374,10 +336,8 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("settledOrderItemIds").GetArrayLength(), Is.Zero);
-                      Assert.That(body.RootElement.GetProperty("reappliedOrderItemIds").GetArrayLength(),
-                                  Is.EqualTo(2));
-                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(),
-                                  Is.Zero);
+                      Assert.That(body.RootElement.GetProperty("reappliedOrderItemIds").GetArrayLength(), Is.EqualTo(2));
+                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(), Is.Zero);
                     });
   }
 
@@ -386,9 +346,7 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 0, "Essen fuer die Kapelle"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -407,19 +365,15 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 300, "   "));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 300, "   "));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var open = await ReadOpenItemsAsync();
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
@@ -428,12 +382,8 @@ public sealed class OpenItemEndpointsTest
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
 
-    using var first = await _context.SendAsync(HttpMethod.Post,
-                                               "/api/open-items/settle",
-                                               SettleBodyFor(itemIds, 0, "Kapelle"));
-    using var second = await _context.SendAsync(HttpMethod.Post,
-                                                "/api/open-items/settle",
-                                                SettleBodyFor(itemIds, 100, "Versehen"));
+    using var first = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 0, "Kapelle"));
+    using var second = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 100, "Versehen"));
 
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -451,15 +401,10 @@ public sealed class OpenItemEndpointsTest
   public async Task PostSettle_ALineAColleagueAlreadySettled_IsReportedBackAndLeftUntouched()
   {
     IReadOnlyList<Guid> itemIds = await PlaceOrderAsync("Tisch 12");
-    string colleagueToken = await _context.IssueSecondStaffTokenAsync("Bernd");
+    var colleagueToken = await _context.IssueSecondStaffTokenAsync("Bernd");
 
-    using var colleagueSettlement = await _context.SendAsAsync(colleagueToken,
-                                                               HttpMethod.Post,
-                                                               "/api/open-items/settle",
-                                                               new SettleItemsBody([new(itemIds[0], 0, "Kapelle")]));
-    using var response = await _context.SendAsync(HttpMethod.Post,
-                                                  "/api/open-items/settle",
-                                                  SettleBodyFor(itemIds, 350));
+    using var colleagueSettlement = await _context.SendAsAsync(colleagueToken, HttpMethod.Post, "/api/open-items/settle", new SettleItemsBody([new(itemIds[0], 0, "Kapelle")]));
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/open-items/settle", SettleBodyFor(itemIds, 350));
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     await using var database = _context.Factory.CreateContext();
     List<OrderItem> stored = await database.OrderItems.ToListAsync();
@@ -471,8 +416,7 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(colleagueSettlement.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                       Assert.That(body.RootElement.GetProperty("settledOrderItemIds").GetArrayLength(), Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(),
-                                  Is.EqualTo(1));
+                      Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(), Is.EqualTo(1));
                       Assert.That(colleagueLine.ChargedPriceCents, Is.Zero);
                       Assert.That(colleagueLine.PaymentNotice, Is.EqualTo("Kapelle"));
                       Assert.That(colleagueLine.SettledByStaffMemberId, Is.Not.EqualTo(_context.World.StaffMemberId));
@@ -498,10 +442,8 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementUnknownItem"));
-                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementUnknownItem"));
+                      Assert.That(open.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
@@ -526,8 +468,7 @@ public sealed class OpenItemEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.settlementCannotBeProcessed"));
                       Assert.That(tables.GetArrayLength(), Is.EqualTo(2));
                       Assert.That(tables[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                       Assert.That(tables[1].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
@@ -542,10 +483,12 @@ public sealed class OpenItemEndpointsTest
 
     var body = await ReadOpenItemsAsync();
 
-    Assert.That(body.RootElement.GetProperty("tables")
-                    .EnumerateArray()
-                    .Select(table => table.GetProperty("tableName").GetString()),
-                Is.EqualTo(new[] { "Tisch 12", "Tisch 3" }));
+    Assert.That(body.RootElement.GetProperty("tables").EnumerateArray().Select(table => table.GetProperty("tableName").GetString()),
+                Is.EqualTo(new[]
+                           {
+                             "Tisch 12",
+                             "Tisch 3"
+                           }));
   }
 
   [Test]
@@ -558,12 +501,8 @@ public sealed class OpenItemEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(body.RootElement.GetProperty("itemsWithoutAnOrderCount").GetInt32(),
-                                  Is.EqualTo(1));
-                      Assert.That(body.RootElement.GetProperty("tables")[0]
-                                      .GetProperty("openAmountCents")
-                                      .GetInt32(),
-                                  Is.EqualTo(700));
+                      Assert.That(body.RootElement.GetProperty("itemsWithoutAnOrderCount").GetInt32(), Is.EqualTo(1));
+                      Assert.That(body.RootElement.GetProperty("tables")[0].GetProperty("openAmountCents").GetInt32(), Is.EqualTo(700));
                     });
   }
 
@@ -576,11 +515,9 @@ public sealed class OpenItemEndpointsTest
     Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
   }
 
-  private SettleItemsBody SettleBodyFor(IReadOnlyList<Guid> orderItemIds,
-                                        int? paidPriceCents,
-                                        string? paymentNotice = null)
+  private SettleItemsBody SettleBodyFor(IReadOnlyList<Guid> orderItemIds, int? paidPriceCents, string? paymentNotice = null)
   {
-    return new([.. orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, paidPriceCents, paymentNotice))]);
+    return new(orderItemIds.Select(orderItemId => new SettleLineBody(orderItemId, paidPriceCents, paymentNotice)).ToList());
   }
 
   private async Task AddAnItemWithoutAnOrderAsync()
@@ -611,7 +548,11 @@ public sealed class OpenItemEndpointsTest
 
   private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(string tableName, bool settled = false)
   {
-    OrderItemSettlementBody? settlement = settled ? new(350) : null;
+    OrderItemSettlementBody? settlement = null;
+
+    if (settled)
+      settlement = new(350);
+
     OrderBody order = new(Guid.NewGuid(),
                           tableName,
                           null,
@@ -623,13 +564,6 @@ public sealed class OpenItemEndpointsTest
     using var response = await _context.PostOrderAsync(order);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return
-    [
-      .. body.RootElement
-             .GetProperty("stationOrders")
-             .EnumerateArray()
-             .SelectMany(stationOrder => stationOrder.GetProperty("itemIds").EnumerateArray())
-             .Select(itemId => itemId.GetGuid())
-    ];
+    return body.RootElement.GetProperty("stationOrders").EnumerateArray().SelectMany(stationOrder => stationOrder.GetProperty("itemIds").EnumerateArray()).Select(itemId => itemId.GetGuid()).ToList();
   }
 }

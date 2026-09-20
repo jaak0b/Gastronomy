@@ -12,12 +12,7 @@ public sealed class StationOrderVisibilityService
 
     if (stationOrder.DeliveryMode != DeliveryMode.AsItComes)
     {
-      return Result<StationOrder, StationOrderVisibilityFailure>.Failed(new()
-                                                                        {
-                                                                          Reason =
-                                                                            StationOrderVisibilityFailureReason
-                                                                              .NotAnAsItComesOrder
-                                                                        });
+      return Result<StationOrder, StationOrderVisibilityFailure>.Failed(new() { Reason = StationOrderVisibilityFailureReason.NotAnAsItComesOrder });
     }
 
     stationOrder.IsHiddenFromAsItComesQueue = true;

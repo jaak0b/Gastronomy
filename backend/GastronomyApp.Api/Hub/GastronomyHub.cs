@@ -11,9 +11,7 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
   private readonly HubGroupNames _groupNames = new();
   private readonly LocalAddressSet _localAddresses;
 
-  public GastronomyHub(CallerIdentity callerIdentity,
-                       LocalAddressSet localAddresses,
-                       HubConnectionRegistry connectionRegistry)
+  public GastronomyHub(CallerIdentity callerIdentity, LocalAddressSet localAddresses, HubConnectionRegistry connectionRegistry)
   {
     _callerIdentity = callerIdentity;
     _localAddresses = localAddresses;
@@ -22,7 +20,11 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 
   override public async Task OnConnectedAsync()
   {
-    var caller = Context.User is null ? null : _callerIdentity.ReadDevice(Context.User);
+    DeviceCaller? caller = null;
+
+    if (Context.User is not null)
+      caller = _callerIdentity.ReadDevice(Context.User);
+
     var httpContext = Context.GetHttpContext();
 
     List<string> joinedGroups = [];
@@ -37,30 +39,22 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
         joinedGroups.Add(_groupNames.Stations);
       }
       else
-      {
         joinedGroups.Add(_groupNames.Devices);
-      }
     }
 
-    if (caller is null
-        && httpContext is not null
-        && _localAddresses.Contains(httpContext.Connection.RemoteIpAddress))
-    {
+    if (caller is null && httpContext is not null && _localAddresses.Contains(httpContext.Connection.RemoteIpAddress))
       joinedGroups.Add(_groupNames.Admin);
-    }
 
     foreach (var group in joinedGroups)
-    {
       await Groups.AddToGroupAsync(Context.ConnectionId, group);
-    }
 
     _connectionRegistry.Add(new()
-                           {
-                             ConnectionId = Context.ConnectionId,
-                             DeviceId = caller?.DeviceId,
-                             Groups = joinedGroups,
-                             CallerContext = Context
-                           });
+                            {
+                              ConnectionId = Context.ConnectionId,
+                              DeviceId = caller?.DeviceId,
+                              Groups = joinedGroups,
+                              CallerContext = Context
+                            });
 
     await base.OnConnectedAsync();
   }

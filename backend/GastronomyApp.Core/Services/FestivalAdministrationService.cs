@@ -15,11 +15,7 @@ public sealed class FestivalAdministrationService
   private readonly FestivalSchedule _schedule;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalAdministrationService(IFestivalRepository repository,
-                                       FestivalSchedule schedule,
-                                       FestivalMoment moment,
-                                       ITransactionRunner transactionRunner,
-                                       IClock clock)
+  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, ITransactionRunner transactionRunner, IClock clock)
   {
     _repository = repository;
     _schedule = schedule;
@@ -36,63 +32,46 @@ public sealed class FestivalAdministrationService
     Dictionary<Guid, FestivalContentCounts> countsByFestivalId = counts.ToDictionary(count => count.FestivalId);
     var nowUtc = _clock.UtcNow;
 
-    return [.. festivals.Select(festival => BuildAdministeredFestival(festival, countsByFestivalId, nowUtc))];
+    return festivals.Select(festival => BuildAdministeredFestival(festival, countsByFestivalId, nowUtc)).ToList();
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CreateAsync(FestivalPeriodRequest request,
-                                                                                CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CreateAsync(FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdateAsync(Guid festivalId,
-                                                                                FestivalPeriodRequest request,
-                                                                                CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdateAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CopyAsync(Guid festivalId,
-                                                                              FestivalPeriodRequest request,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CopyAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    return RunAsync(transactionCancellationToken => CopiedAsync(festivalId, request, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => CopiedAsync(festivalId, request, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> HideAsync(Guid festivalId,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> HideAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> ShowAsync(Guid festivalId,
-                                                                              CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken),
-                    cancellationToken);
+    return RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CreatedAsync(
-    FestivalPeriodRequest request,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CreatedAsync(FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
-    Result<FestivalPeriod, FestivalAdministrationFailure> period =
-      await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
 
     if (!period.IsSuccess)
-    {
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
-    }
 
     var festivalId = Guid.NewGuid();
 
@@ -102,25 +81,17 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdatedAsync(
-    Guid festivalId,
-    FestivalPeriodRequest request,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdatedAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
-    Festival? festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
+    var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
-    {
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
-    }
 
-    Result<FestivalPeriod, FestivalAdministrationFailure> period =
-      await ReadPeriodAsync(request, festivalId, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, festivalId, cancellationToken);
 
     if (!period.IsSuccess)
-    {
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
-    }
 
     festival.Name = period.Value.Name;
     festival.StartsAtUtc = period.Value.StartsAtUtc;
@@ -131,23 +102,15 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CopiedAsync(
-    Guid festivalId,
-    FestivalPeriodRequest request,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CopiedAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
   {
     if (!await _repository.ExistsAsync(festivalId, cancellationToken))
-    {
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
-    }
 
-    Result<FestivalPeriod, FestivalAdministrationFailure> period =
-      await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
 
     if (!period.IsSuccess)
-    {
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
-    }
 
     var newFestivalId = Guid.NewGuid();
 
@@ -158,31 +121,24 @@ public sealed class FestivalAdministrationService
     return Saved(newFestivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> HiddenAsync(
-    Guid festivalId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> HiddenAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    Festival? festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
+    var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
-    {
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
-    }
 
     if (_schedule.IsRunning(festival, _clock.UtcNow))
     {
-      return Result<SavedFestival, FestivalAdministrationFailure>
-        .Failed(new()
-                {
-                  Reason = FestivalAdministrationFailureReason.FestivalIsRunning,
-                  OffendingFestivalId = festivalId
-                });
+      return Result<SavedFestival, FestivalAdministrationFailure>.Failed(new()
+                                                                         {
+                                                                           Reason = FestivalAdministrationFailureReason.FestivalIsRunning,
+                                                                           OffendingFestivalId = festivalId
+                                                                         });
     }
 
     if (festival.IsHidden)
-    {
       return Saved(festivalId, false);
-    }
 
     festival.IsHidden = true;
     await _repository.SaveChangesAsync(cancellationToken);
@@ -190,21 +146,15 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> ShownAsync(
-    Guid festivalId,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> ShownAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    Festival? festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
+    var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
-    {
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
-    }
 
     if (!festival.IsHidden)
-    {
       return Saved(festivalId, false);
-    }
 
     festival.IsHidden = false;
     await _repository.SaveChangesAsync(cancellationToken);
@@ -212,15 +162,11 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<FestivalPeriod, FestivalAdministrationFailure>> ReadPeriodAsync(
-    FestivalPeriodRequest request,
-    Guid candidateId,
-    CancellationToken cancellationToken)
+  private async Task<Result<FestivalPeriod, FestivalAdministrationFailure>> ReadPeriodAsync(FestivalPeriodRequest request, Guid candidateId, CancellationToken cancellationToken)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
     {
-      return Result<FestivalPeriod, FestivalAdministrationFailure>
-        .Failed(new() { Reason = FestivalAdministrationFailureReason.NameMissing });
+      return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.NameMissing });
     }
 
     var startsAtUtc = _moment.AsUtc(request.StartsAtUtc);
@@ -228,21 +174,19 @@ public sealed class FestivalAdministrationService
 
     if (endsAtUtc <= startsAtUtc)
     {
-      return Result<FestivalPeriod, FestivalAdministrationFailure>
-        .Failed(new() { Reason = FestivalAdministrationFailureReason.PeriodInvalid });
+      return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.PeriodInvalid });
     }
 
     IReadOnlyCollection<Festival> others = await _repository.FindAllAsync(cancellationToken);
-    Festival? inTheWay = _schedule.FindOverlapping(candidateId, startsAtUtc, endsAtUtc, others);
+    var inTheWay = _schedule.FindOverlapping(candidateId, startsAtUtc, endsAtUtc, others);
 
     if (inTheWay is not null)
     {
-      return Result<FestivalPeriod, FestivalAdministrationFailure>
-        .Failed(new()
-                {
-                  Reason = FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival,
-                  OverlappingFestivalName = inTheWay.Name
-                });
+      return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new()
+                                                                          {
+                                                                            Reason = FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival,
+                                                                            OverlappingFestivalName = inTheWay.Name
+                                                                          });
     }
 
     return Result<FestivalPeriod, FestivalAdministrationFailure>.Success(new(request.Name, startsAtUtc, endsAtUtc));
@@ -261,22 +205,11 @@ public sealed class FestivalAdministrationService
            };
   }
 
-  private AdministeredFestival BuildAdministeredFestival(
-    Festival festival,
-    IReadOnlyDictionary<Guid, FestivalContentCounts> countsByFestivalId,
-    DateTime nowUtc)
+  private AdministeredFestival BuildAdministeredFestival(Festival festival, IReadOnlyDictionary<Guid, FestivalContentCounts> countsByFestivalId, DateTime nowUtc)
   {
     countsByFestivalId.TryGetValue(festival.Id, out var counts);
 
-    return new(festival.Id,
-               festival.Name,
-               festival.StartsAtUtc,
-               festival.EndsAtUtc,
-               festival.IsHidden,
-               _schedule.IsRunning(festival, nowUtc),
-               counts?.StationCount ?? 0,
-               counts?.MenuItemCount ?? 0,
-               counts?.OrderCount ?? 0);
+    return new(festival.Id, festival.Name, festival.StartsAtUtc, festival.EndsAtUtc, festival.IsHidden, _schedule.IsRunning(festival, nowUtc), counts?.StationCount ?? 0, counts?.MenuItemCount ?? 0, counts?.OrderCount ?? 0);
   }
 
   private Result<SavedFestival, FestivalAdministrationFailure> Saved(Guid festivalId, bool somethingChanged)
@@ -289,14 +222,11 @@ public sealed class FestivalAdministrationService
     return Result<SavedFestival, FestivalAdministrationFailure>.Failed(new() { Reason = reason });
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> RunAsync(
-    Func<CancellationToken, Task<Result<SavedFestival, FestivalAdministrationFailure>>> write,
-    CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> RunAsync(Func<CancellationToken, Task<Result<SavedFestival, FestivalAdministrationFailure>>> write, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<SavedFestival, FestivalAdministrationFailure> written =
-                                                 await write(transactionCancellationToken);
+                                               Result<SavedFestival, FestivalAdministrationFailure> written = await write(transactionCancellationToken);
 
                                                return new TransactionOutcome<Result<SavedFestival, FestivalAdministrationFailure>>
                                                       {

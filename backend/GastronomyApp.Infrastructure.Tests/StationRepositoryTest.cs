@@ -19,11 +19,14 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyCollection<Station> stations =
-      await repository.FindAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyCollection<Station> stations = await repository.FindAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stations.Select(station => station.Id),
-                Is.EqualTo(new[] { seeded.KitchenStationId, seeded.BarStationId }));
+                Is.EqualTo(new[]
+                           {
+                             seeded.KitchenStationId,
+                             seeded.BarStationId
+                           }));
   }
 
   [Test]
@@ -34,8 +37,7 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStation> stations =
-      await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stations.Select(station => station.IsAtTheFestival), Is.All.False);
   }
@@ -48,10 +50,7 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStation> stations =
-      await repository.FindAdministeredAsync(seeded.FestivalId,
-                                             _now,
-                                             TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(seeded.FestivalId, _now, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stations.Select(station => station.IsAtTheFestival), Is.All.True);
   }
@@ -66,10 +65,9 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStation> stations =
-      await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
 
-    AdministeredStation kitchen = stations.First(station => station.StationId == seeded.KitchenStationId);
+    var kitchen = stations.First(station => station.StationId == seeded.KitchenStationId);
 
     Assert.Multiple(() =>
                     {
@@ -87,21 +85,13 @@ public sealed class StationRepositoryTest
 
     StationRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<AdministeredStation> stillValid =
-      await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
-    IReadOnlyList<AdministeredStation> afterItRanOut =
-      await repository.FindAdministeredAsync(null,
-                                             _now.AddMinutes(5),
-                                             TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStation> stillValid = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<AdministeredStation> afterItRanOut = await repository.FindAdministeredAsync(null, _now.AddMinutes(5), TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stillValid.First(station => station.StationId == seeded.KitchenStationId)
-                                            .HasOutstandingInvitation,
-                                  Is.True);
-                      Assert.That(afterItRanOut.First(station => station.StationId == seeded.KitchenStationId)
-                                               .HasOutstandingInvitation,
-                                  Is.False);
+                      Assert.That(stillValid.First(station => station.StationId == seeded.KitchenStationId).HasOutstandingInvitation, Is.True);
+                      Assert.That(afterItRanOut.First(station => station.StationId == seeded.KitchenStationId).HasOutstandingInvitation, Is.False);
                     });
   }
 
@@ -115,12 +105,8 @@ public sealed class StationRepositoryTest
 
     Assert.Multiple(async () =>
                     {
-                      Assert.That(await repository.ExistsAsync(seeded.KitchenStationId,
-                                                               TestContext.CurrentContext.CancellationToken),
-                                  Is.True);
-                      Assert.That(await repository.ExistsAsync(Guid.NewGuid(),
-                                                               TestContext.CurrentContext.CancellationToken),
-                                  Is.False);
+                      Assert.That(await repository.ExistsAsync(seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken), Is.True);
+                      Assert.That(await repository.ExistsAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.False);
                     });
   }
 
@@ -145,14 +131,10 @@ public sealed class StationRepositoryTest
 
     await using var readContext = fixture.CreateContext();
 
-    Assert.That(await readContext.Stations.AnyAsync(station => station.Id == stationId,
-                                                    TestContext.CurrentContext.CancellationToken),
-                Is.True);
+    Assert.That(await readContext.Stations.AnyAsync(station => station.Id == stationId, TestContext.CurrentContext.CancellationToken), Is.True);
   }
 
-  private async Task GiveTheKitchenATabletAsync(SqliteInMemoryFixture fixture,
-                                                SeededDomain seeded,
-                                                DateTime lastSeenAtUtc)
+  private async Task GiveTheKitchenATabletAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime lastSeenAtUtc)
   {
     fixture.DbContext.Devices.Add(new()
                                   {
@@ -167,17 +149,13 @@ public sealed class StationRepositoryTest
                                     LastSeenAtUtc = lastSeenAtUtc
                                   });
 
-    var kitchen = await fixture.DbContext.Stations
-                               .FirstAsync(station => station.Id == seeded.KitchenStationId,
-                                           TestContext.CurrentContext.CancellationToken);
+    var kitchen = await fixture.DbContext.Stations.FirstAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     kitchen.DeviceId = seeded.DeviceId;
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task InviteTheKitchenAsync(SqliteInMemoryFixture fixture,
-                                           SeededDomain seeded,
-                                           DateTime expiresAtUtc)
+  private async Task InviteTheKitchenAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime expiresAtUtc)
   {
     var invitationId = Guid.NewGuid();
 
@@ -194,9 +172,7 @@ public sealed class StationRepositoryTest
                                                  ConsumedByDeviceId = null
                                                });
 
-    var kitchen = await fixture.DbContext.Stations
-                               .FirstAsync(station => station.Id == seeded.KitchenStationId,
-                                           TestContext.CurrentContext.CancellationToken);
+    var kitchen = await fixture.DbContext.Stations.FirstAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     kitchen.EnrolmentInvitationId = invitationId;
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);

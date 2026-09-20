@@ -4,8 +4,9 @@ public sealed class FestivalMoment
 {
   public DateTime AsUtc(DateTime moment)
   {
-    return moment.Kind == DateTimeKind.Local
-             ? moment.ToUniversalTime()
-             : DateTime.SpecifyKind(moment, DateTimeKind.Utc);
+    if (moment.Kind == DateTimeKind.Local)
+      return moment.ToUniversalTime();
+
+    return DateTime.SpecifyKind(moment, DateTimeKind.Utc);
   }
 }

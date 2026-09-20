@@ -5,21 +5,16 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemFulfillmentService
 {
-  public Result<FulfillmentResult, FulfillmentFailure> Fulfill(FulfillmentRequest request,
-                                                               IReadOnlyCollection<OrderItem> knownItems,
-                                                               DateTime fulfilledAtUtc)
+  public Result<FulfillmentResult, FulfillmentFailure> Fulfill(FulfillmentRequest request, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = [.. request.OrderItemIds.Distinct()];
+    List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
     {
-      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new()
-                                                                  {
-                                                                    Reason = FulfillmentFailureReason.NoItemsSelected
-                                                                  });
+      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
     }
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
@@ -38,41 +33,31 @@ public sealed class OrderItemFulfillmentService
       }
 
       if (item.FulfilledAtUtc is null)
-      {
         toFulfill.Add(item);
-      }
       else
-      {
         alreadyFulfilled.Add(item);
-      }
     }
 
     foreach (var item in toFulfill)
-    {
       item.FulfilledAtUtc = fulfilledAtUtc;
-    }
 
     return Result<FulfillmentResult, FulfillmentFailure>.Success(new()
-                                                                  {
-                                                                    ChangedItems = toFulfill,
-                                                                    AlreadyFulfilled = alreadyFulfilled
-                                                                  });
+                                                                 {
+                                                                   ChangedItems = toFulfill,
+                                                                   AlreadyFulfilled = alreadyFulfilled
+                                                                 });
   }
 
-  public Result<FulfillmentResult, FulfillmentFailure> Unfulfill(FulfillmentRequest request,
-                                                                 IReadOnlyCollection<OrderItem> knownItems)
+  public Result<FulfillmentResult, FulfillmentFailure> Unfulfill(FulfillmentRequest request, IReadOnlyCollection<OrderItem> knownItems)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = [.. request.OrderItemIds.Distinct()];
+    List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
     {
-      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new()
-                                                                  {
-                                                                    Reason = FulfillmentFailureReason.NoItemsSelected
-                                                                  });
+      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
     }
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
@@ -102,14 +87,12 @@ public sealed class OrderItemFulfillmentService
     }
 
     foreach (var item in toClear)
-    {
       item.FulfilledAtUtc = null;
-    }
 
     return Result<FulfillmentResult, FulfillmentFailure>.Success(new()
-                                                                  {
-                                                                    ChangedItems = toClear,
-                                                                    AlreadyFulfilled = []
-                                                                  });
+                                                                 {
+                                                                   ChangedItems = toClear,
+                                                                   AlreadyFulfilled = []
+                                                                 });
   }
 }

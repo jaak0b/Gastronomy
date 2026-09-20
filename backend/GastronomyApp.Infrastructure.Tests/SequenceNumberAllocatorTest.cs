@@ -14,8 +14,7 @@ public sealed class SequenceNumberAllocatorTest
     SequenceNumberAllocator allocator = new(fixture.DbContext);
     var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
 
-    var allocated = await allocator.AllocateGlobalOrderNumberAsync(festivalId,
-                                                                   TestContext.CurrentContext.CancellationToken);
+    var allocated = await allocator.AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(allocated, Is.EqualTo(1));
   }
@@ -30,8 +29,7 @@ public sealed class SequenceNumberAllocatorTest
 
     await allocator.AllocateGlobalOrderNumberAsync(firstFestivalId, TestContext.CurrentContext.CancellationToken);
     await allocator.AllocateGlobalOrderNumberAsync(firstFestivalId, TestContext.CurrentContext.CancellationToken);
-    var secondFestivalFirstNumber =
-      await allocator.AllocateGlobalOrderNumberAsync(secondFestivalId, TestContext.CurrentContext.CancellationToken);
+    var secondFestivalFirstNumber = await allocator.AllocateGlobalOrderNumberAsync(secondFestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(secondFestivalFirstNumber, Is.EqualTo(1));
   }
@@ -50,15 +48,13 @@ public sealed class SequenceNumberAllocatorTest
     {
       var attemptContext = fixture.CreateContext();
       await using var transaction = await attemptContext.Database.BeginTransactionAsync();
-      rolledBackValue = await new SequenceNumberAllocator(attemptContext)
-                         .AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
+      rolledBackValue = await new SequenceNumberAllocator(attemptContext).AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
       await transaction.RollbackAsync();
       attemptContext.Dispose();
     }
 
     var secondContext = fixture.CreateContext();
-    var afterRollback = await new SequenceNumberAllocator(secondContext)
-                         .AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
+    var afterRollback = await new SequenceNumberAllocator(secondContext).AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -79,8 +75,7 @@ public sealed class SequenceNumberAllocatorTest
     beforeRestart.Dispose();
 
     var afterRestart = fixture.CreateContext();
-    var allocated = await new SequenceNumberAllocator(afterRestart)
-                     .AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
+    var allocated = await new SequenceNumberAllocator(afterRestart).AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(allocated, Is.EqualTo(3));
   }
@@ -96,9 +91,7 @@ public sealed class SequenceNumberAllocatorTest
 
     await allocator.AllocateStationOrderNumberAsync(festivalId, firstStationId, TestContext.CurrentContext.CancellationToken);
     await allocator.AllocateStationOrderNumberAsync(festivalId, firstStationId, TestContext.CurrentContext.CancellationToken);
-    var secondStationFirstNumber = await allocator.AllocateStationOrderNumberAsync(festivalId,
-                                                                                   secondStationId,
-                                                                                   TestContext.CurrentContext.CancellationToken);
+    var secondStationFirstNumber = await allocator.AllocateStationOrderNumberAsync(festivalId, secondStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(secondStationFirstNumber, Is.EqualTo(1));
   }
@@ -115,9 +108,7 @@ public sealed class SequenceNumberAllocatorTest
 
     await allocator.AllocateStationOrderNumberAsync(firstFestivalId, stationId, TestContext.CurrentContext.CancellationToken);
     await allocator.AllocateStationOrderNumberAsync(firstFestivalId, stationId, TestContext.CurrentContext.CancellationToken);
-    var atTheSecondFestival = await allocator.AllocateStationOrderNumberAsync(secondFestivalId,
-                                                                              stationId,
-                                                                              TestContext.CurrentContext.CancellationToken);
+    var atTheSecondFestival = await allocator.AllocateStationOrderNumberAsync(secondFestivalId, stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(atTheSecondFestival, Is.EqualTo(1));
   }
@@ -133,9 +124,7 @@ public sealed class SequenceNumberAllocatorTest
     await AddStationOrderAsync(fixture.DbContext, festivalId, stationId, 2);
     await AddStationOrderAsync(fixture.DbContext, festivalId, stationId, 3);
 
-    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId,
-                                                                     stationId,
-                                                                     TestContext.CurrentContext.CancellationToken);
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId, stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(nextNumber, Is.EqualTo(4));
   }
@@ -148,9 +137,7 @@ public sealed class SequenceNumberAllocatorTest
     var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
     var stationId = await AddStationAsync(fixture.DbContext, festivalId, "Kueche");
 
-    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId,
-                                                                     stationId,
-                                                                     TestContext.CurrentContext.CancellationToken);
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(festivalId, stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(nextNumber, Is.EqualTo(1));
   }
@@ -169,9 +156,7 @@ public sealed class SequenceNumberAllocatorTest
     await AddStationOrderAsync(fixture.DbContext, firstFestivalId, otherStationId, 5);
     await AddStationOrderAsync(fixture.DbContext, secondFestivalId, stationId, 7);
 
-    var nextNumber = await allocator.FindNextStationOrderNumberAsync(firstFestivalId,
-                                                                     stationId,
-                                                                     TestContext.CurrentContext.CancellationToken);
+    var nextNumber = await allocator.FindNextStationOrderNumberAsync(firstFestivalId, stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(nextNumber, Is.EqualTo(2));
   }
@@ -183,21 +168,15 @@ public sealed class SequenceNumberAllocatorTest
     var festivalId = await AddFestivalAsync(fixture.DbContext, "Sommerfest");
     using var firstContext = fixture.CreateContext();
     using var secondContext = fixture.CreateContext();
-    await firstContext.Festivals.FirstAsync(candidate => candidate.Id == festivalId,
-                                            TestContext.CurrentContext.CancellationToken);
-    await secondContext.Festivals.FirstAsync(candidate => candidate.Id == festivalId,
-                                             TestContext.CurrentContext.CancellationToken);
+    await firstContext.Festivals.FirstAsync(candidate => candidate.Id == festivalId, TestContext.CurrentContext.CancellationToken);
+    await secondContext.Festivals.FirstAsync(candidate => candidate.Id == festivalId, TestContext.CurrentContext.CancellationToken);
 
-    var firstNumber = await new SequenceNumberAllocator(firstContext)
-                       .AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
+    var firstNumber = await new SequenceNumberAllocator(firstContext).AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(firstNumber, Is.EqualTo(1));
-                      Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () =>
-                                                                         await new SequenceNumberAllocator(secondContext)
-                                                                          .AllocateGlobalOrderNumberAsync(festivalId,
-                                                                                                          TestContext.CurrentContext.CancellationToken));
+                      Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () => await new SequenceNumberAllocator(secondContext).AllocateGlobalOrderNumberAsync(festivalId, TestContext.CurrentContext.CancellationToken));
                     });
   }
 
@@ -209,22 +188,15 @@ public sealed class SequenceNumberAllocatorTest
     var stationId = await AddStationAsync(fixture.DbContext, festivalId, "Kueche");
     using var firstContext = fixture.CreateContext();
     using var secondContext = fixture.CreateContext();
-    await firstContext.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId,
-                                                   TestContext.CurrentContext.CancellationToken);
-    await secondContext.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId,
-                                                    TestContext.CurrentContext.CancellationToken);
+    await firstContext.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId, TestContext.CurrentContext.CancellationToken);
+    await secondContext.FestivalStations.FirstAsync(candidate => candidate.FestivalId == festivalId, TestContext.CurrentContext.CancellationToken);
 
-    var firstNumber = await new SequenceNumberAllocator(firstContext)
-                       .AllocateStationOrderNumberAsync(festivalId, stationId, TestContext.CurrentContext.CancellationToken);
+    var firstNumber = await new SequenceNumberAllocator(firstContext).AllocateStationOrderNumberAsync(festivalId, stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(firstNumber, Is.EqualTo(1));
-                      Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () =>
-                                                                         await new SequenceNumberAllocator(secondContext)
-                                                                          .AllocateStationOrderNumberAsync(festivalId,
-                                                                                                           stationId,
-                                                                                                           TestContext.CurrentContext.CancellationToken));
+                      Assert.ThrowsAsync<DbUpdateConcurrencyException>(async () => await new SequenceNumberAllocator(secondContext).AllocateStationOrderNumberAsync(festivalId, stationId, TestContext.CurrentContext.CancellationToken));
                     });
   }
 
@@ -278,10 +250,7 @@ public sealed class SequenceNumberAllocatorTest
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task AddStationOrderAsync(GastronomyAppDbContext dbContext,
-                                          Guid festivalId,
-                                          Guid stationId,
-                                          int stationOrderNumber)
+  private async Task AddStationOrderAsync(GastronomyAppDbContext dbContext, Guid festivalId, Guid stationId, int stationOrderNumber)
   {
     var orderId = Guid.NewGuid();
 
@@ -297,14 +266,14 @@ public sealed class SequenceNumberAllocatorTest
                          });
 
     dbContext.StationOrders.Add(new()
-                               {
-                                 Id = Guid.NewGuid(),
-                                 OrderId = orderId,
-                                 FestivalId = festivalId,
-                                 StationId = stationId,
-                                 StationOrderNumber = stationOrderNumber,
-                                 DeliveryMode = DeliveryMode.Together
-                               });
+                                {
+                                  Id = Guid.NewGuid(),
+                                  OrderId = orderId,
+                                  FestivalId = festivalId,
+                                  StationId = stationId,
+                                  StationOrderNumber = stationOrderNumber,
+                                  DeliveryMode = DeliveryMode.Together
+                                });
 
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }

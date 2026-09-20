@@ -18,10 +18,6 @@ public sealed class StationEstimateHandler
   {
     IReadOnlyList<StationEstimate> estimates = await _estimateService.ReadAsync(cancellationToken);
 
-    return Results.Ok(new StationEstimateListView([
-                                                    .. estimates.Select(estimate =>
-                                                                          new StationEstimateView(estimate.StationId,
-                                                                                                  estimate.QueuedMinutes))
-                                                  ]));
+    return Results.Ok(new StationEstimateListView(estimates.Select(estimate => new StationEstimateView(estimate.StationId, estimate.QueuedMinutes)).ToList()));
   }
 }

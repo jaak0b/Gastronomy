@@ -16,15 +16,11 @@ public sealed class ApplicationLog
 
     var path = Path.Combine(folder, LogFileName);
 
-    var logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
-                .WriteTo.File(path,
-                              rollingInterval: RollingInterval.Day,
-                              retainedFileCountLimit: RetainedFiles,
-                              shared: true)
-                .CreateLogger();
+    var logger = new LoggerConfiguration().MinimumLevel.Information()
+                                          .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                                          .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                                          .WriteTo.File(path, rollingInterval: RollingInterval.Day, retainedFileCountLimit: RetainedFiles, shared: true)
+                                          .CreateLogger();
 
     Log.Logger = logger;
 

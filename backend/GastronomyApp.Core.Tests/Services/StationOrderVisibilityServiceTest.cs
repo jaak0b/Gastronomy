@@ -26,8 +26,7 @@ public sealed class StationOrderVisibilityServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason,
-                                  Is.EqualTo(StationOrderVisibilityFailureReason.NotAnAsItComesOrder));
+                      Assert.That(outcome.Failure.Reason, Is.EqualTo(StationOrderVisibilityFailureReason.NotAnAsItComesOrder));
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }

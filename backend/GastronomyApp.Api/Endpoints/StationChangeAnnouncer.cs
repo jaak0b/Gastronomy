@@ -15,8 +15,6 @@ public sealed class StationChangeAnnouncer
 
   public Task AnnounceAsync(Guid stationId)
   {
-    return _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken =>
-                                                                          _dispatcher.PushStationsChangedAsync(stationId,
-                                                                                                               cancellationToken));
+    return _announcement.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken => _dispatcher.PushStationsChangedAsync(stationId, cancellationToken));
   }
 }

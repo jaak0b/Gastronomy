@@ -1,4 +1,3 @@
-
 namespace GastronomyApp.Core.Ports;
 
 public sealed record DeviceOwnerRecord

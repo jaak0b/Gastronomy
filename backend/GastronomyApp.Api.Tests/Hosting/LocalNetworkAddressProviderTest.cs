@@ -15,7 +15,6 @@ public sealed class LocalNetworkAddressProviderTest
     Assert.That(addresses, Is.Not.Null);
 
     foreach (var address in addresses)
-    {
       Assert.Multiple(() =>
                       {
                         Assert.That(address.IPAddress, Does.Not.StartWith("127."));
@@ -23,7 +22,6 @@ public sealed class LocalNetworkAddressProviderTest
                         Assert.That(address.IPAddress.Split('.'), Has.Length.EqualTo(4));
                         Assert.That(address.InterfaceName, Is.Not.Empty);
                       });
-    }
   }
 
   [Test]

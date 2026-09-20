@@ -20,9 +20,7 @@ sealed internal class Program
     {
       if (args.Contains(SetupArgument))
       {
-        Environment.ExitCode = new ElevatedSetupEntryPoint(log,
-                                                           composition.DataDirectoryPath,
-                                                           composition.ElevatedSetupSteps).Run();
+        Environment.ExitCode = new ElevatedSetupEntryPoint(log, composition.DataDirectoryPath, composition.ElevatedSetupSteps).Run();
 
         return;
       }
@@ -35,12 +33,11 @@ sealed internal class Program
     }
   }
 
-  public static AppBuilder BuildAvaloniaApp()
-    => AppBuilder.Configure<App>()
-                 .UsePlatformDetect()
+  public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+                                                           .UsePlatformDetect()
 #if DEBUG
-                 .WithDeveloperTools()
+                                                           .WithDeveloperTools()
 #endif
-                 .WithInterFont()
-                 .LogToTrace();
+                                                           .WithInterFont()
+                                                           .LogToTrace();
 }

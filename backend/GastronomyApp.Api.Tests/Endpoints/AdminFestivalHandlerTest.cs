@@ -35,10 +35,9 @@ public sealed class AdminFestivalHandlerTest
   [Test]
   public async Task CreateAsync_APeriodNoOtherFestivalCovers_TellsTheDevices()
   {
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
-    IResult response = await HandlerTalkingTo(hubContext).CreateAsync(BuildNextYearsFestival(),
-                                                                      CancellationToken.None);
+    var response = await HandlerTalkingTo(hubContext).CreateAsync(BuildNextYearsFestival(), CancellationToken.None);
 
     Assert.That(response, Is.Not.Null);
 
@@ -49,11 +48,9 @@ public sealed class AdminFestivalHandlerTest
   public async Task CreateAsync_TheDevicesCannotBeTold_StillAnswersTheAdminWithTheSavedChange()
   {
     var proxy = A.Fake<IClientProxy>();
-    A.CallTo(() => proxy.SendCoreAsync(A<string>._, A<object?[]>._, A<CancellationToken>._))
-     .Throws(new InvalidOperationException("The connection to the station tablets broke."));
+    A.CallTo(() => proxy.SendCoreAsync(A<string>._, A<object?[]>._, A<CancellationToken>._)).Throws(new InvalidOperationException("The connection to the station tablets broke."));
 
-    IResult response = await HandlerTalkingTo(HubTalkingTo(proxy)).CreateAsync(BuildNextYearsFestival(),
-                                                                               CancellationToken.None);
+    var response = await HandlerTalkingTo(HubTalkingTo(proxy)).CreateAsync(BuildNextYearsFestival(), CancellationToken.None);
 
     Assert.That(response, Is.InstanceOf<IStatusCodeHttpResult>());
     Assert.That(((IStatusCodeHttpResult)response).StatusCode, Is.EqualTo(StatusCodes.Status201Created));
@@ -62,10 +59,9 @@ public sealed class AdminFestivalHandlerTest
   [Test]
   public async Task HideAsync_AFestivalRunningRightNow_RefusesAndTellsNobody()
   {
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
 
-    IResult response = await HandlerTalkingTo(hubContext).HideAsync(_context.World.FestivalId,
-                                                                     CancellationToken.None);
+    var response = await HandlerTalkingTo(hubContext).HideAsync(_context.World.FestivalId, CancellationToken.None);
 
     Assert.That(((IStatusCodeHttpResult)response).StatusCode, Is.EqualTo(StatusCodes.Status400BadRequest));
 
@@ -87,7 +83,7 @@ public sealed class AdminFestivalHandlerTest
     var clients = A.Fake<IHubClients>();
     A.CallTo(() => clients.Group(A<string>._)).Returns(proxy);
 
-    var hubContext = A.Fake<IHubContext<GastronomyHub>>();
+    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
     A.CallTo(() => hubContext.Clients).Returns(clients);
 
     return hubContext;
@@ -95,14 +91,8 @@ public sealed class AdminFestivalHandlerTest
 
   private AdminFestivalHandler HandlerTalkingTo(IHubContext<GastronomyHub> hubContext)
   {
-    FestivalChangeAnnouncer announcer =
-      new(new(hubContext),
-          new(_scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>(),
-              A.Fake<ILogger<SavedChangeAnnouncement>>()));
+    FestivalChangeAnnouncer announcer = new(new(hubContext), new(_scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncement>>()));
 
-    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(),
-               announcer,
-               _scope.ServiceProvider.GetRequiredService<ResultEnvelope>(),
-               A.Fake<ILogger<AdminFestivalHandler>>());
+    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(), announcer, _scope.ServiceProvider.GetRequiredService<ResultEnvelope>(), A.Fake<ILogger<AdminFestivalHandler>>());
   }
 }

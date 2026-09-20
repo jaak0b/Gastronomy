@@ -12,10 +12,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
   [SetUp]
   public void SetUp()
   {
-    _service = new(A.Fake<IOpenItemRepository>(),
-                   A.Fake<IFestivalRepository>(),
-                   A.Fake<ITransactionRunner>(),
-                   A.Fake<IClock>());
+    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), A.Fake<IClock>()), A.Fake<ITransactionRunner>(), A.Fake<IClock>());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -33,9 +30,13 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    var settlement = _service.Settle(RequestFor([Line(firstBeer, 350), Line(secondBeer, 350), Line(hotdog, 400)]),
-                                     AtOneTable(firstBeer, secondBeer, hotdog),
-                                     _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
+                                                                                          Line(firstBeer, 350),
+                                                                                          Line(secondBeer, 350),
+                                                                                          Line(hotdog, 400)
+                                                                                        ]),
+                                                                             AtOneTable(firstBeer, secondBeer, hotdog),
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -58,11 +59,13 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    var settlement = _service.Settle(RequestFor([Line(firstBeer, 350),
-                                                 Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
-                                                 Line(hotdog, 500)]),
-                                     AtOneTable(firstBeer, secondBeer, hotdog),
-                                     _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
+                                                                                          Line(firstBeer, 350),
+                                                                                          Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
+                                                                                          Line(hotdog, 500)
+                                                                                        ]),
+                                                                             AtOneTable(firstBeer, secondBeer, hotdog),
+                                                                             _now);
 
     Assert.Multiple(() =>
                     {
@@ -97,7 +100,12 @@ public sealed class OrderItemSettlementServiceOverlapTest
 
   private IReadOnlyCollection<SettlementCandidate> AtOneTable(params OrderItem[] items)
   {
-    return [.. items.Select(item => new SettlementCandidate { Item = item, TableName = "Tisch 3" })];
+    return items.Select(item => new SettlementCandidate
+                                {
+                                  Item = item,
+                                  TableName = "Tisch 3"
+                                })
+                .ToList();
   }
 
   private OrderItem OpenItem(int unitPriceCents)

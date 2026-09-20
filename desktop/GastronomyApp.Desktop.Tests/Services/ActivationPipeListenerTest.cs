@@ -7,7 +7,6 @@ namespace GastronomyApp.Desktop.Tests.Services;
 [TestFixture]
 public sealed class ActivationPipeListenerTest
 {
-
   private static string UnusedPipeName()
   {
     return $"GastronomyApp.Desktop.Tests.Activation.{Guid.NewGuid():N}";
@@ -24,9 +23,7 @@ public sealed class ActivationPipeListenerTest
     await closing.CancelAsync();
     await listening;
 
-    Assert.That(log.Entries.Where(entry => entry.Level >= LogEventLevel.Warning),
-                Is.Empty,
-                "The expected end of the listener must not be reported as a failure.");
+    Assert.That(log.Entries.Where(entry => entry.Level >= LogEventLevel.Warning), Is.Empty, "The expected end of the listener must not be reported as a failure.");
   }
 
   [Test]
@@ -40,8 +37,7 @@ public sealed class ActivationPipeListenerTest
     await closing.CancelAsync();
     await listening;
 
-    Assert.That(log.Entries.Select(entry => entry.RenderMessage()),
-                Has.Some.Contains("listener"));
+    Assert.That(log.Entries.Select(entry => entry.RenderMessage()), Has.Some.Contains("listener"));
   }
 
   [Test]
@@ -53,8 +49,6 @@ public sealed class ActivationPipeListenerTest
 
     await listener.ListenAsync(closing.Token);
 
-    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error
-                                           && entry.Exception is not null),
-                Is.Not.Empty);
+    Assert.That(log.Entries.Where(entry => entry.Level == LogEventLevel.Error && entry.Exception is not null), Is.Not.Empty);
   }
 }

@@ -9,28 +9,20 @@ public sealed class LocalAddressSet
   public bool Contains(IPAddress? address)
   {
     if (address is null)
-    {
       return false;
-    }
 
     if (IPAddress.IsLoopback(address))
-    {
       return true;
-    }
 
-    var candidate = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+    var candidate = address;
+
+    if (address.IsIPv4MappedToIPv6)
+      candidate = address.MapToIPv4();
 
     foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
-    {
-      foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
-      {
-        if (unicast.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6
-            && unicast.Address.Equals(candidate))
-        {
-          return true;
-        }
-      }
-    }
+    foreach (var unicast in networkInterface.GetIPProperties().UnicastAddresses)
+      if (unicast.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6 && unicast.Address.Equals(candidate))
+        return true;
 
     return false;
   }

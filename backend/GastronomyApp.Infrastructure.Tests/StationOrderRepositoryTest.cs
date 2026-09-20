@@ -18,10 +18,7 @@ public sealed class StationOrderRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     StationOrderRepository repository = new(fixture.DbContext);
 
-    Assert.That(async () => await repository.FindItemsAtStationAsync(null!,
-                                                                      Guid.NewGuid(),
-                                                                      TestContext.CurrentContext.CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindItemsAtStationAsync(null!, Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -30,10 +27,7 @@ public sealed class StationOrderRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     StationOrderRepository repository = new(fixture.DbContext);
 
-    Assert.That(async () => await repository.FindOrderIdsOfStationOrdersAsync(null!,
-                                                                               TestContext.CurrentContext
-                                                                                          .CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindOrderIdsOfStationOrdersAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -42,10 +36,7 @@ public sealed class StationOrderRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     StationOrderRepository repository = new(fixture.DbContext);
 
-    Assert.That(async () => await repository.FindFulfillmentCountsAsync(null!,
-                                                                         TestContext.CurrentContext
-                                                                                    .CancellationToken),
-                Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindFulfillmentCountsAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -57,10 +48,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> queue =
-      await repository.FindUnfinishedAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -71,7 +59,11 @@ public sealed class StationOrderRepositoryTest
                       Assert.That(queue[0].ItemCount, Is.EqualTo(2));
                       Assert.That(queue[0].FulfilledItemCount, Is.Zero);
                       Assert.That(queue[0].Items.Select(item => item.ItemName),
-                                  Is.EquivalentTo(new[] { "Bratwurst", "Limonade" }));
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "Bratwurst",
+                                                    "Limonade"
+                                                  }));
                     });
   }
 
@@ -84,10 +76,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> queue =
-      await repository.FindUnfinishedAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(queue[0].Items.Select(item => item.Note), Contains.Item("Ohne Ketchup"));
   }
@@ -97,15 +86,12 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, items);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> queue =
-      await repository.FindUnfinishedAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(queue, Is.Empty);
   }
@@ -119,10 +105,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> queue =
-      await repository.FindUnfinishedAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(queue, Is.Empty);
   }
@@ -137,12 +120,14 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> queue =
-      await repository.FindUnfinishedAtStationAsync(seeded.FestivalId,
-                                                     seeded.KitchenStationId,
-                                                     TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> queue = await repository.FindUnfinishedAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(queue.Select(stationOrder => stationOrder.TableName), Is.EqualTo(new[] { "Tisch 3", "Tisch 12" }));
+    Assert.That(queue.Select(stationOrder => stationOrder.TableName),
+                Is.EqualTo(new[]
+                           {
+                             "Tisch 3",
+                             "Tisch 12"
+                           }));
   }
 
   [Test]
@@ -150,15 +135,12 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, [items[0]]);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> fulfilled =
-      await repository.FindFulfilledAtStationAsync(seeded.FestivalId,
-                                                    seeded.KitchenStationId,
-                                                    TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> fulfilled = await repository.FindFulfilledAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -177,10 +159,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<QueuedStationOrder> fulfilled =
-      await repository.FindFulfilledAtStationAsync(seeded.FestivalId,
-                                                    seeded.KitchenStationId,
-                                                    TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<QueuedStationOrder> fulfilled = await repository.FindFulfilledAtStationAsync(seeded.FestivalId, seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(fulfilled, Is.Empty);
   }
@@ -190,16 +169,12 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var kitchenItems =
-      await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
-    var barItems = await PlaceOrderAsync(fixture, seeded, seeded.BarStationId, "Tisch 12", 2, DeliveryMode.Together);
+    IReadOnlyList<Guid> kitchenItems = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> barItems = await PlaceOrderAsync(fixture, seeded, seeded.BarStationId, "Tisch 12", 2, DeliveryMode.Together);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<OrderItem> items =
-      await repository.FindItemsAtStationAsync([.. kitchenItems, .. barItems],
-                                                seeded.KitchenStationId,
-                                                TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> items = await repository.FindItemsAtStationAsync(kitchenItems.Concat(barItems).ToList(), seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(items.Select(item => item.Id), Is.EquivalentTo(kitchenItems));
   }
@@ -209,21 +184,16 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<OrderItem> found =
-      await repository.FindItemsAtStationAsync([items[0]],
-                                                seeded.KitchenStationId,
-                                                TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderItem> found = await repository.FindItemsAtStationAsync([items[0]], seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     found[0].FulfilledAtUtc = _orderedAtUtc.AddMinutes(5);
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
-    OrderItem stored = await readContext.OrderItems
-                                        .FirstAsync(item => item.Id == items[0],
-                                                    TestContext.CurrentContext.CancellationToken);
+    var stored = await readContext.OrderItems.FirstAsync(item => item.Id == items[0], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stored.FulfilledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(5)));
   }
@@ -238,10 +208,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    StationOrder? found = await repository.FindAtStationAsync(barStationOrderId,
-                                                               seeded.KitchenStationId,
-                                                               seeded.FestivalId,
-                                                               TestContext.CurrentContext.CancellationToken);
+    var found = await repository.FindAtStationAsync(barStationOrderId, seeded.KitchenStationId, seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found, Is.Null);
   }
@@ -256,17 +223,12 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    StationOrder? found = await repository.FindAtStationAsync(stationOrderId,
-                                                               seeded.KitchenStationId,
-                                                               seeded.FestivalId,
-                                                               TestContext.CurrentContext.CancellationToken);
+    var found = await repository.FindAtStationAsync(stationOrderId, seeded.KitchenStationId, seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
     found!.IsHiddenFromAsItComesQueue = true;
     await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
     await using var readContext = fixture.CreateContext();
-    StationOrder stored = await readContext.StationOrders
-                                           .FirstAsync(stationOrder => stationOrder.Id == stationOrderId,
-                                                       TestContext.CurrentContext.CancellationToken);
+    var stored = await readContext.StationOrders.FirstAsync(stationOrder => stationOrder.Id == stationOrderId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(stored.IsHiddenFromAsItComesQueue, Is.True);
   }
@@ -283,9 +245,7 @@ public sealed class StationOrderRepositoryTest
     StationOrderRepository repository = new(fixture.DbContext);
     List<Guid> stationOrderIds = await StationOrderIdsAsync(fixture);
 
-    IReadOnlyList<Guid> orderIds =
-      await repository.FindOrderIdsOfStationOrdersAsync(stationOrderIds,
-                                                         TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> orderIds = await repository.FindOrderIdsOfStationOrdersAsync(stationOrderIds, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(orderIds, Is.EqualTo(new[] { orderId }));
   }
@@ -295,16 +255,14 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var kitchenItems =
-      await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> kitchenItems = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     var orderId = await OnlyOrderIdAsync(fixture);
     await AddStationOrderAsync(fixture, seeded, orderId, seeded.BarStationId);
     await FulfillAsync(fixture, [kitchenItems[0]]);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<OrderFulfillmentCounts> counts =
-      await repository.FindFulfillmentCountsAsync([orderId], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([orderId], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -322,8 +280,7 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<OrderFulfillmentCounts> counts =
-      await repository.FindFulfillmentCountsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
 
     Assert.That(counts, Is.Empty);
   }
@@ -338,17 +295,18 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<StationQueuedWork> queuedWork =
-      await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId,
-                                                      TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StationQueuedWork> queuedWork = await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(queuedWork, Has.Count.EqualTo(2));
-                      Assert.That(queuedWork.Select(row => row.StationId),
-                                  Is.All.EqualTo(seeded.KitchenStationId));
+                      Assert.That(queuedWork.Select(row => row.StationId), Is.All.EqualTo(seeded.KitchenStationId));
                       Assert.That(queuedWork.Select(row => row.Work.ProductionMinutes),
-                                  Is.EquivalentTo(new double?[] { 4, null }));
+                                  Is.EquivalentTo(new double?[]
+                                                  {
+                                                    4,
+                                                    null
+                                                  }));
                     });
   }
 
@@ -357,68 +315,50 @@ public sealed class StationOrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
+    IReadOnlyList<Guid> items = await PlaceOrderAsync(fixture, seeded, seeded.KitchenStationId, "Tisch 12", 1, DeliveryMode.Together);
     await FulfillAsync(fixture, items);
 
     StationOrderRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<StationQueuedWork> queuedWork =
-      await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId,
-                                                      TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StationQueuedWork> queuedWork = await repository.FindQueuedWorkAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(queuedWork, Is.Empty);
   }
 
   private async Task GiveTheSausageAProductionTimeAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
   {
-    CatalogItem sausage = await fixture.DbContext.CatalogItems
-                                       .FirstAsync(item => item.Id == seeded.SausageItemId,
-                                                   TestContext.CurrentContext.CancellationToken);
+    var sausage = await fixture.DbContext.CatalogItems.FirstAsync(item => item.Id == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
     sausage.ProductionMinutes = 4;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task FulfillAsync(SqliteInMemoryFixture fixture, IReadOnlyCollection<Guid> orderItemIds)
   {
-    List<Guid> ids = [.. orderItemIds];
-    List<OrderItem> items = await fixture.DbContext.OrderItems
-                                         .Where(item => ids.Contains(item.Id))
-                                         .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    List<Guid> ids = orderItemIds.ToList();
+    List<OrderItem> items = await fixture.DbContext.OrderItems.Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
 
     foreach (var item in items)
-    {
       item.FulfilledAtUtc = _orderedAtUtc.AddMinutes(5);
-    }
 
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<Guid> OnlyOrderIdAsync(SqliteInMemoryFixture fixture)
   {
-    return await fixture.DbContext.Orders
-                        .Select(order => order.Id)
-                        .FirstAsync(TestContext.CurrentContext.CancellationToken);
+    return await fixture.DbContext.Orders.Select(order => order.Id).FirstAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<Guid> StationOrderIdAsync(SqliteInMemoryFixture fixture, Guid stationId)
   {
-    return await fixture.DbContext.StationOrders
-                        .Where(stationOrder => stationOrder.StationId == stationId)
-                        .Select(stationOrder => stationOrder.Id)
-                        .FirstAsync(TestContext.CurrentContext.CancellationToken);
+    return await fixture.DbContext.StationOrders.Where(stationOrder => stationOrder.StationId == stationId).Select(stationOrder => stationOrder.Id).FirstAsync(TestContext.CurrentContext.CancellationToken);
   }
 
   private async Task<List<Guid>> StationOrderIdsAsync(SqliteInMemoryFixture fixture)
   {
-    return await fixture.DbContext.StationOrders
-                        .Select(stationOrder => stationOrder.Id)
-                        .ToListAsync(TestContext.CurrentContext.CancellationToken);
+    return await fixture.DbContext.StationOrders.Select(stationOrder => stationOrder.Id).ToListAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task AddStationOrderAsync(SqliteInMemoryFixture fixture,
-                                          SeededDomain seeded,
-                                          Guid orderId,
-                                          Guid stationId)
+  private async Task AddStationOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid orderId, Guid stationId)
   {
     var stationOrderId = Guid.NewGuid();
 
@@ -439,12 +379,7 @@ public sealed class StationOrderRepositoryTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(SqliteInMemoryFixture fixture,
-                                                          SeededDomain seeded,
-                                                          Guid stationId,
-                                                          string tableName,
-                                                          int orderNumber,
-                                                          DeliveryMode deliveryMode)
+  private async Task<IReadOnlyList<Guid>> PlaceOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, Guid stationId, string tableName, int orderNumber, DeliveryMode deliveryMode)
   {
     var orderId = Guid.NewGuid();
     var stationOrderId = Guid.NewGuid();
@@ -478,14 +413,10 @@ public sealed class StationOrderRepositoryTest
     fixture.DbContext.Orders.Add(order);
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    return [.. stationOrder.Items.Select(item => item.Id)];
+    return stationOrder.Items.Select(item => item.Id).ToList();
   }
 
-  private OrderItem BuildItem(Guid stationOrderId,
-                              Guid catalogItemId,
-                              string itemName,
-                              int unitPriceCents,
-                              string? note)
+  private OrderItem BuildItem(Guid stationOrderId, Guid catalogItemId, string itemName, int unitPriceCents, string? note)
   {
     return new()
            {

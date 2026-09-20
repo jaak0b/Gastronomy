@@ -11,8 +11,8 @@ public sealed class UpdateConfirmViewModel : ViewModelBase
     Body = text.Format("desktop.update.confirmBody", new TextPlaceholder("version", version));
     ConfirmLabel = text.Get("desktop.update.confirmRestart");
     CancelLabel = text.Get("desktop.update.confirmLater");
-    CancelCommand = new RelayCommand(() => OnCloseRequested(confirmed: false));
-    ConfirmCommand = new RelayCommand(() => OnCloseRequested(confirmed: true));
+    CancelCommand = new RelayCommand(() => OnCloseRequested(false));
+    ConfirmCommand = new RelayCommand(() => OnCloseRequested(true));
   }
 
   public string Title { get; }

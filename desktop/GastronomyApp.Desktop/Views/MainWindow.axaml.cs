@@ -23,14 +23,10 @@ public partial class MainWindow : Window
   private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
   {
     if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-    {
       return;
-    }
 
     if (ClickLandsOnAButtonOrDropdown(e.Source))
-    {
       return;
-    }
 
     BeginMoveDrag(e);
   }
@@ -40,9 +36,7 @@ public partial class MainWindow : Window
     for (var visual = source as Visual; visual is not null; visual = visual.GetVisualParent())
     {
       if (visual is Button or ComboBox)
-      {
         return true;
-      }
     }
 
     return false;
@@ -51,9 +45,7 @@ public partial class MainWindow : Window
   private void OnClosingMinimisesInstead(object? sender, WindowClosingEventArgs e)
   {
     if (e.IsProgrammatic)
-    {
       return;
-    }
 
     e.Cancel = true;
     WindowState = WindowState.Minimized;

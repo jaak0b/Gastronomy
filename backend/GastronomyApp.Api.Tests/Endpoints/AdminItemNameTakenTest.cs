@@ -26,20 +26,19 @@ public sealed class AdminItemNameTakenTest
   public async Task PostItem_NameThatAlreadyExists_IsRefused()
   {
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Bratwurst mit Brot",
-                                                                categoryId = _context.World.FoodCategoryId,
-                                                                sortOrder = 3
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Bratwurst mit Brot",
+                                                                 categoryId = _context.World.FoodCategoryId,
+                                                                 sortOrder = 3
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNameTaken"));
                     });
   }
 
@@ -54,20 +53,19 @@ public sealed class AdminItemNameTakenTest
     }
 
     using var response = await _context.Client.PostAsJsonAsync("/api/admin/items",
-                                                              new
-                                                              {
-                                                                name = "Bier",
-                                                                categoryId = _context.World.DrinkCategoryId,
-                                                                sortOrder = 3
-                                                              });
+                                                               new
+                                                               {
+                                                                 name = "Bier",
+                                                                 categoryId = _context.World.DrinkCategoryId,
+                                                                 sortOrder = 3
+                                                               });
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNameTaken"));
                     });
   }
 
@@ -87,8 +85,7 @@ public sealed class AdminItemNameTakenTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
-                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(),
-                                  Is.EqualTo("admin.itemNameTaken"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("admin.itemNameTaken"));
                     });
   }
 

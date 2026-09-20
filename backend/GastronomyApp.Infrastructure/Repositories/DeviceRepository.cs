@@ -15,8 +15,7 @@ public sealed class DeviceRepository : IDeviceRepository
 
   public async Task<Device?> FindByIdAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Devices
-                           .FirstOrDefaultAsync(device => device.Id == deviceId, cancellationToken);
+    return await _dbContext.Devices.FirstOrDefaultAsync(device => device.Id == deviceId, cancellationToken);
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)

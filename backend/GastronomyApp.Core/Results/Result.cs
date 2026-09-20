@@ -19,9 +19,7 @@ public sealed class Result<TValue, TFailure>
     get
     {
       if (!IsSuccess)
-      {
         throw new InvalidOperationException("The value of a failed result cannot be read.");
-      }
 
       return _value!;
     }
@@ -32,9 +30,7 @@ public sealed class Result<TValue, TFailure>
     get
     {
       if (IsSuccess)
-      {
         throw new InvalidOperationException("The failure of a successful result cannot be read.");
-      }
 
       return _failure!;
     }

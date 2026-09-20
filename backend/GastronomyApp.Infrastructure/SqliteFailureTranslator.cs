@@ -32,25 +32,20 @@ public sealed class SqliteFailureTranslator
   {
     ArgumentNullException.ThrowIfNull(exception);
 
-    return exception.SqliteErrorCode == SqliteConstraint
-           && exception.Message.Contains("UNIQUE constraint failed", StringComparison.Ordinal);
+    return exception.SqliteErrorCode == SqliteConstraint && exception.Message.Contains("UNIQUE constraint failed", StringComparison.Ordinal);
   }
 
   public InfrastructureException TranslateConflict(SqliteException exception)
   {
     ArgumentNullException.ThrowIfNull(exception);
 
-    return new(InfrastructureFailureReason.ConflictingChange,
-               "Another write reached the same unique row first.",
-               exception);
+    return new(InfrastructureFailureReason.ConflictingChange, "Another write reached the same unique row first.", exception);
   }
 
   public InfrastructureException Translate(SqliteException exception)
   {
     ArgumentNullException.ThrowIfNull(exception);
 
-    return new(InfrastructureFailureReason.DatabaseUnavailable,
-               "The order database could not be written to.",
-               exception);
+    return new(InfrastructureFailureReason.DatabaseUnavailable, "The order database could not be written to.", exception);
   }
 }
