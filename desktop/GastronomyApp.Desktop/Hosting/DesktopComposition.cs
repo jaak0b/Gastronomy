@@ -1,12 +1,12 @@
 using System.Reflection;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Platform;
 using GastronomyApp.Desktop.Platform.Windows;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Infrastructure;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Hosting;
 

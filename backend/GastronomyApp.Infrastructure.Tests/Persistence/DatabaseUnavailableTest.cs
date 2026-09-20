@@ -1,5 +1,6 @@
 using System.Data.Common;
 using GastronomyApp.Core.Requests;
+using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Tests.TestSupport;

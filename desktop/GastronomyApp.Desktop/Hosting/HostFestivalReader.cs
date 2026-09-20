@@ -1,6 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Hosting;
 

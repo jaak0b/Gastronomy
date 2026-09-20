@@ -1,14 +1,11 @@
 using System.Globalization;
 using FakeItEasy;
-using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Enums;
-using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Platform;
-using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.Values;
 using GastronomyApp.Desktop.ViewModels;
+using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 

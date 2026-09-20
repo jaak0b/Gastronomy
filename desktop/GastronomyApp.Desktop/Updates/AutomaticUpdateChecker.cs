@@ -1,5 +1,5 @@
-using GastronomyApp.Desktop.Settings;
 using Serilog;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Updates;
 

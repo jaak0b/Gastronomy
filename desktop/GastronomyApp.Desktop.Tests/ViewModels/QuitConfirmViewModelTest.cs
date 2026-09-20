@@ -1,10 +1,7 @@
 using FakeItEasy;
-using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Platform;
-using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.ViewModels;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 

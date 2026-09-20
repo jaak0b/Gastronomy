@@ -1,4 +1,6 @@
-﻿namespace GastronomyApp.Api.Values;
+﻿using GastronomyApp.Api.Options;
+
+namespace GastronomyApp.Api.Values;
 
 public sealed record ApiHostOptions
 {

@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Auth.Callers;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Handlers;
 using Microsoft.AspNetCore.Builder;

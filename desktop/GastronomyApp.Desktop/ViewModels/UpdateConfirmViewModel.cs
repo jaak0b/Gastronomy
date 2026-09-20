@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Desktop.Events;
-using GastronomyApp.Desktop.Localization;
+using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.ViewModels;
 

@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Api.Options;
-using GastronomyApp.Api.Values;
+﻿using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api.Hosting;
 

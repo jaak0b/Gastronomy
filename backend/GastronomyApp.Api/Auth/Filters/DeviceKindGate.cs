@@ -1,4 +1,3 @@
-using GastronomyApp.Api.Auth.Callers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Core.Enums;
 using Microsoft.AspNetCore.Http;

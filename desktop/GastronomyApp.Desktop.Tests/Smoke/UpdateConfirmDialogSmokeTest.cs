@@ -5,6 +5,8 @@ using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
+using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 

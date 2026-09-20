@@ -1,8 +1,8 @@
 using FakeItEasy;
-using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Hosting;
-using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.Values;
+using GastronomyApp.Api.Values;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Hosting;
 

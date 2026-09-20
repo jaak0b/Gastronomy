@@ -1,3 +1,4 @@
+using GastronomyApp.Infrastructure.Enums;
 using Microsoft.Data.Sqlite;
 
 namespace GastronomyApp.Infrastructure.ErrorHandling;

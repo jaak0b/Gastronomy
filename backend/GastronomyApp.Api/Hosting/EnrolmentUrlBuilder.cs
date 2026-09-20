@@ -1,4 +1,3 @@
-using GastronomyApp.Api.Options;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using GastronomyApp.Api.Values;

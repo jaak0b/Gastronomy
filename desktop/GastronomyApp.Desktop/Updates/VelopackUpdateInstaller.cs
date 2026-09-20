@@ -2,6 +2,7 @@ using GastronomyApp.Desktop.Values;
 using Serilog;
 using Velopack;
 using Velopack.Sources;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Updates;
 

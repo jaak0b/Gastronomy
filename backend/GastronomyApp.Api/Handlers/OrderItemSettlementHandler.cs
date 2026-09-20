@@ -1,5 +1,4 @@
 using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Auth.Callers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;

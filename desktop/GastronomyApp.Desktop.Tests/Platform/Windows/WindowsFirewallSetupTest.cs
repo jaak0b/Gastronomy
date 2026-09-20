@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using FakeItEasy;
 using GastronomyApp.Desktop.Platform.Windows;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Platform.Windows;
 

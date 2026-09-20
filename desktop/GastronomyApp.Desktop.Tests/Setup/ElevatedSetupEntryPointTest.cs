@@ -1,6 +1,7 @@
 using FakeItEasy;
 using GastronomyApp.Desktop.Setup;
 using Serilog;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Setup;
 

@@ -1,3 +1,5 @@
+using GastronomyApp.Infrastructure.Enums;
+
 namespace GastronomyApp.Infrastructure.ErrorHandling;
 
 public sealed class InfrastructureException : Exception

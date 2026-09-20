@@ -5,17 +5,14 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FakeItEasy;
-using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Enums;
-using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Platform;
-using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Tests.TestSupport;
-using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.Values;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
+using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 

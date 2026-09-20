@@ -1,8 +1,8 @@
 using FakeItEasy;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.ViewModels;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.ViewModels;
 

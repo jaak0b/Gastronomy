@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using System.Resources;
+using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Desktop.Values;
 
 namespace GastronomyApp.Desktop.Localization;
 

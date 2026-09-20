@@ -3,6 +3,7 @@ using System.Globalization;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
+using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

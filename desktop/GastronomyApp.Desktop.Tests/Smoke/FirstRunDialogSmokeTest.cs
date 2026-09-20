@@ -4,10 +4,10 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using FakeItEasy;
 using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.Tests.TestSupport;
 using GastronomyApp.Desktop.ViewModels;
 using GastronomyApp.Desktop.Views;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Smoke;
 

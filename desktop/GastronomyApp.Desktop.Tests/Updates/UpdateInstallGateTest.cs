@@ -1,8 +1,8 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Updates;
 

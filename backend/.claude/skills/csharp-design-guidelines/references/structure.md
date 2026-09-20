@@ -174,28 +174,39 @@ above.
   the namespace of its project plus its folder, so no folder is a catch-all and no folder is written
   an exception.
 - **Do** place a new file in the folder that names both its kind and its concept, so the folder alone
-  says what the file is. In `GastronomyApp.Core`: `Entities` for persisted aggregates, `Enums` for
-  domain enums shared beyond one area, `Ports` for interfaces only, `Requests` for the records a
-  caller hands to a service, `ReadModels` for what a service or a repository returns for reading
-  including intermediate values a service computes and hands on, `Results` for the outcome of a write
-  or a verification and for failure records with their reason enums, `Exceptions` for exception types,
-  and `Services` for classes only. In `GastronomyApp.Api`: `Endpoints` for the route mapping classes
-  only, `Handlers` for the classes an endpoint calls, `Mapping` for the Mapster `IRegister` classes and
-  the configuration that compiles them, `Announcers` for the classes that tell the devices, `Responders`
-  for the classes that write a response body, `Contracts` for wire records only, `Auth` for
-  authentication with `Auth/Filters` for the endpoint filters and `Auth/Callers` for the caller records,
-  `Names` for the classes that hold nothing but the constant names of hub events, hub groups, rate limit
-  policies, authentication schemes and device claims, `Values` for the records the Api passes around
-  inside itself rather than over the wire, and `Hub`, `Hosting`, `ErrorHandling`, `Options` and
-  `RateLimiting` for what their names say. In
-  `GastronomyApp.Infrastructure`:
-  `Persistence` for the context, the connection factory and the transaction runner, `Repositories`,
-  `Configurations`, `Security`, `ErrorHandling` and `Values` for the records its own classes hand each
-  other. `Projections` holds the Mapster `IRegister`
-  classes that declare how entities and query rows become read models, and `QueryRows` holds the
-  intermediate records a query materialises on the way there, so `Repositories` keeps to repositories
-  alone. In `GastronomyApp.Desktop`: one folder per
-  concern (`Hosting`, `Updates`, `Settings`, `Setup`, `Platform`, `Localization`, `Logging`,
-  `ViewModels`, `Views`), with `Enums` for its enums, `Events` for its event argument classes and `Values` for
-  its records, and never a `Services` catch-all. In a test project a support type that is not
-  a fixture lives under `TestSupport` and the fixture folders mirror the production folders.
+  says what the file is.
+
+  In `GastronomyApp.Core`: `Entities` for persisted aggregates, `Enums` for domain enums shared
+  beyond one area, `Exceptions` for exception types, `Ports` for interfaces only, `ReadModels` for
+  what a service or a repository returns for reading including intermediate values a service
+  computes and hands on, `Requests` for the records a caller hands to a service, `Results` for the
+  outcome of a write or a verification together with the failure records and their reason enums,
+  and `Services` for classes only.
+
+  In `GastronomyApp.Api`: `Announcers` for the classes that tell the devices, `Auth` for the
+  authentication classes, `Auth/Conventions` for the endpoint convention extensions, `Auth/Filters`
+  for the endpoint filters, `Contracts` for wire records only, `Endpoints` for the route mapping
+  classes only, `ErrorHandling`, `Handlers` for the classes an endpoint calls, `Hosting`, `Hub`,
+  `Mapping` for the Mapster `IRegister` classes and the configuration that compiles them, `Names`
+  for the records that hold nothing but the constant names of hub events, hub groups, rate limit
+  policies, authentication schemes and device claims, `Options`, `RateLimiting`, `Responders` for
+  the classes that write a response body, and `Values` for the records the Api passes around inside
+  itself rather than over the wire. The composition root stays at the project root in
+  `ApiPipeline`, `ApiServiceRegistration` and `GastronomyAppApiApplication`.
+
+  In `GastronomyApp.Infrastructure`: `Configurations` for the entity configurations, `Enums` for its
+  own enums, `ErrorHandling` for the infrastructure exception and the failure translator,
+  `Migrations`, `Persistence` for the context, the connection factory and the transaction runner,
+  `Projections` for the Mapster `IRegister` classes that declare how entities and query rows become
+  read models, `QueryRows` for the intermediate records a query materialises on the way there so
+  `Repositories` keeps to repositories alone, `Repositories`, `Security`, and `Values` for the
+  records its own classes hand each other. `SystemClock` stays at the project root.
+
+  In `GastronomyApp.Desktop`: one folder per concern (`Hosting`, `Updates`, `Settings`, `Setup`,
+  `Platform/Windows`, `Localization`, `Logging`, `ViewModels`, `Views`), with `Converters` for the
+  Avalonia value converters, `Enums` for its enums, `Events` for its event argument classes, `Ports`
+  for the interfaces it defines and implements itself, and `Values` for its records, and never a
+  `Services` catch-all. `App`, `Program` and `ViewLocator` stay at the project root.
+
+  In a test project a support type that is not a fixture lives under `TestSupport` and the fixture
+  folders mirror the production folders.

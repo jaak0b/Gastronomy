@@ -1,7 +1,8 @@
+using GastronomyApp.Api.Auth.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
-namespace GastronomyApp.Api.Auth.Filters;
+namespace GastronomyApp.Api.Auth.Conventions;
 
 public static class DeviceKindEndpointConventions
 {

@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using GastronomyApp.Desktop.Enums;
 using Serilog;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Platform.Windows;
 

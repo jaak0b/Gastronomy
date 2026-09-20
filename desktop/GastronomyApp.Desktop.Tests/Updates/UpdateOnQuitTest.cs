@@ -1,5 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Desktop.Updates;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Tests.Updates;
 

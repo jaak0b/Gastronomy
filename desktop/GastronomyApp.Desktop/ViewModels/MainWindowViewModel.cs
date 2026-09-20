@@ -5,13 +5,10 @@ using GastronomyApp.Api.Options;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Events;
-using GastronomyApp.Desktop.Hosting;
-using GastronomyApp.Desktop.Localization;
-using GastronomyApp.Desktop.Platform;
-using GastronomyApp.Desktop.Settings;
-using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.Values;
 using Serilog;
+using GastronomyApp.Api.Values;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.ViewModels;
 

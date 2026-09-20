@@ -1,5 +1,5 @@
-using GastronomyApp.Api.Options;
 using GastronomyApp.Desktop.Values;
+using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Desktop.Ports;
 

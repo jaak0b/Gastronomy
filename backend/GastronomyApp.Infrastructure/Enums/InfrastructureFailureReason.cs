@@ -1,4 +1,4 @@
-namespace GastronomyApp.Infrastructure.ErrorHandling;
+namespace GastronomyApp.Infrastructure.Enums;
 
 public enum InfrastructureFailureReason
 {

@@ -1,8 +1,8 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Desktop.Hosting;
 using Serilog;
+using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Updates;
 

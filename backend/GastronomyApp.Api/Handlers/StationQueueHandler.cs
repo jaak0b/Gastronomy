@@ -1,4 +1,3 @@
-using GastronomyApp.Api.Auth.Callers;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Responders;
 using GastronomyApp.Core.ReadModels;

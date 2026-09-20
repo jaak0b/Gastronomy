@@ -3,6 +3,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
+using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Tests.TestSupport;

@@ -1,5 +1,5 @@
-using GastronomyApp.Api.Auth.Callers;
-using GastronomyApp.Api.Auth.Filters;
+using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Names;
