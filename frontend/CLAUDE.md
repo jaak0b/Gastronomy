@@ -19,6 +19,8 @@ Three audiences in one build:
 
 ## Hard rules
 
+0. **Read the `typescript-vue-design-guidelines` skill before touching any `.ts` or `.vue` file.** This comes before the first edit, before a rename, before a new test, and before a review, and it binds the main agent and every subagent without exception: a subagent prompt that concerns TypeScript or Vue must say so. The skill lives at `frontend/.claude/skills/typescript-vue-design-guidelines/SKILL.md` and is the checklist of the Google TypeScript Style Guide, the TypeScript declaration Do's and Don'ts and the official Vue style guide; its reference files hold the full rules. Code written without reading it is handed back, and a name, type, function or component that fails a checklist item is a review finding.
+
 1. **Keep the core framework-agnostic and modular.** Code in `src/core/` must not import Vue or Pinia
    and must not touch the DOM. Order building, price totalling, routing rules, draft cart persistence
    and submission identity are plain TypeScript, so they are testable without mounting anything.
