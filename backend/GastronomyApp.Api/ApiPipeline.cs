@@ -18,12 +18,10 @@ public sealed class ApiPipeline
     app.UseStaticFiles(new StaticFileOptions
                        {
                          OnPrepareResponse = staticFileResponse =>
-                         {
-                           if (staticFileResponse.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
-                           {
-                             staticFileResponse.Context.Response.Headers.CacheControl = "no-cache";
-                           }
-                         },
+                                             {
+                                               if (staticFileResponse.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                                                 staticFileResponse.Context.Response.Headers.CacheControl = "no-cache";
+                                             }
                        });
     app.UseMiddleware<LoopbackAdminAuthorizationMiddleware>();
     app.UseAuthentication();
@@ -44,8 +42,7 @@ public sealed class ApiPipeline
     app.MapAdminEnrolmentEndpoints();
     app.MapAdminInvitationQREndpoints();
     app.MapAdminFestivalEndpoints();
-    app.MapFallback("/{*clientRoute:nonfile}",
-                    (HttpContext httpContext, ClientRouteFallbackResponder responder) => responder.Respond(httpContext));
+    app.MapFallback("/{*clientRoute:nonfile}", (HttpContext httpContext, ClientRouteFallbackResponder responder) => responder.Respond(httpContext));
     app.MapHub<GastronomyHub>("/hub");
   }
 }

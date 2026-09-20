@@ -14,11 +14,7 @@ public sealed class Pbkdf2SecretHasher
     ArgumentNullException.ThrowIfNull(secret);
 
     var salt = RandomNumberGenerator.GetBytes(SaltLengthBytes);
-    var hash = Rfc2898DeriveBytes.Pbkdf2(secret,
-                                         salt,
-                                         DefaultIterations,
-                                         HashAlgorithmName.SHA512,
-                                         HashLengthBytes);
+    var hash = Rfc2898DeriveBytes.Pbkdf2(secret, salt, DefaultIterations, HashAlgorithmName.SHA512, HashLengthBytes);
 
     return new(hash, salt, DefaultIterations, AlgorithmName);
   }
@@ -31,15 +27,9 @@ public sealed class Pbkdf2SecretHasher
     ArgumentNullException.ThrowIfNull(storedAlgorithm);
 
     if (storedAlgorithm != AlgorithmName)
-    {
       return false;
-    }
 
-    var computed = Rfc2898DeriveBytes.Pbkdf2(secret,
-                                             storedSalt,
-                                             storedIterations,
-                                             HashAlgorithmName.SHA512,
-                                             storedHash.Length);
+    var computed = Rfc2898DeriveBytes.Pbkdf2(secret, storedSalt, storedIterations, HashAlgorithmName.SHA512, storedHash.Length);
 
     return CryptographicOperations.FixedTimeEquals(computed, storedHash);
   }

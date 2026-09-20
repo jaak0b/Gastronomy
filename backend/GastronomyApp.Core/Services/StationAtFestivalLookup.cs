@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
@@ -11,51 +10,39 @@ public sealed class StationAtFestivalLookup
   private readonly RunningFestivalLookup _runningFestival;
   private readonly IStationRepository _stationRepository;
 
-  public StationAtFestivalLookup(IStationRepository stationRepository,
-                                 IFestivalStationRepository festivalStationRepository,
-                                 RunningFestivalLookup runningFestival)
+  public StationAtFestivalLookup(IStationRepository stationRepository, IFestivalStationRepository festivalStationRepository, RunningFestivalLookup runningFestival)
   {
     _stationRepository = stationRepository;
     _festivalStationRepository = festivalStationRepository;
     _runningFestival = runningFestival;
   }
 
-  public async Task<Result<StationAtFestival, StationQueueFailure>> FindAsync(Guid stationId,
-                                                                             CancellationToken cancellationToken)
+  public async Task<Result<StationAtFestival, StationQueueFailure>> FindAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Station? station = await _stationRepository.FindByIdAsync(stationId, cancellationToken);
+    var station = await _stationRepository.FindByIdAsync(stationId, cancellationToken);
 
     if (station is null)
-    {
       return Refuse(StationQueueFailureReason.StationUnknown);
-    }
 
-    Festival? festival = await _runningFestival.FindAsync(cancellationToken);
+    var festival = await _runningFestival.FindAsync(cancellationToken);
 
     if (festival is null)
-    {
       return Refuse(StationQueueFailureReason.NoRunningFestival);
-    }
 
-    FestivalStation? link = await _festivalStationRepository.FindLinkAsync(festival.Id, stationId, cancellationToken);
+    var link = await _festivalStationRepository.FindLinkAsync(festival.Id, stationId, cancellationToken);
 
     if (link is null)
-    {
       return Refuse(StationQueueFailureReason.StationNotAtTheFestival);
-    }
 
     return Result<StationAtFestival, StationQueueFailure>.Success(new()
-                                                                 {
-                                                                   Station = station,
-                                                                   FestivalId = festival.Id
-                                                                 });
+                                                                  {
+                                                                    Station = station,
+                                                                    FestivalId = festival.Id
+                                                                  });
   }
 
   private Result<StationAtFestival, StationQueueFailure> Refuse(StationQueueFailureReason reason)
   {
-    return Result<StationAtFestival, StationQueueFailure>.Failed(new()
-                                                                {
-                                                                  Reason = reason
-                                                                });
+    return Result<StationAtFestival, StationQueueFailure>.Failed(new() { Reason = reason });
   }
 }

@@ -14,41 +14,24 @@ public sealed class FestivalMenuRepository : IFestivalMenuRepository
     _dbContext = dbContext;
   }
 
-  public async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId,
-                                                           Guid catalogItemId,
-                                                           CancellationToken cancellationToken)
+  public async Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return await _dbContext.FestivalCatalogItems
-                           .FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId
-                                                           && menuRow.CatalogItemId == catalogItemId,
-                                                cancellationToken);
+    return await _dbContext.FestivalCatalogItems.FirstOrDefaultAsync(menuRow => menuRow.FestivalId == festivalId && menuRow.CatalogItemId == catalogItemId, cancellationToken);
   }
 
   public async Task<bool> CatalogItemExistsAsync(Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return await _dbContext.CatalogItems
-                           .AsNoTracking()
-                           .AnyAsync(item => item.Id == catalogItemId, cancellationToken);
+    return await _dbContext.CatalogItems.AsNoTracking().AnyAsync(item => item.Id == catalogItemId, cancellationToken);
   }
 
-  public async Task<IReadOnlyList<Guid>> FindStationIdsAtFestivalAsync(Guid festivalId,
-                                                                       CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Guid>> FindStationIdsAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.FestivalStations
-                           .AsNoTracking()
-                           .Where(link => link.FestivalId == festivalId)
-                           .Select(link => link.StationId)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.FestivalStations.AsNoTracking().Where(link => link.FestivalId == festivalId).Select(link => link.StationId).ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId,
-                                                                               Guid catalogItemId,
-                                                                               CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return await _dbContext.ItemStationAssignments
-                           .Where(assignment => assignment.FestivalId == festivalId
-                                                && assignment.CatalogItemId == catalogItemId)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.ItemStationAssignments.Where(assignment => assignment.FestivalId == festivalId && assignment.CatalogItemId == catalogItemId).ToListAsync(cancellationToken);
   }
 
   public async Task AddMenuRowAsync(FestivalCatalogItem menuRow, CancellationToken cancellationToken)

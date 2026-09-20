@@ -29,9 +29,7 @@ public sealed class CatalogItemAdministrationService
   public async Task<Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
-    {
       return Failed<IReadOnlyList<AdministeredCatalogItem>>(CatalogItemAdministrationFailureReason.FestivalNotFound);
-    }
 
     IReadOnlyList<CatalogItem> items = await _itemRepository.FindAllOrderedAsync(cancellationToken);
 
@@ -81,9 +79,7 @@ public sealed class CatalogItemAdministrationService
                   ?? (await _itemRepository.IsNameTakenAsync(request.Name!, null, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
 
     if (refusal is not null)
-    {
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
-    }
 
     var itemId = Guid.NewGuid();
 
@@ -109,17 +105,13 @@ public sealed class CatalogItemAdministrationService
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-    {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
-    }
 
     var refusal = Validate(request)
                   ?? (await _itemRepository.IsNameTakenAsync(request.Name!, itemId, cancellationToken) ? new CatalogItemAdministrationFailure { Reason = CatalogItemAdministrationFailureReason.NameTaken } : null) ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
-    {
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
-    }
 
     item.Name = request.Name!;
     item.CategoryId = request.CategoryId!.Value;
@@ -137,16 +129,12 @@ public sealed class CatalogItemAdministrationService
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-    {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
-    }
 
     var categoryRefusal = await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
 
     if (categoryRefusal is not null)
-    {
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(categoryRefusal);
-    }
 
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);
@@ -159,16 +147,12 @@ public sealed class CatalogItemAdministrationService
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-    {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
-    }
 
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is not null && await _itemRepository.FindMenuRowAsync(runningFestival.Id, itemId, cancellationToken) is not null)
-    {
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemIsOnTheRunningFestivalsMenu);
-    }
 
     item.IsActive = false;
     await _itemRepository.SaveChangesAsync(cancellationToken);
@@ -181,19 +165,13 @@ public sealed class CatalogItemAdministrationService
     CatalogCategory? category = null;
 
     if (categoryId is not null)
-    {
       category = await _categoryRepository.FindByIdAsync(categoryId.Value, cancellationToken);
-    }
 
     if (category is null)
-    {
       return new() { Reason = CatalogItemAdministrationFailureReason.CategoryUnknown };
-    }
 
     if (category.IsActive || !theArticleIsSwitchedOn)
-    {
       return null;
-    }
 
     return new() { Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff };
   }
@@ -201,13 +179,15 @@ public sealed class CatalogItemAdministrationService
   private CatalogItemAdministrationFailure? Validate(SaveCatalogItemRequest request)
   {
     if (string.IsNullOrWhiteSpace(request.Name))
-    {
       return new() { Reason = CatalogItemAdministrationFailureReason.NameMissing };
-    }
 
     if (request.ProductionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
     {
-      return new() { Reason = CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange, OffendingProductionMinutes = minutes };
+      return new()
+             {
+               Reason = CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange,
+               OffendingProductionMinutes = minutes
+             };
     }
 
     return null;
@@ -216,9 +196,7 @@ public sealed class CatalogItemAdministrationService
   private CatalogItemAtFestival? BuildItemAtFestival(Guid itemId, IReadOnlyDictionary<Guid, FestivalCatalogItem> menuRowsByItemId, IReadOnlyCollection<ItemStationAssignment> assignments)
   {
     if (!menuRowsByItemId.TryGetValue(itemId, out var menuRow))
-    {
       return null;
-    }
 
     return new(menuRow.PriceCents, menuRow.IsAvailable, assignments.Where(assignment => assignment.CatalogItemId == itemId).Select(assignment => assignment.StationId).ToList());
   }
@@ -234,7 +212,11 @@ public sealed class CatalogItemAdministrationService
                                              {
                                                Result<Guid, CatalogItemAdministrationFailure> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<Guid, CatalogItemAdministrationFailure>> { Value = written, ShouldCommit = written.IsSuccess };
+                                               return new TransactionOutcome<Result<Guid, CatalogItemAdministrationFailure>>
+                                                      {
+                                                        Value = written,
+                                                        ShouldCommit = written.IsSuccess
+                                                      };
                                              },
                                              cancellationToken);
   }

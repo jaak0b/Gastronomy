@@ -18,9 +18,6 @@ public sealed class CatalogItemConfiguration : IEntityTypeConfiguration<CatalogI
     builder.Property(item => item.IsActive).IsRequired();
     builder.Property(item => item.ProductionMinutes).IsRequired(false);
     builder.HasIndex(item => item.CategoryId);
-    builder.HasOne<CatalogCategory>()
-           .WithMany()
-           .HasForeignKey(item => item.CategoryId)
-           .OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne<CatalogCategory>().WithMany().HasForeignKey(item => item.CategoryId).OnDelete(DeleteBehavior.Restrict);
   }
 }

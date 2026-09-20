@@ -16,14 +16,13 @@ public sealed class FestivalCatalogItemConfiguration : IEntityTypeConfiguration<
     builder.Property(menuRow => menuRow.CatalogItemId).IsRequired();
     builder.Property(menuRow => menuRow.PriceCents).IsRequired();
     builder.Property(menuRow => menuRow.IsAvailable).IsRequired();
-    builder.HasIndex(menuRow => new { menuRow.FestivalId, menuRow.CatalogItemId }).IsUnique();
-    builder.HasOne<Festival>()
-           .WithMany()
-           .HasForeignKey(menuRow => menuRow.FestivalId)
-           .OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<CatalogItem>()
-           .WithMany()
-           .HasForeignKey(menuRow => menuRow.CatalogItemId)
-           .OnDelete(DeleteBehavior.Restrict);
+    builder.HasIndex(menuRow => new
+                                {
+                                  menuRow.FestivalId,
+                                  menuRow.CatalogItemId
+                                })
+           .IsUnique();
+    builder.HasOne<Festival>().WithMany().HasForeignKey(menuRow => menuRow.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne<CatalogItem>().WithMany().HasForeignKey(menuRow => menuRow.CatalogItemId).OnDelete(DeleteBehavior.Restrict);
   }
 }
