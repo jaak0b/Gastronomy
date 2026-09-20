@@ -226,6 +226,10 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     weighing a fix's cost against its value, stop: that trade-off is the owner's, so it becomes an
     Owner-waived item, not a silent drop. Single-file changes are exempt.
 
+    **The review covers names.** The reviewer reads every new or renamed method, type and property
+    cold, states what it does from the name alone, and reports as a finding any name that needs the
+    body, or a comment, to be understood.
+
 15. **Subagent discipline.** Give every subagent a correct, specific title, and dispatch every one of
     them in the background so the owner is never blocked waiting. The main agent edits repository files
     itself when the change is small and self-contained, meaning a handful of lines across one or two
@@ -341,6 +345,12 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
     and the result, in the domain's words, in every language and layer. **One concept has one word:**
     the part of an order that belongs to one station is a `StationOrder` in code, and a collection of
     them is `stationOrders`, never a second word for the same thing.
+    - **A name must survive being read alone.** Read it with no body and say what goes in and what
+      comes back; if that takes a guess, the name is wrong. A check that answers yes or no is written
+      as the question it asks (`IsTheNameAlreadyTakenAsync`, `HasOpenItems`), never as a noun for its
+      answer. A method that produces something is named after what it produces
+      (`BuildNameTakenProblem`). Never an invented noun for a return value (`refusal`, `result`,
+      `response`), and never an action verb for a method that only answers.
     - Methods start with a verb that says what happens (`Load`, `Find`, `Build`, `Read`, `Count`,
       `Push`, `Split`), and the name carries the subject, not only the parameters:
       `LoadOwnersAsync(items)`, never `OwnersOfAsync(items)`.
