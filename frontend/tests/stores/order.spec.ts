@@ -93,7 +93,14 @@ describe('an order in progress that could not be read back', () => {
   it('is not reported when the order in progress came back in full', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[]}',
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [],
+      }),
     )
 
     const order = useOrderStore()
@@ -547,6 +554,7 @@ describe('an order the page was still sending when it was loaded again', () => {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
       JSON.stringify({
+        festivalId: null,
         tableName: 'Tisch 4',
         note: null,
         lines: [
@@ -555,6 +563,7 @@ describe('an order the page was still sending when it was loaded again', () => {
             note: null,
             stationId: 'station-bar',
             name: 'Wasser',
+            stationName: 'Bar',
           },
         ],
         clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
@@ -897,7 +906,7 @@ describe('an order the laptop refused because an item sold out', () => {
   })
 
   it('asks the catalogue for a fresh line without holding up the refusal', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     setActivePinia(createPinia())
     const askedPaths: string[] = []
     vi.stubGlobal(
@@ -1250,9 +1259,10 @@ describe('an order sent from a phone the laptop no longer knows', () => {
 
   function anOrderOnThePhone(): void {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 5',
       note: null,
-      lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' }],
+      lines: [{ catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser', stationName: 'Bar' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
     })

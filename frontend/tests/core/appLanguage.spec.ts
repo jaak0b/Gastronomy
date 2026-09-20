@@ -40,4 +40,11 @@ describe('the language a device starts in', () => {
 
     expect(initialLanguage()).toBe('en')
   })
+
+  it('falls back to the browser language when the stored value is not one of the two', () => {
+    withTheBrowserLanguage('fr-FR')
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, '{"language":"de"}')
+
+    expect(initialLanguage()).toBe('en')
+  })
 })

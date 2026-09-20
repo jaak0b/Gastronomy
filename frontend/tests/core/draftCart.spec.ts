@@ -134,44 +134,6 @@ describe('restoreDraft', () => {
     expect(restoration.outcome).toBe('unreadableDraftDiscarded')
   })
 
-  it('reads a draft written before lines carried a name without crashing', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null}]}',
-    )
-
-    const restoration = restoreDraft()
-
-    expect(restoration.draft.lines).toEqual([
-      {
-        catalogItemId: 'item-1',
-        note: null,
-        stationId: null,
-        name: '',
-        stationName: '',
-      },
-    ])
-  })
-
-  it('reads a draft written while lines still carried a price, and leaves the price behind', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[{"catalogItemId":"item-1","note":null,"stationId":null,"name":"Bratwurst","unitPriceCents":350}]}',
-    )
-
-    const restoration = restoreDraft()
-
-    expect(restoration.draft.lines).toEqual([
-      {
-        catalogItemId: 'item-1',
-        note: null,
-        stationId: null,
-        name: 'Bratwurst',
-        stationName: '',
-      },
-    ])
-  })
-
   it('reports a stored draft whose lines are unreadable as thrown away', () => {
     localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":"Tisch 12","lines":[{"note":"ohne Eis"}]}')
 
@@ -335,36 +297,6 @@ describe('draft mutators', () => {
       'station-kueche': 'asItComes',
       'station-theke': 'together',
     })
-  })
-})
-
-describe('a stored draft whose delivery choice cannot be read', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('comes back with no delivery choice rather than being thrown away', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[],"deliveryModes":{"station-kueche":"whenever"}}',
-    )
-
-    const restoration = restoreDraft()
-
-    expect(restoration.outcome).toBe('restored')
-    expect(restoration.draft.deliveryModes).toEqual({})
-  })
-
-  it('reads a draft written before the delivery choice existed', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      '{"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[]}',
-    )
-
-    const restoration = restoreDraft()
-
-    expect(restoration.outcome).toBe('restored')
-    expect(restoration.draft.deliveryModes).toEqual({})
   })
 })
 
@@ -566,26 +498,6 @@ describe('the station name a line keeps', () => {
 
     expect(restoreDraft().draft.lines[0].stationName).toBe('Küche')
   })
-
-  it('is empty on an order stored before lines kept it, and that order still loads', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      JSON.stringify({
-        tableName: 'Tisch 12',
-        note: null,
-        clientOrderId: null,
-        deliveryModes: {},
-        lines: [
-          { catalogItemId: 'item-1', note: null, stationId: 'station-kueche', name: 'Bratwurst' },
-        ],
-      }),
-    )
-
-    const restoration = restoreDraft()
-
-    expect(restoration.outcome).toBe('restored')
-    expect(restoration.draft.lines[0].stationName).toBe('')
-  })
 })
 
 describe('the festival a draft belongs to', () => {
@@ -593,21 +505,6 @@ describe('the festival a draft belongs to', () => {
     saveDraft({ ...emptyDraft(), festivalId: 'fest-1', tableName: 'Tisch 4' })
 
     expect(restoreDraft().draft.festivalId).toBe('fest-1')
-  })
-
-  it('is read as none when the stored order names no festival', () => {
-    localStorage.setItem(
-      DRAFT_STORAGE_KEY,
-      JSON.stringify({
-        tableName: 'Tisch 12',
-        note: null,
-        clientOrderId: null,
-        deliveryModes: {},
-        lines: [],
-      }),
-    )
-
-    expect(restoreDraft().draft.festivalId).toBeNull()
   })
 
   it('is stamped on the draft and kept in storage', () => {
@@ -623,5 +520,307 @@ describe('the festival a draft belongs to', () => {
     expect(draftIsForAnotherFestival(draft, 'fest-2')).toBe(true)
     expect(draftIsForAnotherFestival(draft, null)).toBe(true)
     expect(draftIsForAnotherFestival(draft, 'fest-1')).toBe(false)
+  })
+})
+
+describe('a stored draft this build cannot read', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('is thrown away when it misses the delivery choice field this build writes', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      '{"festivalId":null,"tableName":"Tisch 12","note":null,"clientOrderId":null,"lines":[]}',
+    )
+
+    expect(restoreDraft()).toEqual({
+      outcome: 'unreadableDraftDiscarded',
+      draft: emptyDraft(),
+    })
+  })
+
+  it('is thrown away when a line carries a field this build does not know', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [
+          {
+            catalogItemId: 'item-1',
+            note: null,
+            stationId: null,
+            name: 'Bratwurst',
+            stationName: '',
+            unitPriceCents: 350,
+          },
+        ],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when a line misses the name it was added under', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [{ catalogItemId: 'item-1', note: null, stationId: null, stationName: '' }],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when a field holds another type than the one this build writes', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: 7,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: {},
+        lines: [],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when the delivery choice names a mode this build no longer has', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: { 'station-kueche': 'whenever' },
+        lines: [],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when the delivery choice is a list instead of a map', () => {
+    localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        festivalId: null,
+        tableName: 'Tisch 12',
+        note: null,
+        clientOrderId: null,
+        deliveryModes: [],
+        lines: [],
+      }),
+    )
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('is thrown away when the stored value is an array', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, '[]')
+
+    expect(restoreDraft().outcome).toBe('unreadableDraftDiscarded')
+  })
+
+  it('leaves storage clean, so the next load starts on an empty order', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, '{"tableName":"Tisch 12","lines":[]}')
+
+    restoreDraft()
+
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull()
+  })
+})
+
+describe('a stored send record this build cannot read', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('is thrown away when the request it carries misses fields of a request', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'failed',
+        attempts: 1,
+        failure: null,
+        unresolvedAttempt: {
+          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+          tableName: 'Tisch 5',
+          items: [],
+        },
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+    expect(restoreSendProgress().unresolvedAttempt).toBeNull()
+  })
+
+  it('is thrown away when an item of the carried request holds another type than a request does', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'failed',
+        attempts: 1,
+        failure: null,
+        unresolvedAttempt: {
+          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+          tableName: 'Tisch 5',
+          note: null,
+          items: [
+            {
+              catalogItemId: 'item-wasser',
+              unitPriceCents: '350',
+              note: null,
+              stationId: null,
+              settlement: null,
+            },
+          ],
+          deliveryModes: [],
+        },
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when an item of the carried request settles a line in an unknown shape', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'failed',
+        attempts: 1,
+        failure: null,
+        unresolvedAttempt: {
+          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+          tableName: 'Tisch 5',
+          note: null,
+          items: [
+            {
+              catalogItemId: 'item-wasser',
+              unitPriceCents: 200,
+              note: null,
+              stationId: null,
+              settlement: { paidPriceCents: 200 },
+            },
+          ],
+          deliveryModes: [],
+        },
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when a carried delivery mode is not one this build has', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'failed',
+        attempts: 1,
+        failure: null,
+        unresolvedAttempt: {
+          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+          tableName: 'Tisch 5',
+          note: null,
+          items: [],
+          deliveryModes: [{ stationId: 'station-kueche', deliveryMode: 'whenever' }],
+        },
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when the reason fills its sentence with a value this build cannot read', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'rejected',
+        attempts: 1,
+        failure: {
+          key: 'catalog.itemSoldOut',
+          parameters: { name: { text: 'Wasser' }, catalogItemId: 'item-wasser' },
+        },
+        unresolvedAttempt: null,
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when the reason has no key', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'rejected',
+        attempts: 1,
+        failure: { parameters: { name: 'Wasser' } },
+        unresolvedAttempt: null,
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when the reason fills its sentence with a list instead of named values', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'rejected',
+        attempts: 1,
+        failure: { key: 'catalog.itemSoldOut', parameters: ['Wasser', 'item-wasser'] },
+        unresolvedAttempt: null,
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when the number of attempts is not a count', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'failed',
+        attempts: -1,
+        failure: null,
+        unresolvedAttempt: {
+          clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
+          tableName: 'Tisch 5',
+          note: null,
+          items: [],
+          deliveryModes: [],
+        },
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
+  })
+
+  it('is thrown away when it carries a field this build does not know', () => {
+    localStorage.setItem(
+      SEND_PROGRESS_STORAGE_KEY,
+      JSON.stringify({
+        state: 'rejected',
+        attempts: 1,
+        failure: { key: 'order.unknownItem' },
+        unresolvedAttempt: null,
+        answeredAtUtc: '2026-01-01T00:00:00Z',
+      }),
+    )
+
+    expect(restoreSendProgress().state).toBe('idle')
   })
 })

@@ -82,6 +82,14 @@ describe('the shell boot script', () => {
     expect(navigated).toEqual(['/door.html?n=10&v=build-a'])
   })
 
+  it('waits for the start button when the stored anchor is not the one the door writes', () => {
+    const storage: TheStorage = new Map([['theDoorAnchor', '{"opened":true}']])
+
+    const { navigated } = runTheBoot('/', storage)
+
+    expect(navigated).toEqual([])
+  })
+
   it('stays put when the door just handed the app over', () => {
     const storage: TheStorage = new Map([
       ['theDoorAnchor', 'yes'],
@@ -113,6 +121,13 @@ describe('the start button', () => {
     sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, 'yes')
 
     expect(needsTheDoorOpened()).toBe(false)
+  })
+
+  it('is asked for when the stored answer is not the one the door writes', async () => {
+    const { needsTheDoorOpened, THE_DOOR_ANCHOR_KEY } = await import('../../src/router')
+    sessionStorage.setItem(THE_DOOR_ANCHOR_KEY, '{"opened":true}')
+
+    expect(needsTheDoorOpened()).toBe(true)
   })
 
   it('is marked with a target the boot script can use', async () => {

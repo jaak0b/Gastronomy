@@ -66,7 +66,7 @@ function addABratwurst(order: ReturnType<typeof useOrderStore>): void {
 
 describe('the order on the phone and the festival that is running', () => {
   beforeEach(() => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     setActivePinia(createPinia())
   })
 

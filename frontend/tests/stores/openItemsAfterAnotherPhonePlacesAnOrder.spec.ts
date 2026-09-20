@@ -92,7 +92,7 @@ describe('the open list on a phone while another phone places an order', () => {
         )
       }),
     )
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'
     const openItems = useOpenItemsStore()
     openItems.listen()

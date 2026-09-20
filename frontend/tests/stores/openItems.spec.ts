@@ -80,7 +80,7 @@ function jsonOf(payload: unknown, status = 200): () => Response {
 
 async function storeWithTheOpenList(replies: (() => Response)[]) {
   const calls = answerWith([jsonOf(OPEN_LIST), ...replies])
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = 'de'
@@ -114,7 +114,7 @@ describe('the list of what the tables still owe', () => {
 
   it('fetches the table names for the ordering screen on their own address', async () => {
     const calls = answerWith([jsonOf({ tableNames: ['Tisch 12', 'Tisch 3'] })])
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'
     const openItems = useOpenItemsStore()
 
@@ -126,7 +126,7 @@ describe('the list of what the tables still owe', () => {
 
   it('says how many items are missing from the list, so nothing disappears in silence', async () => {
     answerWith([jsonOf({ tables: [], itemsWithoutAnOrderCount: 2 })])
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'
     const openItems = useOpenItemsStore()
 
@@ -141,7 +141,7 @@ describe('the list of what the tables still owe', () => {
         throw new TypeError('the laptop cannot be reached')
       },
     ])
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     useSessionStore().deviceToken = 'token-here'
     const openItems = useOpenItemsStore()
 
@@ -278,7 +278,7 @@ describe('settling what the waiter ticked', () => {
             }),
         ),
       )
-      localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+      localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
       useSessionStore().deviceToken = 'token-here'
       const openItems = useOpenItemsStore()
       openItems.tables = OPEN_LIST.tables

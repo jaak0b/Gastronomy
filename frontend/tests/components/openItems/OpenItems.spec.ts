@@ -130,7 +130,7 @@ function lineOf(
 }
 
 async function mountScreen() {
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = 'de'
@@ -283,7 +283,7 @@ describe('the screen that shows what the tables still owe', () => {
 
   it('claims nothing about the tables before the first list has arrived', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     const session = useSessionStore()
     session.deviceToken = 'token-here'
     session.language = 'de'

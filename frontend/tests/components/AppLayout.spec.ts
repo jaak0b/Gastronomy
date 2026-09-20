@@ -45,7 +45,7 @@ describe('where a notice sits on the screen', () => {
   })
 
   it('stands in the page rather than behind the fixed row of buttons', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     navigate('/')
     const app = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()
@@ -69,7 +69,7 @@ describe('where the app bar stands', () => {
   })
 
   async function mountAppAt(path: string) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     navigate(path)
     const app = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
     await flushPromises()

@@ -35,7 +35,7 @@ function laptopAnswers(payload: unknown) {
 
 describe('the catalog on the phone', () => {
   beforeEach(() => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
     setActivePinia(createPinia())
   })
 

@@ -780,10 +780,17 @@ describe('an order the laptop refused after an attempt it never answered', () =>
 
   function anOrderTheLaptopMayAlreadyHold() {
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 3',
       note: null,
       lines: [
-        { catalogItemId: WASSER.id, note: null, stationId: 'station-bar', name: WASSER.name },
+        {
+          catalogItemId: WASSER.id,
+          note: null,
+          stationId: 'station-bar',
+          name: WASSER.name,
+          stationName: 'Bar',
+        },
       ],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},

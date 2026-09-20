@@ -76,7 +76,7 @@ function aLaptopThatCannotBeReached(): void {
 
 function aDeviceThatWasSetUpEarlier() {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, 'de')
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-issued')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-issued')
   navigate('/')
   device = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
   return device

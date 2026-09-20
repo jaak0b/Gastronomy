@@ -15,7 +15,7 @@ describe('an answer of a kind the phone has no handler for', () => {
   })
 
   it('is refused loudly when the phone asks the laptop whose phone it is', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-issued')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-issued')
     const session = useSessionStore()
 
     await expect(session.loadSession()).rejects.toThrow()

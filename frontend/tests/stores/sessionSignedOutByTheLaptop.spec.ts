@@ -23,12 +23,12 @@ function aLaptopThatKnowsTheTablet(): void {
 }
 
 async function aTabletListeningForTheLaptop() {
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-tablet')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
   aLaptopThatKnowsTheTablet()
   const session = useSessionStore()
   session.watchForBeingSignedOut()
   await session.loadSession()
-  await useConnectionStore().connect({ deviceToken: 'token-of-the-tablet' })
+  await useConnectionStore().connect({ deviceToken: 'lookup.of-the-tablet' })
   return session
 }
 
@@ -57,30 +57,30 @@ describe('a device the laptop says is no longer set up', () => {
 
     fireHubEvent('DeviceRevoked', { deviceId: 'device-of-somebody-elses-phone' })
 
-    expect(session.deviceToken).toBe('token-of-the-tablet')
-    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('token-of-the-tablet')
+    expect(session.deviceToken).toBe('lookup.of-the-tablet')
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('lookup.of-the-tablet')
   })
 
   it('leaves the newer setup of the same browser in storage when it signs itself out', async () => {
     const session = await aTabletListeningForTheLaptop()
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-phone')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-phone')
 
     fireHubEvent('DeviceRevoked', { deviceId: 'device-of-the-tablet' })
 
     expect(session.deviceToken).toBeNull()
-    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('token-of-the-phone')
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('lookup.of-the-phone')
   })
 
   it('asks the laptop what became of it when it has not heard which device it is yet', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-tablet')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
     aLaptopThatKnowsTheTablet()
     const session = useSessionStore()
     session.watchForBeingSignedOut()
-    await useConnectionStore().connect({ deviceToken: 'token-of-the-tablet' })
+    await useConnectionStore().connect({ deviceToken: 'lookup.of-the-tablet' })
 
     fireHubEvent('DeviceRevoked', { deviceId: 'device-of-the-tablet' })
 
     await vi.waitFor(() => expect(session.deviceId).toBe('device-of-the-tablet'))
-    expect(session.deviceToken).toBe('token-of-the-tablet')
+    expect(session.deviceToken).toBe('lookup.of-the-tablet')
   })
 })

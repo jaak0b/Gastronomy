@@ -1,8 +1,12 @@
+import { z } from 'zod'
 import type {
   DeliveryMode,
   DraftLine,
   DraftOrder,
+  OrderSettlementLine,
+  OrderSubmitItem,
   OrderSubmitRequest,
+  StationDeliveryMode,
 } from './apiTypes'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
@@ -10,7 +14,70 @@ import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
 export const DRAFT_STORAGE_KEY = 'draftOrder'
 export const SEND_PROGRESS_STORAGE_KEY = 'draftOrderSend'
 
-const DELIVERY_MODES: DeliveryMode[] = ['together', 'asItComes']
+const DELIVERY_MODES = ['together', 'asItComes'] as const
+
+const deliveryModeSchema = z.enum(DELIVERY_MODES)
+
+const draftLineSchema: z.ZodType<DraftLine> = z.strictObject({
+  catalogItemId: z.string(),
+  note: z.string().nullable(),
+  stationId: z.string().nullable(),
+  name: z.string(),
+  stationName: z.string(),
+})
+
+const draftOrderSchema: z.ZodType<DraftOrder> = z.strictObject({
+  festivalId: z.string().nullable(),
+  tableName: z.string(),
+  note: z.string().nullable(),
+  lines: z.array(draftLineSchema),
+  clientOrderId: z.string().nullable(),
+  deliveryModes: z.record(z.string(), deliveryModeSchema),
+})
+
+const sendFailureSchema: z.ZodType<SendFailureMessage> = z.strictObject({
+  key: z.string(),
+  parameters: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+})
+
+const settlementLineSchema: z.ZodType<OrderSettlementLine> = z.strictObject({
+  paidPriceCents: z.number().int().nonnegative(),
+  paymentNotice: z.string().nullable(),
+})
+
+const submitItemSchema: z.ZodType<OrderSubmitItem> = z.strictObject({
+  catalogItemId: z.string(),
+  unitPriceCents: z.number().int().nonnegative(),
+  note: z.string().nullable(),
+  stationId: z.string().nullable(),
+  settlement: settlementLineSchema.nullable(),
+})
+
+const stationDeliveryModeSchema: z.ZodType<StationDeliveryMode> = z.strictObject({
+  stationId: z.string(),
+  deliveryMode: deliveryModeSchema,
+})
+
+const submitRequestSchema: z.ZodType<OrderSubmitRequest> = z.strictObject({
+  clientOrderId: z.string(),
+  tableName: z.string(),
+  note: z.string().nullable(),
+  items: z.array(submitItemSchema),
+  deliveryModes: z.array(stationDeliveryModeSchema),
+})
+
+const sendProgressSchema: z.ZodType<SendProgress> = z
+  .strictObject({
+    state: z.enum(SEND_STATES),
+    attempts: z.number().int().nonnegative(),
+    failure: sendFailureSchema.nullable(),
+    unresolvedAttempt: submitRequestSchema.nullable(),
+  })
+  .refine(
+    (progress) =>
+      progress.unresolvedAttempt !== null ||
+      (progress.state !== 'sending' && progress.state !== 'failed'),
+  )
 
 export function emptyDraft(): DraftOrder {
   return {
@@ -23,64 +90,6 @@ export function emptyDraft(): DraftOrder {
   }
 }
 
-function toDeliveryModes(value: unknown): Record<string, DeliveryMode> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return {}
-  }
-  const readable: Record<string, DeliveryMode> = {}
-  for (const [stationId, mode] of Object.entries(value as Record<string, unknown>)) {
-    const known = DELIVERY_MODES.find((candidate) => candidate === mode)
-    if (known !== undefined) {
-      readable[stationId] = known
-    }
-  }
-  return readable
-}
-
-function toDraftLine(value: unknown): DraftLine | null {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
-  const candidate = value as Record<string, unknown>
-  if (typeof candidate.catalogItemId !== 'string') {
-    return null
-  }
-  return {
-    catalogItemId: candidate.catalogItemId,
-    note: typeof candidate.note === 'string' ? candidate.note : null,
-    stationId:
-      typeof candidate.stationId === 'string' ? candidate.stationId : null,
-    name: typeof candidate.name === 'string' ? candidate.name : '',
-    stationName: typeof candidate.stationName === 'string' ? candidate.stationName : '',
-  }
-}
-
-function toDraftOrder(value: unknown): DraftOrder | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return null
-  }
-  const candidate = value as Record<string, unknown>
-  if (typeof candidate.tableName !== 'string' || !Array.isArray(candidate.lines)) {
-    return null
-  }
-  const lines: DraftLine[] = []
-  for (const entry of candidate.lines) {
-    const line = toDraftLine(entry)
-    if (line === null) {
-      return null
-    }
-    lines.push(line)
-  }
-  return {
-    festivalId: typeof candidate.festivalId === 'string' ? candidate.festivalId : null,
-    tableName: candidate.tableName,
-    note: typeof candidate.note === 'string' ? candidate.note : null,
-    lines,
-    clientOrderId: typeof candidate.clientOrderId === 'string' ? candidate.clientOrderId : null,
-    deliveryModes: toDeliveryModes(candidate.deliveryModes),
-  }
-}
-
 export type DraftRestoration =
   | { outcome: 'nothingStored'; draft: DraftOrder }
   | { outcome: 'restored'; draft: DraftOrder }
@@ -88,7 +97,8 @@ export type DraftRestoration =
 
 function parsedDraft(stored: string): DraftOrder | null {
   try {
-    return toDraftOrder(JSON.parse(stored))
+    const parsed = draftOrderSchema.safeParse(JSON.parse(stored))
+    return parsed.success ? parsed.data : null
   } catch {
     return null
   }
@@ -132,74 +142,14 @@ export function clearDraft(): void {
   localStorage.removeItem(SEND_PROGRESS_STORAGE_KEY)
 }
 
-function toFailureParameters(value: unknown): Record<string, string | number> | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return undefined
-  }
-  const entries = Object.entries(value as Record<string, unknown>).filter(
-    (entry): entry is [string, string | number] =>
-      typeof entry[1] === 'string' || typeof entry[1] === 'number',
-  )
-  return entries.length === 0 ? undefined : Object.fromEntries(entries)
-}
-
-function toSendFailureMessage(value: unknown): SendFailureMessage | null {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
-  const candidate = value as Record<string, unknown>
-  if (typeof candidate.key !== 'string') {
-    return null
-  }
-  const parameters = toFailureParameters(candidate.parameters)
-  return parameters === undefined ? { key: candidate.key } : { key: candidate.key, parameters }
-}
-
-function toUnresolvedAttempt(value: unknown): OrderSubmitRequest | null | undefined {
-  if (value === null || value === undefined) {
-    return null
-  }
-  if (typeof value !== 'object' || Array.isArray(value)) {
-    return undefined
-  }
-  const candidate = value as Record<string, unknown>
-  if (typeof candidate.clientOrderId !== 'string' || !Array.isArray(candidate.items)) {
-    return undefined
-  }
-  return candidate as unknown as OrderSubmitRequest
-}
-
-function toSendProgress(value: unknown): SendProgress | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return null
-  }
-  const candidate = value as Record<string, unknown>
-  const state = SEND_STATES.find((known) => known === candidate.state)
-  if (state === undefined || typeof candidate.attempts !== 'number') {
-    return null
-  }
-  const unresolvedAttempt = toUnresolvedAttempt(candidate.unresolvedAttempt)
-  if (unresolvedAttempt === undefined) {
-    return null
-  }
-  if (unresolvedAttempt === null && (state === 'sending' || state === 'failed')) {
-    return null
-  }
-  return {
-    state,
-    attempts: candidate.attempts,
-    failure: toSendFailureMessage(candidate.failure),
-    unresolvedAttempt,
-  }
-}
-
 export function restoreSendProgress(): SendProgress {
   const stored = localStorage.getItem(SEND_PROGRESS_STORAGE_KEY)
   if (stored === null) {
     return noSendProgress()
   }
   try {
-    return toSendProgress(JSON.parse(stored)) ?? noSendProgress()
+    const parsed = sendProgressSchema.safeParse(JSON.parse(stored))
+    return parsed.success ? parsed.data : noSendProgress()
   } catch {
     return noSendProgress()
   }

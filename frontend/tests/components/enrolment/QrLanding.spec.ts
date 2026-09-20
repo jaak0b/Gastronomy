@@ -176,7 +176,7 @@ describe('landing on a QR code link', () => {
   })
 
   it('offers to carry on when the phone is already set up', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-already-here')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.already-here')
     answerWith(410, { code: 'EnrolmentCodeNoLongerValid', messageKey: 'enrolment.codeNoLongerValid' })
 
     const landing = mountLanding()

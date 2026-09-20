@@ -10,6 +10,7 @@ import type {
   StationIdentity,
 } from '../core/apiTypes'
 import { assertNever } from '../core/assertNever'
+import { deviceTokenIsWellFormed } from '../core/deviceToken'
 import type { DeviceSession } from '../core/landing'
 import type { StartingUpFailure } from '../core/startingUp'
 import { useConnectionStore } from './connection'
@@ -23,8 +24,20 @@ export interface RedeemInput {
   name?: string
 }
 
+function storedDeviceToken(): string | null {
+  const stored = localStorage.getItem(TOKEN_STORAGE_KEY)
+  if (stored === null) {
+    return null
+  }
+  if (!deviceTokenIsWellFormed(stored)) {
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    return null
+  }
+  return stored
+}
+
 export const useSessionStore = defineStore('session', () => {
-  const deviceToken = ref<string | null>(localStorage.getItem(TOKEN_STORAGE_KEY))
+  const deviceToken = ref<string | null>(storedDeviceToken())
   const staffMember = ref<StaffMember | null>(null)
   const station = ref<StationIdentity | null>(null)
   const language = ref<AppLanguage>(initialLanguage())
@@ -99,7 +112,7 @@ export const useSessionStore = defineStore('session', () => {
         code: input.code ?? null,
         name: input.name ?? null,
         userAgent: navigator.userAgent,
-        previousDeviceToken: localStorage.getItem(TOKEN_STORAGE_KEY),
+        previousDeviceToken: storedDeviceToken(),
       },
     })
     switch (result.kind) {

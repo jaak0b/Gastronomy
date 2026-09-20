@@ -62,7 +62,7 @@ function aLaptopThatTurnsTheTabletIntoAPhone(): unknown[] {
 }
 
 async function aTabletThatScansAWaiterCode() {
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-tablet')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
   const bodies = aLaptopThatTurnsTheTabletIntoAPhone()
   navigate('/j/CODE')
   device = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
@@ -104,7 +104,7 @@ describe('a browser that is already set up and scans a second QR code', () => {
         code: 'CODE',
         name: null,
         userAgent: navigator.userAgent,
-        previousDeviceToken: 'token-of-the-tablet',
+        previousDeviceToken: 'lookup.of-the-tablet',
       },
     ])
   })

@@ -15,7 +15,7 @@ describe('a device the laptop refuses while it starts, with its token still in p
   })
 
   it('offers to ask the laptop again instead of waiting for an answer that will not come', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-issued')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-issued')
     const session = useSessionStore()
 
     await session.loadSession()

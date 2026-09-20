@@ -123,7 +123,7 @@ describe('the token a browser gives up when it redeems a code', () => {
   }
 
   it('is the one in the browser storage, so the laptop can retire it', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-of-the-tablet')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.of-the-tablet')
     const bodies = aLaptopThatTakesTheCode()
 
     await useSessionStore().redeem({ code: 'abc123' })
@@ -133,7 +133,7 @@ describe('the token a browser gives up when it redeems a code', () => {
         code: 'abc123',
         name: null,
         userAgent: navigator.userAgent,
-        previousDeviceToken: 'token-of-the-tablet',
+        previousDeviceToken: 'lookup.of-the-tablet',
       },
     ])
   })
@@ -154,11 +154,12 @@ describe('a phone the laptop does not know any more', () => {
   }
 
   async function anOrderRefusedBecauseTheTokenIsUnknown() {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 12',
       note: null,
-      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst' }],
+      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
     })
@@ -200,11 +201,12 @@ describe('a phone that is signed out while a reason stands on the order screen',
   })
 
   async function aPhoneSignedOutWhileTheOrderScreenNamedAReason() {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 12',
       note: null,
-      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst' }],
+      lines: [{ catalogItemId: 'item-1', note: null, stationId: null, name: 'Bratwurst', stationName: '' }],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
     })
@@ -248,5 +250,70 @@ describe('a phone that is signed out while a reason stands on the order screen',
 
     expect(order.draft.lines).toHaveLength(1)
     expect(order.draft.clientOrderId).toBe('c0ffee00-1111-4111-8111-111111111111')
+  })
+})
+
+describe('a stored device token the laptop can never have issued', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is thrown away when it is JSON another build left behind, and the phone asks to be set up', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, '{"deviceToken":"from-an-old-build"}')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBeNull()
+    expect(session.deviceSession).toEqual({ state: 'notSetUp' })
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('is thrown away when it is empty', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, '')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBeNull()
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('is thrown away when it does not carry a lookup id and a secret', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-from-an-old-build')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBeNull()
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('is thrown away when it carries no lookup id', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, '.secret')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBeNull()
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('is thrown away when it carries no secret', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup-id.')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBeNull()
+    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('is kept when it has the shape the laptop issues', () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup-id.secret')
+
+    const session = useSessionStore()
+
+    expect(session.deviceToken).toBe('lookup-id.secret')
   })
 })

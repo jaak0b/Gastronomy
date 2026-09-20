@@ -15,7 +15,8 @@
     "pinia": "^4.0.3",
     "vue": "^3.5.41",
     "vue-i18n": "^11.4.10",
-    "vuetify": "^4.1.12"
+    "vuetify": "^4.1.12",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

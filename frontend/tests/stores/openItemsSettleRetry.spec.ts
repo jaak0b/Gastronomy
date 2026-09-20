@@ -89,7 +89,7 @@ function theWifiDrops(): () => Response {
 }
 
 async function theTableWithTwoItems() {
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-here')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
   session.language = 'de'

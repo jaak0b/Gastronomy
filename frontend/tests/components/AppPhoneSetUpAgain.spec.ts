@@ -67,7 +67,7 @@ function aLaptopThatForgotThisPhoneAfterItStarted(): void {
 }
 
 async function aPhoneOnTheSummaryWithAnOrderOnIt() {
-  localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+  localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
   aLaptopThatForgotThisPhoneAfterItStarted()
   navigate('/review')
   phone = mount(App, { global: { plugins: testPlugins() }, attachTo: document.body })
@@ -131,7 +131,7 @@ describe('a waiter who sends an order from a phone that was set up again while t
 
 describe('a phone whose waiter was set up again while the phone was switched off', () => {
   it('asks to be set up again as soon as the laptop refuses the check the app makes at the start', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('{}', { status: 401 })),
@@ -171,12 +171,19 @@ describe('a phone that is set up again after the laptop refused the order it was
 
 describe('a waiter whose order was already frozen when the phone was set up again', () => {
   async function aFrozenOrderTheLaptopRefusesBecauseItForgotThePhone() {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'token-the-laptop-forgot')
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.the-laptop-forgot')
     saveDraft({
+      festivalId: null,
       tableName: 'Tisch 5',
       note: null,
       lines: [
-        { catalogItemId: 'item-wasser', note: null, stationId: 'station-bar', name: 'Wasser' },
+        {
+          catalogItemId: 'item-wasser',
+          note: null,
+          stationId: 'station-bar',
+          name: 'Wasser',
+          stationName: 'Bar',
+        },
       ],
       clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
       deliveryModes: {},
