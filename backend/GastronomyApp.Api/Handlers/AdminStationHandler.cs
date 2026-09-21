@@ -1,8 +1,7 @@
 using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -41,7 +40,7 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(request.Name, request.SortOrder, cancellationToken);
 
     if (!created.IsSuccess)
       return RefusalFor(created.Failure);
@@ -55,7 +54,7 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, _mapper.Map<SaveStationDetailsRequest>(request), cancellationToken);
+    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, request.Name, request.SortOrder, cancellationToken);
 
     return await AnsweredAsync(updated, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
   }

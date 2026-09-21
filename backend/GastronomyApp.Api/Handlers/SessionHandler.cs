@@ -1,12 +1,12 @@
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Api.Values;
+using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
-using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api.Handlers;
 

@@ -1,12 +1,10 @@
 ﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Core.Requests;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
-using MapsterMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -16,19 +14,17 @@ public sealed class OrderItemSettlementHandler
 {
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly ILogger<OrderItemSettlementHandler> _logger;
-  private readonly IMapper _mapper;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly SavedChangeAnnouncer _savedChangeAnnouncer;
   private readonly OrderItemSettlementService _settlementService;
 
-  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncer savedChangeAnnouncer, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger, IMapper mapper)
+  public OrderItemSettlementHandler(OrderItemSettlementService settlementService, SavedChangeAnnouncer savedChangeAnnouncer, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderItemSettlementHandler> logger)
   {
     _settlementService = settlementService;
     _savedChangeAnnouncer = savedChangeAnnouncer;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
     _logger = logger;
-    _mapper = mapper;
   }
 
   public async Task<IResult> SettleAsync(SettleItemsRequest request, StaffDeviceCaller caller, CancellationToken cancellationToken)
@@ -36,7 +32,7 @@ public sealed class OrderItemSettlementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<SettlementResult, SettlementFailure> settlement = await _settlementService.SettleAsync(BuildSettlementRequest(request, caller), cancellationToken);
+    Result<SettlementResult, SettlementFailure> settlement = await _settlementService.SettleAsync(request.Lines ?? [], caller.StaffMemberId, cancellationToken);
 
     if (!settlement.IsSuccess)
     {
@@ -55,15 +51,6 @@ public sealed class OrderItemSettlementHandler
     var otherPhonesWereTold = settledIds.Count == 0 || await TellTheOtherPhonesAsync(settledIds, settlement.Value.SettledTableNames);
 
     return Results.Ok(new SettlementView(settledIds, reappliedIds, alreadySettledByOthersIds, otherPhonesWereTold));
-  }
-
-  private SettlementRequest BuildSettlementRequest(SettleItemsRequest request, StaffDeviceCaller caller)
-  {
-    return new()
-           {
-             Lines = _mapper.Map<IReadOnlyList<SettlementLine>>(request.Lines ?? []),
-             SettledByStaffMemberId = caller.StaffMemberId
-           };
   }
 
   private Task<bool> TellTheOtherPhonesAsync(IReadOnlyList<Guid> settledIds, IReadOnlyList<string> tableNames)

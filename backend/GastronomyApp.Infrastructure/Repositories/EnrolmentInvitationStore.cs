@@ -1,8 +1,7 @@
 using System.Security.Cryptography;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
@@ -79,9 +78,9 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                        cancellationToken);
   }
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
+  public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(request, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(code, name, userAgent, acceptLanguageHeader, transactionCancellationToken), cancellationToken);
   }
 
   public async Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken)
@@ -97,7 +96,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       invitation.ConsumedAtUtc = consumedAtUtc;
   }
 
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
+  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
     var now = _clock.UtcNow;
     var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
@@ -108,7 +107,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     if (invitation.ExpiresAtUtc <= now)
       return Rejected(EnrolmentRedemptionOutcome.CodeExpired, invitation.Id);
 
-    var qrCodeMatches = _secretHasher.Verify(request.Code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeIterations, invitation.QRCodeAlgorithm);
+    var qrCodeMatches = _secretHasher.Verify(code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeIterations, invitation.QRCodeAlgorithm);
 
     if (!qrCodeMatches)
       return Rejected(EnrolmentRedemptionOutcome.CodeInvalid, invitation.Id);
@@ -117,10 +116,10 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
     if (owner is null)
     {
-      if (string.IsNullOrWhiteSpace(request.Name))
+      if (string.IsNullOrWhiteSpace(name))
         return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation.Id);
 
-      owner = await CreateStaffMemberAsync(request.Name, now, cancellationToken);
+      owner = await CreateStaffMemberAsync(name, now, cancellationToken);
     }
     else
     {
@@ -130,7 +129,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
         return Rejected(OffTheListOutcomeFor(owner.Kind), invitation.Id);
     }
 
-    return await CompleteRedemptionAsync(invitation, owner, request, now, cancellationToken);
+    return await CompleteRedemptionAsync(invitation, owner, userAgent, acceptLanguageHeader, now, cancellationToken);
   }
 
   private EnrolmentRedemptionOutcome OffTheListOutcomeFor(DeviceOwnerKind kind)
@@ -167,9 +166,9 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
            };
   }
 
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation, DeviceOwner owner, EnrolmentRedemptionRequest request, DateTime now, CancellationToken cancellationToken)
+  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation, DeviceOwner owner, string userAgent, string acceptLanguageHeader, DateTime now, CancellationToken cancellationToken)
   {
-    var issued = await _deviceTokenStore.IssueAsync(owner, ResolveLanguage(request.AcceptLanguageHeader), request.UserAgent, cancellationToken);
+    var issued = await _deviceTokenStore.IssueAsync(owner, ResolveLanguage(acceptLanguageHeader), userAgent, cancellationToken);
 
     invitation.ConsumedAtUtc = now;
     invitation.ConsumedByDeviceId = issued.Device.Id;

@@ -1,7 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -46,15 +45,9 @@ public sealed class FestivalMenuServiceTest
   private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
-  public void PutOnTheMenuAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
   public async Task PutOnTheMenuAsync_APriceAboveTheHighestTheFormAccepts_FailsBecauseThePriceIsOutOfRange()
   {
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, BuildRequest(100000, [_kitchenId]), CancellationToken.None);
+    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 100000, [_kitchenId], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -67,7 +60,7 @@ public sealed class FestivalMenuServiceTest
   [Test]
   public async Task PutOnTheMenuAsync_AStationThatIsNotAtTheFestival_NamesTheStationItRefused()
   {
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, BuildRequest(350, [_strangerStationId]), CancellationToken.None);
+    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_strangerStationId], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -80,7 +73,7 @@ public sealed class FestivalMenuServiceTest
   [Test]
   public async Task PutOnTheMenuAsync_NoStationAtAll_FailsBecauseNobodyWouldPrepareTheItem()
   {
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, BuildRequest(350, []), CancellationToken.None);
+    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -92,7 +85,7 @@ public sealed class FestivalMenuServiceTest
   [Test]
   public async Task PutOnTheMenuAsync_AnItemThatIsNotOnTheMenuYet_AddsTheRowAndItsStationAndCommits()
   {
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, BuildRequest(350, [_kitchenId]), CancellationToken.None);
+    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_kitchenId], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -110,11 +103,11 @@ public sealed class FestivalMenuServiceTest
   {
     await _service.PutOnTheMenuAsync(_festivalId,
                                      _bratwurstId,
-                                     BuildRequest(350,
-                                                  [
-                                                    _kitchenId,
-                                                    _kitchenId
-                                                  ]),
+                                     350,
+                                     [
+                                       _kitchenId,
+                                       _kitchenId
+                                     ],
                                      CancellationToken.None);
 
     A.CallTo(() => _repository.AddAssignmentAsync(A<ItemStationAssignment>._, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -126,7 +119,7 @@ public sealed class FestivalMenuServiceTest
     var menuRow = BuildMenuRow(350, true);
     A.CallTo(() => _repository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(menuRow));
 
-    await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, BuildRequest(400, [_kitchenId]), CancellationToken.None);
+    await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 400, [_kitchenId], CancellationToken.None);
 
     Assert.That(menuRow.PriceCents, Is.EqualTo(400));
 
@@ -207,15 +200,6 @@ public sealed class FestivalMenuServiceTest
                       Assert.That(menuRow.IsAvailable, Is.False);
                       Assert.That(_transactionRunner.Committed, Is.True);
                     });
-  }
-
-  private PutOnTheMenuRequest BuildRequest(int priceCents, IReadOnlyList<Guid> stationIds)
-  {
-    return new()
-           {
-             PriceCents = priceCents,
-             StationIds = stationIds
-           };
   }
 
   private FestivalCatalogItem BuildMenuRow(int priceCents, bool isAvailable)

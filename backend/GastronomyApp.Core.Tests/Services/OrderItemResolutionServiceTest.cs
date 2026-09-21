@@ -1,8 +1,8 @@
 using FakeItEasy;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -284,7 +284,7 @@ public sealed class OrderItemResolutionServiceTest
     A.CallTo(() => _catalogItemRepository.FindAssignmentsAsync(A<Guid>._, catalogItemId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<ItemStationAssignment>>(assignments));
   }
 
-  private OrderAcceptanceItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null)
+  private OrderItemRequest ItemFor(Guid catalogItemId, Guid? stationId = null)
   {
     return new()
            {

@@ -1,5 +1,5 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -109,14 +109,7 @@ public sealed class OpenItemRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var olderStationOrderId = Guid.NewGuid();
-    Guid olderOrderId = await PlaceOrderWithItemsAsync(fixture,
-                                                       seeded,
-                                                       "T1",
-                                                       1,
-                                                       _orderedAtUtc,
-                                                       olderStationOrderId,
-                                                       BuildItem(olderStationOrderId, "Bratwurst", 350),
-                                                       BuildItem(olderStationOrderId, "Limonade", 250));
+    var olderOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 1, _orderedAtUtc, olderStationOrderId, BuildItem(olderStationOrderId, "Bratwurst", 350), BuildItem(olderStationOrderId, "Limonade", 250));
 
     var newestStationOrderId = Guid.NewGuid();
     var fulfilledItem = BuildItem(newestStationOrderId, "Bratwurst", 350);
@@ -125,10 +118,10 @@ public sealed class OpenItemRepositoryTest
     settledItem.SettledAtUtc = _orderedAtUtc.AddMinutes(25);
     settledItem.SettledByStaffMemberId = seeded.StaffMemberId;
     settledItem.ChargedPriceCents = 250;
-    Guid newestOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 3, _orderedAtUtc.AddMinutes(15), newestStationOrderId, fulfilledItem, settledItem);
+    var newestOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 3, _orderedAtUtc.AddMinutes(15), newestStationOrderId, fulfilledItem, settledItem);
 
     var sameTimeStationOrderId = Guid.NewGuid();
-    Guid sameTimeOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 2, _orderedAtUtc.AddMinutes(15), sameTimeStationOrderId, BuildItem(sameTimeStationOrderId, "Bier", 300));
+    var sameTimeOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 2, _orderedAtUtc.AddMinutes(15), sameTimeStationOrderId, BuildItem(sameTimeStationOrderId, "Bier", 300));
 
     var otherTableStationOrderId = Guid.NewGuid();
     await PlaceOrderWithItemsAsync(fixture, seeded, "Tisch 3", 4, _orderedAtUtc.AddMinutes(30), otherTableStationOrderId, BuildItem(otherTableStationOrderId, "Bratwurst", 350));
@@ -139,28 +132,52 @@ public sealed class OpenItemRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(orders.Select(order => order.OrderId), Is.EqualTo(new[] { newestOrderId, sameTimeOrderId, olderOrderId }));
-                      Assert.That(orders.Select(order => order.GlobalOrderNumber), Is.EqualTo(new[]
-                                                                                               {
-                                                                                                 3,
-                                                                                                 2,
-                                                                                                 1
-                                                                                               }));
+                      Assert.That(orders.Select(order => order.OrderId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               newestOrderId,
+                                               sameTimeOrderId,
+                                               olderOrderId
+                                             }));
+                      Assert.That(orders.Select(order => order.GlobalOrderNumber),
+                                  Is.EqualTo(new[]
+                                             {
+                                               3,
+                                               2,
+                                               1
+                                             }));
                       Assert.That(orders.Select(order => order.StaffMemberName), Is.All.EqualTo("Anna"));
                       Assert.That(orders[0].CreatedAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(15)));
-                      Assert.That(orders[0].Items.Select(item => item.OrderItemId), Is.EqualTo(new[] { fulfilledItem.Id, settledItem.Id }));
-                      Assert.That(orders[0].Items.Select(item => item.ItemName), Is.EqualTo(new[]
-                                                                                            {
-                                                                                              "Bratwurst",
-                                                                                              "Limonade"
-                                                                                            }));
-                      Assert.That(orders[0].Items.Select(item => item.UnitPriceCents), Is.EqualTo(new[]
-                                                                                                 {
-                                                                                                   350,
-                                                                                                   250
-                                                                                                 }));
-                      Assert.That(orders[0].Items.Select(item => item.FulfilledAtUtc), Is.EqualTo(new DateTime?[] { _orderedAtUtc.AddMinutes(20), null }));
-                      Assert.That(orders[0].Items.Select(item => item.SettledAtUtc), Is.EqualTo(new DateTime?[] { null, _orderedAtUtc.AddMinutes(25) }));
+                      Assert.That(orders[0].Items.Select(item => item.OrderItemId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               fulfilledItem.Id,
+                                               settledItem.Id
+                                             }));
+                      Assert.That(orders[0].Items.Select(item => item.ItemName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Bratwurst",
+                                               "Limonade"
+                                             }));
+                      Assert.That(orders[0].Items.Select(item => item.UnitPriceCents),
+                                  Is.EqualTo(new[]
+                                             {
+                                               350,
+                                               250
+                                             }));
+                      Assert.That(orders[0].Items.Select(item => item.FulfilledAtUtc),
+                                  Is.EqualTo(new DateTime?[]
+                                             {
+                                               _orderedAtUtc.AddMinutes(20),
+                                               null
+                                             }));
+                      Assert.That(orders[0].Items.Select(item => item.SettledAtUtc),
+                                  Is.EqualTo(new DateTime?[]
+                                             {
+                                               null,
+                                               _orderedAtUtc.AddMinutes(25)
+                                             }));
                       Assert.That(orders[0].Items.Select(item => item.OrderId), Is.All.EqualTo(newestOrderId));
                       Assert.That(orders[0].Items.Select(item => item.GlobalOrderNumber), Is.All.EqualTo(3));
                     });
@@ -173,7 +190,7 @@ public sealed class OpenItemRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     var upperStationOrderId = Guid.NewGuid();
-    Guid upperOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 1, _orderedAtUtc, upperStationOrderId, BuildItem(upperStationOrderId, "Bratwurst", 350));
+    var upperOrderId = await PlaceOrderWithItemsAsync(fixture, seeded, "T1", 1, _orderedAtUtc, upperStationOrderId, BuildItem(upperStationOrderId, "Bratwurst", 350));
 
     var lowerStationOrderId = Guid.NewGuid();
     await PlaceOrderWithItemsAsync(fixture, seeded, "t1", 2, _orderedAtUtc.AddMinutes(5), lowerStationOrderId, BuildItem(lowerStationOrderId, "Limonade", 250));
@@ -206,12 +223,13 @@ public sealed class OpenItemRepositoryTest
 
     IReadOnlyList<TableOrderRecord> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(orders[0].Items.Select(item => item.OrderItemId), Is.EqualTo(new[]
-                                                                             {
-                                                                               plainBratwurst.Id,
-                                                                               notedBratwurst.Id,
-                                                                               schnitzel.Id
-                                                                             }));
+    Assert.That(orders[0].Items.Select(item => item.OrderItemId),
+                Is.EqualTo(new[]
+                           {
+                             plainBratwurst.Id,
+                             notedBratwurst.Id,
+                             schnitzel.Id
+                           }));
   }
 
   [Test]

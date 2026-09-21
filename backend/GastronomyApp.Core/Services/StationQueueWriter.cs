@@ -31,7 +31,7 @@ public sealed class StationQueueWriter
                           {
                             IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
 
-                            return _fulfillmentService.Fulfill(new() { OrderItemIds = selectedIds }, itemsAtThisStation, _clock.UtcNow);
+                            return _fulfillmentService.Fulfill(selectedIds, itemsAtThisStation, _clock.UtcNow);
                           },
                           cancellationToken);
   }
@@ -46,7 +46,7 @@ public sealed class StationQueueWriter
                           {
                             IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
 
-                            return _fulfillmentService.Unfulfill(new() { OrderItemIds = selectedIds }, itemsAtThisStation);
+                            return _fulfillmentService.Unfulfill(selectedIds, itemsAtThisStation);
                           },
                           cancellationToken);
   }

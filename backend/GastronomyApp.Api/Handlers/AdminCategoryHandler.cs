@@ -1,9 +1,8 @@
 ﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -39,7 +38,7 @@ public sealed class AdminCategoryHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(_mapper.Map<SaveCatalogCategoryRequest>(request), cancellationToken);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(request.Name, request.ColourHex, cancellationToken);
 
     return await AnsweredAsync(created, category => Results.Json(_mapper.Map<AdminCategoryView>(category), statusCode: StatusCodes.Status201Created));
   }
@@ -48,7 +47,7 @@ public sealed class AdminCategoryHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> updated = await _service.UpdateAsync(categoryId, _mapper.Map<SaveCatalogCategoryRequest>(request), cancellationToken);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> updated = await _service.UpdateAsync(categoryId, request.Name, request.ColourHex, cancellationToken);
 
     return await AnsweredAsync(updated, category => Results.Ok(_mapper.Map<AdminCategoryView>(category)));
   }

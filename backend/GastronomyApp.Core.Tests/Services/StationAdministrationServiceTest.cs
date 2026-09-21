@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -52,18 +51,6 @@ public sealed class StationAdministrationServiceTest
   private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
-  public void CreateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.CreateAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void UpdateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.UpdateAsync(_kitchenId, null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
   public async Task ListAsync_AFestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
@@ -80,7 +67,7 @@ public sealed class StationAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildRequest("  ", 1), CancellationToken.None);
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync("  ", 1, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -93,7 +80,7 @@ public sealed class StationAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AValidRequest_HandsBackTheStationTheAdminListShows()
   {
-    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(BuildRequest("Kueche am Zelt", 2), CancellationToken.None);
+    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync("Kueche am Zelt", 2, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -115,7 +102,7 @@ public sealed class StationAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
 
-    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, BuildRequest("Kueche", 1), CancellationToken.None);
+    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, "Kueche", 1, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -129,7 +116,7 @@ public sealed class StationAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
 
-    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, BuildRequest("Kueche am Zelt", 1), CancellationToken.None);
+    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, "Kueche am Zelt", 1, CancellationToken.None);
 
     Assert.That(updated.Value.SomethingChanged, Is.True);
   }
@@ -206,15 +193,6 @@ public sealed class StationAdministrationServiceTest
     Assert.That(switchedOff.Value.RevokedDeviceId, Is.Null);
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
-  }
-
-  private SaveStationDetailsRequest BuildRequest(string? name, int sortOrder)
-  {
-    return new()
-           {
-             Name = name,
-             SortOrder = sortOrder
-           };
   }
 
   private Station BuildStation(bool isActive, Guid? deviceId, Guid? invitationId)

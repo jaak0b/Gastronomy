@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;

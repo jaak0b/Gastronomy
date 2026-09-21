@@ -1,6 +1,5 @@
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -45,18 +44,14 @@ public sealed class StationAdministrationService
     return Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure>.Success(stations);
   }
 
-  public Task<Result<AdministeredStation, StationAdministrationFailure>> CreateAsync(SaveStationDetailsRequest request, CancellationToken cancellationToken)
+  public Task<Result<AdministeredStation, StationAdministrationFailure>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(name, sortOrder, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedStation, StationAdministrationFailure>> UpdateAsync(Guid stationId, SaveStationDetailsRequest request, CancellationToken cancellationToken)
+  public Task<Result<SavedStation, StationAdministrationFailure>> UpdateAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => UpdatedAsync(stationId, request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(stationId, name, sortOrder, transactionCancellationToken), cancellationToken);
   }
 
   public Task<Result<SavedStation, StationAdministrationFailure>> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
@@ -69,9 +64,9 @@ public sealed class StationAdministrationService
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(stationId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<AdministeredStation, StationAdministrationFailure>> CreatedAsync(SaveStationDetailsRequest request, CancellationToken cancellationToken)
+  private async Task<Result<AdministeredStation, StationAdministrationFailure>> CreatedAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (string.IsNullOrWhiteSpace(name))
       return Failed<AdministeredStation>(StationAdministrationFailureReason.NameMissing);
 
     var stationId = Guid.NewGuid();
@@ -79,20 +74,20 @@ public sealed class StationAdministrationService
     await _repository.AddAsync(new()
                                {
                                  Id = stationId,
-                                 Name = request.Name,
-                                 SortOrder = request.SortOrder,
+                                 Name = name,
+                                 SortOrder = sortOrder,
                                  IsActive = true
                                },
                                cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<AdministeredStation, StationAdministrationFailure>.Success(new(stationId, request.Name, request.SortOrder, true, false, null, false, false));
+    return Result<AdministeredStation, StationAdministrationFailure>.Success(new(stationId, name, sortOrder, true, false, null, false, false));
   }
 
-  private async Task<Result<SavedStation, StationAdministrationFailure>> UpdatedAsync(Guid stationId, SaveStationDetailsRequest request, CancellationToken cancellationToken)
+  private async Task<Result<SavedStation, StationAdministrationFailure>> UpdatedAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (string.IsNullOrWhiteSpace(name))
       return Failed<SavedStation>(StationAdministrationFailureReason.NameMissing);
 
     var station = await _repository.FindByIdAsync(stationId, cancellationToken);
@@ -100,10 +95,10 @@ public sealed class StationAdministrationService
     if (station is null)
       return Failed<SavedStation>(StationAdministrationFailureReason.StationNotFound);
 
-    var somethingChanged = station.Name != request.Name || station.SortOrder != request.SortOrder;
+    var somethingChanged = station.Name != name || station.SortOrder != sortOrder;
 
-    station.Name = request.Name;
-    station.SortOrder = request.SortOrder;
+    station.Name = name;
+    station.SortOrder = sortOrder;
     await _repository.SaveChangesAsync(cancellationToken);
 
     return Saved(stationId, somethingChanged, null);

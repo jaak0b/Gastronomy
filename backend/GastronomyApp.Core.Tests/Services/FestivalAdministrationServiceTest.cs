@@ -2,7 +2,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -35,24 +34,6 @@ public sealed class FestivalAdministrationServiceTest
   private IFestivalRepository _repository = null!;
   private FestivalAdministrationService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
-
-  [Test]
-  public void CreateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.CreateAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void UpdateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.UpdateAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void CopyAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.CopyAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
 
   [Test]
   public async Task ListAsync_AFestivalNothingHasBeenAddedTo_CountsNothingInsteadOfFailing()
@@ -89,7 +70,7 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest("   ", _now, _now.AddHours(6)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync("   ", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -102,7 +83,7 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AnEndThatIsNotAfterTheStart_FailsBecauseThePeriodIsInvalid()
   {
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest("Sommerfest", _now, _now), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync("Sommerfest", _now, _now, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -116,7 +97,7 @@ public sealed class FestivalAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([BuildFestival(_festivalId, false)]));
 
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest("Herbstfest", _now, _now.AddHours(2)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync("Herbstfest", _now, _now.AddHours(2), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -129,7 +110,7 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task CreateAsync_APeriodNoOtherFestivalCovers_StoresTheFestivalAndCommits()
   {
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(BuildPeriodRequest("Sommerfest", _now, _now.AddHours(6)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync("Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -146,7 +127,7 @@ public sealed class FestivalAdministrationServiceTest
   {
     A.CallTo(() => _repository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, BuildPeriodRequest("Sommerfest 2027", _now, _now.AddHours(6)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -158,7 +139,7 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task CopyAsync_AFestivalThatIsThere_CopiesItsStationsItemsAndAssignmentsAcross()
   {
-    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, BuildPeriodRequest("Sommerfest 2027", _now, _now.AddHours(6)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.That(copied.IsSuccess, Is.True);
 
@@ -216,23 +197,13 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_AFestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
   {
-    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(_festivalId, BuildPeriodRequest("Sommerfest", _now, _now.AddHours(6)), CancellationToken.None);
+    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(_festivalId, "Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.IsSuccess, Is.False);
                       Assert.That(updated.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.FestivalNotFound));
                     });
-  }
-
-  private FestivalPeriodRequest BuildPeriodRequest(string? name, DateTime startsAtUtc, DateTime endsAtUtc)
-  {
-    return new()
-           {
-             Name = name,
-             StartsAtUtc = startsAtUtc,
-             EndsAtUtc = endsAtUtc
-           };
   }
 
   private Festival BuildFestival(Guid festivalId, bool isHidden)

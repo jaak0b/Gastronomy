@@ -1,10 +1,10 @@
 using FakeItEasy;
 using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;

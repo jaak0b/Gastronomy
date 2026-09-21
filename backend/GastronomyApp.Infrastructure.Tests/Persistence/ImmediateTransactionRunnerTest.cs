@@ -1,7 +1,7 @@
 using FakeItEasy;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
@@ -36,7 +36,7 @@ public sealed class ImmediateTransactionRunnerTest
     Assert.That(async () => await runner.RunAsync<int>(_ => throw new InvalidOperationException("The body failed."), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -73,7 +73,7 @@ public sealed class ImmediateTransactionRunnerTest
                 Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), TestContext.CurrentContext.CancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -167,12 +167,11 @@ public sealed class ImmediateTransactionRunnerTest
     return new(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance);
   }
 
-  private OrderAcceptanceRequest BuildRequest(SeededDomain seeded)
+  private PlaceOrderRequest BuildRequest(SeededDomain seeded)
   {
     return new()
            {
              ClientOrderId = Guid.NewGuid(),
-             StaffMemberId = seeded.StaffMemberId,
              TableName = "Tisch 12",
              Items =
              [

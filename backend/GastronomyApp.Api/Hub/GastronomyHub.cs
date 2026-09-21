@@ -1,8 +1,8 @@
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Names;
-using GastronomyApp.Core.Enums;
-using Microsoft.AspNetCore.SignalR;
 using GastronomyApp.Api.Values;
+using GastronomyApp.Contracts.Enums;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
 

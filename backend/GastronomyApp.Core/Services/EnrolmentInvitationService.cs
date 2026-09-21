@@ -1,7 +1,6 @@
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -53,11 +52,13 @@ public sealed class EnrolmentInvitationService
                                                                                                 });
   }
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken)
+  public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(code);
+    ArgumentNullException.ThrowIfNull(userAgent);
+    ArgumentNullException.ThrowIfNull(acceptLanguageHeader);
 
-    return _store.RedeemAsync(request, cancellationToken);
+    return _store.RedeemAsync(code, name, userAgent, acceptLanguageHeader, cancellationToken);
   }
 
   public async Task<Guid?> RetireHandedOverDeviceAsync(string tokenLookupId, string secret, Guid newDeviceId, CancellationToken cancellationToken)

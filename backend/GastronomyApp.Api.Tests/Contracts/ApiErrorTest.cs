@@ -1,5 +1,5 @@
 using System.Text.Json;
-using GastronomyApp.Api.Contracts;
+using GastronomyApp.Contracts;
 
 namespace GastronomyApp.Api.Tests.Contracts;
 

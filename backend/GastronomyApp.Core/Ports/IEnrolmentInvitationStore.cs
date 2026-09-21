@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Ports;
@@ -8,7 +7,7 @@ public interface IEnrolmentInvitationStore
 {
   public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken);
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(EnrolmentRedemptionRequest request, CancellationToken cancellationToken);
+  public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken);
 
   public Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken);
 

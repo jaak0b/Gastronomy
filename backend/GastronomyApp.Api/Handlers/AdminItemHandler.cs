@@ -1,8 +1,7 @@
 ﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -44,7 +43,7 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
+    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
 
     return await AnsweredAsync(created, item => Results.Json(_mapper.Map<AdminItemView>(item), statusCode: StatusCodes.Status201Created));
   }
@@ -53,7 +52,7 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, _mapper.Map<SaveCatalogItemRequest>(request), cancellationToken);
+    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
 
     return await AnsweredAsync(updated, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }

@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;

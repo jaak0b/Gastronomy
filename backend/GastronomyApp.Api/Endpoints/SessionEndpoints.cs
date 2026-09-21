@@ -1,7 +1,7 @@
 using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Names;
+using GastronomyApp.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

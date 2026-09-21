@@ -2,6 +2,7 @@
     <Folder Name="/backend/">
         <Project Path="backend/GastronomyApp.Api.Tests/GastronomyApp.Api.Tests.csproj"/>
         <Project Path="backend/GastronomyApp.Api/GastronomyApp.Api.csproj"/>
+        <Project Path="backend/GastronomyApp.Contracts/GastronomyApp.Contracts.csproj"/>
         <Project Path="backend/GastronomyApp.Core.Tests/GastronomyApp.Core.Tests.csproj"/>
         <Project Path="backend/GastronomyApp.Core/GastronomyApp.Core.csproj"/>
         <Project Path="backend/GastronomyApp.Infrastructure.Tests/GastronomyApp.Infrastructure.Tests.csproj"/>

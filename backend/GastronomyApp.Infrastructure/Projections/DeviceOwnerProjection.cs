@@ -1,5 +1,5 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using Mapster;

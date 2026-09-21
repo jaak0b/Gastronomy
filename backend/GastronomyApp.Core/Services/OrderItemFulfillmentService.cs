@@ -1,17 +1,16 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemFulfillmentService
 {
-  public Result<FulfillmentResult, FulfillmentFailure> Fulfill(FulfillmentRequest request, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
+  public Result<FulfillmentResult, FulfillmentFailure> Fulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
   {
-    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
+    List<Guid> selectedIds = orderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
       return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
@@ -47,12 +46,12 @@ public sealed class OrderItemFulfillmentService
                                                                  });
   }
 
-  public Result<FulfillmentResult, FulfillmentFailure> Unfulfill(FulfillmentRequest request, IReadOnlyCollection<OrderItem> knownItems)
+  public Result<FulfillmentResult, FulfillmentFailure> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
   {
-    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = request.OrderItemIds.Distinct().ToList();
+    List<Guid> selectedIds = orderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
       return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });

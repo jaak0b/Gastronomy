@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using Microsoft.Extensions.DependencyInjection;

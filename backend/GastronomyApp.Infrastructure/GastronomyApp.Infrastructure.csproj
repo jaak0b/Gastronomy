@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
+        <ProjectReference Include="..\GastronomyApp.Contracts\GastronomyApp.Contracts.csproj"/>
         <ProjectReference Include="..\GastronomyApp.Core\GastronomyApp.Core.csproj"/>
     </ItemGroup>
     <ItemGroup>

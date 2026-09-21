@@ -155,6 +155,7 @@ Planned, not yet built. Update this table as it lands.
 
 | Project | Role |
 |---|---|
+| `GastronomyApp.Contracts` | The wire records the API receives and sends, and the enums they carry. References nothing; every other project references it. Core takes its request records as input; only Api produces its response records, mapped from entities with Mapster. |
 | `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
 | `GastronomyApp.Infrastructure` | EF Core SQLite, device token store, enrolment invitations. |
 | `GastronomyApp.Api` | Class library: REST endpoints, SignalR hub, static frontend, composition root. Hosted by `GastronomyApp.Desktop`. |

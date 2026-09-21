@@ -1,7 +1,6 @@
 ﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -49,18 +48,14 @@ public sealed class CatalogItemAdministrationService
     return Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>.Success(administered);
   }
 
-  public Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreateAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  public Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  public Task<Result<Guid, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
   public Task<Result<Guid, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
@@ -73,9 +68,9 @@ public sealed class CatalogItemAdministrationService
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  private async Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    var refusal = Validate(request) ?? await NameRefusalAsync(request.Name!, null, cancellationToken) ?? await CategoryRefusalAsync(request.CategoryId, true, cancellationToken);
+    var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
 
     if (refusal is not null)
       return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
@@ -83,12 +78,12 @@ public sealed class CatalogItemAdministrationService
     CatalogItem created = new()
                           {
                             Id = Guid.NewGuid(),
-                            Name = request.Name!,
-                            CategoryId = request.CategoryId!.Value,
-                            SortOrder = request.SortOrder,
+                            Name = name!,
+                            CategoryId = categoryId!.Value,
+                            SortOrder = sortOrder,
                             IsActive = true,
-                            ProductionMinutes = request.ProductionMinutes,
-                            IsQueueIndependent = request.IsQueueIndependent
+                            ProductionMinutes = productionMinutes,
+                            IsQueueIndependent = isQueueIndependent
                           };
 
     await _itemRepository.AddAsync(created, cancellationToken);
@@ -98,23 +93,23 @@ public sealed class CatalogItemAdministrationService
     return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Success(new(created.Id, created.Name, created.CategoryId, created.SortOrder, created.IsActive, created.ProductionMinutes, created.IsQueueIndependent, null));
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, SaveCatalogItemRequest request, CancellationToken cancellationToken)
+  private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
       return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
-    var refusal = Validate(request) ?? await NameRefusalAsync(request.Name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(request.CategoryId, item.IsActive, cancellationToken);
+    var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
       return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
 
-    item.Name = request.Name!;
-    item.CategoryId = request.CategoryId!.Value;
-    item.SortOrder = request.SortOrder;
-    item.ProductionMinutes = request.ProductionMinutes;
-    item.IsQueueIndependent = request.IsQueueIndependent;
+    item.Name = name!;
+    item.CategoryId = categoryId!.Value;
+    item.SortOrder = sortOrder;
+    item.ProductionMinutes = productionMinutes;
+    item.IsQueueIndependent = isQueueIndependent;
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
@@ -181,12 +176,12 @@ public sealed class CatalogItemAdministrationService
     return new() { Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff };
   }
 
-  private CatalogItemAdministrationFailure? Validate(SaveCatalogItemRequest request)
+  private CatalogItemAdministrationFailure? Validate(string? name, double? productionMinutes)
   {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (string.IsNullOrWhiteSpace(name))
       return new() { Reason = CatalogItemAdministrationFailureReason.NameMissing };
 
-    if (request.ProductionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
+    if (productionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
     {
       return new()
              {

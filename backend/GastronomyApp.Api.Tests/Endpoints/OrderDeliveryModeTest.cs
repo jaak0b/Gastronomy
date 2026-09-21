@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Api.Tests.Endpoints;

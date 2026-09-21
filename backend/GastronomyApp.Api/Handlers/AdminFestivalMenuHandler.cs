@@ -1,6 +1,6 @@
 ﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -29,14 +29,7 @@ public sealed class AdminFestivalMenuHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(festivalId,
-                                                                                                itemId,
-                                                                                                new()
-                                                                                                {
-                                                                                                  PriceCents = request.PriceCents,
-                                                                                                  StationIds = request.StationIds
-                                                                                                },
-                                                                                                cancellationToken);
+    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(festivalId, itemId, request.PriceCents, request.StationIds, cancellationToken);
 
     return await AnsweredAsync(putOn, festivalId, itemId, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
   }

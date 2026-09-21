@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 

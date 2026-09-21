@@ -1,7 +1,6 @@
 ﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -35,25 +34,19 @@ public sealed class FestivalAdministrationService
     return festivals.Select(festival => BuildAdministeredFestival(festival, countsByFestivalId)).ToList();
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CreateAsync(FestivalPeriodRequest request, CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CreateAsync(string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdateAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdateAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CopyAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
+  public Task<Result<SavedFestival, FestivalAdministrationFailure>> CopyAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => CopiedAsync(festivalId, request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => CopiedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
   }
 
   public Task<Result<SavedFestival, FestivalAdministrationFailure>> HideAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -66,9 +59,9 @@ public sealed class FestivalAdministrationService
     return RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CreatedAsync(FestivalPeriodRequest request, CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CreatedAsync(string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(name, startsAtUtc, endsAtUtc, Guid.Empty, cancellationToken);
 
     if (!period.IsSuccess)
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
@@ -81,14 +74,14 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdatedAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> UpdatedAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
     var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
 
-    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, festivalId, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(name, startsAtUtc, endsAtUtc, festivalId, cancellationToken);
 
     if (!period.IsSuccess)
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
@@ -102,12 +95,12 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CopiedAsync(Guid festivalId, FestivalPeriodRequest request, CancellationToken cancellationToken)
+  private async Task<Result<SavedFestival, FestivalAdministrationFailure>> CopiedAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
     if (!await _repository.ExistsAsync(festivalId, cancellationToken))
       return Failed(FestivalAdministrationFailureReason.FestivalNotFound);
 
-    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(request, Guid.Empty, cancellationToken);
+    Result<FestivalPeriod, FestivalAdministrationFailure> period = await ReadPeriodAsync(name, startsAtUtc, endsAtUtc, Guid.Empty, cancellationToken);
 
     if (!period.IsSuccess)
       return Result<SavedFestival, FestivalAdministrationFailure>.Failed(period.Failure);
@@ -162,13 +155,13 @@ public sealed class FestivalAdministrationService
     return Saved(festivalId, true);
   }
 
-  private async Task<Result<FestivalPeriod, FestivalAdministrationFailure>> ReadPeriodAsync(FestivalPeriodRequest request, Guid candidateId, CancellationToken cancellationToken)
+  private async Task<Result<FestivalPeriod, FestivalAdministrationFailure>> ReadPeriodAsync(string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, Guid candidateId, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (string.IsNullOrWhiteSpace(name))
       return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.NameMissing });
 
-    var startsAtUtc = _moment.AsUtc(request.StartsAtUtc);
-    var endsAtUtc = _moment.AsUtc(request.EndsAtUtc);
+    var startsAtUtc = _moment.AsUtc(startsAtUtcRaw);
+    var endsAtUtc = _moment.AsUtc(endsAtUtcRaw);
 
     if (endsAtUtc <= startsAtUtc)
       return Result<FestivalPeriod, FestivalAdministrationFailure>.Failed(new() { Reason = FestivalAdministrationFailureReason.PeriodInvalid });
@@ -185,7 +178,7 @@ public sealed class FestivalAdministrationService
                                                                           });
     }
 
-    return Result<FestivalPeriod, FestivalAdministrationFailure>.Success(new(request.Name, startsAtUtc, endsAtUtc));
+    return Result<FestivalPeriod, FestivalAdministrationFailure>.Success(new(name, startsAtUtc, endsAtUtc));
   }
 
   private Festival BuildFestival(Guid festivalId, FestivalPeriod period)

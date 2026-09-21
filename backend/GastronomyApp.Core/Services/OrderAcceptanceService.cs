@@ -1,9 +1,9 @@
+using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -30,7 +30,7 @@ public sealed class OrderAcceptanceService
     _clock = clock;
   }
 
-  public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(OrderAcceptanceRequest request, CancellationToken cancellationToken)
+  public async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
@@ -38,7 +38,7 @@ public sealed class OrderAcceptanceService
     {
       return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                                {
-                                                 Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await AcceptInsideTransactionAsync(request, transactionCancellationToken);
+                                                 Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await AcceptInsideTransactionAsync(request, staffMemberId, transactionCancellationToken);
 
                                                  return new TransactionOutcome<Result<OrderAcceptanceResult, OrderValidationFailure>>
                                                         {
@@ -54,7 +54,7 @@ public sealed class OrderAcceptanceService
     }
   }
 
-  private async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptInsideTransactionAsync(OrderAcceptanceRequest request, CancellationToken cancellationToken)
+  private async Task<Result<OrderAcceptanceResult, OrderValidationFailure>> AcceptInsideTransactionAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
   {
     var shapeFailure = ValidateShape(request);
     if (shapeFailure is not null)
@@ -74,16 +74,16 @@ public sealed class OrderAcceptanceService
     if (festival is null)
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.NoRunningFestival });
 
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution = await _itemResolutionService.ResolveAsync(festival.Id, request.Items, cancellationToken);
+    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> resolution = await _itemResolutionService.ResolveAsync(festival.Id, request.Items ?? [], cancellationToken);
 
     if (!resolution.IsSuccess)
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(resolution.Failure);
 
     IReadOnlyList<ResolvedOrderItem> resolvedItems = resolution.Value;
 
-    var builtOrder = await BuildOrderAsync(request, festival.Id, resolvedItems, cancellationToken);
+    var builtOrder = await BuildOrderAsync(request, staffMemberId, festival.Id, resolvedItems, cancellationToken);
 
-    var settlementFailure = SettleAtAcceptance(request.StaffMemberId, builtOrder);
+    var settlementFailure = SettleAtAcceptance(staffMemberId, builtOrder);
     if (settlementFailure is not null)
       return Result<OrderAcceptanceResult, OrderValidationFailure>.Failed(settlementFailure);
 
@@ -96,15 +96,15 @@ public sealed class OrderAcceptanceService
                                                                          });
   }
 
-  private OrderValidationFailure? ValidateShape(OrderAcceptanceRequest request)
+  private OrderValidationFailure? ValidateShape(PlaceOrderRequest request)
   {
-    if (request.Items.Count == 0)
+    if ((request.Items?.Count ?? 0) == 0)
       return new() { Reason = OrderValidationFailureReason.NoItems };
 
     if (string.IsNullOrWhiteSpace(request.TableName))
       return new() { Reason = OrderValidationFailureReason.TableNameMissing };
 
-    foreach (var item in request.Items)
+    foreach (var item in request.Items!)
       if (item.UnitPriceCents < 0)
       {
         return new()
@@ -119,23 +119,20 @@ public sealed class OrderAcceptanceService
 
   private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, BuiltOrder builtOrder)
   {
-    List<SettlementLine> lines = builtOrder.Items.Where(item => item.Settlement is not null)
-                                           .Select(item => new SettlementLine
-                                                           {
-                                                             OrderItemId = item.OrderItem.Id,
-                                                             PaidPriceCents = item.Settlement!.PaidPriceCents,
-                                                             PaymentNotice = item.Settlement!.PaymentNotice
-                                                           })
-                                           .ToList();
+    List<SettleLineRequest> lines = builtOrder.Items.Where(item => item.Settlement is not null)
+                                              .Select(item => new SettleLineRequest
+                                                              {
+                                                                OrderItemId = item.OrderItem.Id,
+                                                                PaidPriceCents = item.Settlement!.PaidPriceCents,
+                                                                PaymentNotice = item.Settlement!.PaymentNotice
+                                                              })
+                                              .ToList();
 
     if (lines.Count == 0)
       return null;
 
-    Result<SettlementResult, SettlementFailure> settlement = _settlementService.Settle(new()
-                                                                                       {
-                                                                                         Lines = lines,
-                                                                                         SettledByStaffMemberId = staffMemberId
-                                                                                       },
+    Result<SettlementResult, SettlementFailure> settlement = _settlementService.Settle(lines,
+                                                                                       staffMemberId,
                                                                                        builtOrder.Items.Select(item => new SettlementCandidate
                                                                                                                        {
                                                                                                                          Item = item.OrderItem,
@@ -154,7 +151,7 @@ public sealed class OrderAcceptanceService
            };
   }
 
-  private async Task<BuiltOrder> BuildOrderAsync(OrderAcceptanceRequest request, Guid festivalId, IReadOnlyCollection<ResolvedOrderItem> resolvedItems, CancellationToken cancellationToken)
+  private async Task<BuiltOrder> BuildOrderAsync(PlaceOrderRequest request, Guid staffMemberId, Guid festivalId, IReadOnlyCollection<ResolvedOrderItem> resolvedItems, CancellationToken cancellationToken)
   {
     var createdAtUtc = _clock.UtcNow;
     var globalOrderNumber = await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
@@ -165,13 +162,13 @@ public sealed class OrderAcceptanceService
                     ClientOrderId = request.ClientOrderId,
                     FestivalId = festivalId,
                     GlobalOrderNumber = globalOrderNumber,
-                    StaffMemberId = request.StaffMemberId,
-                    TableName = request.TableName,
+                    StaffMemberId = staffMemberId,
+                    TableName = request.TableName ?? string.Empty,
                     CreatedAtUtc = createdAtUtc
                   };
 
     Dictionary<Guid, StationOrder> stationOrdersByStationId = [];
-    Dictionary<Guid, DeliveryMode> deliveryModesByStationId = request.DeliveryModes.GroupBy(mode => mode.StationId).ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
+    Dictionary<Guid, DeliveryMode> deliveryModesByStationId = (request.DeliveryModes ?? []).GroupBy(mode => mode.StationId).ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 
     List<BuiltOrderItem> createdItems = [];
 
@@ -234,7 +231,7 @@ public sealed class OrderAcceptanceService
   {
     public required OrderItem OrderItem { get; init; }
 
-    public required OrderSettlementLineTerms? Settlement { get; init; }
+    public required OrderSettlementLineRequest? Settlement { get; init; }
   }
 
   private sealed record BuiltOrder

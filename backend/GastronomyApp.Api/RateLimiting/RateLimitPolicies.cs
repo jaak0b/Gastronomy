@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using System.Threading.RateLimiting;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.Names;
+using GastronomyApp.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 

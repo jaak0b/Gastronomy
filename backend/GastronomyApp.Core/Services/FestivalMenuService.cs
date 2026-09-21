@@ -1,6 +1,5 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -25,11 +24,9 @@ public sealed class FestivalMenuService
     _transactionRunner = transactionRunner;
   }
 
-  public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, PutOnTheMenuRequest request, CancellationToken cancellationToken)
+  public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIds, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, request, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken), cancellationToken);
   }
 
   public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
@@ -42,7 +39,7 @@ public sealed class FestivalMenuService
     return RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnAsync(Guid festivalId, Guid catalogItemId, PutOnTheMenuRequest request, CancellationToken cancellationToken)
+  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
   {
     if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
       return Failed(FestivalMenuFailureReason.FestivalNotFound);
@@ -50,10 +47,10 @@ public sealed class FestivalMenuService
     if (!await _repository.CatalogItemExistsAsync(catalogItemId, cancellationToken))
       return Failed(FestivalMenuFailureReason.CatalogItemNotFound);
 
-    if (request.PriceCents is < LowestPriceCents or > HighestPriceCents)
+    if (priceCents is < LowestPriceCents or > HighestPriceCents)
       return Failed(FestivalMenuFailureReason.PriceOutOfRange);
 
-    List<Guid> stationIds = (request.StationIds ?? []).ToList();
+    List<Guid> stationIds = (stationIdsRequested ?? []).ToList();
 
     IReadOnlyList<Guid> stationIdsAtTheFestival = await _repository.FindStationIdsAtFestivalAsync(festivalId, cancellationToken);
 
@@ -80,13 +77,13 @@ public sealed class FestivalMenuService
                                           Id = Guid.NewGuid(),
                                           FestivalId = festivalId,
                                           CatalogItemId = catalogItemId,
-                                          PriceCents = request.PriceCents,
+                                          PriceCents = priceCents,
                                           IsAvailable = true
                                         },
                                         cancellationToken);
     }
     else
-      menuRow.PriceCents = request.PriceCents;
+      menuRow.PriceCents = priceCents;
 
     IReadOnlyList<ItemStationAssignment> existing = await _repository.FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken);
 

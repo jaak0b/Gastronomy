@@ -1,8 +1,7 @@
-﻿using GastronomyApp.Api.Contracts;
-using GastronomyApp.Api.ErrorHandling;
+﻿using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Core.Requests;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -35,7 +34,7 @@ public sealed class OrderPlacementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await _acceptanceService.AcceptAsync(BuildAcceptanceRequest(request, caller), cancellationToken);
+    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await _acceptanceService.AcceptAsync(request, caller.StaffMemberId, cancellationToken);
 
     if (!acceptance.IsSuccess)
     {
@@ -53,18 +52,6 @@ public sealed class OrderPlacementHandler
       return Results.Json(view, statusCode: StatusCodes.Status200OK);
 
     return Results.Json(view, statusCode: StatusCodes.Status201Created);
-  }
-
-  private OrderAcceptanceRequest BuildAcceptanceRequest(PlaceOrderRequest request, StaffDeviceCaller caller)
-  {
-    return new()
-           {
-             ClientOrderId = request.ClientOrderId,
-             StaffMemberId = caller.StaffMemberId,
-             TableName = request.TableName ?? string.Empty,
-             Items = _mapper.Map<IReadOnlyList<OrderAcceptanceItemRequest>>(request.Items ?? []),
-             DeliveryModes = _mapper.Map<IReadOnlyList<StationDeliveryModeRequest>>(request.DeliveryModes ?? [])
-           };
   }
 
   private void WarnAboutTheRefusal(PlaceOrderRequest request, StaffDeviceCaller caller, OrderValidationFailure failure)

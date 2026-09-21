@@ -1,7 +1,7 @@
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -19,7 +19,7 @@ public sealed class OrderItemResolutionService
     _routingResolver = routingResolver;
   }
 
-  public async Task<Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>> ResolveAsync(Guid festivalId, IReadOnlyList<OrderAcceptanceItemRequest> itemRequests, CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>> ResolveAsync(Guid festivalId, IReadOnlyList<OrderItemRequest> itemRequests, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(itemRequests);
 

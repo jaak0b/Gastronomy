@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Contracts;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;

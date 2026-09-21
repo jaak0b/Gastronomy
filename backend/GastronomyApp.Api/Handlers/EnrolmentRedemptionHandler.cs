@@ -1,10 +1,10 @@
 ﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -53,7 +53,7 @@ public sealed class EnrolmentRedemptionHandler
       return _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "enrolment.codeMissing");
     }
 
-    var redemption = await _service.RedeemAsync(new(request.Code, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString()), cancellationToken);
+    var redemption = await _service.RedeemAsync(request.Code, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), cancellationToken);
 
     return redemption.Outcome switch
            {

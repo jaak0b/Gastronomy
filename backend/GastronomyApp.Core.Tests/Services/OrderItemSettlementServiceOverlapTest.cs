@@ -1,8 +1,8 @@
 using FakeItEasy;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -32,11 +32,12 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(firstBeer, 350),
-                                                                                          Line(secondBeer, 350),
-                                                                                          Line(hotdog, 400)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(firstBeer, 350),
+                                                                               Line(secondBeer, 350),
+                                                                               Line(hotdog, 400)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(firstBeer, secondBeer, hotdog),
                                                                              _now);
 
@@ -61,11 +62,12 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(firstBeer, 350),
-                                                                                          Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
-                                                                                          Line(hotdog, 500)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(firstBeer, 350),
+                                                                               Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
+                                                                               Line(hotdog, 500)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(firstBeer, secondBeer, hotdog),
                                                                              _now);
 
@@ -81,16 +83,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
                     });
   }
 
-  private SettlementRequest RequestFor(IReadOnlyList<SettlementLine> lines)
-  {
-    return new()
-           {
-             Lines = lines,
-             SettledByStaffMemberId = _collectingWaiter
-           };
-  }
-
-  private SettlementLine Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
+  private SettleLineRequest Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
            {

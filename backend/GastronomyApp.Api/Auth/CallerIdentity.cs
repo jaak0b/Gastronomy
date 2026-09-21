@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using GastronomyApp.Api.Names;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Api.Values;
+using GastronomyApp.Contracts.Enums;
 
 namespace GastronomyApp.Api.Auth;
 

@@ -1,8 +1,7 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -27,18 +26,14 @@ public sealed class CatalogCategoryAdministrationService
     return _repository.FindAllOrderedAsync(cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreateAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreateAsync(string? name, string? colourHex, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => CreatedAsync(request, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
+    return RunAsync(transactionCancellationToken => CreatedAsync(name, colourHex, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdateAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdateAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
   {
-    ArgumentNullException.ThrowIfNull(request);
-
-    return RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, request, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
+    return RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, name, colourHex, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
   public Task<Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
@@ -56,10 +51,10 @@ public sealed class CatalogCategoryAdministrationService
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreatedAsync(SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> CreatedAsync(string? name, string? colourHex, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
-    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(request, categories, null);
+    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(name, colourHex, categories, null);
 
     if (refusal is not null)
       return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Failed(refusal);
@@ -67,8 +62,8 @@ public sealed class CatalogCategoryAdministrationService
     CatalogCategory created = new()
                               {
                                 Id = Guid.NewGuid(),
-                                Name = request.Name!.Trim(),
-                                ColourHex = request.ColourHex!,
+                                Name = name!.Trim(),
+                                ColourHex = colourHex!,
                                 SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
                                 IsActive = true
                               };
@@ -79,7 +74,7 @@ public sealed class CatalogCategoryAdministrationService
     return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(created);
   }
 
-  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdatedAsync(Guid categoryId, SaveCatalogCategoryRequest request, CancellationToken cancellationToken)
+  private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> UpdatedAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
     var category = categories.FirstOrDefault(candidate => candidate.Id == categoryId);
@@ -87,13 +82,13 @@ public sealed class CatalogCategoryAdministrationService
     if (category is null)
       return Failed<CatalogCategory>(CatalogCategoryAdministrationFailureReason.CategoryNotFound);
 
-    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(request, categories, categoryId);
+    Failure<CatalogCategoryAdministrationFailureReason>? refusal = Validate(name, colourHex, categories, categoryId);
 
     if (refusal is not null)
       return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Failed(refusal);
 
-    category.Name = request.Name!.Trim();
-    category.ColourHex = request.ColourHex!;
+    category.Name = name!.Trim();
+    category.ColourHex = colourHex!;
     await _repository.SaveChangesAsync(cancellationToken);
 
     return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
@@ -152,15 +147,15 @@ public sealed class CatalogCategoryAdministrationService
     return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
   }
 
-  private Failure<CatalogCategoryAdministrationFailureReason>? Validate(SaveCatalogCategoryRequest request, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
+  private Failure<CatalogCategoryAdministrationFailureReason>? Validate(string? name, string? colourHex, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
   {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (string.IsNullOrWhiteSpace(name))
       return new() { Reason = CatalogCategoryAdministrationFailureReason.NameMissing };
 
-    if (!_colour.IsWellFormed(request.ColourHex))
+    if (!_colour.IsWellFormed(colourHex))
       return new() { Reason = CatalogCategoryAdministrationFailureReason.ColourInvalid };
 
-    var wantedName = request.Name.Trim();
+    var wantedName = name.Trim();
 
     var taken = categories.Any(category => category.Id != categoryBeingSaved && string.Equals(category.Name, wantedName, StringComparison.OrdinalIgnoreCase));
 

@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Auth.Filters;

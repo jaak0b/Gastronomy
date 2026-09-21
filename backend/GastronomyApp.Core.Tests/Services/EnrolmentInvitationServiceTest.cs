@@ -1,6 +1,6 @@
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
@@ -40,9 +40,9 @@ public sealed class EnrolmentInvitationServiceTest
   private IEnrolmentInvitationStore _store = null!;
 
   [Test]
-  public void RedeemAsync_NullRequest_ThrowsArgumentNullException()
+  public void RedeemAsync_NullCode_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.RedeemAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _service.RedeemAsync(null!, null, "Test agent", "de", CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]

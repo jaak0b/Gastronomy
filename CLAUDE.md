@@ -46,7 +46,7 @@ wording.
 
 | Folder | Role |
 |---|---|
-| `backend/` | .NET 10 class libraries. `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
+| `backend/` | .NET 10 class libraries. `GastronomyApp.Contracts` holds the wire records, `GastronomyApp.Api` configures the ASP.NET Core web application (REST, SignalR, SQLite, static frontend) and is hosted by the desktop app. |
 | `desktop/` | `GastronomyApp.Desktop`, the **only executable**: an Avalonia window that hosts the web application in-process. Launcher, status light and address display; never a second admin UI. |
 | `frontend/` | Vue 3 + TypeScript + Vite + Pinia. Server phone app, station tablet page and admin configuration UI. Builds into `backend/GastronomyApp.Api/wwwroot`. |
 

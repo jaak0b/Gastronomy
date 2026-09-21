@@ -34,5 +34,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\backend\GastronomyApp.Api\GastronomyApp.Api.csproj"/>
+        <ProjectReference Include="..\..\backend\GastronomyApp.Contracts\GastronomyApp.Contracts.csproj"/>
     </ItemGroup>
 </Project>

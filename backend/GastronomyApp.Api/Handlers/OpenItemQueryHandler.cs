@@ -1,5 +1,4 @@
-using GastronomyApp.Api.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +38,7 @@ public sealed class OpenItemQueryHandler
 
   public async Task<IResult> ReadTableAsync(string? tableName, CancellationToken cancellationToken)
   {
-    TableOrderReport report = await _service.ReadTableAsync(tableName ?? string.Empty, cancellationToken);
+    var report = await _service.ReadTableAsync(tableName ?? string.Empty, cancellationToken);
 
     return Results.Ok(_mapper.Map<TableOrderReportView>(report));
   }

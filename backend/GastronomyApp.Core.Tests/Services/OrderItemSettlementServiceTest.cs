@@ -1,8 +1,8 @@
 using FakeItEasy;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -45,10 +45,11 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 200, "Stammgast"),
-                                                                                          Line(beer, 150, "Stammgast")
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 200, "Stammgast"),
+                                                                               Line(beer, 150, "Stammgast")
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(bratwurst, beer),
                                                                              _now);
 
@@ -72,7 +73,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(bratwurst, 500)]), AtOneTable(bratwurst), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, 500)], _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -87,7 +88,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")]), AtOneTable(bratwurst), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, 150, "  Der Tisch zahlt den Rest spaeter  ")], _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -103,7 +104,7 @@ public sealed class OrderItemSettlementServiceTest
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 0, "Kapelle", _collectingWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(beer, 400)]), AtOneTable(beer), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(beer, 400)], _collectingWaiter, AtOneTable(beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -124,7 +125,7 @@ public sealed class OrderItemSettlementServiceTest
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(beer, 400)]), AtOneTable(beer), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(beer, 400)], _collectingWaiter, AtOneTable(beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -146,10 +147,11 @@ public sealed class OrderItemSettlementServiceTest
     _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(beer, 400),
-                                                                                          Line(bratwurst, 350)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(beer, 400),
+                                                                               Line(bratwurst, 350)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(beer, bratwurst),
                                                                              _now);
 
@@ -170,7 +172,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(bratwurst, null)]), AtOneTable(bratwurst), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, null)], _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -187,7 +189,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(bratwurst, -1, "Ein Grund")]), AtOneTable(bratwurst), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, -1, "Ein Grund")], _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -204,7 +206,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([Line(bratwurst, 300, "   ")]), AtOneTable(bratwurst), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, 300, "   ")], _collectingWaiter, AtOneTable(bratwurst), _now);
 
     Assert.Multiple(() =>
                     {
@@ -221,10 +223,11 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 350),
-                                                                                          Line(beer, null)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 350),
+                                                                               Line(beer, null)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(bratwurst, beer),
                                                                              _now);
 
@@ -244,10 +247,11 @@ public sealed class OrderItemSettlementServiceTest
     var beer = OpenItem(400);
     IReadOnlyCollection<SettlementCandidate> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 350),
-                                                                                          Line(beer, 400)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 350),
+                                                                               Line(beer, 400)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              twoTables,
                                                                              _now);
 
@@ -274,10 +278,11 @@ public sealed class OrderItemSettlementServiceTest
     _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
     IReadOnlyCollection<SettlementCandidate> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 350),
-                                                                                          Line(beer, 400)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 350),
+                                                                               Line(beer, 400)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              twoTables,
                                                                              _now);
 
@@ -294,10 +299,11 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 350),
-                                                                                          Line(bratwurst, 350)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 350),
+                                                                               Line(bratwurst, 350)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(bratwurst),
                                                                              _now);
 
@@ -317,10 +323,11 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var unknownId = Guid.NewGuid();
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([
-                                                                                          Line(bratwurst, 350),
-                                                                                          Line(unknownId, 350)
-                                                                                        ]),
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+                                                                               Line(bratwurst, 350),
+                                                                               Line(unknownId, 350)
+                                                                             ],
+                                                                             _collectingWaiter,
                                                                              AtOneTable(bratwurst),
                                                                              _now);
 
@@ -336,7 +343,7 @@ public sealed class OrderItemSettlementServiceTest
   [Test]
   public void Settle_NothingSelected_IsRefused()
   {
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle(RequestFor([]), AtOneTable(), _now);
+    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([], _collectingWaiter, AtOneTable(), _now);
 
     Assert.Multiple(() =>
                     {
@@ -349,15 +356,10 @@ public sealed class OrderItemSettlementServiceTest
   public void Settle_WithoutNamingTheWaiter_IsRefusedAndNothingIsSettled()
   {
     var bratwurst = OpenItem(350);
-    SettlementRequest withoutAWaiter = new()
-                                       {
-                                         Lines = [Line(bratwurst, 350)],
-                                         SettledByStaffMemberId = Guid.Empty
-                                       };
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(() => _service.Settle(withoutAWaiter, AtOneTable(bratwurst), _now), Throws.ArgumentException);
+                      Assert.That(() => _service.Settle([Line(bratwurst, 350)], Guid.Empty, AtOneTable(bratwurst), _now), Throws.ArgumentException);
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
                       Assert.That(bratwurst.ChargedPriceCents, Is.Null);
                       Assert.That(bratwurst.SettledByStaffMemberId, Is.Null);
@@ -370,7 +372,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
 
-    _service.Settle(RequestFor([Line(bratwurst, 350)]), AtOneTable(bratwurst, beer), _now);
+    _service.Settle([Line(bratwurst, 350)], _collectingWaiter, AtOneTable(bratwurst, beer), _now);
 
     Assert.Multiple(() =>
                     {
@@ -397,7 +399,7 @@ public sealed class OrderItemSettlementServiceTest
   [Test]
   public void SettleAsync_NullRequest_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.SettleAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _service.SettleAsync(null!, _collectingWaiter, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -405,7 +407,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync(RequestFor([Line(Guid.NewGuid(), 350)]), CancellationToken.None);
+    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -423,7 +425,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     GivenTheTableHolds("Tisch 12", bratwurst);
 
-    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync(RequestFor([Line(bratwurst, 350)]), CancellationToken.None);
+    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -440,7 +442,7 @@ public sealed class OrderItemSettlementServiceTest
   [Test]
   public async Task SettleAsync_AnItemThatIsNoLongerThere_RefusesTheSettlementAndRollsTheTransactionBack()
   {
-    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync(RequestFor([Line(Guid.NewGuid(), 350)]), CancellationToken.None);
+    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync([Line(Guid.NewGuid(), 350)], _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -458,7 +460,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([bratwurst]));
 
-    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync(RequestFor([Line(bratwurst, 350)]), CancellationToken.None);
+    Result<SettlementResult, SettlementFailure> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -495,16 +497,7 @@ public sealed class OrderItemSettlementServiceTest
            };
   }
 
-  private SettlementRequest RequestFor(IReadOnlyList<SettlementLine> lines)
-  {
-    return new()
-           {
-             Lines = lines,
-             SettledByStaffMemberId = _collectingWaiter
-           };
-  }
-
-  private SettlementLine Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
+  private SettleLineRequest Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
            {
@@ -514,7 +507,7 @@ public sealed class OrderItemSettlementServiceTest
            };
   }
 
-  private SettlementLine Line(Guid orderItemId, int? paidPriceCents, string? paymentNotice = null)
+  private SettleLineRequest Line(Guid orderItemId, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
            {

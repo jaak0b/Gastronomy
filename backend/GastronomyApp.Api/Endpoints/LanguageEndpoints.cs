@@ -1,5 +1,5 @@
-﻿using GastronomyApp.Api.Contracts;
-using GastronomyApp.Api.Options;
+﻿using GastronomyApp.Api.Options;
+using GastronomyApp.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

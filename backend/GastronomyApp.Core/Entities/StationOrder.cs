@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel;
-using GastronomyApp.Core.Enums;
+using GastronomyApp.Contracts.Enums;
 
 namespace GastronomyApp.Core.Entities;
 

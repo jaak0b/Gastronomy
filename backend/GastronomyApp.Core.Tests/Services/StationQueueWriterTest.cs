@@ -1,6 +1,6 @@
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;

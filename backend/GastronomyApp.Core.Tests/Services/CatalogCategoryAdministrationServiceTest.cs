@@ -1,9 +1,8 @@
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -43,21 +42,9 @@ public sealed class CatalogCategoryAdministrationServiceTest
   private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
-  public void CreateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.CreateAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
-  public void UpdateAsync_NullRequest_ThrowsArgumentNullException()
-  {
-    Assert.That(async () => await _service.UpdateAsync(_foodCategoryId, null!, CancellationToken.None), Throws.ArgumentNullException);
-  }
-
-  [Test]
   public async Task CreateAsync_NameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(RequestFor("  ", "#C62828"), CancellationToken.None);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("  ", "#C62828", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -69,7 +56,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ColourThatIsNotSixHexDigits_FailsBecauseTheColourIsInvalid()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(RequestFor("Nachtisch", "C62828"), CancellationToken.None);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("Nachtisch", "C62828", CancellationToken.None);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.ColourInvalid));
   }
@@ -77,7 +64,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task CreateAsync_NameOfAnotherCategoryInAnotherCasing_FailsBecauseTheNameIsTaken()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(RequestFor("speisen", "#C62828"), CancellationToken.None);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("speisen", "#C62828", CancellationToken.None);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.NameTaken));
   }
@@ -85,7 +72,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task CreateAsync_ANameNothingRefuses_StoresItBehindTheLastCategoryAndCommits()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync(RequestFor("  Nachtisch  ", "#C62828"), CancellationToken.None);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("  Nachtisch  ", "#C62828", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -101,7 +88,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_CategoryThatIsNotThere_FailsBecauseTheCategoryIsNotFound()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> updated = await _service.UpdateAsync(Guid.NewGuid(), RequestFor("Nachtisch", "#C62828"), CancellationToken.None);
+    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> updated = await _service.UpdateAsync(Guid.NewGuid(), "Nachtisch", "#C62828", CancellationToken.None);
 
     Assert.That(updated.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.CategoryNotFound));
   }
@@ -165,15 +152,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
                       Assert.That(_food.IsActive, Is.False);
                       Assert.That(_transactionRunner.Committed, Is.True);
                     });
-  }
-
-  private SaveCatalogCategoryRequest RequestFor(string name, string colourHex)
-  {
-    return new()
-           {
-             Name = name,
-             ColourHex = colourHex
-           };
   }
 
   private CatalogCategory BuildCategory(Guid categoryId, string name, int sortOrder, bool isActive)

@@ -1,8 +1,7 @@
 using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Contracts;
 using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Contracts;
 using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Requests;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -39,7 +38,7 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(_mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> created = await _service.CreateAsync(request.Name, request.StartsAtUtc, request.EndsAtUtc, cancellationToken);
 
     return await AnsweredAsync(created, festivalId => Results.Json(new SavedFestivalView(festivalId), statusCode: StatusCodes.Status201Created));
   }
@@ -48,7 +47,7 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(festivalId, _mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(festivalId, request.Name, request.StartsAtUtc, request.EndsAtUtc, cancellationToken);
 
     return await AnsweredAsync(updated, savedFestivalId => Results.Ok(new SavedFestivalView(savedFestivalId)));
   }
@@ -57,7 +56,7 @@ public sealed class AdminFestivalHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(festivalId, _mapper.Map<FestivalPeriodRequest>(request), cancellationToken);
+    Result<SavedFestival, FestivalAdministrationFailure> copied = await _service.CopyAsync(festivalId, request.Name, request.StartsAtUtc, request.EndsAtUtc, cancellationToken);
 
     return await AnsweredAsync(copied, newFestivalId => Results.Json(new SavedFestivalView(newFestivalId), statusCode: StatusCodes.Status201Created));
   }
