@@ -24,31 +24,31 @@ public sealed class FestivalMenuService
     _transactionRunner = transactionRunner;
   }
 
-  public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIds, CancellationToken cancellationToken)
+  public Task<Result<FestivalCatalogItem, FestivalMenuFailure>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIds, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  public Task<Result<FestivalCatalogItem, FestivalMenuFailure>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => TakenOffAsync(festivalId, catalogItemId, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => TakenOffAsync(festivalId, catalogItemId, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
+  public Task<Result<FestivalCatalogItem?, FestivalMenuFailure>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken), cancellationToken);
+    return RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken), written => written.IsSuccess && written.Value is not null, cancellationToken);
   }
 
-  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> PutOnAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
+  private async Task<Result<FestivalCatalogItem, FestivalMenuFailure>> PutOnAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
   {
     if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
-      return Failed(FestivalMenuFailureReason.FestivalNotFound);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.FestivalNotFound);
 
     if (!await _repository.CatalogItemExistsAsync(catalogItemId, cancellationToken))
-      return Failed(FestivalMenuFailureReason.CatalogItemNotFound);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.CatalogItemNotFound);
 
     if (priceCents is < LowestPriceCents or > HighestPriceCents)
-      return Failed(FestivalMenuFailureReason.PriceOutOfRange);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.PriceOutOfRange);
 
     List<Guid> stationIds = (stationIdsRequested ?? []).ToList();
 
@@ -58,29 +58,30 @@ public sealed class FestivalMenuService
 
     if (strangers.Count > 0)
     {
-      return Result<SavedFestivalMenuItem, FestivalMenuFailure>.Failed(new()
-                                                                       {
-                                                                         Reason = FestivalMenuFailureReason.StationsDoNotBelongToTheFestival,
-                                                                         StationIdsOutsideTheFestival = strangers
-                                                                       });
+      return Result<FestivalCatalogItem, FestivalMenuFailure>.Failed(new()
+                                                                     {
+                                                                       Reason = FestivalMenuFailureReason.StationsDoNotBelongToTheFestival,
+                                                                       StationIdsOutsideTheFestival = strangers
+                                                                     });
     }
 
     if (!await _orderability.AnyOfTheseStationsPreparesAtAsync(festivalId, stationIds, cancellationToken))
-      return Failed(FestivalMenuFailureReason.NoStationPreparesTheItem);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.NoStationPreparesTheItem);
 
     var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
     {
-      await _repository.AddMenuRowAsync(new()
-                                        {
-                                          Id = Guid.NewGuid(),
-                                          FestivalId = festivalId,
-                                          CatalogItemId = catalogItemId,
-                                          PriceCents = priceCents,
-                                          IsAvailable = true
-                                        },
-                                        cancellationToken);
+      menuRow = new()
+                {
+                  Id = Guid.NewGuid(),
+                  FestivalId = festivalId,
+                  CatalogItemId = catalogItemId,
+                  PriceCents = priceCents,
+                  IsAvailable = true
+                };
+
+      await _repository.AddMenuRowAsync(menuRow, cancellationToken);
     }
     else
       menuRow.PriceCents = priceCents;
@@ -101,23 +102,23 @@ public sealed class FestivalMenuService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Saved(catalogItemId, true);
+    return Result<FestivalCatalogItem, FestivalMenuFailure>.Success(menuRow);
   }
 
-  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> TakenOffAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  private async Task<Result<FestivalCatalogItem, FestivalMenuFailure>> TakenOffAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
     var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
-      return Failed(FestivalMenuFailureReason.MenuRowNotFound);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.MenuRowNotFound);
 
     var festival = await _festivalRepository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
-      return Failed(FestivalMenuFailureReason.FestivalNotFound);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.FestivalNotFound);
 
     if (_runningFestival.IsRunning(festival))
-      return Failed(FestivalMenuFailureReason.FestivalIsRunning);
+      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.FestivalIsRunning);
 
     IReadOnlyList<ItemStationAssignment> assignments = await _repository.FindAssignmentsAsync(festivalId, catalogItemId, cancellationToken);
 
@@ -126,45 +127,40 @@ public sealed class FestivalMenuService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Saved(catalogItemId, true);
+    return Result<FestivalCatalogItem, FestivalMenuFailure>.Success(menuRow);
   }
 
-  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> AvailabilitySetAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
+  private async Task<Result<FestivalCatalogItem?, FestivalMenuFailure>> AvailabilitySetAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
   {
     var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
-      return Failed(FestivalMenuFailureReason.MenuRowNotFound);
+      return Failed<FestivalCatalogItem?>(FestivalMenuFailureReason.MenuRowNotFound);
 
     if (menuRow.IsAvailable == isAvailable)
-      return Saved(catalogItemId, false);
+      return Result<FestivalCatalogItem?, FestivalMenuFailure>.Success(null);
 
     menuRow.IsAvailable = isAvailable;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Saved(catalogItemId, true);
+    return Result<FestivalCatalogItem?, FestivalMenuFailure>.Success(menuRow);
   }
 
-  private Result<SavedFestivalMenuItem, FestivalMenuFailure> Saved(Guid catalogItemId, bool somethingChanged)
+  private Result<TValue, FestivalMenuFailure> Failed<TValue>(FestivalMenuFailureReason reason)
   {
-    return Result<SavedFestivalMenuItem, FestivalMenuFailure>.Success(new(catalogItemId, somethingChanged));
+    return Result<TValue, FestivalMenuFailure>.Failed(new() { Reason = reason });
   }
 
-  private Result<SavedFestivalMenuItem, FestivalMenuFailure> Failed(FestivalMenuFailureReason reason)
-  {
-    return Result<SavedFestivalMenuItem, FestivalMenuFailure>.Failed(new() { Reason = reason });
-  }
-
-  private async Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>> RunAsync(Func<CancellationToken, Task<Result<SavedFestivalMenuItem, FestivalMenuFailure>>> write, CancellationToken cancellationToken)
+  private async Task<Result<TValue, FestivalMenuFailure>> RunAsync<TValue>(Func<CancellationToken, Task<Result<TValue, FestivalMenuFailure>>> write, Func<Result<TValue, FestivalMenuFailure>, bool> shouldCommit, CancellationToken cancellationToken)
   {
     return await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                              {
-                                               Result<SavedFestivalMenuItem, FestivalMenuFailure> written = await write(transactionCancellationToken);
+                                               Result<TValue, FestivalMenuFailure> written = await write(transactionCancellationToken);
 
-                                               return new TransactionOutcome<Result<SavedFestivalMenuItem, FestivalMenuFailure>>
+                                               return new TransactionOutcome<Result<TValue, FestivalMenuFailure>>
                                                       {
                                                         Value = written,
-                                                        ShouldCommit = written.IsSuccess && written.Value.SomethingChanged
+                                                        ShouldCommit = shouldCommit(written)
                                                       };
                                              },
                                              cancellationToken);

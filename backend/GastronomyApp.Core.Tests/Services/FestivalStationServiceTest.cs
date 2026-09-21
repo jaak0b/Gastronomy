@@ -55,7 +55,7 @@ public sealed class FestivalStationServiceTest
   {
     A.CallTo(() => _stationRepository.ExistsAsync(_kitchenId, A<CancellationToken>._)).Returns(false);
 
-    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation?, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -69,12 +69,12 @@ public sealed class FestivalStationServiceTest
   {
     A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
 
-    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation?, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(added.IsSuccess, Is.True);
-                      Assert.That(added.Value.SomethingChanged, Is.False);
+                      Assert.That(added.Value, Is.Null);
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
@@ -82,7 +82,7 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task AddAsync_AStationComingBackToTheFestival_ContinuesTheNumberingWhereItStopped()
   {
-    Result<SavedFestivalStation, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation?, FestivalStationFailure> added = await _service.AddAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -96,7 +96,7 @@ public sealed class FestivalStationServiceTest
   [Test]
   public async Task RemoveAsync_AStationThatIsNotAtTheFestival_FailsBecauseTheLinkIsNotFound()
   {
-    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -111,7 +111,7 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(BuildLink()));
     A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -129,7 +129,7 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _repository.FindLinkAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(link));
     A.CallTo(() => _repository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(3);
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.That(removed.IsSuccess, Is.True);
 
@@ -143,7 +143,7 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(_festivalId, A<IReadOnlyCollection<Guid>>.That.Matches(stationIds => stationIds.Contains(_kitchenId)), A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
     A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_bratwurstId]));
 
-    Result<SavedFestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
+    Result<FestivalStation, FestivalStationFailure> removed = await _service.RemoveAsync(_festivalId, _kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

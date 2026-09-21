@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -96,11 +95,11 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task MoveAsync_TheLastCategoryDownwards_KeepsTheOrderAndCommitsNothing()
   {
-    Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
+    Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(moved.Value.OrderChanged, Is.False);
+                      Assert.That(moved.Value, Is.Null);
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
 
@@ -110,12 +109,11 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task MoveAsync_TheLastCategoryUpwards_PutsItFirstAndCommits()
   {
-    Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Up, CancellationToken.None);
+    Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Up, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(moved.Value.OrderChanged, Is.True);
-                      Assert.That(moved.Value.Categories.Select(category => category.Id),
+                      Assert.That(moved.Value!.Select(category => category.Id),
                                   Is.EqualTo(new[]
                                              {
                                                _drinkCategoryId,

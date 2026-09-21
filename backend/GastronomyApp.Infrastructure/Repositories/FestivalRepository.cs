@@ -1,10 +1,7 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.QueryRows;
-using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -14,14 +11,12 @@ public sealed class FestivalRepository : IFestivalRepository
   private const int FirstNumber = 1;
 
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly TypeAdapterConfig _mapperConfig;
   private readonly FestivalSchedule _schedule;
 
-  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule, TypeAdapterConfig mapperConfig)
+  public FestivalRepository(GastronomyAppDbContext dbContext, FestivalSchedule schedule)
   {
     _dbContext = dbContext;
     _schedule = schedule;
-    _mapperConfig = mapperConfig;
   }
 
   public async Task<Festival?> FindRunningAsync(DateTime nowUtc, CancellationToken cancellationToken)
@@ -51,18 +46,14 @@ public sealed class FestivalRepository : IFestivalRepository
     return await _dbContext.Festivals.AsNoTracking().Where(festival => !festival.IsHidden && festival.EndsAtUtc > nowUtc).Select(festival => festival.Id).ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<FestivalContentCounts>> FindContentCountsAsync(CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Festival>> FindAllWithContentsAsync(CancellationToken cancellationToken)
   {
-    return await _dbContext.Festivals.AsNoTracking()
-                           .Select(festival => new FestivalContentCountsRow
-                                               {
-                                                 Festival = festival,
-                                                 StationCount = _dbContext.FestivalStations.Count(link => link.FestivalId == festival.Id),
-                                                 MenuItemCount = _dbContext.FestivalCatalogItems.Count(menuRow => menuRow.FestivalId == festival.Id),
-                                                 OrderCount = _dbContext.Orders.Count(order => order.FestivalId == festival.Id)
-                                               })
-                           .ProjectToType<FestivalContentCounts>(_mapperConfig)
-                           .ToListAsync(cancellationToken);
+    return await _dbContext.Festivals.AsNoTracking().OrderByDescending(festival => festival.StartsAtUtc).Include(festival => festival.Stations).Include(festival => festival.CatalogItems).ToListAsync(cancellationToken);
+  }
+
+  public async Task<IReadOnlyDictionary<Guid, int>> CountOrdersByFestivalAsync(CancellationToken cancellationToken)
+  {
+    return await _dbContext.Orders.AsNoTracking().GroupBy(order => order.FestivalId).ToDictionaryAsync(group => group.Key, group => group.Count(), cancellationToken);
   }
 
   public async Task AddAsync(Festival festival, CancellationToken cancellationToken)

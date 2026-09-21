@@ -8,39 +8,39 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 public sealed class CatalogRepositoryTest
 {
   [Test]
-  public async Task ReadAtFestivalAsync_TheSeededFestival_CarriesItsStationsCategoriesAndPricedItems()
+  public async Task FindWithMenuAsync_TheSeededFestival_CarriesItsStationsCategoriesAndPricedItems()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    CatalogRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    CatalogRepository repository = new(fixture.DbContext);
 
-    var catalog = await repository.ReadAtFestivalAsync(seeded.FestivalId, "Sommerfest", TestContext.CurrentContext.CancellationToken);
+    var festival = (await repository.FindWithMenuAsync(seeded.FestivalId, OrderableItemsOf(seeded), TestContext.CurrentContext.CancellationToken))!;
 
-    var sausage = catalog.Items.Single(item => item.ItemId == seeded.SausageItemId);
+    var sausage = festival.CatalogItems.Single(menuRow => menuRow.CatalogItemId == seeded.SausageItemId);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(catalog.FestivalName, Is.EqualTo("Sommerfest"));
-                      Assert.That(catalog.Stations.Select(station => station.StationId),
+                      Assert.That(festival.Name, Is.EqualTo("Sommerfest"));
+                      Assert.That(festival.Stations.OrderBy(link => link.Station.SortOrder).Select(link => link.StationId),
                                   Is.EqualTo(new[]
                                              {
                                                seeded.KitchenStationId,
                                                seeded.BarStationId
                                              }));
-                      Assert.That(catalog.Categories.Select(category => category.CategoryId),
+                      Assert.That(festival.CatalogItems.Select(menuRow => menuRow.CatalogItem.Category.Id).Distinct().Order(),
                                   Is.EqualTo(new[]
                                              {
                                                seeded.FoodCategoryId,
                                                seeded.DrinkCategoryId
-                                             }));
+                                             }.Order()));
                       Assert.That(sausage.PriceCents, Is.EqualTo(350));
-                      Assert.That(sausage.StationIds, Is.EqualTo(new[] { seeded.KitchenStationId }));
+                      Assert.That(sausage.CatalogItem.StationAssignments.Select(assignment => assignment.StationId), Is.EqualTo(new[] { seeded.KitchenStationId }));
                     });
   }
 
   [Test]
-  public async Task ReadAtFestivalAsync_AnItemWhoseCategoryIsSwitchedOff_LeavesTheItemOut()
+  public async Task FindWithMenuAsync_AnItemWhoseCategoryIsSwitchedOff_LeavesTheItemOut()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -49,15 +49,15 @@ public sealed class CatalogRepositoryTest
     drinks.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    CatalogRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    CatalogRepository repository = new(fixture.DbContext);
 
-    var catalog = await repository.ReadAtFestivalAsync(seeded.FestivalId, "Sommerfest", TestContext.CurrentContext.CancellationToken);
+    var festival = (await repository.FindWithMenuAsync(seeded.FestivalId, OrderableItemsOf(seeded), TestContext.CurrentContext.CancellationToken))!;
 
-    Assert.That(catalog.Items.Select(item => item.ItemId), Is.EqualTo(new[] { seeded.SausageItemId }));
+    Assert.That(festival.CatalogItems.Select(menuRow => menuRow.CatalogItemId), Is.EqualTo(new[] { seeded.SausageItemId }));
   }
 
   [Test]
-  public async Task ReadAtFestivalAsync_AnItemAssignedToAStationThatIsSwitchedOff_LeavesThatStationOut()
+  public async Task FindWithMenuAsync_AnItemAssignedToAStationThatIsSwitchedOff_LeavesThatStationOut()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -66,10 +66,32 @@ public sealed class CatalogRepositoryTest
     kitchen.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    CatalogRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    CatalogRepository repository = new(fixture.DbContext);
 
-    var catalog = await repository.ReadAtFestivalAsync(seeded.FestivalId, "Sommerfest", TestContext.CurrentContext.CancellationToken);
+    var festival = (await repository.FindWithMenuAsync(seeded.FestivalId, OrderableItemsOf(seeded), TestContext.CurrentContext.CancellationToken))!;
 
-    Assert.That(catalog.Items.Single(item => item.ItemId == seeded.SausageItemId).StationIds, Is.Empty);
+    Assert.That(festival.CatalogItems.Single(menuRow => menuRow.CatalogItemId == seeded.SausageItemId).CatalogItem.StationAssignments, Is.Empty);
+  }
+
+  [Test]
+  public async Task FindWithMenuAsync_AnItemTheWaiterCannotOrder_LeavesItOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    CatalogRepository repository = new(fixture.DbContext);
+
+    var festival = (await repository.FindWithMenuAsync(seeded.FestivalId, [seeded.SausageItemId], TestContext.CurrentContext.CancellationToken))!;
+
+    Assert.That(festival.CatalogItems.Select(menuRow => menuRow.CatalogItemId), Is.EqualTo(new[] { seeded.SausageItemId }));
+  }
+
+  private IReadOnlyCollection<Guid> OrderableItemsOf(SeededDomain seeded)
+  {
+    return
+    [
+      seeded.SausageItemId,
+      seeded.LemonadeItemId
+    ];
   }
 }

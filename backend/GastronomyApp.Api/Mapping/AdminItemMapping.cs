@@ -1,5 +1,5 @@
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
@@ -10,8 +10,16 @@ public sealed class AdminItemMapping : IRegister
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<CatalogItemAtFestival, AdminItemAtFestivalView>();
+    config.NewConfig<CatalogItem, AdminItemView>().Map(view => view.ItemId, item => item.Id).Map(view => view.AtTheFestival, item => AtTheFestival(item));
+  }
 
-    config.NewConfig<AdministeredCatalogItem, AdminItemView>();
+  private AdminItemAtFestivalView? AtTheFestival(CatalogItem item)
+  {
+    var menuRow = item.FestivalCatalogItems.FirstOrDefault();
+
+    if (menuRow is null)
+      return null;
+
+    return new(menuRow.PriceCents, menuRow.IsAvailable, item.StationAssignments.Select(assignment => assignment.StationId).ToList());
   }
 }

@@ -1,7 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
-using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Tests.Repositories;
 
@@ -54,7 +53,7 @@ public sealed class CatalogItemRepositoryTest
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<CatalogItem> found = await repository.FindAllOrderedAsync(TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<CatalogItem> found = await repository.FindAllOrderedAsync(null, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(found.Select(item => item.Id),
                 Is.EqualTo(new[]
@@ -80,62 +79,40 @@ public sealed class CatalogItemRepositoryTest
   }
 
   [Test]
-  public async Task FindMenuRowsAtFestivalAsync_TheSeededFestival_ReturnsThePricedRowsOfThatFestival()
+  public async Task FindAllOrderedAsync_AFestival_CarriesThePriceAndTheStationsOfThatFestival()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<FestivalCatalogItem> found = await repository.FindMenuRowsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<CatalogItem> found = await repository.FindAllOrderedAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    var sausage = found.Single(item => item.Id == seeded.SausageItemId);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(found, Has.Count.EqualTo(2));
-                      Assert.That(found.Single(menuRow => menuRow.CatalogItemId == seeded.SausageItemId).PriceCents, Is.EqualTo(350));
+                      Assert.That(sausage.FestivalCatalogItems.Single().PriceCents, Is.EqualTo(350));
+                      Assert.That(sausage.StationAssignments.Select(assignment => assignment.StationId), Is.EqualTo(new[] { seeded.KitchenStationId }));
                     });
   }
 
   [Test]
-  public async Task FindAssignmentsAtFestivalAsync_TheSeededFestival_ReturnsOneAssignmentPerItem()
+  public async Task FindAllOrderedAsync_NoFestival_CarriesNeitherAPriceNorAStation()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     CatalogItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<ItemStationAssignment> found = await repository.FindAssignmentsAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<CatalogItem> found = await repository.FindAllOrderedAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(found.Select(assignment => assignment.StationId),
-                Is.EquivalentTo(new[]
-                                {
-                                  seeded.KitchenStationId,
-                                  seeded.BarStationId
-                                }));
-  }
+    var sausage = found.Single(item => item.Id == seeded.SausageItemId);
 
-  [Test]
-  public async Task AddAsync_ANewItem_StoresItWhenTheChangesAreSaved()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    CatalogItemRepository repository = new(fixture.DbContext);
-    var itemId = Guid.NewGuid();
-
-    await repository.AddAsync(new()
-                              {
-                                Id = itemId,
-                                Name = "Currywurst",
-                                CategoryId = seeded.FoodCategoryId,
-                                SortOrder = 3,
-                                IsActive = true
-                              },
-                              TestContext.CurrentContext.CancellationToken);
-    await repository.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    await using var readContext = fixture.CreateContext();
-
-    Assert.That(await readContext.CatalogItems.AnyAsync(item => item.Id == itemId, TestContext.CurrentContext.CancellationToken), Is.True);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(sausage.FestivalCatalogItems, Is.Empty);
+                      Assert.That(sausage.StationAssignments, Is.Empty);
+                    });
   }
 }

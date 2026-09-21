@@ -1,22 +1,19 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.QueryRows;
-using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
 
 public sealed class StationRepository : IStationRepository
 {
+  private readonly IClock _clock;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly TypeAdapterConfig _mapperConfig;
 
-  public StationRepository(GastronomyAppDbContext dbContext, TypeAdapterConfig mapperConfig)
+  public StationRepository(GastronomyAppDbContext dbContext, IClock clock)
   {
     _dbContext = dbContext;
-    _mapperConfig = mapperConfig;
+    _clock = clock;
   }
 
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -46,22 +43,21 @@ public sealed class StationRepository : IStationRepository
                            .ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<AdministeredStation>> FindAdministeredAsync(Guid? festivalId, DateTime nowUtc, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Station>> FindAllAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    return await _dbContext.Stations.AsNoTracking()
-                           .OrderBy(station => station.SortOrder)
-                           .Select(station => new AdministeredStationRow
-                                              {
-                                                Station = station,
-                                                LastSeenAtUtc = _dbContext.Devices.Where(device => device.Id == station.DeviceId).Select(device => (DateTime?)device.LastSeenAtUtc).FirstOrDefault(),
-                                                HasOutstandingInvitation
-                                                  = _dbContext.EnrolmentInvitations.Any(invitation => invitation.Id == station.EnrolmentInvitationId
-                                                                                                      && invitation.ConsumedAtUtc == null
-                                                                                                      && invitation.ExpiresAtUtc > nowUtc),
-                                                IsAtTheFestival = festivalId != null && _dbContext.FestivalStations.Any(link => link.FestivalId == festivalId.Value && link.StationId == station.Id)
-                                              })
-                           .ProjectToType<AdministeredStation>(_mapperConfig)
-                           .ToListAsync(cancellationToken);
+    List<Station> stations = await _dbContext.Stations.AsNoTracking()
+                                             .OrderBy(station => station.SortOrder)
+                                             .Include(station => station.Device)
+                                             .Include(station => station.EnrolmentInvitation)
+                                             .Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value))
+                                             .ToListAsync(cancellationToken);
+
+    var nowUtc = _clock.UtcNow;
+
+    foreach (var station in stations.Where(station => station.EnrolmentInvitation?.IsOutstandingAt(nowUtc) == false))
+      station.EnrolmentInvitation = null;
+
+    return stations;
   }
 
   public async Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken)

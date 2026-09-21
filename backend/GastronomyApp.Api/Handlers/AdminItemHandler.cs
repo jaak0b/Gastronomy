@@ -1,7 +1,7 @@
-﻿using GastronomyApp.Api.Announcers;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -31,19 +31,19 @@ public sealed class AdminItemHandler
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(festivalId, cancellationToken);
+    Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(festivalId, cancellationToken);
 
     if (!listed.IsSuccess)
       return RefusalFor(listed.Failure);
 
-    return Results.Ok(new AdminItemListView(listed.Value.Select(_mapper.Map<AdminItemView>).ToList()));
+    return Results.Ok(new AdminItemListView(_mapper.Map<IReadOnlyList<AdminItemView>>(listed.Value)));
   }
 
   public async Task<IResult> CreateAsync(SaveItemRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await _service.CreateAsync(request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
 
     return await AnsweredAsync(created, item => Results.Json(_mapper.Map<AdminItemView>(item), statusCode: StatusCodes.Status201Created));
   }
@@ -52,26 +52,26 @@ public sealed class AdminItemHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
+    Result<CatalogItem, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(itemId, request.Name, request.CategoryId, request.SortOrder, request.ProductionMinutes, request.IsQueueIndependent, cancellationToken);
 
-    return await AnsweredAsync(updated, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
+    return await AnsweredAsync(updated, item => Results.Ok(new SavedItemView(item.Id)));
   }
 
   public async Task<IResult> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    Result<Guid, CatalogItemAdministrationFailure> switchedOn = await _service.ActivateAsync(itemId, cancellationToken);
+    Result<CatalogItem, CatalogItemAdministrationFailure> switchedOn = await _service.ActivateAsync(itemId, cancellationToken);
 
-    return await AnsweredAsync(switchedOn, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
+    return await AnsweredAsync(switchedOn, item => Results.Ok(new SavedItemView(item.Id)));
   }
 
   public async Task<IResult> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    Result<Guid, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(itemId, cancellationToken);
+    Result<CatalogItem, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(itemId, cancellationToken);
 
-    return await AnsweredAsync(switchedOff, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
+    return await AnsweredAsync(switchedOff, item => Results.Ok(new SavedItemView(item.Id)));
   }
 
-  private async Task<IResult> AnsweredAsync<TValue>(Result<TValue, CatalogItemAdministrationFailure> written, Func<TValue, IResult> buildResponse)
+  private async Task<IResult> AnsweredAsync(Result<CatalogItem, CatalogItemAdministrationFailure> written, Func<CatalogItem, IResult> buildResponse)
   {
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);

@@ -1,6 +1,5 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,15 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 [TestFixture]
 public sealed class StationRepositoryTest
 {
+  [SetUp]
+  public void SetUp()
+  {
+    _clock = new();
+  }
+
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+
+  private AdjustableClock _clock = null!;
 
   [Test]
   public async Task FindAtFestivalAsync_TheStationsOfOneFestival_ReturnsThemByTheirPlaceInTheList()
@@ -18,7 +25,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
     IReadOnlyCollection<Station> stations = await repository.FindAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -31,68 +38,71 @@ public sealed class StationRepositoryTest
   }
 
   [Test]
-  public async Task FindAdministeredAsync_WithoutAFestival_SaysNoStationBelongsToOne()
+  public async Task FindAllAsync_WithoutAFestival_SaysNoStationBelongsToOne()
   {
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
-    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => station.IsAtTheFestival), Is.All.False);
+    Assert.That(stations.Select(station => station.IsAtTheFestival()), Is.All.False);
   }
 
   [Test]
-  public async Task FindAdministeredAsync_AFestivalTheStationTakesPartIn_SaysTheStationBelongsToIt()
+  public async Task FindAllAsync_AFestivalTheStationTakesPartIn_SaysTheStationBelongsToIt()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
-    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(seeded.FestivalId, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => station.IsAtTheFestival), Is.All.True);
+    Assert.That(stations.Select(station => station.IsAtTheFestival()), Is.All.True);
   }
 
   [Test]
-  public async Task FindAdministeredAsync_AStationHoldingATablet_CarriesWhenThatTabletWasLastSeen()
+  public async Task FindAllAsync_AStationHoldingATablet_CarriesWhenThatTabletWasLastSeen()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var lastSeenAtUtc = _now.AddMinutes(-3);
     await GiveTheKitchenATabletAsync(fixture, seeded, lastSeenAtUtc);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
-    IReadOnlyList<AdministeredStation> stations = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    var kitchen = stations.First(station => station.StationId == seeded.KitchenStationId);
+    var kitchen = stations.First(station => station.Id == seeded.KitchenStationId);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(kitchen.HasDevice, Is.True);
-                      Assert.That(kitchen.LastSeenAtUtc, Is.EqualTo(lastSeenAtUtc));
+                      Assert.That(kitchen.DeviceId, Is.EqualTo(seeded.DeviceId));
+                      Assert.That(kitchen.Device!.LastSeenAtUtc, Is.EqualTo(lastSeenAtUtc));
                     });
   }
 
   [Test]
-  public async Task FindAdministeredAsync_AnInvitationWhoseTimeRanOut_NoLongerCountsAsOutstanding()
+  public async Task FindAllAsync_AnInvitationWhoseTimeRanOut_NoLongerCountsAsOutstanding()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteTheKitchenAsync(fixture, seeded, _now.AddMinutes(2));
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
-    IReadOnlyList<AdministeredStation> stillValid = await repository.FindAdministeredAsync(null, _now, TestContext.CurrentContext.CancellationToken);
-    IReadOnlyList<AdministeredStation> afterItRanOut = await repository.FindAdministeredAsync(null, _now.AddMinutes(5), TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Station> stillValid = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
+
+    _clock.Advance(TimeSpan.FromMinutes(5));
+
+    IReadOnlyList<Station> afterItRanOut = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stillValid.First(station => station.StationId == seeded.KitchenStationId).HasOutstandingInvitation, Is.True);
-                      Assert.That(afterItRanOut.First(station => station.StationId == seeded.KitchenStationId).HasOutstandingInvitation, Is.False);
+                      Assert.That(stillValid.First(station => station.Id == seeded.KitchenStationId).HasOutstandingInvitation(), Is.True);
+                      Assert.That(afterItRanOut.First(station => station.Id == seeded.KitchenStationId).HasOutstandingInvitation(), Is.False);
                     });
   }
 
@@ -102,7 +112,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
     Assert.Multiple(async () =>
                     {
@@ -117,7 +127,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
     var stationId = Guid.NewGuid();
 
     await repository.AddAsync(new()
@@ -141,7 +151,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -161,7 +171,7 @@ public sealed class StationRepositoryTest
     await GiveTheSausageAProductionTimeAsync(fixture, seeded);
     await PlaceKitchenOrderAsync(fixture, seeded);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -181,7 +191,7 @@ public sealed class StationRepositoryTest
     IReadOnlyList<Guid> items = await PlaceKitchenOrderAsync(fixture, seeded);
     await HandOutAsync(fixture, items);
 
-    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StationRepository repository = new(fixture.DbContext, _clock);
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 

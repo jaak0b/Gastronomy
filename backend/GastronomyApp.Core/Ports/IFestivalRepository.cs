@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 
 namespace GastronomyApp.Core.Ports;
 
@@ -9,13 +8,15 @@ public interface IFestivalRepository
 
   public Task<IReadOnlyCollection<Festival>> FindAllAsync(CancellationToken cancellationToken);
 
+  public Task<IReadOnlyList<Festival>> FindAllWithContentsAsync(CancellationToken cancellationToken);
+
+  public Task<IReadOnlyDictionary<Guid, int>> CountOrdersByFestivalAsync(CancellationToken cancellationToken);
+
   public Task<Festival?> FindByIdAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<bool> ExistsAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<IReadOnlyList<Guid>> FindIdsNotEndedAsync(DateTime nowUtc, CancellationToken cancellationToken);
-
-  public Task<IReadOnlyList<FestivalContentCounts>> FindContentCountsAsync(CancellationToken cancellationToken);
 
   public Task AddAsync(Festival festival, CancellationToken cancellationToken);
 

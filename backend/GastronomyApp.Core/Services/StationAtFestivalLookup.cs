@@ -1,5 +1,5 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -17,7 +17,7 @@ public sealed class StationAtFestivalLookup
     _runningFestival = runningFestival;
   }
 
-  public async Task<Result<StationAtFestival, StationQueueFailure>> FindAsync(Guid stationId, CancellationToken cancellationToken)
+  public async Task<Result<FestivalStation, StationQueueFailure>> FindAsync(Guid stationId, CancellationToken cancellationToken)
   {
     var station = await _stationRepository.FindByIdAsync(stationId, cancellationToken);
 
@@ -34,15 +34,11 @@ public sealed class StationAtFestivalLookup
     if (link is null)
       return Refuse(StationQueueFailureReason.StationNotAtTheFestival);
 
-    return Result<StationAtFestival, StationQueueFailure>.Success(new()
-                                                                  {
-                                                                    Station = station,
-                                                                    FestivalId = festival.Id
-                                                                  });
+    return Result<FestivalStation, StationQueueFailure>.Success(link);
   }
 
-  private Result<StationAtFestival, StationQueueFailure> Refuse(StationQueueFailureReason reason)
+  private Result<FestivalStation, StationQueueFailure> Refuse(StationQueueFailureReason reason)
   {
-    return Result<StationAtFestival, StationQueueFailure>.Failed(new() { Reason = reason });
+    return Result<FestivalStation, StationQueueFailure>.Failed(new() { Reason = reason });
   }
 }

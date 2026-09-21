@@ -18,11 +18,11 @@ public sealed class CatalogHandler
 
   public async Task<IResult> ReadAsync(CancellationToken cancellationToken)
   {
-    var catalog = await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken);
+    var festival = await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken);
 
-    if (catalog is null)
+    if (festival is null)
       return Results.Ok(new CatalogView(null, [], [], []));
 
-    return Results.Ok(_mapper.Map<CatalogView>(catalog));
+    return Results.Ok(_mapper.Map<CatalogView>(festival));
   }
 }

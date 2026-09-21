@@ -9,7 +9,7 @@ public sealed class MappingConfiguration
   {
     TypeAdapterConfig config = new() { RequireDestinationMemberSource = true };
 
-    config.Scan(typeof(MappingConfiguration).Assembly, typeof(CatalogProjection).Assembly);
+    config.Scan(typeof(MappingConfiguration).Assembly, typeof(DeviceOwnerProjection).Assembly);
     config.Compile();
 
     return config;

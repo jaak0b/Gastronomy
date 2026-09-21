@@ -11,6 +11,4 @@ public sealed record IssuedEnrolmentInvitation
   public required DeviceOwner? Owner { get; init; }
 
   public required string? OwnerName { get; init; }
-
-  public required Guid? RevokedDeviceId { get; init; }
 }

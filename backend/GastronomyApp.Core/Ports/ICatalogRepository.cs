@@ -1,8 +1,8 @@
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Ports;
 
 public interface ICatalogRepository
 {
-  public Task<CatalogAtFestival> ReadAtFestivalAsync(Guid festivalId, string festivalName, CancellationToken cancellationToken);
+  public Task<Festival?> FindWithMenuAsync(Guid festivalId, IReadOnlyCollection<Guid> orderableItemIds, CancellationToken cancellationToken);
 }

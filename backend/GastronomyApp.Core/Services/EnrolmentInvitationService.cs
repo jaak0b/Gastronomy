@@ -39,7 +39,7 @@ public sealed class EnrolmentInvitationService
     Guid? deviceToReplace = ownerRecord?.DeviceId;
 
     var created = await _store.CreateAsync(owner, cancellationToken);
-    Guid? revokedDeviceId = await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
+    await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
 
     return Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(new()
                                                                                                 {
@@ -47,8 +47,7 @@ public sealed class EnrolmentInvitationService
                                                                                                   QRCodeValue = created.QRCodeValue,
                                                                                                   ExpiresAtUtc = created.ExpiresAtUtc,
                                                                                                   Owner = owner,
-                                                                                                  OwnerName = ownerRecord?.Name,
-                                                                                                  RevokedDeviceId = revokedDeviceId
+                                                                                                  OwnerName = ownerRecord?.Name
                                                                                                 });
   }
 

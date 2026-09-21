@@ -1,5 +1,5 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 
 namespace GastronomyApp.Core.Services;
 
@@ -16,26 +16,15 @@ public sealed class CatalogService
     _runningFestival = runningFestival;
   }
 
-  public async Task<CatalogAtFestival?> ReadRunningFestivalCatalogAsync(CancellationToken cancellationToken)
+  public async Task<Festival?> ReadRunningFestivalCatalogAsync(CancellationToken cancellationToken)
   {
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is null)
       return null;
 
-    var catalog = await _catalogRepository.ReadAtFestivalAsync(runningFestival.Id, runningFestival.Name, cancellationToken);
+    IReadOnlyList<Guid> orderableItemIds = await _orderability.FindOrderableItemIdsAsync(runningFestival.Id, cancellationToken);
 
-    HashSet<Guid> orderableItemIds = (await _orderability.FindOrderableItemIdsAsync(runningFestival.Id, cancellationToken)).ToHashSet();
-
-    List<CatalogItemRow> items = catalog.Items.Where(item => orderableItemIds.Contains(item.ItemId)).ToList();
-    HashSet<Guid> categoryIdsWithItems = items.Select(item => item.CategoryId).ToHashSet();
-
-    List<CatalogCategoryRow> categories = catalog.Categories.Where(category => categoryIdsWithItems.Contains(category.CategoryId)).ToList();
-
-    return catalog with
-           {
-             Items = items,
-             Categories = categories
-           };
+    return await _catalogRepository.FindWithMenuAsync(runningFestival.Id, orderableItemIds, cancellationToken);
   }
 }

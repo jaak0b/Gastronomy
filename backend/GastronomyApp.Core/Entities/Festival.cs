@@ -21,4 +21,14 @@ public sealed class Festival
   public Collection<FestivalCatalogItem> CatalogItems { get; } = [];
 
   public Collection<ItemStationAssignment> ItemStationAssignments { get; } = [];
+
+  public int StationCount()
+  {
+    return Stations.Count;
+  }
+
+  public int MenuItemCount()
+  {
+    return CatalogItems.Count;
+  }
 }

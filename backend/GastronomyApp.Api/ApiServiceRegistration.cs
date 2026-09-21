@@ -55,6 +55,9 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<Pbkdf2SecretHasher>();
     services.AddSingleton<SqliteFailureTranslator>();
 
+    services.AddScoped<AfterCommitActions>();
+    services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
+
     services.AddScoped<ImmediateTransactionRunner>();
     services.AddScoped<ITransactionRunner>(provider => provider.GetRequiredService<ImmediateTransactionRunner>());
 
@@ -129,6 +132,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
     services.AddSingleton<DeviceRevocationAnnouncer>();
+    services.AddSingleton<IDeviceRevocationAnnouncer>(services => services.GetRequiredService<DeviceRevocationAnnouncer>());
     services.AddSingleton<StationChangeAnnouncer>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();

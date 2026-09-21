@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.Auth;
+﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
@@ -20,22 +19,14 @@ public sealed class EnrolmentRedemptionHandler
   private readonly OutstandingInvitationCache _invitationCache;
   private readonly ILogger<EnrolmentRedemptionHandler> _log;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly DeviceRevocationAnnouncer _revocationAnnouncer;
   private readonly EnrolmentInvitationService _service;
   private readonly DeviceTokenSplitter _tokenSplitter;
 
-  public EnrolmentRedemptionHandler(EnrolmentInvitationService service,
-                                    HubNotificationDispatcher dispatcher,
-                                    OutstandingInvitationCache invitationCache,
-                                    DeviceRevocationAnnouncer revocationAnnouncer,
-                                    ResultEnvelope resultEnvelope,
-                                    DeviceTokenSplitter tokenSplitter,
-                                    ILogger<EnrolmentRedemptionHandler> log)
+  public EnrolmentRedemptionHandler(EnrolmentInvitationService service, HubNotificationDispatcher dispatcher, OutstandingInvitationCache invitationCache, ResultEnvelope resultEnvelope, DeviceTokenSplitter tokenSplitter, ILogger<EnrolmentRedemptionHandler> log)
   {
     _service = service;
     _dispatcher = dispatcher;
     _invitationCache = invitationCache;
-    _revocationAnnouncer = revocationAnnouncer;
     _resultEnvelope = resultEnvelope;
     _tokenSplitter = tokenSplitter;
     _log = log;
@@ -133,7 +124,5 @@ public sealed class EnrolmentRedemptionHandler
       return;
 
     _log.LogInformation("The browser that was just set up handed over the device {PreviousDeviceId} it still held, so that one is signed out.", retiredDeviceId);
-
-    await _revocationAnnouncer.AnnounceAsync(retiredDeviceId, cancellationToken);
   }
 }

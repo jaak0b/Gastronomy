@@ -274,7 +274,7 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(fixture.DbContext, new ProjectionConfiguration().Build());
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
-    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
+    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
 
     var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
@@ -373,6 +373,6 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(dbContext, new ProjectionConfiguration().Build());
 
-    return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
+    return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
   }
 }

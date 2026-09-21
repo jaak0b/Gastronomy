@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -23,7 +22,7 @@ public sealed class StationQueueChangeService
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
+    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
@@ -40,7 +39,7 @@ public sealed class StationQueueChangeService
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
+    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
@@ -55,7 +54,7 @@ public sealed class StationQueueChangeService
 
   public async Task<Result<StationQueueChange, StationQueueFailure>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, CancellationToken cancellationToken)
   {
-    Result<StationAtFestival, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
+    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
 
     if (!access.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
@@ -68,7 +67,7 @@ public sealed class StationQueueChangeService
     return await BuildChangeAsync(access.Value, [], cancellationToken);
   }
 
-  private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(StationAtFestival station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
+  private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(FestivalStation station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
   {
     IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedStationOrders.Select(stationOrder => stationOrder.Id).Distinct().ToList(), cancellationToken);
 

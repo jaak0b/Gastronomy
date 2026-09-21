@@ -15,14 +15,17 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
 {
   private const int AttemptsBeforeGivingUp = 5;
 
+  private readonly AfterCommitActions _afterCommitActions;
+
   private readonly GastronomyAppDbContext _dbContext;
   private readonly SqliteFailureTranslator _failureTranslator;
   private readonly ILogger<ImmediateTransactionRunner> _logger;
 
-  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext, SqliteFailureTranslator failureTranslator, ILogger<ImmediateTransactionRunner> logger)
+  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext, SqliteFailureTranslator failureTranslator, AfterCommitActions afterCommitActions, ILogger<ImmediateTransactionRunner> logger)
   {
     _dbContext = dbContext;
     _failureTranslator = failureTranslator;
+    _afterCommitActions = afterCommitActions;
     _logger = logger;
   }
 
@@ -60,6 +63,10 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     await _dbContext.Database.OpenConnectionAsync(cancellationToken);
     var connection = _dbContext.Database.GetDbConnection();
     var transactionIsOpen = false;
+    IReadOnlyList<Func<CancellationToken, Task>> committedActions = [];
+    TValue value;
+
+    _afterCommitActions.StartCollecting();
 
     try
     {
@@ -73,7 +80,10 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
       await ExecuteAsync(connection, ClosingStatementFor(outcome.ShouldCommit), null, cancellationToken);
       transactionIsOpen = false;
 
-      return outcome.Value;
+      if (outcome.ShouldCommit)
+        committedActions = _afterCommitActions.TakeCollectedActions();
+
+      value = outcome.Value;
     }
     catch (SqliteException exception) when (_failureTranslator.IsDatabaseUnavailable(exception))
     {
@@ -89,12 +99,31 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     }
     finally
     {
+      _afterCommitActions.DiscardCollectedActions();
+
       if (transactionIsOpen)
         await RollbackAbandonedTransactionAsync(connection);
 
       _dbContext.Database.AutoTransactionBehavior = previousBehavior;
       await _dbContext.Database.CloseConnectionAsync();
     }
+
+    await RunCommittedActionsAsync(committedActions, cancellationToken);
+
+    return value;
+  }
+
+  private async Task RunCommittedActionsAsync(IReadOnlyList<Func<CancellationToken, Task>> committedActions, CancellationToken cancellationToken)
+  {
+    foreach (Func<CancellationToken, Task> committedAction in committedActions)
+      try
+      {
+        await committedAction(cancellationToken);
+      }
+      catch (Exception exception)
+      {
+        _logger.LogError(exception, "The change was committed, but the step waiting for that commit failed, so the phones and station tablets were not told about it and will load it the next time they connect.");
+      }
   }
 
   private async Task RollbackAbandonedTransactionAsync(DbConnection connection)

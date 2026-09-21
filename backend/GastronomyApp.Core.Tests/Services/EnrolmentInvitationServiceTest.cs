@@ -5,6 +5,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -17,6 +18,7 @@ public sealed class EnrolmentInvitationServiceTest
     _store = A.Fake<IEnrolmentInvitationStore>();
     _ownerStore = A.Fake<IDeviceOwnerStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
+    _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
@@ -24,7 +26,7 @@ public sealed class EnrolmentInvitationServiceTest
     A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwner>._!, A<CancellationToken>._)).Returns(Task.FromResult<DeviceOwnerRecord?>(null));
     A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(null));
 
-    _service = new(_store, _ownerStore, _deviceTokenStore, new(_store, _deviceTokenStore, _clock), _clock);
+    _service = new(_store, _ownerStore, _deviceTokenStore, new(_store, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), _clock);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -33,6 +35,7 @@ public sealed class EnrolmentInvitationServiceTest
   private readonly Guid _staffMemberId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _stationId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
 
+  private IDeviceRevocationAnnouncer _announcer = null!;
   private IClock _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IDeviceOwnerStore _ownerStore = null!;
@@ -81,7 +84,6 @@ public sealed class EnrolmentInvitationServiceTest
                       Assert.That(issued.IsSuccess, Is.True);
                       Assert.That(issued.Value.Owner, Is.Null);
                       Assert.That(issued.Value.QRCodeValue, Is.EqualTo("ABCDEF"));
-                      Assert.That(issued.Value.RevokedDeviceId, Is.Null);
                     });
   }
 
@@ -104,10 +106,10 @@ public sealed class EnrolmentInvitationServiceTest
                     {
                       Assert.That(issued.IsSuccess, Is.True);
                       Assert.That(issued.Value.OwnerName, Is.EqualTo("Kueche"));
-                      Assert.That(issued.Value.RevokedDeviceId, Is.EqualTo(_deviceId));
                     });
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _announcer.AnnounceAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]

@@ -1,6 +1,7 @@
-﻿using GastronomyApp.Api.Announcers;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -29,36 +30,46 @@ public sealed class AdminFestivalMenuHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(festivalId, itemId, request.PriceCents, request.StationIds, cancellationToken);
+    Result<FestivalCatalogItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(festivalId, itemId, request.PriceCents, request.StationIds, cancellationToken);
 
-    return await AnsweredAsync(putOn, festivalId, itemId, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
+    if (!putOn.IsSuccess)
+      return RefusalFor(putOn.Failure, festivalId, itemId);
+
+    await TellTheDevicesAsync();
+
+    return Results.Ok(new SavedItemView(putOn.Value.CatalogItemId));
   }
 
   public async Task<IResult> TakeOffTheMenuAsync(Guid festivalId, Guid itemId, CancellationToken cancellationToken)
   {
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> takenOff = await _service.TakeOffTheMenuAsync(festivalId, itemId, cancellationToken);
+    Result<FestivalCatalogItem, FestivalMenuFailure> takenOff = await _service.TakeOffTheMenuAsync(festivalId, itemId, cancellationToken);
 
-    return await AnsweredAsync(takenOff, festivalId, itemId, _ => Results.NoContent());
+    if (!takenOff.IsSuccess)
+      return RefusalFor(takenOff.Failure, festivalId, itemId);
+
+    await TellTheDevicesAsync();
+
+    return Results.NoContent();
   }
 
   public async Task<IResult> SetAvailabilityAsync(Guid festivalId, Guid itemId, SetAvailabilityRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedFestivalMenuItem, FestivalMenuFailure> saved = await _service.SetAvailabilityAsync(festivalId, itemId, request.IsAvailable, cancellationToken);
+    Result<FestivalCatalogItem?, FestivalMenuFailure> saved = await _service.SetAvailabilityAsync(festivalId, itemId, request.IsAvailable, cancellationToken);
 
-    return await AnsweredAsync(saved, festivalId, itemId, savedItemId => Results.Ok(new SavedItemView(savedItemId)));
+    if (!saved.IsSuccess)
+      return RefusalFor(saved.Failure, festivalId, itemId);
+
+    if (saved.Value is not null)
+      await TellTheDevicesAsync();
+
+    return Results.Ok(new SavedItemView(itemId));
   }
 
-  private async Task<IResult> AnsweredAsync(Result<SavedFestivalMenuItem, FestivalMenuFailure> written, Guid festivalId, Guid itemId, Func<Guid, IResult> buildResponse)
+  private async Task TellTheDevicesAsync()
   {
-    if (!written.IsSuccess)
-      return RefusalFor(written.Failure, festivalId, itemId);
-
-    if (written.Value.SomethingChanged)
-      await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
-
-    return buildResponse(written.Value.CatalogItemId);
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
   }
 
   private IResult RefusalFor(FestivalMenuFailure failure, Guid festivalId, Guid itemId)

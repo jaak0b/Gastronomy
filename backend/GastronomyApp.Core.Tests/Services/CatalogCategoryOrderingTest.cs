@@ -1,5 +1,5 @@
 using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -11,15 +11,15 @@ public sealed class CatalogCategoryOrderingTest
   public void SetUp()
   {
     _ordering = new();
-    _first = Guid.NewGuid();
-    _middle = Guid.NewGuid();
-    _last = Guid.NewGuid();
+    _first = BuildCategory("Speisen", 1);
+    _middle = BuildCategory("Getraenke", 2);
+    _last = BuildCategory("Kuchen", 3);
   }
 
   private CatalogCategoryOrdering _ordering = null!;
-  private Guid _first;
-  private Guid _middle;
-  private Guid _last;
+  private CatalogCategory _first = null!;
+  private CatalogCategory _middle = null!;
+  private CatalogCategory _last = null!;
 
   [Test]
   public void NextSortOrder_NoCategoryExistsYet_StartsAtTheFirstPosition()
@@ -41,121 +41,103 @@ public sealed class CatalogCategoryOrderingTest
   [Test]
   public void Move_DownFromTheFirstPosition_SwapsItWithTheOneBelow()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle,
-                                                                    _last
-                                                                  ],
-                                                                  _first,
-                                                                  CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, CategoryMoveDirection.Down);
 
     Assert.That(moved,
-                Is.EqualTo(new CatalogCategoryPosition[]
+                Is.EqualTo(new[]
                            {
-                             new(_middle, 1),
-                             new(_first, 2),
-                             new(_last, 3)
+                             _middle,
+                             _first,
+                             _last
                            }));
   }
 
   [Test]
   public void Move_UpFromTheLastPosition_SwapsItWithTheOneAbove()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle,
-                                                                    _last
-                                                                  ],
-                                                                  _last,
-                                                                  CategoryMoveDirection.Up);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, CategoryMoveDirection.Up);
 
     Assert.That(moved,
-                Is.EqualTo(new CatalogCategoryPosition[]
+                Is.EqualTo(new[]
                            {
-                             new(_first, 1),
-                             new(_last, 2),
-                             new(_middle, 3)
+                             _first,
+                             _last,
+                             _middle
                            }));
   }
 
   [Test]
   public void Move_UpFromTheFirstPosition_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle,
-                                                                    _last
-                                                                  ],
-                                                                  _first,
-                                                                  CategoryMoveDirection.Up);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _first.Id, CategoryMoveDirection.Up);
 
-    Assert.That(moved,
-                Is.EqualTo(new CatalogCategoryPosition[]
-                           {
-                             new(_first, 1),
-                             new(_middle, 2),
-                             new(_last, 3)
-                           }));
+    Assert.That(moved, Is.EqualTo(AllThree()));
   }
 
   [Test]
   public void Move_DownFromTheLastPosition_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle,
-                                                                    _last
-                                                                  ],
-                                                                  _last,
-                                                                  CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move(AllThree(), _last.Id, CategoryMoveDirection.Down);
 
-    Assert.That(moved,
-                Is.EqualTo(new CatalogCategoryPosition[]
-                           {
-                             new(_first, 1),
-                             new(_middle, 2),
-                             new(_last, 3)
-                           }));
+    Assert.That(moved, Is.EqualTo(AllThree()));
   }
 
   [Test]
   public void Move_TheOnlyCategory_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([_first], _first, CategoryMoveDirection.Down);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move([_first], _first.Id, CategoryMoveDirection.Down);
 
-    Assert.That(moved, Is.EqualTo(new CatalogCategoryPosition[] { new(_first, 1) }));
+    Assert.That(moved, Is.EqualTo(new[] { _first }));
   }
 
   [Test]
   public void Move_CategoryThatIsNotInTheList_ChangesNothing()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle
-                                                                  ],
-                                                                  _last,
-                                                                  CategoryMoveDirection.Up);
+    IReadOnlyList<CatalogCategory> moved = _ordering.Move([
+                                                            _first,
+                                                            _middle
+                                                          ],
+                                                          _last.Id,
+                                                          CategoryMoveDirection.Up);
 
     Assert.That(moved,
-                Is.EqualTo(new CatalogCategoryPosition[]
+                Is.EqualTo(new[]
                            {
-                             new(_first, 1),
-                             new(_middle, 2)
+                             _first,
+                             _middle
                            }));
   }
 
   [Test]
-  public void Move_PositionsWithGapsBetweenThem_NumbersThemWithoutGaps()
+  public void Move_NoListOfCategories_IsRefused()
   {
-    IReadOnlyList<CatalogCategoryPosition> moved = _ordering.Move([
-                                                                    _first,
-                                                                    _middle,
-                                                                    _last
-                                                                  ],
-                                                                  _middle,
-                                                                  CategoryMoveDirection.Up);
+    Assert.That(() => _ordering.Move(null!, _first.Id, CategoryMoveDirection.Up), Throws.ArgumentNullException);
+  }
 
-    Assert.That(moved.Select(position => position.SortOrder),
+  [Test]
+  public void IsNumberedInOrder_PositionsWithGapsBetweenThem_AnswersFalse()
+  {
+    _last.SortOrder = 7;
+
+    Assert.That(_ordering.IsNumberedInOrder(AllThree()), Is.False);
+  }
+
+  [Test]
+  public void IsNumberedInOrder_PositionsCountingUpFromOne_AnswersTrue()
+  {
+    Assert.That(_ordering.IsNumberedInOrder(AllThree()), Is.True);
+  }
+
+  [Test]
+  public void NumberInOrder_PositionsWithGapsBetweenThem_NumbersThemWithoutGaps()
+  {
+    _first.SortOrder = 4;
+    _middle.SortOrder = 9;
+    _last.SortOrder = 11;
+
+    _ordering.NumberInOrder(AllThree());
+
+    Assert.That(AllThree().Select(category => category.SortOrder),
                 Is.EqualTo(new[]
                            {
                              1,
@@ -164,9 +146,25 @@ public sealed class CatalogCategoryOrderingTest
                            }));
   }
 
-  [Test]
-  public void Move_NoListOfCategories_IsRefused()
+  private IReadOnlyList<CatalogCategory> AllThree()
   {
-    Assert.That(() => _ordering.Move(null!, _first, CategoryMoveDirection.Up), Throws.ArgumentNullException);
+    return
+    [
+      _first,
+      _middle,
+      _last
+    ];
+  }
+
+  private CatalogCategory BuildCategory(string name, int sortOrder)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             Name = name,
+             ColourHex = "#C62828",
+             SortOrder = sortOrder,
+             IsActive = true
+           };
   }
 }

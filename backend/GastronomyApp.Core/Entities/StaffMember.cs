@@ -21,4 +21,9 @@ public sealed class StaffMember
   public EnrolmentInvitation? EnrolmentInvitation { get; set; }
 
   public Collection<Order> Orders { get; } = [];
+
+  public bool HasOutstandingInvitation()
+  {
+    return EnrolmentInvitation is not null;
+  }
 }

@@ -1,7 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -53,7 +52,7 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+    Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -63,38 +62,26 @@ public sealed class CatalogItemAdministrationServiceTest
   }
 
   [Test]
-  public async Task ListAsync_AFestivalTheItemIsOnTheMenuOf_CarriesThePriceAndTheStations()
+  public async Task ListAsync_AFestival_AsksForTheItemsWithWhatTheyCostThere()
   {
-    A.CallTo(() => _itemRepository.FindAllOrderedAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([BuildItem(_bratwurstId, "Bratwurst", _foodCategoryId, true)]));
-    A.CallTo(() => _itemRepository.FindMenuRowsAtFestivalAsync(_festivalId, A<CancellationToken>._))
-   .Returns(Task.FromResult<IReadOnlyList<FestivalCatalogItem>>([
-                                                                  new()
-                                                                  {
-                                                                    Id = Guid.NewGuid(),
-                                                                    FestivalId = _festivalId,
-                                                                    CatalogItemId = _bratwurstId,
-                                                                    PriceCents = 350,
-                                                                    IsAvailable = true
-                                                                  }
-                                                                ]));
-    A.CallTo(() => _itemRepository.FindAssignmentsAtFestivalAsync(_festivalId, A<CancellationToken>._))
-   .Returns(Task.FromResult<IReadOnlyList<ItemStationAssignment>>([
-                                                                    new()
-                                                                    {
-                                                                      Id = Guid.NewGuid(),
-                                                                      FestivalId = _festivalId,
-                                                                      CatalogItemId = _bratwurstId,
-                                                                      StationId = _kitchenId
-                                                                    }
-                                                                  ]));
+    var bratwurst = BuildItem(_bratwurstId, "Bratwurst", _foodCategoryId, true);
+    bratwurst.FestivalCatalogItems.Add(new()
+                                       {
+                                         Id = Guid.NewGuid(),
+                                         FestivalId = _festivalId,
+                                         CatalogItemId = _bratwurstId,
+                                         PriceCents = 350,
+                                         IsAvailable = true
+                                       });
 
-    Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+    A.CallTo(() => _itemRepository.FindAllOrderedAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([bratwurst]));
+
+    Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(listed.IsSuccess, Is.True);
-                      Assert.That(listed.Value.Single().AtTheFestival!.PriceCents, Is.EqualTo(350));
-                      Assert.That(listed.Value.Single().AtTheFestival!.StationIds, Is.EqualTo(new[] { _kitchenId }));
+                      Assert.That(listed.Value.Single().FestivalCatalogItems.Single().PriceCents, Is.EqualTo(350));
                     });
   }
 
@@ -103,7 +90,7 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     A.CallTo(() => _itemRepository.IsNameTakenAsync("Bratwurst", null, A<CancellationToken>._)).Returns(true);
 
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Bratwurst", _foodCategoryId);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Bratwurst", _foodCategoryId);
 
     Assert.Multiple(() =>
                     {
@@ -115,7 +102,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_NameOfOnlySpaces_FailsBecauseTheNameIsMissing()
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("   ", _foodCategoryId);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("   ", _foodCategoryId);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.NameMissing));
   }
@@ -123,7 +110,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_CategoryThatIsNotThere_FailsBecauseTheCategoryIsUnknown()
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", Guid.NewGuid());
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", Guid.NewGuid());
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.CategoryUnknown));
   }
@@ -131,7 +118,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_CategoryThatIsSwitchedOff_FailsBecauseTheCategoryIsSwitchedOff()
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _switchedOffCategoryId);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _switchedOffCategoryId);
 
     Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff));
   }
@@ -141,7 +128,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [TestCase(1.25d)]
   public async Task CreateAsync_PreparationTimeTheItemFormNeverProduces_FailsBecauseItIsOutOfRange(double minutes)
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, productionMinutes: minutes);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, productionMinutes: minutes);
 
     Assert.Multiple(() =>
                     {
@@ -153,7 +140,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AnItemNothingRefuses_StoresItAndCommits()
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, productionMinutes: 1.5);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, productionMinutes: 1.5);
 
     Assert.Multiple(() =>
                     {
@@ -168,24 +155,24 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AnItemNothingRefuses_HandsBackTheCreatedArticle()
   {
-    Result<AdministeredCatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, 4);
+    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("Currywurst", _foodCategoryId, 4);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.True);
-                      Assert.That(created.Value.ItemId, Is.Not.EqualTo(Guid.Empty));
+                      Assert.That(created.Value.Id, Is.Not.EqualTo(Guid.Empty));
                       Assert.That(created.Value.Name, Is.EqualTo("Currywurst"));
                       Assert.That(created.Value.CategoryId, Is.EqualTo(_foodCategoryId));
                       Assert.That(created.Value.SortOrder, Is.EqualTo(4));
                       Assert.That(created.Value.IsActive, Is.True);
-                      Assert.That(created.Value.AtTheFestival, Is.Null);
+                      Assert.That(created.Value.FestivalCatalogItems, Is.Empty);
                     });
   }
 
   [Test]
   public async Task UpdateAsync_ItemThatIsNotThere_FailsBecauseTheItemIsNotFound()
   {
-    Result<Guid, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(Guid.NewGuid(), "Currywurst", _foodCategoryId, 1, null, false, CancellationToken.None);
+    Result<CatalogItem, CatalogItemAdministrationFailure> updated = await _service.UpdateAsync(Guid.NewGuid(), "Currywurst", _foodCategoryId, 1, null, false, CancellationToken.None);
 
     Assert.That(updated.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.ItemNotFound));
   }
@@ -196,7 +183,7 @@ public sealed class CatalogItemAdministrationServiceTest
     var itemId = Guid.NewGuid();
     A.CallTo(() => _itemRepository.FindByIdAsync(itemId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(BuildItem(itemId, "Pommes", _switchedOffCategoryId, false)));
 
-    Result<Guid, CatalogItemAdministrationFailure> switchedOn = await _service.ActivateAsync(itemId, CancellationToken.None);
+    Result<CatalogItem, CatalogItemAdministrationFailure> switchedOn = await _service.ActivateAsync(itemId, CancellationToken.None);
 
     Assert.That(switchedOn.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff));
   }
@@ -215,7 +202,7 @@ public sealed class CatalogItemAdministrationServiceTest
                                                     IsAvailable = true
                                                   }));
 
-    Result<Guid, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
+    Result<CatalogItem, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -227,7 +214,7 @@ public sealed class CatalogItemAdministrationServiceTest
   [Test]
   public async Task DeactivateAsync_NoFestivalIsRunning_SwitchesTheItemOff()
   {
-    Result<Guid, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
+    Result<CatalogItem, CatalogItemAdministrationFailure> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -252,7 +239,7 @@ public sealed class CatalogItemAdministrationServiceTest
                                        }));
   }
 
-  private Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder = 1, double? productionMinutes = null, bool isQueueIndependent = false)
+  private Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder = 1, double? productionMinutes = null, bool isQueueIndependent = false)
   {
     return _service.CreateAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, CancellationToken.None);
   }

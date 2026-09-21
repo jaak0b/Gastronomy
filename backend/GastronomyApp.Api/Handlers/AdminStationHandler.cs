@@ -1,7 +1,7 @@
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -13,22 +13,20 @@ public sealed class AdminStationHandler
 {
   private readonly StationChangeAnnouncer _announcer;
   private readonly IMapper _mapper;
-  private readonly DeviceRevocationAnnouncer _revocationAnnouncer;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly StationAdministrationService _service;
 
-  public AdminStationHandler(StationAdministrationService service, StationChangeAnnouncer announcer, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope, IMapper mapper)
+  public AdminStationHandler(StationAdministrationService service, StationChangeAnnouncer announcer, ResultEnvelope resultEnvelope, IMapper mapper)
   {
     _service = service;
     _announcer = announcer;
-    _revocationAnnouncer = revocationAnnouncer;
     _resultEnvelope = resultEnvelope;
     _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    Result<IReadOnlyList<AdministeredStation>, StationAdministrationFailure> listed = await _service.ListAsync(festivalId, cancellationToken);
+    Result<IReadOnlyList<Station>, StationAdministrationFailure> listed = await _service.ListAsync(festivalId, cancellationToken);
 
     if (!listed.IsSuccess)
       return RefusalFor(listed.Failure);
@@ -40,12 +38,12 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<AdministeredStation, StationAdministrationFailure> created = await _service.CreateAsync(request.Name, request.SortOrder, cancellationToken);
+    Result<Station, StationAdministrationFailure> created = await _service.CreateAsync(request.Name, request.SortOrder, cancellationToken);
 
     if (!created.IsSuccess)
       return RefusalFor(created.Failure);
 
-    await _announcer.AnnounceAsync(created.Value.StationId);
+    await _announcer.AnnounceAsync(created.Value.Id);
 
     return Results.Json(_mapper.Map<AdminStationView>(created.Value), statusCode: StatusCodes.Status201Created);
   }
@@ -54,36 +52,34 @@ public sealed class AdminStationHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStation, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, request.Name, request.SortOrder, cancellationToken);
+    Result<Station?, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, request.Name, request.SortOrder, cancellationToken);
 
-    return await AnsweredAsync(updated, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
+    return await AnsweredAsync(updated, stationId);
   }
 
   public async Task<IResult> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Result<SavedStation, StationAdministrationFailure> switchedOn = await _service.ActivateAsync(stationId, cancellationToken);
+    Result<Station?, StationAdministrationFailure> switchedOn = await _service.ActivateAsync(stationId, cancellationToken);
 
-    return await AnsweredAsync(switchedOn, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
+    return await AnsweredAsync(switchedOn, stationId);
   }
 
   public async Task<IResult> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Result<SavedStation, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(stationId, cancellationToken);
+    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(stationId, cancellationToken);
 
-    return await AnsweredAsync(switchedOff, savedStationId => Results.Ok(new SavedStationView(savedStationId)), cancellationToken);
+    return await AnsweredAsync(switchedOff, stationId);
   }
 
-  private async Task<IResult> AnsweredAsync(Result<SavedStation, StationAdministrationFailure> written, Func<Guid, IResult> buildResponse, CancellationToken cancellationToken)
+  private async Task<IResult> AnsweredAsync(Result<Station?, StationAdministrationFailure> written, Guid stationId)
   {
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);
 
-    await _revocationAnnouncer.AnnounceAsync(written.Value.RevokedDeviceId, cancellationToken);
+    if (written.Value is not null)
+      await _announcer.AnnounceAsync(stationId);
 
-    if (written.Value.SomethingChanged)
-      await _announcer.AnnounceAsync(written.Value.StationId);
-
-    return buildResponse(written.Value.StationId);
+    return Results.Ok(new SavedStationView(stationId));
   }
 
   private IResult RefusalFor(StationAdministrationFailure failure)

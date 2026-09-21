@@ -161,7 +161,7 @@ public sealed class FestivalScopeEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(retry.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(retry.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(retryBody, Is.EqualTo(firstBody));
                     });
   }

@@ -119,6 +119,6 @@ public sealed class AdminStationAnnouncementTest
   {
     StationChangeAnnouncer announcer = new(new(hubContext), new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncer>>()));
 
-    return new(services.GetRequiredService<StationAdministrationService>(), announcer, services.GetRequiredService<DeviceRevocationAnnouncer>(), services.GetRequiredService<ResultEnvelope>(), services.GetRequiredService<IMapper>());
+    return new(services.GetRequiredService<StationAdministrationService>(), announcer, services.GetRequiredService<ResultEnvelope>(), services.GetRequiredService<IMapper>());
   }
 }

@@ -1,4 +1,4 @@
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -11,55 +11,68 @@ public sealed class StaffMemberRepositoryTest
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
   [Test]
-  public async Task FindAdministeredAsync_SomebodyWithoutAPhone_CarriesNoDeviceAndNoLastSeenMoment()
+  public async Task FindAllAsync_SomebodyWithoutAPhone_CarriesNoDeviceAndNoOutstandingInvitation()
   {
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(staffMembers[0].Name, Is.EqualTo("Anna"));
-                      Assert.That(staffMembers[0].HasDevice, Is.False);
-                      Assert.That(staffMembers[0].LastSeenAtUtc, Is.Null);
-                      Assert.That(staffMembers[0].HasOutstandingInvitation, Is.False);
+                      Assert.That(staffMembers[0].Device, Is.Null);
+                      Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.False);
                     });
   }
 
   [Test]
-  public async Task FindAdministeredAsync_SomebodyHoldingAPhone_CarriesWhenThatPhoneWasLastSeen()
+  public async Task FindAllAsync_SomebodyHoldingAPhone_CarriesWhenThatPhoneWasLastSeen()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var lastSeenAtUtc = _now.AddMinutes(-2);
     await GiveAnnaAPhoneAsync(fixture, seeded, lastSeenAtUtc);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(staffMembers[0].HasDevice, Is.True);
-                      Assert.That(staffMembers[0].LastSeenAtUtc, Is.EqualTo(lastSeenAtUtc));
+                      Assert.That(staffMembers[0].DeviceId, Is.EqualTo(seeded.DeviceId));
+                      Assert.That(staffMembers[0].Device!.LastSeenAtUtc, Is.EqualTo(lastSeenAtUtc));
                     });
   }
 
   [Test]
-  public async Task FindAdministeredAsync_AnInvitationThatWasAlreadyUsed_NoLongerCountsAsOutstanding()
+  public async Task FindAllAsync_AnInvitationNobodyHasUsedYet_CountsAsOutstanding()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    await InviteAnnaAsync(fixture, seeded, null);
+
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+
+    IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.True);
+  }
+
+  [Test]
+  public async Task FindAllAsync_AnInvitationThatWasAlreadyUsed_NoLongerCountsAsOutstanding()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, _now.AddMinutes(-1));
 
-    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
 
-    IReadOnlyList<AdministeredStaffMember> staffMembers = await repository.FindAdministeredAsync(_now, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(staffMembers[0].HasOutstandingInvitation, Is.False);
+    Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.False);
   }
 
   [Test]
@@ -68,7 +81,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
 
     Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -79,7 +92,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
 
     var anna = (await repository.FindByIdAsync(seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken))!;
     anna.Name = "Anne Marie";
@@ -111,7 +124,7 @@ public sealed class StaffMemberRepositoryTest
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
-  private async Task InviteAnnaAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime consumedAtUtc)
+  private async Task InviteAnnaAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime? consumedAtUtc)
   {
     var invitationId = Guid.NewGuid();
 

@@ -21,10 +21,10 @@ public sealed class OrderAcceptanceComposition
 
   public OrderAcceptanceService Create(GastronomyAppDbContext dbContext, INumberAllocator numberAllocator, ILogger<ImmediateTransactionRunner> logger)
   {
-    OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext), new StationRepository(dbContext, new ProjectionConfiguration().Build()), new());
+    OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext), new StationRepository(dbContext, new AdjustableClock()), new());
 
-    ImmediateTransactionRunner transactionRunner = new(dbContext, new(), logger);
-    FestivalRepository festivalRepository = new(dbContext, new(), new ProjectionConfiguration().Build());
+    ImmediateTransactionRunner transactionRunner = new(dbContext, new(), new(), logger);
+    FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), new SystemClock());
 
     return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, new(new OpenItemRepository(dbContext), runningFestival, transactionRunner, new SystemClock()), transactionRunner, new SystemClock());

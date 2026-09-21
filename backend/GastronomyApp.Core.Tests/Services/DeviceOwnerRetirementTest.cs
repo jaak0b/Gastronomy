@@ -1,6 +1,7 @@
 using FakeItEasy;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -12,17 +13,19 @@ public sealed class DeviceOwnerRetirementTest
   {
     _invitationStore = A.Fake<IEnrolmentInvitationStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
+    _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _clock = A.Fake<IClock>();
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
 
-    _retirement = new(_invitationStore, _deviceTokenStore, _clock);
+    _retirement = new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
   private readonly Guid _invitationId = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
 
+  private IDeviceRevocationAnnouncer _announcer = null!;
   private IClock _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IEnrolmentInvitationStore _invitationStore = null!;
@@ -50,6 +53,7 @@ public sealed class DeviceOwnerRetirementTest
     Assert.That(await _retirement.RevokeDeviceAsync(null, CancellationToken.None), Is.Null);
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+    A.CallTo(() => _announcer.AnnounceAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]

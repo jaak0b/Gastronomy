@@ -1,8 +1,7 @@
-﻿using GastronomyApp.Api.Announcers;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -56,15 +55,17 @@ public sealed class AdminCategoryHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(categoryId, request.Direction, cancellationToken);
+    Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(categoryId, request.Direction, cancellationToken);
 
     if (!moved.IsSuccess)
       return RefusalFor(moved.Failure);
 
-    if (moved.Value.OrderChanged)
-      await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+    if (moved.Value is not { } reordered)
+      return Results.Ok(BuildCategoryListView(await _service.ListAsync(cancellationToken)));
 
-    return Results.Ok(BuildCategoryListView(moved.Value.Categories));
+    await _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(_announcer.AnnounceAsync);
+
+    return Results.Ok(BuildCategoryListView(reordered));
   }
 
   public async Task<IResult> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
@@ -107,10 +108,5 @@ public sealed class AdminCategoryHandler
   private AdminCategoryListView BuildCategoryListView(IReadOnlyCollection<CatalogCategory> categories)
   {
     return new(_mapper.Map<IReadOnlyList<AdminCategoryView>>(categories));
-  }
-
-  private AdminCategoryView BuildCategoryView(CatalogCategory category)
-  {
-    return new(category.Id, category.Name, category.ColourHex, category.SortOrder, category.IsActive);
   }
 }

@@ -1,7 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -19,7 +18,7 @@ public sealed class CatalogServiceTest
 
     A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival()));
-    A.CallTo(() => _catalogRepository.ReadAtFestivalAsync(_festivalId, "Sommerfest", A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult(BuildCatalog()));
+    A.CallTo(() => _catalogRepository.FindWithMenuAsync(_festivalId, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult<Festival?>(BuildFestival()));
     A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
     A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(_festivalId, A<CancellationToken>._))
    .Returns(Task.FromResult<IReadOnlyList<Guid>>([
@@ -34,9 +33,7 @@ public sealed class CatalogServiceTest
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _beerId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
   private readonly Guid _bratwurstId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
-  private readonly Guid _drinkCategoryId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
-  private readonly Guid _foodCategoryId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _kitchenId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
 
   private ICatalogRepository _catalogRepository = null!;
@@ -50,33 +47,34 @@ public sealed class CatalogServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    var catalog = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
+    var festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
 
-    Assert.That(catalog, Is.Null);
+    Assert.That(festival, Is.Null);
   }
 
   [Test]
-  public async Task ReadRunningFestivalCatalogAsync_AnItemNoStationPrepares_LeavesTheItemAndItsCategoryOut()
+  public async Task ReadRunningFestivalCatalogAsync_AnItemNoStationPrepares_AsksOnlyForTheItemsTheWaiterCanOrder()
   {
-    var catalog = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
+    await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(catalog!.Items.Select(item => item.ItemId), Is.EqualTo(new[] { _bratwurstId }));
-                      Assert.That(catalog.Categories.Select(category => category.CategoryId), Is.EqualTo(new[] { _foodCategoryId }));
-                    });
+    A.CallTo(() => _catalogRepository.FindWithMenuAsync(_festivalId, A<IReadOnlyCollection<Guid>>.That.IsSameSequenceAs(TheBratwurstAlone()), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
-  public async Task ReadRunningFestivalCatalogAsync_ARunningFestival_KeepsItsNameAndStations()
+  public async Task ReadRunningFestivalCatalogAsync_ARunningFestival_ReturnsTheFestivalWithItsMenu()
   {
-    var catalog = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
+    var festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(catalog!.FestivalName, Is.EqualTo("Sommerfest"));
-                      Assert.That(catalog.Stations.Select(station => station.StationId), Is.EqualTo(new[] { _kitchenId }));
+                      Assert.That(festival!.Id, Is.EqualTo(_festivalId));
+                      Assert.That(festival.Name, Is.EqualTo("Sommerfest"));
                     });
+  }
+
+  private IReadOnlyCollection<Guid> TheBratwurstAlone()
+  {
+    return [_bratwurstId];
   }
 
   private Festival BuildFestival()
@@ -90,20 +88,5 @@ public sealed class CatalogServiceTest
              NextOrderNumber = 1,
              IsHidden = false
            };
-  }
-
-  private CatalogAtFestival BuildCatalog()
-  {
-    return new(_festivalId,
-               "Sommerfest",
-               [new(_kitchenId, "Kueche", 1)],
-               [
-                 new(_foodCategoryId, "Speisen", "#C62828", 1),
-                 new(_drinkCategoryId, "Getraenke", "#1565C0", 2)
-               ],
-               [
-                 new(_bratwurstId, _foodCategoryId, "Bratwurst", 350, 1, true, 5, false, [_kitchenId]),
-                 new(_beerId, _drinkCategoryId, "Bier", 250, 2, true, null, true, [])
-               ]);
   }
 }

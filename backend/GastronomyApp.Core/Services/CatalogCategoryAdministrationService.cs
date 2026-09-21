@@ -1,7 +1,6 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -36,9 +35,9 @@ public sealed class CatalogCategoryAdministrationService
     return RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, name, colourHex, transactionCancellationToken), written => written.IsSuccess, cancellationToken);
   }
 
-  public Task<Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  public Task<Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken), written => written.IsSuccess && written.Value.OrderChanged, cancellationToken);
+    return RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken), written => written.IsSuccess && written.Value is not null, cancellationToken);
   }
 
   public Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
@@ -94,28 +93,23 @@ public sealed class CatalogCategoryAdministrationService
     return Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>.Success(category);
   }
 
-  private async Task<Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>> MovedAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  private async Task<Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>>> MovedAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
 
     if (categories.All(candidate => candidate.Id != categoryId))
-      return Failed<ReorderedCatalogCategories>(CatalogCategoryAdministrationFailureReason.CategoryNotFound);
+      return Failed<IReadOnlyList<CatalogCategory>?>(CatalogCategoryAdministrationFailureReason.CategoryNotFound);
 
-    Dictionary<Guid, CatalogCategory> categoriesById = categories.ToDictionary(category => category.Id);
+    IReadOnlyList<CatalogCategory> reordered = _ordering.Move(categories, categoryId, direction);
 
-    IReadOnlyList<CatalogCategoryPosition> positions = _ordering.Move(categories.Select(category => category.Id).ToList(), categoryId, direction);
+    if (_ordering.IsNumberedInOrder(reordered))
+      return Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>>.Success(null);
 
-    IReadOnlyList<CatalogCategory> reordered = positions.Select(position => categoriesById[position.CategoryId]).ToList();
-
-    if (positions.All(position => categoriesById[position.CategoryId].SortOrder == position.SortOrder))
-      return Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>.Success(new(reordered, false));
-
-    foreach (var position in positions)
-      categoriesById[position.CategoryId].SortOrder = position.SortOrder;
+    _ordering.NumberInOrder(reordered);
 
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<ReorderedCatalogCategories, Failure<CatalogCategoryAdministrationFailureReason>>.Success(new(reordered, true));
+    return Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>>.Success(reordered);
   }
 
   private async Task<Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>>> SwitchedOnAsync(Guid categoryId, CancellationToken cancellationToken)

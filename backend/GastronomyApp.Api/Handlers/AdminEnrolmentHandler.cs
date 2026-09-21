@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Api.Announcers;
-using GastronomyApp.Api.ErrorHandling;
+﻿using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
@@ -15,16 +14,14 @@ public sealed class AdminEnrolmentHandler
   private readonly OutstandingInvitationCache _invitationCache;
   private readonly ILogger<AdminEnrolmentHandler> _log;
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly DeviceRevocationAnnouncer _revocationAnnouncer;
   private readonly EnrolmentInvitationService _service;
   private readonly EnrolmentUrlBuilder _urlBuilder;
 
-  public AdminEnrolmentHandler(EnrolmentInvitationService service, EnrolmentUrlBuilder urlBuilder, OutstandingInvitationCache invitationCache, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope, ILogger<AdminEnrolmentHandler> log)
+  public AdminEnrolmentHandler(EnrolmentInvitationService service, EnrolmentUrlBuilder urlBuilder, OutstandingInvitationCache invitationCache, ResultEnvelope resultEnvelope, ILogger<AdminEnrolmentHandler> log)
   {
     _service = service;
     _urlBuilder = urlBuilder;
     _invitationCache = invitationCache;
-    _revocationAnnouncer = revocationAnnouncer;
     _resultEnvelope = resultEnvelope;
     _log = log;
   }
@@ -48,8 +45,6 @@ public sealed class AdminEnrolmentHandler
                         invitation.Owner?.Id,
                         _urlBuilder.Origin(),
                         invitation.ExpiresAtUtc);
-
-    await _revocationAnnouncer.AnnounceAsync(invitation.RevokedDeviceId, cancellationToken);
 
     return Results.Json(BuildInvitationView(invitation, qrUrl), statusCode: StatusCodes.Status201Created);
   }

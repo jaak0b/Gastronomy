@@ -1,7 +1,6 @@
-using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -12,21 +11,19 @@ namespace GastronomyApp.Api.Handlers;
 public sealed class AdminStaffMembersHandler
 {
   private readonly IMapper _mapper;
-  private readonly DeviceRevocationAnnouncer _revocationAnnouncer;
   private readonly ResultEnvelope _resultEnvelope;
   private readonly StaffMemberAdministrationService _service;
 
-  public AdminStaffMembersHandler(StaffMemberAdministrationService service, DeviceRevocationAnnouncer revocationAnnouncer, ResultEnvelope resultEnvelope, IMapper mapper)
+  public AdminStaffMembersHandler(StaffMemberAdministrationService service, ResultEnvelope resultEnvelope, IMapper mapper)
   {
     _service = service;
-    _revocationAnnouncer = revocationAnnouncer;
     _resultEnvelope = resultEnvelope;
     _mapper = mapper;
   }
 
   public async Task<IResult> ListAsync(CancellationToken cancellationToken)
   {
-    IReadOnlyList<AdministeredStaffMember> staffMembers = await _service.ListAsync(cancellationToken);
+    IReadOnlyList<StaffMember> staffMembers = await _service.ListAsync(cancellationToken);
 
     return Results.Ok(new AdminStaffMemberListView(_mapper.Map<IReadOnlyList<AdminStaffMemberView>>(staffMembers)));
   }
@@ -35,33 +32,31 @@ public sealed class AdminStaffMembersHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(staffMemberId, request.Name, cancellationToken);
+    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(staffMemberId, request.Name, cancellationToken);
 
-    return await AnsweredAsync(renamed, cancellationToken);
+    return Answered(renamed);
   }
 
   public async Task<IResult> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOn = await _service.ActivateAsync(staffMemberId, cancellationToken);
+    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOn = await _service.ActivateAsync(staffMemberId, cancellationToken);
 
-    return await AnsweredAsync(switchedOn, cancellationToken);
+    return Answered(switchedOn);
   }
 
   public async Task<IResult> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(staffMemberId, cancellationToken);
+    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(staffMemberId, cancellationToken);
 
-    return await AnsweredAsync(switchedOff, cancellationToken);
+    return Answered(switchedOff);
   }
 
-  private async Task<IResult> AnsweredAsync(Result<SavedStaffMember, Failure<StaffMemberAdministrationFailureReason>> written, CancellationToken cancellationToken)
+  private IResult Answered(Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> written)
   {
     if (!written.IsSuccess)
       return RefusalFor(written.Failure);
 
-    await _revocationAnnouncer.AnnounceAsync(written.Value.RevokedDeviceId, cancellationToken);
-
-    return Results.Ok(new StaffMemberView(written.Value.StaffMemberId, written.Value.Name));
+    return Results.Ok(_mapper.Map<StaffMemberView>(written.Value));
   }
 
   private IResult RefusalFor(Failure<StaffMemberAdministrationFailureReason> failure)

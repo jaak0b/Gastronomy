@@ -9,7 +9,7 @@ public sealed class ProjectionConfiguration
   {
     TypeAdapterConfig config = new() { RequireDestinationMemberSource = true };
 
-    config.Scan(typeof(CatalogProjection).Assembly);
+    config.Scan(typeof(DeviceOwnerProjection).Assembly);
     config.Compile();
 
     return config;

@@ -24,6 +24,16 @@ public sealed class Station
 
   public Collection<FestivalStation> FestivalStations { get; } = [];
 
+  public bool HasOutstandingInvitation()
+  {
+    return EnrolmentInvitation is not null;
+  }
+
+  public bool IsAtTheFestival()
+  {
+    return FestivalStations.Count != 0;
+  }
+
   public double QueuedMinutes()
   {
     var queuedMinutes = StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && !item.CatalogItem.IsQueueIndependent).Sum(item => item.CatalogItem.ProductionMinutes ?? 0);

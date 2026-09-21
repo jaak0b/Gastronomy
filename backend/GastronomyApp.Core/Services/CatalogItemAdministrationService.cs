@@ -1,6 +1,5 @@
-﻿using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -25,55 +24,42 @@ public sealed class CatalogItemAdministrationService
     _transactionRunner = transactionRunner;
   }
 
-  public async Task<Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
-      return Failed<IReadOnlyList<AdministeredCatalogItem>>(CatalogItemAdministrationFailureReason.FestivalNotFound);
+      return Failed<IReadOnlyList<CatalogItem>>(CatalogItemAdministrationFailureReason.FestivalNotFound);
 
-    IReadOnlyList<CatalogItem> items = await _itemRepository.FindAllOrderedAsync(cancellationToken);
+    IReadOnlyList<CatalogItem> items = await _itemRepository.FindAllOrderedAsync(festivalId, cancellationToken);
 
-    IReadOnlyList<FestivalCatalogItem> menuRows = [];
-    IReadOnlyList<ItemStationAssignment> assignments = [];
-
-    if (festivalId is not null)
-    {
-      menuRows = await _itemRepository.FindMenuRowsAtFestivalAsync(festivalId.Value, cancellationToken);
-      assignments = await _itemRepository.FindAssignmentsAtFestivalAsync(festivalId.Value, cancellationToken);
-    }
-
-    Dictionary<Guid, FestivalCatalogItem> menuRowsByItemId = menuRows.ToDictionary(menuRow => menuRow.CatalogItemId);
-
-    IReadOnlyList<AdministeredCatalogItem> administered = items.Select(item => new AdministeredCatalogItem(item.Id, item.Name, item.CategoryId, item.SortOrder, item.IsActive, item.ProductionMinutes, item.IsQueueIndependent, BuildItemAtFestival(item.Id, menuRowsByItemId, assignments))).ToList();
-
-    return Result<IReadOnlyList<AdministeredCatalogItem>, CatalogItemAdministrationFailure>.Success(administered);
+    return Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure>.Success(items);
   }
 
-  public Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => CreatedAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
+  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<Guid, CatalogItemAdministrationFailure>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
+  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
     return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
 
     if (refusal is not null)
-      return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
+      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
 
     CatalogItem created = new()
                           {
@@ -90,20 +76,20 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<AdministeredCatalogItem, CatalogItemAdministrationFailure>.Success(new(created.Id, created.Name, created.CategoryId, created.SortOrder, created.IsActive, created.ProductionMinutes, created.IsQueueIndependent, null));
+    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(created);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
     var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
-      return Result<Guid, CatalogItemAdministrationFailure>.Failed(refusal);
+      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
 
     item.Name = name!;
     item.CategoryId = categoryId!.Value;
@@ -113,43 +99,43 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
+    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
+  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
     var categoryRefusal = await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
 
     if (categoryRefusal is not null)
-      return Result<Guid, CatalogItemAdministrationFailure>.Failed(categoryRefusal);
+      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(categoryRefusal);
 
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
+    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
   }
 
-  private async Task<Result<Guid, CatalogItemAdministrationFailure>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
+  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is not null && await _itemRepository.FindMenuRowAsync(runningFestival.Id, itemId, cancellationToken) is not null)
-      return Failed<Guid>(CatalogItemAdministrationFailureReason.ItemIsOnTheRunningFestivalsMenu);
+      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemIsOnTheRunningFestivalsMenu);
 
     item.IsActive = false;
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<Guid, CatalogItemAdministrationFailure>.Success(itemId);
+    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
   }
 
   private async Task<CatalogItemAdministrationFailure?> NameRefusalAsync(string name, Guid? itemKeepingItsOwnName, CancellationToken cancellationToken)
@@ -191,14 +177,6 @@ public sealed class CatalogItemAdministrationService
     }
 
     return null;
-  }
-
-  private CatalogItemAtFestival? BuildItemAtFestival(Guid itemId, IReadOnlyDictionary<Guid, FestivalCatalogItem> menuRowsByItemId, IReadOnlyCollection<ItemStationAssignment> assignments)
-  {
-    if (!menuRowsByItemId.TryGetValue(itemId, out var menuRow))
-      return null;
-
-    return new(menuRow.PriceCents, menuRow.IsAvailable, assignments.Where(assignment => assignment.CatalogItemId == itemId).Select(assignment => assignment.StationId).ToList());
   }
 
   private Result<TValue, CatalogItemAdministrationFailure> Failed<TValue>(CatalogItemAdministrationFailureReason reason)

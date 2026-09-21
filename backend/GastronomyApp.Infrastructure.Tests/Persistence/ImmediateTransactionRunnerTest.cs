@@ -2,10 +2,13 @@ using FakeItEasy;
 using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
+using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -155,16 +158,141 @@ public sealed class ImmediateTransactionRunnerTest
   {
     using SqliteInMemoryFixture fixture = new();
     ILogger<ImmediateTransactionRunner> logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
-    ImmediateTransactionRunner runner = new(fixture.DbContext, new(), logger);
+    ImmediateTransactionRunner runner = new(fixture.DbContext, new(), new(), logger);
 
     Assert.That(async () => await runner.RunAsync<int>(_ => throw new DbUpdateConcurrencyException(), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<ConcurrentWriteException>());
 
     A.CallTo(logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Warning).MustHaveHappened(4, Times.Exactly);
   }
 
+  [Test]
+  public async Task RunAsync_TheBodyRevokesADevice_TellsTheDeviceOnlyAfterTheCommitIsVisibleToAnotherConnection()
+  {
+    using SqliteTempFileFixture fixture = new();
+    var dbContext = fixture.CreateContext();
+    await new DomainSeeder().SeedAsync(dbContext, TestContext.CurrentContext.CancellationToken);
+    var deviceId = await AddDeviceAsync(dbContext, TestContext.CurrentContext.CancellationToken);
+    CommitWatchingAnnouncer announcer = new(fixture);
+    AfterCommitActions afterCommitActions = new();
+    var retirement = RetirementOn(dbContext, announcer, afterCommitActions);
+    ImmediateTransactionRunner runner = new(dbContext, new(), afterCommitActions, NullLogger<ImmediateTransactionRunner>.Instance);
+
+    await runner.RunAsync(async transactionCancellationToken =>
+                          {
+                            await retirement.RevokeDeviceAsync(deviceId, transactionCancellationToken);
+
+                            return new TransactionOutcome<bool>
+                                   {
+                                     Value = true,
+                                     ShouldCommit = true
+                                   };
+                          },
+                          TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(announcer.Announcements, Is.EqualTo(1));
+                      Assert.That(announcer.TheDeviceWasAlreadyGone, Is.True);
+                    });
+  }
+
+  [Test]
+  public void RunAsync_TheBodyEnqueuesAnActionAndThenFails_LeavesThatActionUnrun()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    AfterCommitActions afterCommitActions = new();
+    ImmediateTransactionRunner runner = new(fixture.DbContext, new(), afterCommitActions, NullLogger<ImmediateTransactionRunner>.Instance);
+    var runsOfTheAction = 0;
+
+    Assert.That(async () => await runner.RunAsync<int>(async transactionCancellationToken =>
+                                                       {
+                                                         await afterCommitActions.RunWhenCommittedAsync(_ =>
+                                                                                                        {
+                                                                                                          runsOfTheAction++;
+
+                                                                                                          return Task.CompletedTask;
+                                                                                                        },
+                                                                                                        transactionCancellationToken);
+
+                                                         throw new InvalidOperationException("The body failed.");
+                                                       },
+                                                       TestContext.CurrentContext.CancellationToken),
+                Throws.InstanceOf<InvalidOperationException>());
+
+    Assert.That(runsOfTheAction, Is.Zero);
+  }
+
+  [Test]
+  public async Task RunAsync_TheFirstAttemptEnqueuesAnActionAndLosesTheRowsItRead_RunsThatActionOnceForTheCommittedAttempt()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    AfterCommitActions afterCommitActions = new();
+    ImmediateTransactionRunner runner = new(fixture.DbContext, new(), afterCommitActions, NullLogger<ImmediateTransactionRunner>.Instance);
+    var attempts = 0;
+    var runsOfTheAction = 0;
+
+    await runner.RunAsync(async transactionCancellationToken =>
+                          {
+                            attempts++;
+
+                            await afterCommitActions.RunWhenCommittedAsync(_ =>
+                                                                           {
+                                                                             runsOfTheAction++;
+
+                                                                             return Task.CompletedTask;
+                                                                           },
+                                                                           transactionCancellationToken);
+
+                            if (attempts == 1)
+                              throw new DbUpdateConcurrencyException();
+
+                            return new TransactionOutcome<bool>
+                                   {
+                                     Value = true,
+                                     ShouldCommit = true
+                                   };
+                          },
+                          TestContext.CurrentContext.CancellationToken);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(attempts, Is.EqualTo(2));
+                      Assert.That(runsOfTheAction, Is.EqualTo(1));
+                    });
+  }
+
+  private DeviceOwnerRetirement RetirementOn(GastronomyAppDbContext dbContext, IDeviceRevocationAnnouncer announcer, AfterCommitActions afterCommitActions)
+  {
+    DeviceTokenStore tokenStore = new(dbContext, A.Fake<IDeviceOwnerStore>(), new(), new SystemClock());
+
+    return new(A.Fake<IEnrolmentInvitationStore>(), tokenStore, announcer, afterCommitActions, new SystemClock());
+  }
+
+  private async Task<Guid> AddDeviceAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)
+  {
+    DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+    Device device = new()
+                    {
+                      Id = Guid.NewGuid(),
+                      Language = "de",
+                      TokenHash = [1],
+                      TokenSalt = [2],
+                      TokenIterations = 1,
+                      TokenAlgorithm = "PBKDF2-HMAC-SHA512",
+                      TokenLookupId = Guid.NewGuid().ToString("N"),
+                      CreatedAtUtc = now,
+                      LastSeenAtUtc = now
+                    };
+
+    dbContext.Devices.Add(device);
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    return device.Id;
+  }
+
   private ImmediateTransactionRunner RunnerOn(GastronomyAppDbContext dbContext)
   {
-    return new(dbContext, new(), NullLogger<ImmediateTransactionRunner>.Instance);
+    return new(dbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance);
   }
 
   private PlaceOrderRequest BuildRequest(SeededDomain seeded)
@@ -199,5 +327,27 @@ public sealed class ImmediateTransactionRunnerTest
              ConsumedAtUtc = null,
              ConsumedByDeviceId = null
            };
+  }
+
+  private sealed class CommitWatchingAnnouncer : IDeviceRevocationAnnouncer
+  {
+    private readonly SqliteTempFileFixture _fixture;
+
+    public CommitWatchingAnnouncer(SqliteTempFileFixture fixture)
+    {
+      _fixture = fixture;
+    }
+
+    public int Announcements { get; private set; }
+
+    public bool TheDeviceWasAlreadyGone { get; private set; }
+
+    public async Task AnnounceAsync(Guid revokedDeviceId, CancellationToken cancellationToken)
+    {
+      Announcements++;
+
+      var watcher = _fixture.CreateContext();
+      TheDeviceWasAlreadyGone = !await watcher.Devices.AsNoTracking().AnyAsync(device => device.Id == revokedDeviceId, cancellationToken);
+    }
   }
 }
