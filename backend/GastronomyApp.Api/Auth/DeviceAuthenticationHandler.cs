@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
 using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Authentication;
@@ -13,9 +13,9 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private const string AccessTokenQueryKey = "access_token";
   private const string HubPathPrefix = "/hub";
   private readonly IDeviceTokenStore _deviceTokenStore;
-  private readonly DeviceTokenSplitter _tokenSplitter;
+  private readonly IDeviceTokenSplitter _tokenSplitter;
 
-  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IDeviceTokenStore deviceTokenStore, DeviceTokenSplitter tokenSplitter) : base(options, logger, encoder)
+  public DeviceAuthenticationHandler(IOptionsMonitor<DeviceAuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IDeviceTokenStore deviceTokenStore, IDeviceTokenSplitter tokenSplitter) : base(options, logger, encoder)
   {
     _deviceTokenStore = deviceTokenStore;
     _tokenSplitter = tokenSplitter;

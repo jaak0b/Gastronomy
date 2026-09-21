@@ -1,8 +1,9 @@
-﻿using GastronomyApp.Api.Values;
+﻿using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Api.Hosting;
 
-public sealed class OutstandingInvitationCache
+public sealed class OutstandingInvitationCache : IOutstandingInvitationCache
 {
   private readonly Lock _guard = new();
 

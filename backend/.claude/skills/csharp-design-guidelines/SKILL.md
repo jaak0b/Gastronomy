@@ -176,7 +176,11 @@ an entity is a method on the entity, not a separate function. No stateless one-m
 Names shared across call sites are constants in one static class. A rule that refuses returns
 `ErrorOr<T>`, never a nullable value standing for a refusal; the refusal is an `Error` from a factory
 in `Core/Refusals`, and its numeric type is its HTTP status, declared once in `RefusalType`. A handler
-is one expression ending in `Match`.
+is one expression ending in `Match`. The service that changed something announces it itself, through
+a Core port named after what is announced and enqueued with `IAfterCommitActions` so it leaves after
+the commit; the Api's SignalR dispatcher implements those ports and holds the never-fail guard. Core
+writes its own log lines through the `ILogger<T>` abstractions and takes no other framework
+dependency.
 
 ## How to use
 

@@ -6,8 +6,9 @@ using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using Microsoft.Extensions.Time.Testing;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -25,6 +26,8 @@ public sealed class OrderAcceptanceServiceTest
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
+    A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).Invokes(call => Remember(call.GetArgument<Order>(0)!));
+    A.CallTo(() => _orderRepository.FindWithStationOrdersAsync(A<Guid>._, A<CancellationToken>._)).ReturnsLazily(call => Task.FromResult(_ordersTheLaptopHolds.GetValueOrDefault(call.GetArgument<Guid>(0))));
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
    .Returns(Task.FromResult<IReadOnlyCollection<Station>>([
@@ -43,7 +46,17 @@ public sealed class OrderAcceptanceServiceTest
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
-    _service = new(_orderRepository, runningFestival, _numberAllocator, new(_catalogItemRepository, _stationRepository, new()), new(A.Fake<IOpenItemRepository>(), runningFestival, _transactionRunner, _clock), _transactionRunner, _clock);
+    _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
+
+    _service = new(_orderRepository,
+                   runningFestival,
+                   _numberAllocator,
+                   new(_catalogItemRepository, _stationRepository, new()),
+                   new(A.Fake<IOpenItemRepository>(), runningFestival, A.Fake<ISettlementAnnouncer>(), new ImmediateAfterCommitActions(), _transactionRunner, _clock, NullLogger<OrderItemSettlementService>.Instance),
+                   _stationOrdersAnnouncer,
+                   new ImmediateAfterCommitActions(),
+                   _transactionRunner,
+                   _clock);
   }
 
   private readonly Guid _eventSessionId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
@@ -58,6 +71,8 @@ public sealed class OrderAcceptanceServiceTest
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
   private readonly DateTime _now = new(2026, 8, 26, 17, 42, 3, DateTimeKind.Utc);
 
+  private readonly Dictionary<Guid, Order> _ordersTheLaptopHolds = [];
+
   private IOrderRepository _orderRepository = null!;
   private ICatalogItemRepository _catalogItemRepository = null!;
   private IStationRepository _stationRepository = null!;
@@ -66,6 +81,7 @@ public sealed class OrderAcceptanceServiceTest
   private TimeProvider _clock = null!;
   private ITransactionRunner _transactionRunner = null!;
   private OrderAcceptanceService _service = null!;
+  private IStationOrdersAnnouncer _stationOrdersAnnouncer = null!;
 
   private Festival RunningFestival()
   {
@@ -164,11 +180,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_TheSameItemTwice_StoresOneRowPerItem()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_bratwurstId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_bratwurstId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     Assert.That(ReadOrderItems(result.Value), Has.Count.EqualTo(2));
   }
@@ -177,11 +193,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_FirstTimeClientOrderId_AllocatesNumbersAndStoresTheOrderOnce()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
 
@@ -206,11 +222,11 @@ public sealed class OrderAcceptanceServiceTest
     GivenCatalogItem(_beerId, "Bier", [_kitchenId]);
 
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
 
@@ -231,11 +247,11 @@ public sealed class OrderAcceptanceServiceTest
     A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _barIndoorId, A<CancellationToken>._)).Returns(Task.FromResult(7));
 
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
     var kitchenTicket = order.StationOrders.Single(stationOrder => stationOrder.StationId == _kitchenId);
@@ -246,6 +262,20 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(kitchenTicket.StationOrderNumber, Is.EqualTo(42));
                       Assert.That(barTicket.StationOrderNumber, Is.EqualTo(7));
                     });
+  }
+
+  [Test]
+  public async Task AcceptAsync_AnOrderForTwoStations_TellsBothStationsOnce()
+  {
+    await _service.AcceptAsync(RequestWith([
+                                             ItemFor(_bratwurstId),
+                                             ItemFor(_beerId)
+                                           ]),
+                               _staffMemberId,
+                               CancellationToken.None);
+
+    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_kitchenId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_barIndoorId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -262,6 +292,7 @@ public sealed class OrderAcceptanceServiceTest
                        CreatedAtUtc = _now
                      };
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
+    Remember(existing);
 
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
 
@@ -277,11 +308,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_ValidRequest_GivesEveryCreatedRowItsOwnNonEmptyIdentifier()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
     List<Guid> everyId =
@@ -304,11 +335,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_ValidRequest_StampsEveryCreatedRowWithTheClocksTime()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
 
@@ -319,11 +350,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_ValidRequest_LeavesEveryItemOpen()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     Assert.That(ReadOrderItems(result.Value).Select(item => item.FulfilledAtUtc), Is.All.Null);
   }
@@ -332,11 +363,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                                                                            ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                                                     ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value);
     var bratwurstLine = items.Single(item => item.CatalogItemId == _bratwurstId);
@@ -358,11 +389,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
-                                                                                            ItemFor(_beerId, unitPriceCents: 400)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
+                                                                     ItemFor(_beerId, unitPriceCents: 400)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value);
     var settledLine = items.Single(item => item.CatalogItemId == _bratwurstId);
@@ -385,11 +416,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
-                                                                                            ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
+                                                                     ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -404,30 +435,30 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_SettlementSendingOnePricePerLine_StoresExactlyThePricesThePhoneSent()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId,
-                                                                                                    unitPriceCents: 333,
-                                                                                                    settlement: new()
-                                                                                                                {
-                                                                                                                  PaidPriceCents = 167,
-                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                                                }),
-                                                                                            ItemFor(_bratwurstId,
-                                                                                                    unitPriceCents: 333,
-                                                                                                    settlement: new()
-                                                                                                                {
-                                                                                                                  PaidPriceCents = 167,
-                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                                                }),
-                                                                                            ItemFor(_bratwurstId,
-                                                                                                    unitPriceCents: 333,
-                                                                                                    settlement: new()
-                                                                                                                {
-                                                                                                                  PaidPriceCents = 166,
-                                                                                                                  PaymentNotice = "Der Tisch zahlt den Rest spaeter"
-                                                                                                                })
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId,
+                                                                             unitPriceCents: 333,
+                                                                             settlement: new()
+                                                                                         {
+                                                                                           PaidPriceCents = 167,
+                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                         }),
+                                                                     ItemFor(_bratwurstId,
+                                                                             unitPriceCents: 333,
+                                                                             settlement: new()
+                                                                                         {
+                                                                                           PaidPriceCents = 167,
+                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                         }),
+                                                                     ItemFor(_bratwurstId,
+                                                                             unitPriceCents: 333,
+                                                                             settlement: new()
+                                                                                         {
+                                                                                           PaidPriceCents = 166,
+                                                                                           PaymentNotice = "Der Tisch zahlt den Rest spaeter"
+                                                                                         })
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value);
 
@@ -449,11 +480,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_NoSettlement_LeavesEveryItemUnsettled()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     List<OrderItem> items = ReadOrderItems(result.Value);
 
@@ -471,11 +502,11 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_NoDeliveryModeNamed_SendsEveryStationOrderTogether()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId),
-                                                                                            ItemFor(_beerId)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId),
+                                                                     ItemFor(_beerId)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     Assert.That(result.Value.StationOrders.Select(stationOrder => stationOrder.DeliveryMode), Is.All.EqualTo(DeliveryMode.Together));
   }
@@ -513,12 +544,12 @@ public sealed class OrderAcceptanceServiceTest
   public async Task AcceptAsync_ValidRequest_KeepsTheNameFromTheCatalogAndThePriceThePhoneShowed()
   {
     ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
-                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350),
-                                                                                            ItemFor(_bratwurstId, unitPriceCents: 350),
-                                                                                            ItemFor(_beerId, unitPriceCents: 400)
-                                                                                          ]),
-                                                                              _staffMemberId,
-                                                                              CancellationToken.None);
+                                                                     ItemFor(_bratwurstId, unitPriceCents: 350),
+                                                                     ItemFor(_bratwurstId, unitPriceCents: 350),
+                                                                     ItemFor(_beerId, unitPriceCents: 400)
+                                                                   ]),
+                                                       _staffMemberId,
+                                                       CancellationToken.None);
 
     var order = result.Value;
     var bratwurstLine = ReadOrderItems(order).First(item => item.CatalogItemId == _bratwurstId);
@@ -635,5 +666,10 @@ public sealed class OrderAcceptanceServiceTest
     ErrorOr<Order> refused = await RefusalProducedByAsync(scenario);
 
     Assert.That(refused.RefusalMessageKey(), Is.EqualTo(expectedMessageKey));
+  }
+
+  private void Remember(Order order)
+  {
+    _ordersTheLaptopHolds[order.Id] = order;
   }
 }

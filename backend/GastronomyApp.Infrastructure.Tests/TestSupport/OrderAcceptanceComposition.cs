@@ -1,3 +1,4 @@
+﻿using FakeItEasy;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
@@ -24,10 +25,12 @@ public sealed class OrderAcceptanceComposition
   {
     OrderItemResolutionService itemResolutionService = new(new CatalogItemRepository(dbContext), new StationRepository(dbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero))), new());
 
-    ImmediateTransactionRunner transactionRunner = new(dbContext, new(), new(), logger);
+    AfterCommitActions afterCommitActions = new();
+    ImmediateTransactionRunner transactionRunner = new(dbContext, new(), afterCommitActions, logger);
     FestivalRepository festivalRepository = new(dbContext, new());
     RunningFestivalLookup runningFestival = new(festivalRepository, new(), TimeProvider.System);
+    OrderItemSettlementService settlementService = new(new OpenItemRepository(dbContext), runningFestival, A.Fake<ISettlementAnnouncer>(), afterCommitActions, transactionRunner, TimeProvider.System, NullLogger<OrderItemSettlementService>.Instance);
 
-    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, new(new OpenItemRepository(dbContext), runningFestival, transactionRunner, TimeProvider.System), transactionRunner, TimeProvider.System);
+    return new(new OrderRepository(dbContext), runningFestival, numberAllocator, itemResolutionService, settlementService, A.Fake<IStationOrdersAnnouncer>(), afterCommitActions, transactionRunner, TimeProvider.System);
   }
 }

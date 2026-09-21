@@ -1,5 +1,7 @@
-﻿using GastronomyApp.Core.Entities;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
@@ -16,15 +18,20 @@ public sealed class CatalogService
     _runningFestival = runningFestival;
   }
 
-  public async Task<Festival?> ReadRunningFestivalCatalogAsync(CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> ReadRunningFestivalCatalogAsync(CancellationToken cancellationToken)
   {
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is null)
-      return null;
+      return Refusal.Catalog.NoRunningFestival();
 
     IReadOnlyList<Guid> orderableItemIds = await _orderability.FindOrderableItemIdsAsync(runningFestival.Id, cancellationToken);
 
-    return await _catalogRepository.FindWithMenuAsync(runningFestival.Id, orderableItemIds, cancellationToken);
+    var festivalWithMenu = await _catalogRepository.FindWithMenuAsync(runningFestival.Id, orderableItemIds, cancellationToken);
+
+    if (festivalWithMenu is null)
+      return Refusal.Catalog.NoRunningFestival();
+
+    return festivalWithMenu;
   }
 }

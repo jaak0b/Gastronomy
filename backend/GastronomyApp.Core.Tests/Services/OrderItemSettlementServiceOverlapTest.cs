@@ -6,6 +6,8 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -18,7 +20,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
   {
     var timeProvider = new FakeTimeProvider(new(_now));
 
-    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), timeProvider), A.Fake<ITransactionRunner>(), timeProvider);
+    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), timeProvider), A.Fake<ISettlementAnnouncer>(), new ImmediateAfterCommitActions(), A.Fake<ITransactionRunner>(), timeProvider, NullLogger<OrderItemSettlementService>.Instance);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -37,13 +39,13 @@ public sealed class OrderItemSettlementServiceOverlapTest
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
-                                                                               Line(firstBeer, 350),
-                                                                               Line(secondBeer, 350),
-                                                                               Line(hotdog, 400)
-                                                                             ],
-                                                                             _collectingWaiter,
-                                                                             AtOneTable(firstBeer, secondBeer, hotdog),
-                                                                             _now);
+                                                             Line(firstBeer, 350),
+                                                             Line(secondBeer, 350),
+                                                             Line(hotdog, 400)
+                                                           ],
+                                                           _collectingWaiter,
+                                                           AtOneTable(firstBeer, secondBeer, hotdog),
+                                                           _now);
 
     Assert.Multiple(() =>
                     {
@@ -67,13 +69,13 @@ public sealed class OrderItemSettlementServiceOverlapTest
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
     ErrorOr<SettlementResult> settlement = _service.Settle([
-                                                                               Line(firstBeer, 350),
-                                                                               Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
-                                                                               Line(hotdog, 500)
-                                                                             ],
-                                                                             _collectingWaiter,
-                                                                             AtOneTable(firstBeer, secondBeer, hotdog),
-                                                                             _now);
+                                                             Line(firstBeer, 350),
+                                                             Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
+                                                             Line(hotdog, 500)
+                                                           ],
+                                                           _collectingWaiter,
+                                                           AtOneTable(firstBeer, secondBeer, hotdog),
+                                                           _now);
 
     Assert.Multiple(() =>
                     {

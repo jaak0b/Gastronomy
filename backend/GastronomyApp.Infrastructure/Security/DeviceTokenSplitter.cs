@@ -1,8 +1,9 @@
-using GastronomyApp.Api.Values;
+﻿using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Results;
 
-namespace GastronomyApp.Api.Auth;
+namespace GastronomyApp.Infrastructure.Security;
 
-public sealed class DeviceTokenSplitter
+public sealed class DeviceTokenSplitter : IDeviceTokenSplitter
 {
   private const char LookupIdSeparator = '.';
 

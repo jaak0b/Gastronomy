@@ -3,7 +3,6 @@ using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -32,7 +31,10 @@ public sealed class StationQueueChangeServiceTest
 
     StationAtFestivalLookup lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
 
-    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository));
+    _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
+    _orderStatusAnnouncer = A.Fake<IOrderStatusAnnouncer>();
+
+    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository), _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -45,7 +47,9 @@ public sealed class StationQueueChangeServiceTest
   private IFestivalStationRepository _festivalStationRepository = null!;
   private IStationOrderRepository _stationOrderRepository = null!;
   private IStationRepository _stationRepository = null!;
+  private IOrderStatusAnnouncer _orderStatusAnnouncer = null!;
   private StationQueueChangeService _service = null!;
+  private IStationOrdersAnnouncer _stationOrdersAnnouncer = null!;
 
   [Test]
   public async Task FulfillAsync_AnOpenItem_AnswersWithTheFreshQueueAndTheNewStatusOfItsOrder()
@@ -53,15 +57,16 @@ public sealed class StationQueueChangeServiceTest
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    ErrorOr<StationQueueChange> change = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.Station.Id, Is.EqualTo(_stationId));
-                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
-                      Assert.That(change.Value.ChangedOrders[0].Id, Is.EqualTo(_orderId));
+                      Assert.That(queue.IsSuccess, Is.True);
+                      Assert.That(queue.Value.Id, Is.EqualTo(_stationId));
                     });
+
+    A.CallTo(() => _stationOrdersAnnouncer.AnnounceStationOrdersChangedAsync(_stationId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -71,13 +76,11 @@ public sealed class StationQueueChangeServiceTest
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    ErrorOr<StationQueueChange> change = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
-                    });
+    Assert.That(queue.IsSuccess, Is.True);
+
+    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -85,12 +88,12 @@ public sealed class StationQueueChangeServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    ErrorOr<StationQueueChange> change = await _service.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(change.IsSuccess, Is.False);
-                      Assert.That(change.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
+                      Assert.That(queue.IsSuccess, Is.False);
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
                     });
 
     A.CallTo(() => _stationOrderRepository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -109,13 +112,11 @@ public sealed class StationQueueChangeServiceTest
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    ErrorOr<StationQueueChange> change = await _service.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
-                    });
+    Assert.That(queue.IsSuccess, Is.True);
+
+    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>.That.Matches(order => order.Id == _orderId), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -130,14 +131,15 @@ public sealed class StationQueueChangeServiceTest
     var stationOrder = AsItComesStationOrder();
     A.CallTo(() => _stationOrderRepository.FindAtStationAsync(stationOrder.Id, _stationId, _festivalId, A<CancellationToken>._)).Returns(Task.FromResult<StationOrder?>(stationOrder));
 
-    ErrorOr<StationQueueChange> change = await _service.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.ChangedOrders, Is.Empty);
+                      Assert.That(queue.IsSuccess, Is.True);
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
                     });
+
+    A.CallTo(() => _orderStatusAnnouncer.AnnounceOrderStatusChangedAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -145,12 +147,12 @@ public sealed class StationQueueChangeServiceTest
   {
     A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
 
-    ErrorOr<StationQueueChange> change = await _service.HideFromAsItComesQueueAsync(Guid.NewGuid(), _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.HideFromAsItComesQueueAsync(Guid.NewGuid(), _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(change.IsSuccess, Is.False);
-                      Assert.That(change.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
+                      Assert.That(queue.IsSuccess, Is.False);
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
                     });
 
     A.CallTo(() => _stationOrderRepository.FindAtStationAsync(A<Guid>._, A<Guid>._, A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();

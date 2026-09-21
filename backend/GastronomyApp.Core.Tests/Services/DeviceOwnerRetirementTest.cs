@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -52,7 +52,7 @@ public sealed class DeviceOwnerRetirementTest
     Assert.That(await _retirement.RevokeDeviceAsync(null, CancellationToken.None), Is.Null);
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
-    A.CallTo(() => _announcer.AnnounceAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+    A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]

@@ -1,6 +1,6 @@
-namespace GastronomyApp.Core.Ports;
+﻿namespace GastronomyApp.Core.Ports;
 
 public interface IDeviceRevocationAnnouncer
 {
-  public Task AnnounceAsync(Guid revokedDeviceId, CancellationToken cancellationToken);
+  public Task AnnounceDeviceRevokedAsync(Guid revokedDeviceId, CancellationToken cancellationToken);
 }

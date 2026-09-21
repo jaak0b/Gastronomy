@@ -50,8 +50,7 @@ public sealed class ImmediateTransactionRunnerTest
     using SqliteInMemoryFixture fixture = new();
     var runner = RunnerOn(fixture.DbContext);
 
-    Assert.That(async () => await runner.RunAsync(_ => runner.RunAsync(_ => Task.FromResult<ErrorOr<int>>(1), TestContext.CurrentContext.CancellationToken), TestContext.CurrentContext.CancellationToken),
-                Throws.InstanceOf<InvalidOperationException>().With.Message.Contains("already inside"));
+    Assert.That(async () => await runner.RunAsync(_ => runner.RunAsync(_ => Task.FromResult<ErrorOr<int>>(1), TestContext.CurrentContext.CancellationToken), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>().With.Message.Contains("already inside"));
   }
 
   [Test]
@@ -117,16 +116,16 @@ public sealed class ImmediateTransactionRunnerTest
     var runner = RunnerOn(fixture.DbContext);
     var attempts = 0;
 
-    var value = await runner.RunAsync(_ =>
-                                      {
-                                        attempts++;
+    ErrorOr<int> value = await runner.RunAsync(_ =>
+                                               {
+                                                 attempts++;
 
-                                        if (attempts == 1)
-                                          throw new DbUpdateConcurrencyException();
+                                                 if (attempts == 1)
+                                                   throw new DbUpdateConcurrencyException();
 
-                                        return Task.FromResult<ErrorOr<int>>(7);
-                                      },
-                                      TestContext.CurrentContext.CancellationToken);
+                                                 return Task.FromResult<ErrorOr<int>>(7);
+                                               },
+                                               TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -353,7 +352,7 @@ public sealed class ImmediateTransactionRunnerTest
 
     public bool TheDeviceWasAlreadyGone { get; private set; }
 
-    public async Task AnnounceAsync(Guid revokedDeviceId, CancellationToken cancellationToken)
+    public async Task AnnounceDeviceRevokedAsync(Guid revokedDeviceId, CancellationToken cancellationToken)
     {
       Announcements++;
 

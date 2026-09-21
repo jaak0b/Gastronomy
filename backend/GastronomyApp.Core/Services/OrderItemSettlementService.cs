@@ -1,25 +1,32 @@
 ﻿using ErrorOr;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Results;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemSettlementService
 {
   private readonly TimeProvider _timeProvider;
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly ISettlementAnnouncer _announcer;
+  private readonly ILogger<OrderItemSettlementService> _logger;
   private readonly IOpenItemRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
-  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner, TimeProvider timeProvider)
+  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ISettlementAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner, TimeProvider timeProvider, ILogger<OrderItemSettlementService> logger)
   {
     _repository = repository;
     _runningFestival = runningFestival;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _transactionRunner = transactionRunner;
     _timeProvider = timeProvider;
+    _logger = logger;
   }
 
   public async Task<ErrorOr<SettlementResult>> SettleAsync(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, CancellationToken cancellationToken)
@@ -31,7 +38,28 @@ public sealed class OrderItemSettlementService
     if (festival is null)
       return Refusal.Settlement.NoRunningFestival();
 
-    return await _transactionRunner.RunAsync(transactionCancellationToken => SettledInsideTransactionAsync(lines, settledByStaffMemberId, transactionCancellationToken), cancellationToken);
+    ErrorOr<SettlementResult> settled = await _transactionRunner.RunAsync(transactionCancellationToken => SettledInsideTransactionAsync(lines, settledByStaffMemberId, transactionCancellationToken), cancellationToken);
+
+    if (settled.IsError)
+      return settled.Errors;
+
+    return await AnnouncedAsync(settled.Value, cancellationToken);
+  }
+
+  private async Task<SettlementResult> AnnouncedAsync(SettlementResult settlement, CancellationToken cancellationToken)
+  {
+    List<Guid> settledIds = settlement.NewlySettled.Select(item => item.Id).ToList();
+
+    if (settledIds.Count == 0)
+      return settlement;
+
+    _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
+
+    var otherDevicesWereTold = false;
+
+    await _afterCommitActions.RunWhenCommittedAsync(async announcementCancellationToken => otherDevicesWereTold = await _announcer.AnnounceOrderItemsSettledAsync(settledIds, settlement.SettledTableNames, announcementCancellationToken), cancellationToken);
+
+    return settlement with { OtherDevicesWereTold = otherDevicesWereTold };
   }
 
   public ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
@@ -130,8 +158,7 @@ public sealed class OrderItemSettlementService
   {
     IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
 
-    return await Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime)
-                 .ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
+    return await Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
   }
 
   private IReadOnlyCollection<OrderItem> ItemsWhoseTableIsKnown(IReadOnlyCollection<OrderItem> selected)

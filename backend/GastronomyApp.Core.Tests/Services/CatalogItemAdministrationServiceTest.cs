@@ -30,7 +30,7 @@ public sealed class CatalogItemAdministrationServiceTest
     A.CallTo(() => _categoryRepository.FindByIdAsync(_foodCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_foodCategoryId, true)));
     A.CallTo(() => _categoryRepository.FindByIdAsync(_switchedOffCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_switchedOffCategoryId, false)));
 
-    _service = new(_itemRepository, _categoryRepository, _festivalRepository, new(_festivalRepository, new(), _clock), _transactionRunner);
+    _service = new(_itemRepository, _categoryRepository, _festivalRepository, A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock), _transactionRunner);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);

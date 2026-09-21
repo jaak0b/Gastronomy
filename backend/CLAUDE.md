@@ -80,6 +80,25 @@ local and switches on no refusal.
 answers with a value and rolls back when it answers with errors; the after-commit actions run only
 on a commit.
 
+## Announcements
+
+The service in `GastronomyApp.Core` that made a change is the one that announces it. It holds a Core
+port named after what is announced (`IStationOrdersAnnouncer`, `IOrderStatusAnnouncer`,
+`ICatalogChangeAnnouncer`, `IFestivalChangeAnnouncer`, `IStationsChangeAnnouncer`,
+`ISettlementAnnouncer`, `IEnrolmentCompletionAnnouncer`, `IDeviceRevocationAnnouncer`) and hands the
+announcement to `IAfterCommitActions.RunWhenCommittedAsync`, so it leaves the laptop after the
+commit, and runs straight away where no transaction is open. A handler announces nothing.
+
+`HubNotificationDispatcher` in the Api implements every one of those ports over SignalR. Each of its
+methods is one call to a private method that wraps the send in `IAnnouncementGuard`, so a hub that
+cannot be reached is logged and never fails the change that was already saved. The guard lives once,
+in `AnnouncementGuard`.
+
+Core logs the outcome of what it did through `Microsoft.Extensions.Logging.Abstractions`
+(`ILogger<T>` in the constructor): an enrolment invitation created, an invitation redeemed, a
+handed-over device signed out, items settled. Core takes no other framework dependency: no ASP.NET
+Core, no EF Core.
+
 ## Hard rules
 
 0. **Read the `csharp-design-guidelines` skill before touching any C# file.** This comes before the
@@ -90,7 +109,7 @@ on a commit.
    reading it is handed back, and a name, type or member that fails a checklist item is a review
    finding.
 
-1. **No static methods or properties.** Framework metadata registration is the only exception.
+1. **No static methods or properties on classes that hold state or dependencies.** Statics exist only where there is nothing to inject: framework metadata registration, the `Names` constants, the `Refusal` factories, and a contract record's empty value such as `CatalogView.Empty`.
 
 2. **Localization is resx-only.** Every translatable string lives in `Strings.en.resx` /
    `Strings.de.resx` or a domain-specific resx pair, resolved through the localization service. Both

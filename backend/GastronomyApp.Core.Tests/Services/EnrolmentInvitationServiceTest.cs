@@ -6,6 +6,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -20,17 +21,23 @@ public sealed class EnrolmentInvitationServiceTest
     _ownerStore = A.Fake<IDeviceOwnerStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
+    _enrolmentAnnouncer = A.Fake<IEnrolmentCompletionAnnouncer>();
+    _invitationCache = A.Fake<IOutstandingInvitationCache>();
+    _tokenSplitter = A.Fake<IDeviceTokenSplitter>();
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _store.CreateAsync(A<IDeviceOwner?>._, A<CancellationToken>._)).ReturnsLazily(call => Task.FromResult(new IssuedEnrolmentInvitation(BuildInvitation(null, null, _now.AddMinutes(5)), "ABCDEF", call.GetArgument<IDeviceOwner?>(0))));
     A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwnerKind>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(null));
     A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(null));
+    A.CallTo(() => _invitationCache.Read()).Returns(null);
+    A.CallTo(() => _tokenSplitter.Split(A<string?>._)).Returns(null);
 
-    _service = new(_store, _ownerStore, _deviceTokenStore, new(_store, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), _clock);
+    _service = new(_store, _ownerStore, _deviceTokenStore, _tokenSplitter, _invitationCache, _enrolmentAnnouncer, new ImmediateAfterCommitActions(), new(_store, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), _clock, NullLogger<EnrolmentInvitationService>.Instance);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
+  private readonly Guid _handedOverDeviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
   private readonly Guid _invitationId = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
   private readonly Guid _staffMemberId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _stationId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
@@ -38,14 +45,17 @@ public sealed class EnrolmentInvitationServiceTest
   private IDeviceRevocationAnnouncer _announcer = null!;
   private TimeProvider _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
+  private IEnrolmentCompletionAnnouncer _enrolmentAnnouncer = null!;
+  private IOutstandingInvitationCache _invitationCache = null!;
   private IDeviceOwnerStore _ownerStore = null!;
   private EnrolmentInvitationService _service = null!;
   private IEnrolmentInvitationStore _store = null!;
+  private IDeviceTokenSplitter _tokenSplitter = null!;
 
   [Test]
   public void RedeemAsync_NullCode_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.RedeemAsync(null!, null, "Test agent", "de", CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _service.RedeemAsync(null!, null, "Test agent", "de", null, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -110,99 +120,130 @@ public sealed class EnrolmentInvitationServiceTest
                     });
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _announcer.AnnounceAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
-  public async Task EnsureStillOpenAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
+  public async Task ReadOpenQRUrlAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
   {
-    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stillOpen.IsSuccess, Is.False);
-                      Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
+                      Assert.That(qrUrl.IsSuccess, Is.False);
+                      Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
                     });
   }
 
   [Test]
-  public async Task EnsureStillOpenAsync_AnInvitationAPhoneAlreadyUsed_SaysItWasAlreadyUsed()
+  public async Task ReadOpenQRUrlAsync_AnInvitationAPhoneAlreadyUsed_SaysItWasAlreadyUsed()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), _deviceId, _now.AddMinutes(4))));
 
-    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
   }
 
   [Test]
-  public async Task EnsureStillOpenAsync_AnInvitationANewerOneReplaced_SaysItWasReplaced()
+  public async Task ReadOpenQRUrlAsync_AnInvitationANewerOneReplaced_SaysItWasReplaced()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), null, _now.AddMinutes(4))));
 
-    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrReplaced"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrReplaced"));
   }
 
   [Test]
-  public async Task EnsureStillOpenAsync_AnInvitationWhoseTimeRanOut_SaysItExpired()
+  public async Task ReadOpenQRUrlAsync_AnInvitationWhoseTimeRanOut_SaysItExpired()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now)));
 
-    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.expired"));
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.expired"));
   }
 
   [Test]
-  public async Task EnsureStillOpenAsync_AnInvitationThatIsStillOutstanding_AnswersWithIt()
+  public async Task ReadOpenQRUrlAsync_AnInvitationTheLaptopNoLongerHolds_SaysThePictureIsUnavailable()
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
+    A.CallTo(() => _invitationCache.Read()).Returns(new(Guid.NewGuid(), "ABCDEF", "http://192.168.0.5:5000/j/ABCDEF", _now.AddMinutes(4)));
 
-    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
+
+    Assert.That(qrUrl.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
+  }
+
+  [Test]
+  public async Task ReadOpenQRUrlAsync_AnInvitationThatIsStillOutstanding_AnswersWithTheRememberedAddress()
+  {
+    A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
+    A.CallTo(() => _invitationCache.Read()).Returns(new(_invitationId, "ABCDEF", "http://192.168.0.5:5000/j/ABCDEF", _now.AddMinutes(4)));
+
+    ErrorOr<string> qrUrl = await _service.ReadOpenQRUrlAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stillOpen.IsSuccess, Is.True);
-                      Assert.That(stillOpen.Value.Id, Is.EqualTo(_invitationId));
-                      Assert.That(stillOpen.Value.ExpiresAtUtc, Is.EqualTo(_now.AddMinutes(4)));
+                      Assert.That(qrUrl.IsSuccess, Is.True);
+                      Assert.That(qrUrl.Value, Is.EqualTo("http://192.168.0.5:5000/j/ABCDEF"));
                     });
   }
 
   [Test]
-  public async Task RetireHandedOverDeviceAsync_ATokenThatDoesNotVerify_RevokesNothing()
+  public async Task RedeemAsync_AnInvitationThePhoneScanned_ForgetsTheCodeAndTellsTheLaptop()
   {
+    var owner = BuildStaffMemberHolding(_deviceId);
+    GiveTheStoreARedemption(owner);
+
+    ErrorOr<EnrolmentRedemptionResult> redeemed = await _service.RedeemAsync("ABCDEF", "Anna", "Test agent", "de", null, CancellationToken.None);
+
+    Assert.That(redeemed.IsSuccess, Is.True);
+
+    A.CallTo(() => _invitationCache.ForgetInvitation()).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _enrolmentAnnouncer.AnnounceEnrolmentCompletedAsync(owner, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task RedeemAsync_ATokenThatDoesNotVerify_RevokesNothing()
+  {
+    GiveTheStoreARedemption(BuildStaffMemberHolding(_deviceId));
+    A.CallTo(() => _tokenSplitter.Split("lookup.secret")).Returns(new("lookup", "secret"));
     A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(null));
 
-    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
-
-    Assert.That(retired, Is.Null);
+    await _service.RedeemAsync("ABCDEF", "Anna", "Test agent", "de", "lookup.secret", CancellationToken.None);
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
-  public async Task RetireHandedOverDeviceAsync_TheDeviceThatWasJustSetUp_RevokesNothing()
+  public async Task RedeemAsync_TheDeviceThatWasJustSetUp_RevokesNothing()
   {
+    GiveTheStoreARedemption(BuildStaffMemberHolding(_deviceId));
+    A.CallTo(() => _tokenSplitter.Split("lookup.secret")).Returns(new("lookup", "secret"));
     A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(BuildStaffMemberHolding(_deviceId)));
 
-    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
+    await _service.RedeemAsync("ABCDEF", "Anna", "Test agent", "de", "lookup.secret", CancellationToken.None);
 
-    Assert.That(retired, Is.Null);
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
-  public async Task RetireHandedOverDeviceAsync_AnotherDeviceTheBrowserStillHeld_SignsThatOneOut()
+  public async Task RedeemAsync_AnotherDeviceTheBrowserStillHeld_SignsThatOneOut()
   {
-    var handedOverDeviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
-    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(BuildStaffMemberHolding(handedOverDeviceId)));
+    GiveTheStoreARedemption(BuildStaffMemberHolding(_deviceId));
+    A.CallTo(() => _tokenSplitter.Split("lookup.secret")).Returns(new("lookup", "secret"));
+    A.CallTo(() => _deviceTokenStore.VerifyAsync(A<string>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(BuildStaffMemberHolding(_handedOverDeviceId)));
 
-    Guid? retired = await _service.RetireHandedOverDeviceAsync("lookup", "secret", _deviceId, CancellationToken.None);
+    await _service.RedeemAsync("ABCDEF", "Anna", "Test agent", "de", "lookup.secret", CancellationToken.None);
 
-    Assert.That(retired, Is.EqualTo(handedOverDeviceId));
+    A.CallTo(() => _deviceTokenStore.RevokeAsync(_handedOverDeviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
 
-    A.CallTo(() => _deviceTokenStore.RevokeAsync(handedOverDeviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  private void GiveTheStoreARedemption(IDeviceOwner owner)
+  {
+    A.CallTo(() => _store.RedeemAsync(A<string>._, A<string?>._, A<string>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<ErrorOr<EnrolmentRedemptionResult>>(new EnrolmentRedemptionResult(BuildInvitation(_now, owner.DeviceId, _now.AddMinutes(4)), owner, "lookup.secret")));
   }
 
   private EnrolmentInvitation BuildInvitation(DateTime? consumedAtUtc, Guid? consumedByDeviceId, DateTime expiresAtUtc)

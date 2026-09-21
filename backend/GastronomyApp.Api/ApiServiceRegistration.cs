@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Auth.Filters;
 using GastronomyApp.Api.DocumentTransformers;
@@ -88,6 +87,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderAcceptanceService>();
     services.AddScoped<ItemOrderability>();
     services.AddScoped<CatalogService>();
+    services.AddScoped<SessionService>();
     services.AddScoped<CatalogItemAdministrationService>();
     services.AddScoped<CatalogCategoryAdministrationService>();
     services.AddScoped<DeviceOwnerRetirement>();
@@ -109,9 +109,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
     services.AddScoped<IEnrolmentInvitationStore, EnrolmentInvitationStore>();
 
-    services.AddSingleton<SavedChangeAnnouncer>();
-    services.AddSingleton<CatalogChangeAnnouncer>();
-    services.AddSingleton<FestivalChangeAnnouncer>();
     services.AddSingleton<CatalogCategoryOrdering>();
     services.AddHttpContextAccessor();
     services.AddSingleton<SystemTextJsonRecordingSerializer>();
@@ -119,6 +116,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IProblemDetailsService, RequestShapeRefusalWriter>();
     services.AddSingleton<CallerIdentity>();
     services.AddSingleton<DeviceTokenSplitter>();
+    services.AddSingleton<IDeviceTokenSplitter>(provider => provider.GetRequiredService<DeviceTokenSplitter>());
     services.AddSingleton<LocalAddressSet>();
     services.AddSingleton<LoopbackAdminAuthorizationMiddleware>();
     services.AddScoped<InfrastructureExceptionMiddleware>();
@@ -128,13 +126,11 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderItemSettlementHandler>();
     services.AddScoped<SessionHandler>();
     services.AddSingleton<OutstandingInvitationCache>();
+    services.AddSingleton<IOutstandingInvitationCache>(provider => provider.GetRequiredService<OutstandingInvitationCache>());
     services.AddScoped<InvitationQRHandler>();
     services.AddSingleton<LocalNetworkAddressProvider>();
     services.AddSingleton<ReachableHostResolver>();
     services.AddSingleton<EnrolmentUrlBuilder>();
-    services.AddSingleton<DeviceRevocationAnnouncer>();
-    services.AddSingleton<IDeviceRevocationAnnouncer>(services => services.GetRequiredService<DeviceRevocationAnnouncer>());
-    services.AddSingleton<StationChangeAnnouncer>();
     services.AddScoped<AdminStationHandler>();
     services.AddScoped<AdminFestivalHandler>();
     services.AddScoped<AdminFestivalMenuHandler>();
@@ -157,7 +153,16 @@ public sealed class ApiServiceRegistration
     services.AddSignalR().AddJsonProtocol(protocolOptions => protocolOptions.PayloadSerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
     services.AddSingleton<HubConnectionRegistry>();
     services.AddSingleton<DeviceConnectionTerminator>();
-    services.AddSingleton<HubNotificationDispatcher>();
+    services.AddSingleton<IAnnouncementGuard, AnnouncementGuard>();
+    services.AddScoped<HubNotificationDispatcher>();
+    services.AddScoped<IStationOrdersAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<IOrderStatusAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<ICatalogChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<IFestivalChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<IStationsChangeAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<ISettlementAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<IEnrolmentCompletionAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
+    services.AddScoped<IDeviceRevocationAnnouncer>(provider => provider.GetRequiredService<HubNotificationDispatcher>());
 
     services.ConfigureHttpJsonOptions(jsonOptions => jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
 

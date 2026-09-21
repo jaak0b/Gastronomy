@@ -7,15 +7,19 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalMenuService
 {
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly ICatalogChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalMenuRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
+  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
   {
     _repository = repository;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _orderability = orderability;
     _runningFestival = runningFestival;
@@ -24,17 +28,19 @@ public sealed class FestivalMenuService
 
   public Task<ErrorOr<FestivalCatalogItem>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIds, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<FestivalCatalogItem>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => TakenOffAsync(festivalId, catalogItemId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => TakenOffAsync(festivalId, catalogItemId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<FestivalCatalogItem>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   private async Task<ErrorOr<FestivalCatalogItem>> PutOnAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)

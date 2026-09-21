@@ -30,7 +30,17 @@ public sealed class StationAdministrationServiceTest
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(null));
     A.CallTo(() => _festivalStationRepository.CountUnfulfilledItemsAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(0);
 
-    _service = new(_repository, _festivalRepository, _festivalStationRepository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), new(_orderabilityRepository, _festivalRepository, _clock), new(_festivalRepository, new(), _clock), _transactionRunner);
+    _stationsAnnouncer = A.Fake<IStationsChangeAnnouncer>();
+
+    _service = new(_repository,
+                   _festivalRepository,
+                   _festivalStationRepository,
+                   new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock),
+                   _stationsAnnouncer,
+                   new ImmediateAfterCommitActions(),
+                   new(_orderabilityRepository, _festivalRepository, _clock),
+                   new(_festivalRepository, new(), _clock),
+                   _transactionRunner);
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -47,8 +57,25 @@ public sealed class StationAdministrationServiceTest
   private IEnrolmentInvitationStore _invitationStore = null!;
   private IItemOrderabilityRepository _orderabilityRepository = null!;
   private IStationRepository _repository = null!;
+  private IStationsChangeAnnouncer _stationsAnnouncer = null!;
   private StationAdministrationService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
+
+  [Test]
+  public async Task CreateAsync_AStationTheFestivalDidNotHaveBefore_TellsTheDevices()
+  {
+    ErrorOr<Station> created = await _service.CreateAsync("Kuchenbuffet", 3, CancellationToken.None);
+
+    A.CallTo(() => _stationsAnnouncer.AnnounceStationsChangedAsync(created.Value.Id, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task UpdateAsync_AStationNobodyKnows_TellsTheDevicesNothing()
+  {
+    await _service.UpdateAsync(_kitchenId, "Kueche am Zelt", 1, CancellationToken.None);
+
+    A.CallTo(() => _stationsAnnouncer.AnnounceStationsChangedAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+  }
 
   [Test]
   public async Task ListAsync_AFestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
@@ -142,7 +169,7 @@ public sealed class StationAdministrationServiceTest
 
     A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     A.CallTo(() => _deviceTokenStore.RevokeAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-    A.CallTo(() => _announcer.AnnounceAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(_deviceId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
   }
 
   [Test]
@@ -155,7 +182,7 @@ public sealed class StationAdministrationServiceTest
     Assert.That(switchedOff.IsSuccess, Is.True);
 
     A.CallTo(() => _deviceTokenStore.RevokeAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
-    A.CallTo(() => _announcer.AnnounceAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
+    A.CallTo(() => _announcer.AnnounceDeviceRevokedAsync(A<Guid>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   private Station BuildStation(bool isActive, Guid? deviceId, Guid? invitationId)

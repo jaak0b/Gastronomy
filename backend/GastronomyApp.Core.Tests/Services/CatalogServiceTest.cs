@@ -1,7 +1,9 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -43,13 +45,17 @@ public sealed class CatalogServiceTest
   private CatalogService _service = null!;
 
   [Test]
-  public async Task ReadRunningFestivalCatalogAsync_NoFestivalIsRunning_ReturnsNothing()
+  public async Task ReadRunningFestivalCatalogAsync_NoFestivalIsRunning_RefusesBecauseThereIsNoMenu()
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    var festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
+    ErrorOr<Festival> festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
 
-    Assert.That(festival, Is.Null);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(festival.IsSuccess, Is.False);
+                      Assert.That(festival.RefusalMessageKey(), Is.EqualTo("NoRunningFestival"));
+                    });
   }
 
   [Test]
@@ -63,12 +69,12 @@ public sealed class CatalogServiceTest
   [Test]
   public async Task ReadRunningFestivalCatalogAsync_ARunningFestival_ReturnsTheFestivalWithItsMenu()
   {
-    var festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
+    ErrorOr<Festival> festival = await _service.ReadRunningFestivalCatalogAsync(CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(festival!.Id, Is.EqualTo(_festivalId));
-                      Assert.That(festival.Name, Is.EqualTo("Sommerfest"));
+                      Assert.That(festival.Value.Id, Is.EqualTo(_festivalId));
+                      Assert.That(festival.Value.Name, Is.EqualTo("Sommerfest"));
                     });
   }
 

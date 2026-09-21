@@ -22,16 +22,35 @@ public sealed class FestivalAdministrationServiceTest
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
     A.CallTo(() => _repository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
 
-    _service = new(_repository, new(), new(), _transactionRunner, new(_repository, new(), _clock));
+    _announcer = A.Fake<IFestivalChangeAnnouncer>();
+
+    _service = new(_repository, new(), new(), _announcer, new ImmediateAfterCommitActions(), _transactionRunner, new(_repository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
 
+  private IFestivalChangeAnnouncer _announcer = null!;
   private TimeProvider _clock = null!;
   private IFestivalRepository _repository = null!;
   private FestivalAdministrationService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
+
+  [Test]
+  public async Task CreateAsync_APeriodNoOtherFestivalCovers_TellsTheDevices()
+  {
+    await _service.CreateAsync("Sommerfest 2028", _now.AddYears(2), _now.AddYears(2).AddDays(1), CancellationToken.None);
+
+    A.CallTo(() => _announcer.AnnounceFestivalChangedAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task HideAsync_AFestivalNobodyKnows_TellsTheDevicesNothing()
+  {
+    await _service.HideAsync(_festivalId, CancellationToken.None);
+
+    A.CallTo(() => _announcer.AnnounceFestivalChangedAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
 
   [Test]
   public async Task ListAsync_AFestivalNothingHasBeenAddedTo_CountsNothingInsteadOfFailing()

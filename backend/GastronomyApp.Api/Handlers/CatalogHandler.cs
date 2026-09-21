@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Catalog;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -18,11 +19,6 @@ public sealed class CatalogHandler
 
   public async Task<IResult> ReadAsync(CancellationToken cancellationToken)
   {
-    var festival = await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken);
-
-    if (festival is null)
-      return Results.Ok(new CatalogView(null, [], [], []));
-
-    return Results.Ok(_mapper.Map<CatalogView>(festival));
+    return await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken).Match(festival => Results.Ok(_mapper.Map<CatalogView>(festival)), noFestivalIsRunning => Results.Ok(CatalogView.Empty));
   }
 }

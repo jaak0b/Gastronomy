@@ -1,32 +1,30 @@
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace GastronomyApp.Api.Announcers;
+namespace GastronomyApp.Api.Hub;
 
-public sealed class SavedChangeAnnouncer
+public sealed class AnnouncementGuard : IAnnouncementGuard
 {
   private readonly IHostApplicationLifetime _applicationLifetime;
-  private readonly ILogger<SavedChangeAnnouncer> _logger;
+  private readonly ILogger<AnnouncementGuard> _logger;
 
-  public SavedChangeAnnouncer(IHostApplicationLifetime applicationLifetime, ILogger<SavedChangeAnnouncer> logger)
+  public AnnouncementGuard(IHostApplicationLifetime applicationLifetime, ILogger<AnnouncementGuard> logger)
   {
     _applicationLifetime = applicationLifetime;
     _logger = logger;
   }
 
-  public async Task<bool> TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices)
+  public async Task<bool> TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(tellTheDevices);
 
-    var tokenOutlivingTheAdminsRequest = _applicationLifetime.ApplicationStopping;
-
     try
     {
-      await tellTheDevices(tokenOutlivingTheAdminsRequest);
+      await tellTheDevices(cancellationToken);
 
       return true;
     }
-    catch (OperationCanceledException) when (tokenOutlivingTheAdminsRequest.IsCancellationRequested)
+    catch (OperationCanceledException) when (_applicationLifetime.ApplicationStopping.IsCancellationRequested)
     {
       _logger.LogInformation("The change was saved, but the program was quitting, so the phones and station tablets were not told about it and will load it the next time they connect.");
 

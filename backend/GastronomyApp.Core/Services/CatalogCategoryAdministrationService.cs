@@ -1,21 +1,25 @@
 ﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class CatalogCategoryAdministrationService
 {
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly ICatalogChangeAnnouncer _announcer;
   private readonly CatalogCategoryOrdering _ordering;
   private readonly ICatalogCategoryRepository _repository;
   private readonly ITransactionRunner _transactionRunner;
 
-  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ITransactionRunner transactionRunner)
+  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner)
   {
     _repository = repository;
     _ordering = ordering;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _transactionRunner = transactionRunner;
   }
 
@@ -26,27 +30,27 @@ public sealed class CatalogCategoryAdministrationService
 
   public Task<ErrorOr<CatalogCategory>> CreateAsync(string? name, string? colourHex, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, colourHex, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, colourHex, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<CatalogCategory>> UpdateAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, name, colourHex, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, name, colourHex, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<CatalogCategory>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<CatalogCategory>> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   private async Task<ErrorOr<CatalogCategory>> CreatedAsync(string? name, string? colourHex, CancellationToken cancellationToken)

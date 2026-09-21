@@ -7,6 +7,8 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationAdministrationService
 {
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly IStationsChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly IFestivalStationRepository _festivalStationRepository;
   private readonly ItemOrderability _orderability;
@@ -19,6 +21,8 @@ public sealed class StationAdministrationService
                                       IFestivalRepository festivalRepository,
                                       IFestivalStationRepository festivalStationRepository,
                                       DeviceOwnerRetirement retirement,
+                                      IStationsChangeAnnouncer announcer,
+                                      IAfterCommitActions afterCommitActions,
                                       ItemOrderability orderability,
                                       RunningFestivalLookup runningFestival,
                                       ITransactionRunner transactionRunner)
@@ -27,6 +31,8 @@ public sealed class StationAdministrationService
     _festivalRepository = festivalRepository;
     _festivalStationRepository = festivalStationRepository;
     _retirement = retirement;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _orderability = orderability;
     _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
@@ -44,22 +50,30 @@ public sealed class StationAdministrationService
 
   public Task<ErrorOr<Station>> CreateAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, sortOrder, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, sortOrder, transactionCancellationToken)
+                                        .ThenDoAsync(station => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<Station>> UpdateAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(stationId, name, sortOrder, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(stationId, name, sortOrder, transactionCancellationToken)
+                                        .ThenDoAsync(station => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<Station>> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(stationId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(stationId, transactionCancellationToken)
+                                        .ThenDoAsync(station => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<Station>> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(stationId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(stationId, transactionCancellationToken)
+                                        .ThenDoAsync(station => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(station.Id, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   private async Task<ErrorOr<Station>> CreatedAsync(string? name, int sortOrder, CancellationToken cancellationToken)

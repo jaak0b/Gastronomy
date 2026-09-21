@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
@@ -9,15 +9,19 @@ public sealed class FestivalAdministrationService
 {
   private const int FirstNumber = 1;
 
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly IFestivalChangeAnnouncer _announcer;
   private readonly FestivalMoment _moment;
   private readonly IFestivalRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly FestivalSchedule _schedule;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, ITransactionRunner transactionRunner, RunningFestivalLookup runningFestival)
+  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, IFestivalChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _schedule = schedule;
     _moment = moment;
     _transactionRunner = transactionRunner;
@@ -41,27 +45,29 @@ public sealed class FestivalAdministrationService
 
   public Task<ErrorOr<Festival>> CreateAsync(string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<Festival>> UpdateAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<Festival>> CopyAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CopiedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => CopiedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<Festival>> HideAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   public Task<ErrorOr<Festival>> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
   }
 
   private async Task<ErrorOr<Festival>> CreatedAsync(string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)

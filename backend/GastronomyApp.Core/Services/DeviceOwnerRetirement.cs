@@ -33,7 +33,7 @@ public sealed class DeviceOwnerRetirement
       return null;
 
     await _deviceTokenStore.RevokeAsync(deviceId.Value, cancellationToken);
-    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceAsync(deviceId.Value, announcementCancellationToken), cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceDeviceRevokedAsync(deviceId.Value, announcementCancellationToken), cancellationToken);
 
     return deviceId;
   }

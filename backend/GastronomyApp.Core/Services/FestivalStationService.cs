@@ -7,6 +7,8 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalStationService
 {
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly IStationsChangeAnnouncer _announcer;
   private readonly IFestivalRepository _festivalRepository;
   private readonly INumberAllocator _numberAllocator;
   private readonly ItemOrderability _orderability;
@@ -15,9 +17,19 @@ public sealed class FestivalStationService
   private readonly IStationRepository _stationRepository;
   private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalStationService(IFestivalStationRepository repository, IFestivalRepository festivalRepository, IStationRepository stationRepository, ItemOrderability orderability, INumberAllocator numberAllocator, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
+  public FestivalStationService(IFestivalStationRepository repository,
+                                IFestivalRepository festivalRepository,
+                                IStationRepository stationRepository,
+                                ItemOrderability orderability,
+                                INumberAllocator numberAllocator,
+                                IStationsChangeAnnouncer announcer,
+                                IAfterCommitActions afterCommitActions,
+                                RunningFestivalLookup runningFestival,
+                                ITransactionRunner transactionRunner)
   {
     _repository = repository;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _stationRepository = stationRepository;
     _orderability = orderability;
@@ -28,12 +40,16 @@ public sealed class FestivalStationService
 
   public Task<ErrorOr<FestivalStation>> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => AddedAsync(festivalId, stationId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => AddedAsync(festivalId, stationId, transactionCancellationToken)
+                                        .ThenDoAsync(link => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(link.StationId, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   public Task<ErrorOr<FestivalStation>> RemoveAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => RemovedAsync(festivalId, stationId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => RemovedAsync(festivalId, stationId, transactionCancellationToken)
+                                        .ThenDoAsync(link => _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationsChangedAsync(link.StationId, announcementCancellationToken), transactionCancellationToken)),
+                                       cancellationToken);
   }
 
   private async Task<ErrorOr<FestivalStation>> AddedAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)

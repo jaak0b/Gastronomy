@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Results;
 
@@ -11,4 +11,6 @@ public sealed record SettlementResult
   public required IReadOnlyList<OrderItem> AlreadySettledByOthers { get; init; }
 
   public required IReadOnlyList<string> SettledTableNames { get; init; }
+
+  public bool OtherDevicesWereTold { get; init; } = true;
 }

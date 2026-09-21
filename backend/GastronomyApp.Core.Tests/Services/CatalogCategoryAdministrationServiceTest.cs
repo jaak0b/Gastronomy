@@ -28,7 +28,9 @@ public sealed class CatalogCategoryAdministrationServiceTest
     A.CallTo(() => _repository.FindByIdAsync(_foodCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(_food));
     A.CallTo(() => _repository.HoldsActiveItemsAsync(A<Guid>._, A<CancellationToken>._)).Returns(false);
 
-    _service = new(_repository, new(), _transactionRunner);
+    _catalogAnnouncer = A.Fake<ICatalogChangeAnnouncer>();
+
+    _service = new(_repository, new(), _catalogAnnouncer, new ImmediateAfterCommitActions(), _transactionRunner);
   }
 
   private readonly Guid _drinkCategoryId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
@@ -36,9 +38,26 @@ public sealed class CatalogCategoryAdministrationServiceTest
 
   private CatalogCategory _drinks = null!;
   private CatalogCategory _food = null!;
+  private ICatalogChangeAnnouncer _catalogAnnouncer = null!;
   private ICatalogCategoryRepository _repository = null!;
   private CatalogCategoryAdministrationService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
+
+  [Test]
+  public async Task MoveAsync_DownFromTheFirstPosition_TellsTheDevicesTheCatalogChanged()
+  {
+    await _service.MoveAsync(_foodCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
+
+    A.CallTo(() => _catalogAnnouncer.AnnounceCatalogChangedAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+  }
+
+  [Test]
+  public async Task CreateAsync_ANameAnotherCategoryHolds_TellsTheDevicesNothing()
+  {
+    await _service.CreateAsync("speisen", "#C62828", CancellationToken.None);
+
+    A.CallTo(() => _catalogAnnouncer.AnnounceCatalogChangedAsync(A<CancellationToken>._)).MustNotHaveHappened();
+  }
 
   [Test]
   public async Task CreateAsync_NameOfAnotherCategoryInAnotherCasing_FailsBecauseTheNameIsTaken()
@@ -80,7 +99,12 @@ public sealed class CatalogCategoryAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(moved.IsSuccess, Is.True);
-                      Assert.That(moved.Value.Select(category => category.Id), Is.EqualTo(new[] { _foodCategoryId, _drinkCategoryId }));
+                      Assert.That(moved.Value.Select(category => category.Id),
+                                  Is.EqualTo(new[]
+                                             {
+                                               _foodCategoryId,
+                                               _drinkCategoryId
+                                             }));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();

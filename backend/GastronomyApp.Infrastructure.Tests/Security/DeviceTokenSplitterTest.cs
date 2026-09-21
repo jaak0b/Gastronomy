@@ -1,6 +1,6 @@
-using GastronomyApp.Api.Auth;
+﻿using GastronomyApp.Infrastructure.Security;
 
-namespace GastronomyApp.Api.Tests.Auth;
+namespace GastronomyApp.Infrastructure.Tests.Security;
 
 [TestFixture]
 public sealed class DeviceTokenSplitterTest

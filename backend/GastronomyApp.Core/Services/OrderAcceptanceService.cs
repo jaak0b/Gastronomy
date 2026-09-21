@@ -3,15 +3,17 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderAcceptanceService
 {
   private readonly TimeProvider _timeProvider;
+  private readonly IAfterCommitActions _afterCommitActions;
+  private readonly IStationOrdersAnnouncer _announcer;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
 
@@ -20,13 +22,23 @@ public sealed class OrderAcceptanceService
   private readonly OrderItemSettlementService _settlementService;
   private readonly ITransactionRunner _transactionRunner;
 
-  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, OrderItemSettlementService settlementService, ITransactionRunner transactionRunner, TimeProvider timeProvider)
+  public OrderAcceptanceService(IOrderRepository orderRepository,
+                                RunningFestivalLookup runningFestival,
+                                INumberAllocator numberAllocator,
+                                OrderItemResolutionService itemResolutionService,
+                                OrderItemSettlementService settlementService,
+                                IStationOrdersAnnouncer announcer,
+                                IAfterCommitActions afterCommitActions,
+                                ITransactionRunner transactionRunner,
+                                TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
     _numberAllocator = numberAllocator;
     _itemResolutionService = itemResolutionService;
     _settlementService = settlementService;
+    _announcer = announcer;
+    _afterCommitActions = afterCommitActions;
     _transactionRunner = transactionRunner;
     _timeProvider = timeProvider;
   }
@@ -49,7 +61,7 @@ public sealed class OrderAcceptanceService
   {
     var existingOrder = await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
     if (existingOrder is not null)
-      return existingOrder;
+      return await AcceptedOrderAsync(existingOrder.Id, cancellationToken);
 
     var festival = await _runningFestival.FindAsync(cancellationToken);
     if (festival is null)
@@ -72,7 +84,17 @@ public sealed class OrderAcceptanceService
 
     await _orderRepository.AddAsync(order, cancellationToken);
 
-    return order;
+    return await AcceptedOrderAsync(order.Id, cancellationToken);
+  }
+
+  private async Task<Order> AcceptedOrderAsync(Guid orderId, CancellationToken cancellationToken)
+  {
+    var storedOrder = (await _orderRepository.FindWithStationOrdersAsync(orderId, cancellationToken))!;
+
+    foreach (var stationId in storedOrder.StationOrders.Select(stationOrder => stationOrder.StationId).Distinct())
+      await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceStationOrdersChangedAsync(stationId, announcementCancellationToken), cancellationToken);
+
+    return storedOrder;
   }
 
   private ErrorOr<Order> SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)
@@ -97,9 +119,7 @@ public sealed class OrderAcceptanceService
     if (lines.Count == 0)
       return order;
 
-    return _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc)
-                             .Match<ErrorOr<Order>>(settlement => order,
-                                                    settlementErrors => settlementErrors.ConvertAll(Refusal.Order.SettlementCannotBeProcessed));
+    return _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc).Match<ErrorOr<Order>>(settlement => order, settlementErrors => settlementErrors.ConvertAll(Refusal.Order.SettlementCannotBeProcessed));
   }
 
   private async Task<Order> BuildOrderAsync(PlaceOrderRequest request, Guid staffMemberId, Guid festivalId, IReadOnlyCollection<OrderItem> routedItems, CancellationToken cancellationToken)
