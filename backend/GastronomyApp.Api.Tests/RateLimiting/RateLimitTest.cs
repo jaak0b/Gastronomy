@@ -23,7 +23,8 @@ public sealed class RateLimitTest
     }
 
     using var scope = _factory.Services.CreateScope();
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, world.StaffMemberId), "de", "NUnit", CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, world.StaffMemberId, CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }
 

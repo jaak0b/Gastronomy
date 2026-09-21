@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -15,16 +14,16 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var issued = await store.IssueAsync(StaffMemberOwner(seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
+    var issued = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
     var parts = SplitToken(issued.PlaintextToken);
 
-    var verification = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
+    var owner = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(verification.IsValid, Is.True);
-                      Assert.That(verification.Device!.Id, Is.EqualTo(issued.Device.Id));
-                      Assert.That(verification.Owner, Is.EqualTo(StaffMemberOwner(seeded)));
+                      Assert.That(owner, Is.Not.Null);
+                      Assert.That(owner!.Device!.Id, Is.EqualTo(issued.Device.Id));
+                      Assert.That(owner.Id, Is.EqualTo(seeded.StaffMemberId));
                     });
   }
 
@@ -35,15 +34,15 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var issued = await store.IssueAsync(KitchenOwner(seeded), "de", "Tablet", TestContext.CurrentContext.CancellationToken);
+    var issued = await store.IssueAsync(await KitchenOwnerAsync(fixture, seeded), "de", "Tablet", TestContext.CurrentContext.CancellationToken);
     var parts = SplitToken(issued.PlaintextToken);
 
-    var verification = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
+    var owner = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
     var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(verification.Owner, Is.EqualTo(KitchenOwner(seeded)));
+                      Assert.That(owner!.Id, Is.EqualTo(seeded.KitchenStationId));
                       Assert.That(kitchen.DeviceId, Is.EqualTo(issued.Device.Id));
                     });
   }
@@ -55,29 +54,20 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var first = await store.IssueAsync(StaffMemberOwner(seeded), "de", "Old phone", TestContext.CurrentContext.CancellationToken);
-    var second = await store.IssueAsync(StaffMemberOwner(seeded), "de", "New phone", TestContext.CurrentContext.CancellationToken);
+    var first = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "Old phone", TestContext.CurrentContext.CancellationToken);
+    var second = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "New phone", TestContext.CurrentContext.CancellationToken);
     var firstParts = SplitToken(first.PlaintextToken);
 
-    var firstVerification = await store.VerifyAsync(firstParts.TokenLookupId, firstParts.Secret, TestContext.CurrentContext.CancellationToken);
+    var firstOwner = await store.VerifyAsync(firstParts.TokenLookupId, firstParts.Secret, TestContext.CurrentContext.CancellationToken);
     var staffMember = await fixture.DbContext.StaffMembers.SingleAsync(candidate => candidate.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     var deviceCount = await fixture.DbContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(firstVerification.IsValid, Is.False);
+                      Assert.That(firstOwner, Is.Null);
                       Assert.That(staffMember.DeviceId, Is.EqualTo(second.Device.Id));
                       Assert.That(deviceCount, Is.EqualTo(1));
                     });
-  }
-
-  [Test]
-  public void IssueAsync_ForAnOwnerThatDoesNotExist_Throws()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var store = CreateStore(fixture);
-
-    Assert.That(async () => await store.IssueAsync(new(DeviceOwnerKind.StaffMember, Guid.NewGuid()), "de", "Test agent", TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>());
   }
 
   [Test]
@@ -87,17 +77,12 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var issued = await store.IssueAsync(StaffMemberOwner(seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
+    var issued = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
     var parts = SplitToken(issued.PlaintextToken);
 
-    var verification = await store.VerifyAsync(parts.TokenLookupId, "wrong-secret", TestContext.CurrentContext.CancellationToken);
+    var owner = await store.VerifyAsync(parts.TokenLookupId, "wrong-secret", TestContext.CurrentContext.CancellationToken);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(verification.IsValid, Is.False);
-                      Assert.That(verification.Device, Is.Null);
-                      Assert.That(verification.Owner, Is.Null);
-                    });
+    Assert.That(owner, Is.Null);
   }
 
   [Test]
@@ -107,16 +92,16 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var issued = await store.IssueAsync(StaffMemberOwner(seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
+    var issued = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
     var parts = SplitToken(issued.PlaintextToken);
 
     await store.RevokeAsync(issued.Device.Id, TestContext.CurrentContext.CancellationToken);
-    var verification = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
+    var owner = await store.VerifyAsync(parts.TokenLookupId, parts.Secret, TestContext.CurrentContext.CancellationToken);
     var staffMember = await fixture.DbContext.StaffMembers.SingleAsync(candidate => candidate.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(verification.IsValid, Is.False);
+                      Assert.That(owner, Is.Null);
                       Assert.That(staffMember.DeviceId, Is.Null);
                     });
   }
@@ -127,9 +112,9 @@ public sealed class DeviceTokenStoreTest
     using SqliteInMemoryFixture fixture = new();
     var store = CreateStore(fixture);
 
-    var verification = await store.VerifyAsync(Guid.NewGuid().ToString("N"), "any-secret", TestContext.CurrentContext.CancellationToken);
+    var owner = await store.VerifyAsync(Guid.NewGuid().ToString("N"), "any-secret", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(verification.IsValid, Is.False);
+    Assert.That(owner, Is.Null);
   }
 
   [Test]
@@ -139,7 +124,7 @@ public sealed class DeviceTokenStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture);
 
-    var issued = await store.IssueAsync(StaffMemberOwner(seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
+    var issued = await store.IssueAsync(await StaffMemberOwnerAsync(fixture, seeded), "de", "Test agent", TestContext.CurrentContext.CancellationToken);
     var parts = SplitToken(issued.PlaintextToken);
 
     List<string> storedValues = [];
@@ -169,14 +154,14 @@ public sealed class DeviceTokenStoreTest
                     });
   }
 
-  private DeviceOwner StaffMemberOwner(SeededDomain seeded)
+  private async Task<IDeviceOwner> StaffMemberOwnerAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
   {
-    return new(DeviceOwnerKind.StaffMember, seeded.StaffMemberId);
+    return await fixture.DbContext.StaffMembers.SingleAsync(candidate => candidate.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
   }
 
-  private DeviceOwner KitchenOwner(SeededDomain seeded)
+  private async Task<IDeviceOwner> KitchenOwnerAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
   {
-    return new(DeviceOwnerKind.Station, seeded.KitchenStationId);
+    return await fixture.DbContext.Stations.SingleAsync(candidate => candidate.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
   }
 
   private TokenParts SplitToken(string plaintextToken)
@@ -188,7 +173,7 @@ public sealed class DeviceTokenStoreTest
 
   private DeviceTokenStore CreateStore(SqliteInMemoryFixture fixture)
   {
-    return new(fixture.DbContext, new DeviceOwnerStore(fixture.DbContext, new ProjectionConfiguration().Build()), new(), new SystemClock());
+    return new(fixture.DbContext, new DeviceOwnerStore(fixture.DbContext), new(), new SystemClock());
   }
 
   private sealed record TokenParts(string TokenLookupId, string Secret);

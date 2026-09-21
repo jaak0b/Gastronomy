@@ -30,7 +30,8 @@ public sealed class ConcurrentOrderTest
                               });
     await database.SaveChangesAsync();
 
-    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, secondStaffMemberId), "de", "NUnit second phone", CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, secondStaffMemberId, CancellationToken.None);
+    var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit second phone", CancellationToken.None);
     _secondDeviceToken = issued.PlaintextToken;
   }
 

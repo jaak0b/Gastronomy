@@ -1,9 +1,10 @@
-﻿using GastronomyApp.Api.Auth;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -61,54 +62,41 @@ public sealed class EnrolmentRedemptionHandler
 
   private IResult Refused(EnrolmentRedemptionResult redemption, string reason, int statusCode, string code, string messageKey)
   {
-    _log.LogWarning("Enrolment refused for invitation {InvitationId}, because {Reason}.", redemption.InvitationId, reason);
+    _log.LogWarning("Enrolment refused for invitation {InvitationId}, because {Reason}.", redemption.Invitation?.Id, reason);
 
     return _resultEnvelope.Problem(statusCode, code, messageKey);
   }
 
   private async Task<IResult> CompletedAsync(EnrolmentRedemptionResult redemption, string? previousDeviceToken, CancellationToken cancellationToken)
   {
-    _invitationCache.Forget();
+    _invitationCache.ForgetInvitation();
 
-    var device = redemption.Device!;
-    var deviceKind = redemption.OwnerKind!.Value;
-    Guid ownerId;
-    string ownerName;
+    var owner = redemption.Owner!;
+    var device = owner.Device!;
 
-    if (deviceKind == DeviceOwnerKind.StaffMember)
-    {
-      ownerId = redemption.StaffMember!.Id;
-      ownerName = redemption.StaffMember!.Name;
-    }
-    else
-    {
-      ownerId = redemption.Station!.Id;
-      ownerName = redemption.Station!.Name;
-    }
-
-    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.InvitationId, device.Id, deviceKind, ownerId);
+    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.Invitation?.Id, device.Id, owner.Kind, owner.Id);
 
     await RetireHandedOverDeviceAsync(previousDeviceToken, device.Id, cancellationToken);
 
-    await _dispatcher.PushEnrolmentCompletedAsync(new(deviceKind, ownerId, ownerName, device.Id), cancellationToken);
+    await _dispatcher.PushEnrolmentCompletedAsync(new(owner.Kind, owner.Id, owner.Name, device.Id), cancellationToken);
 
-    return Results.Ok(new RedeemedEnrolmentView(device.Id, redemption.PlaintextToken!, deviceKind, BuildStaffMemberView(redemption), BuildStationSummaryView(redemption), device.Language));
+    return Results.Ok(new RedeemedEnrolmentView(device.Id, redemption.PlaintextToken!, owner.Kind, BuildStaffMemberView(owner), BuildStationSummaryView(owner), device.Language));
   }
 
-  private StaffMemberView? BuildStaffMemberView(EnrolmentRedemptionResult redemption)
+  private StaffMemberView? BuildStaffMemberView(IDeviceOwner owner)
   {
-    if (redemption.StaffMember is null)
+    if (owner.Kind != DeviceOwnerKind.StaffMember)
       return null;
 
-    return new(redemption.StaffMember.Id, redemption.StaffMember.Name);
+    return new(owner.Id, owner.Name);
   }
 
-  private StationSummaryView? BuildStationSummaryView(EnrolmentRedemptionResult redemption)
+  private StationSummaryView? BuildStationSummaryView(IDeviceOwner owner)
   {
-    if (redemption.Station is null)
+    if (owner.Kind != DeviceOwnerKind.Station)
       return null;
 
-    return new(redemption.Station.Id, redemption.Station.Name);
+    return new(owner.Id, owner.Name);
   }
 
   private async Task RetireHandedOverDeviceAsync(string? previousDeviceToken, Guid newDeviceId, CancellationToken cancellationToken)

@@ -2,8 +2,8 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -27,7 +27,7 @@ public sealed class SessionHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    var owner = await _ownerStore.FindAsync(new(caller.OwnerKind, caller.OwnerId), cancellationToken);
+    var owner = await _ownerStore.FindAsync(caller.OwnerKind, caller.OwnerId, cancellationToken);
 
     if (owner is null)
       return Results.Unauthorized();
@@ -35,7 +35,7 @@ public sealed class SessionHandler
     return Results.Ok(new SessionView(caller.DeviceId, caller.OwnerKind, BuildStaffMemberView(caller, owner), BuildStationSummaryView(caller, owner), caller.Language));
   }
 
-  private StaffMemberView? BuildStaffMemberView(DeviceCaller caller, DeviceOwnerRecord owner)
+  private StaffMemberView? BuildStaffMemberView(DeviceCaller caller, IDeviceOwner owner)
   {
     if (caller.OwnerKind != DeviceOwnerKind.StaffMember)
       return null;
@@ -43,7 +43,7 @@ public sealed class SessionHandler
     return new(caller.OwnerId, owner.Name);
   }
 
-  private StationSummaryView? BuildStationSummaryView(DeviceCaller caller, DeviceOwnerRecord owner)
+  private StationSummaryView? BuildStationSummaryView(DeviceCaller caller, IDeviceOwner owner)
   {
     if (caller.OwnerKind != DeviceOwnerKind.Station)
       return null;
@@ -56,7 +56,7 @@ public sealed class SessionHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
+    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
 
     if (changed.IsSuccess)
       return Results.NoContent();

@@ -1,19 +1,15 @@
-using GastronomyApp.Core.ReadModels;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Ports;
 
 public interface IDeviceOwnerStore
 {
-  public Task<DeviceOwnerRecord?> FindAsync(DeviceOwner owner, CancellationToken cancellationToken);
+  public Task<IDeviceOwner?> FindAsync(DeviceOwnerKind kind, Guid ownerId, CancellationToken cancellationToken);
 
-  public Task<DeviceOwner?> FindByDeviceAsync(Guid deviceId, CancellationToken cancellationToken);
+  public Task<IDeviceOwner?> FindByDeviceAsync(Guid deviceId, CancellationToken cancellationToken);
 
-  public Task<DeviceOwner?> FindByInvitationAsync(Guid invitationId, CancellationToken cancellationToken);
-
-  public Task PointDeviceAsync(DeviceOwner owner, Guid? deviceId, CancellationToken cancellationToken);
-
-  public Task PointInvitationAsync(DeviceOwner owner, Guid? invitationId, CancellationToken cancellationToken);
+  public Task<IDeviceOwner?> FindByInvitationAsync(Guid invitationId, CancellationToken cancellationToken);
 
   public Task ForgetInvitationsAsync(IReadOnlyCollection<Guid> invitationIds, CancellationToken cancellationToken);
 }

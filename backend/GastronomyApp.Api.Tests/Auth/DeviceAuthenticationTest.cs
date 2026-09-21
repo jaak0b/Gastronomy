@@ -101,6 +101,8 @@ public sealed class DeviceAuthenticationTest
   private async Task<IssuedDeviceToken> IssueTokenAsync()
   {
     using var scope = _factory.Services.CreateScope();
-    return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), "de", "NUnit", CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, _world.StaffMemberId, CancellationToken.None);
+
+    return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
   }
 }

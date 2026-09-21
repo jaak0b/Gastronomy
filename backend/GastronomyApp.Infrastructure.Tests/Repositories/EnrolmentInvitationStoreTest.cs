@@ -1,4 +1,5 @@
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
@@ -18,18 +19,17 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de-DE,de;q=0.9", TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.OwnerKind, Is.EqualTo(DeviceOwnerKind.StaffMember));
-                      Assert.That(redemption.Device, Is.Not.Null);
-                      Assert.That(redemption.StaffMember!.Name, Is.EqualTo("Anna"));
-                      Assert.That(redemption.StaffMember.DeviceId, Is.EqualTo(redemption.Device!.Id));
-                      Assert.That(redemption.Station, Is.Null);
-                      Assert.That(redemption.Device.Language, Is.EqualTo("de"));
+                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Owner.Device, Is.Not.Null);
+                      Assert.That(redemption.Owner.Name, Is.EqualTo("Anna"));
+                      Assert.That(redemption.Owner.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
+                      Assert.That(redemption.Owner.Device.Language, Is.EqualTo("de"));
                     });
   }
 
@@ -45,12 +45,11 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.OwnerKind, Is.EqualTo(DeviceOwnerKind.StaffMember));
-                      Assert.That(redemption.Device, Is.Not.Null);
-                      Assert.That(redemption.StaffMember!.Name, Is.EqualTo("Bernd"));
-                      Assert.That(redemption.StaffMember.IsActive, Is.True);
-                      Assert.That(redemption.StaffMember.DeviceId, Is.EqualTo(redemption.Device!.Id));
-                      Assert.That(redemption.Station, Is.Null);
+                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Owner.Device, Is.Not.Null);
+                      Assert.That(redemption.Owner.Name, Is.EqualTo("Bernd"));
+                      Assert.That(redemption.Owner.IsActive, Is.True);
+                      Assert.That(redemption.Owner.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
                     });
   }
 
@@ -66,7 +65,7 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.NameRequired));
-                      Assert.That(redemption.Device, Is.Null);
+                      Assert.That(redemption.Owner, Is.Null);
                       Assert.That(redemption.PlaintextToken, Is.Null);
                     });
   }
@@ -78,7 +77,7 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var created = await store.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await KitchenAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var kitchenBeforeRedemption = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     Guid? pointedAtTheInvitation = kitchenBeforeRedemption.EnrolmentInvitationId;
 
@@ -87,12 +86,11 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(pointedAtTheInvitation, Is.EqualTo(created.InvitationId));
+                      Assert.That(pointedAtTheInvitation, Is.EqualTo(created.Invitation.Id));
                       Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.OwnerKind, Is.EqualTo(DeviceOwnerKind.Station));
-                      Assert.That(redemption.Station!.Id, Is.EqualTo(seeded.KitchenStationId));
-                      Assert.That(redemption.StaffMember, Is.Null);
-                      Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Device!.Id));
+                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.Station));
+                      Assert.That(redemption.Owner.Id, Is.EqualTo(seeded.KitchenStationId));
+                      Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
                       Assert.That(kitchen.EnrolmentInvitationId, Is.Null);
                     });
   }
@@ -104,7 +102,7 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var created = await store.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await KitchenAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
     kitchen.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
@@ -125,7 +123,7 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var anna = await fixture.DbContext.StaffMembers.SingleAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     anna.IsActive = false;
     await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
@@ -142,11 +140,11 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var first = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var second = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var first = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
+    var second = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
 
-    var firstRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == first.InvitationId, TestContext.CurrentContext.CancellationToken);
-    var secondRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == second.InvitationId, TestContext.CurrentContext.CancellationToken);
+    var firstRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == first.Invitation.Id, TestContext.CurrentContext.CancellationToken);
+    var secondRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == second.Invitation.Id, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -162,17 +160,17 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    var forAnna = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
-    var forTheKitchen = await store.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken);
+    var forAnna = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
+    var forTheKitchen = await store.CreateAsync(await KitchenAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
 
     var anna = await fixture.DbContext.StaffMembers.SingleAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
     var kitchen = await fixture.DbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(forAnna.InvitationId, Is.Not.EqualTo(forTheKitchen.InvitationId));
+                      Assert.That(forAnna.Invitation.Id, Is.Not.EqualTo(forTheKitchen.Invitation.Id));
                       Assert.That(anna.EnrolmentInvitationId, Is.Null);
-                      Assert.That(kitchen.EnrolmentInvitationId, Is.EqualTo(forTheKitchen.InvitationId));
+                      Assert.That(kitchen.EnrolmentInvitationId, Is.EqualTo(forTheKitchen.Invitation.Id));
                     });
   }
 
@@ -184,7 +182,7 @@ public sealed class EnrolmentInvitationStoreTest
     AdjustableClock clock = new();
     var store = CreateStore(fixture, clock);
 
-    var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     clock.Advance(TimeSpan.FromMinutes(6));
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
@@ -200,13 +198,13 @@ public sealed class EnrolmentInvitationStoreTest
     AdjustableClock clock = new();
     var store = CreateStore(fixture, clock);
 
-    var firstInvitation = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var firstInvitation = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var firstRedemption = await store.RedeemAsync(firstInvitation.QRCodeValue, null, "Old phone", "de", TestContext.CurrentContext.CancellationToken);
 
-    var staffMemberId = firstRedemption.StaffMember!.Id;
-    var oldDeviceId = firstRedemption.Device!.Id;
+    var staffMemberId = firstRedemption.Owner!.Id;
+    var oldDeviceId = firstRedemption.Owner.Device!.Id;
 
-    var secondInvitation = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var secondInvitation = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var secondRedemption = await store.RedeemAsync(secondInvitation.QRCodeValue, null, "New phone", "de", TestContext.CurrentContext.CancellationToken);
 
     var staffMember = await fixture.DbContext.StaffMembers.SingleAsync(candidate => candidate.Id == staffMemberId, TestContext.CurrentContext.CancellationToken);
@@ -215,10 +213,10 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(secondRedemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(secondRedemption.StaffMember!.Id, Is.EqualTo(staffMemberId));
+                      Assert.That(secondRedemption.Owner!.Id, Is.EqualTo(staffMemberId));
                       Assert.That(deviceCount, Is.EqualTo(1));
                       Assert.That(staffMember.DeviceId, Is.Not.EqualTo(oldDeviceId));
-                      Assert.That(staffMember.DeviceId, Is.EqualTo(secondRedemption.Device!.Id));
+                      Assert.That(staffMember.DeviceId, Is.EqualTo(secondRedemption.Owner.Device!.Id));
                     });
   }
 
@@ -229,10 +227,14 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
     AdjustableClock clock = new();
 
-    var firstStore = CreateStore(fixture.CreateContext(), clock);
-    var secondStore = CreateStore(fixture.CreateContext(), clock);
+    var firstContext = fixture.CreateContext();
+    var secondContext = fixture.CreateContext();
+    var firstStore = CreateStore(firstContext, clock);
+    var secondStore = CreateStore(secondContext, clock);
+    var anna = await AnnaAsync(firstContext, seeded);
+    var kitchen = await KitchenAsync(secondContext, seeded);
 
-    await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken)), Task.Run(() => secondStore.CreateAsync(Kitchen(seeded), TestContext.CurrentContext.CancellationToken)));
+    await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(anna, TestContext.CurrentContext.CancellationToken)), Task.Run(() => secondStore.CreateAsync(kitchen, TestContext.CurrentContext.CancellationToken)));
 
     var verificationContext = fixture.CreateContext();
     var outstandingCount = await verificationContext.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.UtcNow, TestContext.CurrentContext.CancellationToken);
@@ -247,7 +249,8 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
     AdjustableClock clock = new();
 
-    var created = await CreateStore(fixture.CreateContext(), clock).CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var creatingContext = fixture.CreateContext();
+    var created = await CreateStore(creatingContext, clock).CreateAsync(await AnnaAsync(creatingContext, seeded), TestContext.CurrentContext.CancellationToken);
 
     var firstStore = CreateStore(fixture.CreateContext(), clock);
     var secondStore = CreateStore(fixture.CreateContext(), clock);
@@ -272,22 +275,22 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     AdjustableClock clock = new();
     Pbkdf2SecretHasher secretHasher = new();
-    DeviceOwnerStore ownerStore = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    DeviceOwnerStore ownerStore = new(fixture.DbContext);
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
     EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
 
-    var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
     Assert.That(redemption.PlaintextToken, Is.Not.Null);
 
     var separatorIndex = redemption.PlaintextToken!.IndexOf('.', StringComparison.Ordinal);
-    var verification = await deviceTokenStore.VerifyAsync(redemption.PlaintextToken[..separatorIndex], redemption.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
+    var verifiedOwner = await deviceTokenStore.VerifyAsync(redemption.PlaintextToken[..separatorIndex], redemption.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(verification.IsValid, Is.True);
-                      Assert.That(verification.Device!.Id, Is.EqualTo(redemption.Device!.Id));
+                      Assert.That(verifiedOwner, Is.Not.Null);
+                      Assert.That(verifiedOwner!.Device!.Id, Is.EqualTo(redemption.Owner!.Device!.Id));
                     });
   }
 
@@ -298,7 +301,7 @@ public sealed class EnrolmentInvitationStoreTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     var store = CreateStore(fixture, new());
 
-    await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync("not-the-right-code", null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
@@ -316,7 +319,7 @@ public sealed class EnrolmentInvitationStoreTest
     AdjustableClock clock = new();
     var store = CreateStore(fixture, clock);
 
-    var created = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     clock.Advance(TimeSpan.FromMinutes(6));
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
@@ -336,15 +339,15 @@ public sealed class EnrolmentInvitationStoreTest
     AdjustableClock clock = new();
     var store = CreateStore(fixture, clock);
 
-    var yesterday = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var yesterday = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
 
     clock.Advance(TimeSpan.FromDays(1));
 
-    var today = await store.CreateAsync(StaffMember(seeded), TestContext.CurrentContext.CancellationToken);
+    var today = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
 
-    var expiredRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == yesterday.InvitationId, TestContext.CurrentContext.CancellationToken);
+    var expiredRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == yesterday.Invitation.Id, TestContext.CurrentContext.CancellationToken);
 
-    var currentRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == today.InvitationId, TestContext.CurrentContext.CancellationToken);
+    var currentRow = await fixture.DbContext.EnrolmentInvitations.SingleAsync(invitation => invitation.Id == today.Invitation.Id, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -353,14 +356,14 @@ public sealed class EnrolmentInvitationStoreTest
                     });
   }
 
-  private DeviceOwner StaffMember(SeededDomain seeded)
+  private async Task<IDeviceOwner> AnnaAsync(GastronomyAppDbContext dbContext, SeededDomain seeded)
   {
-    return new(DeviceOwnerKind.StaffMember, seeded.StaffMemberId);
+    return await dbContext.StaffMembers.SingleAsync(staffMember => staffMember.Id == seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
   }
 
-  private DeviceOwner Kitchen(SeededDomain seeded)
+  private async Task<IDeviceOwner> KitchenAsync(GastronomyAppDbContext dbContext, SeededDomain seeded)
   {
-    return new(DeviceOwnerKind.Station, seeded.KitchenStationId);
+    return await dbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
   }
 
   private EnrolmentInvitationStore CreateStore(SqliteInMemoryFixture fixture, AdjustableClock clock)
@@ -371,7 +374,7 @@ public sealed class EnrolmentInvitationStoreTest
   private EnrolmentInvitationStore CreateStore(GastronomyAppDbContext dbContext, AdjustableClock clock)
   {
     Pbkdf2SecretHasher secretHasher = new();
-    DeviceOwnerStore ownerStore = new(dbContext, new ProjectionConfiguration().Build());
+    DeviceOwnerStore ownerStore = new(dbContext);
 
     return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
   }

@@ -4,7 +4,6 @@ using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -32,9 +31,9 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_QrCodeForm_ReturnsTheDeviceTokenOnce()
   {
-    var invitation = await CreateInvitationAsync();
+    var code = await CreateInvitationCodeAsync();
 
-    using var response = await RedeemAsync(invitation.QRCodeValue);
+    using var response = await RedeemAsync(code);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -50,7 +49,7 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_NeitherCodeForm_IsRefused()
   {
-    await CreateInvitationAsync();
+    await CreateInvitationCodeAsync();
 
     using var response = await RedeemAsync(null);
 
@@ -60,9 +59,9 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_AnInvitationForNobodyAndABlankName_AsksForTheName()
   {
-    var invitation = await CreateInvitationForNobodyAsync();
+    var code = await CreateInvitationCodeForNobodyAsync();
 
-    using var response = await RedeemAsync(invitation.QRCodeValue, "   ");
+    using var response = await RedeemAsync(code, "   ");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -75,9 +74,9 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_AnInvitationForNobodyAndATypedName_PutsThatWaiterOnTheList()
   {
-    var invitation = await CreateInvitationForNobodyAsync();
+    var code = await CreateInvitationCodeForNobodyAsync();
 
-    using var response = await RedeemAsync(invitation.QRCodeValue, "  Bernd  ");
+    using var response = await RedeemAsync(code, "  Bernd  ");
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -92,14 +91,14 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_AlreadyConsumedInvitation_AnswersGone()
   {
-    var invitation = await CreateInvitationAsync();
+    var code = await CreateInvitationCodeAsync();
 
-    using (var first = await RedeemAsync(invitation.QRCodeValue))
+    using (var first = await RedeemAsync(code))
     {
       Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using var second = await RedeemAsync(invitation.QRCodeValue);
+    using var second = await RedeemAsync(code);
 
     Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
   }
@@ -107,12 +106,12 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task EnrolmentRoundTrip_AdminInvitesThenReplacesThePhone_RevokesTheFirstDeviceWithTheNewCode()
   {
-    var firstInvitation = await CreateInvitationOverHttpAsync(_world.StaffMemberId);
+    var firstCode = await CreateInvitationCodeOverHttpAsync(_world.StaffMemberId);
 
     string firstToken;
     Guid staffMemberId;
 
-    using (var redeemed = await RedeemAsync(firstInvitation.QRCodeValue))
+    using (var redeemed = await RedeemAsync(firstCode))
     {
       Assert.That(redeemed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync());
@@ -125,19 +124,19 @@ public sealed class EnrolmentEndpointsTest
       Assert.That(authenticated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-    using (var replayed = await RedeemAsync(firstInvitation.QRCodeValue))
+    using (var replayed = await RedeemAsync(firstCode))
     {
       Assert.That(replayed.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
     }
 
-    var secondInvitation = await CreateInvitationOverHttpAsync(staffMemberId);
+    var secondCode = await CreateInvitationCodeOverHttpAsync(staffMemberId);
 
     using (var whileTheCodeIsOnScreen = await GetSessionAsync(firstToken))
     {
       Assert.That(whileTheCodeIsOnScreen.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "Asking for a new code hands the phone over, so the old one is signed out at once.");
     }
 
-    using var secondRedemption = await RedeemAsync(secondInvitation.QRCodeValue);
+    using var secondRedemption = await RedeemAsync(secondCode);
     var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -156,19 +155,19 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_TheSameBrowserScansACodeForSomebodyElse_SignsTheSetupItHeldOut()
   {
-    var firstInvitation = await CreateInvitationAsync();
+    var firstCode = await CreateInvitationCodeAsync();
     string firstToken;
 
-    using (var firstRedemption = await RedeemAsync(firstInvitation.QRCodeValue))
+    using (var firstRedemption = await RedeemAsync(firstCode))
     {
       Assert.That(firstRedemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var firstBody = JsonDocument.Parse(await firstRedemption.Content.ReadAsStringAsync());
       firstToken = firstBody.RootElement.GetProperty("deviceToken").GetString()!;
     }
 
-    var secondInvitation = await CreateInvitationForNobodyAsync();
+    var secondCode = await CreateInvitationCodeForNobodyAsync();
 
-    using var secondRedemption = await RedeemAsync(secondInvitation.QRCodeValue, "Bernd", firstToken);
+    using var secondRedemption = await RedeemAsync(secondCode, "Bernd", firstToken);
     var secondBody = JsonDocument.Parse(await secondRedemption.Content.ReadAsStringAsync());
     var secondToken = secondBody.RootElement.GetProperty("deviceToken").GetString()!;
 
@@ -186,17 +185,17 @@ public sealed class EnrolmentEndpointsTest
   [Test]
   public async Task PostRedeem_ARefusedCodeWhileHoldingASetup_LeavesThatSetupWorking()
   {
-    var invitation = await CreateInvitationAsync();
+    var code = await CreateInvitationCodeAsync();
     string token;
 
-    using (var redemption = await RedeemAsync(invitation.QRCodeValue))
+    using (var redemption = await RedeemAsync(code))
     {
       Assert.That(redemption.StatusCode, Is.EqualTo(HttpStatusCode.OK));
       var body = JsonDocument.Parse(await redemption.Content.ReadAsStringAsync());
       token = body.RootElement.GetProperty("deviceToken").GetString()!;
     }
 
-    using var refused = await RedeemAsync(invitation.QRCodeValue, null, token);
+    using var refused = await RedeemAsync(code, null, token);
     using var stillSetUp = await GetSessionAsync(token);
 
     Assert.Multiple(() =>
@@ -211,9 +210,9 @@ public sealed class EnrolmentEndpointsTest
   [TestCase("")]
   public async Task PostRedeem_APreviousTokenThatNamesNoDevice_StillSetsThePhoneUp(string previousDeviceToken)
   {
-    var invitation = await CreateInvitationAsync();
+    var code = await CreateInvitationCodeAsync();
 
-    using var response = await RedeemAsync(invitation.QRCodeValue, null, previousDeviceToken);
+    using var response = await RedeemAsync(code, null, previousDeviceToken);
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
     Assert.Multiple(() =>
@@ -230,9 +229,9 @@ public sealed class EnrolmentEndpointsTest
   [TestCase("", "en")]
   public async Task PostRedeem_TheBrowserLanguage_BecomesTheDeviceLanguage(string acceptLanguage, string expectedLanguage)
   {
-    var invitation = await CreateInvitationAsync();
+    var code = await CreateInvitationCodeAsync();
 
-    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem") { Content = JsonContent.Create(new RedeemBody(invitation.QRCodeValue, null, "NUnit")) };
+    using var request = new HttpRequestMessage(HttpMethod.Post, "/api/enrolment/redeem") { Content = JsonContent.Create(new RedeemBody(code, null, "NUnit")) };
     request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
 
     using var response = await _factory.Client.SendAsync(request);
@@ -258,21 +257,22 @@ public sealed class EnrolmentEndpointsTest
     return _factory.Client.SendAsync(request);
   }
 
-  private async Task<EnrolmentInvitationCreated> CreateInvitationAsync()
+  private async Task<string> CreateInvitationCodeAsync()
+  {
+    using var scope = _factory.Services.CreateScope();
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, _world.StaffMemberId, CancellationToken.None);
+
+    return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(owner, CancellationToken.None)).QRCodeValue;
+  }
+
+  private async Task<string> CreateInvitationCodeForNobodyAsync()
   {
     using var scope = _factory.Services.CreateScope();
 
-    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(new(DeviceOwnerKind.StaffMember, _world.StaffMemberId), CancellationToken.None);
+    return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(null, CancellationToken.None)).QRCodeValue;
   }
 
-  private async Task<EnrolmentInvitationCreated> CreateInvitationForNobodyAsync()
-  {
-    using var scope = _factory.Services.CreateScope();
-
-    return await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(null, CancellationToken.None);
-  }
-
-  private async Task<EnrolmentInvitationCreated> CreateInvitationOverHttpAsync(Guid staffMemberId)
+  private async Task<string> CreateInvitationCodeOverHttpAsync(Guid staffMemberId)
   {
     using var response = await _factory.Client.PostAsJsonAsync("/api/admin/enrolment/invitations", new { staffMemberId });
 
@@ -281,6 +281,6 @@ public sealed class EnrolmentEndpointsTest
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     var qrUrl = body.RootElement.GetProperty("qrUrl").GetString()!;
 
-    return new(body.RootElement.GetProperty("invitationId").GetGuid(), qrUrl[(qrUrl.LastIndexOf('/') + 1)..], body.RootElement.GetProperty("expiresAtUtc").GetDateTime());
+    return qrUrl[(qrUrl.LastIndexOf('/') + 1)..];
   }
 }

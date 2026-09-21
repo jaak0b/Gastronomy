@@ -1,7 +1,7 @@
 using System.Text;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +29,7 @@ public sealed class InvitationQRHandler
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
+    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
 
     if (!stillOpen.IsSuccess)
       return RefusalFor(stillOpen.Failure);

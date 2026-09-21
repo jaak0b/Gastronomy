@@ -1,3 +1,4 @@
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -18,7 +19,7 @@ public sealed class DeviceLanguageService
     _repository = repository;
   }
 
-  public async Task<Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>> ChangeAsync(Guid deviceId, string? language, CancellationToken cancellationToken)
+  public async Task<Result<Device, Failure<DeviceLanguageFailureReason>>> ChangeAsync(Guid deviceId, string? language, CancellationToken cancellationToken)
   {
     if (language is null || !_supportedLanguages.Contains(language, StringComparer.Ordinal))
       return Failed(DeviceLanguageFailureReason.UnsupportedLanguage);
@@ -31,15 +32,11 @@ public sealed class DeviceLanguageService
     device.Language = language;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>.Success(new()
-                                                                                       {
-                                                                                         DeviceId = deviceId,
-                                                                                         Language = language
-                                                                                       });
+    return Result<Device, Failure<DeviceLanguageFailureReason>>.Success(device);
   }
 
-  private Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> Failed(DeviceLanguageFailureReason reason)
+  private Result<Device, Failure<DeviceLanguageFailureReason>> Failed(DeviceLanguageFailureReason reason)
   {
-    return Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>>.Failed(new() { Reason = reason });
+    return Result<Device, Failure<DeviceLanguageFailureReason>>.Failed(new() { Reason = reason });
   }
 }

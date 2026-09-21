@@ -1,8 +1,9 @@
 using System.Collections.ObjectModel;
+using GastronomyApp.Contracts.Enums;
 
 namespace GastronomyApp.Core.Entities;
 
-public sealed class StaffMember
+public sealed class StaffMember : IDeviceOwner
 {
   public required Guid Id { get; set; }
 
@@ -21,6 +22,8 @@ public sealed class StaffMember
   public EnrolmentInvitation? EnrolmentInvitation { get; set; }
 
   public Collection<Order> Orders { get; } = [];
+
+  DeviceOwnerKind IDeviceOwner.Kind => DeviceOwnerKind.StaffMember;
 
   public bool HasOutstandingInvitation()
   {

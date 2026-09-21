@@ -1,14 +1,5 @@
+using GastronomyApp.Core.Entities;
+
 namespace GastronomyApp.Core.Results;
 
-public sealed record IssuedEnrolmentInvitation
-{
-  public required Guid InvitationId { get; init; }
-
-  public required string QRCodeValue { get; init; }
-
-  public required DateTime ExpiresAtUtc { get; init; }
-
-  public required DeviceOwner? Owner { get; init; }
-
-  public required string? OwnerName { get; init; }
-}
+public sealed record IssuedEnrolmentInvitation(EnrolmentInvitation Invitation, string QRCodeValue, IDeviceOwner? Owner);

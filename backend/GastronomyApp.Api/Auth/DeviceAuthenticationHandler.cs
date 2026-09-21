@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using GastronomyApp.Api.Names;
 using GastronomyApp.Core.Ports;
@@ -34,13 +34,12 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     if (tokenParts is null)
       return AuthenticateResult.Fail("The device token is not in the form TokenLookupId.secret.");
 
-    var verification = await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
+    var owner = await _deviceTokenStore.VerifyAsync(tokenParts.TokenLookupId, tokenParts.Secret, Context.RequestAborted);
 
-    if (!verification.IsValid || verification.Device is null || verification.Owner is null)
+    if (owner?.Device is null)
       return AuthenticateResult.Fail("The device token was not accepted.");
 
-    var device = verification.Device;
-    var owner = verification.Owner;
+    var device = owner.Device;
     ClaimsIdentity identity = new([
                                     new(ClaimTypes.NameIdentifier, owner.Id.ToString()),
                                     new(_claimTypes.OwnerKind, owner.Kind.ToString()),

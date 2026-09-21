@@ -5,7 +5,7 @@ namespace GastronomyApp.Core.Ports;
 
 public interface IEnrolmentInvitationStore
 {
-  public Task<EnrolmentInvitationCreated> CreateAsync(DeviceOwner? owner, CancellationToken cancellationToken);
+  public Task<IssuedEnrolmentInvitation> CreateAsync(IDeviceOwner? owner, CancellationToken cancellationToken);
 
   public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken);
 

@@ -1,6 +1,6 @@
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -27,28 +27,22 @@ public sealed class EnrolmentInvitationService
     if (staffMemberId is not null && stationId is not null)
       return Failed(EnrolmentInvitationFailureReason.AtMostOneOwner);
 
-    var owner = ReadOwner(staffMemberId, stationId);
-    DeviceOwnerRecord? ownerRecord = null;
+    IDeviceOwner? owner = null;
 
-    if (owner is not null)
-      ownerRecord = await _ownerStore.FindAsync(owner, cancellationToken);
+    if (staffMemberId is not null || stationId is not null)
+    {
+      owner = await FindOwnerAsync(staffMemberId, stationId, cancellationToken);
 
-    if (owner is not null && ownerRecord is null)
-      return Failed(EnrolmentInvitationFailureReason.OwnerNotFound);
+      if (owner is null)
+        return Failed(EnrolmentInvitationFailureReason.OwnerNotFound);
+    }
 
-    Guid? deviceToReplace = ownerRecord?.DeviceId;
+    Guid? deviceToReplace = owner?.DeviceId;
 
-    var created = await _store.CreateAsync(owner, cancellationToken);
+    var issued = await _store.CreateAsync(owner, cancellationToken);
     await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
 
-    return Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(new()
-                                                                                                {
-                                                                                                  InvitationId = created.InvitationId,
-                                                                                                  QRCodeValue = created.QRCodeValue,
-                                                                                                  ExpiresAtUtc = created.ExpiresAtUtc,
-                                                                                                  Owner = owner,
-                                                                                                  OwnerName = ownerRecord?.Name
-                                                                                                });
+    return Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(issued);
   }
 
   public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
@@ -62,15 +56,15 @@ public sealed class EnrolmentInvitationService
 
   public async Task<Guid?> RetireHandedOverDeviceAsync(string tokenLookupId, string secret, Guid newDeviceId, CancellationToken cancellationToken)
   {
-    var verification = await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, cancellationToken);
+    var owner = await _deviceTokenStore.VerifyAsync(tokenLookupId, secret, cancellationToken);
 
-    if (!verification.IsValid || verification.Device is null || verification.Device.Id == newDeviceId)
+    if (owner?.Device is null || owner.Device.Id == newDeviceId)
       return null;
 
-    return await _retirement.RevokeDeviceAsync(verification.Device.Id, cancellationToken);
+    return await _retirement.RevokeDeviceAsync(owner.Device.Id, cancellationToken);
   }
 
-  public async Task<Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>> EnsureStillOpenAsync(Guid invitationId, CancellationToken cancellationToken)
+  public async Task<Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>> EnsureStillOpenAsync(Guid invitationId, CancellationToken cancellationToken)
   {
     var invitation = await _store.FindByIdAsync(invitationId, cancellationToken);
 
@@ -88,18 +82,15 @@ public sealed class EnrolmentInvitationService
     if (invitation.ExpiresAtUtc <= _clock.UtcNow)
       return Refused(EnrolmentInvitationFailureReason.InvitationExpired);
 
-    return Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(new(invitation.Id, invitation.ExpiresAtUtc));
+    return Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(invitation);
   }
 
-  private DeviceOwner? ReadOwner(Guid? staffMemberId, Guid? stationId)
+  private Task<IDeviceOwner?> FindOwnerAsync(Guid? staffMemberId, Guid? stationId, CancellationToken cancellationToken)
   {
     if (staffMemberId is not null)
-      return new(DeviceOwnerKind.StaffMember, staffMemberId.Value);
+      return _ownerStore.FindAsync(DeviceOwnerKind.StaffMember, staffMemberId.Value, cancellationToken);
 
-    if (stationId is null)
-      return null;
-
-    return new(DeviceOwnerKind.Station, stationId.Value);
+    return _ownerStore.FindAsync(DeviceOwnerKind.Station, stationId!.Value, cancellationToken);
   }
 
   private Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> Failed(EnrolmentInvitationFailureReason reason)
@@ -107,8 +98,8 @@ public sealed class EnrolmentInvitationService
     return Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Failed(new() { Reason = reason });
   }
 
-  private Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> Refused(EnrolmentInvitationFailureReason reason)
+  private Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> Refused(EnrolmentInvitationFailureReason reason)
   {
-    return Result<OpenEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Failed(new() { Reason = reason });
+    return Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Failed(new() { Reason = reason });
   }
 }

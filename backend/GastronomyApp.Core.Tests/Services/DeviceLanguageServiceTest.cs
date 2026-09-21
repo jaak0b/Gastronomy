@@ -26,7 +26,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ALanguageTheAppDoesNotSpeak_RefusesItAndSavesNothing()
   {
-    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
+    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -40,7 +40,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_NoLanguageAtAll_RefusesItAsUnsupported()
   {
-    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
+    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -52,7 +52,7 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ADeviceThatWasSetUpAgainElsewhere_RefusesBecauseTheDeviceIsGone()
   {
-    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -66,13 +66,12 @@ public sealed class DeviceLanguageServiceTest
   {
     var device = GivenTheDeviceSpeaks("de");
 
-    Result<ChangedDeviceLanguage, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.True);
-                      Assert.That(changed.Value.DeviceId, Is.EqualTo(_deviceId));
-                      Assert.That(changed.Value.Language, Is.EqualTo("en"));
+                      Assert.That(changed.Value, Is.SameAs(device));
                       Assert.That(device.Language, Is.EqualTo("en"));
                     });
 

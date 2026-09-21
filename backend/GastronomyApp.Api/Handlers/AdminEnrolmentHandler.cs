@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
@@ -35,39 +35,40 @@ public sealed class AdminEnrolmentHandler
     if (!issued.IsSuccess)
       return RefusalFor(issued.Failure);
 
-    var invitation = issued.Value;
-    var qrUrl = _urlBuilder.BuildEnrolmentUrl(invitation.QRCodeValue);
-    _invitationCache.Remember(new(invitation.InvitationId, invitation.QRCodeValue, qrUrl, invitation.ExpiresAtUtc));
+    var issuedInvitation = issued.Value;
+    var invitation = issuedInvitation.Invitation;
+    var qrUrl = _urlBuilder.BuildEnrolmentUrl(issuedInvitation.QRCodeValue);
+    _invitationCache.Remember(new(invitation.Id, issuedInvitation.QRCodeValue, qrUrl, invitation.ExpiresAtUtc));
 
     _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
-                        invitation.InvitationId,
-                        invitation.Owner?.Kind,
-                        invitation.Owner?.Id,
+                        invitation.Id,
+                        issuedInvitation.Owner?.Kind,
+                        issuedInvitation.Owner?.Id,
                         _urlBuilder.Origin(),
                         invitation.ExpiresAtUtc);
 
-    return Results.Json(BuildInvitationView(invitation, qrUrl), statusCode: StatusCodes.Status201Created);
+    return Results.Json(BuildInvitationView(issuedInvitation, qrUrl), statusCode: StatusCodes.Status201Created);
   }
 
-  private InvitationView BuildInvitationView(IssuedEnrolmentInvitation invitation, string qrUrl)
+  private InvitationView BuildInvitationView(IssuedEnrolmentInvitation issuedInvitation, string qrUrl)
   {
-    return new(invitation.InvitationId, qrUrl, invitation.ExpiresAtUtc, invitation.Owner?.Kind, BuildStaffMemberView(invitation), BuildStationSummaryView(invitation), _urlBuilder.ReachableAddresses());
+    return new(issuedInvitation.Invitation.Id, qrUrl, issuedInvitation.Invitation.ExpiresAtUtc, issuedInvitation.Owner?.Kind, BuildStaffMemberView(issuedInvitation), BuildStationSummaryView(issuedInvitation), _urlBuilder.ReachableAddresses());
   }
 
-  private StaffMemberView? BuildStaffMemberView(IssuedEnrolmentInvitation invitation)
+  private StaffMemberView? BuildStaffMemberView(IssuedEnrolmentInvitation issuedInvitation)
   {
-    if (invitation.Owner?.Kind != DeviceOwnerKind.StaffMember)
+    if (issuedInvitation.Owner?.Kind != DeviceOwnerKind.StaffMember)
       return null;
 
-    return new(invitation.Owner.Id, invitation.OwnerName!);
+    return new(issuedInvitation.Owner.Id, issuedInvitation.Owner.Name);
   }
 
-  private StationSummaryView? BuildStationSummaryView(IssuedEnrolmentInvitation invitation)
+  private StationSummaryView? BuildStationSummaryView(IssuedEnrolmentInvitation issuedInvitation)
   {
-    if (invitation.Owner?.Kind != DeviceOwnerKind.Station)
+    if (issuedInvitation.Owner?.Kind != DeviceOwnerKind.Station)
       return null;
 
-    return new(invitation.Owner.Id, invitation.OwnerName!);
+    return new(issuedInvitation.Owner.Id, issuedInvitation.Owner.Name);
   }
 
   private IResult RefusalFor(Failure<EnrolmentInvitationFailureReason> failure)

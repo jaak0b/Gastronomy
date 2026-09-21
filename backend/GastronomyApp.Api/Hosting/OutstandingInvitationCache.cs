@@ -24,7 +24,7 @@ public sealed class OutstandingInvitationCache
     }
   }
 
-  public void Forget()
+  public void ForgetInvitation()
   {
     lock (_guard)
     {
