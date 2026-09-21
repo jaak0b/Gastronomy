@@ -179,13 +179,13 @@ describe('how long a station says its part will take', () => {
     expect(deliveries[0].minutes).toBe(12)
   })
 
-  it('counts a station the laptop said nothing about as having nothing queued', () => {
+  it('names no waiting time for a station the laptop said nothing about', () => {
     const deliveries = stationDeliveries(
       [line({ stationId: 'station-grill', candidateStationIds: ['station-grill'] })],
       QUEUES,
       alwaysTogether,
     )
 
-    expect(deliveries[0].minutes).toBe(8)
+    expect(deliveries[0].minutes).toBeNull()
   })
 })
