@@ -7,13 +7,13 @@ namespace GastronomyApp.Infrastructure.Repositories;
 
 public sealed class StationRepository : IStationRepository
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
 
-  public StationRepository(GastronomyAppDbContext dbContext, IClock clock)
+  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider)
   {
     _dbContext = dbContext;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ public sealed class StationRepository : IStationRepository
                                              .Include(station => station.FestivalStations.Where(link => festivalId != null && link.FestivalId == festivalId.Value))
                                              .ToListAsync(cancellationToken);
 
-    var nowUtc = _clock.UtcNow;
+    var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
     foreach (var station in stations.Where(station => station.EnrolmentInvitation?.IsOutstandingAt(nowUtc) == false))
       station.EnrolmentInvitation = null;

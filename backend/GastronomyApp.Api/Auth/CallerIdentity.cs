@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using GastronomyApp.Api.Names;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Enums;
 
@@ -7,16 +6,14 @@ namespace GastronomyApp.Api.Auth;
 
 public sealed class CallerIdentity
 {
-  private readonly DeviceClaimTypes _claimTypes = new();
-
   public DeviceCaller? ReadDevice(ClaimsPrincipal principal)
   {
     ArgumentNullException.ThrowIfNull(principal);
 
     var ownerId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-    var ownerKind = principal.FindFirstValue(_claimTypes.OwnerKind);
-    var deviceId = principal.FindFirstValue(_claimTypes.DeviceId);
-    var language = principal.FindFirstValue(_claimTypes.Language);
+    var ownerKind = principal.FindFirstValue(Names.DeviceClaims.OwnerKind);
+    var deviceId = principal.FindFirstValue(Names.DeviceClaims.DeviceId);
+    var language = principal.FindFirstValue(Names.DeviceClaims.Language);
 
     if (ownerId is null || deviceId is null || language is null || !Enum.TryParse(ownerKind, out DeviceOwnerKind parsedOwnerKind))
       return null;

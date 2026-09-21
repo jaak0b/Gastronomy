@@ -1,7 +1,6 @@
+using GastronomyApp.Contracts.Session;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Handlers;
-using GastronomyApp.Api.Names;
-using GastronomyApp.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -12,7 +11,7 @@ public static class SessionEndpoints
 {
   public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder routes)
   {
-    var group = routes.MapGroup("/api/session").RequireAuthorization().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    var group = routes.MapGroup("/api/session").RequireAuthorization().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
     group.MapGet(string.Empty,
                  async (HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>

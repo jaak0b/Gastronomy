@@ -7,19 +7,19 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class EnrolmentInvitationService
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly IDeviceOwnerStore _ownerStore;
   private readonly DeviceOwnerRetirement _retirement;
   private readonly IEnrolmentInvitationStore _store;
 
-  public EnrolmentInvitationService(IEnrolmentInvitationStore store, IDeviceOwnerStore ownerStore, IDeviceTokenStore deviceTokenStore, DeviceOwnerRetirement retirement, IClock clock)
+  public EnrolmentInvitationService(IEnrolmentInvitationStore store, IDeviceOwnerStore ownerStore, IDeviceTokenStore deviceTokenStore, DeviceOwnerRetirement retirement, TimeProvider timeProvider)
   {
     _store = store;
     _ownerStore = ownerStore;
     _deviceTokenStore = deviceTokenStore;
     _retirement = retirement;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>> CreateAsync(Guid? staffMemberId, Guid? stationId, CancellationToken cancellationToken)
@@ -79,7 +79,7 @@ public sealed class EnrolmentInvitationService
       return Refused(EnrolmentInvitationFailureReason.InvitationAlreadyUsed);
     }
 
-    if (invitation.ExpiresAtUtc <= _clock.UtcNow)
+    if (invitation.ExpiresAtUtc <= _timeProvider.GetUtcNow().UtcDateTime)
       return Refused(EnrolmentInvitationFailureReason.InvitationExpired);
 
     return Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>>.Success(invitation);

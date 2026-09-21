@@ -1,10 +1,12 @@
 using FakeItEasy;
-using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.OpenItems;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -19,9 +21,8 @@ public sealed class OrderAcceptanceServiceTest
     _stationRepository = A.Fake<IStationRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(null));
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _stationRepository.FindAtFestivalAsync(A<Guid>._, A<CancellationToken>._))
@@ -61,7 +62,7 @@ public sealed class OrderAcceptanceServiceTest
   private IStationRepository _stationRepository = null!;
   private IFestivalRepository _festivalRepository = null!;
   private INumberAllocator _numberAllocator = null!;
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private ITransactionRunner _transactionRunner = null!;
   private OrderAcceptanceService _service = null!;
 

@@ -16,7 +16,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private const int InvitationLifetimeMinutes = 5;
   private const string GermanLanguage = "de";
   private const string EnglishLanguage = "en";
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly IDeviceTokenStore _deviceTokenStore;
@@ -24,21 +24,21 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private readonly Pbkdf2SecretHasher _secretHasher;
   private readonly ITransactionRunner _transactionRunner;
 
-  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IDeviceTokenStore deviceTokenStore, ITransactionRunner transactionRunner, IClock clock)
+  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IDeviceTokenStore deviceTokenStore, ITransactionRunner transactionRunner, TimeProvider timeProvider)
   {
     _dbContext = dbContext;
     _transactionRunner = transactionRunner;
     _ownerStore = ownerStore;
     _secretHasher = secretHasher;
     _deviceTokenStore = deviceTokenStore;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public Task<IssuedEnrolmentInvitation> CreateAsync(IDeviceOwner? owner, CancellationToken cancellationToken)
   {
     return _transactionRunner.RunAsync(async transactionCancellationToken =>
                                        {
-                                         var now = _clock.UtcNow;
+                                         var now = _timeProvider.GetUtcNow().UtcDateTime;
 
                                          await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, transactionCancellationToken);
 
@@ -99,7 +99,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
-    var now = _clock.UtcNow;
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
     var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
 
     if (invitation is null)

@@ -1,12 +1,11 @@
 using System.Reflection;
 using GastronomyApp.Desktop.Localization;
 using GastronomyApp.Desktop.Platform.Windows;
+using GastronomyApp.Desktop.Ports;
 using GastronomyApp.Desktop.Settings;
 using GastronomyApp.Desktop.Setup;
 using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.ViewModels;
-using GastronomyApp.Infrastructure;
-using GastronomyApp.Desktop.Ports;
 
 namespace GastronomyApp.Desktop.Hosting;
 
@@ -45,7 +44,7 @@ public sealed class DesktopComposition : IDisposable
 
     UpdateInstaller = new VelopackUpdateInstaller();
     FestivalReader = new HostFestivalReader(HostLauncher);
-    UpdateInstallGate = new(FestivalReader, new(), new SystemClock());
+    UpdateInstallGate = new(FestivalReader, new(), TimeProvider.System);
     UpdateOnQuit = new(UpdateInstaller, UpdateInstallGate);
     AutomaticUpdateChecker = new(UpdateInstaller, SettingsStore);
   }

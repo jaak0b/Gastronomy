@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using Mapster;
 

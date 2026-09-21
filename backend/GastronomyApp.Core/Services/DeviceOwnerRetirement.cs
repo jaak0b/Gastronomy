@@ -6,17 +6,17 @@ public sealed class DeviceOwnerRetirement
 {
   private readonly IAfterCommitActions _afterCommitActions;
   private readonly IDeviceRevocationAnnouncer _announcer;
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly IEnrolmentInvitationStore _invitationStore;
 
-  public DeviceOwnerRetirement(IEnrolmentInvitationStore invitationStore, IDeviceTokenStore deviceTokenStore, IDeviceRevocationAnnouncer announcer, IAfterCommitActions afterCommitActions, IClock clock)
+  public DeviceOwnerRetirement(IEnrolmentInvitationStore invitationStore, IDeviceTokenStore deviceTokenStore, IDeviceRevocationAnnouncer announcer, IAfterCommitActions afterCommitActions, TimeProvider timeProvider)
   {
     _invitationStore = invitationStore;
     _deviceTokenStore = deviceTokenStore;
     _announcer = announcer;
     _afterCommitActions = afterCommitActions;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task WithdrawOutstandingInvitationAsync(Guid? invitationId, CancellationToken cancellationToken)
@@ -24,7 +24,7 @@ public sealed class DeviceOwnerRetirement
     if (invitationId is null)
       return;
 
-    await _invitationStore.ConsumeAsync(invitationId.Value, _clock.UtcNow, cancellationToken);
+    await _invitationStore.ConsumeAsync(invitationId.Value, _timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
   }
 
   public async Task<Guid?> RevokeDeviceAsync(Guid? deviceId, CancellationToken cancellationToken)

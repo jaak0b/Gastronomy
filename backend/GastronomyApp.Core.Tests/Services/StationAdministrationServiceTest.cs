@@ -4,6 +4,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -20,10 +21,9 @@ public sealed class StationAdministrationServiceTest
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
     _transactionRunner = new();
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
     A.CallTo(() => _festivalRepository.FindIdsNotEndedAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
@@ -40,7 +40,7 @@ public sealed class StationAdministrationServiceTest
   private readonly Guid _kitchenId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
 
   private IDeviceRevocationAnnouncer _announcer = null!;
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IFestivalRepository _festivalRepository = null!;
   private IFestivalStationRepository _festivalStationRepository = null!;

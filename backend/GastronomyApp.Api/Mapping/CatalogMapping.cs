@@ -1,4 +1,5 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Festivals;
+using GastronomyApp.Contracts.Catalog;
 using GastronomyApp.Core.Entities;
 using Mapster;
 

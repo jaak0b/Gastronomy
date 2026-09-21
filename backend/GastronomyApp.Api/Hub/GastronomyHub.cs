@@ -1,5 +1,4 @@
 using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Names;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Enums;
 using Microsoft.AspNetCore.SignalR;
@@ -10,7 +9,6 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 {
   private readonly CallerIdentity _callerIdentity;
   private readonly HubConnectionRegistry _connectionRegistry;
-  private readonly HubGroupNames _groupNames = new();
   private readonly LocalAddressSet _localAddresses;
 
   public GastronomyHub(CallerIdentity callerIdentity, LocalAddressSet localAddresses, HubConnectionRegistry connectionRegistry)
@@ -33,19 +31,19 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
 
     if (caller is not null)
     {
-      joinedGroups.Add(_groupNames.BuildDeviceGroupName(caller.DeviceId));
+      joinedGroups.Add(Names.HubGroups.BuildDeviceGroupName(caller.DeviceId));
 
       if (caller.OwnerKind == DeviceOwnerKind.Station)
       {
-        joinedGroups.Add(_groupNames.BuildStationGroupName(caller.OwnerId));
-        joinedGroups.Add(_groupNames.Stations);
+        joinedGroups.Add(Names.HubGroups.BuildStationGroupName(caller.OwnerId));
+        joinedGroups.Add(Names.HubGroups.Stations);
       }
       else
-        joinedGroups.Add(_groupNames.Devices);
+        joinedGroups.Add(Names.HubGroups.Devices);
     }
 
     if (caller is null && httpContext is not null && _localAddresses.Contains(httpContext.Connection.RemoteIpAddress))
-      joinedGroups.Add(_groupNames.Admin);
+      joinedGroups.Add(Names.HubGroups.Admin);
 
     foreach (var group in joinedGroups)
       await Groups.AddToGroupAsync(Context.ConnectionId, group);

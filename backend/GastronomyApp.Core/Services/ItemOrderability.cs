@@ -4,15 +4,15 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class ItemOrderability
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly IFestivalRepository _festivalRepository;
   private readonly IItemOrderabilityRepository _repository;
 
-  public ItemOrderability(IItemOrderabilityRepository repository, IFestivalRepository festivalRepository, IClock clock)
+  public ItemOrderability(IItemOrderabilityRepository repository, IFestivalRepository festivalRepository, TimeProvider timeProvider)
   {
     _repository = repository;
     _festivalRepository = festivalRepository;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public Task<IReadOnlyList<Guid>> FindOrderableItemIdsAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -41,7 +41,7 @@ public sealed class ItemOrderability
 
   public async Task<IReadOnlyList<Guid>> FindItemsStrandedBySwitchingOffStationAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Guid> festivalIdsStillToCome = await _festivalRepository.FindIdsNotEndedAsync(_clock.UtcNow, cancellationToken);
+    IReadOnlyList<Guid> festivalIdsStillToCome = await _festivalRepository.FindIdsNotEndedAsync(_timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
 
     HashSet<Guid> stranded = [];
 

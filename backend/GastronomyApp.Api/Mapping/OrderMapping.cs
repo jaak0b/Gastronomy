@@ -1,4 +1,5 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Events;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using Mapster;
 

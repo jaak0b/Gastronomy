@@ -2,7 +2,7 @@
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;

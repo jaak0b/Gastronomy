@@ -1,10 +1,11 @@
 using FakeItEasy;
-using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -14,7 +15,9 @@ public sealed class OrderItemSettlementServiceOverlapTest
   [SetUp]
   public void SetUp()
   {
-    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), A.Fake<IClock>()), A.Fake<ITransactionRunner>(), A.Fake<IClock>());
+    var timeProvider = new FakeTimeProvider(new(_now));
+
+    _service = new(A.Fake<IOpenItemRepository>(), new(A.Fake<IFestivalRepository>(), new(), timeProvider), A.Fake<ITransactionRunner>(), timeProvider);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);

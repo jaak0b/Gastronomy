@@ -1,5 +1,5 @@
 using System.Data.Common;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;

@@ -5,6 +5,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -18,9 +19,8 @@ public sealed class EnrolmentInvitationServiceTest
     _ownerStore = A.Fake<IDeviceOwnerStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _store.CreateAsync(A<IDeviceOwner?>._, A<CancellationToken>._)).ReturnsLazily(call => Task.FromResult(new IssuedEnrolmentInvitation(BuildInvitation(null, null, _now.AddMinutes(5)), "ABCDEF", call.GetArgument<IDeviceOwner?>(0))));
     A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwnerKind>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(null));
     A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(null));
@@ -35,7 +35,7 @@ public sealed class EnrolmentInvitationServiceTest
   private readonly Guid _stationId = Guid.Parse("dddddddd-0000-0000-0000-000000000001");
 
   private IDeviceRevocationAnnouncer _announcer = null!;
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IDeviceOwnerStore _ownerStore = null!;
   private EnrolmentInvitationService _service = null!;

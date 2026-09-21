@@ -1,5 +1,6 @@
-using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.OpenItems;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
@@ -9,7 +10,7 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderAcceptanceService
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly OrderItemResolutionService _itemResolutionService;
   private readonly INumberAllocator _numberAllocator;
 
@@ -18,7 +19,7 @@ public sealed class OrderAcceptanceService
   private readonly OrderItemSettlementService _settlementService;
   private readonly ITransactionRunner _transactionRunner;
 
-  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, OrderItemSettlementService settlementService, ITransactionRunner transactionRunner, IClock clock)
+  public OrderAcceptanceService(IOrderRepository orderRepository, RunningFestivalLookup runningFestival, INumberAllocator numberAllocator, OrderItemResolutionService itemResolutionService, OrderItemSettlementService settlementService, ITransactionRunner transactionRunner, TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
     _runningFestival = runningFestival;
@@ -26,7 +27,7 @@ public sealed class OrderAcceptanceService
     _itemResolutionService = itemResolutionService;
     _settlementService = settlementService;
     _transactionRunner = transactionRunner;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<Result<Order, OrderValidationFailure>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
@@ -144,7 +145,7 @@ public sealed class OrderAcceptanceService
 
   private async Task<Order> BuildOrderAsync(PlaceOrderRequest request, Guid staffMemberId, Guid festivalId, IReadOnlyCollection<OrderItem> routedItems, CancellationToken cancellationToken)
   {
-    var createdAtUtc = _clock.UtcNow;
+    var createdAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
     var globalOrderNumber = await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
 
     Order order = new()

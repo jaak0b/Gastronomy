@@ -1,6 +1,7 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Catalog;
+using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;

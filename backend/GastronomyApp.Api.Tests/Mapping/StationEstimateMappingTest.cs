@@ -1,6 +1,6 @@
 using GastronomyApp.Api.Mapping;
-using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using MapsterMapper;
 

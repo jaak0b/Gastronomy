@@ -11,18 +11,18 @@ namespace GastronomyApp.Infrastructure.Repositories;
 public sealed class DeviceTokenStore : IDeviceTokenStore
 {
   private const int SecretLengthBytes = 32;
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
 
   private readonly GastronomyAppDbContext _dbContext;
   private readonly IDeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
 
-  public DeviceTokenStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IClock clock)
+  public DeviceTokenStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, TimeProvider timeProvider)
   {
     _dbContext = dbContext;
     _ownerStore = ownerStore;
     _secretHasher = secretHasher;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<IssuedDeviceToken> IssueAsync(IDeviceOwner owner, string language, string userAgentSnapshot, CancellationToken cancellationToken)
@@ -34,7 +34,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     var tokenLookupId = Guid.NewGuid().ToString("N");
     var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(SecretLengthBytes));
     var hashedSecret = _secretHasher.Hash(secret);
-    var now = _clock.UtcNow;
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
 
     Device device = new()
                     {
@@ -74,7 +74,7 @@ public sealed class DeviceTokenStore : IDeviceTokenStore
     if (owner is null)
       return null;
 
-    device.LastSeenAtUtc = _clock.UtcNow;
+    device.LastSeenAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
     return owner;

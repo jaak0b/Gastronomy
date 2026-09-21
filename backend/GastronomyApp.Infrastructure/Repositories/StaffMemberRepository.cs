@@ -7,20 +7,20 @@ namespace GastronomyApp.Infrastructure.Repositories;
 
 public sealed class StaffMemberRepository : IStaffMemberRepository
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
 
-  public StaffMemberRepository(GastronomyAppDbContext dbContext, IClock clock)
+  public StaffMemberRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider)
   {
     _dbContext = dbContext;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<IReadOnlyList<StaffMember>> FindAllAsync(CancellationToken cancellationToken)
   {
     List<StaffMember> staffMembers = await _dbContext.StaffMembers.AsNoTracking().OrderBy(staffMember => staffMember.Name).Include(staffMember => staffMember.Device).Include(staffMember => staffMember.EnrolmentInvitation).ToListAsync(cancellationToken);
 
-    var nowUtc = _clock.UtcNow;
+    var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
     foreach (var staffMember in staffMembers.Where(staffMember => staffMember.EnrolmentInvitation?.IsOutstandingAt(nowUtc) == false))
       staffMember.EnrolmentInvitation = null;

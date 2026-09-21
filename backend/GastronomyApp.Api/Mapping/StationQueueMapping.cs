@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
 using Mapster;
 
@@ -24,10 +24,7 @@ public sealed class StationQueueMapping : IRegister
 
     config.NewConfig<Station, StationSummaryView>();
 
-    config.NewConfig<Station, StationQueueView>()
-          .Map(view => view.Station, station => station)
-          .Map(view => view.Orders, station => OrdersInTheOpenColumn(station))
-          .Map(view => view.AsItComes, station => OrdersInTheAsItComesColumn(station));
+    config.NewConfig<Station, StationQueueView>().Map(view => view.Station, station => station).Map(view => view.Orders, station => OrdersInTheOpenColumn(station)).Map(view => view.AsItComes, station => OrdersInTheAsItComesColumn(station));
   }
 
   private IReadOnlyList<StationOrder> OrdersInTheOpenColumn(Station station)

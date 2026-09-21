@@ -1,22 +1,21 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using Serilog;
 using GastronomyApp.Desktop.Ports;
+using Serilog;
 
 namespace GastronomyApp.Desktop.Updates;
 
 public sealed class UpdateInstallGate : IUpdateInstallGate
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly IFestivalReader _festivals;
   private readonly FestivalSchedule _schedule;
 
-  public UpdateInstallGate(IFestivalReader festivals, FestivalSchedule schedule, IClock clock)
+  public UpdateInstallGate(IFestivalReader festivals, FestivalSchedule schedule, TimeProvider timeProvider)
   {
     _festivals = festivals;
     _schedule = schedule;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<bool> CanInstallNowAsync(CancellationToken cancellationToken)
@@ -24,7 +23,7 @@ public sealed class UpdateInstallGate : IUpdateInstallGate
     try
     {
       IReadOnlyCollection<Festival> festivals = await _festivals.ReadAllAsync(cancellationToken);
-      var now = _clock.UtcNow;
+      var now = _timeProvider.GetUtcNow().UtcDateTime;
 
       if (_schedule.FindRunningAt(festivals, now) is not null)
         return false;

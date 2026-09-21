@@ -7,6 +7,7 @@ using GastronomyApp.Infrastructure.Security;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Repositories;
 
@@ -179,7 +180,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
     var store = CreateStore(fixture, clock);
 
     var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
@@ -195,7 +196,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
     var store = CreateStore(fixture, clock);
 
     var firstInvitation = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
@@ -225,7 +226,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteTempFileFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
 
     var firstContext = fixture.CreateContext();
     var secondContext = fixture.CreateContext();
@@ -237,7 +238,7 @@ public sealed class EnrolmentInvitationStoreTest
     await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(anna, TestContext.CurrentContext.CancellationToken)), Task.Run(() => secondStore.CreateAsync(kitchen, TestContext.CurrentContext.CancellationToken)));
 
     var verificationContext = fixture.CreateContext();
-    var outstandingCount = await verificationContext.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.UtcNow, TestContext.CurrentContext.CancellationToken);
+    var outstandingCount = await verificationContext.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.GetUtcNow().UtcDateTime, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(outstandingCount, Is.EqualTo(1));
   }
@@ -247,7 +248,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteTempFileFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
 
     var creatingContext = fixture.CreateContext();
     var created = await CreateStore(creatingContext, clock).CreateAsync(await AnnaAsync(creatingContext, seeded), TestContext.CurrentContext.CancellationToken);
@@ -273,7 +274,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(fixture.DbContext);
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
@@ -316,7 +317,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
     var store = CreateStore(fixture, clock);
 
     var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
@@ -336,7 +337,7 @@ public sealed class EnrolmentInvitationStoreTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    AdjustableClock clock = new();
+    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
     var store = CreateStore(fixture, clock);
 
     var yesterday = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
@@ -366,12 +367,12 @@ public sealed class EnrolmentInvitationStoreTest
     return await dbContext.Stations.SingleAsync(station => station.Id == seeded.KitchenStationId, TestContext.CurrentContext.CancellationToken);
   }
 
-  private EnrolmentInvitationStore CreateStore(SqliteInMemoryFixture fixture, AdjustableClock clock)
+  private EnrolmentInvitationStore CreateStore(SqliteInMemoryFixture fixture, FakeTimeProvider clock)
   {
     return CreateStore(fixture.DbContext, clock);
   }
 
-  private EnrolmentInvitationStore CreateStore(GastronomyAppDbContext dbContext, AdjustableClock clock)
+  private EnrolmentInvitationStore CreateStore(GastronomyAppDbContext dbContext, FakeTimeProvider clock)
   {
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(dbContext);

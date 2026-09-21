@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Handlers;
-using GastronomyApp.Api.Names;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
@@ -10,7 +9,7 @@ public static class CatalogEndpoints
 {
   public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder routes)
   {
-    routes.MapGet("/api/catalog", async (CatalogHandler handler, CancellationToken cancellationToken) => await handler.ReadAsync(cancellationToken)).RequireAuthorization().RequireStaffDevice().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    routes.MapGet("/api/catalog", async (CatalogHandler handler, CancellationToken cancellationToken) => await handler.ReadAsync(cancellationToken)).RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
     return routes;
   }

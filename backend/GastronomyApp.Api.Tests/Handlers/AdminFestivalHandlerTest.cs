@@ -4,7 +4,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;

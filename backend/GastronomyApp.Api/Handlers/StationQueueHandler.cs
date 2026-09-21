@@ -1,6 +1,6 @@
 using GastronomyApp.Api.Responders;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;

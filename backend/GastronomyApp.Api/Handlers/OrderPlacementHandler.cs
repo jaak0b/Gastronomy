@@ -1,7 +1,7 @@
-using GastronomyApp.Api.ErrorHandling;
+﻿using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;

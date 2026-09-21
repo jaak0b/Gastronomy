@@ -8,6 +8,7 @@
         <PackageReference Include="Avalonia.Headless"/>
         <PackageReference Include="Avalonia.Headless.NUnit"/>
         <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="NUnit"/>
         <PackageReference Include="NUnit3TestAdapter"/>

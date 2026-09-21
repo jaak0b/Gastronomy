@@ -2,6 +2,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Repositories;
 
@@ -16,7 +17,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -36,7 +37,7 @@ public sealed class StaffMemberRepositoryTest
     var lastSeenAtUtc = _now.AddMinutes(-2);
     await GiveAnnaAPhoneAsync(fixture, seeded, lastSeenAtUtc);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -54,7 +55,7 @@ public sealed class StaffMemberRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, null);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -68,7 +69,7 @@ public sealed class StaffMemberRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, _now.AddMinutes(-1));
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -81,7 +82,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -92,7 +93,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new AdjustableClock());
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
 
     var anna = (await repository.FindByIdAsync(seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken))!;
     anna.Name = "Anne Marie";

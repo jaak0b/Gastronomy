@@ -1,8 +1,8 @@
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
-using GastronomyApp.Desktop.Updates;
 using GastronomyApp.Desktop.Ports;
+using GastronomyApp.Desktop.Updates;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Desktop.Tests.Updates;
 
@@ -15,13 +15,12 @@ public sealed class UpdateInstallGateTest
   public void SetUp()
   {
     _festivals = A.Fake<IFestivalReader>();
-    _clock = A.Fake<IClock>();
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
+    _clock = new FakeTimeProvider(new(_now));
     A.CallTo(() => _festivals.ReadAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([]));
   }
 
   private IFestivalReader _festivals = null!;
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
 
   private UpdateInstallGate CreateGate()
   {

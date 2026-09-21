@@ -1,8 +1,7 @@
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Handlers;
-using GastronomyApp.Api.Names;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.OpenItems;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -13,7 +12,7 @@ public static class OpenItemEndpoints
 {
   public static IEndpointRouteBuilder MapOpenItemEndpoints(this IEndpointRouteBuilder routes)
   {
-    var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(new RateLimitPolicyNames().PerDevice);
+    var group = routes.MapGroup("/api/open-items").RequireAuthorization().RequireStaffDevice().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
     group.MapGet(string.Empty, async (OpenItemQueryHandler handler, CancellationToken cancellationToken) => { return await handler.ListAsync(cancellationToken); });
 

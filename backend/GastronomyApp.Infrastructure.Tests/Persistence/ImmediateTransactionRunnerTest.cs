@@ -1,5 +1,5 @@
 using FakeItEasy;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
@@ -263,9 +263,9 @@ public sealed class ImmediateTransactionRunnerTest
 
   private DeviceOwnerRetirement RetirementOn(GastronomyAppDbContext dbContext, IDeviceRevocationAnnouncer announcer, AfterCommitActions afterCommitActions)
   {
-    DeviceTokenStore tokenStore = new(dbContext, A.Fake<IDeviceOwnerStore>(), new(), new SystemClock());
+    DeviceTokenStore tokenStore = new(dbContext, A.Fake<IDeviceOwnerStore>(), new(), TimeProvider.System);
 
-    return new(A.Fake<IEnrolmentInvitationStore>(), tokenStore, announcer, afterCommitActions, new SystemClock());
+    return new(A.Fake<IEnrolmentInvitationStore>(), tokenStore, announcer, afterCommitActions, TimeProvider.System);
   }
 
   private async Task<Guid> AddDeviceAsync(GastronomyAppDbContext dbContext, CancellationToken cancellationToken)

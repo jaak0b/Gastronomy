@@ -1,5 +1,5 @@
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;

@@ -5,6 +5,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -15,10 +16,9 @@ public sealed class StationQueueWriterTest
   public void SetUp()
   {
     _repository = A.Fake<IStationOrderRepository>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
     _transactionRunner = new();
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _repository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
     _writer = new(_repository, new(), new(), _transactionRunner, _clock);
@@ -28,7 +28,7 @@ public sealed class StationQueueWriterTest
   private readonly Guid _stationId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
 
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IStationOrderRepository _repository = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
   private StationQueueWriter _writer = null!;

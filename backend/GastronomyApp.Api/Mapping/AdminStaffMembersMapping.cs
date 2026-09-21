@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
 using Mapster;
 

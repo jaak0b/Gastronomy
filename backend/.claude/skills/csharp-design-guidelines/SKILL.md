@@ -166,6 +166,15 @@ Assembly naming, serialization attributes, System.Xml usage and WPF dependency p
 summarized in one paragraph each at the end of [references/usage-and-patterns.md](references/usage-and-patterns.md)
 and do not apply to this application.
 
+## Data flow
+
+Inside the backend, data travels as EF entities. Wire records live in `GastronomyApp.Contracts`:
+requests are consumed by `Core`, responses are produced only by `Api`, mapped from entities with
+Mapster. A record outside `Contracts` exists only when the alternative is a tuple or more than about
+five parameters, and only after trying the entity or its id first. Logic that is one expression over
+an entity is a method on the entity, not a separate function. No stateless one-method service classes.
+Names shared across call sites are constants in one static class.
+
 ## How to use
 
 Run this checklist over every new or changed type and member before handing the code back, and again

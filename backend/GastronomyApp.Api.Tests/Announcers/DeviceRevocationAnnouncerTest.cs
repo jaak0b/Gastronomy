@@ -1,7 +1,7 @@
 using FakeItEasy;
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Hub;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Events;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

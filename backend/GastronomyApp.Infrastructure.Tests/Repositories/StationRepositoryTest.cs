@@ -3,6 +3,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Repositories;
 
@@ -12,12 +13,12 @@ public sealed class StationRepositoryTest
   [SetUp]
   public void SetUp()
   {
-    _clock = new();
+    _clock = new(new(_now));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
-  private AdjustableClock _clock = null!;
+  private FakeTimeProvider _clock = null!;
 
   [Test]
   public async Task FindAtFestivalAsync_TheStationsOfOneFestival_ReturnsThemByTheirPlaceInTheList()

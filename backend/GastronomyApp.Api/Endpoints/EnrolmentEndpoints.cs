@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Handlers;
-using GastronomyApp.Api.Names;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enrolment;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -13,7 +12,7 @@ public static class EnrolmentEndpoints
   {
     routes.MapPost("/api/enrolment/redeem", async (RedeemEnrolmentRequest request, HttpContext httpContext, EnrolmentRedemptionHandler handler, CancellationToken cancellationToken) => await handler.RedeemAsync(request, httpContext, cancellationToken))
           .AllowAnonymous()
-          .RequireRateLimiting(new RateLimitPolicyNames().PerAddress);
+          .RequireRateLimiting(Names.RateLimitPolicies.PerAddress);
 
     return routes;
   }

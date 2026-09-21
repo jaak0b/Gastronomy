@@ -4,6 +4,7 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -17,9 +18,8 @@ public sealed class StationQueueServiceTest
     _stationRepository = A.Fake<IStationRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _festivalStationRepository = A.Fake<IFestivalStationRepository>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _stationRepository.FindByIdAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
@@ -35,7 +35,7 @@ public sealed class StationQueueServiceTest
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
   private readonly Guid _stationId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
 
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IFestivalRepository _festivalRepository = null!;
   private IFestivalStationRepository _festivalStationRepository = null!;
   private IStationOrderRepository _repository = null!;

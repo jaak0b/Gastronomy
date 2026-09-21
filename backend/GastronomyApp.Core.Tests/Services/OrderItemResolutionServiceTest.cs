@@ -1,5 +1,5 @@
 using FakeItEasy;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;

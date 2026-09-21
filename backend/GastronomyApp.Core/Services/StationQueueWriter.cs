@@ -6,19 +6,19 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class StationQueueWriter
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly OrderItemFulfillmentService _fulfillmentService;
   private readonly IStationOrderRepository _repository;
   private readonly ITransactionRunner _transactionRunner;
   private readonly StationOrderVisibilityService _visibilityService;
 
-  public StationQueueWriter(IStationOrderRepository repository, OrderItemFulfillmentService fulfillmentService, StationOrderVisibilityService visibilityService, ITransactionRunner transactionRunner, IClock clock)
+  public StationQueueWriter(IStationOrderRepository repository, OrderItemFulfillmentService fulfillmentService, StationOrderVisibilityService visibilityService, ITransactionRunner transactionRunner, TimeProvider timeProvider)
   {
     _repository = repository;
     _fulfillmentService = fulfillmentService;
     _visibilityService = visibilityService;
     _transactionRunner = transactionRunner;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ public sealed class StationQueueWriter
                           {
                             IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
 
-                            return _fulfillmentService.Fulfill(selectedIds, itemsAtThisStation, _clock.UtcNow);
+                            return _fulfillmentService.Fulfill(selectedIds, itemsAtThisStation, _timeProvider.GetUtcNow().UtcDateTime);
                           },
                           cancellationToken);
   }

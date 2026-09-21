@@ -1,11 +1,12 @@
 using FakeItEasy;
-using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -17,10 +18,9 @@ public sealed class OrderItemSettlementServiceTest
   {
     _repository = A.Fake<IOpenItemRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
     _transactionRunner = new();
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
@@ -32,7 +32,7 @@ public sealed class OrderItemSettlementServiceTest
   private readonly Guid _collectingWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001");
   private readonly Guid _anotherWaiter = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
 
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IFestivalRepository _festivalRepository = null!;
   private IOpenItemRepository _repository = null!;
   private OrderItemSettlementService _service = null!;

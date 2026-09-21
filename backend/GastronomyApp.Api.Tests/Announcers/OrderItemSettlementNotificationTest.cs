@@ -5,7 +5,7 @@ using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http.HttpResults;

@@ -2,6 +2,7 @@ using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -12,9 +13,7 @@ public sealed class RunningFestivalLookupTest
   public void SetUp()
   {
     _festivalRepository = A.Fake<IFestivalRepository>();
-    _clock = A.Fake<IClock>();
-
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
+    _clock = new FakeTimeProvider(new(_now));
 
     _lookup = new(_festivalRepository, new(), _clock);
   }
@@ -22,7 +21,7 @@ public sealed class RunningFestivalLookupTest
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
 
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IFestivalRepository _festivalRepository = null!;
   private RunningFestivalLookup _lookup = null!;
 

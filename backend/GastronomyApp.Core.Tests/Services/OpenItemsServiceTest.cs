@@ -3,6 +3,7 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -14,9 +15,8 @@ public sealed class OpenItemsServiceTest
   {
     _repository = A.Fake<IOpenItemRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
@@ -31,7 +31,7 @@ public sealed class OpenItemsServiceTest
 
   private int _ordersPlaced;
 
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IFestivalRepository _festivalRepository = null!;
   private IOpenItemRepository _repository = null!;
   private OpenItemsService _service = null!;
@@ -61,10 +61,10 @@ public sealed class OpenItemsServiceTest
     var limonade = At("Tisch 12", OpenItem("Limonade", 250));
 
     IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
-                                                                                     bier,
-                                                                                     bratwurst,
-                                                                                     limonade
-                                                                                   ]);
+                                                                                                         bier,
+                                                                                                         bratwurst,
+                                                                                                         limonade
+                                                                                                       ]);
 
     Assert.Multiple(() =>
                     {
@@ -92,10 +92,10 @@ public sealed class OpenItemsServiceTest
     var bier = SameOrderAs(bratwurst, OpenItem("Bier", 400));
 
     IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
-                                                                                     bratwurst,
-                                                                                     limonade,
-                                                                                     bier
-                                                                                   ]);
+                                                                                                         bratwurst,
+                                                                                                         limonade,
+                                                                                                         bier
+                                                                                                       ]);
 
     Assert.That(tables[0],
                 Is.EqualTo(new[]
@@ -114,9 +114,9 @@ public sealed class OpenItemsServiceTest
     notedBratwurst.Note = "Ohne Ketchup";
 
     IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
-                                                                                     plainBratwurst,
-                                                                                     notedBratwurst
-                                                                                   ]);
+                                                                                                         plainBratwurst,
+                                                                                                         notedBratwurst
+                                                                                                       ]);
 
     Assert.Multiple(() =>
                     {

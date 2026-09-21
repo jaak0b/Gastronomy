@@ -8,13 +8,11 @@ using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Mapping;
-using GastronomyApp.Api.Names;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Responders;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
-using GastronomyApp.Infrastructure;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
@@ -51,7 +49,6 @@ public sealed class ApiServiceRegistration
 
     services.AddScoped(provider => provider.GetRequiredService<IDbContextFactory<GastronomyAppDbContext>>().CreateDbContext());
 
-    services.AddSingleton<IClock, SystemClock>();
     services.AddSingleton<Pbkdf2SecretHasher>();
     services.AddSingleton<SqliteFailureTranslator>();
 
@@ -163,10 +160,9 @@ public sealed class ApiServiceRegistration
 
     services.AddRateLimiter(limiterOptions => new RateLimitPolicies().Configure(limiterOptions));
 
-    AuthenticationSchemeNames schemeNames = new();
-    services.AddAuthentication(schemeNames.Device).AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(schemeNames.Device, null);
+    services.AddAuthentication(Names.AuthenticationSchemes.Device).AddScheme<DeviceAuthenticationSchemeOptions, DeviceAuthenticationHandler>(Names.AuthenticationSchemes.Device, null);
 
-    services.AddAuthorization(authorization => { authorization.DefaultPolicy = new AuthorizationPolicyBuilder(schemeNames.Device).RequireAuthenticatedUser().Build(); });
+    services.AddAuthorization(authorization => { authorization.DefaultPolicy = new AuthorizationPolicyBuilder(Names.AuthenticationSchemes.Device).RequireAuthenticatedUser().Build(); });
   }
 
   private JsonStringEnumConverter EnumsAsCamelCaseText()

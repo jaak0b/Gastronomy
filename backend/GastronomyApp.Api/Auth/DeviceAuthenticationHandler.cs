@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using GastronomyApp.Api.Names;
 using GastronomyApp.Core.Ports;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
@@ -13,8 +12,6 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
   private const string BearerPrefix = "Bearer ";
   private const string AccessTokenQueryKey = "access_token";
   private const string HubPathPrefix = "/hub";
-  private readonly DeviceClaimTypes _claimTypes = new();
-
   private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly DeviceTokenSplitter _tokenSplitter;
 
@@ -42,9 +39,9 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     var device = owner.Device;
     ClaimsIdentity identity = new([
                                     new(ClaimTypes.NameIdentifier, owner.Id.ToString()),
-                                    new(_claimTypes.OwnerKind, owner.Kind.ToString()),
-                                    new(_claimTypes.DeviceId, device.Id.ToString()),
-                                    new(_claimTypes.Language, device.Language)
+                                    new(Names.DeviceClaims.OwnerKind, owner.Kind.ToString()),
+                                    new(Names.DeviceClaims.DeviceId, device.Id.ToString()),
+                                    new(Names.DeviceClaims.Language, device.Language)
                                   ],
                                   Scheme.Name);
 

@@ -4,6 +4,7 @@ using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -17,10 +18,9 @@ public sealed class StaffMemberAdministrationServiceTest
     _invitationStore = A.Fake<IEnrolmentInvitationStore>();
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
-    _clock = A.Fake<IClock>();
+    _clock = new FakeTimeProvider(new(_now));
     _transactionRunner = new();
 
-    A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(null));
 
     _service = new(_repository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), _transactionRunner);
@@ -32,7 +32,7 @@ public sealed class StaffMemberAdministrationServiceTest
   private readonly Guid _invitationId = Guid.Parse("ffffffff-0000-0000-0000-000000000001");
 
   private IDeviceRevocationAnnouncer _announcer = null!;
-  private IClock _clock = null!;
+  private TimeProvider _clock = null!;
   private IDeviceTokenStore _deviceTokenStore = null!;
   private IEnrolmentInvitationStore _invitationStore = null!;
   private IStaffMemberRepository _repository = null!;

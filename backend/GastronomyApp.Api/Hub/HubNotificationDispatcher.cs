@@ -1,13 +1,10 @@
-using GastronomyApp.Api.Names;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Events;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
 
 public sealed class HubNotificationDispatcher
 {
-  private readonly HubEventNames _eventNames = new();
-  private readonly HubGroupNames _groupNames = new();
   private readonly IHubContext<GastronomyHub> _hubContext;
 
   public HubNotificationDispatcher(IHubContext<GastronomyHub> hubContext)
@@ -17,85 +14,85 @@ public sealed class HubNotificationDispatcher
 
   public async Task PushOrderStatusChangedAsync(OrderStatusChangedEvent payload, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.OrderStatusChanged,
+    await SendToAsync(Names.HubEvents.OrderStatusChanged,
                       payload,
                       [
-                        _groupNames.Devices,
-                        _groupNames.Admin
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }
 
   public async Task PushStationOrdersChangedAsync(Guid stationId, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.StationOrdersChanged,
+    await SendToAsync(Names.HubEvents.StationOrdersChanged,
                       new StationOrdersChangedEvent(stationId),
                       [
-                        _groupNames.Devices,
-                        _groupNames.BuildStationGroupName(stationId),
-                        _groupNames.Admin
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.BuildStationGroupName(stationId),
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }
 
   public async Task PushStationsChangedAsync(Guid stationId, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.StationsChanged,
+    await SendToAsync(Names.HubEvents.StationsChanged,
                       new StationsChangedEvent(),
                       [
-                        _groupNames.Devices,
-                        _groupNames.Admin,
-                        _groupNames.BuildStationGroupName(stationId)
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.Admin,
+                        Names.HubGroups.BuildStationGroupName(stationId)
                       ],
                       ct);
   }
 
   public async Task PushOrderItemsSettledAsync(OrderItemsSettledEvent payload, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.OrderItemsSettled,
+    await SendToAsync(Names.HubEvents.OrderItemsSettled,
                       payload,
                       [
-                        _groupNames.Devices,
-                        _groupNames.Admin
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }
 
   public async Task PushFestivalChangedAsync(CancellationToken ct)
   {
-    await SendToAsync(_eventNames.FestivalChanged,
+    await SendToAsync(Names.HubEvents.FestivalChanged,
                       new FestivalChangedEvent(),
                       [
-                        _groupNames.Devices,
-                        _groupNames.Stations,
-                        _groupNames.Admin
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.Stations,
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }
 
   public async Task PushCatalogChangedAsync(CancellationToken ct)
   {
-    await SendToAsync(_eventNames.CatalogChanged,
+    await SendToAsync(Names.HubEvents.CatalogChanged,
                       new CatalogChangedEvent(),
                       [
-                        _groupNames.Devices,
-                        _groupNames.Admin
+                        Names.HubGroups.Devices,
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }
 
   public async Task PushEnrolmentCompletedAsync(EnrolmentCompletedEvent payload, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.EnrolmentCompleted, payload, [_groupNames.Admin], ct);
+    await SendToAsync(Names.HubEvents.EnrolmentCompleted, payload, [Names.HubGroups.Admin], ct);
   }
 
   public async Task PushDeviceRevokedAsync(Guid deviceId, CancellationToken ct)
   {
-    await SendToAsync(_eventNames.DeviceRevoked,
+    await SendToAsync(Names.HubEvents.DeviceRevoked,
                       new DeviceRevokedEvent(deviceId),
                       [
-                        _groupNames.BuildDeviceGroupName(deviceId),
-                        _groupNames.Admin
+                        Names.HubGroups.BuildDeviceGroupName(deviceId),
+                        Names.HubGroups.Admin
                       ],
                       ct);
   }

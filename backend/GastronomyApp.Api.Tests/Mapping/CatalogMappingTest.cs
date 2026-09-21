@@ -1,5 +1,5 @@
 using GastronomyApp.Api.Mapping;
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Catalog;
 using GastronomyApp.Core.Entities;
 using MapsterMapper;
 

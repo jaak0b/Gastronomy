@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -7,17 +7,17 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemSettlementService
 {
-  private readonly IClock _clock;
+  private readonly TimeProvider _timeProvider;
   private readonly IOpenItemRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly ITransactionRunner _transactionRunner;
 
-  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner, IClock clock)
+  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner, TimeProvider timeProvider)
   {
     _repository = repository;
     _runningFestival = runningFestival;
     _transactionRunner = transactionRunner;
-    _clock = clock;
+    _timeProvider = timeProvider;
   }
 
   public async Task<Result<SettlementResult, SettlementFailure>> SettleAsync(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, CancellationToken cancellationToken)
@@ -137,7 +137,7 @@ public sealed class OrderItemSettlementService
   {
     IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
 
-    Result<SettlementResult, SettlementFailure> settlement = Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _clock.UtcNow);
+    Result<SettlementResult, SettlementFailure> settlement = Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime);
 
     if (settlement.IsSuccess)
       await _repository.SaveChangesAsync(cancellationToken);
