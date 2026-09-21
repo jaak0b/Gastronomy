@@ -1,5 +1,4 @@
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 
 namespace GastronomyApp.Core.Ports;
 
@@ -11,7 +10,7 @@ public interface IOpenItemRepository
 
   public Task<IReadOnlyList<string>> FindTableNamesAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken);
 
-  public Task<IReadOnlyList<TableOrderRecord>> FindTableOrdersAsync(Guid festivalId, string tableName, CancellationToken cancellationToken);
+  public Task<IReadOnlyList<Order>> FindTableOrdersAsync(Guid festivalId, string tableName, CancellationToken cancellationToken);
 
   public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

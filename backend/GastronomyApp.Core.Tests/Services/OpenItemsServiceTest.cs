@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Services;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -21,11 +20,9 @@ public sealed class OpenItemsServiceTest
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
-    A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([]));
+    A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([]));
 
-    RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
-
-    _service = new(_repository, runningFestival, new(_repository, runningFestival, A.Fake<ITransactionRunner>(), _clock));
+    _service = new(_repository, new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -40,64 +37,118 @@ public sealed class OpenItemsServiceTest
   private OpenItemsService _service = null!;
 
   [Test]
-  public async Task ReadAsync_NoFestivalIsRunning_ReportsNoTables()
+  public async Task ReadOpenItemsAsync_NoFestivalIsRunning_ReadsNothing()
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    var report = await _service.ReadAsync(CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.Tables, Is.Empty);
-                      Assert.That(report.OrderItemIdsWithoutAnOrder, Is.Empty);
-                    });
+    Assert.That(await _service.ReadOpenItemsAsync(CancellationToken.None), Is.Empty);
   }
 
   [Test]
-  public async Task ReadAsync_OpenItemsAtTwoTables_ReportsEachTableWithWhatItStillOwes()
+  public async Task ReadOpenItemsAsync_AFestivalIsRunning_ReadsTheOpenItemsOfThatFestival()
   {
-    GivenOpenItems(At("Tisch 3", OpenItem("Bier", 400)), At("Tisch 12", OpenItem("Bratwurst", 350)), At("Tisch 12", OpenItem("Limonade", 250)));
+    var bier = At("Tisch 3", OpenItem("Bier", 400));
+    GivenOpenItems(bier);
 
-    var report = await _service.ReadAsync(CancellationToken.None);
+    Assert.That(await _service.ReadOpenItemsAsync(CancellationToken.None), Is.EqualTo(new[] { bier }));
+  }
+
+  [Test]
+  public void GroupItemsWithAKnownOrderByTableName_OpenItemsAtTwoTables_PutsEachTableOnceInTableNameOrder()
+  {
+    var bier = At("Tisch 3", OpenItem("Bier", 400));
+    var bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
+    var limonade = At("Tisch 12", OpenItem("Limonade", 250));
+
+    IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
+                                                                                     bier,
+                                                                                     bratwurst,
+                                                                                     limonade
+                                                                                   ]);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(report.Tables.Select(table => table.TableName),
+                      Assert.That(tables.Select(table => table.Key),
                                   Is.EqualTo(new[]
                                              {
                                                "Tisch 12",
                                                "Tisch 3"
                                              }));
-                      Assert.That(report.Tables[0].OpenAmountCents, Is.EqualTo(600));
-                      Assert.That(report.Tables[1].OpenAmountCents, Is.EqualTo(400));
+                      Assert.That(tables[0],
+                                  Is.EqualTo(new[]
+                                             {
+                                               bratwurst,
+                                               limonade
+                                             }));
+                      Assert.That(tables[1], Is.EqualTo(new[] { bier }));
                     });
   }
 
   [Test]
-  public async Task ReadAsync_AnItemWhoseOrderCannotBeFound_LeavesItOutOfTheTablesAndNamesIt()
+  public void GroupItemsWithAKnownOrderByTableName_ItemsOfSeveralOrders_SortsThemByOrderNumberAndThenByName()
   {
-    var stray = OpenItem("Bratwurst", 350);
-    GivenOpenItems(stray);
+    var limonade = At("Tisch 12", OpenItem("Limonade", 250));
+    var bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
+    var bier = SameOrderAs(bratwurst, OpenItem("Bier", 400));
 
-    var report = await _service.ReadAsync(CancellationToken.None);
+    IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
+                                                                                     bratwurst,
+                                                                                     limonade,
+                                                                                     bier
+                                                                                   ]);
+
+    Assert.That(tables[0],
+                Is.EqualTo(new[]
+                           {
+                             limonade,
+                             bier,
+                             bratwurst
+                           }));
+  }
+
+  [Test]
+  public void GroupItemsWithAKnownOrderByTableName_TwoUnitsOfOneArticleWithDifferentNotes_KeepsThemAsTwoLines()
+  {
+    var plainBratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
+    var notedBratwurst = SameOrderAs(plainBratwurst, OpenItem("Bratwurst", 350));
+    notedBratwurst.Note = "Ohne Ketchup";
+
+    IReadOnlyList<IGrouping<string, OrderItem>> tables = _service.GroupItemsWithAKnownOrderByTableName([
+                                                                                     plainBratwurst,
+                                                                                     notedBratwurst
+                                                                                   ]);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(report.Tables, Is.Empty);
-                      Assert.That(report.OrderItemIdsWithoutAnOrder, Is.EqualTo(new[] { stray.Id }));
+                      Assert.That(tables[0].Count(), Is.EqualTo(2));
+                      Assert.That(tables[0].Select(item => item.Note),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    null,
+                                                    "Ohne Ketchup"
+                                                  }));
                     });
   }
 
   [Test]
-  public async Task ReadAsync_ItemsOfOneOrder_CarryTheNoteTheWaiterTypedForThem()
+  public void GroupItemsWithAKnownOrderByTableName_AnItemWhoseOrderCannotBeFound_LeavesItOutOfTheTables()
   {
-    var bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
-    bratwurst.Note = "Ohne Ketchup";
-    GivenOpenItems(bratwurst);
+    var stray = OpenItem("Bratwurst", 350);
 
-    var report = await _service.ReadAsync(CancellationToken.None);
+    Assert.That(_service.GroupItemsWithAKnownOrderByTableName([stray]), Is.Empty);
+  }
 
-    Assert.That(report.Tables[0].Items[0].Note, Is.EqualTo("Ohne Ketchup"));
+  [Test]
+  public void ItemIdsWithoutAnOrder_AnItemWhoseOrderCannotBeFound_NamesThatItem()
+  {
+    var stray = OpenItem("Bratwurst", 350);
+    var bier = At("Tisch 3", OpenItem("Bier", 400));
+
+    Assert.That(_service.ItemIdsWithoutAnOrder([
+                                                 stray,
+                                                 bier
+                                               ]),
+                Is.EqualTo(new[] { stray.Id }));
   }
 
   [Test]
@@ -126,78 +177,41 @@ public sealed class OpenItemsServiceTest
   }
 
   [Test]
-  public async Task ReadTableAsync_NoFestivalIsRunning_ReportsTheTableWithNothingOpen()
+  public void ReadTableOrdersAsync_NullTableName_ThrowsArgumentNullException()
+  {
+    Assert.That(async () => await _service.ReadTableOrdersAsync(null!, CancellationToken.None), Throws.ArgumentNullException);
+  }
+
+  [Test]
+  public async Task ReadTableOrdersAsync_NoFestivalIsRunning_ReadsNoOrders()
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    var report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.TableName, Is.EqualTo("Tisch 12"));
-                      Assert.That(report.OpenAmountCents, Is.Zero);
-                      Assert.That(report.Orders, Is.Empty);
-                    });
+    Assert.That(await _service.ReadTableOrdersAsync("Tisch 12", CancellationToken.None), Is.Empty);
   }
 
   [Test]
-  public async Task ReadTableAsync_AnUnknownTableName_ReportsNoOrdersAndNothingOpen()
+  public async Task ReadTableOrdersAsync_AWhitespaceTableName_ReadsNoOrders()
   {
-    var report = await _service.ReadTableAsync("Tisch 99", CancellationToken.None);
+    Assert.That(await _service.ReadTableOrdersAsync("   ", CancellationToken.None), Is.Empty);
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.TableName, Is.EqualTo("Tisch 99"));
-                      Assert.That(report.OpenAmountCents, Is.Zero);
-                      Assert.That(report.Orders, Is.Empty);
-                    });
+    A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
-  public async Task ReadTableAsync_AWhitespaceTableName_ReportsNoOrdersAndNothingOpen()
+  public async Task ReadTableOrdersAsync_AnUnknownTableName_ReadsNoOrders()
   {
-    var report = await _service.ReadTableAsync("   ", CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.TableName, Is.EqualTo("   "));
-                      Assert.That(report.OpenAmountCents, Is.Zero);
-                      Assert.That(report.Orders, Is.Empty);
-                    });
+    Assert.That(await _service.ReadTableOrdersAsync("Tisch 99", CancellationToken.None), Is.Empty);
   }
 
   [Test]
-  public async Task ReadTableAsync_AnOrderWithAnOpenAndASettledPosition_AddsUpOnlyWhatIsStillOpen()
+  public async Task ReadTableOrdersAsync_ATableWithOrders_ReadsTheOrdersOfThatTable()
   {
-    var order = new TableOrderRecord
-                {
-                  OrderId = Guid.NewGuid(),
-                  GlobalOrderNumber = 1,
-                  CreatedAtUtc = _orderedAtUtc,
-                  StaffMemberName = "Anna",
-                  Items =
-                  [
-                    Position("Bratwurst", 350),
-                    Position("Limonade", 250, _now)
-                  ]
-                };
-    A.CallTo(() => _repository.FindTableOrdersAsync(_festivalId, "Tisch 12", A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([order]));
+    var bratwurst = At("Tisch 12", OpenItem("Bratwurst", 350));
+    var order = bratwurst.StationOrder.Order;
+    A.CallTo(() => _repository.FindTableOrdersAsync(_festivalId, "Tisch 12", A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([order]));
 
-    var report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(report.TableName, Is.EqualTo("Tisch 12"));
-                      Assert.That(report.OpenAmountCents, Is.EqualTo(350));
-                      Assert.That(report.Orders, Has.Count.EqualTo(1));
-                      Assert.That(report.Orders[0].StaffMemberName, Is.EqualTo("Anna"));
-                      Assert.That(report.Orders[0].Items.Select(item => item.ItemName),
-                                  Is.EqualTo(new[]
-                                             {
-                                               "Bratwurst",
-                                               "Limonade"
-                                             }));
-                    });
+    Assert.That(await _service.ReadTableOrdersAsync("Tisch 12", CancellationToken.None), Is.EqualTo(new[] { order }));
   }
 
   private void GivenOpenItems(params OrderItem[] items)
@@ -238,6 +252,17 @@ public sealed class OpenItemsServiceTest
     return item;
   }
 
+  private OrderItem SameOrderAs(OrderItem placedItem, OrderItem item)
+  {
+    var stationOrder = placedItem.StationOrder;
+
+    item.StationOrderId = stationOrder.Id;
+    item.StationOrder = stationOrder;
+    stationOrder.Items.Add(item);
+
+    return item;
+  }
+
   private OrderItem OpenItem(string itemName, int unitPriceCents)
   {
     return new()
@@ -247,22 +272,6 @@ public sealed class OpenItemsServiceTest
              CatalogItemId = Guid.NewGuid(),
              ItemName = itemName,
              UnitPriceCents = unitPriceCents
-           };
-  }
-
-  private TableOrderRecordItem Position(string itemName, int unitPriceCents, DateTime? settledAtUtc = null)
-  {
-    return new()
-           {
-             OrderItemId = Guid.NewGuid(),
-             OrderId = Guid.NewGuid(),
-             GlobalOrderNumber = 1,
-             ItemName = itemName,
-             Note = null,
-             UnitPriceCents = unitPriceCents,
-             OrderedAtUtc = _orderedAtUtc,
-             FulfilledAtUtc = null,
-             SettledAtUtc = settledAtUtc
            };
   }
 

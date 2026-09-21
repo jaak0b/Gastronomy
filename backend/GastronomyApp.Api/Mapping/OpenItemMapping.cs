@@ -1,5 +1,5 @@
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
@@ -10,14 +10,23 @@ public sealed class OpenItemMapping : IRegister
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<OpenOrderItem, OpenOrderItemView>();
+    config.NewConfig<OrderItem, OpenOrderItemView>()
+          .Map(view => view.OrderItemId, item => item.Id)
+          .Map(view => view.OrderId, item => item.StationOrder.Order.Id)
+          .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
+          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc);
 
-    config.NewConfig<OpenTable, OpenTableView>();
+    config.NewConfig<OrderItem, TableOrderRecordItemView>()
+          .Map(view => view.OrderItemId, item => item.Id)
+          .Map(view => view.OrderId, item => item.StationOrder.Order.Id)
+          .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
+          .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc);
 
-    config.NewConfig<TableOrderRecordItem, TableOrderRecordItemView>();
+    config.NewConfig<Order, TableOrderRecordView>().Map(view => view.OrderId, order => order.Id).Map(view => view.StaffMemberName, order => order.StaffMember.Name).Map(view => view.Items, order => PositionsOfTheOrder(order));
+  }
 
-    config.NewConfig<TableOrderRecord, TableOrderRecordView>();
-
-    config.NewConfig<TableOrderReport, TableOrderReportView>();
+  private IReadOnlyList<OrderItem> PositionsOfTheOrder(Order order)
+  {
+    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.Ordinal).ThenBy(item => item.Note, StringComparer.Ordinal).ThenBy(item => item.Id).ToList();
   }
 }

@@ -1,6 +1,5 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -137,11 +136,13 @@ public sealed class OpenItemRepositoryTest
 
     OpenItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<TableOrderRecord> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Order> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
+
+    IReadOnlyList<OrderItem> newestItems = PositionsOf(orders[0]);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(orders.Select(order => order.OrderId),
+                      Assert.That(orders.Select(order => order.Id),
                                   Is.EqualTo(new[]
                                              {
                                                newestOrderId,
@@ -155,40 +156,19 @@ public sealed class OpenItemRepositoryTest
                                                2,
                                                1
                                              }));
-                      Assert.That(orders.Select(order => order.StaffMemberName), Is.All.EqualTo("Anna"));
+                      Assert.That(orders.Select(order => order.StaffMember.Name), Is.All.EqualTo("Anna"));
                       Assert.That(orders[0].CreatedAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(15)));
-                      Assert.That(orders[0].Items.Select(item => item.OrderItemId),
-                                  Is.EqualTo(new[]
-                                             {
-                                               fulfilledItem.Id,
-                                               settledItem.Id
-                                             }));
-                      Assert.That(orders[0].Items.Select(item => item.ItemName),
-                                  Is.EqualTo(new[]
-                                             {
-                                               "Bratwurst",
-                                               "Limonade"
-                                             }));
-                      Assert.That(orders[0].Items.Select(item => item.UnitPriceCents),
-                                  Is.EqualTo(new[]
-                                             {
-                                               350,
-                                               250
-                                             }));
-                      Assert.That(orders[0].Items.Select(item => item.FulfilledAtUtc),
-                                  Is.EqualTo(new DateTime?[]
-                                             {
-                                               _orderedAtUtc.AddMinutes(20),
-                                               null
-                                             }));
-                      Assert.That(orders[0].Items.Select(item => item.SettledAtUtc),
-                                  Is.EqualTo(new DateTime?[]
-                                             {
-                                               null,
-                                               _orderedAtUtc.AddMinutes(25)
-                                             }));
-                      Assert.That(orders[0].Items.Select(item => item.OrderId), Is.All.EqualTo(newestOrderId));
-                      Assert.That(orders[0].Items.Select(item => item.GlobalOrderNumber), Is.All.EqualTo(3));
+                      Assert.That(newestItems.Select(item => item.Id),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    fulfilledItem.Id,
+                                                    settledItem.Id
+                                                  }));
+                      Assert.That(newestItems.Single(item => item.Id == fulfilledItem.Id).FulfilledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(20)));
+                      Assert.That(newestItems.Single(item => item.Id == settledItem.Id).SettledAtUtc, Is.EqualTo(_orderedAtUtc.AddMinutes(25)));
+                      Assert.That(newestItems.Single(item => item.Id == settledItem.Id).UnitPriceCents, Is.EqualTo(250));
+                      Assert.That(newestItems.Select(item => item.StationOrder.Order.Id), Is.All.EqualTo(newestOrderId));
+                      Assert.That(newestItems.Select(item => item.StationOrder.Order.GlobalOrderNumber), Is.All.EqualTo(3));
                     });
   }
 
@@ -206,39 +186,9 @@ public sealed class OpenItemRepositoryTest
 
     OpenItemRepository repository = new(fixture.DbContext);
 
-    IReadOnlyList<TableOrderRecord> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Order> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "T1", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(orders.Select(order => order.OrderId), Is.EqualTo(new[] { upperOrderId }));
-  }
-
-  [Test]
-  public async Task FindTableOrdersAsync_ThePositionsOfAnOrder_ComeBackByNameThenNoteThenId()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    var stationOrderId = Guid.NewGuid();
-    var schnitzel = BuildItem(stationOrderId, seeded.SausageItemId, "Schnitzel", 400);
-    schnitzel.Id = new("00000000-0000-0000-0000-000000000003");
-    var notedBratwurst = BuildItem(stationOrderId, seeded.SausageItemId, "Bratwurst", 350);
-    notedBratwurst.Id = new("00000000-0000-0000-0000-000000000001");
-    notedBratwurst.Note = "Ohne Ketchup";
-    var plainBratwurst = BuildItem(stationOrderId, seeded.SausageItemId, "Bratwurst", 350);
-    plainBratwurst.Id = new("00000000-0000-0000-0000-000000000002");
-
-    await PlaceOrderWithItemsAsync(fixture, seeded, "Tisch 12", 1, _orderedAtUtc, stationOrderId, schnitzel, notedBratwurst, plainBratwurst);
-
-    OpenItemRepository repository = new(fixture.DbContext);
-
-    IReadOnlyList<TableOrderRecord> orders = await repository.FindTableOrdersAsync(seeded.FestivalId, "Tisch 12", TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(orders[0].Items.Select(item => item.OrderItemId),
-                Is.EqualTo(new[]
-                           {
-                             plainBratwurst.Id,
-                             notedBratwurst.Id,
-                             schnitzel.Id
-                           }));
+    Assert.That(orders.Select(order => order.Id), Is.EqualTo(new[] { upperOrderId }));
   }
 
   [Test]
@@ -272,6 +222,11 @@ public sealed class OpenItemRepositoryTest
                       Assert.That(selected, Has.Count.EqualTo(1));
                       Assert.That(stored.ChargedPriceCents, Is.EqualTo(350));
                     });
+  }
+
+  private IReadOnlyList<OrderItem> PositionsOf(Order order)
+  {
+    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
   }
 
   private async Task<Guid> AddFestivalAsync(SqliteInMemoryFixture fixture, string name)

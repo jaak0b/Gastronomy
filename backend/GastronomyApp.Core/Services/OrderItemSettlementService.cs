@@ -1,7 +1,6 @@
 using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -43,7 +42,7 @@ public sealed class OrderItemSettlementService
                                              cancellationToken);
   }
 
-  public Result<SettlementResult, SettlementFailure> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<SettlementCandidate> knownItems, DateTime settledAtUtc)
+  public Result<SettlementResult, SettlementFailure> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(lines);
     ArgumentNullException.ThrowIfNull(knownItems);
@@ -54,12 +53,12 @@ public sealed class OrderItemSettlementService
     if (shapeFailure is not null)
       return Result<SettlementResult, SettlementFailure>.Failed(shapeFailure);
 
-    Dictionary<Guid, SettlementCandidate> candidatesById = knownItems.ToDictionary(candidate => candidate.Item.Id);
-    List<SettlementCandidate> selected = [];
+    Dictionary<Guid, OrderItem> knownItemsById = knownItems.ToDictionary(item => item.Id);
+    List<OrderItem> selected = [];
 
     foreach (var line in lines)
     {
-      if (!candidatesById.TryGetValue(line.OrderItemId, out var candidate))
+      if (!knownItemsById.TryGetValue(line.OrderItemId, out var knownItem))
       {
         return Result<SettlementResult, SettlementFailure>.Failed(new()
                                                                   {
@@ -68,7 +67,7 @@ public sealed class OrderItemSettlementService
                                                                   });
       }
 
-      selected.Add(candidate);
+      selected.Add(knownItem);
     }
 
     var priceFailure = ValidatePrices(lines, selected);
@@ -87,15 +86,14 @@ public sealed class OrderItemSettlementService
     for (var index = 0; index < lines.Count; index++)
     {
       var line = lines[index];
-      var candidate = selected[index];
-      var item = candidate.Item;
+      var item = selected[index];
       var paidPriceCents = line.PaidPriceCents!.Value;
 
       if (item.SettledAtUtc is null)
       {
         MarkSettled(item, paidPriceCents, line.PaymentNotice, settledByStaffMemberId, settledAtUtc);
         newlySettled.Add(item);
-        tableNamesOfTheNewlySettled.Add(candidate.TableName);
+        tableNamesOfTheNewlySettled.Add(TableNameOf(item));
         continue;
       }
 
@@ -118,7 +116,7 @@ public sealed class OrderItemSettlementService
                                                                });
   }
 
-  public int SumOpenAmountCents(IEnumerable<ISettleableOrderItem> items)
+  public int SumOpenAmountCents(IEnumerable<OrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 
@@ -139,9 +137,7 @@ public sealed class OrderItemSettlementService
   {
     IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
 
-    IReadOnlyCollection<SettlementCandidate> candidates = BuildCandidates(selected);
-
-    Result<SettlementResult, SettlementFailure> settlement = Settle(lines, settledByStaffMemberId, candidates, _clock.UtcNow);
+    Result<SettlementResult, SettlementFailure> settlement = Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _clock.UtcNow);
 
     if (settlement.IsSuccess)
       await _repository.SaveChangesAsync(cancellationToken);
@@ -149,15 +145,14 @@ public sealed class OrderItemSettlementService
     return settlement;
   }
 
-  private IReadOnlyCollection<SettlementCandidate> BuildCandidates(IReadOnlyCollection<OrderItem> selected)
+  private IReadOnlyCollection<OrderItem> ItemsWhoseTableIsKnown(IReadOnlyCollection<OrderItem> selected)
   {
-    return selected.Where(item => item.StationOrder?.Order is not null)
-                   .Select(item => new SettlementCandidate
-                                   {
-                                     Item = item,
-                                     TableName = item.StationOrder.Order.TableName
-                                   })
-                   .ToList();
+    return selected.Where(item => item.StationOrder?.Order is not null).ToList();
+  }
+
+  private string TableNameOf(OrderItem item)
+  {
+    return item.StationOrder.Order.TableName;
   }
 
   private IReadOnlyList<Guid> ReadSelectedIds(IReadOnlyList<SettleLineRequest> lines)
@@ -207,7 +202,7 @@ public sealed class OrderItemSettlementService
     return null;
   }
 
-  private SettlementFailure? ValidatePrices(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<SettlementCandidate> selected)
+  private SettlementFailure? ValidatePrices(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<OrderItem> selected)
   {
     for (var index = 0; index < lines.Count; index++)
     {
@@ -231,7 +226,7 @@ public sealed class OrderItemSettlementService
                };
       }
 
-      if (paidPriceCents < selected[index].Item.UnitPriceCents && TrimNotice(line.PaymentNotice).Length == 0)
+      if (paidPriceCents < selected[index].UnitPriceCents && TrimNotice(line.PaymentNotice).Length == 0)
       {
         return new()
                {
@@ -244,9 +239,9 @@ public sealed class OrderItemSettlementService
     return null;
   }
 
-  private SettlementFailure? ValidateOneTable(IReadOnlyList<SettlementCandidate> selected)
+  private SettlementFailure? ValidateOneTable(IReadOnlyList<OrderItem> selected)
   {
-    IReadOnlyList<string> tableNames = SortedNames(selected.Select(candidate => candidate.TableName));
+    IReadOnlyList<string> tableNames = SortedNames(selected.Select(TableNameOf));
 
     if (tableNames.Count <= 1)
       return null;

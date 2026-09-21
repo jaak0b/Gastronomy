@@ -1,8 +1,8 @@
 using FakeItEasy;
 using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -93,14 +93,41 @@ public sealed class OrderItemSettlementServiceOverlapTest
            };
   }
 
-  private IReadOnlyCollection<SettlementCandidate> AtOneTable(params OrderItem[] items)
+  private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
   {
-    return items.Select(item => new SettlementCandidate
+    foreach (var item in items)
+      PutAtTable("Tisch 3", item);
+
+    return items.ToList();
+  }
+
+  private void PutAtTable(string tableName, OrderItem item)
+  {
+    Order order = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = Guid.NewGuid(),
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _earlier
+                  };
+
+    StationOrder stationOrder = new()
                                 {
-                                  Item = item,
-                                  TableName = "Tisch 3"
-                                })
-                .ToList();
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = order.FestivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
+
+    stationOrder.Items.Add(item);
+    order.StationOrders.Add(stationOrder);
+    item.StationOrder = stationOrder;
   }
 
   private OrderItem OpenItem(int unitPriceCents)

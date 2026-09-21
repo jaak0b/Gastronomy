@@ -3,7 +3,6 @@ using GastronomyApp.Contracts;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -245,7 +244,7 @@ public sealed class OrderItemSettlementServiceTest
   {
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
-    IReadOnlyCollection<SettlementCandidate> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
+    IReadOnlyCollection<OrderItem> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
 
     Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
                                                                                Line(bratwurst, 350),
@@ -276,7 +275,7 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     var beer = OpenItem(400);
     _service.MarkSettled(beer, 400, null, _anotherWaiter, _earlier);
-    IReadOnlyCollection<SettlementCandidate> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
+    IReadOnlyCollection<OrderItem> twoTables = At("Tisch 12", bratwurst).Concat(At("Tisch 3", beer)).ToList();
 
     Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
                                                                                Line(bratwurst, 350),
@@ -540,19 +539,17 @@ public sealed class OrderItemSettlementServiceTest
            };
   }
 
-  private IReadOnlyCollection<SettlementCandidate> AtOneTable(params OrderItem[] items)
+  private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
   {
     return At("Tisch 12", items);
   }
 
-  private IReadOnlyCollection<SettlementCandidate> At(string tableName, params OrderItem[] items)
+  private IReadOnlyCollection<OrderItem> At(string tableName, params OrderItem[] items)
   {
-    return items.Select(item => new SettlementCandidate
-                                {
-                                  Item = item,
-                                  TableName = tableName
-                                })
-                .ToList();
+    foreach (var item in items)
+      PutAtTable(tableName, item);
+
+    return items.ToList();
   }
 
   private OrderItem OpenItem(int unitPriceCents)

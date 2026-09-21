@@ -3,7 +3,6 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -131,15 +130,7 @@ public sealed class OrderAcceptanceService
     if (lines.Count == 0)
       return null;
 
-    Result<SettlementResult, SettlementFailure> settlementResult = _settlementService.Settle(lines,
-                                                                                             staffMemberId,
-                                                                                             routedItems.Select(item => new SettlementCandidate
-                                                                                                                        {
-                                                                                                                          Item = item,
-                                                                                                                          TableName = order.TableName
-                                                                                                                        })
-                                                                                                        .ToList(),
-                                                                                             order.CreatedAtUtc);
+    Result<SettlementResult, SettlementFailure> settlementResult = _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc);
 
     if (settlementResult.IsSuccess)
       return null;
@@ -177,6 +168,7 @@ public sealed class OrderAcceptanceService
         continue;
 
       stationOrder.OrderId = order.Id;
+      stationOrder.Order = order;
       stationOrder.StationOrderNumber = await _numberAllocator.AllocateStationOrderNumberAsync(festivalId, stationOrder.StationId, cancellationToken);
       stationOrder.DeliveryMode = DeliveryModeFor(deliveryModesByStationId, stationOrder.StationId);
 

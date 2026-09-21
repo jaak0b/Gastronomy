@@ -1,8 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Persistence;
-using GastronomyApp.Infrastructure.QueryRows;
 using Microsoft.EntityFrameworkCore;
 
 namespace GastronomyApp.Infrastructure.Repositories;
@@ -45,70 +43,18 @@ public sealed class OpenItemRepository : IOpenItemRepository
     return usedNames.Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList();
   }
 
-  public async Task<IReadOnlyList<TableOrderRecord>> FindTableOrdersAsync(Guid festivalId, string tableName, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Order>> FindTableOrdersAsync(Guid festivalId, string tableName, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(tableName);
 
-    List<TableOrderHeaderRow> headers = await _dbContext.Orders.AsNoTracking()
-                                                        .Where(order => order.FestivalId == festivalId && order.TableName == tableName)
-                                                        .Join(_dbContext.StaffMembers.AsNoTracking(),
-                                                              order => order.StaffMemberId,
-                                                              staffMember => staffMember.Id,
-                                                              (order, staffMember) => new TableOrderHeaderRow
-                                                                                      {
-                                                                                        OrderId = order.Id,
-                                                                                        GlobalOrderNumber = order.GlobalOrderNumber,
-                                                                                        CreatedAtUtc = order.CreatedAtUtc,
-                                                                                        StaffMemberName = staffMember.Name
-                                                                                      })
-                                                        .OrderByDescending(header => header.CreatedAtUtc)
-                                                        .ThenByDescending(header => header.GlobalOrderNumber)
-                                                        .ToListAsync(cancellationToken);
-
-    if (headers.Count == 0)
-      return [];
-
-    List<Guid> orderIds = headers.Select(header => header.OrderId).ToList();
-
-    List<TableOrderItemRow> items = await _dbContext.OrderItems.AsNoTracking()
-                                                    .Join(_dbContext.StationOrders.AsNoTracking(),
-                                                          item => item.StationOrderId,
-                                                          stationOrder => stationOrder.Id,
-                                                          (item, stationOrder) => new TableOrderItemRow
-                                                                                  {
-                                                                                    OrderId = stationOrder.OrderId,
-                                                                                    Item = item
-                                                                                  })
-                                                    .Where(row => orderIds.Contains(row.OrderId))
-                                                    .OrderBy(row => row.Item.ItemName)
-                                                    .ThenBy(row => row.Item.Note)
-                                                    .ThenBy(row => row.Item.Id)
-                                                    .ToListAsync(cancellationToken);
-
-    ILookup<Guid, TableOrderItemRow> itemsByOrder = items.ToLookup(row => row.OrderId);
-
-    return headers.Select(header => new TableOrderRecord
-                                    {
-                                      OrderId = header.OrderId,
-                                      GlobalOrderNumber = header.GlobalOrderNumber,
-                                      CreatedAtUtc = header.CreatedAtUtc,
-                                      StaffMemberName = header.StaffMemberName,
-                                      Items = itemsByOrder[header.OrderId]
-                                       .Select(row => new TableOrderRecordItem
-                                                      {
-                                                        OrderItemId = row.Item.Id,
-                                                        OrderId = header.OrderId,
-                                                        GlobalOrderNumber = header.GlobalOrderNumber,
-                                                        ItemName = row.Item.ItemName,
-                                                        Note = row.Item.Note,
-                                                        UnitPriceCents = row.Item.UnitPriceCents,
-                                                        OrderedAtUtc = header.CreatedAtUtc,
-                                                        FulfilledAtUtc = row.Item.FulfilledAtUtc,
-                                                        SettledAtUtc = row.Item.SettledAtUtc
-                                                      })
-                                       .ToList()
-                                    })
-                  .ToList();
+    return await _dbContext.Orders.AsNoTracking()
+                           .Where(order => order.FestivalId == festivalId && order.TableName == tableName)
+                           .Include(order => order.StaffMember)
+                           .Include(order => order.StationOrders)
+                           .ThenInclude(stationOrder => stationOrder.Items)
+                           .OrderByDescending(order => order.CreatedAtUtc)
+                           .ThenByDescending(order => order.GlobalOrderNumber)
+                           .ToListAsync(cancellationToken);
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken)
