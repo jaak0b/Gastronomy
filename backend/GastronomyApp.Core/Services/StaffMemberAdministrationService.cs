@@ -1,6 +1,7 @@
-﻿using GastronomyApp.Core.Entities;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
@@ -22,53 +23,53 @@ public sealed class StaffMemberAdministrationService
     return _repository.FindAllAsync(cancellationToken);
   }
 
-  public Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
+  public Task<ErrorOr<StaffMember>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => RenamedAsync(staffMemberId, name, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => RenamedAsync(staffMemberId, name, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public Task<ErrorOr<StaffMember>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOnAsync(staffMemberId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(staffMemberId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public Task<ErrorOr<StaffMember>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOffAsync(staffMemberId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(staffMemberId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
+  private async Task<ErrorOr<StaffMember>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
     if (staffMember is null)
-      return Failed(StaffMemberAdministrationFailureReason.StaffMemberNotFound);
+      return Refusal.StaffMember.StaffMemberNotFound(staffMemberId);
 
     staffMember.Name = name!;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>.Success(staffMember);
+    return staffMember;
   }
 
-  private async Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> SwitchedOnAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<ErrorOr<StaffMember>> SwitchedOnAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
     if (staffMember is null)
-      return Failed(StaffMemberAdministrationFailureReason.StaffMemberNotFound);
+      return Refusal.StaffMember.StaffMemberNotFound(staffMemberId);
 
     staffMember.IsActive = true;
     await _repository.SaveChangesAsync(cancellationToken);
 
-    return Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>.Success(staffMember);
+    return staffMember;
   }
 
-  private async Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> SwitchedOffAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<ErrorOr<StaffMember>> SwitchedOffAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
     if (staffMember is null)
-      return Failed(StaffMemberAdministrationFailureReason.StaffMemberNotFound);
+      return Refusal.StaffMember.StaffMemberNotFound(staffMemberId);
 
     Guid? deviceId = staffMember.DeviceId;
 
@@ -79,26 +80,6 @@ public sealed class StaffMemberAdministrationService
 
     await _retirement.RevokeDeviceAsync(deviceId, cancellationToken);
 
-    return Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>.Success(staffMember);
-  }
-
-  private Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> Failed(StaffMemberAdministrationFailureReason reason)
-  {
-    return Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>.Failed(new() { Reason = reason });
-  }
-
-  private async Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> RunAsync(Func<CancellationToken, Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>>> write, CancellationToken cancellationToken)
-  {
-    return await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                             {
-                                               Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> written = await write(transactionCancellationToken);
-
-                                               return new TransactionOutcome<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>>
-                                                      {
-                                                        Value = written,
-                                                        ShouldCommit = written.IsSuccess
-                                                      };
-                                             },
-                                             cancellationToken);
+    return staffMember;
   }
 }

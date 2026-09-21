@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Contracts.Session;
 using GastronomyApp.Api.ErrorHandling;
@@ -6,7 +7,6 @@ using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
 
@@ -58,16 +58,8 @@ public sealed class SessionHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken);
-
-    if (changed.IsSuccess)
-      return Results.NoContent();
-
-    return changed.Failure.Reason switch
-           {
-             DeviceLanguageFailureReason.UnsupportedLanguage => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "session.unsupportedLanguage"),
-             DeviceLanguageFailureReason.DeviceNotFound => Results.Unauthorized(),
-             _ => new UnreachableCase().Throw<IResult>(changed.Failure.Reason)
-           };
+    return await _languageService.ChangeAsync(caller.DeviceId, request.Language, cancellationToken)
+                                 .Match(device => Results.NoContent(), _resultEnvelope.Refuse);
   }
+
 }

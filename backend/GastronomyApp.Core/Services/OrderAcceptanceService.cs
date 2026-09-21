@@ -1,10 +1,11 @@
-﻿using GastronomyApp.Contracts.Enums;
+﻿using ErrorOr;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
@@ -30,61 +31,51 @@ public sealed class OrderAcceptanceService
     _timeProvider = timeProvider;
   }
 
-  public async Task<Result<Order, OrderValidationFailure>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Order>> AcceptAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
     try
     {
-      return await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                               {
-                                                 Result<Order, OrderValidationFailure> acceptance = await AcceptInsideTransactionAsync(request, staffMemberId, transactionCancellationToken);
-
-                                                 return new TransactionOutcome<Result<Order, OrderValidationFailure>>
-                                                        {
-                                                          Value = acceptance,
-                                                          ShouldCommit = acceptance.IsSuccess
-                                                        };
-                                               },
-                                               cancellationToken);
+      return await _transactionRunner.RunAsync(transactionCancellationToken => AcceptInsideTransactionAsync(request, staffMemberId, transactionCancellationToken), cancellationToken);
     }
     catch (ConcurrentWriteException)
     {
-      return Result<Order, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.OrderNumberCouldNotBeAllocated });
+      return Refusal.Order.OrderNumberCouldNotBeAllocated();
     }
   }
 
-  private async Task<Result<Order, OrderValidationFailure>> AcceptInsideTransactionAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
+  private async Task<ErrorOr<Order>> AcceptInsideTransactionAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
   {
     var existingOrder = await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
     if (existingOrder is not null)
-      return Result<Order, OrderValidationFailure>.Success(existingOrder);
+      return existingOrder;
 
     var festival = await _runningFestival.FindAsync(cancellationToken);
     if (festival is null)
-      return Result<Order, OrderValidationFailure>.Failed(new() { Reason = OrderValidationFailureReason.NoRunningFestival });
+      return Refusal.Order.NoRunningFestival();
 
     IReadOnlyList<OrderItemRequest> itemRequests = request.Items!;
 
-    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> resolution = await _itemResolutionService.BuildRoutedItemsAsync(festival.Id, itemRequests, cancellationToken);
+    ErrorOr<IReadOnlyList<OrderItem>> resolution = await _itemResolutionService.BuildRoutedItemsAsync(festival.Id, itemRequests, cancellationToken);
 
-    if (!resolution.IsSuccess)
-      return Result<Order, OrderValidationFailure>.Failed(resolution.Failure);
+    if (resolution.IsError)
+      return resolution.Errors;
 
     IReadOnlyList<OrderItem> routedItems = resolution.Value;
 
     var order = await BuildOrderAsync(request, staffMemberId, festival.Id, routedItems, cancellationToken);
 
-    var settlementFailure = SettleAtAcceptance(staffMemberId, order, itemRequests, routedItems);
-    if (settlementFailure is not null)
-      return Result<Order, OrderValidationFailure>.Failed(settlementFailure);
+    ErrorOr<Order> settled = SettleAtAcceptance(staffMemberId, order, itemRequests, routedItems);
+    if (settled.IsError)
+      return settled.Errors;
 
     await _orderRepository.AddAsync(order, cancellationToken);
 
-    return Result<Order, OrderValidationFailure>.Success(order);
+    return order;
   }
 
-  private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)
+  private ErrorOr<Order> SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)
   {
     List<SettleLineRequest> lines = [];
 
@@ -104,18 +95,11 @@ public sealed class OrderAcceptanceService
     }
 
     if (lines.Count == 0)
-      return null;
+      return order;
 
-    Result<SettlementResult, SettlementFailure> settlementResult = _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc);
-
-    if (settlementResult.IsSuccess)
-      return null;
-
-    return new()
-           {
-             Reason = OrderValidationFailureReason.SettlementCannotBeProcessed,
-             SettlementFailureReason = settlementResult.Failure.Reason
-           };
+    return _settlementService.Settle(lines, staffMemberId, routedItems, order.CreatedAtUtc)
+                             .Match<ErrorOr<Order>>(settlement => order,
+                                                    settlementErrors => settlementErrors.ConvertAll(Refusal.Order.SettlementCannotBeProcessed));
   }
 
   private async Task<Order> BuildOrderAsync(PlaceOrderRequest request, Guid staffMemberId, Guid festivalId, IReadOnlyCollection<OrderItem> routedItems, CancellationToken cancellationToken)

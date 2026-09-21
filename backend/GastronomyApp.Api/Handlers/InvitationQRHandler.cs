@@ -1,8 +1,7 @@
-using System.Text;
+﻿using System.Text;
+using ErrorOr;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
-using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
 using QRCoder;
@@ -29,11 +28,12 @@ public sealed class InvitationQRHandler
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(invitationId, cancellationToken);
+    return await _service.EnsureStillOpenAsync(invitationId, cancellationToken)
+                         .Match(invitation => RenderTheRememberedCode(invitationId, httpContext), _resultEnvelope.Refuse);
+  }
 
-    if (!stillOpen.IsSuccess)
-      return RefusalFor(stillOpen.Failure);
-
+  private IResult RenderTheRememberedCode(Guid invitationId, HttpContext httpContext)
+  {
     var remembered = _invitationCache.Read();
 
     if (remembered is null || remembered.InvitationId != invitationId)
@@ -45,17 +45,6 @@ public sealed class InvitationQRHandler
     return Results.Text(Render(remembered.QRUrl), SvgMediaType, Encoding.UTF8);
   }
 
-  private IResult RefusalFor(Failure<EnrolmentInvitationFailureReason> failure)
-  {
-    return failure.Reason switch
-           {
-             EnrolmentInvitationFailureReason.InvitationUnknown => BuildQRUnavailableProblem(),
-             EnrolmentInvitationFailureReason.InvitationReplaced => _resultEnvelope.Problem(StatusCodes.Status410Gone, "EnrolmentCodeReplaced", "admin.enrol.qrReplaced"),
-             EnrolmentInvitationFailureReason.InvitationAlreadyUsed => _resultEnvelope.Problem(StatusCodes.Status410Gone, "EnrolmentCodeAlreadyUsed", "admin.enrol.qrAlreadyUsed"),
-             EnrolmentInvitationFailureReason.InvitationExpired => _resultEnvelope.Problem(StatusCodes.Status410Gone, "EnrolmentCodeExpired", "admin.enrol.expired"),
-             _ => new UnreachableCase().Throw<IResult>(failure.Reason)
-           };
-  }
 
   private IResult BuildQRUnavailableProblem()
   {

@@ -1,6 +1,7 @@
-﻿using GastronomyApp.Core.Entities;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
@@ -21,96 +22,50 @@ public sealed class StationQueueWriter
     _timeProvider = timeProvider;
   }
 
-  public async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public Task<ErrorOr<IReadOnlyList<StationOrder>>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
     List<Guid> selectedIds = orderItemIds.ToList();
 
-    return await RunAsync(async transactionCancellationToken =>
-                          {
-                            IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
+    return RunAsync(async transactionCancellationToken =>
+                    {
+                      IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
 
-                            return _fulfillmentService.Fulfill(selectedIds, itemsAtThisStation, _timeProvider.GetUtcNow().UtcDateTime);
-                          },
-                          cancellationToken);
+                      return _fulfillmentService.Fulfill(selectedIds, itemsAtThisStation, _timeProvider.GetUtcNow().UtcDateTime);
+                    },
+                    cancellationToken);
   }
 
-  public async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public Task<ErrorOr<IReadOnlyList<StationOrder>>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
     List<Guid> selectedIds = orderItemIds.ToList();
 
-    return await RunAsync(async transactionCancellationToken =>
-                          {
-                            IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
+    return RunAsync(async transactionCancellationToken =>
+                    {
+                      IReadOnlyList<OrderItem> itemsAtThisStation = await _repository.FindItemsAtStationAsync(selectedIds, stationId, transactionCancellationToken);
 
-                            return _fulfillmentService.Unfulfill(selectedIds, itemsAtThisStation);
-                          },
-                          cancellationToken);
+                      return _fulfillmentService.Unfulfill(selectedIds, itemsAtThisStation);
+                    },
+                    cancellationToken);
   }
 
-  public async Task<Result<StationOrder, StationQueueFailure>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, Guid festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<StationOrder>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, Guid festivalId, CancellationToken cancellationToken)
   {
     var stationOrder = await _repository.FindAtStationAsync(stationOrderId, stationId, festivalId, cancellationToken);
 
     if (stationOrder is null)
-      return Result<StationOrder, StationQueueFailure>.Failed(new() { Reason = StationQueueFailureReason.OrderNotAtThisStation });
+      return Refusal.StationQueue.OrderNotAtThisStation(stationOrderId);
 
-    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> hidden = _visibilityService.HideFromAsItComesQueue(stationOrder);
-
-    if (!hidden.IsSuccess)
-      return Result<StationOrder, StationQueueFailure>.Failed(new() { Reason = TranslateVisibilityReason(hidden.Failure.Reason) });
-
-    await _repository.SaveChangesAsync(cancellationToken);
-
-    return Result<StationOrder, StationQueueFailure>.Success(hidden.Value);
+    return await _visibilityService.HideFromAsItComesQueue(stationOrder)
+                                   .ThenDoAsync(hidden => _repository.SaveChangesAsync(cancellationToken));
   }
 
-  private async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> RunAsync(Func<CancellationToken, Task<Result<IReadOnlyList<StationOrder>, FulfillmentFailure>>> body, CancellationToken cancellationToken)
+  private Task<ErrorOr<IReadOnlyList<StationOrder>>> RunAsync(Func<CancellationToken, Task<ErrorOr<IReadOnlyList<StationOrder>>>> body, CancellationToken cancellationToken)
   {
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                                                                                        {
-                                                                                                          Result<IReadOnlyList<StationOrder>, FulfillmentFailure> applied = await body(transactionCancellationToken);
-
-                                                                                                          if (applied.IsSuccess)
-                                                                                                            await _repository.SaveChangesAsync(transactionCancellationToken);
-
-                                                                                                          return new TransactionOutcome<Result<IReadOnlyList<StationOrder>, FulfillmentFailure>>
-                                                                                                                 {
-                                                                                                                   Value = applied,
-                                                                                                                   ShouldCommit = applied.IsSuccess
-                                                                                                                 };
-                                                                                                        },
-                                                                                                        cancellationToken);
-
-    if (outcome.IsSuccess)
-      return Result<IReadOnlyList<StationOrder>, StationQueueFailure>.Success(outcome.Value);
-
-    return Result<IReadOnlyList<StationOrder>, StationQueueFailure>.Failed(new()
-                                                                           {
-                                                                             Reason = TranslateFulfillmentReason(outcome.Failure.Reason),
-                                                                             OffendingOrderItemId = outcome.Failure.OffendingOrderItemId
-                                                                           });
-  }
-
-  private StationQueueFailureReason TranslateFulfillmentReason(FulfillmentFailureReason reason)
-  {
-    return reason switch
-           {
-             FulfillmentFailureReason.UnknownOrderItemId => StationQueueFailureReason.UnknownOrderItemId,
-             FulfillmentFailureReason.ItemNotFulfilled => StationQueueFailureReason.ItemNotFulfilled,
-             _ => new UnreachableCase().Throw<StationQueueFailureReason>(reason)
-           };
-  }
-
-  private StationQueueFailureReason TranslateVisibilityReason(StationOrderVisibilityFailureReason reason)
-  {
-    return reason switch
-           {
-             StationOrderVisibilityFailureReason.NotAnAsItComesOrder => StationQueueFailureReason.NotAnAsItComesOrder,
-             _ => new UnreachableCase().Throw<StationQueueFailureReason>(reason)
-           };
+    return _transactionRunner.RunAsync(transactionCancellationToken => body(transactionCancellationToken).ThenDoAsync(applied => _repository.SaveChangesAsync(transactionCancellationToken)),
+                                       cancellationToken);
   }
 }

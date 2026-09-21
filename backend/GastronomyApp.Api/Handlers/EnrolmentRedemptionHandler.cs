@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Auth;
+﻿using ErrorOr;
+using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
@@ -40,42 +41,25 @@ public sealed class EnrolmentRedemptionHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    var redemption = await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), cancellationToken);
-
-    return redemption.Outcome switch
-           {
-             EnrolmentRedemptionOutcome.Redeemed => await CompletedAsync(redemption, request.PreviousDeviceToken, cancellationToken),
-             EnrolmentRedemptionOutcome.CodeInvalid => Refused(redemption, "the code sent does not match the invitation that is outstanding", StatusCodes.Status404NotFound, "EnrolmentCodeUnknown", "enrolment.codeUnknown"),
-             EnrolmentRedemptionOutcome.CodeExpired => Refused(redemption, "the outstanding invitation had already expired", StatusCodes.Status410Gone, "EnrolmentCodeNoLongerValid", "enrolment.codeNoLongerValid"),
-             EnrolmentRedemptionOutcome.NoInvitationOutstanding => Refused(redemption, "no invitation is outstanding, so the last one was already used or was replaced by a newer one", StatusCodes.Status410Gone, "EnrolmentCodeNoLongerValid", "enrolment.codeNoLongerValid"),
-             EnrolmentRedemptionOutcome.StaffMemberIsOffTheList => Refused(redemption, "the person the invitation names is off the list", StatusCodes.Status410Gone, "StaffMemberIsOffTheList", "enrolment.staffMemberIsOffTheList"),
-             EnrolmentRedemptionOutcome.StationIsOffTheList => Refused(redemption, "the station the invitation names is switched off", StatusCodes.Status410Gone, "StationIsOffTheList", "enrolment.stationIsOffTheList"),
-             EnrolmentRedemptionOutcome.NameRequired => Refused(redemption, "the invitation names nobody and the phone sent no name", StatusCodes.Status400BadRequest, "ValidationFailed", "enrolment.nameMissing"),
-             _ => new UnreachableCase().Throw<IResult>(redemption.Outcome)
-           };
+    return await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), cancellationToken)
+                         .MatchAsync(redemption => CompletedAsync(redemption, request.PreviousDeviceToken, cancellationToken), refusedLines => Task.FromResult(_resultEnvelope.Refuse(refusedLines)));
   }
 
-  private IResult Refused(EnrolmentRedemptionResult redemption, string reason, int statusCode, string code, string messageKey)
-  {
-    _log.LogWarning("Enrolment refused for invitation {InvitationId}, because {Reason}.", redemption.Invitation?.Id, reason);
-
-    return _resultEnvelope.Problem(statusCode, code, messageKey);
-  }
 
   private async Task<IResult> CompletedAsync(EnrolmentRedemptionResult redemption, string? previousDeviceToken, CancellationToken cancellationToken)
   {
     _invitationCache.ForgetInvitation();
 
-    var owner = redemption.Owner!;
+    var owner = redemption.Owner;
     var device = owner.Device!;
 
-    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.Invitation?.Id, device.Id, owner.Kind, owner.Id);
+    _log.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.Invitation.Id, device.Id, owner.Kind, owner.Id);
 
     await RetireHandedOverDeviceAsync(previousDeviceToken, device.Id, cancellationToken);
 
     await _dispatcher.PushEnrolmentCompletedAsync(new(owner.Kind, owner.Id, owner.Name, device.Id), cancellationToken);
 
-    return Results.Ok(new RedeemedEnrolmentView(device.Id, redemption.PlaintextToken!, owner.Kind, BuildStaffMemberView(owner), BuildStationSummaryView(owner), device.Language));
+    return Results.Ok(new RedeemedEnrolmentView(device.Id, redemption.PlaintextToken, owner.Kind, BuildStaffMemberView(owner), BuildStationSummaryView(owner), device.Language));
   }
 
   private StaffMemberView? BuildStaffMemberView(IDeviceOwner owner)

@@ -1,6 +1,7 @@
-﻿using GastronomyApp.Core.Entities;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
 
@@ -24,42 +25,42 @@ public sealed class CatalogItemAdministrationService
     _transactionRunner = transactionRunner;
   }
 
-  public async Task<Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IReadOnlyList<CatalogItem>>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
     if (festivalId is { } askedFestivalId && !await _festivalRepository.ExistsAsync(askedFestivalId, cancellationToken))
-      return Failed<IReadOnlyList<CatalogItem>>(CatalogItemAdministrationFailureReason.FestivalNotFound);
+      return Refusal.CatalogItem.FestivalNotFound(askedFestivalId);
 
     IReadOnlyList<CatalogItem> items = await _itemRepository.FindAllOrderedAsync(festivalId, cancellationToken);
 
-    return Result<IReadOnlyList<CatalogItem>, CatalogItemAdministrationFailure>.Success(items);
+    return items.ToErrorOr();
   }
 
-  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public Task<ErrorOr<CatalogItem>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => CreatedAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public Task<ErrorOr<CatalogItem>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => UpdatedAsync(itemId, name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(itemId, name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
+  public Task<ErrorOr<CatalogItem>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  public Task<Result<CatalogItem, CatalogItemAdministrationFailure>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
+  public Task<ErrorOr<CatalogItem>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
-    return RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
+    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken), cancellationToken);
   }
 
-  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  private async Task<ErrorOr<CatalogItem>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    var refusal = ValidateProductionMinutes(productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
+    var refusal = ProductionMinutesRefusal(productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
 
-    if (refusal is not null)
-      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
+    if (refusal is { } error)
+      return error;
 
     CatalogItem created = new()
                           {
@@ -76,20 +77,20 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(created);
+    return created;
   }
 
-  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  private async Task<ErrorOr<CatalogItem>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Refusal.CatalogItem.ItemNotFound(itemId);
 
-    var refusal = ValidateProductionMinutes(productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
+    var refusal = ProductionMinutesRefusal(productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
 
-    if (refusal is not null)
-      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
+    if (refusal is { } error)
+      return error;
 
     item.Name = name!;
     item.CategoryId = categoryId!.Value;
@@ -99,54 +100,52 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
+    return item;
   }
 
-  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
+  private async Task<ErrorOr<CatalogItem>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Refusal.CatalogItem.ItemNotFound(itemId);
 
-    var categoryRefusal = await CategoryRefusalAsync(item.CategoryId, true, cancellationToken);
-
-    if (categoryRefusal is not null)
-      return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(categoryRefusal);
+    if (await CategoryRefusalAsync(item.CategoryId, true, cancellationToken) is { } categoryRefusal)
+      return categoryRefusal;
 
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
+    return item;
   }
 
-  private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
+  private async Task<ErrorOr<CatalogItem>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
     if (item is null)
-      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
+      return Refusal.CatalogItem.ItemNotFound(itemId);
 
     var runningFestival = await _runningFestival.FindAsync(cancellationToken);
 
     if (runningFestival is not null && await _itemRepository.FindMenuRowAsync(runningFestival.Id, itemId, cancellationToken) is not null)
-      return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemIsOnTheRunningFestivalsMenu);
+      return Refusal.CatalogItem.ItemIsOnTheRunningFestivalsMenu(itemId);
 
     item.IsActive = false;
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
-    return Result<CatalogItem, CatalogItemAdministrationFailure>.Success(item);
+    return item;
   }
 
-  private async Task<CatalogItemAdministrationFailure?> NameRefusalAsync(string name, Guid? itemKeepingItsOwnName, CancellationToken cancellationToken)
+  private async Task<Error?> NameRefusalAsync(string name, Guid? itemKeepingItsOwnName, CancellationToken cancellationToken)
   {
     if (!await _itemRepository.IsNameTakenAsync(name, itemKeepingItsOwnName, cancellationToken))
       return null;
 
-    return new() { Reason = CatalogItemAdministrationFailureReason.NameTaken };
+    return Refusal.CatalogItem.NameTaken(name);
   }
 
-  private async Task<CatalogItemAdministrationFailure?> CategoryRefusalAsync(Guid? categoryId, bool theArticleIsSwitchedOn, CancellationToken cancellationToken)
+  private async Task<Error?> CategoryRefusalAsync(Guid? categoryId, bool theArticleIsSwitchedOn, CancellationToken cancellationToken)
   {
     CatalogCategory? category = null;
 
@@ -154,45 +153,19 @@ public sealed class CatalogItemAdministrationService
       category = await _categoryRepository.FindByIdAsync(categoryId.Value, cancellationToken);
 
     if (category is null)
-      return new() { Reason = CatalogItemAdministrationFailureReason.CategoryUnknown };
+      return Refusal.CatalogItem.CategoryUnknown(categoryId);
 
     if (category.IsActive || !theArticleIsSwitchedOn)
       return null;
 
-    return new() { Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff };
+    return Refusal.CatalogItem.CategoryIsSwitchedOff(category.Id);
   }
 
-  private CatalogItemAdministrationFailure? ValidateProductionMinutes(double? productionMinutes)
+  private Error? ProductionMinutesRefusal(double? productionMinutes)
   {
     if (productionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
-    {
-      return new()
-             {
-               Reason = CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange,
-               OffendingProductionMinutes = minutes
-             };
-    }
+      return Refusal.CatalogItem.ProductionMinutesOutOfRange(minutes);
 
     return null;
-  }
-
-  private Result<TValue, CatalogItemAdministrationFailure> Failed<TValue>(CatalogItemAdministrationFailureReason reason)
-  {
-    return Result<TValue, CatalogItemAdministrationFailure>.Failed(new() { Reason = reason });
-  }
-
-  private async Task<Result<TValue, CatalogItemAdministrationFailure>> RunAsync<TValue>(Func<CancellationToken, Task<Result<TValue, CatalogItemAdministrationFailure>>> write, CancellationToken cancellationToken)
-  {
-    return await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                             {
-                                               Result<TValue, CatalogItemAdministrationFailure> written = await write(transactionCancellationToken);
-
-                                               return new TransactionOutcome<Result<TValue, CatalogItemAdministrationFailure>>
-                                                      {
-                                                        Value = written,
-                                                        ShouldCommit = written.IsSuccess
-                                                      };
-                                             },
-                                             cancellationToken);
   }
 }

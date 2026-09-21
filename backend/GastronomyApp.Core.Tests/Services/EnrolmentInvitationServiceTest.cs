@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
@@ -50,12 +51,12 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task CreateAsync_BothAWaiterAndAStation_FailsBecauseOnlyOneOwnerIsAllowed()
   {
-    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(_staffMemberId, _stationId, CancellationToken.None);
+    ErrorOr<IssuedEnrolmentInvitation> issued = await _service.CreateAsync(_staffMemberId, _stationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(issued.IsSuccess, Is.False);
-                      Assert.That(issued.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.AtMostOneOwner));
+                      Assert.That(issued.RefusalMessageKey(), Is.EqualTo("enrolment.atMostOneOwner"));
                     });
 
     A.CallTo(() => _store.CreateAsync(A<IDeviceOwner?>._, A<CancellationToken>._)).MustNotHaveHappened();
@@ -64,19 +65,19 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task CreateAsync_AnOwnerWhoIsNotOnTheList_FailsBecauseTheOwnerIsNotFound()
   {
-    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(_staffMemberId, null, CancellationToken.None);
+    ErrorOr<IssuedEnrolmentInvitation> issued = await _service.CreateAsync(_staffMemberId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(issued.IsSuccess, Is.False);
-                      Assert.That(issued.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.OwnerNotFound));
+                      Assert.That(issued.RefusalMessageKey(), Is.EqualTo("OwnerNotFound"));
                     });
   }
 
   [Test]
   public async Task CreateAsync_NobodyNamed_IssuesAnInvitationWithoutAnOwner()
   {
-    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(null, null, CancellationToken.None);
+    ErrorOr<IssuedEnrolmentInvitation> issued = await _service.CreateAsync(null, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -100,7 +101,7 @@ public sealed class EnrolmentInvitationServiceTest
 
     A.CallTo(() => _ownerStore.FindAsync(DeviceOwnerKind.Station, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(kitchen));
 
-    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(null, _stationId, CancellationToken.None);
+    ErrorOr<IssuedEnrolmentInvitation> issued = await _service.CreateAsync(null, _stationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -115,12 +116,12 @@ public sealed class EnrolmentInvitationServiceTest
   [Test]
   public async Task EnsureStillOpenAsync_AnInvitationNobodyKnows_FailsBecauseTheInvitationIsUnknown()
   {
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(stillOpen.IsSuccess, Is.False);
-                      Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationUnknown));
+                      Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrUnavailable"));
                     });
   }
 
@@ -129,9 +130,9 @@ public sealed class EnrolmentInvitationServiceTest
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), _deviceId, _now.AddMinutes(4))));
 
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationAlreadyUsed));
+    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrAlreadyUsed"));
   }
 
   [Test]
@@ -139,9 +140,9 @@ public sealed class EnrolmentInvitationServiceTest
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(_now.AddMinutes(-1), null, _now.AddMinutes(4))));
 
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationReplaced));
+    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.qrReplaced"));
   }
 
   [Test]
@@ -149,9 +150,9 @@ public sealed class EnrolmentInvitationServiceTest
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now)));
 
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
-    Assert.That(stillOpen.Failure.Reason, Is.EqualTo(EnrolmentInvitationFailureReason.InvitationExpired));
+    Assert.That(stillOpen.RefusalMessageKey(), Is.EqualTo("admin.enrol.expired"));
   }
 
   [Test]
@@ -159,7 +160,7 @@ public sealed class EnrolmentInvitationServiceTest
   {
     A.CallTo(() => _store.FindByIdAsync(_invitationId, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(BuildInvitation(null, null, _now.AddMinutes(4))));
 
-    Result<EnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
+    ErrorOr<EnrolmentInvitation> stillOpen = await _service.EnsureStillOpenAsync(_invitationId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

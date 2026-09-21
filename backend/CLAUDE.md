@@ -42,11 +42,43 @@ in `Contracts/Validation/RefusalMessageKeys.cs`. A refused shape answers 400 wit
 record every other refusal uses: `RequestShapeRefusalWriter` is the `IProblemDetailsService` the
 validation filter writes through, and it logs which member was refused before it answers.
 
-**Domain rules stay in `GastronomyApp.Core`** and keep returning `Result<..., Failure<...>>`: anything
-that needs the database (no running festival, an item that is not on the menu, a name another row
-already holds, an item already handed out, an unknown table), the uniqueness of the order item ids in
-one settlement, the production minutes an article may carry, a festival's period and its overlap, and
-the reason a settlement needs when the amount paid is below the price the database holds.
+**Domain rules stay in `GastronomyApp.Core`** and return `ErrorOr<T>` from the ErrorOr package:
+anything that needs the database (no running festival, an item that is not on the menu, a name
+another row already holds, an item already handed out, an unknown table), the uniqueness of the order
+item ids in one settlement, the production minutes an article may carry, a festival's period and its
+overlap, and the reason a settlement needs when the amount paid is below the price the database
+holds.
+
+## Refusals
+
+A refusal is an ErrorOr `Error` built by a factory in `Core/Refusals`, one partial file per area of
+the one static class `Refusal` (`Refusal.Order`, `Refusal.StationQueue`, `Refusal.Festival` and so
+on). A factory carries:
+
+- **`Code`**: the frontend's message key, the same key the phone looked up before. A refusal the API
+  answers with a bare status carries a plain name instead, because no device ever reads it.
+- **`Description`**: one sentence naming the exact reason, written for the developer reading the log.
+- **`Metadata`**: the parameters the message needs, under the fixed keys in `Refusal.MetadataKeys`,
+  plus `ProblemCode`, the `ApiError.Code` value the frontend receives.
+- **`NumericType`**: the HTTP status the refusal answers, declared once in `RefusalType`
+  (`BadRequest`, `Unauthorized`, `NotFound`, `Conflict`, `Gone`, `UnprocessableEntity`). Every
+  factory goes through a private helper on `Refusal` named after that status; the built-in
+  `Error.Validation`, `Error.NotFound` and their siblings are not used.
+
+`ResultEnvelope` in the Api answers a refusal: it logs the recording of the refused lines at Warning
+with the request path, takes the status from `NumericType`, and writes an `ApiError` built from the
+`ProblemCode` metadata, the `Code` and the remaining metadata as parameters. A refusal without a
+`ProblemCode` is answered with the bare status and no body. Where a command validates a list, every
+bad line is collected into `List<Error>`; the envelope answers with the first and the log holds them
+all.
+
+A handler is one expression: the service call, `ThenDo`/`ThenDoAsync` for what follows a success, and
+`Match(view => Results...., _resultEnvelope.Refuse)` at the end. A handler holds no `ErrorOr` in a
+local and switches on no refusal.
+
+`ITransactionRunner.RunAsync` takes a body returning `Task<ErrorOr<T>>`, commits when the body
+answers with a value and rolls back when it answers with errors; the after-commit actions run only
+on a commit.
 
 ## Hard rules
 

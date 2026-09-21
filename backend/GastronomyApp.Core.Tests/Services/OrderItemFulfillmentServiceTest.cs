@@ -1,7 +1,8 @@
-﻿using GastronomyApp.Contracts.Enums;
+﻿using ErrorOr;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -26,7 +27,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var beer = stationOrder.Items[1];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
                                                                                          bratwurst.Id,
                                                                                          beer.Id
                                                                                        ],
@@ -47,7 +48,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var first = StationOrderWith(OpenItem(), OpenItem());
     var second = StationOrderWith(OpenItem());
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
                                                                                          first.Items[0].Id,
                                                                                          first.Items[1].Id,
                                                                                          second.Items[0].Id
@@ -70,7 +71,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var beer = stationOrder.Items[1];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
                                                                                          bratwurst.Id,
                                                                                          beer.Id
                                                                                        ],
@@ -91,7 +92,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var stationOrder = StationOrderWith(OpenItem());
     var bratwurst = stationOrder.Items[0];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
                                                                                          bratwurst.Id,
                                                                                          bratwurst.Id
                                                                                        ],
@@ -112,7 +113,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var strangerId = Guid.NewGuid();
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([
                                                                                          bratwurst.Id,
                                                                                          strangerId
                                                                                        ],
@@ -122,8 +123,8 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.UnknownOrderItemId));
-                      Assert.That(outcome.Failure.OffendingOrderItemId, Is.EqualTo(strangerId));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(outcome.RefusalDescription(), Does.Contain(strangerId.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.Null);
                     });
   }
@@ -134,7 +135,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var stationOrder = StationOrderWith(FulfilledItem(_earlier));
     var bratwurst = stationOrder.Items[0];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([bratwurst.Id], stationOrder.Items, _now);
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Fulfill([bratwurst.Id], stationOrder.Items, _now);
 
     Assert.Multiple(() =>
                     {
@@ -151,7 +152,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var beer = stationOrder.Items[1];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Unfulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
                                                                                            bratwurst.Id,
                                                                                            beer.Id
                                                                                          ],
@@ -173,7 +174,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var beer = stationOrder.Items[1];
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Unfulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
                                                                                            bratwurst.Id,
                                                                                            beer.Id
                                                                                          ],
@@ -182,8 +183,8 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.ItemNotFulfilled));
-                      Assert.That(outcome.Failure.OffendingOrderItemId, Is.EqualTo(beer.Id));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(outcome.RefusalDescription(), Does.Contain(beer.Id.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_earlier));
                     });
   }
@@ -195,7 +196,7 @@ public sealed class OrderItemFulfillmentServiceTest
     var bratwurst = stationOrder.Items[0];
     var strangerId = Guid.NewGuid();
 
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Unfulfill([
+    ErrorOr<IReadOnlyList<StationOrder>> outcome = _service.Unfulfill([
                                                                                            bratwurst.Id,
                                                                                            strangerId
                                                                                          ],
@@ -204,8 +205,8 @@ public sealed class OrderItemFulfillmentServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.UnknownOrderItemId));
-                      Assert.That(outcome.Failure.OffendingOrderItemId, Is.EqualTo(strangerId));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
+                      Assert.That(outcome.RefusalDescription(), Does.Contain(strangerId.ToString()));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_earlier));
                     });
   }

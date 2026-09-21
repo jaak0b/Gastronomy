@@ -1,9 +1,9 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
@@ -39,7 +39,7 @@ public sealed class ImmediateTransactionRunnerTest
     Assert.That(async () => await runner.RunAsync<int>(_ => throw new InvalidOperationException("The body failed."), TestContext.CurrentContext.CancellationToken), Throws.InstanceOf<InvalidOperationException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<Order, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -50,17 +50,7 @@ public sealed class ImmediateTransactionRunnerTest
     using SqliteInMemoryFixture fixture = new();
     var runner = RunnerOn(fixture.DbContext);
 
-    Assert.That(async () => await runner.RunAsync(async _ => new TransactionOutcome<int>
-                                                             {
-                                                               Value = await runner.RunAsync(_ => Task.FromResult(new TransactionOutcome<int>
-                                                                                                                  {
-                                                                                                                    Value = 1,
-                                                                                                                    ShouldCommit = true
-                                                                                                                  }),
-                                                                                             TestContext.CurrentContext.CancellationToken),
-                                                               ShouldCommit = true
-                                                             },
-                                                  TestContext.CurrentContext.CancellationToken),
+    Assert.That(async () => await runner.RunAsync(_ => runner.RunAsync(_ => Task.FromResult<ErrorOr<int>>(1), TestContext.CurrentContext.CancellationToken), TestContext.CurrentContext.CancellationToken),
                 Throws.InstanceOf<InvalidOperationException>().With.Message.Contains("already inside"));
   }
 
@@ -76,7 +66,7 @@ public sealed class ImmediateTransactionRunnerTest
                 Throws.InstanceOf<InfrastructureException>().With.Property(nameof(InfrastructureException.Reason)).EqualTo(InfrastructureFailureReason.DatabaseUnavailable).And.InnerException.InstanceOf<SqliteException>());
 
     var acceptanceService = new OrderAcceptanceComposition().Create(dbContext);
-    Result<Order, OrderValidationFailure> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
 
     Assert.That(result.IsSuccess, Is.True);
   }
@@ -94,11 +84,7 @@ public sealed class ImmediateTransactionRunnerTest
                                                                                                   fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
                                                                                                   await fixture.DbContext.SaveChangesAsync(transactionCancellationToken);
 
-                                                                                                  return new TransactionOutcome<bool>
-                                                                                                         {
-                                                                                                           Value = true,
-                                                                                                           ShouldCommit = true
-                                                                                                         };
+                                                                                                  return true.ToErrorOr();
                                                                                                 },
                                                                                                 TestContext.CurrentContext.CancellationToken))!;
 
@@ -138,17 +124,13 @@ public sealed class ImmediateTransactionRunnerTest
                                         if (attempts == 1)
                                           throw new DbUpdateConcurrencyException();
 
-                                        return Task.FromResult(new TransactionOutcome<int>
-                                                               {
-                                                                 Value = 7,
-                                                                 ShouldCommit = true
-                                                               });
+                                        return Task.FromResult<ErrorOr<int>>(7);
                                       },
                                       TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(value, Is.EqualTo(7));
+                      Assert.That(value.Value, Is.EqualTo(7));
                       Assert.That(attempts, Is.EqualTo(2));
                     });
   }
@@ -181,11 +163,7 @@ public sealed class ImmediateTransactionRunnerTest
                           {
                             await retirement.RevokeDeviceAsync(deviceId, transactionCancellationToken);
 
-                            return new TransactionOutcome<bool>
-                                   {
-                                     Value = true,
-                                     ShouldCommit = true
-                                   };
+                            return true.ToErrorOr();
                           },
                           TestContext.CurrentContext.CancellationToken);
 
@@ -246,11 +224,7 @@ public sealed class ImmediateTransactionRunnerTest
                             if (attempts == 1)
                               throw new DbUpdateConcurrencyException();
 
-                            return new TransactionOutcome<bool>
-                                   {
-                                     Value = true,
-                                     ShouldCommit = true
-                                   };
+                            return true.ToErrorOr();
                           },
                           TestContext.CurrentContext.CancellationToken);
 
@@ -258,6 +232,43 @@ public sealed class ImmediateTransactionRunnerTest
                     {
                       Assert.That(attempts, Is.EqualTo(2));
                       Assert.That(runsOfTheAction, Is.EqualTo(1));
+                    });
+  }
+
+  [Test]
+  public async Task RunAsync_TheBodyReturnsAnError_RollsTheWriteBackAndRunsNoAfterCommitAction()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    AfterCommitActions afterCommitActions = new();
+    ImmediateTransactionRunner runner = new(fixture.DbContext, new(), afterCommitActions, NullLogger<ImmediateTransactionRunner>.Instance);
+    DateTime now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
+    var runsOfTheAction = 0;
+
+    ErrorOr<bool> outcome = await runner.RunAsync<bool>(async transactionCancellationToken =>
+                                                        {
+                                                          await afterCommitActions.RunWhenCommittedAsync(_ =>
+                                                                                                         {
+                                                                                                           runsOfTheAction++;
+
+                                                                                                           return Task.CompletedTask;
+                                                                                                         },
+                                                                                                         transactionCancellationToken);
+
+                                                          fixture.DbContext.EnrolmentInvitations.Add(BuildUnconsumedInvitation(now));
+                                                          await fixture.DbContext.SaveChangesAsync(transactionCancellationToken);
+
+                                                          return Error.Custom(1, "the.body.refused", "The body refused the write.");
+                                                        },
+                                                        TestContext.CurrentContext.CancellationToken);
+
+    fixture.DbContext.ChangeTracker.Clear();
+
+    Assert.Multiple(async () =>
+                    {
+                      Assert.That(outcome.IsError, Is.True);
+                      Assert.That(outcome.FirstError.Code, Is.EqualTo("the.body.refused"));
+                      Assert.That(runsOfTheAction, Is.Zero);
+                      Assert.That(await fixture.DbContext.EnrolmentInvitations.AsNoTracking().CountAsync(TestContext.CurrentContext.CancellationToken), Is.Zero);
                     });
   }
 

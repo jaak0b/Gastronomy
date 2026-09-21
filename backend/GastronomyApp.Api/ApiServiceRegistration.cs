@@ -113,6 +113,8 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddSingleton<FestivalChangeAnnouncer>();
     services.AddSingleton<CatalogCategoryOrdering>();
+    services.AddHttpContextAccessor();
+    services.AddSingleton<SystemTextJsonRecordingSerializer>();
     services.AddSingleton<ResultEnvelope>();
     services.AddSingleton<IProblemDetailsService, RequestShapeRefusalWriter>();
     services.AddSingleton<CallerIdentity>();
@@ -146,7 +148,6 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddSingleton<StationQueueRefusalResponder>();
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();
     services.AddScoped<StationFulfillmentHandler>();

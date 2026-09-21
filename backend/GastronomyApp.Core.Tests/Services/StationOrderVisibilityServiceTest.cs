@@ -1,7 +1,8 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -21,12 +22,12 @@ public sealed class StationOrderVisibilityServiceTest
   {
     var stationOrder = BuildStationOrder(DeliveryMode.Together);
 
-    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    ErrorOr<StationOrder> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(StationOrderVisibilityFailureReason.NotAnAsItComesOrder));
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
   }
@@ -36,7 +37,7 @@ public sealed class StationOrderVisibilityServiceTest
   {
     var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
 
-    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    ErrorOr<StationOrder> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {
@@ -52,7 +53,7 @@ public sealed class StationOrderVisibilityServiceTest
     var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
     stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> outcome = _service.HideFromAsItComesQueue(stationOrder);
+    ErrorOr<StationOrder> outcome = _service.HideFromAsItComesQueue(stationOrder);
 
     Assert.Multiple(() =>
                     {

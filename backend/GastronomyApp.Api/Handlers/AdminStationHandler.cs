@@ -1,8 +1,7 @@
-﻿using GastronomyApp.Api.Announcers;
+﻿using ErrorOr;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts.Admin.Stations;
-using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
@@ -26,71 +25,39 @@ public sealed class AdminStationHandler
 
   public async Task<IResult> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
   {
-    Result<IReadOnlyList<Station>, StationAdministrationFailure> listed = await _service.ListAsync(festivalId, cancellationToken);
-
-    if (!listed.IsSuccess)
-      return RefusalFor(listed.Failure);
-
-    return Results.Ok(new AdminStationListView(_mapper.Map<IReadOnlyList<AdminStationView>>(listed.Value)));
+    return await _service.ListAsync(festivalId, cancellationToken)
+                         .Match(stations => Results.Ok(new AdminStationListView(_mapper.Map<IReadOnlyList<AdminStationView>>(stations))), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> CreateAsync(SaveStationRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Station, StationAdministrationFailure> created = await _service.CreateAsync(request.Name, request.SortOrder, cancellationToken);
-
-    if (!created.IsSuccess)
-      return RefusalFor(created.Failure);
-
-    await _announcer.AnnounceAsync(created.Value.Id);
-
-    return Results.Json(_mapper.Map<AdminStationView>(created.Value), statusCode: StatusCodes.Status201Created);
+    return await _service.CreateAsync(request.Name, request.SortOrder, cancellationToken)
+                         .ThenDoAsync(station => _announcer.AnnounceAsync(station.Id))
+                         .Match(station => Results.Json(_mapper.Map<AdminStationView>(station), statusCode: StatusCodes.Status201Created), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> UpdateAsync(Guid stationId, SaveStationRequest request, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<Station?, StationAdministrationFailure> updated = await _service.UpdateAsync(stationId, request.Name, request.SortOrder, cancellationToken);
-
-    return await AnsweredAsync(updated, stationId);
+    return await _service.UpdateAsync(stationId, request.Name, request.SortOrder, cancellationToken)
+                         .ThenDoAsync(station => _announcer.AnnounceAsync(station.Id))
+                         .Match(station => Results.Ok(new SavedStationView(station.Id)), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> ActivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Result<Station?, StationAdministrationFailure> switchedOn = await _service.ActivateAsync(stationId, cancellationToken);
-
-    return await AnsweredAsync(switchedOn, stationId);
+    return await _service.ActivateAsync(stationId, cancellationToken)
+                         .ThenDoAsync(station => _announcer.AnnounceAsync(station.Id))
+                         .Match(station => Results.Ok(new SavedStationView(station.Id)), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> DeactivateAsync(Guid stationId, CancellationToken cancellationToken)
   {
-    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(stationId, cancellationToken);
-
-    return await AnsweredAsync(switchedOff, stationId);
-  }
-
-  private async Task<IResult> AnsweredAsync(Result<Station?, StationAdministrationFailure> written, Guid stationId)
-  {
-    if (!written.IsSuccess)
-      return RefusalFor(written.Failure);
-
-    if (written.Value is not null)
-      await _announcer.AnnounceAsync(stationId);
-
-    return Results.Ok(new SavedStationView(stationId));
-  }
-
-  private IResult RefusalFor(StationAdministrationFailure failure)
-  {
-    return failure.Reason switch
-           {
-             StationAdministrationFailureReason.FestivalNotFound => Results.NotFound(),
-             StationAdministrationFailureReason.StationNotFound => Results.NotFound(),
-             StationAdministrationFailureReason.StationHasUnfulfilledItems => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "StationHasUnfinishedItems", "admin.stationHasUnfinishedItems"),
-             StationAdministrationFailureReason.ItemsWouldHaveNoStation => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemsWouldHaveNoStation", "admin.itemsWouldHaveNoStation", new Dictionary<string, string> { ["count"] = failure.StrandedItemCount.ToString() }),
-             _ => new UnreachableCase().Throw<IResult>(failure.Reason)
-           };
+    return await _service.DeactivateAsync(stationId, cancellationToken)
+                         .ThenDoAsync(station => _announcer.AnnounceAsync(station.Id))
+                         .Match(station => Results.Ok(new SavedStationView(station.Id)), _resultEnvelope.Refuse);
   }
 }

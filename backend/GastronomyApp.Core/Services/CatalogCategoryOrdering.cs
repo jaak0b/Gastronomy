@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Services;

@@ -1,4 +1,4 @@
-namespace GastronomyApp.Core.Services;
+﻿namespace GastronomyApp.Core.Services;
 
 public sealed class UnreachableCase
 {

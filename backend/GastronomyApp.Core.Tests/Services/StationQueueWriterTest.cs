@@ -1,8 +1,8 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -39,7 +39,7 @@ public sealed class StationQueueWriterTest
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> written = await _writer.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -54,12 +54,12 @@ public sealed class StationQueueWriterTest
   [Test]
   public async Task FulfillAsync_AnItemThatIsNotAtThisStation_RefusesAndRollsBack()
   {
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> written = await _writer.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(written.IsSuccess, Is.False);
-                      Assert.That(written.Failure.Reason, Is.EqualTo(StationQueueFailureReason.UnknownOrderItemId));
+                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
 
@@ -79,7 +79,7 @@ public sealed class StationQueueWriterTest
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -95,12 +95,12 @@ public sealed class StationQueueWriterTest
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(written.IsSuccess, Is.False);
-                      Assert.That(written.Failure.Reason, Is.EqualTo(StationQueueFailureReason.ItemNotFulfilled));
+                      Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
@@ -117,7 +117,7 @@ public sealed class StationQueueWriterTest
     var stationOrder = StationOrderWith(DeliveryMode.AsItComes);
     GivenStationOrder(stationOrder);
 
-    Result<StationOrder, StationQueueFailure> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<StationOrder> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -134,12 +134,12 @@ public sealed class StationQueueWriterTest
     var stationOrder = StationOrderWith(DeliveryMode.Together);
     GivenStationOrder(stationOrder);
 
-    Result<StationOrder, StationQueueFailure> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<StationOrder> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrder.Id, _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.Failure.Reason, Is.EqualTo(StationQueueFailureReason.NotAnAsItComesOrder));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
                     });
 
@@ -151,12 +151,12 @@ public sealed class StationQueueWriterTest
   {
     A.CallTo(() => _repository.FindAtStationAsync(A<Guid>._, A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StationOrder?>(null));
 
-    Result<StationOrder, StationQueueFailure> hidden = await _writer.HideFromAsItComesQueueAsync(Guid.NewGuid(), _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<StationOrder> hidden = await _writer.HideFromAsItComesQueueAsync(Guid.NewGuid(), _stationId, _festivalId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.Failure.Reason, Is.EqualTo(StationQueueFailureReason.OrderNotAtThisStation));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("station.orderNotAtThisStation"));
                     });
   }
 

@@ -173,7 +173,10 @@ requests are consumed by `Core`, responses are produced only by `Api`, mapped fr
 Mapster. A record outside `Contracts` exists only when the alternative is a tuple or more than about
 five parameters, and only after trying the entity or its id first. Logic that is one expression over
 an entity is a method on the entity, not a separate function. No stateless one-method service classes.
-Names shared across call sites are constants in one static class.
+Names shared across call sites are constants in one static class. A rule that refuses returns
+`ErrorOr<T>`, never a nullable value standing for a refusal; the refusal is an `Error` from a factory
+in `Core/Refusals`, and its numeric type is its HTTP status, declared once in `RefusalType`. A handler
+is one expression ending in `Match`.
 
 ## How to use
 

@@ -1,68 +1,68 @@
-﻿using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
+﻿using ErrorOr;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemFulfillmentService
 {
-  public Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Fulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
+  public ErrorOr<IReadOnlyList<StationOrder>> Fulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = orderItemIds.Distinct().ToList();
-
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> selectedItems = [];
+    List<Error> refusedIds = [];
 
-    foreach (var orderItemId in selectedIds)
-    {
-      if (!itemsById.TryGetValue(orderItemId, out var item))
-        return Refuse(FulfillmentFailureReason.UnknownOrderItemId, orderItemId);
+    foreach (var orderItemId in orderItemIds.Distinct())
+      if (itemsById.TryGetValue(orderItemId, out var item))
+        selectedItems.Add(item);
+      else
+        refusedIds.Add(Refusal.StationQueue.UnknownOrderItemId(orderItemId));
 
-      selectedItems.Add(item);
-    }
+    if (refusedIds.Count > 0)
+      return refusedIds;
 
     foreach (var item in selectedItems.Where(item => item.FulfilledAtUtc is null))
       item.FulfilledAtUtc = fulfilledAtUtc;
 
-    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Success(StationOrdersOf(selectedItems));
+    return StationOrdersOf(selectedItems).ToErrorOr();
   }
 
-  public Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
+  public ErrorOr<IReadOnlyList<StationOrder>> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
 
-    List<Guid> selectedIds = orderItemIds.Distinct().ToList();
-
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> toClear = [];
+    List<Error> refusedIds = [];
 
-    foreach (var orderItemId in selectedIds)
+    foreach (var orderItemId in orderItemIds.Distinct())
     {
       if (!itemsById.TryGetValue(orderItemId, out var item))
-        return Refuse(FulfillmentFailureReason.UnknownOrderItemId, orderItemId);
+      {
+        refusedIds.Add(Refusal.StationQueue.UnknownOrderItemId(orderItemId));
+        continue;
+      }
 
       if (item.FulfilledAtUtc is null)
-        return Refuse(FulfillmentFailureReason.ItemNotFulfilled, item.Id);
+      {
+        refusedIds.Add(Refusal.StationQueue.ItemNotFulfilled(item.Id));
+        continue;
+      }
 
       toClear.Add(item);
     }
 
+    if (refusedIds.Count > 0)
+      return refusedIds;
+
     foreach (var item in toClear)
       item.FulfilledAtUtc = null;
 
-    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Success(StationOrdersOf(toClear));
-  }
-
-  private Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Refuse(FulfillmentFailureReason reason, Guid? offendingOrderItemId)
-  {
-    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Failed(new()
-                                                                          {
-                                                                            Reason = reason,
-                                                                            OffendingOrderItemId = offendingOrderItemId
-                                                                          });
+    return StationOrdersOf(toClear).ToErrorOr();
   }
 
   private IReadOnlyList<StationOrder> StationOrdersOf(IEnumerable<OrderItem> items)

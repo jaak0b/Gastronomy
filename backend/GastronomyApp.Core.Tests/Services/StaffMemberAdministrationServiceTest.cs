@@ -1,7 +1,7 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -50,12 +50,12 @@ public sealed class StaffMemberAdministrationServiceTest
   [Test]
   public async Task RenameAsync_ASomebodyWhoIsNotOnTheList_FailsBecauseThePersonIsNotFound()
   {
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
+    ErrorOr<StaffMember> renamed = await _service.RenameAsync(_annaId, "Annemarie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(renamed.IsSuccess, Is.False);
-                      Assert.That(renamed.Failure.Reason, Is.EqualTo(StaffMemberAdministrationFailureReason.StaffMemberNotFound));
+                      Assert.That(renamed.RefusalMessageKey(), Is.EqualTo("StaffMemberNotFound"));
                     });
   }
 
@@ -65,7 +65,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(true, null, null);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
+    ErrorOr<StaffMember> renamed = await _service.RenameAsync(_annaId, "Anne Marie", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -82,7 +82,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(false, null, null);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOn = await _service.ActivateAsync(_annaId, CancellationToken.None);
+    ErrorOr<StaffMember> switchedOn = await _service.ActivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -97,7 +97,7 @@ public sealed class StaffMemberAdministrationServiceTest
     var staffMember = BuildStaffMember(true, _deviceId, _invitationId);
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(staffMember));
 
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    ErrorOr<StaffMember> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -117,7 +117,7 @@ public sealed class StaffMemberAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_annaId, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(BuildStaffMember(true, null, null)));
 
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
+    ErrorOr<StaffMember> switchedOff = await _service.DeactivateAsync(_annaId, CancellationToken.None);
 
     Assert.That(switchedOff.IsSuccess, Is.True);
 

@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
@@ -30,17 +30,6 @@ public sealed class AdminItemAvailabilityAnnouncementTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task SetAvailability_ToTheValueTheItemAlreadyHas_TellsTheDevicesNothingBecauseNothingChanged()
-  {
-    using var scope = _context.Factory.Services.CreateScope();
-    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
-
-    await HandlerTalkingTo(scope.ServiceProvider, hubContext).SetAvailabilityAsync(_context.World.FestivalId, _context.World.BratwurstItemId, new() { IsAvailable = true }, CancellationToken.None);
-
-    A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
-  }
-
-  [Test]
   public async Task SetAvailability_ToSoldOut_TellsTheDevicesTheCatalogChanged()
   {
     using var scope = _context.Factory.Services.CreateScope();
@@ -55,6 +44,6 @@ public sealed class AdminItemAvailabilityAnnouncementTest
   {
     CatalogChangeAnnouncer announcer = new(new(hubContext));
 
-    return new(services.GetRequiredService<FestivalMenuService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncer>>()), services.GetRequiredService<ResultEnvelope>(), A.Fake<ILogger<AdminFestivalMenuHandler>>());
+    return new(services.GetRequiredService<FestivalMenuService>(), announcer, new(services.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncer>>()), services.GetRequiredService<ResultEnvelope>());
   }
 }

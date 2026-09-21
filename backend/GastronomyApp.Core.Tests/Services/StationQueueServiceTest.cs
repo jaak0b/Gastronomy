@@ -1,10 +1,11 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.Extensions.Time.Testing;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -47,7 +48,7 @@ public sealed class StationQueueServiceTest
   {
     GivenUnfinished(StationOrder(1, DeliveryMode.Together), StationOrder(2, DeliveryMode.AsItComes));
 
-    Result<Station, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -68,12 +69,12 @@ public sealed class StationQueueServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    Result<Station, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(queue.IsSuccess, Is.False);
-                      Assert.That(queue.Failure.Reason, Is.EqualTo(StationQueueFailureReason.NoRunningFestival));
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("station.noFestivalIsRunning"));
                     });
   }
 
@@ -82,12 +83,12 @@ public sealed class StationQueueServiceTest
   {
     A.CallTo(() => _repository.FindStationWithUnfinishedOrdersAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(null));
 
-    Result<Station, StationQueueFailure> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<Station> queue = await _service.ReadQueueAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(queue.IsSuccess, Is.False);
-                      Assert.That(queue.Failure.Reason, Is.EqualTo(StationQueueFailureReason.StationUnknown));
+                      Assert.That(queue.RefusalMessageKey(), Is.EqualTo("StationUnknown"));
                     });
   }
 
@@ -110,7 +111,7 @@ public sealed class StationQueueServiceTest
   {
     A.CallTo(() => _repository.FindFulfilledAtStationAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<StationOrder>>([StationOrder(1, DeliveryMode.Together)]));
 
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -124,12 +125,12 @@ public sealed class StationQueueServiceTest
   {
     A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(null));
 
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
+    ErrorOr<IReadOnlyList<StationOrder>> fulfilled = await _service.ReadFulfilledAsync(_stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(fulfilled.IsSuccess, Is.False);
-                      Assert.That(fulfilled.Failure.Reason, Is.EqualTo(StationQueueFailureReason.StationNotAtTheFestival));
+                      Assert.That(fulfilled.RefusalMessageKey(), Is.EqualTo("station.notPartOfTheFestival"));
                     });
   }
 

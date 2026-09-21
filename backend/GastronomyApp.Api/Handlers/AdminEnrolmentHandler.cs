@@ -1,9 +1,10 @@
+﻿using ErrorOr;
 using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Contracts.Enrolment;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -32,24 +33,20 @@ public sealed class AdminEnrolmentHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<IssuedEnrolmentInvitation, Failure<EnrolmentInvitationFailureReason>> issued = await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken);
+    return await _service.CreateAsync(request.StaffMemberId, request.StationId, cancellationToken)
+                         .Then(issuedInvitation => new IssuedEnrolmentCode(issuedInvitation, _urlBuilder.BuildEnrolmentUrl(issuedInvitation.QRCodeValue)))
+                         .ThenDo(issuedCode =>
+                                 {
+                                   _invitationCache.Remember(new(issuedCode.Invitation.Invitation.Id, issuedCode.Invitation.QRCodeValue, issuedCode.QRUrl, issuedCode.Invitation.Invitation.ExpiresAtUtc));
 
-    if (!issued.IsSuccess)
-      return RefusalFor(issued.Failure);
-
-    var issuedInvitation = issued.Value;
-    var invitation = issuedInvitation.Invitation;
-    var qrUrl = _urlBuilder.BuildEnrolmentUrl(issuedInvitation.QRCodeValue);
-    _invitationCache.Remember(new(invitation.Id, issuedInvitation.QRCodeValue, qrUrl, invitation.ExpiresAtUtc));
-
-    _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
-                        invitation.Id,
-                        issuedInvitation.Owner?.Kind,
-                        issuedInvitation.Owner?.Id,
-                        _urlBuilder.Origin(),
-                        invitation.ExpiresAtUtc);
-
-    return Results.Json(BuildInvitationView(issuedInvitation, qrUrl), statusCode: StatusCodes.Status201Created);
+                                   _log.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId} at {Origin}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
+                                                       issuedCode.Invitation.Invitation.Id,
+                                                       issuedCode.Invitation.Owner?.Kind,
+                                                       issuedCode.Invitation.Owner?.Id,
+                                                       _urlBuilder.Origin(),
+                                                       issuedCode.Invitation.Invitation.ExpiresAtUtc);
+                                 })
+                         .Match(issuedCode => Results.Json(BuildInvitationView(issuedCode.Invitation, issuedCode.QRUrl), statusCode: StatusCodes.Status201Created), _resultEnvelope.Refuse);
   }
 
   private InvitationView BuildInvitationView(IssuedEnrolmentInvitation issuedInvitation, string qrUrl)
@@ -73,13 +70,5 @@ public sealed class AdminEnrolmentHandler
     return new(issuedInvitation.Owner.Id, issuedInvitation.Owner.Name);
   }
 
-  private IResult RefusalFor(Failure<EnrolmentInvitationFailureReason> failure)
-  {
-    return failure.Reason switch
-           {
-             EnrolmentInvitationFailureReason.AtMostOneOwner => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "enrolment.atMostOneOwner"),
-             EnrolmentInvitationFailureReason.OwnerNotFound => Results.NotFound(),
-             _ => new UnreachableCase().Throw<IResult>(failure.Reason)
-           };
-  }
+  private sealed record IssuedEnrolmentCode(IssuedEnrolmentInvitation Invitation, string QRUrl);
 }

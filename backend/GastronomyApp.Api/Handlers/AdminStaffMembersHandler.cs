@@ -1,7 +1,7 @@
-﻿using GastronomyApp.Api.ErrorHandling;
+﻿using ErrorOr;
+using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
 using Microsoft.AspNetCore.Http;
@@ -32,39 +32,19 @@ public sealed class AdminStaffMembersHandler
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(staffMemberId, request.Name, cancellationToken);
-
-    return Answered(renamed);
+    return await _service.RenameAsync(staffMemberId, request.Name, cancellationToken)
+                         .Match(staffMember => Results.Ok(_mapper.Map<StaffMemberView>(staffMember)), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOn = await _service.ActivateAsync(staffMemberId, cancellationToken);
-
-    return Answered(switchedOn);
+    return await _service.ActivateAsync(staffMemberId, cancellationToken)
+                         .Match(staffMember => Results.Ok(_mapper.Map<StaffMemberView>(staffMember)), _resultEnvelope.Refuse);
   }
 
   public async Task<IResult> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(staffMemberId, cancellationToken);
-
-    return Answered(switchedOff);
-  }
-
-  private IResult Answered(Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> written)
-  {
-    if (!written.IsSuccess)
-      return RefusalFor(written.Failure);
-
-    return Results.Ok(_mapper.Map<StaffMemberView>(written.Value));
-  }
-
-  private IResult RefusalFor(Failure<StaffMemberAdministrationFailureReason> failure)
-  {
-    return failure.Reason switch
-           {
-             StaffMemberAdministrationFailureReason.StaffMemberNotFound => Results.NotFound(),
-             _ => new UnreachableCase().Throw<IResult>(failure.Reason)
-           };
+    return await _service.DeactivateAsync(staffMemberId, cancellationToken)
+                         .Match(staffMember => Results.Ok(_mapper.Map<StaffMemberView>(staffMember)), _resultEnvelope.Refuse);
   }
 }

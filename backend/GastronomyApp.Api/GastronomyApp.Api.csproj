@@ -9,6 +9,7 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App"/>
     </ItemGroup>
     <ItemGroup>
+        <PackageReference Include="ErrorOr"/>
         <PackageReference Include="Mapster"/>
         <PackageReference Include="Mapster.DependencyInjection"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>

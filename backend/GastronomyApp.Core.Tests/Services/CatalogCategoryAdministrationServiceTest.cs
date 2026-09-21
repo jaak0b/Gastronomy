@@ -1,8 +1,8 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 
@@ -43,15 +43,15 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task CreateAsync_NameOfAnotherCategoryInAnotherCasing_FailsBecauseTheNameIsTaken()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("speisen", "#C62828", CancellationToken.None);
+    ErrorOr<CatalogCategory> created = await _service.CreateAsync("speisen", "#C62828", CancellationToken.None);
 
-    Assert.That(created.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.NameTaken));
+    Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.categoryNameTaken"));
   }
 
   [Test]
   public async Task CreateAsync_ANameNothingRefuses_StoresItBehindTheLastCategoryAndCommits()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("  Nachtisch  ", "#C62828", CancellationToken.None);
+    ErrorOr<CatalogCategory> created = await _service.CreateAsync("  Nachtisch  ", "#C62828", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -67,20 +67,20 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_CategoryThatIsNotThere_FailsBecauseTheCategoryIsNotFound()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> updated = await _service.UpdateAsync(Guid.NewGuid(), "Nachtisch", "#C62828", CancellationToken.None);
+    ErrorOr<CatalogCategory> updated = await _service.UpdateAsync(Guid.NewGuid(), "Nachtisch", "#C62828", CancellationToken.None);
 
-    Assert.That(updated.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.CategoryNotFound));
+    Assert.That(updated.RefusalMessageKey(), Is.EqualTo("CategoryNotFound"));
   }
 
   [Test]
-  public async Task MoveAsync_TheLastCategoryDownwards_KeepsTheOrderAndCommitsNothing()
+  public async Task MoveAsync_TheLastCategoryDownwards_KeepsTheOrderAndWritesNothing()
   {
-    Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
+    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Down, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(moved.Value, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.False);
+                      Assert.That(moved.IsSuccess, Is.True);
+                      Assert.That(moved.Value.Select(category => category.Id), Is.EqualTo(new[] { _foodCategoryId, _drinkCategoryId }));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -89,11 +89,11 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task MoveAsync_TheLastCategoryUpwards_PutsItFirstAndCommits()
   {
-    Result<IReadOnlyList<CatalogCategory>?, Failure<CatalogCategoryAdministrationFailureReason>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Up, CancellationToken.None);
+    ErrorOr<IReadOnlyList<CatalogCategory>> moved = await _service.MoveAsync(_drinkCategoryId, CategoryMoveDirection.Up, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(moved.Value!.Select(category => category.Id),
+                      Assert.That(moved.Value.Select(category => category.Id),
                                   Is.EqualTo(new[]
                                              {
                                                _drinkCategoryId,
@@ -109,11 +109,11 @@ public sealed class CatalogCategoryAdministrationServiceTest
   {
     A.CallTo(() => _repository.HoldsActiveItemsAsync(_foodCategoryId, A<CancellationToken>._)).Returns(true);
 
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_foodCategoryId, CancellationToken.None);
+    ErrorOr<CatalogCategory> switchedOff = await _service.DeactivateAsync(_foodCategoryId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(switchedOff.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.CategoryHoldsActiveItems));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.categoryHasActiveItems"));
                       Assert.That(_food.IsActive, Is.True);
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
@@ -122,7 +122,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
   [Test]
   public async Task DeactivateAsync_CategoryWithoutActiveItems_SwitchesItOff()
   {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> switchedOff = await _service.DeactivateAsync(_foodCategoryId, CancellationToken.None);
+    ErrorOr<CatalogCategory> switchedOff = await _service.DeactivateAsync(_foodCategoryId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

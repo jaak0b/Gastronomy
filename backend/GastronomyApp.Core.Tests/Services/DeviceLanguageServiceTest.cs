@@ -1,8 +1,9 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -26,12 +27,12 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_ALanguageTheAppDoesNotSpeak_RefusesItAndSavesNothing()
   {
-    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
+    ErrorOr<Device> changed = await _service.ChangeAsync(_deviceId, "fr", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
+                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("session.unsupportedLanguage"));
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -40,24 +41,24 @@ public sealed class DeviceLanguageServiceTest
   [Test]
   public async Task ChangeAsync_NoLanguageAtAll_RefusesItAsUnsupported()
   {
-    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
+    ErrorOr<Device> changed = await _service.ChangeAsync(_deviceId, null, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.UnsupportedLanguage));
+                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("session.unsupportedLanguage"));
                     });
   }
 
   [Test]
   public async Task ChangeAsync_ADeviceThatWasSetUpAgainElsewhere_RefusesBecauseTheDeviceIsGone()
   {
-    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    ErrorOr<Device> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(changed.IsSuccess, Is.False);
-                      Assert.That(changed.Failure.Reason, Is.EqualTo(DeviceLanguageFailureReason.DeviceNotFound));
+                      Assert.That(changed.RefusalMessageKey(), Is.EqualTo("DeviceNotFound"));
                     });
   }
 
@@ -66,7 +67,7 @@ public sealed class DeviceLanguageServiceTest
   {
     var device = GivenTheDeviceSpeaks("de");
 
-    Result<Device, Failure<DeviceLanguageFailureReason>> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
+    ErrorOr<Device> changed = await _service.ChangeAsync(_deviceId, "en", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

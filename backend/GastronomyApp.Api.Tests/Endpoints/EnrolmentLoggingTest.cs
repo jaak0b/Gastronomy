@@ -101,7 +101,7 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("does not match the invitation"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("does not match the outstanding invitation"));
                     });
   }
 
@@ -120,7 +120,7 @@ public sealed class EnrolmentLoggingTest
     Assert.Multiple(() =>
                     {
                       Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Gone));
-                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("no invitation is outstanding"));
+                      Assert.That(_log.ReadRenderedMessages(), Has.Some.Contains("No invitation is outstanding"));
                     });
   }
 

@@ -1,5 +1,5 @@
+﻿using ErrorOr;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Tests.TestSupport;
 
@@ -7,13 +7,13 @@ public sealed class RecordingTransactionRunner : ITransactionRunner
 {
   public bool? Committed { get; private set; }
 
-  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
+  public async Task<ErrorOr<TValue>> RunAsync<TValue>(Func<CancellationToken, Task<ErrorOr<TValue>>> body, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(body);
 
-    TransactionOutcome<TValue> outcome = await body(cancellationToken);
-    Committed = outcome.ShouldCommit;
+    ErrorOr<TValue> outcome = await body(cancellationToken);
+    Committed = !outcome.IsError;
 
-    return outcome.Value;
+    return outcome;
   }
 }

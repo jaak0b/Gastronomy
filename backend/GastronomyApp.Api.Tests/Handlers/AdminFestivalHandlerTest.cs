@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
@@ -95,6 +95,6 @@ public sealed class AdminFestivalHandlerTest
   {
     FestivalChangeAnnouncer announcer = new(new(hubContext), new(_scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>(), A.Fake<ILogger<SavedChangeAnnouncer>>()));
 
-    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(), announcer, _scope.ServiceProvider.GetRequiredService<ResultEnvelope>(), A.Fake<ILogger<AdminFestivalHandler>>());
+    return new(_scope.ServiceProvider.GetRequiredService<FestivalAdministrationService>(), announcer, _scope.ServiceProvider.GetRequiredService<ResultEnvelope>());
   }
 }

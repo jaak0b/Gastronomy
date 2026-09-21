@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
@@ -25,12 +26,12 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
-                      Assert.That(redemption.Owner.Device, Is.Not.Null);
-                      Assert.That(redemption.Owner.Name, Is.EqualTo("Anna"));
-                      Assert.That(redemption.Owner.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
-                      Assert.That(redemption.Owner.Device.Language, Is.EqualTo("de"));
+                      Assert.That(redemption.IsSuccess, Is.True);
+                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Value.Owner.Device, Is.Not.Null);
+                      Assert.That(redemption.Value.Owner.Name, Is.EqualTo("Anna"));
+                      Assert.That(redemption.Value.Owner.DeviceId, Is.EqualTo(redemption.Value.Owner.Device!.Id));
+                      Assert.That(redemption.Value.Owner.Device.Language, Is.EqualTo("de"));
                     });
   }
 
@@ -45,12 +46,12 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
-                      Assert.That(redemption.Owner.Device, Is.Not.Null);
-                      Assert.That(redemption.Owner.Name, Is.EqualTo("Bernd"));
-                      Assert.That(redemption.Owner.IsActive, Is.True);
-                      Assert.That(redemption.Owner.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
+                      Assert.That(redemption.IsSuccess, Is.True);
+                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Value.Owner.Device, Is.Not.Null);
+                      Assert.That(redemption.Value.Owner.Name, Is.EqualTo("Bernd"));
+                      Assert.That(redemption.Value.Owner.IsActive, Is.True);
+                      Assert.That(redemption.Value.Owner.DeviceId, Is.EqualTo(redemption.Value.Owner.Device!.Id));
                     });
   }
 
@@ -65,9 +66,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.NameRequired));
-                      Assert.That(redemption.Owner, Is.Null);
-                      Assert.That(redemption.PlaintextToken, Is.Null);
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.nameMissing"));
                     });
   }
 
@@ -88,10 +87,10 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(pointedAtTheInvitation, Is.EqualTo(created.Invitation.Id));
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(redemption.Owner!.Kind, Is.EqualTo(DeviceOwnerKind.Station));
-                      Assert.That(redemption.Owner.Id, Is.EqualTo(seeded.KitchenStationId));
-                      Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Owner.Device!.Id));
+                      Assert.That(redemption.IsSuccess, Is.True);
+                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.Station));
+                      Assert.That(redemption.Value.Owner.Id, Is.EqualTo(seeded.KitchenStationId));
+                      Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Value.Owner.Device!.Id));
                       Assert.That(kitchen.EnrolmentInvitationId, Is.Null);
                     });
   }
@@ -112,8 +111,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.StationIsOffTheList));
-                      Assert.That(redemption.PlaintextToken, Is.Null);
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.stationIsOffTheList"));
                     });
   }
 
@@ -131,7 +129,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Phone", "de", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.StaffMemberIsOffTheList));
+    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.staffMemberIsOffTheList"));
   }
 
   [Test]
@@ -188,7 +186,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeExpired));
+    Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeNoLongerValid"));
   }
 
   [Test]
@@ -202,8 +200,8 @@ public sealed class EnrolmentInvitationStoreTest
     var firstInvitation = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var firstRedemption = await store.RedeemAsync(firstInvitation.QRCodeValue, null, "Old phone", "de", TestContext.CurrentContext.CancellationToken);
 
-    var staffMemberId = firstRedemption.Owner!.Id;
-    var oldDeviceId = firstRedemption.Owner.Device!.Id;
+    var staffMemberId = firstRedemption.Value.Owner.Id;
+    var oldDeviceId = firstRedemption.Value.Owner.Device!.Id;
 
     var secondInvitation = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var secondRedemption = await store.RedeemAsync(secondInvitation.QRCodeValue, null, "New phone", "de", TestContext.CurrentContext.CancellationToken);
@@ -213,11 +211,11 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(secondRedemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.Redeemed));
-                      Assert.That(secondRedemption.Owner!.Id, Is.EqualTo(staffMemberId));
+                      Assert.That(secondRedemption.IsSuccess, Is.True);
+                      Assert.That(secondRedemption.Value.Owner.Id, Is.EqualTo(staffMemberId));
                       Assert.That(deviceCount, Is.EqualTo(1));
                       Assert.That(staffMember.DeviceId, Is.Not.EqualTo(oldDeviceId));
-                      Assert.That(staffMember.DeviceId, Is.EqualTo(secondRedemption.Owner.Device!.Id));
+                      Assert.That(staffMember.DeviceId, Is.EqualTo(secondRedemption.Value.Owner.Device!.Id));
                     });
   }
 
@@ -256,7 +254,7 @@ public sealed class EnrolmentInvitationStoreTest
     var firstStore = CreateStore(fixture.CreateContext(), clock);
     var secondStore = CreateStore(fixture.CreateContext(), clock);
 
-    EnrolmentRedemptionResult[] results = await Task.WhenAll(Task.Run(() => firstStore.RedeemAsync(created.QRCodeValue, null, "First phone", "de", TestContext.CurrentContext.CancellationToken)),
+    ErrorOr<EnrolmentRedemptionResult>[] results = await Task.WhenAll(Task.Run(() => firstStore.RedeemAsync(created.QRCodeValue, null, "First phone", "de", TestContext.CurrentContext.CancellationToken)),
                                                              Task.Run(() => secondStore.RedeemAsync(created.QRCodeValue, null, "Second phone", "de", TestContext.CurrentContext.CancellationToken)));
 
     var verificationContext = fixture.CreateContext();
@@ -264,7 +262,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(results.Count(result => result.Outcome == EnrolmentRedemptionOutcome.Redeemed), Is.EqualTo(1));
+                      Assert.That(results.Count(result => result.IsSuccess), Is.EqualTo(1));
                       Assert.That(deviceCount, Is.EqualTo(1));
                     });
   }
@@ -283,15 +281,14 @@ public sealed class EnrolmentInvitationStoreTest
     var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(redemption.PlaintextToken, Is.Not.Null);
-
-    var separatorIndex = redemption.PlaintextToken!.IndexOf('.', StringComparison.Ordinal);
-    var verifiedOwner = await deviceTokenStore.VerifyAsync(redemption.PlaintextToken[..separatorIndex], redemption.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
+    
+    var separatorIndex = redemption.Value.PlaintextToken.IndexOf('.', StringComparison.Ordinal);
+    var verifiedOwner = await deviceTokenStore.VerifyAsync(redemption.Value.PlaintextToken[..separatorIndex], redemption.Value.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(verifiedOwner, Is.Not.Null);
-                      Assert.That(verifiedOwner!.Device!.Id, Is.EqualTo(redemption.Owner!.Device!.Id));
+                      Assert.That(verifiedOwner!.Device!.Id, Is.EqualTo(redemption.Value.Owner.Device!.Id));
                     });
   }
 
@@ -307,8 +304,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeInvalid));
-                      Assert.That(redemption.PlaintextToken, Is.Null);
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeUnknown"));
                     });
   }
 
@@ -327,8 +323,7 @@ public sealed class EnrolmentInvitationStoreTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(redemption.Outcome, Is.EqualTo(EnrolmentRedemptionOutcome.CodeExpired));
-                      Assert.That(redemption.PlaintextToken, Is.Null);
+                      Assert.That(redemption.RefusalMessageKey(), Is.EqualTo("enrolment.codeNoLongerValid"));
                     });
   }
 

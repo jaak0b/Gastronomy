@@ -1,7 +1,7 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -71,12 +71,12 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task CreateAsync_AnEndThatIsNotAfterTheStart_FailsBecauseThePeriodIsInvalid()
   {
-    Result<Festival, FestivalAdministrationFailure> created = await _service.CreateAsync("Sommerfest", _now, _now, CancellationToken.None);
+    ErrorOr<Festival> created = await _service.CreateAsync("Sommerfest", _now, _now, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.PeriodInvalid));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.festivalPeriodInvalid"));
                     });
   }
 
@@ -85,20 +85,20 @@ public sealed class FestivalAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([BuildFestival(_festivalId, false)]));
 
-    Result<Festival, FestivalAdministrationFailure> created = await _service.CreateAsync("Herbstfest", _now, _now.AddHours(2), CancellationToken.None);
+    ErrorOr<Festival> created = await _service.CreateAsync("Herbstfest", _now, _now.AddHours(2), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival));
-                      Assert.That(created.Failure.OverlappingFestivalName, Is.EqualTo("Sommerfest"));
+                      Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.festivalOverlaps"));
+                      Assert.That(created.RefusalMetadata("name"), Is.EqualTo("Sommerfest"));
                     });
   }
 
   [Test]
   public async Task CreateAsync_APeriodNoOtherFestivalCovers_StoresTheFestivalAndCommits()
   {
-    Result<Festival, FestivalAdministrationFailure> created = await _service.CreateAsync("Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
+    ErrorOr<Festival> created = await _service.CreateAsync("Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -115,19 +115,19 @@ public sealed class FestivalAdministrationServiceTest
   {
     A.CallTo(() => _repository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    Result<Festival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
+    ErrorOr<Festival> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(copied.IsSuccess, Is.False);
-                      Assert.That(copied.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.FestivalNotFound));
+                      Assert.That(copied.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
                     });
   }
 
   [Test]
   public async Task CopyAsync_AFestivalThatIsThere_CopiesItsStationsItemsAndAssignmentsAcross()
   {
-    Result<Festival, FestivalAdministrationFailure> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
+    ErrorOr<Festival> copied = await _service.CopyAsync(_festivalId, "Sommerfest 2027", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.That(copied.IsSuccess, Is.True);
 
@@ -139,30 +139,31 @@ public sealed class FestivalAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_festivalId, false)));
 
-    Result<Festival?, FestivalAdministrationFailure> hidden = await _service.HideAsync(_festivalId, CancellationToken.None);
+    ErrorOr<Festival> hidden = await _service.HideAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.False);
-                      Assert.That(hidden.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.FestivalIsRunning));
-                      Assert.That(hidden.Failure.OffendingFestivalId, Is.EqualTo(_festivalId));
+                      Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(hidden.RefusalDescription(), Does.Contain(_festivalId.ToString()));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
   [Test]
-  public async Task HideAsync_AFestivalThatIsAlreadyHidden_ChangesNothingAndRollsBack()
+  public async Task HideAsync_AFestivalThatIsAlreadyHidden_WritesNothing()
   {
     A.CallTo(() => _repository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(_festivalId, true)));
 
-    Result<Festival?, FestivalAdministrationFailure> hidden = await _service.HideAsync(_festivalId, CancellationToken.None);
+    ErrorOr<Festival> hidden = await _service.HideAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(hidden.IsSuccess, Is.True);
-                      Assert.That(hidden.Value, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.False);
+                      Assert.That(hidden.Value, Is.Not.Null);
                     });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -171,7 +172,7 @@ public sealed class FestivalAdministrationServiceTest
     var festival = BuildFestival(_festivalId, true);
     A.CallTo(() => _repository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(festival));
 
-    Result<Festival?, FestivalAdministrationFailure> shown = await _service.ShowAsync(_festivalId, CancellationToken.None);
+    ErrorOr<Festival> shown = await _service.ShowAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -185,12 +186,12 @@ public sealed class FestivalAdministrationServiceTest
   [Test]
   public async Task UpdateAsync_AFestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
   {
-    Result<Festival, FestivalAdministrationFailure> updated = await _service.UpdateAsync(_festivalId, "Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
+    ErrorOr<Festival> updated = await _service.UpdateAsync(_festivalId, "Sommerfest", _now, _now.AddHours(6), CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(updated.IsSuccess, Is.False);
-                      Assert.That(updated.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.FestivalNotFound));
+                      Assert.That(updated.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
                     });
   }
 

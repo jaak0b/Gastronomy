@@ -1,12 +1,13 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.Extensions.Time.Testing;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Services;
 
@@ -38,7 +39,7 @@ public sealed class OrderAcceptanceServiceTest
     GivenCatalogItem(_beerId, "Bier", [_barIndoorId]);
 
     _transactionRunner = A.Fake<ITransactionRunner>();
-    A.CallTo(_transactionRunner).WithReturnType<Task<Result<Order, OrderValidationFailure>>>().ReturnsLazily(async call => (await call.GetArgument<Func<CancellationToken, Task<TransactionOutcome<Result<Order, OrderValidationFailure>>>>>(0)!(call.GetArgument<CancellationToken>(1))).Value);
+    A.CallTo(_transactionRunner).WithReturnType<Task<ErrorOr<Order>>>().ReturnsLazily(call => call.GetArgument<Func<CancellationToken, Task<ErrorOr<Order>>>>(0)!(call.GetArgument<CancellationToken>(1)));
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
@@ -162,7 +163,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_TheSameItemTwice_StoresOneRowPerItem()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_bratwurstId)
                                                                                           ]),
@@ -175,7 +176,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_FirstTimeClientOrderId_AllocatesNumbersAndStoresTheOrderOnce()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -204,7 +205,7 @@ public sealed class OrderAcceptanceServiceTest
   {
     GivenCatalogItem(_beerId, "Bier", [_kitchenId]);
 
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -229,7 +230,7 @@ public sealed class OrderAcceptanceServiceTest
     A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _kitchenId, A<CancellationToken>._)).Returns(Task.FromResult(42));
     A.CallTo(() => _numberAllocator.AllocateStationOrderNumberAsync(A<Guid>._, _barIndoorId, A<CancellationToken>._)).Returns(Task.FromResult(7));
 
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -262,7 +263,7 @@ public sealed class OrderAcceptanceServiceTest
                      };
     A.CallTo(() => _orderRepository.FindByClientOrderIdAsync(_clientOrderId, A<CancellationToken>._)).Returns(Task.FromResult<Order?>(existing));
 
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)]), _staffMemberId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -275,7 +276,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_GivesEveryCreatedRowItsOwnNonEmptyIdentifier()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -302,7 +303,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_StampsEveryCreatedRowWithTheClocksTime()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -317,7 +318,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_LeavesEveryItemOpen()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -330,7 +331,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementCoveringTheWholeOrder_ChargesEveryItemItsOwnPriceAndNamesTheCallerAsTheCollector()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
                                                                                             ItemFor(_beerId, unitPriceCents: 400, settlement: new() { PaidPriceCents = 400 })
                                                                                           ]),
@@ -356,7 +357,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_OneLineSettledAndOneOpen_SettlesOnlyTheLineThatCarriesASettlement()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId, unitPriceCents: 350, settlement: new() { PaidPriceCents = 350 }),
                                                                                             ItemFor(_beerId, unitPriceCents: 400)
                                                                                           ]),
@@ -383,7 +384,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementBelowTheTotalWithoutANotice_IsRefusedAndStoresNothing()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 }),
                                                                                             ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 250 })
                                                                                           ]),
@@ -393,8 +394,8 @@ public sealed class OrderAcceptanceServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.SettlementCannotBeProcessed));
-                      Assert.That(result.Failure.SettlementFailureReason, Is.EqualTo(SettlementFailureReason.PaymentNoticeMissing));
+                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
+                      Assert.That(result.RefusalDescription(), Does.Contain("without a typed reason"));
                     });
     A.CallTo(() => _orderRepository.AddAsync(A<Order>._, A<CancellationToken>._)).MustNotHaveHappened();
   }
@@ -402,7 +403,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_SettlementSendingOnePricePerLine_StoresExactlyThePricesThePhoneSent()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId,
                                                                                                     unitPriceCents: 333,
                                                                                                     settlement: new()
@@ -447,7 +448,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_NoSettlement_LeavesEveryItemUnsettled()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -469,7 +470,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_NoDeliveryModeNamed_SendsEveryStationOrderTogether()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId),
                                                                                             ItemFor(_beerId)
                                                                                           ]),
@@ -495,7 +496,7 @@ public sealed class OrderAcceptanceServiceTest
                                 }
                               ]);
 
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(request, _staffMemberId, CancellationToken.None);
+    ErrorOr<Order> result = await _service.AcceptAsync(request, _staffMemberId, CancellationToken.None);
 
     var order = result.Value;
     var kitchenStationOrder = order.StationOrders.Single(stationOrder => stationOrder.StationId == _kitchenId);
@@ -511,7 +512,7 @@ public sealed class OrderAcceptanceServiceTest
   [Test]
   public async Task AcceptAsync_ValidRequest_KeepsTheNameFromTheCatalogAndThePriceThePhoneShowed()
   {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
+    ErrorOr<Order> result = await _service.AcceptAsync(RequestWith([
                                                                                             ItemFor(_bratwurstId, unitPriceCents: 350),
                                                                                             ItemFor(_bratwurstId, unitPriceCents: 350),
                                                                                             ItemFor(_beerId, unitPriceCents: 400)
@@ -533,26 +534,26 @@ public sealed class OrderAcceptanceServiceTest
                     });
   }
 
-  private async Task<OrderValidationFailureReason> ReasonProducedByAsync(OrderValidationFailureReason scenario)
+  private async Task<ErrorOr<Order>> RefusalProducedByAsync(string scenario)
   {
     var request = scenario switch
                   {
-                    OrderValidationFailureReason.UnknownCatalogItemId => RequestWith([ItemFor(UnknownItemId())]),
-                    OrderValidationFailureReason.StationRequired => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
-                    OrderValidationFailureReason.StationNotAssignedToItem => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
-                    OrderValidationFailureReason.ItemHasNoStation => RequestWith([ItemFor(ItemWithNoActiveStationId())]),
-                    OrderValidationFailureReason.ItemNotAvailable => RequestWith([ItemFor(SoldOutItemId())]),
-                    OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
-                    OrderValidationFailureReason.NoRunningFestival => RequestWhileNoFestivalRuns(),
-                    OrderValidationFailureReason.SettlementCannotBeProcessed => RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
+                    "UnknownCatalogItemId" => RequestWith([ItemFor(UnknownItemId())]),
+                    "StationRequired" => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
+                    "StationNotAssignedToItem" => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),
+                    "ItemHasNoStation" => RequestWith([ItemFor(ItemWithNoActiveStationId())]),
+                    "ItemNotAvailable" => RequestWith([ItemFor(SoldOutItemId())]),
+                    "ChosenStationNoLongerPreparesTheItem" => RequestWith([ItemFor(ItemWithAStaleStationChoiceId(), _barOutdoorId)]),
+                    "NoRunningFestival" => RequestWhileNoFestivalRuns(),
+                    "SettlementCannotBeProcessed" => RequestWith([ItemFor(_bratwurstId, settlement: new() { PaidPriceCents = 1 })]),
                     _ => throw new InvalidOperationException($"No scenario covers {scenario}")
                   };
 
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(request, _staffMemberId, CancellationToken.None);
+    ErrorOr<Order> result = await _service.AcceptAsync(request, _staffMemberId, CancellationToken.None);
 
     Assert.That(result.IsSuccess, Is.False, $"{scenario} should have been rejected");
 
-    return result.Failure.Reason;
+    return result;
   }
 
   private PlaceOrderRequest RequestWhileNoFestivalRuns()
@@ -621,16 +622,18 @@ public sealed class OrderAcceptanceServiceTest
     return _bratwurstId;
   }
 
-  [Test]
-  public async Task AcceptAsync_EveryValidationFailureReasonThisServiceDecides_IsProducedByARealRequest()
+  [TestCase("UnknownCatalogItemId", "order.unknownItem")]
+  [TestCase("StationRequired", "order.cannotBeProcessed")]
+  [TestCase("StationNotAssignedToItem", "catalog.itemSoldOut")]
+  [TestCase("ItemHasNoStation", "order.cannotBeProcessed")]
+  [TestCase("ItemNotAvailable", "catalog.itemSoldOut")]
+  [TestCase("ChosenStationNoLongerPreparesTheItem", "catalog.itemSoldOut")]
+  [TestCase("NoRunningFestival", "order.cannotBeProcessed")]
+  [TestCase("SettlementCannotBeProcessed", "order.settlementCannotBeProcessed")]
+  public async Task AcceptAsync_ARequestThisServiceRefuses_CarriesTheMessageKeyThatScenarioAlwaysAnswered(string scenario, string expectedMessageKey)
   {
-    OrderValidationFailureReason[] reasonsDecidedByTheAcceptanceTransaction = [OrderValidationFailureReason.OrderNumberCouldNotBeAllocated];
+    ErrorOr<Order> refused = await RefusalProducedByAsync(scenario);
 
-    foreach (var reason in Enum.GetValues<OrderValidationFailureReason>().Except(reasonsDecidedByTheAcceptanceTransaction))
-    {
-      SetUp();
-
-      Assert.That(await ReasonProducedByAsync(reason), Is.EqualTo(reason));
-    }
+    Assert.That(refused.RefusalMessageKey(), Is.EqualTo(expectedMessageKey));
   }
 }

@@ -1,7 +1,7 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -47,32 +47,32 @@ public sealed class FestivalMenuServiceTest
   [Test]
   public async Task PutOnTheMenuAsync_AStationThatIsNotAtTheFestival_NamesTheStationItRefused()
   {
-    Result<FestivalCatalogItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_strangerStationId], CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_strangerStationId], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(putOn.IsSuccess, Is.False);
-                      Assert.That(putOn.Failure.Reason, Is.EqualTo(FestivalMenuFailureReason.StationsDoNotBelongToTheFestival));
-                      Assert.That(putOn.Failure.StationIdsOutsideTheFestival, Is.EqualTo(new[] { _strangerStationId }));
+                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("admin.actionFailed"));
+                      Assert.That(putOn.RefusalDescription(), Does.Contain(_strangerStationId.ToString()));
                     });
   }
 
   [Test]
   public async Task PutOnTheMenuAsync_NoStationAtAll_FailsBecauseNobodyWouldPrepareTheItem()
   {
-    Result<FestivalCatalogItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [], CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(putOn.IsSuccess, Is.False);
-                      Assert.That(putOn.Failure.Reason, Is.EqualTo(FestivalMenuFailureReason.NoStationPreparesTheItem));
+                      Assert.That(putOn.RefusalMessageKey(), Is.EqualTo("admin.itemNeedsAStation"));
                     });
   }
 
   [Test]
   public async Task PutOnTheMenuAsync_AnItemThatIsNotOnTheMenuYet_AddsTheRowAndItsStationAndCommits()
   {
-    Result<FestivalCatalogItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_kitchenId], CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 350, [_kitchenId], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -118,12 +118,12 @@ public sealed class FestivalMenuServiceTest
   {
     A.CallTo(() => _repository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(BuildMenuRow(350, true)));
 
-    Result<FestivalCatalogItem, FestivalMenuFailure> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(takenOff.IsSuccess, Is.False);
-                      Assert.That(takenOff.Failure.Reason, Is.EqualTo(FestivalMenuFailureReason.FestivalIsRunning));
+                      Assert.That(takenOff.RefusalMessageKey(), Is.EqualTo("admin.itemStaysOnTheMenuWhileTheFestivalRuns"));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
@@ -131,12 +131,12 @@ public sealed class FestivalMenuServiceTest
   [Test]
   public async Task TakeOffTheMenuAsync_AnItemThatIsNotOnTheMenu_FailsBecauseTheRowIsNotFound()
   {
-    Result<FestivalCatalogItem, FestivalMenuFailure> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(takenOff.IsSuccess, Is.False);
-                      Assert.That(takenOff.Failure.Reason, Is.EqualTo(FestivalMenuFailureReason.MenuRowNotFound));
+                      Assert.That(takenOff.RefusalMessageKey(), Is.EqualTo("MenuRowNotFound"));
                     });
   }
 
@@ -147,7 +147,7 @@ public sealed class FestivalMenuServiceTest
     A.CallTo(() => _repository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(menuRow));
     A.CallTo(() => _festivalRepository.FindByIdAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(true)));
 
-    Result<FestivalCatalogItem, FestivalMenuFailure> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> takenOff = await _service.TakeOffTheMenuAsync(_festivalId, _bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -159,18 +159,19 @@ public sealed class FestivalMenuServiceTest
   }
 
   [Test]
-  public async Task SetAvailabilityAsync_TheAvailabilityTheItemAlreadyHad_ChangesNothingAndRollsBack()
+  public async Task SetAvailabilityAsync_TheAvailabilityTheItemAlreadyHad_WritesNothing()
   {
     A.CallTo(() => _repository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(BuildMenuRow(350, true)));
 
-    Result<FestivalCatalogItem?, FestivalMenuFailure> saved = await _service.SetAvailabilityAsync(_festivalId, _bratwurstId, true, CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> saved = await _service.SetAvailabilityAsync(_festivalId, _bratwurstId, true, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(saved.IsSuccess, Is.True);
-                      Assert.That(saved.Value, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.False);
+                      Assert.That(saved.Value, Is.Not.Null);
                     });
+
+    A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
   }
 
   [Test]
@@ -179,7 +180,7 @@ public sealed class FestivalMenuServiceTest
     var menuRow = BuildMenuRow(350, true);
     A.CallTo(() => _repository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(menuRow));
 
-    Result<FestivalCatalogItem?, FestivalMenuFailure> saved = await _service.SetAvailabilityAsync(_festivalId, _bratwurstId, false, CancellationToken.None);
+    ErrorOr<FestivalCatalogItem> saved = await _service.SetAvailabilityAsync(_festivalId, _bratwurstId, false, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {

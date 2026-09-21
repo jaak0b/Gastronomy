@@ -1,20 +1,21 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class StationOrderVisibilityService
 {
-  public Result<StationOrder, Failure<StationOrderVisibilityFailureReason>> HideFromAsItComesQueue(StationOrder stationOrder)
+  public ErrorOr<StationOrder> HideFromAsItComesQueue(StationOrder stationOrder)
   {
     ArgumentNullException.ThrowIfNull(stationOrder);
 
     if (stationOrder.DeliveryMode != DeliveryMode.AsItComes)
-      return Result<StationOrder, Failure<StationOrderVisibilityFailureReason>>.Failed(new() { Reason = StationOrderVisibilityFailureReason.NotAnAsItComesOrder });
+      return Refusal.StationQueue.NotAnAsItComesOrder(stationOrder.Id);
 
     stationOrder.IsHiddenFromAsItComesQueue = true;
 
-    return Result<StationOrder, Failure<StationOrderVisibilityFailureReason>>.Success(stationOrder);
+    return stationOrder;
   }
 }

@@ -1,48 +1,52 @@
-﻿using GastronomyApp.Contracts;
-using GastronomyApp.Contracts.Validation;
-using GastronomyApp.Core.Results;
-using GastronomyApp.Core.Services;
+﻿using ErrorOr;
+using GastronomyApp.Contracts;
+using GastronomyApp.Core.Refusals;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.ErrorHandling;
 
 public sealed class ResultEnvelope
 {
-  private const string ValidationFailedCode = Names.ProblemCodes.ValidationFailed;
-  private const string UnprocessableEntityCode = "UnprocessableEntity";
-  private const string CannotBeProcessedKey = RefusalMessageKeys.OrderCannotBeProcessed;
-  private const string SettlementCannotBeProcessedKey = RefusalMessageKeys.SettlementCannotBeProcessed;
+  private readonly IHttpContextAccessor _httpContextAccessor;
+  private readonly ILogger<ResultEnvelope> _logger;
+  private readonly SystemTextJsonRecordingSerializer _recordingSerializer;
 
-  public ProblemDescription BuildProblemDescription(OrderValidationFailure failure)
+  public ResultEnvelope(SystemTextJsonRecordingSerializer recordingSerializer, IHttpContextAccessor httpContextAccessor, ILogger<ResultEnvelope> logger)
   {
-    return failure.Reason switch
-           {
-             OrderValidationFailureReason.StationRequired => BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.ItemHasNoStation => BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.NoRunningFestival => BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.OrderNumberCouldNotBeAllocated => BuildUnprocessableProblem(CannotBeProcessedKey, null),
-             OrderValidationFailureReason.SettlementCannotBeProcessed => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             OrderValidationFailureReason.UnknownCatalogItemId => BuildUnprocessableProblem("order.unknownItem", failure.OffendingCatalogItemId),
-             OrderValidationFailureReason.ItemNotAvailable or OrderValidationFailureReason.ChosenStationNoLongerPreparesTheItem or OrderValidationFailureReason.StationNotAssignedToItem => BuildUnprocessableProblemWithParameters("catalog.itemSoldOut", OffendingItemParameters(failure)),
-             _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
-           };
+    _recordingSerializer = recordingSerializer;
+    _httpContextAccessor = httpContextAccessor;
+    _logger = logger;
   }
 
-  public ProblemDescription BuildProblemDescription(SettlementFailure failure)
+  public IResult Refuse(List<Error> refusedLines)
   {
-    return failure.Reason switch
-           {
-             SettlementFailureReason.PaymentNoticeMissing => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.UnknownOrderItemId => BuildUnprocessableProblem("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
-             SettlementFailureReason.DuplicateOrderItemId => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.SelectionSpansSeveralTables => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.NoRunningFestival => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             _ => new UnreachableCase().Throw<ProblemDescription>(failure.Reason)
-           };
+    ArgumentNullException.ThrowIfNull(refusedLines);
+
+    LogTheRefusedRequest(refusedLines);
+
+    var answered = refusedLines[0];
+    var statusCode = answered.NumericType;
+
+    if (ProblemCodeOf(answered) is not { } problemCode)
+      return Results.StatusCode(statusCode);
+
+    return ToResult(new()
+                    {
+                      StatusCode = statusCode,
+                      Error = new()
+                              {
+                                Code = problemCode,
+                                MessageKey = answered.Code,
+                                Parameters = ParametersOf(answered)
+                              }
+                    });
   }
 
   public IResult ToResult(ProblemDescription problem)
   {
+    ArgumentNullException.ThrowIfNull(problem);
+
     return Results.Json(problem.Error, statusCode: problem.StatusCode);
   }
 
@@ -62,56 +66,26 @@ public sealed class ResultEnvelope
     return Problem(statusCode, code, messageKey, new Dictionary<string, string>());
   }
 
-  private ProblemDescription BuildValidationProblem(string messageKey)
+  private void LogTheRefusedRequest(List<Error> refusedLines)
   {
-    return new()
-           {
-             StatusCode = StatusCodes.Status400BadRequest,
-             Error = new()
-                     {
-                       Code = ValidationFailedCode,
-                       MessageKey = messageKey,
-                       Parameters = new Dictionary<string, string>()
-                     }
-           };
+    IErrorOr refusal = ErrorOrFactory.From<Success>(refusedLines);
+
+    _logger.LogWarning("The request to {RequestPath} was refused: {Refusal}", _httpContextAccessor.HttpContext?.Request.Path.Value, refusal.GetRecording(_recordingSerializer));
   }
 
-  private ProblemDescription BuildUnprocessableProblem(string messageKey, Guid? offendingCatalogItemId)
+  private string? ProblemCodeOf(Error refusal)
   {
-    return BuildUnprocessableProblem(messageKey, "catalogItemId", offendingCatalogItemId);
+    if (refusal.Metadata is { } metadata && metadata.TryGetValue(Refusal.MetadataKeys.ProblemCode, out var problemCode))
+      return problemCode.ToString();
+
+    return null;
   }
 
-  private ProblemDescription BuildUnprocessableProblem(string messageKey, string parameterName, Guid? offendingId)
+  private IReadOnlyDictionary<string, string> ParametersOf(Error refusal)
   {
-    Dictionary<string, string> parameters = [];
-    if (offendingId is not null)
-      parameters[parameterName] = offendingId.Value.ToString();
+    if (refusal.Metadata is not { } metadata)
+      return new Dictionary<string, string>();
 
-    return BuildUnprocessableProblemWithParameters(messageKey, parameters);
-  }
-
-  private ProblemDescription BuildUnprocessableProblemWithParameters(string messageKey, IReadOnlyDictionary<string, string> parameters)
-  {
-    return new()
-           {
-             StatusCode = StatusCodes.Status422UnprocessableEntity,
-             Error = new()
-                     {
-                       Code = UnprocessableEntityCode,
-                       MessageKey = messageKey,
-                       Parameters = parameters
-                     }
-           };
-  }
-
-  private Dictionary<string, string> OffendingItemParameters(OrderValidationFailure failure)
-  {
-    Dictionary<string, string> parameters = [];
-    if (failure.OffendingCatalogItemId is { } catalogItemId)
-      parameters["catalogItemId"] = catalogItemId.ToString();
-    if (failure.OffendingCatalogItemName is { } itemName)
-      parameters["name"] = itemName;
-
-    return parameters;
+    return metadata.Where(entry => entry.Key != Refusal.MetadataKeys.ProblemCode).ToDictionary(entry => entry.Key, entry => entry.Value.ToString() ?? string.Empty, StringComparer.Ordinal);
   }
 }

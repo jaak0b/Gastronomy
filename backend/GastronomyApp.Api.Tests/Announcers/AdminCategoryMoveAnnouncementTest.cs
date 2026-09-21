@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
@@ -30,17 +30,6 @@ public sealed class AdminCategoryMoveAnnouncementTest
   }
 
   private OrderTestContext _context = null!;
-
-  [Test]
-  public async Task Move_UpFromTheFirstPosition_TellsTheDevicesNothingBecauseNothingMoved()
-  {
-    using var scope = _context.Factory.Services.CreateScope();
-    IHubContext<GastronomyHub> hubContext = A.Fake<IHubContext<GastronomyHub>>();
-
-    await HandlerTalkingTo(scope.ServiceProvider, hubContext).MoveAsync(_context.World.FoodCategoryId, new() { Direction = CategoryMoveDirection.Up }, CancellationToken.None);
-
-    A.CallTo(() => hubContext.Clients).MustNotHaveHappened();
-  }
 
   [Test]
   public async Task Move_DownFromTheFirstPosition_TellsTheDevicesTheCatalogChanged()

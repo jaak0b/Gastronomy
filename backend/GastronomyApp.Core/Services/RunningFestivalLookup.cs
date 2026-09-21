@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 
 namespace GastronomyApp.Core.Services;

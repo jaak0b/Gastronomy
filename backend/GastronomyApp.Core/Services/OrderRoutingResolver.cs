@@ -1,40 +1,42 @@
+﻿using ErrorOr;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderRoutingResolver
 {
-  public Result<Station, Failure<RoutingFailureReason>> Resolve(Guid catalogItemId, IReadOnlyCollection<ItemStationAssignment> assignments, IReadOnlyCollection<Station> activeStations, Guid? chosenStationId)
+  public ErrorOr<Station> Resolve(CatalogItem catalogItem, IReadOnlyCollection<ItemStationAssignment> assignments, IReadOnlyCollection<Station> activeStations, Guid? chosenStationId)
   {
+    ArgumentNullException.ThrowIfNull(catalogItem);
     ArgumentNullException.ThrowIfNull(assignments);
     ArgumentNullException.ThrowIfNull(activeStations);
 
-    HashSet<Guid> assignedStationIds = assignments.Where(assignment => assignment.CatalogItemId == catalogItemId).Select(assignment => assignment.StationId).ToHashSet();
+    HashSet<Guid> assignedStationIds = assignments.Where(assignment => assignment.CatalogItemId == catalogItem.Id).Select(assignment => assignment.StationId).ToHashSet();
 
     List<Station> candidates = activeStations.Where(station => station.IsActive && assignedStationIds.Contains(station.Id)).OrderBy(station => station.SortOrder).ToList();
 
     if (candidates.Count == 0)
-      return Result<Station, Failure<RoutingFailureReason>>.Failed(new() { Reason = RoutingFailureReason.ItemHasNoStation });
+      return Refusal.Order.ItemHasNoStation(catalogItem.Id, catalogItem.Name);
 
     if (chosenStationId is null)
     {
       if (candidates.Count > 1)
-        return Result<Station, Failure<RoutingFailureReason>>.Failed(new() { Reason = RoutingFailureReason.StationRequired });
+        return Refusal.Order.StationRequired(catalogItem.Id, catalogItem.Name);
 
-      return Result<Station, Failure<RoutingFailureReason>>.Success(candidates[0]);
+      return candidates[0];
     }
 
     var chosenId = chosenStationId.Value;
 
     if (!assignedStationIds.Contains(chosenId))
-      return Result<Station, Failure<RoutingFailureReason>>.Failed(new() { Reason = RoutingFailureReason.StationNotAssignedToItem });
+      return Refusal.Order.StationNotAssignedToItem(catalogItem.Id, catalogItem.Name);
 
     var chosenCandidate = candidates.FirstOrDefault(candidate => candidate.Id == chosenId);
 
     if (chosenCandidate is null)
-      return Result<Station, Failure<RoutingFailureReason>>.Failed(new() { Reason = RoutingFailureReason.ChosenStationNoLongerPreparesTheItem });
+      return Refusal.Order.ChosenStationNoLongerPreparesTheItem(catalogItem.Id, catalogItem.Name);
 
-    return Result<Station, Failure<RoutingFailureReason>>.Success(chosenCandidate);
+    return chosenCandidate;
   }
 }

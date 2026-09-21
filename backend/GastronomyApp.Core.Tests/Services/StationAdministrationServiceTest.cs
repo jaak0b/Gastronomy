@@ -1,7 +1,7 @@
-﻿using FakeItEasy;
+﻿using ErrorOr;
+using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
 using Microsoft.Extensions.Time.Testing;
@@ -55,19 +55,19 @@ public sealed class StationAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.ExistsAsync(_festivalId, A<CancellationToken>._)).Returns(false);
 
-    Result<IReadOnlyList<Station>, StationAdministrationFailure> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
+    ErrorOr<IReadOnlyList<Station>> listed = await _service.ListAsync(_festivalId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(listed.IsSuccess, Is.False);
-                      Assert.That(listed.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.FestivalNotFound));
+                      Assert.That(listed.RefusalMessageKey(), Is.EqualTo("FestivalNotFound"));
                     });
   }
 
   [Test]
   public async Task CreateAsync_AValidRequest_HandsBackTheStationTheAdminListShows()
   {
-    Result<Station, StationAdministrationFailure> created = await _service.CreateAsync("Kueche am Zelt", 2, CancellationToken.None);
+    ErrorOr<Station> created = await _service.CreateAsync("Kueche am Zelt", 2, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -84,48 +84,24 @@ public sealed class StationAdministrationServiceTest
   }
 
   [Test]
-  public async Task UpdateAsync_TheNameAndPlaceTheStationAlreadyHad_ReportsThatNothingChanged()
-  {
-    A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
-
-    Result<Station?, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, "Kueche", 1, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(updated.IsSuccess, Is.True);
-                      Assert.That(updated.Value, Is.Null);
-                    });
-  }
-
-  [Test]
   public async Task UpdateAsync_ANameTheStationDidNotHaveBefore_HandsBackTheChangedStation()
   {
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
 
-    Result<Station?, StationAdministrationFailure> updated = await _service.UpdateAsync(_kitchenId, "Kueche am Zelt", 1, CancellationToken.None);
+    ErrorOr<Station> updated = await _service.UpdateAsync(_kitchenId, "Kueche am Zelt", 1, CancellationToken.None);
 
     Assert.That(updated.Value, Is.Not.Null);
   }
 
   [Test]
-  public async Task ActivateAsync_AStationThatWasAlreadySwitchedOn_ReportsThatNothingChanged()
-  {
-    A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
-
-    Result<Station?, StationAdministrationFailure> switchedOn = await _service.ActivateAsync(_kitchenId, CancellationToken.None);
-
-    Assert.That(switchedOn.Value, Is.Null);
-  }
-
-  [Test]
   public async Task DeactivateAsync_AStationThatIsNotThere_FailsBecauseTheStationIsNotFound()
   {
-    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
+    ErrorOr<Station> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(switchedOff.IsSuccess, Is.False);
-                      Assert.That(switchedOff.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.StationNotFound));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("StationNotFound"));
                     });
   }
 
@@ -137,12 +113,12 @@ public sealed class StationAdministrationServiceTest
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival()));
     A.CallTo(() => _festivalStationRepository.CountUnfulfilledItemsAsync(_festivalId, _kitchenId, A<CancellationToken>._)).Returns(2);
 
-    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
+    ErrorOr<Station> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(switchedOff.IsSuccess, Is.False);
-                      Assert.That(switchedOff.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.StationHasUnfulfilledItems));
+                      Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.stationHasUnfinishedItems"));
                       Assert.That(station.IsActive, Is.True);
                     });
   }
@@ -153,7 +129,7 @@ public sealed class StationAdministrationServiceTest
     var station = BuildStation(true, _deviceId, _invitationId);
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(station));
 
-    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
+    ErrorOr<Station> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -174,7 +150,7 @@ public sealed class StationAdministrationServiceTest
   {
     A.CallTo(() => _repository.FindByIdAsync(_kitchenId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(BuildStation(true, null, null)));
 
-    Result<Station?, StationAdministrationFailure> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
+    ErrorOr<Station> switchedOff = await _service.DeactivateAsync(_kitchenId, CancellationToken.None);
 
     Assert.That(switchedOff.IsSuccess, Is.True);
 

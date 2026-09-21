@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
@@ -35,7 +36,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+    ErrorOr<SettlementResult> settlement = _service.Settle([
                                                                                Line(firstBeer, 350),
                                                                                Line(secondBeer, 350),
                                                                                Line(hotdog, 400)
@@ -65,7 +66,7 @@ public sealed class OrderItemSettlementServiceOverlapTest
     var hotdog = OpenItem(400);
     _service.MarkSettled(firstBeer, 0, "Kapelle", _anotherWaiter, _earlier);
 
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
+    ErrorOr<SettlementResult> settlement = _service.Settle([
                                                                                Line(firstBeer, 350),
                                                                                Line(secondBeer, 100, "Der Tisch zahlt den Rest spaeter"),
                                                                                Line(hotdog, 500)

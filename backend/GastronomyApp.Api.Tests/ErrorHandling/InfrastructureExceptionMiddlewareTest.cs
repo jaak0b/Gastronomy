@@ -1,10 +1,11 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GastronomyApp.Api.Tests.ErrorHandling;
 
@@ -14,7 +15,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
   [Test]
   public async Task InvokeAsync_DatabaseUnavailable_WritesTheServiceUnavailableEnvelope()
   {
-    InfrastructureExceptionMiddleware middleware = new(new());
+    InfrastructureExceptionMiddleware middleware = new(BuildEnvelope());
     DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
     using MemoryStream body = new();
     context.Response.Body = body;
@@ -35,7 +36,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
   [Test]
   public async Task InvokeAsync_ConflictingChange_WritesARetryableConflictEnvelope()
   {
-    InfrastructureExceptionMiddleware middleware = new(new());
+    InfrastructureExceptionMiddleware middleware = new(BuildEnvelope());
     DefaultHttpContext context = new() { RequestServices = BuildRequestServices() };
     using MemoryStream body = new();
     context.Response.Body = body;
@@ -56,7 +57,7 @@ public sealed class InfrastructureExceptionMiddlewareTest
   [Test]
   public void InvokeAsync_UnclassifiedException_RethrowsIt()
   {
-    InfrastructureExceptionMiddleware middleware = new(new());
+    InfrastructureExceptionMiddleware middleware = new(BuildEnvelope());
     DefaultHttpContext context = new();
 
     Assert.That(async () => await middleware.InvokeAsync(context, _ => throw new InvalidOperationException("unclassified")), Throws.TypeOf<InvalidOperationException>());
@@ -67,5 +68,10 @@ public sealed class InfrastructureExceptionMiddlewareTest
     ServiceCollection services = new();
     services.AddLogging();
     return services.BuildServiceProvider();
+  }
+
+  private ResultEnvelope BuildEnvelope()
+  {
+    return new(new(), new HttpContextAccessor(), NullLogger<ResultEnvelope>.Instance);
   }
 }

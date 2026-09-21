@@ -1,4 +1,5 @@
-﻿using GastronomyApp.Api.Announcers;
+﻿using ErrorOr;
+using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
@@ -32,23 +33,20 @@ public sealed class OrderItemSettlementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<SettlementResult, SettlementFailure> settlement = await _settlementService.SettleAsync(request.Lines ?? [], caller.StaffMemberId, cancellationToken);
+    return await _settlementService.SettleAsync(request.Lines ?? [], caller.StaffMemberId, cancellationToken)
+                                   .MatchAsync(BuildSettlementViewAsync, refusedLines => Task.FromResult(_resultEnvelope.Refuse(refusedLines)));
+  }
 
-    if (!settlement.IsSuccess)
-    {
-      WarnAboutASettlementTheScreenCannotProduce(settlement.Failure, caller.StaffMemberId);
-
-      return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(settlement.Failure));
-    }
-
-    List<Guid> settledIds = settlement.Value.NewlySettled.Select(item => item.Id).ToList();
-    List<Guid> reappliedIds = settlement.Value.Reapplied.Select(item => item.Id).ToList();
-    List<Guid> alreadySettledByOthersIds = settlement.Value.AlreadySettledByOthers.Select(item => item.Id).ToList();
+  private async Task<IResult> BuildSettlementViewAsync(SettlementResult settlement)
+  {
+    List<Guid> settledIds = settlement.NewlySettled.Select(item => item.Id).ToList();
+    List<Guid> reappliedIds = settlement.Reapplied.Select(item => item.Id).ToList();
+    List<Guid> alreadySettledByOthersIds = settlement.AlreadySettledByOthers.Select(item => item.Id).ToList();
 
     if (settledIds.Count > 0)
       _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
 
-    var otherPhonesWereTold = settledIds.Count == 0 || await TellTheOtherPhonesAsync(settledIds, settlement.Value.SettledTableNames);
+    var otherPhonesWereTold = settledIds.Count == 0 || await TellTheOtherPhonesAsync(settledIds, settlement.SettledTableNames);
 
     return Results.Ok(new SettlementView(settledIds, reappliedIds, alreadySettledByOthersIds, otherPhonesWereTold));
   }
@@ -58,26 +56,4 @@ public sealed class OrderItemSettlementHandler
     return _savedChangeAnnouncer.TellTheDevicesWithoutFailingTheSavedChangeAsync(cancellationToken => _dispatcher.PushOrderItemsSettledAsync(new(settledIds, tableNames), cancellationToken));
   }
 
-  private void WarnAboutASettlementTheScreenCannotProduce(SettlementFailure failure, Guid staffMemberId)
-  {
-    if (failure.Reason is SettlementFailureReason.NoRunningFestival)
-    {
-      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because no festival is running, so nothing was settled.", staffMemberId);
-      return;
-    }
-
-    if (failure.Reason is SettlementFailureReason.DuplicateOrderItemId or SettlementFailureReason.UnknownOrderItemId or SettlementFailureReason.PaymentNoticeMissing)
-    {
-      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The order item it names is {OrderItemId}, and the open items screen cannot produce that, so nothing was settled.", staffMemberId, failure.Reason, failure.OffendingOrderItemId);
-      return;
-    }
-
-    if (failure.Reason is SettlementFailureReason.SelectionSpansSeveralTables)
-    {
-      _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The items the phone sent belong to the tables {TableNames}, and the open items screen holds every other table back once one of them has something ticked, so nothing was settled.",
-                         staffMemberId,
-                         failure.Reason,
-                         failure.TableNamesInTheSelection);
-    }
-  }
 }

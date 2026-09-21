@@ -1,3 +1,4 @@
+﻿using ErrorOr;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 
@@ -18,68 +19,62 @@ public sealed class StationQueueChangeService
     _changedOrderReader = changedOrderReader;
   }
 
-  public async Task<Result<StationQueueChange, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public Task<ErrorOr<StationQueueChange>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
-
-    if (!access.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
-
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync(orderItemIds, stationId, cancellationToken);
-
-    if (!written.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(written.Failure);
-
-    return await BuildChangeAsync(access.Value, written.Value, cancellationToken);
+    return ChangedAsync(stationId, station => _writer.FulfillAsync(orderItemIds, stationId, cancellationToken), cancellationToken);
   }
 
-  public async Task<Result<StationQueueChange, StationQueueFailure>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public Task<ErrorOr<StationQueueChange>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
-    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
-
-    if (!access.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
-
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync(orderItemIds, stationId, cancellationToken);
-
-    if (!written.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(written.Failure);
-
-    return await BuildChangeAsync(access.Value, written.Value, cancellationToken);
+    return ChangedAsync(stationId, station => _writer.UnfulfillAsync(orderItemIds, stationId, cancellationToken), cancellationToken);
   }
 
-  public async Task<Result<StationQueueChange, StationQueueFailure>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, CancellationToken cancellationToken)
+  public Task<ErrorOr<StationQueueChange>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, CancellationToken cancellationToken)
   {
-    Result<FestivalStation, StationQueueFailure> access = await _lookup.FindAsync(stationId, cancellationToken);
-
-    if (!access.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
-
-    Result<StationOrder, StationQueueFailure> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrderId, stationId, access.Value.FestivalId, cancellationToken);
-
-    if (!hidden.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(hidden.Failure);
-
-    return await BuildChangeAsync(access.Value, [], cancellationToken);
+    return ChangedAsync(stationId, station => HiddenAsync(stationOrderId, stationId, station.FestivalId, cancellationToken), cancellationToken);
   }
 
-  private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(FestivalStation station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
+  private async Task<ErrorOr<IReadOnlyList<StationOrder>>> HiddenAsync(Guid stationOrderId, Guid stationId, Guid festivalId, CancellationToken cancellationToken)
+  {
+    ErrorOr<StationOrder> hidden = await _writer.HideFromAsItComesQueueAsync(stationOrderId, stationId, festivalId, cancellationToken);
+
+    if (hidden.IsError)
+      return hidden.Errors;
+
+    return Array.Empty<StationOrder>().ToErrorOr<IReadOnlyList<StationOrder>>();
+  }
+
+  private async Task<ErrorOr<StationQueueChange>> ChangedAsync(Guid stationId, Func<FestivalStation, Task<ErrorOr<IReadOnlyList<StationOrder>>>> write, CancellationToken cancellationToken)
+  {
+    ErrorOr<FestivalStation> access = await _lookup.FindAsync(stationId, cancellationToken);
+
+    if (access.IsError)
+      return access.Errors;
+
+    var station = access.Value;
+
+    ErrorOr<IReadOnlyList<StationOrder>> written = await write(station);
+
+    if (written.IsError)
+      return written.Errors;
+
+    return await BuildChangeAsync(station, written.Value, cancellationToken);
+  }
+
+  private async Task<ErrorOr<StationQueueChange>> BuildChangeAsync(FestivalStation station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
   {
     IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedStationOrders.Select(stationOrder => stationOrder.Id).Distinct().ToList(), cancellationToken);
 
-    Result<Station, StationQueueFailure> queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
+    ErrorOr<Station> queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
 
-    if (!queue.IsSuccess)
-      return Result<StationQueueChange, StationQueueFailure>.Failed(queue.Failure);
-
-    return Result<StationQueueChange, StationQueueFailure>.Success(new()
-                                                                   {
-                                                                     Station = queue.Value,
-                                                                     ChangedOrders = changedOrders
-                                                                   });
+    return queue.Then(stationWithQueue => new StationQueueChange
+                                          {
+                                            Station = stationWithQueue,
+                                            ChangedOrders = changedOrders
+                                          });
   }
 }

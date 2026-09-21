@@ -1,8 +1,8 @@
-using System.Data.Common;
+﻿using System.Data.Common;
+using ErrorOr;
 using System.Globalization;
 using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.Data.Sqlite;
@@ -29,7 +29,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     _logger = logger;
   }
 
-  public async Task<TValue> RunAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
+  public async Task<ErrorOr<TValue>> RunAsync<TValue>(Func<CancellationToken, Task<ErrorOr<TValue>>> body, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(body);
 
@@ -54,7 +54,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     throw new ConcurrentWriteException("Another writer took the rows this transaction had read, and every attempt to write them lost that race.", lostRace!);
   }
 
-  private async Task<TValue> RunOnceAsync<TValue>(Func<CancellationToken, Task<TransactionOutcome<TValue>>> body, CancellationToken cancellationToken)
+  private async Task<ErrorOr<TValue>> RunOnceAsync<TValue>(Func<CancellationToken, Task<ErrorOr<TValue>>> body, CancellationToken cancellationToken)
   {
     var previousBehavior = _dbContext.Database.AutoTransactionBehavior;
     if (previousBehavior == AutoTransactionBehavior.Never)
@@ -64,7 +64,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     var connection = _dbContext.Database.GetDbConnection();
     var transactionIsOpen = false;
     IReadOnlyList<Func<CancellationToken, Task>> committedActions = [];
-    TValue value;
+    ErrorOr<TValue> outcome;
 
     _afterCommitActions.StartCollecting();
 
@@ -75,15 +75,15 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
       await ExecuteAsync(connection, "BEGIN IMMEDIATE", ReadBusyTimeoutSeconds(connection), cancellationToken);
       transactionIsOpen = true;
 
-      TransactionOutcome<TValue> outcome = await body(cancellationToken);
+      outcome = await body(cancellationToken);
 
-      await ExecuteAsync(connection, ClosingStatementFor(outcome.ShouldCommit), null, cancellationToken);
+      var shouldCommit = !outcome.IsError;
+
+      await ExecuteAsync(connection, ClosingStatementFor(shouldCommit), null, cancellationToken);
       transactionIsOpen = false;
 
-      if (outcome.ShouldCommit)
+      if (shouldCommit)
         committedActions = _afterCommitActions.TakeCollectedActions();
-
-      value = outcome.Value;
     }
     catch (SqliteException exception) when (_failureTranslator.IsDatabaseUnavailable(exception))
     {
@@ -110,7 +110,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
 
     await RunCommittedActionsAsync(committedActions, cancellationToken);
 
-    return value;
+    return outcome;
   }
 
   private async Task RunCommittedActionsAsync(IReadOnlyList<Func<CancellationToken, Task>> committedActions, CancellationToken cancellationToken)

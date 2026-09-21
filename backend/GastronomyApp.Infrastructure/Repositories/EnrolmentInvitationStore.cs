@@ -1,7 +1,9 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
+using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
@@ -34,9 +36,9 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     _timeProvider = timeProvider;
   }
 
-  public Task<IssuedEnrolmentInvitation> CreateAsync(IDeviceOwner? owner, CancellationToken cancellationToken)
+  public async Task<IssuedEnrolmentInvitation> CreateAsync(IDeviceOwner? owner, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(async transactionCancellationToken =>
+    ErrorOr<IssuedEnrolmentInvitation> issued = await _transactionRunner.RunAsync(async transactionCancellationToken =>
                                        {
                                          var now = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -70,16 +72,14 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
                                            await _dbContext.SaveChangesAsync(transactionCancellationToken);
                                          }
 
-                                         return new TransactionOutcome<IssuedEnrolmentInvitation>
-                                                {
-                                                  Value = new(invitation, qrCodeValue, owner),
-                                                  ShouldCommit = true
-                                                };
+                                         return new IssuedEnrolmentInvitation(invitation, qrCodeValue, owner).ToErrorOr();
                                        },
                                        cancellationToken);
+
+    return issued.Value;
   }
 
-  public Task<EnrolmentRedemptionResult> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
+  public Task<ErrorOr<EnrolmentRedemptionResult>> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
     return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(code, name, userAgent, acceptLanguageHeader, transactionCancellationToken), cancellationToken);
   }
@@ -97,44 +97,44 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       invitation.ConsumedAtUtc = consumedAtUtc;
   }
 
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
+  private async Task<ErrorOr<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
     var now = _timeProvider.GetUtcNow().UtcDateTime;
     var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
 
     if (invitation is null)
-      return Rejected(EnrolmentRedemptionOutcome.NoInvitationOutstanding, null);
+      return Refusal.EnrolmentRedemption.NoInvitationOutstanding();
 
     if (invitation.ExpiresAtUtc <= now)
-      return Rejected(EnrolmentRedemptionOutcome.CodeExpired, invitation);
+      return Refusal.EnrolmentRedemption.CodeExpired(invitation.Id);
 
     var qrCodeMatches = _secretHasher.Verify(code, invitation.QRCodeHash, invitation.QRCodeSalt, invitation.QRCodeIterations, invitation.QRCodeAlgorithm);
 
     if (!qrCodeMatches)
-      return Rejected(EnrolmentRedemptionOutcome.CodeInvalid, invitation);
+      return Refusal.EnrolmentRedemption.CodeInvalid(invitation.Id);
 
     var owner = await _ownerStore.FindByInvitationAsync(invitation.Id, cancellationToken);
 
     if (owner is null)
     {
       if (string.IsNullOrWhiteSpace(name))
-        return Rejected(EnrolmentRedemptionOutcome.NameRequired, invitation);
+        return Refusal.EnrolmentRedemption.NameRequired(invitation.Id);
 
       owner = await CreateStaffMemberAsync(name, now, cancellationToken);
     }
     else if (!owner.IsActive)
-      return Rejected(OffTheListOutcomeFor(owner.Kind), invitation);
+      return OffTheListRefusalFor(owner.Kind, invitation.Id);
 
     return await CompleteRedemptionAsync(invitation, owner, userAgent, acceptLanguageHeader, now, cancellationToken);
   }
 
-  private EnrolmentRedemptionOutcome OffTheListOutcomeFor(DeviceOwnerKind kind)
+  private Error OffTheListRefusalFor(DeviceOwnerKind kind, Guid invitationId)
   {
     return kind switch
            {
-             DeviceOwnerKind.StaffMember => EnrolmentRedemptionOutcome.StaffMemberIsOffTheList,
-             DeviceOwnerKind.Station => EnrolmentRedemptionOutcome.StationIsOffTheList,
-             _ => new UnreachableCase().Throw<EnrolmentRedemptionOutcome>(kind)
+             DeviceOwnerKind.StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
+             DeviceOwnerKind.Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
+             _ => new UnreachableCase().Throw<Error>(kind)
            };
   }
 
@@ -153,16 +153,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     return null;
   }
 
-  private TransactionOutcome<EnrolmentRedemptionResult> Rejected(EnrolmentRedemptionOutcome outcome, EnrolmentInvitation? invitation)
-  {
-    return new()
-           {
-             Value = new(outcome, invitation, null, null),
-             ShouldCommit = false
-           };
-  }
-
-  private async Task<TransactionOutcome<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation, IDeviceOwner owner, string userAgent, string acceptLanguageHeader, DateTime now, CancellationToken cancellationToken)
+  private async Task<ErrorOr<EnrolmentRedemptionResult>> CompleteRedemptionAsync(EnrolmentInvitation invitation, IDeviceOwner owner, string userAgent, string acceptLanguageHeader, DateTime now, CancellationToken cancellationToken)
   {
     var issued = await _deviceTokenStore.IssueAsync(owner, ResolveLanguage(acceptLanguageHeader), userAgent, cancellationToken);
 
@@ -172,11 +163,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     owner.EnrolmentInvitation = null;
     await _dbContext.SaveChangesAsync(cancellationToken);
 
-    return new()
-           {
-             Value = new(EnrolmentRedemptionOutcome.Redeemed, invitation, owner, issued.PlaintextToken),
-             ShouldCommit = true
-           };
+    return new EnrolmentRedemptionResult(invitation, owner, issued.PlaintextToken).ToErrorOr();
   }
 
   private async Task ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(DateTime now, CancellationToken cancellationToken)
