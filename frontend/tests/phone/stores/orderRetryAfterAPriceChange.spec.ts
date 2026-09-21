@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { CatalogItem } from '../../../src/shared/api/apiTypes'
+import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
 
-function menuItem(id: string, name: string, priceCents: number): CatalogItem {
+function menuItem(id: string, name: string, priceCents: number): CatalogItemView {
   return {
     id,
     name,
@@ -18,7 +18,7 @@ function menuItem(id: string, name: string, priceCents: number): CatalogItem {
   }
 }
 
-function menuWith(items: CatalogItem[]) {
+function menuWith(items: CatalogItemView[]) {
   useCatalogStore().catalog = {
     festival: { festivalId: 'festival-1', name: 'Sommerfest' },
     categories: [{ categoryId: 'category-1', name: 'Speisen und Getraenke', sortOrder: 1 }],

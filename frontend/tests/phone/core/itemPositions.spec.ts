@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { groupPositions, countItemPortions, positionsForItem } from '../../../src/phone/core/itemPositions'
 import type { ItemPosition } from '../../../src/phone/core/itemPositions'
-import type { CatalogItem, DraftLine, DraftOrder } from '../../../src/shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from '../../../src/phone/core/draftCart'
+import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 
-function item(stationIds: string[]): CatalogItem {
+function item(stationIds: string[]): CatalogItemView {
   return {
     id: 'item-1',
     name: 'Bier',

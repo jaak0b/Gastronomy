@@ -1,5 +1,5 @@
 import { assertNever } from '../../shared/core/assertNever'
-import type { OrderSubmitRequest } from '../../shared/api/apiTypes'
+import { PlaceOrderRequest } from '../../shared/api/generatedSchemas'
 import { messageForAnInterruptedSend, type SendFailureMessage } from './sendFailure'
 
 export const SEND_STATES = ['idle', 'sending', 'failed', 'rejected', 'accepted'] as const
@@ -12,7 +12,7 @@ export interface SendProgress {
   state: SendState
   attempts: number
   failure: SendFailureMessage | null
-  unresolvedAttempt: OrderSubmitRequest | null
+  unresolvedAttempt: PlaceOrderRequest | null
 }
 
 export function noSendProgress(): SendProgress {

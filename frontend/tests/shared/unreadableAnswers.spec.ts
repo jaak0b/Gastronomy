@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { OpenTable } from '../../src/shared/api/apiTypes'
+import { OpenTableView } from '../../src/shared/api/generatedSchemas'
 
 const { useOpenItemsStore } = await import('../../src/phone/stores/openItems')
 const { useOrderStore } = await import('../../src/phone/stores/order')
@@ -14,7 +14,7 @@ function aLaptopThatAnswersWith(aBody: unknown): void {
   )
 }
 
-const A_TABLE: OpenTable = {
+const A_TABLE: OpenTableView = {
   tableName: 'Tisch 5',
   openAmountCents: 200,
   items: [

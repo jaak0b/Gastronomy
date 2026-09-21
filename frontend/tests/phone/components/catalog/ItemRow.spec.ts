@@ -5,13 +5,13 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { testPlugins } from '../../../support/plugins'
 import ItemRow from '../../../../src/phone/components/catalog/ItemRow.vue'
 import { useKeyboardInset } from '../../../../src/phone/composables/useKeyboardInset'
-import type { CatalogItem } from '../../../../src/shared/api/apiTypes'
+import { CatalogItemView } from '../../../../src/shared/api/generatedSchemas'
 import type { EstimateRange } from '../../../../src/phone/core/estimates'
 import type { ItemPosition } from '../../../../src/phone/core/itemPositions'
 
 enableAutoUnmount(afterEach)
 
-function item(isAvailable: boolean): CatalogItem {
+function item(isAvailable: boolean): CatalogItemView {
   return {
     id: 'item-wasser',
     name: 'Wasser',

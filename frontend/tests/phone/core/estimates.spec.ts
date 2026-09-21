@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
+
   pickerEstimateRange,
   queuedMinutesAt,
   stationEstimateAfterAdding,
   stationReadyInMinutes,
 } from '../../../src/phone/core/estimates'
-import type { CatalogItem, StationEstimate } from '../../../src/shared/api/apiTypes'
+import { CatalogItemView, StationEstimateView } from '../../../src/shared/api/generatedSchemas'
 import type { BasketLineView } from '../../../src/phone/core/basket'
 
-const QUEUES: StationEstimate[] = [
+const QUEUES: StationEstimateView[] = [
   { stationId: 'station-kueche', queuedMinutes: 12 },
   { stationId: 'station-grill', queuedMinutes: 50 },
 ]
 
-const PICKER_QUEUES: StationEstimate[] = [
+const PICKER_QUEUES: StationEstimateView[] = [
   { stationId: 'station-kueche', queuedMinutes: 0 },
   { stationId: 'station-grill', queuedMinutes: 50 },
 ]
@@ -40,7 +41,7 @@ function item(
   stationIds: string[],
   productionMinutes: number | null,
   isQueueIndependent = false,
-): CatalogItem {
+): CatalogItemView {
   return {
     id: 'item-1',
     name: 'Bratwurst',

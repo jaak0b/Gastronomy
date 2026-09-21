@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  OpenTable,
-  TableOrderRecord,
-  TableOrderRecordItem,
-  TableOrderReport,
-} from '../../../src/shared/api/apiTypes'
+import { OpenTableView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../../src/shared/api/generatedSchemas'
 import {
+
   canTheAmountBeSettled,
   isHeldBackByAnotherTable,
   isPaymentNoticeNeeded,
@@ -30,7 +26,7 @@ function itemWith(
   fulfilledAtUtc: string | null,
   settledAtUtc: string | null,
   unitPriceCents: number,
-): TableOrderRecordItem {
+): TableOrderRecordItemView {
   return {
     orderItemId,
     orderId: 'order-1',
@@ -44,7 +40,7 @@ function itemWith(
   }
 }
 
-function recordWith(items: TableOrderRecordItem[]): TableOrderRecord {
+function recordWith(items: TableOrderRecordItemView[]): TableOrderRecordView {
   return {
     orderId: 'order-1',
     globalOrderNumber: 1,
@@ -54,7 +50,7 @@ function recordWith(items: TableOrderRecordItem[]): TableOrderRecord {
   }
 }
 
-function tableWith(tableName: string, prices: number[]): OpenTable {
+function tableWith(tableName: string, prices: number[]): OpenTableView {
   return {
     tableName,
     openAmountCents: prices.reduce((total, price) => total + price, 0),
@@ -390,7 +386,7 @@ describe('whether a table is held back by the table holding the selection', () =
 })
 
 describe('the open table inside what the laptop knows about one table', () => {
-  const report: TableOrderReport = {
+  const report: TableOrderReportView = {
     tableName: 'Tisch 12',
     openAmountCents: 750,
     orders: [

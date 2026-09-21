@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { requestAction } from '../../shared/api/client'
-import { adminFestivalsResponseSchema } from '../../shared/api/apiSchemas'
+import { AdminFestivalListView, AdminFestivalView } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
-import type { AdminFestival } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 
@@ -16,24 +15,24 @@ export interface FestivalDraft {
 }
 
 export const useAdminFestivalsStore = defineStore('adminFestivals', () => {
-  const festivals = ref<AdminFestival[]>([])
+  const festivals = ref<AdminFestivalView[]>([])
   const loadFailed = ref(false)
 
   const festivalsGate = createLatestRequestGate()
 
   const shownFestivals = computed(() => festivals.value.filter((festival) => !festival.isHidden))
-  const runningFestival = computed<AdminFestival | null>(
+  const runningFestival = computed<AdminFestivalView | null>(
     () => festivals.value.find((festival) => festival.isRunning) ?? null,
   )
 
-  function findFestivalWithId(festivalId: string): AdminFestival | null {
+  function findFestivalWithId(festivalId: string): AdminFestivalView | null {
     return festivals.value.find((festival) => festival.festivalId === festivalId) ?? null
   }
 
   async function load(): Promise<void> {
     await loadAdminList({
       path: '/api/admin/festivals',
-      schema: adminFestivalsResponseSchema,
+      schema: AdminFestivalListView,
       gate: festivalsGate,
       itemsOf: (response) => response.festivals,
       showItems: (loaded) => {

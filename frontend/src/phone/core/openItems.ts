@@ -1,13 +1,5 @@
-import type {
-  AppLanguage,
-  OpenItemsSettleLine,
-  OpenOrderItem,
-  OpenTable,
-  SettlementResponse,
-  TableOrderRecord,
-  TableOrderRecordItem,
-  TableOrderReport,
-} from '../../shared/api/apiTypes'
+import { OpenOrderItemView, OpenTableView, SettleLineRequest, SettlementView, TableOrderRecordItemView, TableOrderRecordView, TableOrderReportView } from '../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
@@ -24,7 +16,7 @@ export interface SettleNotice {
   count: number | null
 }
 
-export function openTableInReport(report: TableOrderReport): OpenTable {
+export function openTableInReport(report: TableOrderReportView): OpenTableView {
   return {
     tableName: report.tableName,
     openAmountCents: report.openAmountCents,
@@ -34,11 +26,11 @@ export function openTableInReport(report: TableOrderReport): OpenTable {
   }
 }
 
-export function producedCountIn(order: TableOrderRecord): number {
+export function producedCountIn(order: TableOrderRecordView): number {
   return order.items.filter((item) => item.fulfilledAtUtc !== null).length
 }
 
-export function productionStateOf(order: TableOrderRecord): ProductionState {
+export function productionStateOf(order: TableOrderRecordView): ProductionState {
   const produced = producedCountIn(order)
   if (produced === 0) {
     return 'none'
@@ -46,30 +38,30 @@ export function productionStateOf(order: TableOrderRecord): ProductionState {
   return produced === order.items.length ? 'all' : 'some'
 }
 
-export function positionStateOf(item: TableOrderRecordItem): PositionState {
+export function positionStateOf(item: TableOrderRecordItemView): PositionState {
   return item.fulfilledAtUtc === null ? 'notProduced' : 'produced'
 }
 
-export function itemIdsAtTable(table: OpenTable): string[] {
+export function itemIdsAtTable(table: OpenTableView): string[] {
   return table.items.map((item) => item.orderItemId)
 }
 
 export function selectedItemsAtTable(
-  table: OpenTable,
+  table: OpenTableView,
   selectedItemIds: readonly string[],
-): OpenOrderItem[] {
+): OpenOrderItemView[] {
   return table.items.filter((item) => selectedItemIds.includes(item.orderItemId))
 }
 
 export function selectedItems(
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
   selectedItemIds: readonly string[],
-): OpenOrderItem[] {
+): OpenOrderItemView[] {
   return tables.flatMap((table) => selectedItemsAtTable(table, selectedItemIds))
 }
 
 export function selectedAmountCents(
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
   selectedItemIds: readonly string[],
 ): number {
   return selectedItems(tables, selectedItemIds).reduce(
@@ -79,7 +71,7 @@ export function selectedAmountCents(
 }
 
 export function isTheWholeTableSelected(
-  table: OpenTable,
+  table: OpenTableView,
   selectedItemIds: readonly string[],
 ): boolean {
   return (
@@ -89,7 +81,7 @@ export function isTheWholeTableSelected(
 }
 
 export function tableHoldingTheSelection(
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
   selectedItemIds: readonly string[],
 ): string | null {
   const holding = tables.find(
@@ -98,13 +90,13 @@ export function tableHoldingTheSelection(
   return holding === undefined ? null : holding.tableName
 }
 
-export function tableForItem(tables: readonly OpenTable[], orderItemId: string): string | null {
+export function tableForItem(tables: readonly OpenTableView[], orderItemId: string): string | null {
   const owning = tables.find((table) => itemIdsAtTable(table).includes(orderItemId))
   return owning === undefined ? null : owning.tableName
 }
 
 export function isHeldBackByAnotherTable(
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
   selectedItemIds: readonly string[],
   tableName: string,
 ): boolean {
@@ -114,7 +106,7 @@ export function isHeldBackByAnotherTable(
 
 export function withItemToggled(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
   orderItemId: string,
 ): string[] {
   const tableName = tableForItem(tables, orderItemId)
@@ -128,8 +120,8 @@ export function withItemToggled(
 
 export function withWholeTable(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTable[],
-  table: OpenTable,
+  tables: readonly OpenTableView[],
+  table: OpenTableView,
   isWanted: boolean,
 ): string[] {
   if (isHeldBackByAnotherTable(tables, selectedItemIds, table.tableName)) {
@@ -142,7 +134,7 @@ export function withWholeTable(
 
 export function withoutItemsThatAreGone(
   selectedItemIds: readonly string[],
-  tables: readonly OpenTable[],
+  tables: readonly OpenTableView[],
 ): string[] {
   const stillOpen = tables.flatMap(itemIdsAtTable)
   return selectedItemIds.filter((id) => stillOpen.includes(id))
@@ -172,9 +164,11 @@ export function canTheAmountBeSettled(
   )
 }
 
+export type SentSettleLine = SettleLineRequest & { paidPriceCents: number }
+
 export function noticeAfterSettling(
-  settlement: SettlementResponse,
-  sentLines: readonly OpenItemsSettleLine[],
+  settlement: SettlementView,
+  sentLines: readonly SentSettleLine[],
   language: AppLanguage,
 ): SettleNotice | null {
   const takenBySomebodyElse = settlement.alreadySettledByOthersOrderItemIds

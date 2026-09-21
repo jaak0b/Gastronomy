@@ -1,14 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request } from '../../shared/api/client'
-import { estimatesSchema } from '../../shared/api/apiSchemas'
-import type { StationEstimate } from '../../shared/api/apiTypes'
+import { StationEstimateListView, StationEstimateView } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
 export const useEstimatesStore = defineStore('estimates', () => {
-  const stations = ref<StationEstimate[]>([])
+  const stations = ref<StationEstimateView[]>([])
 
   const loadGate = createLatestRequestGate()
 
@@ -20,7 +19,7 @@ export const useEstimatesStore = defineStore('estimates', () => {
     const token = loadGate.startRequest()
     const result = await request('/api/estimates', {
       token: session.deviceToken,
-      schema: estimatesSchema,
+      schema: StationEstimateListView,
     })
     if (!loadGate.isNewestRequest(token)) {
       return

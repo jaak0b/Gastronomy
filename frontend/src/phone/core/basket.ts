@@ -1,4 +1,5 @@
-import type { Catalog, CatalogItem, CatalogStation, DraftLine, DraftOrder } from '../../shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from './draftCart'
+import { CatalogItemView, CatalogStationView, CatalogView } from '../../shared/api/generatedSchemas'
 import { candidateStations, routedStationId, stationStillPreparesIt } from './routingPreview'
 import { saveDraft } from './draftCart'
 
@@ -17,16 +18,16 @@ export interface BasketLineView {
   isNoLongerPreparedAtItsStation: boolean
 }
 
-export function findCatalogItem(catalog: Catalog, catalogItemId: string): CatalogItem | null {
+export function findCatalogItem(catalog: CatalogView, catalogItemId: string): CatalogItemView | null {
   return catalog.items.find((item) => item.id === catalogItemId) ?? null
 }
 
-export function findCatalogStation(catalog: Catalog, stationId: string): CatalogStation | null {
+export function findCatalogStation(catalog: CatalogView, stationId: string): CatalogStationView | null {
   return catalog.stations.find((station) => station.id === stationId) ?? null
 }
 
 function stationNameForLine(
-  catalog: Catalog,
+  catalog: CatalogView,
   line: DraftLine,
   candidateStationIds: readonly string[],
 ): string {
@@ -37,7 +38,7 @@ function stationNameForLine(
   return findCatalogStation(catalog, stationId)?.name ?? line.stationName
 }
 
-export function buildBasketView(draft: DraftOrder, catalog: Catalog): BasketLineView[] {
+export function buildBasketView(draft: DraftOrder, catalog: CatalogView): BasketLineView[] {
   return draft.lines.map((line) => {
     const item = findCatalogItem(catalog, line.catalogItemId)
     if (item === null) {
@@ -81,7 +82,7 @@ export function lineCannotBeOrdered(line: BasketLineView): boolean {
   return line.isSoldOut || line.isNoLongerOnTheMenu || line.isNoLongerPreparedAtItsStation
 }
 
-export function withoutLinesThatCannotBeOrdered(draft: DraftOrder, catalog: Catalog): DraftOrder {
+export function withoutLinesThatCannotBeOrdered(draft: DraftOrder, catalog: CatalogView): DraftOrder {
   const shown = buildBasketView(draft, catalog)
   const kept: DraftOrder = {
     ...draft,

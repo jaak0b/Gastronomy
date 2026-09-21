@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminStation } from '../../../shared/api/apiTypes'
+import { AdminStationView } from '../../../shared/api/generatedSchemas'
 
 const props = defineProps<{
-  stations: AdminStation[]
+  stations: AdminStationView[]
   selectedStationIds: string[]
   errorText: string | null
 }>()

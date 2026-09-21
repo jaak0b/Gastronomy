@@ -24,7 +24,11 @@ function stubLaptop(festivals: unknown[], rest: Record<string, unknown> = {}): s
       urls.push(url)
       const body = url.startsWith('/api/admin/festivals')
         ? { festivals }
-        : { stations: [], items: [], categories: [], ...rest }
+        : url.startsWith('/api/admin/stations')
+          ? { stations: rest.stations ?? [] }
+          : url.startsWith('/api/admin/items')
+            ? { items: rest.items ?? [] }
+            : { categories: rest.categories ?? [] }
       return new Response(JSON.stringify(body), { status: 200 })
     }),
   )
@@ -134,6 +138,8 @@ describe('the overview of the festival that is running', () => {
           sortOrder: 1,
           isActive: true,
           hasDevice: false,
+          lastSeenAtUtc: null,
+          hasOutstandingInvitation: false,
           isAtTheFestival: true,
         },
       ],
@@ -156,6 +162,8 @@ describe('the overview of the festival that is running', () => {
           sortOrder: 1,
           isActive: true,
           hasDevice: true,
+          lastSeenAtUtc: null,
+          hasOutstandingInvitation: false,
           isAtTheFestival: true,
         },
       ],

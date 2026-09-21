@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { navigate } from '../../../shared/router/router'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminFestival } from '../../../shared/api/apiTypes'
+import { AdminFestivalView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../../shared/core/festivalTimes'
 import { useAdminFestivalsStore, type FestivalDraft } from '../../stores/festivals'
@@ -15,8 +15,8 @@ const { t, locale } = useI18n()
 const festivals = useAdminFestivalsStore()
 const showsHidden = ref(false)
 const isCreating = ref(false)
-const copiedFestival = ref<AdminFestival | null>(null)
-const hiddenFestival = ref<AdminFestival | null>(null)
+const copiedFestival = ref<AdminFestivalView | null>(null)
+const hiddenFestival = ref<AdminFestivalView | null>(null)
 const refusal = ref<AdminErrorMessage | null>(null)
 let stopListening: (() => void) | null = null
 
@@ -41,12 +41,12 @@ function startCreating(): void {
   isCreating.value = true
 }
 
-function startCopying(festival: AdminFestival): void {
+function startCopying(festival: AdminFestivalView): void {
   closeTheForms()
   copiedFestival.value = festival
 }
 
-function open(festival: AdminFestival): void {
+function open(festival: AdminFestivalView): void {
   navigate(`/admin/festivals/${festival.festivalId}`)
 }
 

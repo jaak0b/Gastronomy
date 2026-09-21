@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+
   basketItemCount,
   buildBasketView,
   lineCannotBeOrdered,
@@ -7,9 +8,10 @@ import {
 } from '../../../src/phone/core/basket'
 import { orderTotalCents } from '../../../src/phone/core/totals'
 import { DRAFT_STORAGE_KEY } from '../../../src/phone/core/draftCart'
-import type { Catalog, DraftOrder } from '../../../src/shared/api/apiTypes'
+import type { DraftOrder } from '../../../src/phone/core/draftCart'
+import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 
-function catalog(): Catalog {
+function catalog(): CatalogView {
   return {
     categories: [
       { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
@@ -389,7 +391,7 @@ describe('a line whose station no longer prepares its item', () => {
 })
 
 describe('the station a line names on the summary', () => {
-  function withoutTheOutdoorBar(): Catalog {
+  function withoutTheOutdoorBar(): CatalogView {
     const menu = catalog()
     return {
       ...menu,

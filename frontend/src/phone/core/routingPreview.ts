@@ -1,15 +1,15 @@
-import type { CatalogItem } from '../../shared/api/apiTypes'
+import { CatalogItemView } from '../../shared/api/generatedSchemas'
 
 export interface RoutableLine {
   stationId: string | null
   candidateStationIds: readonly string[]
 }
 
-export function candidateStations(item: CatalogItem): string[] {
+export function candidateStations(item: CatalogItemView): string[] {
   return [...item.stationIds]
 }
 
-export function needsStationChoice(item: CatalogItem): boolean {
+export function needsStationChoice(item: CatalogItemView): boolean {
   return candidateStations(item).length > 1
 }
 

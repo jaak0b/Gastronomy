@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, CatalogItem } from '../../../shared/api/apiTypes'
+import { CatalogItemView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { withEstimate } from '../../core/estimateWording'
 import { candidateStations } from '../../core/routingPreview'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const props = defineProps<{
-  item: CatalogItem
+  item: CatalogItemView
   language: AppLanguage
   stationNameFor: (stationId: string) => string
   estimateFor: (stationId: string) => number | null

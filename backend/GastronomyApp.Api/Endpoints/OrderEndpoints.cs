@@ -1,5 +1,5 @@
+﻿using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Auth.Conventions;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Contracts.Orders;
 using Microsoft.AspNetCore.Builder;
@@ -19,7 +19,8 @@ public static class OrderEndpoints
                   {
                     var caller = callerIdentity.ReadStaffDevice(httpContext.User)!;
                     return await handler.PlaceAsync(request, caller, cancellationToken);
-                  });
+                  })
+         .Produces<PlacedOrderView>(StatusCodes.Status201Created);
 
     return routes;
   }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationOrder } from '../../shared/api/apiTypes'
+import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import {
+
   itemLineText,
   itemLines,
   openItemsIn,
@@ -12,14 +13,14 @@ import { useStationOrderHeader } from '../composables/useStationOrderHeader'
 import BaseStationCard from './BaseStationCard.vue'
 
 const props = defineProps<{
-  stationOrder: StationOrder
+  stationOrder: StationOrderQueueView
   selectedItemIds: string[]
   isWorking: boolean
   showHide: boolean
 }>()
 const emit = defineEmits<{
   toggleItem: [orderItemId: string]
-  fulfill: [stationOrder: StationOrder, orderItemIds: string[]]
+  fulfill: [stationOrder: StationOrderQueueView, orderItemIds: string[]]
   hide: [stationOrderId: string]
 }>()
 

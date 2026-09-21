@@ -16,6 +16,8 @@ const ONE_STATION = JSON.stringify({
       sortOrder: 1,
       isActive: true,
       hasDevice: true,
+      lastSeenAtUtc: null,
+      hasOutstandingInvitation: false,
       isAtTheFestival: true,
     },
   ],
@@ -134,6 +136,8 @@ describe('a new station', () => {
               sortOrder: 2,
               isActive: true,
               hasDevice: false,
+              lastSeenAtUtc: null,
+              hasOutstandingInvitation: false,
               isAtTheFestival: false,
             }),
             { status: 201 },
@@ -273,6 +277,8 @@ describe('setting up the tablet of a station', () => {
             JSON.stringify({
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
+              ownerKind: 'station',
+              availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember: null,
               station: { id: STATION_ID, name: 'Küche' },
@@ -592,6 +598,8 @@ describe('a refusal the admin has walked away from', () => {
     sortOrder: 1,
     isActive: true,
     hasDevice: true,
+    lastSeenAtUtc: null,
+    hasOutstandingInvitation: false,
     isAtTheFestival: true,
   }
 

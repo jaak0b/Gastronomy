@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminStation } from '../../../shared/api/apiTypes'
+import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import BaseFormDialog from '../BaseFormDialog.vue'
 
-const props = defineProps<{ station: AdminStation | null; errorText: string | null }>()
+const props = defineProps<{ station: AdminStationView | null; errorText: string | null }>()
 const emit = defineEmits<{
   save: [value: { stationId?: string; name: string; sortOrder: number }]
   cancel: []

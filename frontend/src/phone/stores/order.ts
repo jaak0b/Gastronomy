@@ -1,15 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { answerIsABusinessRefusal, answerSaysTheDeviceIsNoLongerSetUp, request } from '../../shared/api/client'
-import { orderSubmitResponseSchema } from '../../shared/api/apiSchemas'
-import type {
-  ConfirmedSettlement,
-  DeliveryMode,
-  DraftLine,
-  DraftOrder,
-  OrderSubmitRequest,
-} from '../../shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from '../core/draftCart'
+import type { ConfirmedSettlement } from '../core/submission'
+import { DeliveryMode, PlaceOrderRequest, PlacedOrderView } from '../../shared/api/generatedSchemas'
 import {
+
   addLine,
   clearDraft,
   draftIsForAnotherFestival,
@@ -24,6 +20,7 @@ import {
   stampFestival,
 } from '../core/draftCart'
 import {
+
   changesAreRefusedFor,
   writingItDownIsTheOnlyWayLeft,
   progressAfterALoad,
@@ -37,6 +34,7 @@ import { assertNever } from '../../shared/core/assertNever'
 import { buildSubmitRequest, withClientOrderIdIfMissing } from '../core/submission'
 import { buildStationDeliveryModes, buildStationOrders, deliveryModeChosenOrDefault } from '../core/stationOrders'
 import {
+
   buildBasketView,
   basketItemCount,
   lineCannotBeOrdered,
@@ -88,7 +86,7 @@ export const useOrderStore = defineStore('order', () => {
   const sendState = ref<SendState>(progressWhenTheAppLoaded.state)
   const failure = ref<SendFailureMessage | null>(progressWhenTheAppLoaded.failure)
   const attemptsMade = ref(progressWhenTheAppLoaded.attempts)
-  const unresolvedAttempt = ref<OrderSubmitRequest | null>(
+  const unresolvedAttempt = ref<PlaceOrderRequest | null>(
     progressWhenTheAppLoaded.unresolvedAttempt,
   )
   const acceptedOrderNumber = ref<number | null>(null)
@@ -247,7 +245,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   async function postTheAttempt(
-    attempt: OrderSubmitRequest,
+    attempt: PlaceOrderRequest,
     sendBeforeThisAttempt: SendProgress = whatTheSendHasComeTo(),
   ): Promise<void> {
     const session = useSessionStore()
@@ -260,7 +258,7 @@ export const useOrderStore = defineStore('order', () => {
       body: attempt,
       token: session.deviceToken,
       timeoutMs: SEND_TIMEOUT_MS,
-      schema: orderSubmitResponseSchema,
+      schema: PlacedOrderView,
     })
     switch (result.kind) {
       case 'ok':

@@ -1,4 +1,4 @@
-import type { CatalogItem, StationEstimate } from '../../shared/api/apiTypes'
+import { CatalogItemView, StationEstimateView } from '../../shared/api/generatedSchemas'
 import { routedStationId } from './routingPreview'
 
 export interface EstimateRange {
@@ -14,7 +14,7 @@ export interface EstimableLine {
 }
 
 export function queuedMinutesAt(
-  estimates: readonly StationEstimate[],
+  estimates: readonly StationEstimateView[],
   stationId: string,
 ): number | null {
   return estimates.find((estimate) => estimate.stationId === stationId)?.queuedMinutes ?? null
@@ -51,7 +51,7 @@ function estimateFromLanes(
 }
 
 export function stationReadyInMinutes(
-  estimates: readonly StationEstimate[],
+  estimates: readonly StationEstimateView[],
   lines: readonly EstimableLine[],
   stationId: string,
 ): number | null {
@@ -60,7 +60,7 @@ export function stationReadyInMinutes(
 }
 
 export function stationEstimateAfterAdding(
-  estimates: readonly StationEstimate[],
+  estimates: readonly StationEstimateView[],
   lines: readonly EstimableLine[],
   stationId: string,
   productionMinutes: number,
@@ -78,8 +78,8 @@ export function stationEstimateAfterAdding(
 }
 
 export function pickerEstimateRange(
-  item: CatalogItem,
-  estimates: readonly StationEstimate[],
+  item: CatalogItemView,
+  estimates: readonly StationEstimateView[],
   lines: readonly EstimableLine[],
 ): EstimateRange | null {
   const productionMinutes = item.productionMinutes

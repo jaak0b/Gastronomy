@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminItem, AdminStation } from '../../../shared/api/apiTypes'
+import { AdminItemView, AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { appLanguageOf } from '../../../shared/core/deviceLanguage'
 import { formatEuroInput, parseEuroInput } from '../../../shared/core/money'
@@ -13,8 +13,8 @@ import StationSelect from './StationSelect.vue'
 
 const props = defineProps<{
   festivalId: string
-  item: AdminItem
-  stations: AdminStation[]
+  item: AdminItemView
+  stations: AdminStationView[]
 }>()
 const emit = defineEmits<{ placed: []; cancel: [] }>()
 

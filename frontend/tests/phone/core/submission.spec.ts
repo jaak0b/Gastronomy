@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildSubmitRequest, withClientOrderIdIfMissing } from '../../../src/phone/core/submission'
-import type { Catalog } from '../../../src/shared/api/apiTypes'
+import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 import {
+
   addLine,
   clearDraft,
   emptyDraft,
@@ -88,7 +89,7 @@ describe('buildSubmitRequest', () => {
     localStorage.clear()
   })
 
-  function catalog(priceCents = 350): Catalog {
+  function catalog(priceCents = 350): CatalogView {
     return {
       categories: [
         { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
@@ -202,7 +203,7 @@ describe('buildSubmitRequest', () => {
   })
 
   it('gives every item its own share of what the table paid', () => {
-    const twoItems: Catalog = {
+    const twoItems: CatalogView = {
       ...catalog(),
       items: [
         ...catalog().items,

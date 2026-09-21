@@ -1,17 +1,17 @@
-import type { DeliveryMode, StationDeliveryMode } from '../../shared/api/apiTypes'
+import { DeliveryMode, OrderDeliveryModeRequest } from '../../shared/api/generatedSchemas'
 import { routedStationId, type RoutableLine } from './routingPreview'
 
 export const DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES: DeliveryMode = 'together'
 
-export interface StationOrder<TLine> {
+export interface StationOrderQueueView<TLine> {
   stationId: string | null
   lines: TLine[]
 }
 
 export function buildStationOrders<TLine extends RoutableLine>(
   lines: readonly TLine[],
-): StationOrder<TLine>[] {
-  const stationOrders: StationOrder<TLine>[] = []
+): StationOrderQueueView<TLine>[] {
+  const stationOrders: StationOrderQueueView<TLine>[] = []
   for (const line of lines) {
     const stationId = routedStationId(line)
     const stationOrder = stationOrders.find((candidate) => candidate.stationId === stationId)
@@ -32,10 +32,10 @@ export function deliveryModeChosenOrDefault(
 }
 
 export function buildStationDeliveryModes<TLine extends RoutableLine>(
-  stationOrders: readonly StationOrder<TLine>[],
+  stationOrders: readonly StationOrderQueueView<TLine>[],
   chosen: Readonly<Record<string, DeliveryMode>>,
-): StationDeliveryMode[] {
-  const modes: StationDeliveryMode[] = []
+): OrderDeliveryModeRequest[] {
+  const modes: OrderDeliveryModeRequest[] = []
   for (const stationOrder of stationOrders) {
     const stationId = stationOrder.stationId
     if (stationId === null) {

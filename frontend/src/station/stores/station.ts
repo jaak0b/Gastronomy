@@ -1,18 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
-import { stationFulfilledResponseSchema, stationOrdersResponseSchema } from '../../shared/api/apiSchemas'
-import type { StationIdentity, StationOrder, StationOrdersResponse } from '../../shared/api/apiTypes'
+import { StationFulfilledView, StationOrderQueueView, StationQueueView, StationSummaryView } from '../../shared/api/generatedSchemas'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { retainOpenItemIds, stationFailureKey } from '../../shared/core/stationBoard'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
 export const useStationStore = defineStore('station', () => {
-  const identity = ref<StationIdentity | null>(null)
-  const orders = ref<StationOrder[]>([])
-  const asItComes = ref<StationOrder[]>([])
-  const fulfilled = ref<StationOrder[]>([])
+  const identity = ref<StationSummaryView | null>(null)
+  const orders = ref<StationOrderQueueView[]>([])
+  const asItComes = ref<StationOrderQueueView[]>([])
+  const fulfilled = ref<StationOrderQueueView[]>([])
   const selectedItemIds = ref<string[]>([])
   const loadFailed = ref(false)
   const loadFailureKey = ref<string | null>(null)
@@ -35,7 +34,7 @@ export const useStationStore = defineStore('station', () => {
     return useSessionStore().deviceToken
   }
 
-  function applyQueue(data: StationOrdersResponse): void {
+  function applyQueue(data: StationQueueView): void {
     identity.value = data.station
     orders.value = data.orders
     asItComes.value = data.asItComes
@@ -49,7 +48,7 @@ export const useStationStore = defineStore('station', () => {
     const token = boardGate.startRequest()
     const result = await request('/api/station/orders', {
       token: deviceToken(),
-      schema: stationOrdersResponseSchema,
+      schema: StationQueueView,
     })
     if (!boardGate.isNewestRequest(token)) {
       return
@@ -72,7 +71,7 @@ export const useStationStore = defineStore('station', () => {
     const token = fulfilledGate.startRequest()
     const result = await request('/api/station/orders/fulfilled', {
       token: deviceToken(),
-      schema: stationFulfilledResponseSchema,
+      schema: StationFulfilledView,
     })
     if (!fulfilledGate.isNewestRequest(token)) {
       return
@@ -118,7 +117,7 @@ export const useStationStore = defineStore('station', () => {
       method: 'POST',
       body: { orderItemIds },
       token: deviceToken(),
-      schema: stationOrdersResponseSchema,
+      schema: StationQueueView,
     })
     if (newestActionToken === token) {
       isWorking.value = false
@@ -142,7 +141,7 @@ export const useStationStore = defineStore('station', () => {
       method: 'POST',
       body: { orderItemIds: [orderItemId] },
       token: deviceToken(),
-      schema: stationOrdersResponseSchema,
+      schema: StationQueueView,
     })
     if (newestActionToken === token) {
       isWorking.value = false
@@ -168,7 +167,7 @@ export const useStationStore = defineStore('station', () => {
     const result = await request(`/api/station/orders/${stationOrderId}/hide`, {
       method: 'POST',
       token: deviceToken(),
-      schema: stationOrdersResponseSchema,
+      schema: StationQueueView,
     })
     if (newestActionToken === token) {
       isWorking.value = false

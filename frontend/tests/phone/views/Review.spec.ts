@@ -140,6 +140,7 @@ describe('sending the order from the review screen', () => {
             JSON.stringify({
               orderId: 'order-1',
               globalOrderNumber: 1,
+              status: 'open',
               totalCents: 200,
               createdAtUtc: '2026-09-05T18:00:00Z',
               stationOrders: [],
@@ -904,6 +905,7 @@ describe('the question the waiter answers before an order goes out', () => {
             JSON.stringify({
               orderId: 'order-1',
               globalOrderNumber: 1,
+              status: 'open',
               totalCents: 200,
               createdAtUtc: '2026-09-05T18:00:00Z',
               stationOrders: [],

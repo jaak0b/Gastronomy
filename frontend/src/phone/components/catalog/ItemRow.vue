@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, CatalogItem } from '../../../shared/api/apiTypes'
+import { CatalogItemView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { itemState } from '../../core/catalogItemState'
 import { assertNever } from '../../../shared/core/assertNever'
 import type { EstimateRange } from '../../core/estimates'
@@ -12,7 +13,7 @@ import { needsStationChoice } from '../../core/routingPreview'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const props = defineProps<{
-  item: CatalogItem
+  item: CatalogItemView
   positions: ItemPosition[]
   language: AppLanguage
   estimateRange: EstimateRange | null

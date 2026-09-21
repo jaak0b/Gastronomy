@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, ConfirmedSettlement } from '../../shared/api/apiTypes'
+import type { ConfirmedSettlement } from '../core/submission'
+import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { canBeTypedIntoAEuroField, formatEuroInput, parseEuroInput } from '../../shared/core/money'
 import { canTheAmountBeSettled, isPaymentNoticeNeeded } from '../core/openItems'
 

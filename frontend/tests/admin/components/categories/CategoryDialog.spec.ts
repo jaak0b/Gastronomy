@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CategoryDialog from '../../../../src/admin/components/categories/CategoryDialog.vue'
-import type { AdminCategory } from '../../../../src/shared/api/apiTypes'
+import { AdminCategoryView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 
-const DRINKS: AdminCategory = {
+const DRINKS: AdminCategoryView = {
   categoryId: '11111111-1111-1111-1111-111111111111',
   name: 'Getränke',
   colourHex: '#C62828',
@@ -13,7 +13,7 @@ const DRINKS: AdminCategory = {
   isActive: true,
 }
 
-function mountDialog(category: AdminCategory | null = null, errorText: string | null = null) {
+function mountDialog(category: AdminCategoryView | null = null, errorText: string | null = null) {
   return mount(CategoryDialog, {
     props: { category, errorText },
     global: { plugins: testPlugins() },

@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminStaffMember } from '../../../shared/api/apiTypes'
+import { AdminStaffMemberView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStaffStore } from '../../stores/staff'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
@@ -15,7 +15,7 @@ import StaffRenameDialog from './StaffRenameDialog.vue'
 const { t } = useI18n()
 const staff = useAdminStaffStore()
 const enrolment = useAdminEnrolmentStore()
-const renamingStaffMember = ref<AdminStaffMember | null>(null)
+const renamingStaffMember = ref<AdminStaffMemberView | null>(null)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const refusal = ref<AdminErrorMessage | null>(null)
@@ -77,7 +77,7 @@ async function rename(name: string): Promise<void> {
   }
 }
 
-function startRenaming(staffMember: AdminStaffMember): void {
+function startRenaming(staffMember: AdminStaffMemberView): void {
   renamingStaffMember.value = staffMember
   refusal.value = null
 }

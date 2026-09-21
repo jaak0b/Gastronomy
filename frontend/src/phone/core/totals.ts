@@ -1,4 +1,4 @@
-import type { AppLanguage } from '../../shared/api/apiTypes'
+import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import { assertNever } from '../../shared/core/assertNever'
 import type { BasketLineView } from './basket'
 import type { CollapsedLine } from '../../shared/core/collapse'

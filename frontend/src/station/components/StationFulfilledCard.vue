@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationOrder } from '../../shared/api/apiTypes'
+import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import { isFulfilled, itemLineText, itemLines } from '../../shared/core/stationBoard'
 import { useStationOrderHeader } from '../composables/useStationOrderHeader'
 import BaseStationCard from './BaseStationCard.vue'
 
-const props = defineProps<{ stationOrder: StationOrder; isWorking: boolean }>()
+const props = defineProps<{ stationOrder: StationOrderQueueView; isWorking: boolean }>()
 const emit = defineEmits<{ putBack: [orderItemId: string] }>()
 
 const { t } = useI18n()

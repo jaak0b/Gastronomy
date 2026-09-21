@@ -2,7 +2,7 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminCategory, AdminItem } from '../../../shared/api/apiTypes'
+import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
@@ -24,11 +24,11 @@ const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const stations = useAdminStationsStore()
 const chosenItemId = ref<string | null>(null)
-const itemToPlace = ref<AdminItem | null>(null)
+const itemToPlace = ref<AdminItemView | null>(null)
 const isCreating = ref(false)
-const editingCategory = ref<AdminCategory | null>(null)
-const editingItem = ref<AdminItem | null>(null)
-const removedItem = ref<AdminItem | null>(null)
+const editingCategory = ref<AdminCategoryView | null>(null)
+const editingItem = ref<AdminItemView | null>(null)
+const removedItem = ref<AdminItemView | null>(null)
 const createRefusal = ref<AdminErrorMessage | null>(null)
 const categoryRefusal = ref<AdminErrorMessage | null>(null)
 const itemRefusal = ref<AdminErrorMessage | null>(null)
@@ -87,7 +87,7 @@ const chosenItem = computed(
   () => items.items.find((item) => item.itemId === chosenItemId.value) ?? null,
 )
 
-function startPlacing(item: AdminItem): void {
+function startPlacing(item: AdminItemView): void {
   itemToPlace.value = item
 }
 
@@ -130,7 +130,7 @@ async function create(draft: AdminItemDraft): Promise<void> {
   }
 }
 
-function startEditingCategory(category: AdminCategory): void {
+function startEditingCategory(category: AdminCategoryView): void {
   categoryRefusal.value = null
   editingCategory.value = category
 }
@@ -159,7 +159,7 @@ async function saveCategory(draft: AdminCategoryDraft): Promise<void> {
   }
 }
 
-function startEditingItem(item: AdminItem): void {
+function startEditingItem(item: AdminItemView): void {
   itemRefusal.value = null
   editingItem.value = item
 }

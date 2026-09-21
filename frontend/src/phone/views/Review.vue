@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ConfirmedSettlement } from '../../shared/api/apiTypes'
+import type { ConfirmedSettlement } from '../core/submission'
 import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../core/totals'
 import { useEstimatesStore } from '../stores/estimates'

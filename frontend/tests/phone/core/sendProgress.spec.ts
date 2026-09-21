@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { OrderSubmitRequest } from '../../../src/shared/api/apiTypes'
+import { PlaceOrderRequest } from '../../../src/shared/api/generatedSchemas'
 import {
+
   changesAreRefusedFor,
   noSendProgress,
   writingItDownIsTheOnlyWayLeft,
@@ -12,7 +13,7 @@ import {
   type SendState,
 } from '../../../src/phone/core/sendProgress'
 
-function anUnresolvedAttempt(): OrderSubmitRequest {
+function anUnresolvedAttempt(): PlaceOrderRequest {
   return {
     clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
     tableName: 'Tisch 4',
@@ -31,7 +32,7 @@ function anUnresolvedAttempt(): OrderSubmitRequest {
 
 function sendThatIs(
   state: SendState,
-  unresolvedAttempt: OrderSubmitRequest | null = null,
+  unresolvedAttempt: PlaceOrderRequest | null = null,
 ): SendProgress {
   return { ...noSendProgress(), state, unresolvedAttempt }
 }

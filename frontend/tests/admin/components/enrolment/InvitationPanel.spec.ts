@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import InvitationPanel from '../../../../src/admin/components/enrolment/InvitationPanel.vue'
 import type { InvitationQr } from '../../../../src/admin/core/invitationQr'
-import type { Invitation } from '../../../../src/shared/api/apiTypes'
+import { InvitationView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 
-const INVITATION: Invitation = {
+const INVITATION: InvitationView = {
   invitationId: 'invitation-1',
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
+  ownerKind: 'staffMember',
+  availableAddresses: [],
   expiresAtUtc: '2026-08-27T18:05:00Z',
   staffMember: { id: 'staff-1', name: 'Anna' },
   station: null,
@@ -16,7 +18,7 @@ const INVITATION: Invitation = {
 const QR_IMAGE_URL = 'data:image/svg+xml;charset=utf-8,%3Csvg%3E'
 const READY: InvitationQr = { kind: 'ready', imageUrl: QR_IMAGE_URL }
 
-function mountPanel(qr: InvitationQr = READY, invitation: Invitation = INVITATION) {
+function mountPanel(qr: InvitationQr = READY, invitation: InvitationView = INVITATION) {
   return mount(InvitationPanel, {
     props: { invitation, qr },
     global: { plugins: testPlugins() },
@@ -117,7 +119,7 @@ describe('the copy button beside the address', () => {
 })
 
 describe('the same panel used for the tablet of a station', () => {
-  const STATION_INVITATION: Invitation = {
+  const STATION_INVITATION: InvitationView = {
     ...INVITATION,
     staffMember: null,
     station: { id: 'station-kueche', name: 'Küche' },

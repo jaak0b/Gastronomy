@@ -1,4 +1,8 @@
-import type { AppLanguage } from '../api/apiTypes'
+import { z } from 'zod'
+
+export const appLanguageSchema = z.enum(['de', 'en'])
+
+export type AppLanguage = z.infer<typeof appLanguageSchema>
 
 export const LANGUAGE_STORAGE_KEY = 'language'
 

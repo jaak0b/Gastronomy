@@ -2,10 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
 import { fetchInvitationQr } from '../api/invitationQr'
-import { invitationSchema } from '../../shared/api/apiSchemas'
+import { DeviceOwnerKind, InvitationView } from '../../shared/api/generatedSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
-import type { DeviceKind, Invitation } from '../../shared/api/apiTypes'
 import type { InvitationQr } from '../core/invitationQr'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
@@ -17,7 +16,7 @@ export type InvitationOwner =
   | { kind: 'station'; stationId: string }
 
 export interface EnrolledDevice {
-  deviceKind: DeviceKind
+  deviceKind: DeviceOwnerKind
   ownerName: string
 }
 
@@ -35,13 +34,13 @@ function bodyFor(owner: InvitationOwner): Record<string, string> {
 }
 
 export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
-  const invitation = ref<Invitation | null>(null)
+  const invitation = ref<InvitationView | null>(null)
   const invitationQr = ref<InvitationQr>({ kind: 'loading' })
   const enrolled = ref<EnrolledDevice | null>(null)
 
   const invitationGate = createLatestRequestGate()
 
-  function enrolledNameFor(wanted: DeviceKind): string | null {
+  function enrolledNameFor(wanted: DeviceOwnerKind): string | null {
     const device = enrolled.value
     if (device === null) {
       return null
@@ -66,7 +65,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
     const result = await request('/api/admin/enrolment/invitations', {
       method: 'POST',
       body: bodyFor(owner),
-      schema: invitationSchema,
+      schema: InvitationView,
     })
     if (!invitationGate.isNewestRequest(token)) {
       return adminOk(null)

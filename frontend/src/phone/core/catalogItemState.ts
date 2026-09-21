@@ -1,14 +1,14 @@
-import type { Catalog, CatalogItem } from '../../shared/api/apiTypes'
+import { CatalogItemView, CatalogView } from '../../shared/api/generatedSchemas'
 import { findCatalogItem, type BasketLineView } from './basket'
 import { assertNever } from '../../shared/core/assertNever'
 
 export type CatalogItemState = 'available' | 'soldOut'
 
-export function itemState(item: CatalogItem): CatalogItemState {
+export function itemState(item: CatalogItemView): CatalogItemState {
   return item.isAvailable ? 'available' : 'soldOut'
 }
 
-export function isLineFlaggedSoldOut(line: BasketLineView, catalog: Catalog): boolean {
+export function isLineFlaggedSoldOut(line: BasketLineView, catalog: CatalogView): boolean {
   const item = findCatalogItem(catalog, line.catalogItemId)
   if (item === null) {
     return false

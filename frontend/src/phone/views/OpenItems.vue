@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { OpenTable, TableOrderRecord } from '../../shared/api/apiTypes'
+import { OpenTableView, TableOrderRecordView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { formatFestivalMoment } from '../../shared/core/festivalTimes'
 import {
+
   isHeldBackByAnotherTable,
   isTheWholeTableSelected,
   positionStateOf,
@@ -125,7 +126,7 @@ function closeTheAmountAskedForUnlessTheLaptopRefused(outcome: SettleOutcome): v
   }
 }
 
-function setWholeTable(table: OpenTable, isWanted: boolean): void {
+function setWholeTable(table: OpenTableView, isWanted: boolean): void {
   openItems.setWholeTable(table, isWanted)
 }
 
@@ -136,7 +137,7 @@ function setTheLookupWholeTable(isWanted: boolean | null): void {
   }
 }
 
-function isHeldBack(table: OpenTable): boolean {
+function isHeldBack(table: OpenTableView): boolean {
   return isHeldBackByAnotherTable(openItems.tables, openItems.selectedItemIds, table.tableName)
 }
 
@@ -144,7 +145,7 @@ function priceTextFor(cents: number): string {
   return formatPrice(cents, session.language)
 }
 
-function stateClassFor(order: TableOrderRecord): string {
+function stateClassFor(order: TableOrderRecordView): string {
   const state = productionStateOf(order)
   switch (state) {
     case 'none':
@@ -158,14 +159,14 @@ function stateClassFor(order: TableOrderRecord): string {
   }
 }
 
-function takenByTextFor(order: TableOrderRecord): string {
+function takenByTextFor(order: TableOrderRecordView): string {
   return t('station.takenBy', {
     time: formatFestivalMoment(order.createdAtUtc, session.language),
     name: order.staffMemberName,
   })
 }
 
-function doneCounterTextFor(order: TableOrderRecord): string {
+function doneCounterTextFor(order: TableOrderRecordView): string {
   return t('station.doneCounter', {
     fulfilled: producedCountIn(order),
     total: order.items.length,

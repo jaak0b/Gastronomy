@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminStation } from '../../../shared/api/apiTypes'
+import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore } from '../../stores/stations'
 import { useAdminEnrolmentStore } from '../../stores/enrolment'
@@ -15,7 +15,7 @@ import StationDialog from './StationDialog.vue'
 const { t } = useI18n()
 const stations = useAdminStationsStore()
 const enrolment = useAdminEnrolmentStore()
-const editingStation = ref<AdminStation | null>(null)
+const editingStation = ref<AdminStationView | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
@@ -43,7 +43,7 @@ async function inviteStation(stationId: string): Promise<void> {
   note(await enrolment.createInvitation({ kind: 'station', stationId }))
 }
 
-function startEditing(station: AdminStation): void {
+function startEditing(station: AdminStationView): void {
   editingStation.value = station
   refusal.value = null
 }

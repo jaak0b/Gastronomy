@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,
   addLine,
@@ -17,7 +18,8 @@ import {
   setTableName,
   stampFestival,
 } from '../../../src/phone/core/draftCart'
-import type { DraftLine, OrderSubmitRequest } from '../../../src/shared/api/apiTypes'
+import type { DraftLine } from '../../../src/phone/core/draftCart'
+import { PlaceOrderRequest } from '../../../src/shared/api/generatedSchemas'
 
 function bratwurstLine(): DraftLine {
   return {
@@ -29,7 +31,7 @@ function bratwurstLine(): DraftLine {
   }
 }
 
-function anAttempt(): OrderSubmitRequest {
+function anAttempt(): PlaceOrderRequest {
   return {
     clientOrderId: 'c0ffee00-1111-4111-8111-111111111111',
     tableName: 'Tisch 5',
@@ -429,7 +431,7 @@ describe('the record of what became of a send', () => {
       state: 'failed',
       attempts: 1,
       failure: null,
-      unresolvedAttempt: { tableName: 'Tisch 5' } as unknown as OrderSubmitRequest,
+      unresolvedAttempt: { tableName: 'Tisch 5' } as unknown as PlaceOrderRequest,
     })
 
     expect(restoreSendProgress()).toEqual({

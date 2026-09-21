@@ -5,7 +5,7 @@ import { VAutocomplete, VCheckbox } from 'vuetify/components'
 import FestivalPage from '../../../../src/admin/components/festivals/FestivalPage.vue'
 import FestivalPlacementDialog from '../../../../src/admin/components/festivals/FestivalPlacementDialog.vue'
 import StationSelect from '../../../../src/admin/components/festivals/StationSelect.vue'
-import type { AdminItem } from '../../../../src/shared/api/apiTypes'
+import { AdminItemView } from '../../../../src/shared/api/generatedSchemas'
 import { useConnectionStore } from '../../../../src/shared/stores/connection'
 import { pressInDialog, testPlugins, waitForDialog } from '../../../support/plugins'
 
@@ -34,6 +34,8 @@ const KITCHEN = {
   sortOrder: 1,
   isActive: true,
   hasDevice: true,
+  lastSeenAtUtc: null,
+  hasOutstandingInvitation: false,
   isAtTheFestival: true,
 }
 
@@ -43,6 +45,8 @@ const BAR = {
   sortOrder: 2,
   isActive: true,
   hasDevice: false,
+  lastSeenAtUtc: null,
+  hasOutstandingInvitation: false,
   isAtTheFestival: false,
 }
 
@@ -195,7 +199,7 @@ async function openDialogStations(page: VueWrapper): Promise<VueWrapper[]> {
   return select.findAllComponents(VCheckbox)
 }
 
-function listedItems(): AdminItem[] {
+function listedItems(): AdminItemView[] {
   return [
     {
       ...SAUSAGE,
@@ -383,6 +387,8 @@ describe('the stations of this festival', () => {
       sortOrder: 3,
       isActive: true,
       hasDevice: false,
+      lastSeenAtUtc: null,
+      hasOutstandingInvitation: false,
       isAtTheFestival: false,
     }
     const calls = stubLaptop({ created: NEW_STATION })
@@ -1144,7 +1150,7 @@ describe('an item change the laptop refuses', () => {
     const theRefusedAnswer = new Promise<void>((carryOn) => {
       releaseTheRefusedAnswer = carryOn
     })
-    const listed: AdminItem[] = [
+    const listed: AdminItemView[] = [
       {
         ...SAUSAGE,
         atTheFestival: {

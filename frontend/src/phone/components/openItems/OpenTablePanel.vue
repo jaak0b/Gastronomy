@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, OpenTable } from '../../../shared/api/apiTypes'
+import { OpenTableView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { isTheWholeTableSelected } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
 import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{
-  table: OpenTable
+  table: OpenTableView
   selectedItemIds: string[]
   language: AppLanguage
   isHeldBackByAnotherTable: boolean

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { CatalogCategory, CatalogItem } from '../../shared/api/apiTypes'
+import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generatedSchemas'
 import { lineCannotBeOrdered } from '../core/basket'
 import { itemState } from '../core/catalogItemState'
 import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import {
+
   pickerEstimateRange,
   stationEstimateAfterAdding,
   type EstimateRange,
@@ -38,7 +39,7 @@ const session = useSessionStore()
 const tappedCategory = ref<string | null>(null)
 const tableField = ref<{ focus: () => void } | null>(null)
 const isTableMissing = ref(false)
-const itemAwaitingStation = ref<CatalogItem | null>(null)
+const itemAwaitingStation = ref<CatalogItemView | null>(null)
 const linesAwaitingStation = ref<number[]>([])
 const focusTheNoteField = ref(false)
 
@@ -57,7 +58,7 @@ onUnmounted(() => {
   closeOpenStep()
 })
 
-const openCategory = computed<CatalogCategory | null>(
+const openCategory = computed<CatalogCategoryView | null>(
   () =>
     catalog.catalog.categories.find(
       (category) => category.categoryId === tappedCategory.value,
@@ -81,7 +82,7 @@ function closeTheOpenCategory(): void {
   forgetTheStationQuestion()
 }
 
-function openTheCategory(category: CatalogCategory): void {
+function openTheCategory(category: CatalogCategoryView): void {
   tappedCategory.value = category.categoryId
   registerOpenStepCloser(closeTheOpenCategory)
 }
@@ -124,7 +125,7 @@ function portionsIn(categoryId: string): number {
   return countCategoryPortions(order.draft, catalog.catalog.items, categoryId)
 }
 
-function labelFor(category: CatalogCategory): string {
+function labelFor(category: CatalogCategoryView): string {
   const portions = portionsIn(category.categoryId)
   if (portions < 1) {
     return category.name
@@ -182,7 +183,7 @@ function estimateForTheStationChoice(stationId: string): number | null {
   )
 }
 
-function place(item: CatalogItem, note: string | null, stationId: string | null): void {
+function place(item: CatalogItemView, note: string | null, stationId: string | null): void {
   order.addItem({
     catalogItemId: item.id,
     note: note,
@@ -191,7 +192,7 @@ function place(item: CatalogItem, note: string | null, stationId: string | null)
   })
 }
 
-function addItem(item: CatalogItem, note: string | null = null): void {
+function addItem(item: CatalogItemView, note: string | null = null): void {
   if (needsStationChoice(item)) {
     itemAwaitingStation.value = item
     focusTheNoteField.value = false
@@ -200,16 +201,16 @@ function addItem(item: CatalogItem, note: string | null = null): void {
   place(item, note, item.stationIds[0] ?? null)
 }
 
-function addItemWithANote(item: CatalogItem, note: string): void {
+function addItemWithANote(item: CatalogItemView, note: string): void {
   addItem(item, note)
 }
 
-function addItemWithANoteAtAStation(item: CatalogItem): void {
+function addItemWithANoteAtAStation(item: CatalogItemView): void {
   addItem(item)
   focusTheNoteField.value = true
 }
 
-function addLikeGroup(item: CatalogItem, note: string | null, stationId: string | null): void {
+function addLikeGroup(item: CatalogItemView, note: string | null, stationId: string | null): void {
   place(item, note, stationId)
 }
 

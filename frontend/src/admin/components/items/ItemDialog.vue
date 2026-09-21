@@ -2,10 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminItem } from '../../../shared/api/apiTypes'
+import { AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { LONGEST_PRODUCTION_MINUTES } from '../../../shared/core/productionMinutes'
 import {
+
   useAdminCategoriesStore,
   type AdminCategoryDraft,
 } from '../../stores/categories'
@@ -15,7 +16,7 @@ import BaseFormDialog from '../BaseFormDialog.vue'
 import { useRefusalText } from '../../composables/useRefusalText'
 
 const props = defineProps<{
-  item: AdminItem | null
+  item: AdminItemView | null
   errorText: string | null
 }>()
 const emit = defineEmits<{ save: [item: AdminItemDraft]; cancel: [] }>()

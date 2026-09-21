@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ConfirmSendDialog from '../../../../src/phone/components/review/ConfirmSendDialog.vue'
 import type { BasketLineView } from '../../../../src/phone/core/basket'
-import type { DeliveryMode, StationEstimate } from '../../../../src/shared/api/apiTypes'
+import { DeliveryMode, StationEstimateView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 
-const QUEUES: StationEstimate[] = [{ stationId: 'station-kueche', queuedMinutes: 12 }]
+const QUEUES: StationEstimateView[] = [{ stationId: 'station-kueche', queuedMinutes: 12 }]
 
 function bratwurst(overrides: Partial<BasketLineView> = {}): BasketLineView {
   return {

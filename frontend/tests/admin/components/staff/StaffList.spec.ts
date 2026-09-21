@@ -173,7 +173,8 @@ describe('the QR code for setting up a phone', () => {
           ? {
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
-              sixDigitCode: '158026',
+              ownerKind: null,
+              availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember,
               station: null,
@@ -245,6 +246,8 @@ describe('adding somebody new to the waiter list', () => {
             JSON.stringify({
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
+              ownerKind: null,
+              availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember: null,
               station: null,

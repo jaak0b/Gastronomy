@@ -1,4 +1,4 @@
-import type { DeliveryMode, StationEstimate } from '../../shared/api/apiTypes'
+import { DeliveryMode, StationEstimateView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { lineCannotBeOrdered, type BasketLineView } from './basket'
 import { stationReadyInMinutes } from './estimates'
@@ -41,7 +41,7 @@ function minutesForTheChosenMode(
 
 export function stationDeliveries(
   lines: readonly BasketLineView[],
-  estimates: readonly StationEstimate[],
+  estimates: readonly StationEstimateView[],
   deliveryModeFor: (stationId: string) => DeliveryMode,
 ): StationDelivery[] {
   return buildStationOrders(lines).map((stationOrder) => {

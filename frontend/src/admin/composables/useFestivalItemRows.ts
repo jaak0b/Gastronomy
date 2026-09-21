@@ -1,23 +1,25 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminItem } from '../../shared/api/apiTypes'
+import { AdminItemView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { appLanguageOf } from '../../shared/core/deviceLanguage'
 import { formatEuroInput, parseEuroInput } from '../../shared/core/money'
 import { refusalFrom, type AdminActionResult } from '../core/adminActionResult'
 import {
+
   adminErrorMessageForKey,
   adminErrorMessageText,
   type AdminErrorMessage,
 } from '../core/adminErrorMessage'
 import {
+
   laptopConfirmedField,
   stillDiffersFromTheLaptop,
   type LaptopConfirmedField,
 } from '../core/laptopConfirmedField'
 import { useAdminItemsStore } from '../stores/items'
 
-export type PlacedItem = AdminItem & { atTheFestival: NonNullable<AdminItem['atTheFestival']> }
+export type PlacedItem = AdminItemView & { atTheFestival: NonNullable<AdminItemView['atTheFestival']> }
 
 export interface Placement {
   priceText: string
@@ -40,8 +42,8 @@ export interface FestivalItemRows {
   typePrice: (itemId: string, typed: string) => void
   save: (itemId: string) => Promise<void>
   changeStations: (itemId: string, stationIds: string[]) => Promise<void>
-  setSoldOut: (item: AdminItem, isSoldOut: boolean) => Promise<void>
-  removeFromTheFestival: (item: AdminItem) => Promise<void>
+  setSoldOut: (item: AdminItemView, isSoldOut: boolean) => Promise<void>
+  removeFromTheFestival: (item: AdminItemView) => Promise<void>
 }
 
 function namesTheSameStations(left: string[], right: string[]): boolean {
@@ -250,7 +252,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     await save(itemId)
   }
 
-  async function setSoldOut(item: AdminItem, isSoldOut: boolean): Promise<void> {
+  async function setSoldOut(item: AdminItemView, isSoldOut: boolean): Promise<void> {
     const started = rows.value.get(item.itemId)
     if (started !== undefined) {
       started.refusal = null
@@ -263,7 +265,7 @@ export function useFestivalItemRows(festivalId: Ref<string>): FestivalItemRows {
     showRowRefusal(item.itemId, accepted)
   }
 
-  async function removeFromTheFestival(item: AdminItem): Promise<void> {
+  async function removeFromTheFestival(item: AdminItemView): Promise<void> {
     const row = rows.value.get(item.itemId)
     if (row !== undefined) {
       row.refusal = null

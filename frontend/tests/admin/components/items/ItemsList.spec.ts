@@ -83,6 +83,8 @@ const ONE_STATION = {
       sortOrder: 1,
       isActive: true,
       hasDevice: true,
+      lastSeenAtUtc: null,
+      hasOutstandingInvitation: false,
       isAtTheFestival: true,
     },
   ],

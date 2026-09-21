@@ -17,6 +17,16 @@ reverse proxy.
   festival's start state changed. Clients never poll for state that the server already knows has
   changed.
 - **REST** for commands and queries.
+- **An OpenAPI document is written at build time.** `dotnet build` of `GastronomyApp.Api` writes
+  `backend/GastronomyApp.Api/openapi/GastronomyApp.Api.json`, which is committed to the repository.
+  `Microsoft.Extensions.ApiDescription.Server` runs the entry point in
+  `DocumentGenerationEntryPoint.cs`, which exists only so the generator can build the web
+  application; the project sets `UseAppHost` to false, so no second executable file is produced. The
+  hosted app maps no `/openapi` route: the document is a build artifact, not something the laptop
+  serves. Every route carries its response type through `Produces`, and the two transformers in
+  `DocumentTransformers/` add the SignalR event payloads under `Contracts/Events` as component
+  schemas and describe numbers as numbers. The frontend generates its TypeScript types and zod
+  schemas from this file.
 
 ## Hard rules
 

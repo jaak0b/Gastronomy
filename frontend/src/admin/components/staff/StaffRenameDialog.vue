@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminStaffMember } from '../../../shared/api/apiTypes'
+import { AdminStaffMemberView } from '../../../shared/api/generatedSchemas'
 import BaseFormDialog from '../BaseFormDialog.vue'
 
-const props = defineProps<{ staffMember: AdminStaffMember; errorText: string | null }>()
+const props = defineProps<{ staffMember: AdminStaffMemberView; errorText: string | null }>()
 const emit = defineEmits<{ save: [name: string]; cancel: [] }>()
 
 const { t } = useI18n()

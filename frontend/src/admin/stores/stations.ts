@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
-import { adminStationsResponseSchema, adminStationSchema } from '../../shared/api/apiSchemas'
+import { AdminStationListView, AdminStationView } from '../../shared/api/generatedSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import type { AdminStation } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -19,19 +18,19 @@ export interface StationDraft {
 }
 
 export const useAdminStationsStore = defineStore('adminStations', () => {
-  const stations = ref<AdminStation[]>([])
+  const stations = ref<AdminStationView[]>([])
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
 
   const stationsGate = createLatestRequestGate()
-  const pendingCreatedStations = createPendingCreatedEntities<AdminStation>(
+  const pendingCreatedStations = createPendingCreatedEntities<AdminStationView>(
     (station) => station.stationId,
   )
 
   async function loadStationsFrom(path: string): Promise<void> {
     await loadAdminList({
       path,
-      schema: adminStationsResponseSchema,
+      schema: AdminStationListView,
       gate: stationsGate,
       itemsOf: (response) => response.stations,
       showItems: (loaded) => {
@@ -68,12 +67,12 @@ export const useAdminStationsStore = defineStore('adminStations', () => {
     await loadAtTheFestival(festivalId)
   }
 
-  async function create(draft: StationDraft): Promise<AdminActionResult<AdminStation>> {
+  async function create(draft: StationDraft): Promise<AdminActionResult<AdminStationView>> {
     const scopeAtStart = festivalInView.value
     const result = await request('/api/admin/stations', {
       method: 'POST',
       body: { name: draft.name, sortOrder: draft.sortOrder },
-      schema: adminStationSchema,
+      schema: AdminStationView,
     })
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)

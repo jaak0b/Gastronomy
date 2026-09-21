@@ -1,0 +1,3149 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "GetDocument.Insider | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/enrolment/redeem": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemEnrolmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedeemedEnrolmentView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/language": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguageView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/enrolment/invitations": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/enrolment/invitations/{invitationId}/qr.svg": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/session": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/session/language": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlacedOrderView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/open-items": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenItemsView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/open-items/table-names": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableNamesView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/open-items/table": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "tableName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableOrderReportView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/open-items/settle": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleItemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/estimates": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationEstimateListView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/orders": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationQueueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/orders/fulfilled": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationFulfilledView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/items/fulfill": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationItemSelectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationQueueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/items/unfulfill": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationItemSelectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationQueueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/station/orders/{stationOrderId}/hide": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "stationOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationQueueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stations": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStationListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stations/{stationId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stations/{stationId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stations/{stationId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/categories": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/categories/{categoryId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/categories/{categoryId}/move": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryListView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/categories/{categoryId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/categories/{categoryId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/items": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminItemListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/items/{itemId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/items/{itemId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/items/{itemId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff-members": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStaffMemberListView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff-members/{staffMemberId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "staffMemberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameStaffMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMemberView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff-members/{staffMemberId}/activate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "staffMemberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMemberView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff-members/{staffMemberId}/deactivate": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "staffMemberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMemberView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals": {
+      "get": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminFestivalListView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFestivalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFestivalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/copy": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFestivalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/hide": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/show": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFestivalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/items/{itemId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFestivalItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/items/{itemId}/availability": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAvailabilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/festivals/{festivalId}/stations/{stationId}": {
+      "put": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStationView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "parameters": [
+          {
+            "name": "festivalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminCategoryListView": {
+        "required": [
+          "categories"
+        ],
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCategoryView"
+            }
+          }
+        }
+      },
+      "AdminCategoryView": {
+        "required": [
+          "categoryId",
+          "name",
+          "colourHex",
+          "sortOrder",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "colourHex": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminFestivalListView": {
+        "required": [
+          "festivals"
+        ],
+        "type": "object",
+        "properties": {
+          "festivals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminFestivalView"
+            }
+          }
+        }
+      },
+      "AdminFestivalView": {
+        "required": [
+          "festivalId",
+          "name",
+          "startsAtUtc",
+          "endsAtUtc",
+          "isHidden",
+          "isRunning",
+          "stationCount",
+          "menuItemCount",
+          "orderCount"
+        ],
+        "type": "object",
+        "properties": {
+          "festivalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "isRunning": {
+            "type": "boolean"
+          },
+          "stationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "menuItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminItemAtFestivalView": {
+        "required": [
+          "priceCents",
+          "isAvailable",
+          "stationIds"
+        ],
+        "type": "object",
+        "properties": {
+          "priceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "stationIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "AdminItemListView": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminItemView"
+            }
+          }
+        }
+      },
+      "AdminItemView": {
+        "required": [
+          "itemId",
+          "name",
+          "categoryId",
+          "sortOrder",
+          "isActive",
+          "productionMinutes",
+          "isQueueIndependent",
+          "atTheFestival"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "productionMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "isQueueIndependent": {
+            "type": "boolean"
+          },
+          "atTheFestival": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AdminItemAtFestivalView"
+              }
+            ]
+          }
+        }
+      },
+      "AdminStaffMemberListView": {
+        "required": [
+          "staffMembers"
+        ],
+        "type": "object",
+        "properties": {
+          "staffMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStaffMemberView"
+            }
+          }
+        }
+      },
+      "AdminStaffMemberView": {
+        "required": [
+          "staffMemberId",
+          "name",
+          "isActive",
+          "hasDevice",
+          "lastSeenAtUtc",
+          "hasOutstandingInvitation"
+        ],
+        "type": "object",
+        "properties": {
+          "staffMemberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "hasDevice": {
+            "type": "boolean"
+          },
+          "lastSeenAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "hasOutstandingInvitation": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminStationListView": {
+        "required": [
+          "stations"
+        ],
+        "type": "object",
+        "properties": {
+          "stations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStationView"
+            }
+          }
+        }
+      },
+      "AdminStationView": {
+        "required": [
+          "stationId",
+          "name",
+          "sortOrder",
+          "isActive",
+          "hasDevice",
+          "lastSeenAtUtc",
+          "hasOutstandingInvitation",
+          "isAtTheFestival"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "hasDevice": {
+            "type": "boolean"
+          },
+          "lastSeenAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "hasOutstandingInvitation": {
+            "type": "boolean"
+          },
+          "isAtTheFestival": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CatalogCategoryView": {
+        "required": [
+          "categoryId",
+          "name",
+          "colourHex",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "colourHex": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CatalogChangedEvent": {
+        "type": "object"
+      },
+      "CatalogItemView": {
+        "required": [
+          "id",
+          "categoryId",
+          "name",
+          "priceCents",
+          "sortOrder",
+          "isAvailable",
+          "productionMinutes",
+          "isQueueIndependent",
+          "stationIds"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "productionMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "isQueueIndependent": {
+            "type": "boolean"
+          },
+          "stationIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "CatalogStationView": {
+        "required": [
+          "id",
+          "name",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CatalogView": {
+        "required": [
+          "festival",
+          "categories",
+          "items",
+          "stations"
+        ],
+        "type": "object",
+        "properties": {
+          "festival": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunningFestivalView"
+              }
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategoryView"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogItemView"
+            }
+          },
+          "stations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogStationView"
+            }
+          }
+        }
+      },
+      "CategoryMoveDirection": {
+        "enum": [
+          "up",
+          "down"
+        ]
+      },
+      "CreateInvitationRequest": {
+        "type": "object",
+        "properties": {
+          "staffMemberId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "stationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "DeliveryMode": {
+        "enum": [
+          "together",
+          "asItComes"
+        ]
+      },
+      "DeviceOwnerKind": {
+        "enum": [
+          "staffMember",
+          "station"
+        ]
+      },
+      "DeviceRevokedEvent": {
+        "required": [
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "EnrolmentCompletedEvent": {
+        "required": [
+          "deviceKind",
+          "ownerId",
+          "ownerName",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceKind": {
+            "enum": [
+              "staffMember",
+              "station"
+            ]
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "FestivalChangedEvent": {
+        "type": "object"
+      },
+      "InvitationView": {
+        "required": [
+          "invitationId",
+          "qrUrl",
+          "expiresAtUtc",
+          "ownerKind",
+          "staffMember",
+          "station",
+          "availableAddresses"
+        ],
+        "type": "object",
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "qrUrl": {
+            "type": "string"
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ownerKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DeviceOwnerKind"
+              }
+            ]
+          },
+          "staffMember": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StaffMemberView"
+              }
+            ]
+          },
+          "station": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StationSummaryView"
+              }
+            ]
+          },
+          "availableAddresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LanguageChangeRequest": {
+        "required": [
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LanguageView": {
+        "required": [
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string"
+          }
+        }
+      },
+      "MoveCategoryRequest": {
+        "required": [
+          "direction"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/CategoryMoveDirection"
+          }
+        }
+      },
+      "OpenItemsView": {
+        "required": [
+          "tables",
+          "itemsWithoutAnOrderCount"
+        ],
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenTableView"
+            }
+          },
+          "itemsWithoutAnOrderCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OpenOrderItemView": {
+        "required": [
+          "orderItemId",
+          "orderId",
+          "globalOrderNumber",
+          "itemName",
+          "note",
+          "unitPriceCents",
+          "orderedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "globalOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitPriceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OpenTableView": {
+        "required": [
+          "tableName",
+          "openAmountCents",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "tableName": {
+            "type": "string"
+          },
+          "openAmountCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenOrderItemView"
+            }
+          }
+        }
+      },
+      "OrderDeliveryModeRequest": {
+        "required": [
+          "stationId",
+          "deliveryMode"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deliveryMode": {
+            "$ref": "#/components/schemas/DeliveryMode"
+          }
+        }
+      },
+      "OrderItemRequest": {
+        "required": [
+          "catalogItemId",
+          "unitPriceCents"
+        ],
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitPriceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "settlement": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrderSettlementLineRequest"
+              }
+            ]
+          }
+        }
+      },
+      "OrderItemsSettledEvent": {
+        "required": [
+          "orderItemIds",
+          "tableNames"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tableNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OrderSettlementLineRequest": {
+        "required": [
+          "paidPriceCents"
+        ],
+        "type": "object",
+        "properties": {
+          "paidPriceCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "paymentNotice": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OrderStatus": {
+        "enum": [
+          "open",
+          "partiallyFulfilled",
+          "fulfilled"
+        ]
+      },
+      "OrderStatusChangedEvent": {
+        "required": [
+          "orderId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "partiallyFulfilled",
+              "fulfilled"
+            ]
+          }
+        }
+      },
+      "PlacedOrderView": {
+        "required": [
+          "orderId",
+          "globalOrderNumber",
+          "status",
+          "totalCents",
+          "createdAtUtc",
+          "stationOrders"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "globalOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "totalCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stationOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationOrderView"
+            }
+          }
+        }
+      },
+      "PlaceOrderRequest": {
+        "required": [
+          "clientOrderId",
+          "tableName",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "clientOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OrderItemRequest"
+            }
+          },
+          "deliveryModes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OrderDeliveryModeRequest"
+            }
+          }
+        }
+      },
+      "RedeemedEnrolmentView": {
+        "required": [
+          "deviceId",
+          "deviceToken",
+          "deviceKind",
+          "staffMember",
+          "station",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceToken": {
+            "type": "string"
+          },
+          "deviceKind": {
+            "$ref": "#/components/schemas/DeviceOwnerKind"
+          },
+          "staffMember": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StaffMemberView"
+              }
+            ]
+          },
+          "station": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StationSummaryView"
+              }
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
+      "RedeemEnrolmentRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userAgent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "previousDeviceToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RenameStaffMemberRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RunningFestivalView": {
+        "required": [
+          "festivalId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "festivalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveCategoryRequest": {
+        "required": [
+          "name",
+          "colourHex"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "colourHex": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SavedFestivalView": {
+        "required": [
+          "festivalId"
+        ],
+        "type": "object",
+        "properties": {
+          "festivalId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SavedItemView": {
+        "required": [
+          "itemId"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SavedStationView": {
+        "required": [
+          "stationId"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SaveFestivalItemRequest": {
+        "required": [
+          "priceCents",
+          "stationIds"
+        ],
+        "type": "object",
+        "properties": {
+          "priceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stationIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "SaveFestivalRequest": {
+        "required": [
+          "name",
+          "startsAtUtc",
+          "endsAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SaveItemRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productionMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "isQueueIndependent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SaveStationRequest": {
+        "required": [
+          "name",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SessionView": {
+        "required": [
+          "deviceId",
+          "deviceKind",
+          "staffMember",
+          "station",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceKind": {
+            "$ref": "#/components/schemas/DeviceOwnerKind"
+          },
+          "staffMember": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StaffMemberView"
+              }
+            ]
+          },
+          "station": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StationSummaryView"
+              }
+            ]
+          },
+          "language": {
+            "type": "string"
+          }
+        }
+      },
+      "SetAvailabilityRequest": {
+        "required": [
+          "isAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "isAvailable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SettleItemsRequest": {
+        "required": [
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SettleLineRequest"
+            }
+          }
+        }
+      },
+      "SettleLineRequest": {
+        "required": [
+          "orderItemId",
+          "paidPriceCents"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paidPriceCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "paymentNotice": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SettlementView": {
+        "required": [
+          "settledOrderItemIds",
+          "reappliedOrderItemIds",
+          "alreadySettledByOthersOrderItemIds",
+          "otherPhonesWereTold"
+        ],
+        "type": "object",
+        "properties": {
+          "settledOrderItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "reappliedOrderItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "alreadySettledByOthersOrderItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "otherPhonesWereTold": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StaffMemberView": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "StationEstimateListView": {
+        "required": [
+          "stations"
+        ],
+        "type": "object",
+        "properties": {
+          "stations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationEstimateView"
+            }
+          }
+        }
+      },
+      "StationEstimateView": {
+        "required": [
+          "stationId",
+          "queuedMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "queuedMinutes": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "StationFulfilledView": {
+        "required": [
+          "stationOrders"
+        ],
+        "type": "object",
+        "properties": {
+          "stationOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationOrderQueueView"
+            }
+          }
+        }
+      },
+      "StationItemSelectionRequest": {
+        "required": [
+          "orderItemIds"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "StationOrderQueueView": {
+        "required": [
+          "stationOrderId",
+          "globalOrderNumber",
+          "stationOrderNumber",
+          "tableName",
+          "staffMemberName",
+          "deliveryMode",
+          "createdAtUtc",
+          "isHiddenFromAsItComesQueue",
+          "itemCount",
+          "fulfilledItemCount",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "stationOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "globalOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stationOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tableName": {
+            "type": "string"
+          },
+          "staffMemberName": {
+            "type": "string"
+          },
+          "deliveryMode": {
+            "$ref": "#/components/schemas/DeliveryMode"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isHiddenFromAsItComesQueue": {
+            "type": "boolean"
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fulfilledItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationQueueItemView"
+            }
+          }
+        }
+      },
+      "StationOrdersChangedEvent": {
+        "required": [
+          "stationId"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "StationOrderView": {
+        "required": [
+          "stationOrderId",
+          "stationId",
+          "stationName",
+          "stationOrderNumber",
+          "deliveryMode",
+          "itemIds"
+        ],
+        "type": "object",
+        "properties": {
+          "stationOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationName": {
+            "type": "string"
+          },
+          "stationOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deliveryMode": {
+            "$ref": "#/components/schemas/DeliveryMode"
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "StationQueueItemView": {
+        "required": [
+          "orderItemId",
+          "itemName",
+          "note",
+          "fulfilledAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fulfilledAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "StationQueueView": {
+        "required": [
+          "station",
+          "orders",
+          "asItComes"
+        ],
+        "type": "object",
+        "properties": {
+          "station": {
+            "$ref": "#/components/schemas/StationSummaryView"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationOrderQueueView"
+            }
+          },
+          "asItComes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationOrderQueueView"
+            }
+          }
+        }
+      },
+      "StationsChangedEvent": {
+        "type": "object"
+      },
+      "StationSummaryView": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "TableNamesView": {
+        "required": [
+          "tableNames"
+        ],
+        "type": "object",
+        "properties": {
+          "tableNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TableOrderRecordItemView": {
+        "required": [
+          "orderItemId",
+          "orderId",
+          "globalOrderNumber",
+          "itemName",
+          "note",
+          "unitPriceCents",
+          "orderedAtUtc",
+          "fulfilledAtUtc",
+          "settledAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "globalOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitPriceCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fulfilledAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "settledAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "TableOrderRecordView": {
+        "required": [
+          "orderId",
+          "globalOrderNumber",
+          "createdAtUtc",
+          "staffMemberName",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "globalOrderNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "staffMemberName": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableOrderRecordItemView"
+            }
+          }
+        }
+      },
+      "TableOrderReportView": {
+        "required": [
+          "tableName",
+          "openAmountCents",
+          "orders"
+        ],
+        "type": "object",
+        "properties": {
+          "tableName": {
+            "type": "string"
+          },
+          "openAmountCents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableOrderRecordView"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "GetDocument.Insider"
+    }
+  ]
+}

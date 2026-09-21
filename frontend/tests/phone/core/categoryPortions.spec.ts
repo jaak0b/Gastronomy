@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { countCategoryPortions } from '../../../src/phone/core/categoryPortions'
-import type { CatalogItem, DraftLine, DraftOrder } from '../../../src/shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from '../../../src/phone/core/draftCart'
+import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 
 const MAIN_COURSE = 'category-hauptspeise'
 const DRINKS = 'category-getraenke'
 
-function item(id: string, name: string, categoryId: string): CatalogItem {
+function item(id: string, name: string, categoryId: string): CatalogItemView {
   return {
     id,
     name,
@@ -19,7 +20,7 @@ function item(id: string, name: string, categoryId: string): CatalogItem {
   }
 }
 
-const ITEMS: CatalogItem[] = [
+const ITEMS: CatalogItemView[] = [
   item('item-semmel', 'Semmel', MAIN_COURSE),
   item('item-gulasch', 'Gulasch', MAIN_COURSE),
   item('item-bier', 'Bier', DRINKS),

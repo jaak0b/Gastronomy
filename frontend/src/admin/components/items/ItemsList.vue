@@ -3,11 +3,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { refusalFrom, type AdminActionResult } from '../../core/adminActionResult'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminCategory, AdminItem } from '../../../shared/api/apiTypes'
+import { AdminCategoryView, AdminItemView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { groupByCategorySortingItemsByName } from '../../../shared/core/grouping'
 import { letteringColourOn } from '../../../shared/core/letteringColour'
 import {
+
   useAdminCategoriesStore,
   type AdminCategoryDraft,
   type CategoryMoveDirection,
@@ -23,12 +24,12 @@ const { t } = useI18n()
 const items = useAdminItemsStore()
 const categories = useAdminCategoriesStore()
 const festivals = useAdminFestivalsStore()
-const editingItem = ref<AdminItem | null>(null)
+const editingItem = ref<AdminItemView | null>(null)
 const isCreating = ref(false)
 const showsDeactivated = ref(false)
 const askingAboutId = ref<string | null>(null)
 const askingAboutCategoryId = ref<string | null>(null)
-const renamedCategory = ref<AdminCategory | null>(null)
+const renamedCategory = ref<AdminCategoryView | null>(null)
 const isCreatingCategory = ref(false)
 const itemRefusal = ref<AdminErrorMessage | null>(null)
 const categoryRefusal = ref<AdminErrorMessage | null>(null)
@@ -55,7 +56,7 @@ const isCategoryDialogOpen = computed(
 )
 const isItemDialogOpen = computed(() => isCreating.value || editingItem.value !== null)
 
-function isOnTheRunningFestivalsMenu(item: AdminItem): boolean {
+function isOnTheRunningFestivalsMenu(item: AdminItemView): boolean {
   return festivals.runningFestival !== null && item.atTheFestival !== null
 }
 
@@ -99,7 +100,7 @@ function forgetRefusals(): void {
   categoryRefusal.value = null
 }
 
-function startEditing(item: AdminItem): void {
+function startEditing(item: AdminItemView): void {
   editingItem.value = item
   forgetRefusals()
 }
@@ -144,7 +145,7 @@ function startCreatingCategory(): void {
   isCreatingCategory.value = true
 }
 
-function startRenamingCategory(category: AdminCategory): void {
+function startRenamingCategory(category: AdminCategoryView): void {
   forgetRefusals()
   isCreatingCategory.value = false
   renamedCategory.value = category

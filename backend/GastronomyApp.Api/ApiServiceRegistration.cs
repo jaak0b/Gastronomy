@@ -1,8 +1,9 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Auth.Filters;
+using GastronomyApp.Api.DocumentTransformers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Hosting;
@@ -155,6 +156,12 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<HubNotificationDispatcher>();
 
     services.ConfigureHttpJsonOptions(jsonOptions => jsonOptions.SerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
+
+    services.AddOpenApi(documentOptions =>
+                        {
+                          documentOptions.AddSchemaTransformer(new StringEncodedNumberSchemaTransformer());
+                          documentOptions.AddDocumentTransformer(new HubEventSchemaTransformer());
+                        });
 
     services.AddSingleton(options.Language);
 

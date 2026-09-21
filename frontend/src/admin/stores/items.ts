@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
-import { adminItemsResponseSchema, adminItemSchema } from '../../shared/api/apiSchemas'
+import { AdminItemListView, AdminItemView } from '../../shared/api/generatedSchemas'
 import { adminFailed, adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import type { AdminItem } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
@@ -26,17 +25,17 @@ export interface FestivalPlacement {
 }
 
 export const useAdminItemsStore = defineStore('adminItems', () => {
-  const items = ref<AdminItem[]>([])
+  const items = ref<AdminItemView[]>([])
   const loadFailed = ref(false)
   const festivalInView = ref<string | null>(null)
 
   const itemsGate = createLatestRequestGate()
-  const pendingCreatedItems = createPendingCreatedEntities<AdminItem>((item) => item.itemId)
+  const pendingCreatedItems = createPendingCreatedEntities<AdminItemView>((item) => item.itemId)
 
   async function loadItemsFrom(path: string): Promise<void> {
     await loadAdminList({
       path,
-      schema: adminItemsResponseSchema,
+      schema: AdminItemListView,
       gate: itemsGate,
       itemsOf: (response) => response.items,
       showItems: (loaded) => {
@@ -83,12 +82,12 @@ export const useAdminItemsStore = defineStore('adminItems', () => {
     }
   }
 
-  async function create(item: AdminItemDraft): Promise<AdminActionResult<AdminItem>> {
+  async function create(item: AdminItemDraft): Promise<AdminActionResult<AdminItemView>> {
     const scopeAtStart = festivalInView.value
     const result = await request('/api/admin/items', {
       method: 'POST',
       body: buildItemRequestBody(item),
-      schema: adminItemSchema,
+      schema: AdminItemView,
     })
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)

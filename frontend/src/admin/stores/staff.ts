@@ -1,17 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { requestAction } from '../../shared/api/client'
-import { adminStaffMembersResponseSchema } from '../../shared/api/apiSchemas'
+import { AdminStaffMemberListView, AdminStaffMemberView } from '../../shared/api/generatedSchemas'
 import type { AdminActionResult } from '../core/adminActionResult'
 import { reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
-import type { AdminStaffMember } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useAdminEnrolmentStore } from './enrolment'
 
 export const useAdminStaffStore = defineStore('adminStaff', () => {
-  const staffMembers = ref<AdminStaffMember[]>([])
+  const staffMembers = ref<AdminStaffMemberView[]>([])
   const loadFailed = ref(false)
 
   const staffMembersGate = createLatestRequestGate()
@@ -19,7 +18,7 @@ export const useAdminStaffStore = defineStore('adminStaff', () => {
   async function load(): Promise<void> {
     await loadAdminList({
       path: '/api/admin/staff-members',
-      schema: adminStaffMembersResponseSchema,
+      schema: AdminStaffMemberListView,
       gate: staffMembersGate,
       itemsOf: (response) => response.staffMembers,
       showItems: (loaded) => {

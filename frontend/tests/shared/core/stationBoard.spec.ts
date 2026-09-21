@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+
   deliveryModeColourToken,
   deliveryModeKey,
   itemLineText,
@@ -13,7 +14,7 @@ import {
   stationStats,
 } from '../../../src/shared/core/stationBoard'
 import type { ItemLine } from '../../../src/shared/core/stationBoard'
-import type { StationOrder, StationOrderItem } from '../../../src/shared/api/apiTypes'
+import { StationOrderQueueView, StationQueueItemView } from '../../../src/shared/api/generatedSchemas'
 
 function articleAndUnits(lines: readonly ItemLine[]): Omit<ItemLine, 'key'>[] {
   return lines.map(({ itemName, note, units }) => ({ itemName, note, units }))
@@ -28,11 +29,11 @@ function stationOrderItem(
   itemName = 'Bratwurst',
   fulfilledAtUtc: string | null = null,
   note: string | null = null,
-): StationOrderItem {
+): StationQueueItemView {
   return { orderItemId, itemName, note, fulfilledAtUtc }
 }
 
-function stationOrder(overrides: Partial<StationOrder> = {}): StationOrder {
+function stationOrder(overrides: Partial<StationOrderQueueView> = {}): StationOrderQueueView {
   return {
     stationOrderId: 'station-order-1',
     globalOrderNumber: 137,

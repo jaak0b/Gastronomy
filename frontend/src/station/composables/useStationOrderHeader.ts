@@ -1,6 +1,6 @@
 import { computed, toValue, type ComputedRef, type MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { StationOrder } from '../../shared/api/apiTypes'
+import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import { formatFestivalMoment } from '../../shared/core/festivalTimes'
 import { deliveryModeColourToken, deliveryModeKey } from '../../shared/core/stationBoard'
 
@@ -13,7 +13,7 @@ export interface StationOrderHeader {
 }
 
 export function useStationOrderHeader(
-  stationOrder: MaybeRefOrGetter<StationOrder>,
+  stationOrder: MaybeRefOrGetter<StationOrderQueueView>,
 ): StationOrderHeader {
   const { t, locale } = useI18n()
 

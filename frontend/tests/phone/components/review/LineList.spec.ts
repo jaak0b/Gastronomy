@@ -4,7 +4,8 @@ import { mount } from '@vue/test-utils'
 import { testPlugins } from '../../../support/plugins'
 import LineList from '../../../../src/phone/components/review/LineList.vue'
 import type { BasketLineView } from '../../../../src/phone/core/basket'
-import type { AppLanguage, DeliveryMode, StationEstimate } from '../../../../src/shared/api/apiTypes'
+import { DeliveryMode, StationEstimateView } from '../../../../src/shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../../src/shared/core/deviceLanguage'
 import { routedStationId } from '../../../../src/phone/core/routingPreview'
 
 const STATION_NAMES: Record<string, string> = {
@@ -37,7 +38,7 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
 }
 
 interface ListOptions {
-  estimates?: StationEstimate[]
+  estimates?: StationEstimateView[]
   deliveryModes?: Record<string, DeliveryMode>
   changesAreRefused?: boolean
   language?: AppLanguage

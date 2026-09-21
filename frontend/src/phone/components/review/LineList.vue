@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AppLanguage, DeliveryMode, StationEstimate } from '../../../shared/api/apiTypes'
+import { DeliveryMode, StationEstimateView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { mergeLinesWithSameArticleAndNote, type CollapsedLine } from '../../../shared/core/collapse'
 import { countedName } from '../../core/countedName'
@@ -17,7 +18,7 @@ interface StationPart extends StationDelivery {
 const props = defineProps<{
   lines: BasketLineView[]
   language: AppLanguage
-  estimates: StationEstimate[]
+  estimates: StationEstimateView[]
   deliveryModeFor: (stationId: string) => DeliveryMode
   changesAreRefused: boolean
 }>()

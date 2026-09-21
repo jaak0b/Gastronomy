@@ -1,12 +1,12 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import type { StationOrder } from '../../shared/api/apiTypes'
+import { StationOrderQueueView } from '../../shared/api/generatedSchemas'
 import { selectedUnits, type ItemLine } from '../../shared/core/stationBoard'
 import { useStationStore } from '../stores/station'
 
 export interface StationDoneDialogState {
-  doneStationOrder: Ref<StationOrder | null>
+  doneStationOrder: Ref<StationOrderQueueView | null>
   doneUnits: ComputedRef<ItemLine[]>
-  openDone: (stationOrder: StationOrder, orderItemIds: string[]) => void
+  openDone: (stationOrder: StationOrderQueueView, orderItemIds: string[]) => void
   closeDone: () => void
   confirmDone: () => Promise<void>
 }
@@ -14,7 +14,7 @@ export interface StationDoneDialogState {
 export function useStationDoneDialog(): StationDoneDialogState {
   const station = useStationStore()
 
-  const doneStationOrder = ref<StationOrder | null>(null)
+  const doneStationOrder = ref<StationOrderQueueView | null>(null)
   const doneItemIds = ref<string[]>([])
 
   const doneUnits = computed<ItemLine[]>(() =>
@@ -23,7 +23,7 @@ export function useStationDoneDialog(): StationDoneDialogState {
       : selectedUnits([doneStationOrder.value], doneItemIds.value),
   )
 
-  function openDone(stationOrder: StationOrder, orderItemIds: string[]): void {
+  function openDone(stationOrder: StationOrderQueueView, orderItemIds: string[]): void {
     doneStationOrder.value = stationOrder
     doneItemIds.value = orderItemIds
   }

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+
   candidateStations,
   needsStationChoice,
   routedStationId,
   stationStillPreparesIt,
 } from '../../../src/phone/core/routingPreview'
-import type { CatalogItem } from '../../../src/shared/api/apiTypes'
+import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
 
-function item(stationIds: string[]): CatalogItem {
+function item(stationIds: string[]): CatalogItemView {
   return {
     id: 'item-1',
     name: 'Bratwurst',

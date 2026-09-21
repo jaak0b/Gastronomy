@@ -1,19 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { onUnauthorisedAnswer, request, requestAction } from '../api/client'
-import { redeemResponseSchema, sessionInfoSchema } from '../api/apiSchemas'
-import type {
-  AppLanguage,
-  DeviceKind,
-  StaffMember,
-  StationIdentity,
-} from '../api/apiTypes'
+import { DeviceOwnerKind, RedeemedEnrolmentView, SessionView, StaffMemberView, StationSummaryView } from '../api/generatedSchemas'
+import { appLanguageSchema, type AppLanguage } from '../core/deviceLanguage'
 import { assertNever } from '../core/assertNever'
 import { deviceTokenIsWellFormed } from '../core/deviceToken'
 import type { DeviceSession } from '../core/landing'
 import type { StartingUpFailure } from '../core/startingUp'
 import { useConnectionStore } from './connection'
 import { LANGUAGE_STORAGE_KEY, initialLanguage, storeLanguage } from '../core/deviceLanguage'
+
+const sessionAnswerSchema = SessionView.extend({ language: appLanguageSchema })
+
+const redeemedEnrolmentAnswerSchema = RedeemedEnrolmentView.extend({ language: appLanguageSchema })
 
 export const TOKEN_STORAGE_KEY = 'deviceToken'
 export { LANGUAGE_STORAGE_KEY }
@@ -37,12 +36,12 @@ function storedDeviceToken(): string | null {
 
 export const useSessionStore = defineStore('session', () => {
   const deviceToken = ref<string | null>(storedDeviceToken())
-  const staffMember = ref<StaffMember | null>(null)
-  const station = ref<StationIdentity | null>(null)
+  const staffMember = ref<StaffMemberView | null>(null)
+  const station = ref<StationSummaryView | null>(null)
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
-  const deviceKind = ref<DeviceKind | null>(null)
+  const deviceKind = ref<DeviceOwnerKind | null>(null)
   const deviceId = ref<string | null>(null)
   const startingUpFailure = ref<StartingUpFailure | null>(null)
   const deviceSession = computed<DeviceSession>(() => {
@@ -55,7 +54,7 @@ export const useSessionStore = defineStore('session', () => {
     return { state: 'setUp', deviceKind: deviceKind.value }
   })
 
-  function storeToken(token: string, kind: DeviceKind, id: string): void {
+  function storeToken(token: string, kind: DeviceOwnerKind, id: string): void {
     deviceToken.value = token
     deviceKind.value = kind
     deviceId.value = id
@@ -113,7 +112,7 @@ export const useSessionStore = defineStore('session', () => {
         userAgent: navigator.userAgent,
         previousDeviceToken: storedDeviceToken(),
       },
-      schema: redeemResponseSchema,
+      schema: redeemedEnrolmentAnswerSchema,
     })
     switch (result.kind) {
       case 'ok':
@@ -143,7 +142,7 @@ export const useSessionStore = defineStore('session', () => {
     startingUpFailure.value = null
     const result = await request('/api/session', {
       token: tokenTheAnswerBelongsTo,
-      schema: sessionInfoSchema,
+      schema: sessionAnswerSchema,
     })
     if (deviceToken.value !== tokenTheAnswerBelongsTo) {
       return

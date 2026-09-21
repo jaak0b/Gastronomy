@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { isLineFlaggedSoldOut, itemState } from '../../../src/phone/core/catalogItemState'
-import type { Catalog, CatalogItem } from '../../../src/shared/api/apiTypes'
+import { CatalogItemView, CatalogView } from '../../../src/shared/api/generatedSchemas'
 import type { BasketLineView } from '../../../src/phone/core/basket'
 
-function item(id: string, isAvailable: boolean): CatalogItem {
+function item(id: string, isAvailable: boolean): CatalogItemView {
   return {
     id,
     name: 'Bratwurst',
@@ -16,7 +16,7 @@ function item(id: string, isAvailable: boolean): CatalogItem {
   }
 }
 
-function catalogWith(items: CatalogItem[]): Catalog {
+function catalogWith(items: CatalogItemView[]): CatalogView {
   return {
     categories: [
       { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AdminCategory } from '../../../shared/api/apiTypes'
+import { AdminCategoryView } from '../../../shared/api/generatedSchemas'
 import type { AdminCategoryDraft } from '../../stores/categories'
 import BaseFormDialog from '../BaseFormDialog.vue'
 
 const COLOUR_OF_A_NEW_CATEGORY = '#607D8B'
 
-const props = defineProps<{ category: AdminCategory | null; errorText: string | null }>()
+const props = defineProps<{ category: AdminCategoryView | null; errorText: string | null }>()
 const emit = defineEmits<{ save: [draft: AdminCategoryDraft]; cancel: [] }>()
 
 const { t } = useI18n()

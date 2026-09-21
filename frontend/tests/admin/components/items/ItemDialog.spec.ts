@@ -4,21 +4,20 @@ import { VSelect } from 'vuetify/components'
 import { createPinia, setActivePinia } from 'pinia'
 import ItemDialog from '../../../../src/admin/components/items/ItemDialog.vue'
 import CategoryDialog from '../../../../src/admin/components/categories/CategoryDialog.vue'
-import type { AdminCategory } from '../../../../src/shared/api/apiTypes'
+import { AdminCategoryView, AdminItemView } from '../../../../src/shared/api/generatedSchemas'
 import { useAdminCategoriesStore } from '../../../../src/admin/stores/categories'
-import type { AdminItem } from '../../../../src/shared/api/apiTypes'
 import { testPlugins } from '../../../support/plugins'
 
 const FOOD_ID = '33333333-3333-3333-3333-333333333333'
 const DRINKS_ID = '44444444-4444-4444-4444-444444444444'
 const DESSERT_ID = '55555555-5555-5555-5555-555555555555'
 
-const CATEGORIES: AdminCategory[] = [
+const CATEGORIES: AdminCategoryView[] = [
   { categoryId: FOOD_ID, name: 'Speisen', colourHex: '#FFEB3B', sortOrder: 1, isActive: true },
   { categoryId: DRINKS_ID, name: 'Getränke', colourHex: '#C62828', sortOrder: 2, isActive: true },
 ]
 
-const CREATED_CATEGORY: AdminCategory = {
+const CREATED_CATEGORY: AdminCategoryView = {
   categoryId: DESSERT_ID,
   name: 'Nachtisch',
   colourHex: '#6D4C41',
@@ -26,7 +25,7 @@ const CREATED_CATEGORY: AdminCategory = {
   isActive: true,
 }
 
-const BRATWURST: AdminItem = {
+const BRATWURST: AdminItemView = {
   itemId: 'item-1',
   name: 'Bratwurst',
   categoryId: FOOD_ID,
@@ -37,7 +36,7 @@ const BRATWURST: AdminItem = {
   atTheFestival: { priceCents: 350, isAvailable: true, stationIds: ['station-kueche'] },
 }
 
-function mountDialog(item: AdminItem | null = null, locale: 'de' | 'en' = 'de'): VueWrapper {
+function mountDialog(item: AdminItemView | null = null, locale: 'de' | 'en' = 'de'): VueWrapper {
   return mount(ItemDialog, {
     props: { item, errorText: null },
     global: { plugins: testPlugins(locale) },
@@ -311,7 +310,7 @@ describe('the category field', () => {
     await vi.waitFor(() => expect(document.querySelector('.category-field')).not.toBeNull())
 
     expect(
-      dialog.getComponent(VSelect).props('items').map((category: AdminCategory) => category.name),
+      dialog.getComponent(VSelect).props('items').map((category: AdminCategoryView) => category.name),
     ).toEqual(['Speisen', 'Getränke'])
   })
 

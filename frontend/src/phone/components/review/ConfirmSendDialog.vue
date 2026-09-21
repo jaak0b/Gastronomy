@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type {
-  AppLanguage,
-  ConfirmedSettlement,
-  DeliveryMode,
-  StationEstimate,
-} from '../../../shared/api/apiTypes'
+import type { ConfirmedSettlement } from '../../core/submission'
+import { DeliveryMode, StationEstimateView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
 import { deliveryModeKey } from '../../../shared/core/stationBoard'
 import {
+
   deliveriesWithAStation,
   stationDeliveries,
   type StationDelivery,
@@ -24,7 +22,7 @@ const props = defineProps<{
   totalCents: number
   language: AppLanguage
   lines: BasketLineView[]
-  estimates: StationEstimate[]
+  estimates: StationEstimateView[]
   deliveryModeFor: (stationId: string) => DeliveryMode
 }>()
 

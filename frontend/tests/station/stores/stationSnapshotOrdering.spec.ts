@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { StationOrder, StationOrderItem } from '../../../src/shared/api/apiTypes'
+import { StationOrderQueueView, StationQueueItemView } from '../../../src/shared/api/generatedSchemas'
 import { useStationStore } from '../../../src/station/stores/station'
 import { useSessionStore } from '../../../src/shared/stores/session'
 
@@ -11,11 +11,11 @@ function item(
   itemName: string,
   note: string | null = null,
   fulfilledAtUtc: string | null = null,
-): StationOrderItem {
+): StationQueueItemView {
   return { orderItemId, itemName, note, fulfilledAtUtc }
 }
 
-function stationOrder(overrides: Partial<StationOrder> = {}): StationOrder {
+function stationOrder(overrides: Partial<StationOrderQueueView> = {}): StationOrderQueueView {
   return {
     stationOrderId: 'station-order-1',
     globalOrderNumber: 40,
@@ -32,7 +32,7 @@ function stationOrder(overrides: Partial<StationOrder> = {}): StationOrder {
   }
 }
 
-function queueBody(orders: StationOrder[]): unknown {
+function queueBody(orders: StationOrderQueueView[]): unknown {
   return { station: KITCHEN, orders, asItComes: [] }
 }
 

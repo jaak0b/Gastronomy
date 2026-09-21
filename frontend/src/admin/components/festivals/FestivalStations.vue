@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AdminErrorMessage } from '../../core/adminErrorMessage'
-import type { AdminStation } from '../../../shared/api/apiTypes'
+import { AdminStationView } from '../../../shared/api/generatedSchemas'
 import { assertNever } from '../../../shared/core/assertNever'
 import { useAdminStationsStore, type StationDraft } from '../../stores/stations'
 import BaseConfirmDialog from '../BaseConfirmDialog.vue'
@@ -15,8 +15,8 @@ const { t } = useI18n()
 const stations = useAdminStationsStore()
 const chosenStationId = ref<string | null>(null)
 const isCreating = ref(false)
-const editingStation = ref<AdminStation | null>(null)
-const removedStation = ref<AdminStation | null>(null)
+const editingStation = ref<AdminStationView | null>(null)
+const removedStation = ref<AdminStationView | null>(null)
 const refusedStationId = ref<string | null>(null)
 const refusal = ref<AdminErrorMessage | null>(null)
 const stationRefusal = ref<AdminErrorMessage | null>(null)
@@ -78,7 +78,7 @@ async function create(draft: StationDraft): Promise<void> {
   }
 }
 
-function startEditing(station: AdminStation): void {
+function startEditing(station: AdminStationView): void {
   stationRefusal.value = null
   editingStation.value = station
 }

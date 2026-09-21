@@ -1,4 +1,5 @@
-import type { CatalogItem, DraftLine, DraftOrder } from '../../shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from './draftCart'
+import { CatalogItemView } from '../../shared/api/generatedSchemas'
 import { groupKeepingFirstSeenOrder } from '../../shared/core/collapse'
 import { needsStationChoice } from './routingPreview'
 
@@ -27,7 +28,7 @@ export function countItemPortions(draft: DraftOrder, catalogItemId: string): num
 
 export function positionsForItem(
   draft: DraftOrder,
-  item: CatalogItem,
+  item: CatalogItemView,
   stationNameOf: (stationId: string) => string,
 ): ItemPosition[] {
   const hasAStationChoice = needsStationChoice(item)

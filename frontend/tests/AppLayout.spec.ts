@@ -10,30 +10,32 @@ const { TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
 const App = (await import('../src/App.vue')).default
 const { testPlugins } = await import('./support/plugins')
 
+function answerFor(url: string): unknown {
+  if (url.startsWith('/api/catalog')) {
+    return { festival: null, categories: [], items: [], stations: [] }
+  }
+  if (url.startsWith('/api/estimates')) {
+    return { stations: [] }
+  }
+  if (url.startsWith('/api/open-items/table-names')) {
+    return { tableNames: [] }
+  }
+  if (url.startsWith('/api/open-items')) {
+    return { tables: [], itemsWithoutAnOrderCount: 0 }
+  }
+  return {
+    deviceId: 'device-1',
+    deviceKind: 'staffMember',
+    staffMember: { id: 'staff-1', name: 'Anna' },
+    station: null,
+    language: 'de',
+  }
+}
+
 function stubTheLaptop(): void {
   vi.stubGlobal(
     'fetch',
-    vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            language: 'de',
-            deviceId: 'device-1',
-            deviceKind: 'staffMember',
-            staffMember: { id: 'staff-1', name: 'Anna' },
-            station: null,
-            festival: null,
-            categories: [],
-            items: [],
-            stations: [],
-            orders: [],
-            tables: [],
-            tableNames: [],
-            itemsWithoutAnOrderCount: 0,
-          }),
-          { status: 200 },
-        ),
-    ),
+    vi.fn(async (url: string) => new Response(JSON.stringify(answerFor(url)), { status: 200 })),
   )
 }
 

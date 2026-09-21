@@ -1,4 +1,4 @@
-import type { AppLanguage } from '../../shared/api/apiTypes'
+import type { AppLanguage } from '../../shared/core/deviceLanguage'
 import type { EstimateRange } from './estimates'
 import { formatMinutes, wholeMinutes } from '../../shared/core/productionMinutes'
 import type { Translate } from '../../shared/core/translation'

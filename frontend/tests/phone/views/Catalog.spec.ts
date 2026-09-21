@@ -1,17 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import Catalog from '../../../src/phone/views/Catalog.vue'
+import CatalogPage from '../../../src/phone/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useEstimatesStore } from '../../../src/phone/stores/estimates'
 import { useOrderStore } from '../../../src/phone/stores/order'
-import type { Catalog as CatalogData, StationEstimate } from '../../../src/shared/api/apiTypes'
+import { CatalogView, StationEstimateView } from '../../../src/shared/api/generatedSchemas'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 
 enableAutoUnmount(afterEach)
 
-const CATALOG: CatalogData = {
+const CATALOG: CatalogView = {
   categories: [
     { categoryId: 'category-essen', name: 'Essen', colourHex: '#FFEB3B', sortOrder: 1 },
     { categoryId: 'category-getraenke', name: 'Getränke', colourHex: '#C62828', sortOrder: 2 },
@@ -49,7 +49,7 @@ const CATALOG: CatalogData = {
 function mountCatalog() {
   const catalog = useCatalogStore()
   catalog.catalog = CATALOG
-  return mount(Catalog, {
+  return mount(CatalogPage, {
     global: { plugins: testPlugins() },
     attachTo: document.body,
   })
@@ -118,7 +118,7 @@ describe('the categories on the ordering screen', () => {
   it('keeps the order the laptop gives the categories in', () => {
     const catalog = useCatalogStore()
     catalog.catalog = { ...CATALOG, categories: [...CATALOG.categories].reverse() }
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     expect(categoryButtons(view)).toEqual(['Getränke', 'Essen'])
   })
@@ -146,7 +146,7 @@ describe('the categories on the ordering screen', () => {
   it('shows no category and no item while the laptop still holds no menu', () => {
     const catalog = useCatalogStore()
     catalog.catalog = { ...CATALOG, categories: [], items: [] }
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     expect(view.findAll('.category-button')).toHaveLength(0)
     expect(view.findAll('.item-row')).toHaveLength(0)
@@ -412,7 +412,7 @@ describe('the length of what a waiter types on the ordering screen', () => {
   })
 })
 
-const CATALOG_WITH_A_STATION_CHOICE: CatalogData = {
+const CATALOG_WITH_A_STATION_CHOICE: CatalogView = {
   ...CATALOG,
   items: [
     ...CATALOG.items,
@@ -446,7 +446,7 @@ describe('the question about which station is to make an item', () => {
   function mountCatalogWithAStationChoice() {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
-    return mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    return mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
   async function askWhereTheCoffeeIsMade(view: MountedCatalog): Promise<void> {
@@ -576,7 +576,7 @@ describe('the question about which station is to make an item', () => {
   })
 })
 
-const CATALOG_WITH_TIMED_ITEMS: CatalogData = {
+const CATALOG_WITH_TIMED_ITEMS: CatalogView = {
   ...CATALOG,
   items: [
     { ...CATALOG.items[0], productionMinutes: 10 },
@@ -595,7 +595,7 @@ const CATALOG_WITH_TIMED_ITEMS: CatalogData = {
   ],
 }
 
-const TIMED_QUEUES: StationEstimate[] = [
+const TIMED_QUEUES: StationEstimateView[] = [
   { stationId: 'station-kueche', queuedMinutes: 0 },
   { stationId: 'station-bar', queuedMinutes: 50 },
 ]
@@ -613,7 +613,7 @@ describe('the waiting time on the ordering screen', () => {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_TIMED_ITEMS
     useEstimatesStore().stations = TIMED_QUEUES
-    return mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    return mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
   it('writes one time on an item only one station makes', async () => {
@@ -665,7 +665,7 @@ describe('the waiting time on the ordering screen', () => {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
     useEstimatesStore().stations = TIMED_QUEUES
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await openCategory(view, 0)
     await view.findAll('.item-row .add')[1].trigger('click')
@@ -704,7 +704,7 @@ describe('the waiting time on the ordering screen', () => {
   })
 
   it('keeps a line that sold out out of the range on the row', async () => {
-    const catalogWithASoldOutWasser: CatalogData = {
+    const catalogWithASoldOutWasser: CatalogView = {
       ...CATALOG_WITH_TIMED_ITEMS,
       items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
         item.id === 'item-wasser' ? { ...item, isAvailable: false } : item,
@@ -719,7 +719,7 @@ describe('the waiting time on the ordering screen', () => {
       stationId: 'station-bar',
       name: 'Wasser',
     })
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await openCategory(view, 0)
 
@@ -730,7 +730,7 @@ describe('the waiting time on the ordering screen', () => {
   })
 
   it('writes no time on the station buttons when the item has just sold out', async () => {
-    const catalogWithASoldOutKaffee: CatalogData = {
+    const catalogWithASoldOutKaffee: CatalogView = {
       ...CATALOG_WITH_TIMED_ITEMS,
       items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
         item.id === 'item-kaffee' ? { ...item, isAvailable: false } : item,
@@ -745,7 +745,7 @@ describe('the waiting time on the ordering screen', () => {
       stationId: 'station-bar',
       name: 'Kaffee',
     })
-    const view = mount(Catalog, { global: { plugins: testPlugins() }, attachTo: document.body })
+    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await openCategory(view, 0)
     await view.findAll('.item-row')[1].get('.group-station').trigger('click')

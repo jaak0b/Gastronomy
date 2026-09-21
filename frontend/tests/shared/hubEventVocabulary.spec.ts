@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { sourceFilesUnder } from '../support/sourceFiles'
 
-const BACKEND_HUB = `${process.cwd()}/../backend/GastronomyApp.Api/Names/HubEventNames.cs`
+const BACKEND_HUB = `${process.cwd()}/../backend/GastronomyApp.Api/Names.cs`
 const SOURCE_ROOT = `${process.cwd()}/src`
 
 function eventsTheLaptopCanPush(): string[] {
   const source = readFileSync(BACKEND_HUB, 'utf8')
-  const declaration = source.indexOf('public sealed record HubEventNames')
+  const declaration = source.indexOf('public static class HubEvents')
   const recordEnd = source.indexOf('\n}', declaration)
   const body =
     recordEnd < declaration ? source.substring(declaration) : source.substring(declaration, recordEnd)

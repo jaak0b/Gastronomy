@@ -1,22 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request, type ApiResult } from '../../shared/api/client'
-import {
-  openItemsResponseSchema,
-  settlementResponseSchema,
-  tableNamesResponseSchema,
-  tableOrderReportSchema,
-} from '../../shared/api/apiSchemas'
-import type {
-  OpenItemsSettleLine,
-  OpenTable,
-  SettlementResponse,
-  TableOrderReport,
-} from '../../shared/api/apiTypes'
+import { OpenItemsView, OpenTableView, SettlementView, TableNamesView, TableOrderReportView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
+
   noticeAfterSettling,
+  type SentSettleLine,
   openTableInReport,
   selectedAmountCents,
   selectedItems,
@@ -32,7 +23,7 @@ import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
 export const useOpenItemsStore = defineStore('openItems', () => {
-  const tables = ref<OpenTable[]>([])
+  const tables = ref<OpenTableView[]>([])
   const knownTableNames = ref<string[]>([])
   const selectedItemIds = ref<string[]>([])
   const hasLoaded = ref(false)
@@ -41,7 +32,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const isSettling = ref(false)
   const notice = ref<SettleNotice | null>(null)
   const lookupName = ref<string | null>(null)
-  const lookupReport = ref<TableOrderReport | null>(null)
+  const lookupReport = ref<TableOrderReportView | null>(null)
   const lookupFailed = ref(false)
 
   const tablesGate = createLatestRequestGate()
@@ -50,11 +41,11 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   const isLookingUp = computed(() => lookupName.value !== null)
 
-  const lookupTable = computed<OpenTable | null>(() =>
+  const lookupTable = computed<OpenTableView | null>(() =>
     lookupReport.value === null ? null : openTableInReport(lookupReport.value),
   )
 
-  const activeTables = computed<OpenTable[]>(() => {
+  const activeTables = computed<OpenTableView[]>(() => {
     if (lookupName.value === null) {
       return tables.value
     }
@@ -76,7 +67,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     const token = tablesGate.startRequest()
     const result = await request('/api/open-items', {
       token: deviceToken(),
-      schema: openItemsResponseSchema,
+      schema: OpenItemsView,
     })
     if (!tablesGate.isNewestRequest(token)) {
       return
@@ -98,7 +89,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     const token = tableNamesGate.startRequest()
     const result = await request('/api/open-items/table-names', {
       token: deviceToken(),
-      schema: tableNamesResponseSchema,
+      schema: TableNamesView,
     })
     if (!tableNamesGate.isNewestRequest(token)) {
       return
@@ -137,7 +128,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     const token = lookupGate.startRequest()
     const result = await request(`/api/open-items/table?tableName=${encodeURIComponent(tableName)}`, {
       token: deviceToken(),
-      schema: tableOrderReportSchema,
+      schema: TableOrderReportView,
     })
     if (!lookupGate.isNewestRequest(token)) {
       return
@@ -195,7 +186,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     selectedItemIds.value = withItemToggled(selectedItemIds.value, activeTables.value, orderItemId)
   }
 
-  function setWholeTable(table: OpenTable, isWanted: boolean): void {
+  function setWholeTable(table: OpenTableView, isWanted: boolean): void {
     dismissNotice()
     selectedItemIds.value = withWholeTable(
       selectedItemIds.value,
@@ -206,8 +197,8 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   }
 
   async function accept(
-    result: ApiResult<SettlementResponse>,
-    sentLines: readonly OpenItemsSettleLine[],
+    result: ApiResult<SettlementView>,
+    sentLines: readonly SentSettleLine[],
   ): Promise<SettleOutcome> {
     isSettling.value = false
     switch (result.kind) {
@@ -251,7 +242,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
         body: { lines },
         token: deviceToken(),
         timeoutMs: SEND_TIMEOUT_MS,
-        schema: settlementResponseSchema,
+        schema: SettlementView,
       }),
       lines,
     )

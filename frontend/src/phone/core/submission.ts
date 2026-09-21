@@ -1,14 +1,13 @@
-import type {
-  Catalog,
-  ConfirmedSettlement,
-  DraftLine,
-  DraftOrder,
-  OrderSubmitRequest,
-  StationDeliveryMode,
-} from '../../shared/api/apiTypes'
+import type { DraftLine, DraftOrder } from './draftCart'
+import { CatalogView, OrderDeliveryModeRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
 import { findCatalogItem } from './basket'
 import { saveDraft } from './draftCart'
 import { splitSettlement } from './settlementSplit'
+
+export interface ConfirmedSettlement {
+  amountPaidCents: number
+  paymentNotice: string | null
+}
 
 const VERSION_FOUR_MASK = 0x0f
 const VERSION_FOUR_BITS = 0x40
@@ -39,16 +38,16 @@ export function withClientOrderIdIfMissing(draft: DraftOrder): DraftOrder {
   return identified
 }
 
-function priceOnTheMenu(catalog: Catalog, line: DraftLine): number {
+function priceOnTheMenu(catalog: CatalogView, line: DraftLine): number {
   return findCatalogItem(catalog, line.catalogItemId)?.priceCents ?? 0
 }
 
 export function buildSubmitRequest(
   draft: DraftOrder,
-  catalog: Catalog,
+  catalog: CatalogView,
   settlement: ConfirmedSettlement | null,
-  deliveryModes: readonly StationDeliveryMode[],
-): OrderSubmitRequest {
+  deliveryModes: readonly OrderDeliveryModeRequest[],
+): PlaceOrderRequest {
   const clientOrderId = draft.clientOrderId
   if (clientOrderId === null) {
     throw new Error('A draft without a clientOrderId must not be submitted')

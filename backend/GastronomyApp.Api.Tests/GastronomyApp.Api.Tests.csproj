@@ -21,6 +21,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="..\GastronomyApp.Api\openapi\GastronomyApp.Api.json" Link="openapi\GastronomyApp.Api.json" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\GastronomyApp.Api\GastronomyApp.Api.csproj"/>
         <ProjectReference Include="..\GastronomyApp.Contracts\GastronomyApp.Contracts.csproj"/>
     </ItemGroup>

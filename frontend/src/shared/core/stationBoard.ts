@@ -1,5 +1,5 @@
 import type { ApiErrorBody } from '../api/apiError'
-import type { DeliveryMode, StationOrder, StationOrderItem } from '../api/apiTypes'
+import { DeliveryMode, StationOrderQueueView, StationQueueItemView } from '../api/generatedSchemas'
 import { assertNever } from './assertNever'
 import { mergeLinesWithSameArticleAndNote } from './collapse'
 import type { Translate } from './translation'
@@ -59,11 +59,11 @@ export function deliveryModeColourToken(deliveryMode: DeliveryMode): DeliveryMod
   }
 }
 
-export function isFulfilled(item: StationOrderItem): boolean {
+export function isFulfilled(item: StationQueueItemView): boolean {
   return item.fulfilledAtUtc !== null
 }
 
-export function openItemsIn(stationOrder: StationOrder): StationOrderItem[] {
+export function openItemsIn(stationOrder: StationOrderQueueView): StationQueueItemView[] {
   return stationOrder.items.filter((item) => !isFulfilled(item))
 }
 
@@ -79,7 +79,7 @@ function compareLines(left: ItemLine, right: ItemLine): number {
   return byName !== 0 ? byName : compareItemNames(left.note ?? '', right.note ?? '')
 }
 
-export function itemLines(items: readonly StationOrderItem[]): ItemLine[] {
+export function itemLines(items: readonly StationQueueItemView[]): ItemLine[] {
   return mergeLinesWithSameArticleAndNote(
     items,
     (item) => item.itemName,
@@ -107,7 +107,7 @@ export function itemLineText(line: ItemLine, t: Translate): string {
 }
 
 export function selectedUnits(
-  stationOrders: readonly StationOrder[],
+  stationOrders: readonly StationOrderQueueView[],
   selectedItemIds: readonly string[],
 ): ItemLine[] {
   const selected = new Set(selectedItemIds)
@@ -119,7 +119,7 @@ export function selectedUnits(
 }
 
 export function selectedOpenItemIds(
-  stationOrder: StationOrder,
+  stationOrder: StationOrderQueueView,
   selectedItemIds: readonly string[],
 ): string[] {
   const selected = new Set(selectedItemIds)
@@ -128,7 +128,7 @@ export function selectedOpenItemIds(
     .map((item) => item.orderItemId)
 }
 
-export function stationStats(stationOrders: readonly StationOrder[]): StationStats {
+export function stationStats(stationOrders: readonly StationOrderQueueView[]): StationStats {
   let togetherOrders = 0
   let asItComesOrders = 0
   for (const stationOrder of stationOrders) {
@@ -154,7 +154,7 @@ export function stationStats(stationOrders: readonly StationOrder[]): StationSta
 
 export function retainOpenItemIds(
   selectedItemIds: readonly string[],
-  stationOrders: readonly StationOrder[],
+  stationOrders: readonly StationOrderQueueView[],
 ): string[] {
   const open = new Set(
     stationOrders.flatMap((stationOrder) => openItemsIn(stationOrder)).map((item) => item.orderItemId),

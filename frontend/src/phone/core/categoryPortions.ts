@@ -1,9 +1,10 @@
-import type { CatalogItem, DraftOrder } from '../../shared/api/apiTypes'
+import type { DraftOrder } from './draftCart'
+import { CatalogItemView } from '../../shared/api/generatedSchemas'
 import { countItemPortions } from './itemPositions'
 
 export function countCategoryPortions(
   draft: DraftOrder,
-  items: readonly CatalogItem[],
+  items: readonly CatalogItemView[],
   categoryId: string,
 ): number {
   return items

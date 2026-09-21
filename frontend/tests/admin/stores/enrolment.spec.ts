@@ -24,6 +24,8 @@ function stubLaptop(qrResponse: () => Response) {
           JSON.stringify({
             invitationId: INVITATION_ID,
             qrUrl: 'http://192.168.1.20:5000/j/CODE',
+            ownerKind: null,
+            availableAddresses: [],
             expiresAtUtc: '2026-08-27T20:00:00Z',
             staffMember: null,
             station: null,
@@ -195,6 +197,8 @@ describe('creating an invitation from the admin screen', () => {
           JSON.stringify({
             invitationId: INVITATION_ID,
             qrUrl: 'http://192.168.1.20:5000/j/CODE',
+            ownerKind: null,
+            availableAddresses: [],
             expiresAtUtc: '2026-08-27T20:00:00Z',
             staffMember: null,
             station: null,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { Catalog } from '../../../src/shared/api/apiTypes'
+import { CatalogView } from '../../../src/shared/api/generatedSchemas'
 import { saveDraft } from '../../../src/phone/core/draftCart'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
@@ -10,7 +10,7 @@ const BIER_ID = 'bier'
 const KUECHE_ID = 'kueche'
 const THEKE_ID = 'theke'
 
-function menuWithBratwurst(): Catalog {
+function menuWithBratwurst(): CatalogView {
   return {
     festival: { festivalId: 'fest-1', name: 'Sommerfest' },
     categories: [
@@ -48,7 +48,7 @@ function menuWithBratwurst(): Catalog {
   }
 }
 
-function menuAfterSpeisenWasSwitchedOff(): Catalog {
+function menuAfterSpeisenWasSwitchedOff(): CatalogView {
   const menu = menuWithBratwurst()
   return {
     ...menu,

@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { request, requestAction } from '../../shared/api/client'
-import { adminCategoriesResponseSchema, adminCategorySchema } from '../../shared/api/apiSchemas'
+import { AdminCategoryListView, AdminCategoryView } from '../../shared/api/generatedSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom, reloadOrFailureOf } from '../core/adminMutation'
 import { loadAdminList } from '../core/adminList'
 import { createPendingCreatedEntities } from '../core/pendingCreatedEntities'
-import type { AdminCategory } from '../../shared/api/apiTypes'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 
@@ -18,11 +17,11 @@ export interface AdminCategoryDraft {
 export type CategoryMoveDirection = 'up' | 'down'
 
 export const useAdminCategoriesStore = defineStore('adminCategories', () => {
-  const categories = ref<AdminCategory[]>([])
+  const categories = ref<AdminCategoryView[]>([])
   const loadFailed = ref(false)
 
   const categoriesGate = createLatestRequestGate()
-  const pendingCreatedCategories = createPendingCreatedEntities<AdminCategory>(
+  const pendingCreatedCategories = createPendingCreatedEntities<AdminCategoryView>(
     (category) => category.categoryId,
   )
   let latestMove: Promise<AdminActionResult<null>> = Promise.resolve(adminOk(null))
@@ -30,7 +29,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
   async function load(): Promise<void> {
     await loadAdminList({
       path: '/api/admin/categories',
-      schema: adminCategoriesResponseSchema,
+      schema: AdminCategoryListView,
       gate: categoriesGate,
       itemsOf: (response) => response.categories,
       showItems: (loaded) => {
@@ -42,11 +41,11 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     })
   }
 
-  async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategory>> {
+  async function create(draft: AdminCategoryDraft): Promise<AdminActionResult<AdminCategoryView>> {
     const result = await request('/api/admin/categories', {
       method: 'POST',
       body: { name: draft.name, colourHex: draft.colourHex },
-      schema: adminCategorySchema,
+      schema: AdminCategoryView,
     })
     if (result.kind !== 'ok') {
       return adminFailureFrom(result)
@@ -84,7 +83,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
     const result = await request(`/api/admin/categories/${categoryId}/move`, {
       method: 'POST',
       body: { direction },
-      schema: adminCategoriesResponseSchema,
+      schema: AdminCategoryListView,
     })
     if (result.kind === 'unreadableAnswer') {
       await load()

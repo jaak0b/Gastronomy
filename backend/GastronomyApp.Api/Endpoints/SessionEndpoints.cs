@@ -1,6 +1,6 @@
-using GastronomyApp.Contracts.Session;
-using GastronomyApp.Api.Auth;
+﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Handlers;
+using GastronomyApp.Contracts.Session;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -18,14 +18,16 @@ public static class SessionEndpoints
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
                    return await handler.ReadAsync(caller, cancellationToken);
-                 });
+                 })
+         .Produces<SessionView>();
 
     group.MapPut("/language",
                  async (LanguageChangeRequest request, HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>
                  {
                    var caller = callerIdentity.ReadDevice(httpContext.User)!;
                    return await handler.ChangeLanguageAsync(request, caller, cancellationToken);
-                 });
+                 })
+         .Produces(StatusCodes.Status204NoContent);
 
     return routes;
   }

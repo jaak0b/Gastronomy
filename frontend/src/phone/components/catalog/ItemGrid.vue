@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import type { AppLanguage, CatalogItem } from '../../../shared/api/apiTypes'
+import { CatalogItemView } from '../../../shared/api/generatedSchemas'
+import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import type { EstimateRange } from '../../core/estimates'
 import type { ItemPosition } from '../../core/itemPositions'
 import ItemRow from './ItemRow.vue'
 
 defineProps<{
-  items: CatalogItem[]
+  items: CatalogItemView[]
   language: AppLanguage
   positionsFor: (itemId: string) => ItemPosition[]
   estimateRangeFor: (itemId: string) => EstimateRange | null
 }>()
 defineEmits<{
-  add: [item: CatalogItem]
-  addWithANote: [item: CatalogItem, note: string]
-  addWithANoteAtAStation: [item: CatalogItem]
-  addLikeGroup: [item: CatalogItem, note: string | null, stationId: string | null]
+  add: [item: CatalogItemView]
+  addWithANote: [item: CatalogItemView, note: string]
+  addWithANoteAtAStation: [item: CatalogItemView]
+  addLikeGroup: [item: CatalogItemView, note: string | null, stationId: string | null]
   removeOne: [index: number]
   renameNote: [indexes: number[], note: string]
   changeStation: [indexes: number[]]

@@ -6,6 +6,7 @@ import { SEND_TIMEOUT_MS } from '../../../src/phone/core/sendTimeout'
 import { useOrderStore, ARRIVAL_NOTICE_MS } from '../../../src/phone/stores/order'
 import { TOKEN_STORAGE_KEY } from '../../../src/shared/stores/session'
 import {
+
   DRAFT_STORAGE_KEY,
   SEND_PROGRESS_STORAGE_KEY,
   restoreDraft,
@@ -23,6 +24,7 @@ function answerWith(totalCents: number) {
           JSON.stringify({
             orderId: 'order-1',
             globalOrderNumber: 1,
+            status: 'open',
             totalCents,
             createdAtUtc: '2026-09-05T18:00:00Z',
             stationOrders: [],

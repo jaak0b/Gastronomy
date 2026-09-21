@@ -1,16 +1,23 @@
 import { z } from 'zod'
-import { deliveryModeSchema } from '../../shared/api/apiSchemas'
-import type {
-  DeliveryMode,
-  DraftLine,
-  DraftOrder,
-  OrderSettlementLine,
-  OrderSubmitItem,
-  OrderSubmitRequest,
-  StationDeliveryMode,
-} from '../../shared/api/apiTypes'
+import { DeliveryMode, OrderDeliveryModeRequest, OrderItemRequest, OrderSettlementLineRequest, PlaceOrderRequest } from '../../shared/api/generatedSchemas'
 import type { SendFailureMessage } from './sendFailure'
 import { noSendProgress, SEND_STATES, type SendProgress } from './sendProgress'
+
+export interface DraftLine {
+  catalogItemId: string
+  note: string | null
+  stationId: string | null
+  name: string
+  stationName: string
+}
+
+export interface DraftOrder {
+  festivalId: string | null
+  tableName: string
+  lines: DraftLine[]
+  clientOrderId: string | null
+  deliveryModes: Record<string, DeliveryMode>
+}
 
 export const DRAFT_STORAGE_KEY = 'draftOrder'
 export const SEND_PROGRESS_STORAGE_KEY = 'draftOrderSend'
@@ -28,7 +35,7 @@ const draftOrderSchema: z.ZodType<DraftOrder> = z.strictObject({
   tableName: z.string(),
   lines: z.array(draftLineSchema),
   clientOrderId: z.string().nullable(),
-  deliveryModes: z.record(z.string(), deliveryModeSchema),
+  deliveryModes: z.record(z.string(), DeliveryMode),
 })
 
 const sendFailureSchema: z.ZodType<SendFailureMessage> = z.strictObject({
@@ -36,12 +43,12 @@ const sendFailureSchema: z.ZodType<SendFailureMessage> = z.strictObject({
   parameters: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 })
 
-const settlementLineSchema: z.ZodType<OrderSettlementLine> = z.strictObject({
+const settlementLineSchema: z.ZodType<OrderSettlementLineRequest> = z.strictObject({
   paidPriceCents: z.number().int().nonnegative(),
   paymentNotice: z.string().nullable(),
 })
 
-const submitItemSchema: z.ZodType<OrderSubmitItem> = z.strictObject({
+const submitItemSchema: z.ZodType<OrderItemRequest> = z.strictObject({
   catalogItemId: z.string(),
   unitPriceCents: z.number().int().nonnegative(),
   note: z.string().nullable(),
@@ -49,12 +56,12 @@ const submitItemSchema: z.ZodType<OrderSubmitItem> = z.strictObject({
   settlement: settlementLineSchema.nullable(),
 })
 
-const stationDeliveryModeSchema: z.ZodType<StationDeliveryMode> = z.strictObject({
+const stationDeliveryModeSchema: z.ZodType<OrderDeliveryModeRequest> = z.strictObject({
   stationId: z.string(),
-  deliveryMode: deliveryModeSchema,
+  deliveryMode: DeliveryMode,
 })
 
-const submitRequestSchema: z.ZodType<OrderSubmitRequest> = z.strictObject({
+const submitRequestSchema: z.ZodType<PlaceOrderRequest> = z.strictObject({
   clientOrderId: z.string(),
   tableName: z.string(),
   items: z.array(submitItemSchema),
