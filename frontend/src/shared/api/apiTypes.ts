@@ -187,6 +187,25 @@ export interface OpenItemsResponse {
   itemsWithoutAnOrderCount: number
 }
 
+export interface TableOrderRecordItem extends OpenOrderItem {
+  fulfilledAtUtc: string | null
+  settledAtUtc: string | null
+}
+
+export interface TableOrderRecord {
+  orderId: string
+  globalOrderNumber: number
+  createdAtUtc: string
+  staffMemberName: string
+  items: TableOrderRecordItem[]
+}
+
+export interface TableOrderReport {
+  tableName: string
+  openAmountCents: number
+  orders: TableOrderRecord[]
+}
+
 export interface TableNamesResponse {
   tableNames: string[]
 }

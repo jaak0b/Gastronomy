@@ -2,6 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import OpenItems from '../../../src/phone/views/OpenItems.vue'
+import { TABLE_LOOKUP_DEBOUNCE_MS } from '../../../src/phone/core/openItems'
 import { useOpenItemsStore } from '../../../src/phone/stores/openItems'
 import { TOKEN_STORAGE_KEY, useSessionStore } from '../../../src/shared/stores/session'
 import { testPlugins } from '../../support/plugins'
@@ -63,6 +64,116 @@ const TWO_TABLES = {
       ],
     },
   ],
+}
+
+const TABLE_REPORT = {
+  tableName: 'Tisch 12',
+  openAmountCents: 1200,
+  orders: [
+    {
+      orderId: 'order-137',
+      globalOrderNumber: 137,
+      createdAtUtc: '2026-09-05T18:00:00Z',
+      staffMemberName: 'Anna',
+      items: [
+        {
+          orderItemId: 'item-plain',
+          orderId: 'order-137',
+          globalOrderNumber: 137,
+          itemName: 'Bratwurst',
+          note: 'ohne Zwiebeln',
+          unitPriceCents: 350,
+          orderedAtUtc: '2026-09-05T18:00:00Z',
+          fulfilledAtUtc: null,
+          settledAtUtc: null,
+        },
+      ],
+    },
+    {
+      orderId: 'order-138',
+      globalOrderNumber: 138,
+      createdAtUtc: '2026-09-05T18:10:00Z',
+      staffMemberName: 'Bernd',
+      items: [
+        {
+          orderItemId: 'item-half',
+          orderId: 'order-138',
+          globalOrderNumber: 138,
+          itemName: 'Bier',
+          note: null,
+          unitPriceCents: 400,
+          orderedAtUtc: '2026-09-05T18:10:00Z',
+          fulfilledAtUtc: '2026-09-05T18:15:00Z',
+          settledAtUtc: null,
+        },
+        {
+          orderItemId: 'item-waiting',
+          orderId: 'order-138',
+          globalOrderNumber: 138,
+          itemName: 'Cola',
+          note: null,
+          unitPriceCents: 150,
+          orderedAtUtc: '2026-09-05T18:10:00Z',
+          fulfilledAtUtc: null,
+          settledAtUtc: null,
+        },
+        {
+          orderItemId: 'item-settled',
+          orderId: 'order-138',
+          globalOrderNumber: 138,
+          itemName: 'Wasser',
+          note: null,
+          unitPriceCents: 200,
+          orderedAtUtc: '2026-09-05T18:10:00Z',
+          fulfilledAtUtc: '2026-09-05T18:15:00Z',
+          settledAtUtc: '2026-09-05T18:40:00Z',
+        },
+      ],
+    },
+    {
+      orderId: 'order-139',
+      globalOrderNumber: 139,
+      createdAtUtc: '2026-09-05T18:20:00Z',
+      staffMemberName: 'Clara',
+      items: [
+        {
+          orderItemId: 'item-done',
+          orderId: 'order-139',
+          globalOrderNumber: 139,
+          itemName: 'Kuchen',
+          note: null,
+          unitPriceCents: 300,
+          orderedAtUtc: '2026-09-05T18:20:00Z',
+          fulfilledAtUtc: '2026-09-05T18:30:00Z',
+          settledAtUtc: null,
+        },
+      ],
+    },
+  ],
+}
+
+function stubTheLaptopWithALookup(
+  report: unknown,
+  list: unknown = OPEN_LIST,
+): { bodies: unknown[] } {
+  const bodies: unknown[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, options: { body?: string }) => {
+      if (options?.body !== undefined) {
+        bodies.push(JSON.parse(options.body))
+        return new Response(JSON.stringify(SETTLED), { status: 200 })
+      }
+      if (url.startsWith('/api/open-items/table?')) {
+        return new Response(JSON.stringify(report), { status: 200 })
+      }
+      if (url === '/api/open-items/table-names') {
+        return new Response(JSON.stringify({ tableNames: ['Tisch 12'] }), { status: 200 })
+      }
+      return new Response(JSON.stringify(list), { status: 200 })
+    }),
+  )
+  return { bodies }
 }
 
 function stubTheLaptopWith(list: unknown, settlement: () => Response): { bodies: unknown[] } {
@@ -494,5 +605,190 @@ describe('settling what the table actually handed over', () => {
     expect(document.querySelector('.amount-paid-dialog')?.textContent).toContain(
       'Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.',
     )
+  })
+})
+
+describe('looking up one table from the screen that shows what is open', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  async function mountTheScreenWithALookup(
+    list: unknown = OPEN_LIST,
+    report: unknown = TABLE_REPORT,
+  ) {
+    const { bodies } = stubTheLaptopWithALookup(report, list)
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    const session = useSessionStore()
+    session.deviceToken = 'token-here'
+    session.language = 'de'
+    const screen = mount(OpenItems, {
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    vi.useFakeTimers()
+    return { screen, bodies }
+  }
+
+  async function typeTheTableName(
+    screen: Awaited<ReturnType<typeof mountTheScreenWithALookup>>['screen'],
+    name: string,
+  ): Promise<void> {
+    await screen.get('.table-field input').setValue(name)
+    await vi.advanceTimersByTimeAsync(TABLE_LOOKUP_DEBOUNCE_MS)
+    await screen.vm.$nextTick()
+  }
+
+  it('hides the list and its notices while the lookup shows the orders of a table', async () => {
+    const { screen } = await mountTheScreenWithALookup({
+      ...OPEN_LIST,
+      tables: [],
+      itemsWithoutAnOrderCount: 2,
+    })
+    expect(screen.find('.empty').exists()).toBe(true)
+    expect(screen.find('.list-incomplete').exists()).toBe(true)
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    expect(screen.find('.empty').exists()).toBe(false)
+    expect(screen.find('.list-incomplete').exists()).toBe(false)
+    expect(screen.find('.open-table').exists()).toBe(false)
+    expect(screen.findAll('.lookup-card')).toHaveLength(3)
+  })
+
+  it('brings the list back when the waiter clears the table name', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+    await typeTheTableName(screen, 'Tisch 12')
+    expect(screen.findAll('.lookup-card')).toHaveLength(3)
+
+    await screen.get('.table-field input').setValue('')
+    await screen.vm.$nextTick()
+
+    expect(screen.findAll('.lookup-card')).toHaveLength(0)
+    expect(screen.find('.open-table').exists()).toBe(true)
+  })
+
+  it('colours each order by how far its positions have been produced', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    const cards = screen.findAll('.lookup-card')
+    expect(cards[0].classes()).toContain('state-none')
+    expect(cards[1].classes()).toContain('state-some')
+    expect(cards[2].classes()).toContain('state-all')
+  })
+
+  it('marks each position as produced or not, with an icon beside the state', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    const notProduced = screen.findAll('.lookup-card')[0].get('.open-line')
+    expect(notProduced.classes()).toContain('is-not-produced')
+    expect(notProduced.get('.line-state').classes()).toContain('mdi-clock-outline')
+
+    const produced = screen.findAll('.lookup-card')[2].get('.open-line')
+    expect(produced.classes()).toContain('is-produced')
+    expect(produced.get('.line-state').classes()).toContain('mdi-check')
+  })
+
+  it('writes the word for paid on a settled position and leaves out its tick box', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    const settled = screen.findAll('.lookup-card')[1].findAll('.open-line')[2]
+    expect(settled.get('.line-paid').text()).toBe('Bezahlt')
+    expect(settled.find('.line-tick').exists()).toBe(false)
+  })
+
+  it('settles a ticked position through the same footer as the list', async () => {
+    const { screen, bodies } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+    await screen.findAll('.lookup-card')[0].get('.open-line').trigger('click')
+    await screen.vm.$nextTick()
+    expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 3,50 €')
+
+    await screen.get('.settle').trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(bodies[0]).toEqual({
+      lines: [{ orderItemId: 'item-plain', paidPriceCents: 350, paymentNotice: null }],
+    })
+  })
+
+  it('takes the whole table at once across its orders', async () => {
+    const { screen } = await mountTheScreenWithALookup()
+
+    await typeTheTableName(screen, 'Tisch 12')
+    await screen.get('.whole-table input').trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(screen.get('.selected-total').text()).toBe('Ausgewählt: 12,00 €')
+  })
+
+  it('says that the table has no orders at all when the lookup finds none', async () => {
+    const { screen } = await mountTheScreenWithALookup(OPEN_LIST, {
+      tableName: 'Tisch 99',
+      openAmountCents: 0,
+      orders: [],
+    })
+
+    await typeTheTableName(screen, 'Tisch 99')
+
+    expect(screen.get('.lookup-empty').text()).toBe(
+      'Für diesen Tisch gibt es keine Bestellungen.',
+    )
+    expect(screen.find('.open-table').exists()).toBe(false)
+  })
+
+  it('says the laptop could not be reached and loads the lookup again from the reload button', async () => {
+    let lookups = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('/api/open-items/table?')) {
+          lookups += 1
+          return new Response('{}', { status: 500 })
+        }
+        if (url === '/api/open-items/table-names') {
+          return new Response(JSON.stringify({ tableNames: [] }), { status: 200 })
+        }
+        return new Response(JSON.stringify(OPEN_LIST), { status: 200 })
+      }),
+    )
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    const session = useSessionStore()
+    session.deviceToken = 'token-here'
+    session.language = 'de'
+    const screen = mount(OpenItems, {
+      global: { plugins: testPlugins() },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    vi.useFakeTimers()
+
+    await typeTheTableName(screen, 'Tisch 12')
+
+    expect(screen.get('.load-failed').text()).toBe(
+      'Tippen Sie auf "Liste neu laden". Der Rechner war nicht erreichbar, deshalb kann diese Liste veraltet sein.',
+    )
+    expect(screen.find('.open-table').exists()).toBe(false)
+
+    await screen.get('.reload').trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(lookups).toBe(2)
   })
 })

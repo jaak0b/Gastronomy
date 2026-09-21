@@ -118,7 +118,7 @@ public sealed class OrderItemSettlementService
                                                                });
   }
 
-  public int SumOpenAmountCents(IEnumerable<OrderItem> items)
+  public int SumOpenAmountCents(IEnumerable<ISettleableOrderItem> items)
   {
     ArgumentNullException.ThrowIfNull(items);
 

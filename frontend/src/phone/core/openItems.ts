@@ -4,15 +4,50 @@ import type {
   OpenOrderItem,
   OpenTable,
   SettlementResponse,
+  TableOrderRecord,
+  TableOrderRecordItem,
+  TableOrderReport,
 } from '../../shared/api/apiTypes'
 import { formatPrice } from './totals'
 
 export type SettleOutcome = 'accepted' | 'refused' | 'answerNeverCame'
 
+export type ProductionState = 'none' | 'some' | 'all'
+
+export type PositionState = 'produced' | 'notProduced' | 'unknown'
+
+export const TABLE_LOOKUP_DEBOUNCE_MS = 300
+
 export interface SettleNotice {
   key: string
   parameters: Record<string, string | number>
   count: number | null
+}
+
+export function openTableInReport(report: TableOrderReport): OpenTable {
+  return {
+    tableName: report.tableName,
+    openAmountCents: report.openAmountCents,
+    items: report.orders
+      .flatMap((order) => order.items)
+      .filter((item) => item.settledAtUtc === null),
+  }
+}
+
+export function producedCountIn(order: TableOrderRecord): number {
+  return order.items.filter((item) => item.fulfilledAtUtc !== null).length
+}
+
+export function productionStateOf(order: TableOrderRecord): ProductionState {
+  const produced = producedCountIn(order)
+  if (produced === 0) {
+    return 'none'
+  }
+  return produced === order.items.length ? 'all' : 'some'
+}
+
+export function positionStateOf(item: TableOrderRecordItem): PositionState {
+  return item.fulfilledAtUtc === null ? 'notProduced' : 'produced'
 }
 
 export function itemIdsAtTable(table: OpenTable): string[] {

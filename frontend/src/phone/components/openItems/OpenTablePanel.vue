@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { AppLanguage, OpenTable } from '../../../shared/api/apiTypes'
 import { isTheWholeTableSelected } from '../../core/openItems'
 import { formatPrice } from '../../core/totals'
+import OpenPositionRow from './OpenPositionRow.vue'
 
 const props = defineProps<{
   table: OpenTable
@@ -70,55 +71,21 @@ function setWholeTable(): void {
           @update:model-value="setWholeTable"
         />
         <v-list class="open-lines" lines="three">
-          <v-list-item
+          <OpenPositionRow
             v-for="item in table.items"
             :key="item.orderItemId"
-            class="open-line"
-            :disabled="isHeldBackByAnotherTable"
-            @click="toggleItem(item.orderItemId)"
-          >
-            <template #prepend>
-              <v-checkbox-btn
-                class="line-tick"
-                readonly
-                :model-value="isSelected(item.orderItemId)"
-              />
-            </template>
-            <v-list-item-title class="line-name">{{ item.itemName }}</v-list-item-title>
-            <v-list-item-subtitle class="line-origin">
-              {{ t('openItems.fromOrder', { number: item.globalOrderNumber }) }}
-            </v-list-item-subtitle>
-            <v-list-item-subtitle v-if="item.note !== null" class="line-note">
-              {{ t('openItems.itemNote', { note: item.note }) }}
-            </v-list-item-subtitle>
-            <template #append>
-              <span class="line-price text-body-1">{{ priceTextFor(item.unitPriceCents) }}</span>
-            </template>
-          </v-list-item>
+            :item-name="item.itemName"
+            :note="item.note"
+            :order-label="t('openItems.fromOrder', { number: item.globalOrderNumber })"
+            :price-text="priceTextFor(item.unitPriceCents)"
+            :is-selected="isSelected(item.orderItemId)"
+            :is-disabled="isHeldBackByAnotherTable"
+            :is-settled="false"
+            production-state="unknown"
+            @toggle="toggleItem(item.orderItemId)"
+          />
         </v-list>
       </template>
     </v-expansion-panel-text>
   </v-expansion-panel>
 </template>
-
-<style scoped>
-.line-name,
-.line-origin,
-.line-note {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  overflow-wrap: anywhere;
-}
-
-.line-price {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  padding-inline-start: 0.75rem;
-}
-
-.open-line {
-  min-height: 0;
-  padding-block: 0.75rem;
-}
-</style>

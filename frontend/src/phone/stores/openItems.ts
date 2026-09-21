@@ -5,16 +5,19 @@ import {
   openItemsResponseSchema,
   settlementResponseSchema,
   tableNamesResponseSchema,
+  tableOrderReportSchema,
 } from '../../shared/api/apiSchemas'
 import type {
   OpenItemsSettleLine,
   OpenTable,
   SettlementResponse,
+  TableOrderReport,
 } from '../../shared/api/apiTypes'
 import { assertNever } from '../../shared/core/assertNever'
 import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
 import {
   noticeAfterSettling,
+  openTableInReport,
   selectedAmountCents,
   selectedItems,
   withItemToggled,
@@ -37,12 +40,29 @@ export const useOpenItemsStore = defineStore('openItems', () => {
   const itemsWithoutAnOrderCount = ref(0)
   const isSettling = ref(false)
   const notice = ref<SettleNotice | null>(null)
+  const lookupName = ref<string | null>(null)
+  const lookupReport = ref<TableOrderReport | null>(null)
+  const lookupFailed = ref(false)
 
   const tablesGate = createLatestRequestGate()
   const tableNamesGate = createLatestRequestGate()
+  const lookupGate = createLatestRequestGate()
+
+  const isLookingUp = computed(() => lookupName.value !== null)
+
+  const lookupTable = computed<OpenTable | null>(() =>
+    lookupReport.value === null ? null : openTableInReport(lookupReport.value),
+  )
+
+  const activeTables = computed<OpenTable[]>(() => {
+    if (lookupName.value === null) {
+      return tables.value
+    }
+    return lookupTable.value === null ? [] : [lookupTable.value]
+  })
 
   const selectedTotalCents = computed(() =>
-    selectedAmountCents(tables.value, selectedItemIds.value),
+    selectedAmountCents(activeTables.value, selectedItemIds.value),
   )
 
   function deviceToken(): string | null {
@@ -62,13 +82,13 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     loadFailed.value = result.kind !== 'ok'
-    if (result.kind !== 'ok') {
-      return
+    if (result.kind === 'ok') {
+      tables.value = result.data.tables
+      itemsWithoutAnOrderCount.value = result.data.itemsWithoutAnOrderCount
+      selectedItemIds.value = withoutItemsThatAreGone(selectedItemIds.value, activeTables.value)
+      hasLoaded.value = true
     }
-    tables.value = result.data.tables
-    itemsWithoutAnOrderCount.value = result.data.itemsWithoutAnOrderCount
-    selectedItemIds.value = withoutItemsThatAreGone(selectedItemIds.value, result.data.tables)
-    hasLoaded.value = true
+    await refreshLookup()
   }
 
   async function loadTableNames(): Promise<void> {
@@ -87,6 +107,59 @@ export const useOpenItemsStore = defineStore('openItems', () => {
       return
     }
     knownTableNames.value = result.data.tableNames
+  }
+
+  function openLookup(tableName: string): void {
+    if (lookupName.value === tableName) {
+      return
+    }
+    lookupName.value = tableName
+    lookupReport.value = null
+    lookupFailed.value = false
+    selectedItemIds.value = []
+  }
+
+  function closeLookup(): void {
+    lookupName.value = null
+    lookupReport.value = null
+    lookupFailed.value = false
+    selectedItemIds.value = []
+    lookupGate.startRequest()
+  }
+
+  async function loadTableReport(tableName: string): Promise<void> {
+    if (deviceToken() === null) {
+      return
+    }
+    if (lookupName.value !== tableName) {
+      return
+    }
+    const token = lookupGate.startRequest()
+    const result = await request(`/api/open-items/table?tableName=${encodeURIComponent(tableName)}`, {
+      token: deviceToken(),
+      schema: tableOrderReportSchema,
+    })
+    if (!lookupGate.isNewestRequest(token)) {
+      return
+    }
+    if (lookupName.value !== tableName) {
+      return
+    }
+    lookupFailed.value = result.kind !== 'ok'
+    if (result.kind !== 'ok') {
+      lookupReport.value = null
+      return
+    }
+    lookupReport.value = result.data
+    selectedItemIds.value = withoutItemsThatAreGone(selectedItemIds.value, activeTables.value)
+  }
+
+  async function refreshLookup(): Promise<void> {
+    const tableName = lookupName.value
+    if (tableName === null) {
+      return
+    }
+    await loadTableReport(tableName)
   }
 
   function listen(): () => void {
@@ -119,12 +192,17 @@ export const useOpenItemsStore = defineStore('openItems', () => {
 
   function toggleItem(orderItemId: string): void {
     dismissNotice()
-    selectedItemIds.value = withItemToggled(selectedItemIds.value, tables.value, orderItemId)
+    selectedItemIds.value = withItemToggled(selectedItemIds.value, activeTables.value, orderItemId)
   }
 
   function setWholeTable(table: OpenTable, isWanted: boolean): void {
     dismissNotice()
-    selectedItemIds.value = withWholeTable(selectedItemIds.value, tables.value, table, isWanted)
+    selectedItemIds.value = withWholeTable(
+      selectedItemIds.value,
+      activeTables.value,
+      table,
+      isWanted,
+    )
   }
 
   async function accept(
@@ -160,7 +238,7 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     paymentNotice: string | null,
   ): Promise<SettleOutcome> {
     isSettling.value = true
-    const items = selectedItems(tables.value, selectedItemIds.value)
+    const items = selectedItems(activeTables.value, selectedItemIds.value)
     const split = splitSettlement(amountPaidCents, items, paymentNotice ?? '')
     const lines = items.map((item, index) => ({
       orderItemId: item.orderItemId,
@@ -189,6 +267,11 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     itemsWithoutAnOrderCount,
     isSettling,
     notice,
+    lookupName,
+    lookupReport,
+    lookupFailed,
+    isLookingUp,
+    lookupTable,
     load,
     loadTableNames,
     listen,
@@ -196,5 +279,9 @@ export const useOpenItemsStore = defineStore('openItems', () => {
     toggleItem,
     setWholeTable,
     settle,
+    openLookup,
+    closeLookup,
+    loadTableReport,
+    refreshLookup,
   }
 })

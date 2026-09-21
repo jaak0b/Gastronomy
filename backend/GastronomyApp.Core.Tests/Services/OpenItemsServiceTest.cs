@@ -21,6 +21,7 @@ public sealed class OpenItemsServiceTest
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(_owners));
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
+    A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([]));
 
     RunningFestivalLookup runningFestival = new(_festivalRepository, new(), _clock);
 
@@ -123,6 +124,76 @@ public sealed class OpenItemsServiceTest
                            }));
   }
 
+  [Test]
+  public async Task ReadTableAsync_NoFestivalIsRunning_ReportsTheTableWithNothingOpen()
+  {
+    A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
+
+    TableOrderReport report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(report.TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(report.OpenAmountCents, Is.Zero);
+                      Assert.That(report.Orders, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task ReadTableAsync_AnUnknownTableName_ReportsNoOrdersAndNothingOpen()
+  {
+    TableOrderReport report = await _service.ReadTableAsync("Tisch 99", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(report.TableName, Is.EqualTo("Tisch 99"));
+                      Assert.That(report.OpenAmountCents, Is.Zero);
+                      Assert.That(report.Orders, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task ReadTableAsync_AWhitespaceTableName_ReportsNoOrdersAndNothingOpen()
+  {
+    TableOrderReport report = await _service.ReadTableAsync("   ", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(report.TableName, Is.EqualTo("   "));
+                      Assert.That(report.OpenAmountCents, Is.Zero);
+                      Assert.That(report.Orders, Is.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task ReadTableAsync_AnOrderWithAnOpenAndASettledPosition_AddsUpOnlyWhatIsStillOpen()
+  {
+    var order = new TableOrderRecord
+                {
+                  OrderId = Guid.NewGuid(),
+                  GlobalOrderNumber = 1,
+                  CreatedAtUtc = _orderedAtUtc,
+                  StaffMemberName = "Anna",
+                  Items = [Position("Bratwurst", 350), Position("Limonade", 250, _now)]
+                };
+    A.CallTo(() => _repository.FindTableOrdersAsync(_festivalId, "Tisch 12", A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([order]));
+
+    TableOrderReport report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(report.TableName, Is.EqualTo("Tisch 12"));
+                      Assert.That(report.OpenAmountCents, Is.EqualTo(350));
+                      Assert.That(report.Orders, Has.Count.EqualTo(1));
+                      Assert.That(report.Orders[0].StaffMemberName, Is.EqualTo("Anna"));
+                      Assert.That(report.Orders[0].Items.Select(item => item.ItemName), Is.EqualTo(new[]
+                                                                                                   {
+                                                                                                     "Bratwurst",
+                                                                                                     "Limonade"
+                                                                                                   }));
+                    });
+  }
+
   private void GivenOpenItems(params OrderItem[] items)
   {
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
@@ -150,6 +221,22 @@ public sealed class OpenItemsServiceTest
              CatalogItemId = Guid.NewGuid(),
              ItemName = itemName,
              UnitPriceCents = unitPriceCents
+           };
+  }
+
+  private TableOrderRecordItem Position(string itemName, int unitPriceCents, DateTime? settledAtUtc = null)
+  {
+    return new()
+           {
+             OrderItemId = Guid.NewGuid(),
+             OrderId = Guid.NewGuid(),
+             GlobalOrderNumber = 1,
+             ItemName = itemName,
+             Note = null,
+             UnitPriceCents = unitPriceCents,
+             OrderedAtUtc = _orderedAtUtc,
+             FulfilledAtUtc = null,
+             SettledAtUtc = settledAtUtc
            };
   }
 

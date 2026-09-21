@@ -13,5 +13,11 @@ public sealed class OpenItemMapping : IRegister
     config.NewConfig<OpenOrderItem, OpenOrderItemView>();
 
     config.NewConfig<OpenTable, OpenTableView>();
+
+    config.NewConfig<TableOrderRecordItem, TableOrderRecordItemView>();
+
+    config.NewConfig<TableOrderRecord, TableOrderRecordView>();
+
+    config.NewConfig<TableOrderReport, TableOrderReportView>();
   }
 }

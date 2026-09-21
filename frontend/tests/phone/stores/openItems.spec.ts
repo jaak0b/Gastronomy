@@ -47,6 +47,59 @@ const SETTLED = {
   otherPhonesWereTold: true,
 }
 
+const TABLE_REPORT = {
+  tableName: 'Tisch 12',
+  openAmountCents: 400,
+  orders: [
+    {
+      orderId: 'order-9',
+      globalOrderNumber: 141,
+      createdAtUtc: '2026-09-05T18:20:00Z',
+      staffMemberName: 'Anna',
+      items: [
+        {
+          orderItemId: 'lookup-open',
+          orderId: 'order-9',
+          globalOrderNumber: 141,
+          itemName: 'Bier',
+          note: null,
+          unitPriceCents: 400,
+          orderedAtUtc: '2026-09-05T18:20:00Z',
+          fulfilledAtUtc: null,
+          settledAtUtc: null,
+        },
+        {
+          orderItemId: 'lookup-settled',
+          orderId: 'order-9',
+          globalOrderNumber: 141,
+          itemName: 'Wasser',
+          note: null,
+          unitPriceCents: 200,
+          orderedAtUtc: '2026-09-05T18:20:00Z',
+          fulfilledAtUtc: '2026-09-05T18:25:00Z',
+          settledAtUtc: '2026-09-05T18:40:00Z',
+        },
+      ],
+    },
+  ],
+}
+
+interface DeferredResponse {
+  promise: Promise<Response>
+  answerWith: (payload: unknown) => void
+}
+
+function deferredResponse(): DeferredResponse {
+  let answer: (response: Response) => void = () => undefined
+  const promise = new Promise<Response>((resolve) => {
+    answer = resolve
+  })
+  return {
+    promise,
+    answerWith: (payload) => answer(new Response(JSON.stringify(payload), { status: 200 })),
+  }
+}
+
 interface RecordedCall {
   url: string
   method: string
@@ -357,5 +410,192 @@ describe('the open list a phone follows', () => {
     fireHubEvent('FestivalChanged')
 
     await vi.waitFor(() => expect(urls).toEqual(['/api/open-items']))
+  })
+
+  it('loads the looked-up table again when the station board changes', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(
+          JSON.stringify(url.startsWith('/api/open-items/table?') ? TABLE_REPORT : EMPTY_LIST),
+          { status: 200 },
+        )
+      }),
+    )
+    const openItems = useOpenItemsStore()
+    openItems.listen()
+    openItems.openLookup('Tisch 12')
+    await openItems.loadTableReport('Tisch 12')
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged')
+
+    await vi.waitFor(() =>
+      expect(urls).toEqual([
+        '/api/open-items',
+        '/api/open-items/table?tableName=Tisch%2012',
+      ]),
+    )
+  })
+})
+
+describe('the table a waiter looks up', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks the laptop for one table under the exact name the waiter typed', async () => {
+    const calls = answerWith([jsonOf(OPEN_LIST), jsonOf(TABLE_REPORT)])
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    useSessionStore().deviceToken = 'token-here'
+    const openItems = useOpenItemsStore()
+    await openItems.load()
+
+    openItems.openLookup('Tisch 12')
+    await openItems.loadTableReport('Tisch 12')
+
+    expect(calls[1].url).toBe('/api/open-items/table?tableName=Tisch%2012')
+    expect(openItems.lookupReport).toEqual(TABLE_REPORT)
+  })
+
+  it('keeps the newest answer when an older lookup answers after it', async () => {
+    const older = deferredResponse()
+    const newer = deferredResponse()
+    let lookups = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('/api/open-items/table?')) {
+          lookups += 1
+          return lookups === 1 ? older.promise : newer.promise
+        }
+        return new Response(JSON.stringify(OPEN_LIST), { status: 200 })
+      }),
+    )
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    useSessionStore().deviceToken = 'token-here'
+    const openItems = useOpenItemsStore()
+    await openItems.load()
+
+    openItems.openLookup('Tisch 12')
+    const firstLookup = openItems.loadTableReport('Tisch 12')
+    const newestLookup = openItems.loadTableReport('Tisch 12')
+    newer.answerWith({ ...TABLE_REPORT, tableName: 'Tisch 3' })
+    await newestLookup
+    older.answerWith(TABLE_REPORT)
+    await firstLookup
+
+    expect(openItems.lookupReport?.tableName).toBe('Tisch 3')
+  })
+
+  it('clears the shown orders when the lookup fails, so a stale table is never trusted', async () => {
+    const { openItems } = await storeWithTheOpenList([
+      jsonOf(TABLE_REPORT),
+      () => {
+        throw new TypeError('the laptop cannot be reached')
+      },
+    ])
+    openItems.openLookup('Tisch 12')
+    await openItems.loadTableReport('Tisch 12')
+
+    await openItems.loadTableReport('Tisch 12')
+
+    expect(openItems.lookupReport).toBeNull()
+    expect(openItems.lookupFailed).toBe(true)
+  })
+
+  it('keeps a closed lookup closed when a slow answer arrives afterwards', async () => {
+    const slow = deferredResponse()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('/api/open-items/table?')) {
+          return slow.promise
+        }
+        return new Response(JSON.stringify(OPEN_LIST), { status: 200 })
+      }),
+    )
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'lookup.token-here')
+    useSessionStore().deviceToken = 'token-here'
+    const openItems = useOpenItemsStore()
+    await openItems.load()
+
+    openItems.openLookup('Tisch 12')
+    const lookup = openItems.loadTableReport('Tisch 12')
+    openItems.closeLookup()
+    slow.answerWith(TABLE_REPORT)
+    await lookup
+
+    expect(openItems.lookupReport).toBeNull()
+    expect(openItems.isLookingUp).toBe(false)
+  })
+
+  it('reads the ticked positions from the lookup while one is shown', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.openLookup('Tisch 12')
+    openItems.lookupReport = TABLE_REPORT
+
+    openItems.toggleItem('lookup-open')
+
+    expect(openItems.selectedItemIds).toEqual(['lookup-open'])
+    expect(openItems.selectedTotalCents).toBe(400)
+  })
+
+  it('takes no tick from a settled position in the lookup', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.openLookup('Tisch 12')
+    openItems.lookupReport = TABLE_REPORT
+
+    openItems.toggleItem('lookup-settled')
+
+    expect(openItems.selectedItemIds).toEqual([])
+  })
+
+  it('empties the selection when the lookup opens and when it closes', async () => {
+    const { openItems } = await storeWithTheOpenList([])
+    openItems.toggleItem('item-1')
+
+    openItems.openLookup('Tisch 12')
+
+    expect(openItems.selectedItemIds).toEqual([])
+
+    openItems.lookupReport = TABLE_REPORT
+    openItems.toggleItem('lookup-open')
+
+    expect(openItems.selectedItemIds).toEqual(['lookup-open'])
+
+    openItems.closeLookup()
+
+    expect(openItems.selectedItemIds).toEqual([])
+  })
+
+  it('asks the laptop for the looked-up table again after settling, so the colours stay true', async () => {
+    const { openItems, calls } = await storeWithTheOpenList([
+      jsonOf(TABLE_REPORT),
+      jsonOf(SETTLED),
+      jsonOf(OPEN_LIST),
+      jsonOf(TABLE_REPORT),
+    ])
+    openItems.openLookup('Tisch 12')
+    await openItems.loadTableReport('Tisch 12')
+    openItems.toggleItem('lookup-open')
+
+    await openItems.settle(400, null)
+
+    expect(calls.map((call) => call.url)).toEqual([
+      '/api/open-items',
+      '/api/open-items/table?tableName=Tisch%2012',
+      '/api/open-items/settle',
+      '/api/open-items',
+      '/api/open-items/table?tableName=Tisch%2012',
+    ])
   })
 })

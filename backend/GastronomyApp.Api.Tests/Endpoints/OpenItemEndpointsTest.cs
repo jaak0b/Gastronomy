@@ -62,6 +62,69 @@ public sealed class OpenItemEndpointsTest
   }
 
   [Test]
+  public async Task GetTableOrders_ASeatedTable_ListsEveryOrderAndPositionWithItsState()
+  {
+    await PlaceOrderAsync("Tisch 12");
+    IReadOnlyList<Guid> newestItems = await PlaceOrderAsync("Tisch 12");
+    await FulfillAndSettleAsync(newestItems[0]);
+
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/table?tableName={Uri.EscapeDataString("Tisch 12")}");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var orders = body.RootElement.GetProperty("orders");
+    var newestOrder = orders[0];
+    var settledItem = newestOrder.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("orderItemId").GetGuid() == newestItems[0]);
+    var openItem = newestOrder.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("orderItemId").GetGuid() == newestItems[1]);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 12"));
+                      Assert.That(body.RootElement.GetProperty("openAmountCents").GetInt32(), Is.EqualTo(1050));
+                      Assert.That(orders.GetArrayLength(), Is.EqualTo(2));
+                      Assert.That(newestOrder.GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(2));
+                      Assert.That(orders[1].GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(1));
+                      Assert.That(newestOrder.GetProperty("staffMemberName").GetString(), Is.EqualTo("Anna"));
+                      Assert.That(newestOrder.GetProperty("createdAtUtc").GetString(), Is.Not.Empty);
+                      Assert.That(newestOrder.GetProperty("items").GetArrayLength(), Is.EqualTo(2));
+                      Assert.That(settledItem.GetProperty("orderId").GetGuid(), Is.EqualTo(newestOrder.GetProperty("orderId").GetGuid()));
+                      Assert.That(settledItem.GetProperty("globalOrderNumber").GetInt32(), Is.EqualTo(2));
+                      Assert.That(settledItem.GetProperty("itemName").GetString(), Is.EqualTo("Bratwurst mit Brot"));
+                      Assert.That(settledItem.GetProperty("note").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(settledItem.GetProperty("unitPriceCents").GetInt32(), Is.EqualTo(350));
+                      Assert.That(settledItem.GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
+                      Assert.That(settledItem.GetProperty("settledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.String));
+                      Assert.That(openItem.GetProperty("fulfilledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                      Assert.That(openItem.GetProperty("settledAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
+                    });
+  }
+
+  [Test]
+  public async Task GetTableOrders_AnUnknownTableName_AnswersWithAnEmptyReport()
+  {
+    await PlaceOrderAsync("Tisch 12");
+
+    using var response = await _context.SendAsync(HttpMethod.Get, $"/api/open-items/table?tableName={Uri.EscapeDataString("Tisch 99")}");
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(body.RootElement.GetProperty("tableName").GetString(), Is.EqualTo("Tisch 99"));
+                      Assert.That(body.RootElement.GetProperty("openAmountCents").GetInt32(), Is.Zero);
+                      Assert.That(body.RootElement.GetProperty("orders").GetArrayLength(), Is.Zero);
+                    });
+  }
+
+  [Test]
+  public async Task GetTableOrders_WithoutADeviceToken_IsRefused()
+  {
+    using HttpRequestMessage request = new(HttpMethod.Get, $"/api/open-items/table?tableName={Uri.EscapeDataString("Tisch 12")}");
+    using var response = await _context.Client.SendAsync(request);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+  }
+
+  [Test]
   public async Task GetOpenItems_NothingBroken_ReportsThatNoItemIsMissingFromTheList()
   {
     await PlaceOrderAsync("Tisch 12");
@@ -500,6 +563,19 @@ public sealed class OpenItemEndpointsTest
 
     await database.SaveChangesAsync();
     await database.Database.CloseConnectionAsync();
+  }
+
+  private async Task FulfillAndSettleAsync(Guid orderItemId)
+  {
+    await using var database = _context.Factory.CreateContext();
+    var item = await database.OrderItems.FirstAsync(candidate => candidate.Id == orderItemId);
+
+    item.FulfilledAtUtc = DateTime.UtcNow;
+    item.SettledAtUtc = DateTime.UtcNow;
+    item.SettledByStaffMemberId = _context.World.StaffMemberId;
+    item.ChargedPriceCents = item.UnitPriceCents;
+
+    await database.SaveChangesAsync();
   }
 
   private async Task<JsonDocument> ReadOpenItemsAsync()

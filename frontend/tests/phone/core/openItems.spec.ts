@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { OpenTable } from '../../../src/shared/api/apiTypes'
+import type {
+  OpenTable,
+  TableOrderRecord,
+  TableOrderRecordItem,
+  TableOrderReport,
+} from '../../../src/shared/api/apiTypes'
 import {
   canTheAmountBeSettled,
   isHeldBackByAnotherTable,
@@ -8,6 +13,10 @@ import {
   isTheWholeTableSelected,
   itemIdsAtTable,
   noticeAfterSettling,
+  openTableInReport,
+  positionStateOf,
+  producedCountIn,
+  productionStateOf,
   selectedAmountCents,
   tableHoldingTheSelection,
   tableForItem,
@@ -15,6 +24,35 @@ import {
   withWholeTable,
   withoutItemsThatAreGone,
 } from '../../../src/phone/core/openItems'
+
+function itemWith(
+  orderItemId: string,
+  fulfilledAtUtc: string | null,
+  settledAtUtc: string | null,
+  unitPriceCents: number,
+): TableOrderRecordItem {
+  return {
+    orderItemId,
+    orderId: 'order-1',
+    globalOrderNumber: 1,
+    itemName: 'Bratwurst',
+    note: null,
+    unitPriceCents,
+    orderedAtUtc: '2026-09-05T18:00:00Z',
+    fulfilledAtUtc,
+    settledAtUtc,
+  }
+}
+
+function recordWith(items: TableOrderRecordItem[]): TableOrderRecord {
+  return {
+    orderId: 'order-1',
+    globalOrderNumber: 1,
+    createdAtUtc: '2026-09-05T18:00:00Z',
+    staffMemberName: 'Anna',
+    items,
+  }
+}
 
 function tableWith(tableName: string, prices: number[]): OpenTable {
   return {
@@ -348,5 +386,79 @@ describe('whether a table is held back by the table holding the selection', () =
 
   it('holds no table back while nothing is ticked', () => {
     expect(isHeldBackByAnotherTable(tables, [], '123')).toBe(false)
+  })
+})
+
+describe('the open table inside what the laptop knows about one table', () => {
+  const report: TableOrderReport = {
+    tableName: 'Tisch 12',
+    openAmountCents: 750,
+    orders: [
+      recordWith([
+        itemWith('item-open', null, null, 400),
+        itemWith('item-settled', '2026-09-05T18:12:00Z', '2026-09-05T18:30:00Z', 200),
+      ]),
+      recordWith([itemWith('item-produced', '2026-09-05T18:05:00Z', null, 350)]),
+    ],
+  }
+
+  it('keeps the table name and what the table still owes', () => {
+    const table = openTableInReport(report)
+
+    expect(table.tableName).toBe('Tisch 12')
+    expect(table.openAmountCents).toBe(750)
+  })
+
+  it('lists the positions of every order that is not settled yet', () => {
+    const table = openTableInReport(report)
+
+    expect(table.items.map((item) => item.orderItemId)).toEqual(['item-open', 'item-produced'])
+  })
+
+  it('leaves a settled position out, so the waiter cannot tick it again', () => {
+    const table = openTableInReport(report)
+
+    expect(table.items.map((item) => item.orderItemId)).not.toContain('item-settled')
+  })
+})
+
+describe('how far the positions of one order are produced', () => {
+  it('says none while nothing has left the station', () => {
+    expect(productionStateOf(recordWith([itemWith('item-1', null, null, 350)]))).toBe('none')
+  })
+
+  it('says some while part of the order has left the station', () => {
+    const order = recordWith([
+      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
+      itemWith('item-2', null, null, 350),
+    ])
+
+    expect(productionStateOf(order)).toBe('some')
+  })
+
+  it('says all once every position has left the station', () => {
+    const order = recordWith([
+      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
+      itemWith('item-2', '2026-09-05T18:06:00Z', null, 350),
+    ])
+
+    expect(productionStateOf(order)).toBe('all')
+  })
+
+  it('counts the positions that have left the station', () => {
+    const order = recordWith([
+      itemWith('item-1', '2026-09-05T18:05:00Z', null, 350),
+      itemWith('item-2', null, null, 350),
+    ])
+
+    expect(producedCountIn(order)).toBe(1)
+  })
+
+  it('reads a position the station has handed out as produced', () => {
+    expect(positionStateOf(itemWith('item-1', '2026-09-05T18:05:00Z', null, 350))).toBe('produced')
+  })
+
+  it('reads a position still at the station as not produced', () => {
+    expect(positionStateOf(itemWith('item-1', null, null, 350))).toBe('notProduced')
   })
 })

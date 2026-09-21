@@ -53,12 +53,44 @@ public sealed class OpenItemsService
     return await _repository.FindTableNamesAtFestivalAsync(festival.Id, cancellationToken);
   }
 
+  public async Task<TableOrderReport> ReadTableAsync(string tableName, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(tableName);
+
+    if (string.IsNullOrWhiteSpace(tableName))
+      return EmptyTableReport(tableName);
+
+    var festival = await _runningFestival.FindAsync(cancellationToken);
+
+    if (festival is null)
+      return EmptyTableReport(tableName);
+
+    IReadOnlyList<TableOrderRecord> orders = await _repository.FindTableOrdersAsync(festival.Id, tableName, cancellationToken);
+
+    return new()
+           {
+             TableName = tableName,
+             OpenAmountCents = _settlementService.SumOpenAmountCents(orders.SelectMany(order => order.Items)),
+             Orders = orders
+           };
+  }
+
   private IReadOnlyCollection<OrderItem> ItemsAtTable(Dictionary<string, List<OrderItem>> byTable, string tableName)
   {
     if (byTable.TryGetValue(tableName, out List<OrderItem>? items))
       return items;
 
     return [];
+  }
+
+  private TableOrderReport EmptyTableReport(string tableName)
+  {
+    return new()
+           {
+             TableName = tableName,
+             OpenAmountCents = 0,
+             Orders = []
+           };
   }
 
   private OpenTable BuildOpenTable(string tableName, IReadOnlyCollection<OrderItem> openItems, IReadOnlyDictionary<Guid, OrderItemOwner> owners)

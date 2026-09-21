@@ -1,6 +1,6 @@
 namespace GastronomyApp.Core.Entities;
 
-public sealed class OrderItem
+public sealed class OrderItem : ISettleableOrderItem
 {
   public required Guid Id { get; set; }
 

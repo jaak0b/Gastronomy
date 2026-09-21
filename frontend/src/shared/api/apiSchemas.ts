@@ -34,6 +34,9 @@ import type {
   StationOrderItem,
   StationOrdersResponse,
   TableNamesResponse,
+  TableOrderRecord,
+  TableOrderRecordItem,
+  TableOrderReport,
 } from './apiTypes'
 
 const appLanguageSchema = z.enum(['de', 'en'])
@@ -185,6 +188,32 @@ const openTableSchema: z.ZodType<OpenTable> = z.object({
 export const openItemsResponseSchema: z.ZodType<OpenItemsResponse> = z.object({
   tables: z.array(openTableSchema),
   itemsWithoutAnOrderCount: z.number(),
+})
+
+const tableOrderRecordItemSchema: z.ZodType<TableOrderRecordItem> = z.object({
+  orderItemId: z.string(),
+  orderId: z.string(),
+  globalOrderNumber: z.number(),
+  itemName: z.string(),
+  note: z.string().nullable(),
+  unitPriceCents: z.number(),
+  orderedAtUtc: z.string(),
+  fulfilledAtUtc: z.string().nullable(),
+  settledAtUtc: z.string().nullable(),
+})
+
+const tableOrderRecordSchema: z.ZodType<TableOrderRecord> = z.object({
+  orderId: z.string(),
+  globalOrderNumber: z.number(),
+  createdAtUtc: z.string(),
+  staffMemberName: z.string(),
+  items: z.array(tableOrderRecordItemSchema),
+})
+
+export const tableOrderReportSchema: z.ZodType<TableOrderReport> = z.object({
+  tableName: z.string(),
+  openAmountCents: z.number(),
+  orders: z.array(tableOrderRecordSchema),
 })
 
 export const tableNamesResponseSchema: z.ZodType<TableNamesResponse> = z.object({
