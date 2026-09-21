@@ -251,9 +251,27 @@ public sealed class SequenceNumberAllocatorTest
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
   }
 
+  private async Task<Guid> AddStaffMemberAsync(GastronomyAppDbContext dbContext, string name)
+  {
+    var staffMemberId = Guid.NewGuid();
+
+    dbContext.StaffMembers.Add(new()
+                               {
+                                 Id = staffMemberId,
+                                 Name = name,
+                                 IsActive = true,
+                                 CreatedAtUtc = DateTime.UtcNow
+                               });
+
+    await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    return staffMemberId;
+  }
+
   private async Task AddStationOrderAsync(GastronomyAppDbContext dbContext, Guid festivalId, Guid stationId, int stationOrderNumber)
   {
     var orderId = Guid.NewGuid();
+    var staffMemberId = await AddStaffMemberAsync(dbContext, $"Anna {stationOrderNumber}");
 
     dbContext.Orders.Add(new()
                          {
@@ -261,7 +279,7 @@ public sealed class SequenceNumberAllocatorTest
                            ClientOrderId = Guid.NewGuid(),
                            FestivalId = festivalId,
                            GlobalOrderNumber = stationOrderNumber,
-                           StaffMemberId = Guid.NewGuid(),
+                           StaffMemberId = staffMemberId,
                            TableName = $"Tisch {stationOrderNumber}",
                            CreatedAtUtc = DateTime.UtcNow
                          });
