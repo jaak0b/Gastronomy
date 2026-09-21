@@ -23,4 +23,10 @@ public sealed class OrderItem : ISettleableOrderItem
   public Guid? SettledByStaffMemberId { get; set; }
 
   public string? PaymentNotice { get; set; }
+
+  public StationOrder StationOrder { get; set; } = null!;
+
+  public CatalogItem CatalogItem { get; set; } = null!;
+
+  public StaffMember? SettledByStaffMember { get; set; }
 }

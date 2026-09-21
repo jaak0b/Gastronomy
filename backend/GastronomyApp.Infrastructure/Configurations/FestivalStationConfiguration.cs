@@ -21,7 +21,7 @@ public sealed class FestivalStationConfiguration : IEntityTypeConfiguration<Fest
                                link.StationId
                              })
            .IsUnique();
-    builder.HasOne<Festival>().WithMany().HasForeignKey(link => link.FestivalId).OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<Station>().WithMany().HasForeignKey(link => link.StationId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(link => link.Festival).WithMany(festival => festival.Stations).HasForeignKey(link => link.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(link => link.Station).WithMany(station => station.FestivalStations).HasForeignKey(link => link.StationId).OnDelete(DeleteBehavior.Restrict);
   }
 }

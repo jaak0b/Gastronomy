@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class CatalogCategory
@@ -11,4 +13,6 @@ public sealed class CatalogCategory
   public required int SortOrder { get; set; }
 
   public required bool IsActive { get; set; }
+
+  public Collection<CatalogItem> Items { get; } = [];
 }

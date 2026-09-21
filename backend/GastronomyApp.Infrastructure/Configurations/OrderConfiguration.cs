@@ -26,7 +26,8 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
                                 order.GlobalOrderNumber
                               })
            .IsUnique();
-    builder.HasOne<Festival>().WithMany().HasForeignKey(order => order.FestivalId).OnDelete(DeleteBehavior.Restrict);
-    builder.HasMany(order => order.StationOrders).WithOne().HasForeignKey(stationOrder => stationOrder.OrderId);
+    builder.HasOne(order => order.Festival).WithMany().HasForeignKey(order => order.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(order => order.StaffMember).WithMany(staffMember => staffMember.Orders).HasForeignKey(order => order.StaffMemberId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasMany(order => order.StationOrders).WithOne(stationOrder => stationOrder.Order).HasForeignKey(stationOrder => stationOrder.OrderId);
   }
 }

@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class CatalogItem
@@ -15,4 +17,10 @@ public sealed class CatalogItem
   public double? ProductionMinutes { get; set; }
 
   public bool IsQueueIndependent { get; set; }
+
+  public CatalogCategory Category { get; set; } = null!;
+
+  public Collection<FestivalCatalogItem> FestivalCatalogItems { get; } = [];
+
+  public Collection<ItemStationAssignment> StationAssignments { get; } = [];
 }

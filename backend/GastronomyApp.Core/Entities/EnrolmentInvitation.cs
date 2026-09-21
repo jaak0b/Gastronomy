@@ -19,4 +19,6 @@ public sealed class EnrolmentInvitation
   public DateTime? ConsumedAtUtc { get; set; }
 
   public Guid? ConsumedByDeviceId { get; set; }
+
+  public Device? ConsumedByDevice { get; set; }
 }

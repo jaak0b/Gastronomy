@@ -22,5 +22,8 @@ public sealed class ItemStationAssignmentConfiguration : IEntityTypeConfiguratio
                                      assignment.StationId
                                    })
            .IsUnique();
+    builder.HasOne(assignment => assignment.Festival).WithMany(festival => festival.ItemStationAssignments).HasForeignKey(assignment => assignment.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(assignment => assignment.CatalogItem).WithMany(item => item.StationAssignments).HasForeignKey(assignment => assignment.CatalogItemId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(assignment => assignment.Station).WithMany().HasForeignKey(assignment => assignment.StationId).OnDelete(DeleteBehavior.Restrict);
   }
 }

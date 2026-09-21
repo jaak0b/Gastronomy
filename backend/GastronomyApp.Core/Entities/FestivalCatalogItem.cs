@@ -11,4 +11,8 @@ public sealed class FestivalCatalogItem
   public required int PriceCents { get; set; }
 
   public required bool IsAvailable { get; set; }
+
+  public Festival Festival { get; set; } = null!;
+
+  public CatalogItem CatalogItem { get; set; } = null!;
 }

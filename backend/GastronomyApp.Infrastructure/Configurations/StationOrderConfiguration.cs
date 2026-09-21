@@ -31,8 +31,8 @@ public sealed class StationOrderConfiguration : IEntityTypeConfiguration<Station
                                        stationOrder.StationOrderNumber
                                      })
            .IsUnique();
-    builder.HasOne<Festival>().WithMany().HasForeignKey(stationOrder => stationOrder.FestivalId).OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<Station>().WithMany().HasForeignKey(stationOrder => stationOrder.StationId).OnDelete(DeleteBehavior.Restrict);
-    builder.HasMany(stationOrder => stationOrder.Items).WithOne().HasForeignKey(item => item.StationOrderId);
+    builder.HasOne(stationOrder => stationOrder.Festival).WithMany().HasForeignKey(stationOrder => stationOrder.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(stationOrder => stationOrder.Station).WithMany(station => station.StationOrders).HasForeignKey(stationOrder => stationOrder.StationId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasMany(stationOrder => stationOrder.Items).WithOne(item => item.StationOrder).HasForeignKey(item => item.StationOrderId);
   }
 }

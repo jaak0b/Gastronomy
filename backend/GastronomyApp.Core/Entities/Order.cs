@@ -18,5 +18,9 @@ public sealed class Order
 
   public required DateTime CreatedAtUtc { get; set; }
 
+  public Festival Festival { get; set; } = null!;
+
+  public StaffMember StaffMember { get; set; } = null!;
+
   public Collection<StationOrder> StationOrders { get; } = [];
 }

@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class StaffMember
@@ -13,4 +15,10 @@ public sealed class StaffMember
   public Guid? EnrolmentInvitationId { get; set; }
 
   public required DateTime CreatedAtUtc { get; set; }
+
+  public Device? Device { get; set; }
+
+  public EnrolmentInvitation? EnrolmentInvitation { get; set; }
+
+  public Collection<Order> Orders { get; } = [];
 }

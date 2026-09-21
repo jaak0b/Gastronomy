@@ -9,4 +9,8 @@ public sealed class FestivalStation
   public required Guid StationId { get; set; }
 
   public required int NextStationOrderNumber { get; set; }
+
+  public Festival Festival { get; set; } = null!;
+
+  public Station Station { get; set; } = null!;
 }

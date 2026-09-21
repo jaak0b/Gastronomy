@@ -19,5 +19,11 @@ public sealed class StationOrder
 
   public bool IsHiddenFromAsItComesQueue { get; set; }
 
+  public Order Order { get; set; } = null!;
+
+  public Festival Festival { get; set; } = null!;
+
+  public Station Station { get; set; } = null!;
+
   public Collection<OrderItem> Items { get; } = [];
 }

@@ -22,7 +22,7 @@ public sealed class FestivalCatalogItemConfiguration : IEntityTypeConfiguration<
                                   menuRow.CatalogItemId
                                 })
            .IsUnique();
-    builder.HasOne<Festival>().WithMany().HasForeignKey(menuRow => menuRow.FestivalId).OnDelete(DeleteBehavior.Restrict);
-    builder.HasOne<CatalogItem>().WithMany().HasForeignKey(menuRow => menuRow.CatalogItemId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(menuRow => menuRow.Festival).WithMany(festival => festival.CatalogItems).HasForeignKey(menuRow => menuRow.FestivalId).OnDelete(DeleteBehavior.Restrict);
+    builder.HasOne(menuRow => menuRow.CatalogItem).WithMany(item => item.FestivalCatalogItems).HasForeignKey(menuRow => menuRow.CatalogItemId).OnDelete(DeleteBehavior.Restrict);
   }
 }

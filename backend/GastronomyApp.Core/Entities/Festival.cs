@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class Festival
@@ -13,4 +15,10 @@ public sealed class Festival
   public required int NextOrderNumber { get; set; }
 
   public required bool IsHidden { get; set; }
+
+  public Collection<FestivalStation> Stations { get; } = [];
+
+  public Collection<FestivalCatalogItem> CatalogItems { get; } = [];
+
+  public Collection<ItemStationAssignment> ItemStationAssignments { get; } = [];
 }

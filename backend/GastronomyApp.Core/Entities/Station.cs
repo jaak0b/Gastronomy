@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace GastronomyApp.Core.Entities;
 
 public sealed class Station
@@ -13,4 +15,12 @@ public sealed class Station
   public Guid? DeviceId { get; set; }
 
   public Guid? EnrolmentInvitationId { get; set; }
+
+  public Device? Device { get; set; }
+
+  public EnrolmentInvitation? EnrolmentInvitation { get; set; }
+
+  public Collection<StationOrder> StationOrders { get; } = [];
+
+  public Collection<FestivalStation> FestivalStations { get; } = [];
 }

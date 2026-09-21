@@ -19,7 +19,7 @@ public sealed class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMem
     builder.Property(staffMember => staffMember.CreatedAtUtc).IsRequired();
     builder.HasIndex(staffMember => staffMember.DeviceId).IsUnique();
     builder.HasIndex(staffMember => staffMember.EnrolmentInvitationId).IsUnique();
-    builder.HasOne<Device>().WithOne().HasForeignKey<StaffMember>(staffMember => staffMember.DeviceId).OnDelete(DeleteBehavior.SetNull);
-    builder.HasOne<EnrolmentInvitation>().WithOne().HasForeignKey<StaffMember>(staffMember => staffMember.EnrolmentInvitationId).OnDelete(DeleteBehavior.SetNull);
+    builder.HasOne(staffMember => staffMember.Device).WithOne().HasForeignKey<StaffMember>(staffMember => staffMember.DeviceId).OnDelete(DeleteBehavior.SetNull);
+    builder.HasOne(staffMember => staffMember.EnrolmentInvitation).WithOne().HasForeignKey<StaffMember>(staffMember => staffMember.EnrolmentInvitationId).OnDelete(DeleteBehavior.SetNull);
   }
 }
