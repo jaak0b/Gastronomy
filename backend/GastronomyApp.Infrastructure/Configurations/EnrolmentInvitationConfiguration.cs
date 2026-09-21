@@ -27,6 +27,6 @@ public sealed class EnrolmentInvitationConfiguration : IEntityTypeConfiguration<
 
     builder.HasIndex(OutstandingMarkerColumnName).IsUnique();
 
-    builder.HasOne(invitation => invitation.ConsumedByDevice).WithMany().HasForeignKey(invitation => invitation.ConsumedByDeviceId).OnDelete(DeleteBehavior.SetNull);
+    builder.HasOne(invitation => invitation.ConsumedByDevice).WithMany().HasForeignKey(invitation => invitation.ConsumedByDeviceId).OnDelete(DeleteBehavior.Cascade);
   }
 }

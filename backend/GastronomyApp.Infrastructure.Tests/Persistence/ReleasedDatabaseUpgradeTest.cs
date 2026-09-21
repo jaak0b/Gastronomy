@@ -16,6 +16,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     var categoryId = Guid.NewGuid();
     var festivalId = Guid.NewGuid();
     var invitationId = Guid.NewGuid();
+    var staffMemberId = Guid.NewGuid();
     var orderId = Guid.NewGuid();
     byte[] qrCodeHash =
     [
@@ -37,7 +38,8 @@ public sealed class ReleasedDatabaseUpgradeTest
     await InsertCatalogCategoryAsync(connection, categoryId);
     await InsertEnrolmentInvitationAsync(connection, invitationId, qrCodeHash, qrCodeSalt);
     await InsertFestivalAsync(connection, festivalId);
-    await InsertOrderAsync(connection, orderId, festivalId);
+    await InsertStaffMemberAsync(connection, staffMemberId);
+    await InsertOrderAsync(connection, orderId, festivalId, staffMemberId);
 
     var context = fixture.CreateContext();
     await context.Database.MigrateAsync();
@@ -57,10 +59,38 @@ public sealed class ReleasedDatabaseUpgradeTest
                       Assert.That(order.TableName, Is.EqualTo("Tisch 7"));
                       Assert.That(order.GlobalOrderNumber, Is.EqualTo(4));
                       Assert.That(order.CreatedAtUtc, Is.EqualTo(new DateTime(2026, 9, 20, 17, 30, 0)));
-                      Assert.That(appliedMigrations, Has.Count.EqualTo(3));
+                      Assert.That(order.StaffMemberId, Is.EqualTo(staffMemberId));
+                      Assert.That(appliedMigrations, Has.Count.EqualTo(4));
                       Assert.That(appliedMigrations[0], Is.EqualTo(_releasedSchema.MigrationId));
                       Assert.That(appliedMigrations[1], Does.EndWith("_CollateCategoryNamesAndCapitalizeQRColumns"));
                       Assert.That(appliedMigrations[2], Does.EndWith("_DropOrderNote"));
+                      Assert.That(appliedMigrations[3], Does.EndWith("_AddEntityNavigations"));
+                    });
+  }
+
+  [Test]
+  public async Task MigrateAsync_OnConsumedInvitationsWithAndWithoutTheirDevice_KeepsOnlyTheOneWhoseDeviceExists()
+  {
+    using SqliteTempFileFixture fixture = new(TemporaryDatabaseSchema.None);
+    var survivingDeviceId = Guid.NewGuid();
+    var survivingInvitationId = Guid.NewGuid();
+    var orphanedInvitationId = Guid.NewGuid();
+
+    var connection = fixture.OpenConnection();
+    await ExecuteAsync(connection, _releasedSchema.Sql);
+    await InsertDeviceAsync(connection, survivingDeviceId);
+    await InsertConsumedEnrolmentInvitationAsync(connection, survivingInvitationId, survivingDeviceId);
+    await InsertConsumedEnrolmentInvitationAsync(connection, orphanedInvitationId, Guid.NewGuid());
+
+    var context = fixture.CreateContext();
+    await context.Database.MigrateAsync();
+
+    List<EnrolmentInvitation> invitations = await context.Set<EnrolmentInvitation>().ToListAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(invitations.Select(invitation => invitation.Id), Is.EquivalentTo(new[] { survivingInvitationId }));
+                      Assert.That(invitations.Single().ConsumedByDeviceId, Is.EqualTo(survivingDeviceId));
                     });
   }
 
@@ -109,6 +139,86 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
+  private async Task InsertDeviceAsync(SqliteConnection connection, Guid deviceId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "Devices" ("Id", "Language", "TokenHash", "TokenSalt", "TokenIterations", "TokenAlgorithm", "TokenLookupId", "CreatedAtUtc", "LastSeenAtUtc")
+                          VALUES ($id, $language, $tokenHash, $tokenSalt, $iterations, $algorithm, $tokenLookupId, $createdAtUtc, $lastSeenAtUtc);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(deviceId));
+    command.Parameters.AddWithValue("$language", "de");
+    command.Parameters.AddWithValue("$tokenHash",
+                                    new byte[]
+                                    {
+                                      17,
+                                      18,
+                                      19,
+                                      20
+                                    });
+    command.Parameters.AddWithValue("$tokenSalt",
+                                    new byte[]
+                                    {
+                                      21,
+                                      22,
+                                      23,
+                                      24
+                                    });
+    command.Parameters.AddWithValue("$iterations", 210000);
+    command.Parameters.AddWithValue("$algorithm", "PBKDF2-HMAC-SHA512");
+    command.Parameters.AddWithValue("$tokenLookupId", deviceId.ToString("N"));
+    command.Parameters.AddWithValue("$createdAtUtc", "2026-09-16 18:01:00");
+    command.Parameters.AddWithValue("$lastSeenAtUtc", "2026-09-20 17:00:00");
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertConsumedEnrolmentInvitationAsync(SqliteConnection connection, Guid invitationId, Guid consumedByDeviceId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "EnrolmentInvitations" ("Id", "QrCodeHash", "QrCodeSalt", "QrCodeIterations", "QrCodeAlgorithm", "CreatedAtUtc", "ExpiresAtUtc", "ConsumedAtUtc", "ConsumedByDeviceId")
+                          VALUES ($id, $hash, $salt, $iterations, $algorithm, $createdAtUtc, $expiresAtUtc, $consumedAtUtc, $consumedByDeviceId);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(invitationId));
+    command.Parameters.AddWithValue("$hash",
+                                    new byte[]
+                                    {
+                                      9,
+                                      10,
+                                      11,
+                                      12
+                                    });
+    command.Parameters.AddWithValue("$salt",
+                                    new byte[]
+                                    {
+                                      13,
+                                      14,
+                                      15,
+                                      16
+                                    });
+    command.Parameters.AddWithValue("$iterations", 210000);
+    command.Parameters.AddWithValue("$algorithm", "PBKDF2-HMAC-SHA512");
+    command.Parameters.AddWithValue("$createdAtUtc", "2026-09-16 18:00:00");
+    command.Parameters.AddWithValue("$expiresAtUtc", "2026-09-16 18:05:00");
+    command.Parameters.AddWithValue("$consumedAtUtc", "2026-09-16 18:01:00");
+    command.Parameters.AddWithValue("$consumedByDeviceId", ToStoredText(consumedByDeviceId));
+    await command.ExecuteNonQueryAsync();
+  }
+
+  private async Task InsertStaffMemberAsync(SqliteConnection connection, Guid staffMemberId)
+  {
+    await using var command = connection.CreateCommand();
+    command.CommandText = """
+                          INSERT INTO "StaffMembers" ("Id", "Name", "IsActive", "DeviceId", "EnrolmentInvitationId", "CreatedAtUtc")
+                          VALUES ($id, $name, $isActive, NULL, NULL, $createdAtUtc);
+                          """;
+    command.Parameters.AddWithValue("$id", ToStoredText(staffMemberId));
+    command.Parameters.AddWithValue("$name", "Anna");
+    command.Parameters.AddWithValue("$isActive", 1);
+    command.Parameters.AddWithValue("$createdAtUtc", "2026-09-20 16:00:00");
+    await command.ExecuteNonQueryAsync();
+  }
+
   private async Task InsertFestivalAsync(SqliteConnection connection, Guid festivalId)
   {
     await using var command = connection.CreateCommand();
@@ -125,7 +235,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     await command.ExecuteNonQueryAsync();
   }
 
-  private async Task InsertOrderAsync(SqliteConnection connection, Guid orderId, Guid festivalId)
+  private async Task InsertOrderAsync(SqliteConnection connection, Guid orderId, Guid festivalId, Guid staffMemberId)
   {
     await using var command = connection.CreateCommand();
     command.CommandText = """
@@ -136,7 +246,7 @@ public sealed class ReleasedDatabaseUpgradeTest
     command.Parameters.AddWithValue("$clientOrderId", ToStoredText(Guid.NewGuid()));
     command.Parameters.AddWithValue("$festivalId", ToStoredText(festivalId));
     command.Parameters.AddWithValue("$globalOrderNumber", 4);
-    command.Parameters.AddWithValue("$staffMemberId", ToStoredText(Guid.NewGuid()));
+    command.Parameters.AddWithValue("$staffMemberId", ToStoredText(staffMemberId));
     command.Parameters.AddWithValue("$tableName", "Tisch 7");
     command.Parameters.AddWithValue("$note", "An old note that nobody reads any more");
     command.Parameters.AddWithValue("$createdAtUtc", "2026-09-20 17:30:00");
