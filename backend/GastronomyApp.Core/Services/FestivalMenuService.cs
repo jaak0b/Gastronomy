@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -6,9 +6,6 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class FestivalMenuService
 {
-  private const int HighestPriceCents = 99999;
-  private const int LowestPriceCents = 0;
-
   private readonly IFestivalRepository _festivalRepository;
   private readonly ItemOrderability _orderability;
   private readonly IFestivalMenuRepository _repository;
@@ -46,9 +43,6 @@ public sealed class FestivalMenuService
 
     if (!await _repository.CatalogItemExistsAsync(catalogItemId, cancellationToken))
       return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.CatalogItemNotFound);
-
-    if (priceCents is < LowestPriceCents or > HighestPriceCents)
-      return Failed<FestivalCatalogItem>(FestivalMenuFailureReason.PriceOutOfRange);
 
     List<Guid> stationIds = (stationIdsRequested ?? []).ToList();
 

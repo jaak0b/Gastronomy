@@ -66,7 +66,7 @@ public sealed class OrderItemSettlementHandler
       return;
     }
 
-    if (failure.Reason is SettlementFailureReason.AmountPaidMissing or SettlementFailureReason.AmountPaidNegative or SettlementFailureReason.DuplicateOrderItemId or SettlementFailureReason.NoItemsSelected or SettlementFailureReason.UnknownOrderItemId or SettlementFailureReason.PaymentNoticeMissing)
+    if (failure.Reason is SettlementFailureReason.DuplicateOrderItemId or SettlementFailureReason.UnknownOrderItemId or SettlementFailureReason.PaymentNoticeMissing)
     {
       _logger.LogWarning("A settlement from staff member {StaffMemberId} was refused because {Reason}. The order item it names is {OrderItemId}, and the open items screen cannot produce that, so nothing was settled.", staffMemberId, failure.Reason, failure.OffendingOrderItemId);
       return;

@@ -69,19 +69,6 @@ public sealed class FestivalAdministrationServiceTest
   }
 
   [Test]
-  public async Task CreateAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
-  {
-    Result<Festival, FestivalAdministrationFailure> created = await _service.CreateAsync("   ", _now, _now.AddHours(6), CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.Failure.Reason, Is.EqualTo(FestivalAdministrationFailureReason.NameMissing));
-                      Assert.That(_transactionRunner.Committed, Is.False);
-                    });
-  }
-
-  [Test]
   public async Task CreateAsync_AnEndThatIsNotAfterTheStart_FailsBecauseThePeriodIsInvalid()
   {
     Result<Festival, FestivalAdministrationFailure> created = await _service.CreateAsync("Sommerfest", _now, _now, CancellationToken.None);

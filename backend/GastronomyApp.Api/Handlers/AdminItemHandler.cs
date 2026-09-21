@@ -87,7 +87,6 @@ public sealed class AdminItemHandler
            {
              CatalogItemAdministrationFailureReason.FestivalNotFound => Results.NotFound(),
              CatalogItemAdministrationFailureReason.ItemNotFound => Results.NotFound(),
-             CatalogItemAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.itemNameMissing"),
              CatalogItemAdministrationFailureReason.NameTaken => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemNameTaken", "admin.itemNameTaken"),
              CatalogItemAdministrationFailureReason.ProductionMinutesOutOfRange => RefusedProductionMinutes(failure.OffendingProductionMinutes),
              CatalogItemAdministrationFailureReason.CategoryUnknown => _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity, "UnprocessableEntity", "admin.itemCategoryUnknown"),

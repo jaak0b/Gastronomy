@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -97,14 +97,6 @@ public sealed class CatalogItemAdministrationServiceTest
                       Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.NameTaken));
                       Assert.That(_transactionRunner.Committed, Is.False);
                     });
-  }
-
-  [Test]
-  public async Task CreateAsync_NameOfOnlySpaces_FailsBecauseTheNameIsMissing()
-  {
-    Result<CatalogItem, CatalogItemAdministrationFailure> created = await CreatedAsync("   ", _foodCategoryId);
-
-    Assert.That(created.Failure.Reason, Is.EqualTo(CatalogItemAdministrationFailureReason.NameMissing));
   }
 
   [Test]

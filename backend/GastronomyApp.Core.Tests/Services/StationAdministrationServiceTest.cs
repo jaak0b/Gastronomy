@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -61,19 +61,6 @@ public sealed class StationAdministrationServiceTest
                     {
                       Assert.That(listed.IsSuccess, Is.False);
                       Assert.That(listed.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.FestivalNotFound));
-                    });
-  }
-
-  [Test]
-  public async Task CreateAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
-  {
-    Result<Station, StationAdministrationFailure> created = await _service.CreateAsync("  ", 1, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(created.IsSuccess, Is.False);
-                      Assert.That(created.Failure.Reason, Is.EqualTo(StationAdministrationFailureReason.NameMissing));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 

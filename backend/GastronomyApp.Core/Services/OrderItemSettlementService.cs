@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.OpenItems;
+﻿using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -49,9 +49,9 @@ public sealed class OrderItemSettlementService
 
     EnsureSettlerNamed(settledByStaffMemberId);
 
-    var shapeFailure = ValidateShape(lines);
-    if (shapeFailure is not null)
-      return Result<SettlementResult, SettlementFailure>.Failed(shapeFailure);
+    var duplicateFailure = ValidateDistinctLines(lines);
+    if (duplicateFailure is not null)
+      return Result<SettlementResult, SettlementFailure>.Failed(duplicateFailure);
 
     Dictionary<Guid, OrderItem> knownItemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> selected = [];
@@ -70,9 +70,9 @@ public sealed class OrderItemSettlementService
       selected.Add(knownItem);
     }
 
-    var priceFailure = ValidatePrices(lines, selected);
-    if (priceFailure is not null)
-      return Result<SettlementResult, SettlementFailure>.Failed(priceFailure);
+    var noticeFailure = ValidatePaymentNotices(lines, selected);
+    if (noticeFailure is not null)
+      return Result<SettlementResult, SettlementFailure>.Failed(noticeFailure);
 
     var tableFailure = ValidateOneTable(selected);
     if (tableFailure is not null)
@@ -182,11 +182,8 @@ public sealed class OrderItemSettlementService
       item.PaymentNotice = null;
   }
 
-  private SettlementFailure? ValidateShape(IReadOnlyList<SettleLineRequest> lines)
+  private SettlementFailure? ValidateDistinctLines(IReadOnlyList<SettleLineRequest> lines)
   {
-    if (lines.Count == 0)
-      return new() { Reason = SettlementFailureReason.NoItemsSelected };
-
     HashSet<Guid> seenIds = [];
 
     foreach (var line in lines)
@@ -202,31 +199,13 @@ public sealed class OrderItemSettlementService
     return null;
   }
 
-  private SettlementFailure? ValidatePrices(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<OrderItem> selected)
+  private SettlementFailure? ValidatePaymentNotices(IReadOnlyList<SettleLineRequest> lines, IReadOnlyList<OrderItem> selected)
   {
     for (var index = 0; index < lines.Count; index++)
     {
       var line = lines[index];
 
-      if (line.PaidPriceCents is not { } paidPriceCents)
-      {
-        return new()
-               {
-                 Reason = SettlementFailureReason.AmountPaidMissing,
-                 OffendingOrderItemId = line.OrderItemId
-               };
-      }
-
-      if (paidPriceCents < 0)
-      {
-        return new()
-               {
-                 Reason = SettlementFailureReason.AmountPaidNegative,
-                 OffendingOrderItemId = line.OrderItemId
-               };
-      }
-
-      if (paidPriceCents < selected[index].UnitPriceCents && TrimNotice(line.PaymentNotice).Length == 0)
+      if (line.PaidPriceCents!.Value < selected[index].UnitPriceCents && TrimNotice(line.PaymentNotice).Length == 0)
       {
         return new()
                {

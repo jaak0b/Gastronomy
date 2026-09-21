@@ -134,7 +134,7 @@ export type RedeemedEnrolmentView = __TypedOpenapi.Schemas.RedeemedEnrolmentView
 export const RedeemedEnrolmentView = z.strictObject({ deviceId: z.string(), deviceToken: z.string(), deviceKind: DeviceOwnerKind, staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
 
 export type RedeemEnrolmentRequest = __TypedOpenapi.Schemas.RedeemEnrolmentRequest;
-export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable(), name: z.string().nullable(), userAgent: z.string().nullable(), previousDeviceToken: z.string().nullable() }).partial();
+export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable(), name: z.string().nullable().optional(), userAgent: z.string().nullable().optional(), previousDeviceToken: z.string().nullable().optional() });
 
 export type RenameStaffMemberRequest = __TypedOpenapi.Schemas.RenameStaffMemberRequest;
 export const RenameStaffMemberRequest = z.strictObject({ name: z.string().nullable() });

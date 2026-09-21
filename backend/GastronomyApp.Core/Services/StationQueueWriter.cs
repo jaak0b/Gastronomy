@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -99,7 +99,6 @@ public sealed class StationQueueWriter
   {
     return reason switch
            {
-             FulfillmentFailureReason.NoItemsSelected => StationQueueFailureReason.NoItemsSelected,
              FulfillmentFailureReason.UnknownOrderItemId => StationQueueFailureReason.UnknownOrderItemId,
              FulfillmentFailureReason.ItemNotFulfilled => StationQueueFailureReason.ItemNotFulfilled,
              _ => new UnreachableCase().Throw<StationQueueFailureReason>(reason)

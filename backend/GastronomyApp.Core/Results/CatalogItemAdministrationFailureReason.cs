@@ -1,10 +1,9 @@
-namespace GastronomyApp.Core.Results;
+﻿namespace GastronomyApp.Core.Results;
 
 public enum CatalogItemAdministrationFailureReason
 {
   FestivalNotFound,
   ItemNotFound,
-  NameMissing,
   NameTaken,
   ProductionMinutesOutOfRange,
   CategoryUnknown,

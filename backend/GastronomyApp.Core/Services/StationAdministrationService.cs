@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -63,13 +63,10 @@ public sealed class StationAdministrationService
 
   private async Task<Result<Station, StationAdministrationFailure>> CreatedAsync(string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return Failed<Station>(StationAdministrationFailureReason.NameMissing);
-
     Station created = new()
                       {
                         Id = Guid.NewGuid(),
-                        Name = name,
+                        Name = name!,
                         SortOrder = sortOrder,
                         IsActive = true
                       };
@@ -83,9 +80,6 @@ public sealed class StationAdministrationService
 
   private async Task<Result<Station?, StationAdministrationFailure>> UpdatedAsync(Guid stationId, string? name, int sortOrder, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return Failed<Station?>(StationAdministrationFailureReason.NameMissing);
-
     var station = await _repository.FindByIdAsync(stationId, cancellationToken);
 
     if (station is null)
@@ -93,7 +87,7 @@ public sealed class StationAdministrationService
 
     var somethingChanged = station.Name != name || station.SortOrder != sortOrder;
 
-    station.Name = name;
+    station.Name = name!;
     station.SortOrder = sortOrder;
     await _repository.SaveChangesAsync(cancellationToken);
 

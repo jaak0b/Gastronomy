@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
@@ -56,10 +56,6 @@ public sealed class OrderAcceptanceService
 
   private async Task<Result<Order, OrderValidationFailure>> AcceptInsideTransactionAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
   {
-    var shapeFailure = ValidateShape(request);
-    if (shapeFailure is not null)
-      return Result<Order, OrderValidationFailure>.Failed(shapeFailure);
-
     var existingOrder = await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
     if (existingOrder is not null)
       return Result<Order, OrderValidationFailure>.Success(existingOrder);
@@ -86,27 +82,6 @@ public sealed class OrderAcceptanceService
     await _orderRepository.AddAsync(order, cancellationToken);
 
     return Result<Order, OrderValidationFailure>.Success(order);
-  }
-
-  private OrderValidationFailure? ValidateShape(PlaceOrderRequest request)
-  {
-    if ((request.Items?.Count ?? 0) == 0)
-      return new() { Reason = OrderValidationFailureReason.NoItems };
-
-    if (string.IsNullOrWhiteSpace(request.TableName))
-      return new() { Reason = OrderValidationFailureReason.TableNameMissing };
-
-    foreach (var item in request.Items!)
-      if (item.UnitPriceCents < 0)
-      {
-        return new()
-               {
-                 Reason = OrderValidationFailureReason.PriceOutOfRange,
-                 OffendingCatalogItemId = item.CatalogItemId
-               };
-      }
-
-    return null;
   }
 
   private OrderValidationFailure? SettleAtAcceptance(Guid staffMemberId, Order order, IReadOnlyList<OrderItemRequest> itemRequests, IReadOnlyList<OrderItem> routedItems)

@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -39,15 +39,12 @@ public sealed class StaffMemberAdministrationService
 
   private async Task<Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return Failed(StaffMemberAdministrationFailureReason.NameMissing);
-
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
     if (staffMember is null)
       return Failed(StaffMemberAdministrationFailureReason.StaffMemberNotFound);
 
-    staffMember.Name = name;
+    staffMember.Name = name!;
     await _repository.SaveChangesAsync(cancellationToken);
 
     return Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>>.Success(staffMember);

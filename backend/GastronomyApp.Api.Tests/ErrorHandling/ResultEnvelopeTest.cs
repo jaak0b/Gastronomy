@@ -8,9 +8,6 @@ public sealed class ResultEnvelopeTest
 {
   private readonly ResultEnvelope _envelope = new();
 
-  [TestCase(OrderValidationFailureReason.NoItems, 400, "ValidationFailed", "order.cannotBeProcessed")]
-  [TestCase(OrderValidationFailureReason.TableNameMissing, 400, "ValidationFailed", "order.cannotBeProcessed")]
-  [TestCase(OrderValidationFailureReason.PriceOutOfRange, 400, "ValidationFailed", "order.cannotBeProcessed")]
   [TestCase(OrderValidationFailureReason.StationRequired, 422, "UnprocessableEntity", "order.cannotBeProcessed")]
   [TestCase(OrderValidationFailureReason.ItemHasNoStation, 422, "UnprocessableEntity", "order.cannotBeProcessed")]
   [TestCase(OrderValidationFailureReason.UnknownCatalogItemId, 422, "UnprocessableEntity", "order.unknownItem")]

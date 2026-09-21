@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts.Admin.Festivals;
 using GastronomyApp.Core.Entities;
@@ -109,7 +109,6 @@ public sealed class AdminFestivalHandler
     return failure.Reason switch
            {
              FestivalAdministrationFailureReason.FestivalNotFound => Results.NotFound(),
-             FestivalAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.festivalNameMissing"),
              FestivalAdministrationFailureReason.PeriodInvalid => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.festivalPeriodInvalid"),
              FestivalAdministrationFailureReason.PeriodOverlapsAnotherFestival => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "FestivalOverlaps", "admin.festivalOverlaps", new Dictionary<string, string> { ["name"] = failure.OverlappingFestivalName ?? string.Empty }),
              FestivalAdministrationFailureReason.FestivalIsRunning => RefusedHidingARunningFestival(failure.OffendingFestivalId),

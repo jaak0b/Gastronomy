@@ -1,11 +1,11 @@
-using GastronomyApp.Api.Auth;
-using GastronomyApp.Contracts.Stations;
+﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hosting;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Contracts.Enrolment;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
@@ -40,14 +40,7 @@ public sealed class EnrolmentRedemptionHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    if (string.IsNullOrWhiteSpace(request.Code))
-    {
-      _log.LogWarning("A phone asked to be set up without sending a code at all.");
-
-      return _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "enrolment.codeMissing");
-    }
-
-    var redemption = await _service.RedeemAsync(request.Code, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), cancellationToken);
+    var redemption = await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), cancellationToken);
 
     return redemption.Outcome switch
            {

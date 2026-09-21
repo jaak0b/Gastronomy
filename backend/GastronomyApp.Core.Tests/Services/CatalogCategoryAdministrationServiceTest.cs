@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -28,7 +28,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
     A.CallTo(() => _repository.FindByIdAsync(_foodCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(_food));
     A.CallTo(() => _repository.HoldsActiveItemsAsync(A<Guid>._, A<CancellationToken>._)).Returns(false);
 
-    _service = new(_repository, new(), new(), _transactionRunner);
+    _service = new(_repository, new(), _transactionRunner);
   }
 
   private readonly Guid _drinkCategoryId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
@@ -39,26 +39,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
   private ICatalogCategoryRepository _repository = null!;
   private CatalogCategoryAdministrationService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
-
-  [Test]
-  public async Task CreateAsync_NameOfOnlySpaces_FailsBecauseTheNameIsMissing()
-  {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("  ", "#C62828", CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(created.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.NameMissing));
-                      Assert.That(_transactionRunner.Committed, Is.False);
-                    });
-  }
-
-  [Test]
-  public async Task CreateAsync_ColourThatIsNotSixHexDigits_FailsBecauseTheColourIsInvalid()
-  {
-    Result<CatalogCategory, Failure<CatalogCategoryAdministrationFailureReason>> created = await _service.CreateAsync("Nachtisch", "C62828", CancellationToken.None);
-
-    Assert.That(created.Failure.Reason, Is.EqualTo(CatalogCategoryAdministrationFailureReason.ColourInvalid));
-  }
 
   [Test]
   public async Task CreateAsync_NameOfAnotherCategoryInAnotherCasing_FailsBecauseTheNameIsTaken()

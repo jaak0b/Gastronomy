@@ -80,7 +80,6 @@ public sealed class AdminFestivalMenuHandler
              FestivalMenuFailureReason.FestivalNotFound => Results.NotFound(),
              FestivalMenuFailureReason.CatalogItemNotFound => Results.NotFound(),
              FestivalMenuFailureReason.MenuRowNotFound => Results.NotFound(),
-             FestivalMenuFailureReason.PriceOutOfRange => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.itemPriceOutOfRange"),
              FestivalMenuFailureReason.StationsDoNotBelongToTheFestival => RefusedStationsOutsideTheFestival(failure.StationIdsOutsideTheFestival, festivalId, itemId),
              FestivalMenuFailureReason.NoStationPreparesTheItem => _resultEnvelope.Problem(StatusCodes.Status422UnprocessableEntity, "UnprocessableEntity", "admin.itemNeedsAStation"),
              FestivalMenuFailureReason.FestivalIsRunning => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemStaysOnTheMenuWhileTheFestivalRuns", "admin.itemStaysOnTheMenuWhileTheFestivalRuns"),

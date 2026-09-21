@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
@@ -167,40 +167,6 @@ public sealed class OrderItemSettlementServiceTest
   }
 
   [Test]
-  public void Settle_ALineWithoutAPrice_IsRefusedAndNothingIsSettled()
-  {
-    var bratwurst = OpenItem(350);
-
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, null)], _collectingWaiter, AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidMissing));
-                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_ANegativePrice_IsRefusedAndNothingIsSettled()
-  {
-    var bratwurst = OpenItem(350);
-
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([Line(bratwurst, -1, "Ein Grund")], _collectingWaiter, AtOneTable(bratwurst), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidNegative));
-                      Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
-                    });
-  }
-
-  [Test]
   public void Settle_AShortLineWithoutAReason_IsRefusedAndNothingIsSettled()
   {
     var bratwurst = OpenItem(350);
@@ -213,29 +179,6 @@ public sealed class OrderItemSettlementServiceTest
                       Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.PaymentNoticeMissing));
                       Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(bratwurst.Id));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_ALaterLineThatFailsValidation_LeavesTheEarlierLineUntouched()
-  {
-    var bratwurst = OpenItem(350);
-    var beer = OpenItem(400);
-
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([
-                                                                               Line(bratwurst, 350),
-                                                                               Line(beer, null)
-                                                                             ],
-                                                                             _collectingWaiter,
-                                                                             AtOneTable(bratwurst, beer),
-                                                                             _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.AmountPaidMissing));
-                      Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                      Assert.That(bratwurst.ChargedPriceCents, Is.Null);
                     });
   }
 
@@ -336,18 +279,6 @@ public sealed class OrderItemSettlementServiceTest
                       Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.UnknownOrderItemId));
                       Assert.That(settlement.Failure.OffendingOrderItemId, Is.EqualTo(unknownId));
                       Assert.That(bratwurst.SettledAtUtc, Is.Null);
-                    });
-  }
-
-  [Test]
-  public void Settle_NothingSelected_IsRefused()
-  {
-    Result<SettlementResult, SettlementFailure> settlement = _service.Settle([], _collectingWaiter, AtOneTable(), _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.False);
-                      Assert.That(settlement.Failure.Reason, Is.EqualTo(SettlementFailureReason.NoItemsSelected));
                     });
   }
 

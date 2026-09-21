@@ -1,4 +1,4 @@
-namespace GastronomyApp.Api;
+﻿namespace GastronomyApp.Api;
 
 public static class Names
 {
@@ -52,6 +52,11 @@ public static class Names
     {
       return $"station:{stationId}";
     }
+  }
+
+  public static class ProblemCodes
+  {
+    public const string ValidationFailed = "ValidationFailed";
   }
 
   public static class RateLimitPolicies

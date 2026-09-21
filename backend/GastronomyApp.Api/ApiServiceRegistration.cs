@@ -21,6 +21,7 @@ using GastronomyApp.Infrastructure.Security;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -111,9 +112,9 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<SavedChangeAnnouncer>();
     services.AddSingleton<CatalogChangeAnnouncer>();
     services.AddSingleton<FestivalChangeAnnouncer>();
-    services.AddSingleton<ColorFormatValidator>();
     services.AddSingleton<CatalogCategoryOrdering>();
     services.AddSingleton<ResultEnvelope>();
+    services.AddSingleton<IProblemDetailsService, RequestShapeRefusalWriter>();
     services.AddSingleton<CallerIdentity>();
     services.AddSingleton<DeviceTokenSplitter>();
     services.AddSingleton<LocalAddressSet>();
@@ -149,6 +150,8 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationEstimateHandler>();
     services.AddScoped<StationQueueHandler>();
     services.AddScoped<StationFulfillmentHandler>();
+
+    services.AddValidation();
 
     services.AddSignalR().AddJsonProtocol(protocolOptions => protocolOptions.PayloadSerializerOptions.Converters.Add(EnumsAsCamelCaseText()));
     services.AddSingleton<HubConnectionRegistry>();

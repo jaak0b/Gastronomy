@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
@@ -129,18 +129,6 @@ public sealed class OrderItemFulfillmentServiceTest
   }
 
   [Test]
-  public void Fulfill_NothingSelected_IsRefused()
-  {
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Fulfill([], [], _now);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.NoItemsSelected));
-                    });
-  }
-
-  [Test]
   public void Fulfill_AnItemAnotherTapHadAlreadyFinished_StillNamesItsStationOrder()
   {
     var stationOrder = StationOrderWith(FulfilledItem(_earlier));
@@ -219,18 +207,6 @@ public sealed class OrderItemFulfillmentServiceTest
                       Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.UnknownOrderItemId));
                       Assert.That(outcome.Failure.OffendingOrderItemId, Is.EqualTo(strangerId));
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_earlier));
-                    });
-  }
-
-  [Test]
-  public void Unfulfill_NothingSelected_IsRefused()
-  {
-    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = _service.Unfulfill([], []);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(outcome.IsSuccess, Is.False);
-                      Assert.That(outcome.Failure.Reason, Is.EqualTo(FulfillmentFailureReason.NoItemsSelected));
                     });
   }
 

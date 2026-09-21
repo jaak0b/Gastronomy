@@ -97,8 +97,6 @@ public sealed class AdminCategoryHandler
     return failure.Reason switch
            {
              CatalogCategoryAdministrationFailureReason.CategoryNotFound => Results.NotFound(),
-             CatalogCategoryAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.categoryNameMissing"),
-             CatalogCategoryAdministrationFailureReason.ColourInvalid => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.categoryColourInvalid"),
              CatalogCategoryAdministrationFailureReason.NameTaken => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CategoryNameTaken", "admin.categoryNameTaken"),
              CatalogCategoryAdministrationFailureReason.CategoryHoldsActiveItems => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "CategoryHasActiveItems", "admin.categoryHasActiveItems"),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)

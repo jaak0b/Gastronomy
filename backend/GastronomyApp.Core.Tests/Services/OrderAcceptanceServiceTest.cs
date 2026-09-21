@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
@@ -160,19 +160,6 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_EmptyLines_FailsWithNoLinesAndAllocatesNothing()
-  {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([]), _staffMemberId, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.NoItems));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
   public async Task AcceptAsync_TheSameItemTwice_StoresOneRowPerItem()
   {
     Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([
@@ -183,27 +170,6 @@ public sealed class OrderAcceptanceServiceTest
                                                                               CancellationToken.None);
 
     Assert.That(ReadOrderItems(result.Value), Has.Count.EqualTo(2));
-  }
-
-  [Test]
-  public async Task AcceptAsync_EmptyTableName_FailsWithTableNameMissing()
-  {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], string.Empty), _staffMemberId, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameMissing));
-                    });
-    AssertNothingWasAllocatedOrStored();
-  }
-
-  [Test]
-  public async Task AcceptAsync_WhitespaceTableName_FailsWithTableNameMissing()
-  {
-    Result<Order, OrderValidationFailure> result = await _service.AcceptAsync(RequestWith([ItemFor(_bratwurstId)], "   "), _staffMemberId, CancellationToken.None);
-
-    Assert.That(result.Failure.Reason, Is.EqualTo(OrderValidationFailureReason.TableNameMissing));
   }
 
   [Test]
@@ -571,9 +537,6 @@ public sealed class OrderAcceptanceServiceTest
   {
     var request = scenario switch
                   {
-                    OrderValidationFailureReason.NoItems => RequestWith([]),
-                    OrderValidationFailureReason.PriceOutOfRange => RequestWith([ItemFor(_bratwurstId, unitPriceCents: -1)]),
-                    OrderValidationFailureReason.TableNameMissing => RequestWith([ItemFor(_bratwurstId)], string.Empty),
                     OrderValidationFailureReason.UnknownCatalogItemId => RequestWith([ItemFor(UnknownItemId())]),
                     OrderValidationFailureReason.StationRequired => RequestWith([ItemFor(AmbiguouslyRoutedItemId())]),
                     OrderValidationFailureReason.StationNotAssignedToItem => RequestWith([ItemFor(_bratwurstId, _barIndoorId)]),

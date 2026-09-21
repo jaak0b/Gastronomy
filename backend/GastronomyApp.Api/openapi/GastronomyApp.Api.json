@@ -2176,6 +2176,8 @@
             "format": "uuid"
           },
           "unitPriceCents": {
+            "maximum": 2147483647,
+            "minimum": 0,
             "type": "integer",
             "format": "int32"
           },
@@ -2233,6 +2235,8 @@
         "type": "object",
         "properties": {
           "paidPriceCents": {
+            "maximum": 2147483647,
+            "minimum": 0,
             "type": [
               "null",
               "integer"
@@ -2331,6 +2335,7 @@
             ]
           },
           "items": {
+            "minItems": 1,
             "type": [
               "null",
               "array"
@@ -2397,6 +2402,9 @@
         }
       },
       "RedeemEnrolmentRequest": {
+        "required": [
+          "code"
+        ],
         "type": "object",
         "properties": {
           "code": {
@@ -2469,6 +2477,7 @@
             ]
           },
           "colourHex": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
             "type": [
               "null",
               "string"
@@ -2520,6 +2529,8 @@
         "type": "object",
         "properties": {
           "priceCents": {
+            "maximum": 99999,
+            "minimum": 0,
             "type": "integer",
             "format": "int32"
           },
@@ -2675,6 +2686,7 @@
         "type": "object",
         "properties": {
           "lines": {
+            "minItems": 1,
             "type": [
               "null",
               "array"
@@ -2697,6 +2709,8 @@
             "format": "uuid"
           },
           "paidPriceCents": {
+            "maximum": 2147483647,
+            "minimum": 0,
             "type": [
               "null",
               "integer"
@@ -2814,6 +2828,7 @@
         "type": "object",
         "properties": {
           "orderItemIds": {
+            "minItems": 1,
             "type": [
               "null",
               "array"

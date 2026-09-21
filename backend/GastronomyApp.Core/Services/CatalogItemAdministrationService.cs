@@ -1,4 +1,4 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 
@@ -56,7 +56,7 @@ public sealed class CatalogItemAdministrationService
 
   private async Task<Result<CatalogItem, CatalogItemAdministrationFailure>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
-    var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
+    var refusal = ValidateProductionMinutes(productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
 
     if (refusal is not null)
       return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
@@ -86,7 +86,7 @@ public sealed class CatalogItemAdministrationService
     if (item is null)
       return Failed<CatalogItem>(CatalogItemAdministrationFailureReason.ItemNotFound);
 
-    var refusal = Validate(name, productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
+    var refusal = ValidateProductionMinutes(productionMinutes) ?? await NameRefusalAsync(name!, itemId, cancellationToken) ?? await CategoryRefusalAsync(categoryId, item.IsActive, cancellationToken);
 
     if (refusal is not null)
       return Result<CatalogItem, CatalogItemAdministrationFailure>.Failed(refusal);
@@ -162,11 +162,8 @@ public sealed class CatalogItemAdministrationService
     return new() { Reason = CatalogItemAdministrationFailureReason.CategoryIsSwitchedOff };
   }
 
-  private CatalogItemAdministrationFailure? Validate(string? name, double? productionMinutes)
+  private CatalogItemAdministrationFailure? ValidateProductionMinutes(double? productionMinutes)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return new() { Reason = CatalogItemAdministrationFailureReason.NameMissing };
-
     if (productionMinutes is { } minutes && (minutes is < ShortestProductionMinutes or > LongestProductionMinutes || Math.Round(minutes, 1) != minutes))
     {
       return new()

@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -45,19 +45,6 @@ public sealed class StaffMemberAdministrationServiceTest
     await _service.ListAsync(CancellationToken.None);
 
     A.CallTo(() => _repository.FindAllAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task RenameAsync_ANameOfOnlySpaces_FailsBecauseTheNameIsMissing()
-  {
-    Result<StaffMember, Failure<StaffMemberAdministrationFailureReason>> renamed = await _service.RenameAsync(_annaId, "   ", CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(renamed.IsSuccess, Is.False);
-                      Assert.That(renamed.Failure.Reason, Is.EqualTo(StaffMemberAdministrationFailureReason.NameMissing));
-                      Assert.That(_transactionRunner.Committed, Is.False);
-                    });
   }
 
   [Test]

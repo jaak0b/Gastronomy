@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Announcers;
+﻿using GastronomyApp.Api.Announcers;
 using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
@@ -88,7 +88,6 @@ public sealed class AdminStationHandler
            {
              StationAdministrationFailureReason.FestivalNotFound => Results.NotFound(),
              StationAdministrationFailureReason.StationNotFound => Results.NotFound(),
-             StationAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.stationNameMissing"),
              StationAdministrationFailureReason.StationHasUnfulfilledItems => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "StationHasUnfinishedItems", "admin.stationHasUnfinishedItems"),
              StationAdministrationFailureReason.ItemsWouldHaveNoStation => _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ItemsWouldHaveNoStation", "admin.itemsWouldHaveNoStation", new Dictionary<string, string> { ["count"] = failure.StrandedItemCount.ToString() }),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)

@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -43,19 +43,6 @@ public sealed class FestivalMenuServiceTest
   private IFestivalMenuRepository _repository = null!;
   private FestivalMenuService _service = null!;
   private RecordingTransactionRunner _transactionRunner = null!;
-
-  [Test]
-  public async Task PutOnTheMenuAsync_APriceAboveTheHighestTheFormAccepts_FailsBecauseThePriceIsOutOfRange()
-  {
-    Result<FestivalCatalogItem, FestivalMenuFailure> putOn = await _service.PutOnTheMenuAsync(_festivalId, _bratwurstId, 100000, [_kitchenId], CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(putOn.IsSuccess, Is.False);
-                      Assert.That(putOn.Failure.Reason, Is.EqualTo(FestivalMenuFailureReason.PriceOutOfRange));
-                      Assert.That(_transactionRunner.Committed, Is.False);
-                    });
-  }
 
   [Test]
   public async Task PutOnTheMenuAsync_AStationThatIsNotAtTheFestival_NamesTheStationItRefused()

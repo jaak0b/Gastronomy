@@ -1,7 +1,6 @@
-namespace GastronomyApp.Core.Results;
+﻿namespace GastronomyApp.Core.Results;
 
 public enum StaffMemberAdministrationFailureReason
 {
-  StaffMemberNotFound = 1,
-  NameMissing = 2
+  StaffMemberNotFound = 1
 }

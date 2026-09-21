@@ -170,9 +170,6 @@ public sealed class FestivalAdministrationService
 
   private async Task<FestivalAdministrationFailure?> PeriodRefusalAsync(string? name, DateTime startsAtUtc, DateTime endsAtUtc, Guid festivalKeepingItsOwnPeriod, CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return new() { Reason = FestivalAdministrationFailureReason.NameMissing };
-
     if (endsAtUtc <= startsAtUtc)
       return new() { Reason = FestivalAdministrationFailureReason.PeriodInvalid };
 

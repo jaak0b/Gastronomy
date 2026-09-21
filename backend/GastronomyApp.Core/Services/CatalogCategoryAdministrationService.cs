@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -7,16 +7,14 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class CatalogCategoryAdministrationService
 {
-  private readonly ColorFormatValidator _colour;
   private readonly CatalogCategoryOrdering _ordering;
   private readonly ICatalogCategoryRepository _repository;
   private readonly ITransactionRunner _transactionRunner;
 
-  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ColorFormatValidator colour, ITransactionRunner transactionRunner)
+  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ITransactionRunner transactionRunner)
   {
     _repository = repository;
     _ordering = ordering;
-    _colour = colour;
     _transactionRunner = transactionRunner;
   }
 
@@ -143,13 +141,7 @@ public sealed class CatalogCategoryAdministrationService
 
   private Failure<CatalogCategoryAdministrationFailureReason>? Validate(string? name, string? colourHex, IReadOnlyCollection<CatalogCategory> categories, Guid? categoryBeingSaved)
   {
-    if (string.IsNullOrWhiteSpace(name))
-      return new() { Reason = CatalogCategoryAdministrationFailureReason.NameMissing };
-
-    if (!_colour.IsWellFormed(colourHex))
-      return new() { Reason = CatalogCategoryAdministrationFailureReason.ColourInvalid };
-
-    var wantedName = name.Trim();
+    var wantedName = name!.Trim();
 
     var taken = categories.Any(category => category.Id != categoryBeingSaved && string.Equals(category.Name, wantedName, StringComparison.OrdinalIgnoreCase));
 

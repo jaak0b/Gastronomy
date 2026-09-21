@@ -1,4 +1,4 @@
-using GastronomyApp.Api.ErrorHandling;
+﻿using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Contracts.Admin.Staff;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
@@ -64,7 +64,6 @@ public sealed class AdminStaffMembersHandler
     return failure.Reason switch
            {
              StaffMemberAdministrationFailureReason.StaffMemberNotFound => Results.NotFound(),
-             StaffMemberAdministrationFailureReason.NameMissing => _resultEnvelope.Problem(StatusCodes.Status400BadRequest, "ValidationFailed", "admin.staff.nameMissing"),
              _ => new UnreachableCase().Throw<IResult>(failure.Reason)
            };
   }

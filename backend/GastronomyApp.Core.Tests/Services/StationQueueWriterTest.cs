@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
@@ -64,18 +64,6 @@ public sealed class StationQueueWriterTest
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
-  }
-
-  [Test]
-  public async Task FulfillAsync_NothingSelected_RefusesBecauseNoItemsWereSelected()
-  {
-    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([], _stationId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(written.IsSuccess, Is.False);
-                      Assert.That(written.Failure.Reason, Is.EqualTo(StationQueueFailureReason.NoItemsSelected));
-                    });
   }
 
   [Test]

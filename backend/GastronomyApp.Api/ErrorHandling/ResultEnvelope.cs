@@ -1,4 +1,5 @@
-using GastronomyApp.Contracts;
+﻿using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Validation;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using Microsoft.AspNetCore.Http;
@@ -7,18 +8,15 @@ namespace GastronomyApp.Api.ErrorHandling;
 
 public sealed class ResultEnvelope
 {
-  private const string ValidationFailedCode = "ValidationFailed";
+  private const string ValidationFailedCode = Names.ProblemCodes.ValidationFailed;
   private const string UnprocessableEntityCode = "UnprocessableEntity";
-  private const string CannotBeProcessedKey = "order.cannotBeProcessed";
-  private const string SettlementCannotBeProcessedKey = "order.settlementCannotBeProcessed";
+  private const string CannotBeProcessedKey = RefusalMessageKeys.OrderCannotBeProcessed;
+  private const string SettlementCannotBeProcessedKey = RefusalMessageKeys.SettlementCannotBeProcessed;
 
   public ProblemDescription BuildProblemDescription(OrderValidationFailure failure)
   {
     return failure.Reason switch
            {
-             OrderValidationFailureReason.NoItems => BuildValidationProblem(CannotBeProcessedKey),
-             OrderValidationFailureReason.TableNameMissing => BuildValidationProblem(CannotBeProcessedKey),
-             OrderValidationFailureReason.PriceOutOfRange => BuildValidationProblem(CannotBeProcessedKey),
              OrderValidationFailureReason.StationRequired => BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.ItemHasNoStation => BuildUnprocessableProblem(CannotBeProcessedKey, null),
              OrderValidationFailureReason.NoRunningFestival => BuildUnprocessableProblem(CannotBeProcessedKey, null),
@@ -34,11 +32,8 @@ public sealed class ResultEnvelope
   {
     return failure.Reason switch
            {
-             SettlementFailureReason.NoItemsSelected => BuildValidationProblem("order.settlementNoItemsSelected"),
              SettlementFailureReason.PaymentNoticeMissing => BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.UnknownOrderItemId => BuildUnprocessableProblem("order.settlementUnknownItem", "orderItemId", failure.OffendingOrderItemId),
-             SettlementFailureReason.AmountPaidMissing => BuildValidationProblem(SettlementCannotBeProcessedKey),
-             SettlementFailureReason.AmountPaidNegative => BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.DuplicateOrderItemId => BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.SelectionSpansSeveralTables => BuildValidationProblem(SettlementCannotBeProcessedKey),
              SettlementFailureReason.NoRunningFestival => BuildValidationProblem(SettlementCannotBeProcessedKey),

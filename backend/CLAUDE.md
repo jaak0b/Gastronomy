@@ -28,6 +28,26 @@ reverse proxy.
   schemas and describe numbers as numbers. The frontend generates its TypeScript types and zod
   schemas from this file.
 
+## Request validation
+
+A request's **shape** is validated by DataAnnotations attributes on the contract records in
+`GastronomyApp.Contracts`, checked by the built-in minimal API validation (`AddValidation` in
+`ApiServiceRegistration`). A required field, a string length, a numeric range, a non-empty list and a
+well-formed colour live there and nowhere else. The one cross-field shape rule, that a settlement
+sent with an order needs a reason when the amount paid is below the price the phone displayed, is
+`IValidatableObject` on `OrderItemRequest`.
+
+Every attribute carries the frontend's message key as its `ErrorMessage`, and the keys are constants
+in `Contracts/Validation/RefusalMessageKeys.cs`. A refused shape answers 400 with the same `ApiError`
+record every other refusal uses: `RequestShapeRefusalWriter` is the `IProblemDetailsService` the
+validation filter writes through, and it logs which member was refused before it answers.
+
+**Domain rules stay in `GastronomyApp.Core`** and keep returning `Result<..., Failure<...>>`: anything
+that needs the database (no running festival, an item that is not on the menu, a name another row
+already holds, an item already handed out, an unknown table), the uniqueness of the order item ids in
+one settlement, the production minutes an article may carry, a festival's period and its overlap, and
+the reason a settlement needs when the amount paid is below the price the database holds.
+
 ## Hard rules
 
 0. **Read the `csharp-design-guidelines` skill before touching any C# file.** This comes before the
@@ -165,7 +185,7 @@ Planned, not yet built. Update this table as it lands.
 
 | Project | Role |
 |---|---|
-| `GastronomyApp.Contracts` | The wire records the API receives and sends, grouped into folders by area (`Admin/Catalog`, `Admin/Festivals`, `Admin/Staff`, `Admin/Stations`, `Enrolment`, `Orders`, `OpenItems`, `Catalog`, `Stations`, `Events`), each folder its own sub-namespace under `GastronomyApp.Contracts`. `ApiError`, `ProblemDescription` and `Enums/` stay at the root. References nothing; every other project references it. Core takes its request records as input; only Api produces its response records, mapped from entities with Mapster. |
+| `GastronomyApp.Contracts` | The wire records the API receives and sends, grouped into folders by area (`Admin/Catalog`, `Admin/Festivals`, `Admin/Staff`, `Admin/Stations`, `Enrolment`, `Orders`, `OpenItems`, `Catalog`, `Stations`, `Events`, `Validation`), each folder its own sub-namespace under `GastronomyApp.Contracts`. `ApiError`, `ProblemDescription` and `Enums/` stay at the root, and `Validation/` holds the shared refusal message keys and the `RequiredText` attribute. References nothing; every other project references it. Core takes its request records as input; only Api produces its response records, mapped from entities with Mapster. |
 | `GastronomyApp.Core` | Domain models, ports, use cases. No framework dependencies. |
 | `GastronomyApp.Infrastructure` | EF Core SQLite, device token store, enrolment invitations. |
 | `GastronomyApp.Api` | Class library: REST endpoints, SignalR hub, static frontend, composition root. Names shared across the Api (authentication schemes, device claim types, hub events, hub groups, rate limit policies) are `public const string` members of nested static classes inside `GastronomyApp.Api.Names`, never injected instances. Hosted by `GastronomyApp.Desktop`. |
