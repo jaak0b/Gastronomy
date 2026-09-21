@@ -70,7 +70,7 @@ public sealed class OrderDeliveryModeTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
                       Assert.That(secondBody, Is.EqualTo(firstBody));
                       Assert.That(database.Orders.Count(), Is.EqualTo(1));
                     });

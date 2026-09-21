@@ -1,6 +1,5 @@
 using GastronomyApp.Api.Names;
 using GastronomyApp.Contracts;
-using GastronomyApp.Contracts.Enums;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
@@ -16,10 +15,10 @@ public sealed class HubNotificationDispatcher
     _hubContext = hubContext;
   }
 
-  public async Task PushOrderStatusChangedAsync(Guid orderId, OrderStatus newStatus, CancellationToken ct)
+  public async Task PushOrderStatusChangedAsync(OrderStatusChangedEvent payload, CancellationToken ct)
   {
     await SendToAsync(_eventNames.OrderStatusChanged,
-                      new OrderStatusChangedEvent(orderId, newStatus),
+                      payload,
                       [
                         _groupNames.Devices,
                         _groupNames.Admin

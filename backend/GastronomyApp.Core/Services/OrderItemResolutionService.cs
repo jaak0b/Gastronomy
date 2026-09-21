@@ -1,7 +1,7 @@
 using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 
 namespace GastronomyApp.Core.Services;
@@ -19,60 +19,94 @@ public sealed class OrderItemResolutionService
     _routingResolver = routingResolver;
   }
 
-  public async Task<Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>> ResolveAsync(Guid festivalId, IReadOnlyList<OrderItemRequest> itemRequests, CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<OrderItem>, OrderValidationFailure>> BuildRoutedItemsAsync(Guid festivalId, IReadOnlyList<OrderItemRequest> itemRequests, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(itemRequests);
 
     IReadOnlyCollection<Station> stationsAtTheFestival = await _stationRepository.FindAtFestivalAsync(festivalId, cancellationToken);
 
-    List<ResolvedOrderItem> resolvedItems = [];
+    Dictionary<Guid, StationOrder> stationOrdersByStationId = [];
+    List<OrderItem> routedItems = [];
 
     foreach (var itemRequest in itemRequests)
     {
       var catalogItem = await _catalogItemRepository.FindByIdAsync(itemRequest.CatalogItemId, cancellationToken);
       if (catalogItem is null)
       {
-        return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Failed(new()
-                                                                                       {
-                                                                                         Reason = OrderValidationFailureReason.UnknownCatalogItemId,
-                                                                                         OffendingCatalogItemId = itemRequest.CatalogItemId
-                                                                                       });
+        return Result<IReadOnlyList<OrderItem>, OrderValidationFailure>.Failed(new()
+                                                                               {
+                                                                                 Reason = OrderValidationFailureReason.UnknownCatalogItemId,
+                                                                                 OffendingCatalogItemId = itemRequest.CatalogItemId
+                                                                               });
       }
 
       var menuRow = await _catalogItemRepository.FindMenuRowAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
       if (!catalogItem.IsActive || menuRow is { IsAvailable: false })
       {
-        return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Failed(new()
-                                                                                       {
-                                                                                         Reason = OrderValidationFailureReason.ItemNotAvailable,
-                                                                                         OffendingCatalogItemId = itemRequest.CatalogItemId,
-                                                                                         OffendingCatalogItemName = catalogItem.Name
-                                                                                       });
+        return Result<IReadOnlyList<OrderItem>, OrderValidationFailure>.Failed(new()
+                                                                               {
+                                                                                 Reason = OrderValidationFailureReason.ItemNotAvailable,
+                                                                                 OffendingCatalogItemId = itemRequest.CatalogItemId,
+                                                                                 OffendingCatalogItemName = catalogItem.Name
+                                                                               });
       }
 
       IReadOnlyCollection<ItemStationAssignment> assignments = await _catalogItemRepository.FindAssignmentsAsync(festivalId, itemRequest.CatalogItemId, cancellationToken);
 
-      Result<RoutingDecision, Failure<RoutingFailureReason>> routing = _routingResolver.Resolve(itemRequest.CatalogItemId, assignments, stationsAtTheFestival, itemRequest.StationId);
+      Result<Station, Failure<RoutingFailureReason>> routing = _routingResolver.Resolve(itemRequest.CatalogItemId, assignments, stationsAtTheFestival, itemRequest.StationId);
 
       if (!routing.IsSuccess)
       {
-        return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Failed(new()
-                                                                                       {
-                                                                                         Reason = TranslateRoutingFailureReason(routing.Failure.Reason),
-                                                                                         OffendingCatalogItemId = itemRequest.CatalogItemId,
-                                                                                         OffendingCatalogItemName = catalogItem.Name
-                                                                                       });
+        return Result<IReadOnlyList<OrderItem>, OrderValidationFailure>.Failed(new()
+                                                                               {
+                                                                                 Reason = TranslateRoutingFailureReason(routing.Failure.Reason),
+                                                                                 OffendingCatalogItemId = itemRequest.CatalogItemId,
+                                                                                 OffendingCatalogItemName = catalogItem.Name
+                                                                               });
       }
 
-      resolvedItems.Add(new()
-                        {
-                          Request = itemRequest,
-                          CatalogItem = catalogItem,
-                          Decision = routing.Value
-                        });
+      routedItems.Add(BuildItemIntoStationOrder(itemRequest, catalogItem, StationOrderFor(stationOrdersByStationId, festivalId, routing.Value.Id)));
     }
 
-    return Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure>.Success(resolvedItems);
+    return Result<IReadOnlyList<OrderItem>, OrderValidationFailure>.Success(routedItems);
+  }
+
+  private StationOrder StationOrderFor(Dictionary<Guid, StationOrder> stationOrdersByStationId, Guid festivalId, Guid stationId)
+  {
+    if (stationOrdersByStationId.TryGetValue(stationId, out var known))
+      return known;
+
+    StationOrder created = new()
+                           {
+                             Id = Guid.NewGuid(),
+                             OrderId = Guid.Empty,
+                             FestivalId = festivalId,
+                             StationId = stationId,
+                             StationOrderNumber = 0,
+                             DeliveryMode = DeliveryMode.Together
+                           };
+
+    stationOrdersByStationId.Add(stationId, created);
+
+    return created;
+  }
+
+  private OrderItem BuildItemIntoStationOrder(OrderItemRequest itemRequest, CatalogItem catalogItem, StationOrder stationOrder)
+  {
+    OrderItem orderItem = new()
+                          {
+                            Id = Guid.NewGuid(),
+                            StationOrderId = stationOrder.Id,
+                            CatalogItemId = catalogItem.Id,
+                            ItemName = catalogItem.Name,
+                            UnitPriceCents = itemRequest.UnitPriceCents,
+                            Note = itemRequest.Note,
+                            StationOrder = stationOrder
+                          };
+
+    stationOrder.Items.Add(orderItem);
+
+    return orderItem;
   }
 
   private OrderValidationFailureReason TranslateRoutingFailureReason(RoutingFailureReason routingFailureReason)

@@ -1,5 +1,6 @@
 using FakeItEasy;
 using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
@@ -23,7 +24,6 @@ public sealed class OrderItemSettlementServiceTest
     A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(new Dictionary<Guid, OrderItemOwner>()));
 
     _service = new(_repository, new(_festivalRepository, new(), _clock), _transactionRunner, _clock);
   }
@@ -472,16 +472,39 @@ public sealed class OrderItemSettlementServiceTest
 
   private void GivenTheTableHolds(string tableName, params OrderItem[] items)
   {
+    foreach (var item in items)
+      PutAtTable(tableName, item);
+
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
-    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-   .Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(items.ToDictionary(item => item.Id,
-                                                                                          item => new OrderItemOwner
-                                                                                                  {
-                                                                                                    OrderId = Guid.NewGuid(),
-                                                                                                    TableName = tableName,
-                                                                                                    GlobalOrderNumber = 1,
-                                                                                                    OrderedAtUtc = _earlier
-                                                                                                  })));
+  }
+
+  private void PutAtTable(string tableName, OrderItem item)
+  {
+    Order order = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = RunningFestival().Id,
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _earlier
+                  };
+
+    StationOrder stationOrder = new()
+                                {
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = order.FestivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
+
+    stationOrder.Items.Add(item);
+    order.StationOrders.Add(stationOrder);
+    item.StationOrder = stationOrder;
   }
 
   private Festival RunningFestival()

@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Contracts;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 
@@ -42,46 +41,46 @@ public sealed class OrderItemResolutionServiceTest
   private OrderItemResolutionService _service = null!;
 
   [Test]
-  public void ResolveAsync_NullItemRequests_ThrowsArgumentNullException()
+  public void BuildRoutedItemsAsync_NullItemRequests_ThrowsArgumentNullException()
   {
-    Assert.That(async () => await _service.ResolveAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
+    Assert.That(async () => await _service.BuildRoutedItemsAsync(_festivalId, null!, CancellationToken.None), Throws.ArgumentNullException);
   }
 
   [Test]
-  public async Task ResolveAsync_ItemsThatAllRoute_ReturnsOneResolvedItemPerRequestInTheOrderTheyWereSent()
+  public async Task BuildRoutedItemsAsync_ItemsThatAllRoute_ReturnsOneResolvedItemPerRequestInTheOrderTheyWereSent()
   {
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId,
-                                                                                                          [
-                                                                                                            ItemFor(_bratwurstId),
-                                                                                                            ItemFor(_beerId)
-                                                                                                          ],
-                                                                                                          CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId,
+                                                                                                           [
+                                                                                                             ItemFor(_bratwurstId),
+                                                                                                             ItemFor(_beerId)
+                                                                                                           ],
+                                                                                                           CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(result.IsSuccess, Is.True);
                       Assert.That(result.Value, Has.Count.EqualTo(2));
-                      Assert.That(result.Value[0].CatalogItem.Name, Is.EqualTo("Bratwurst"));
-                      Assert.That(result.Value[0].Decision.ResolvedStationId, Is.EqualTo(_kitchenId));
-                      Assert.That(result.Value[1].CatalogItem.Name, Is.EqualTo("Bier"));
-                      Assert.That(result.Value[1].Decision.ResolvedStationId, Is.EqualTo(_barIndoorId));
+                      Assert.That(result.Value[0].ItemName, Is.EqualTo("Bratwurst"));
+                      Assert.That(result.Value[0].StationOrder.StationId, Is.EqualTo(_kitchenId));
+                      Assert.That(result.Value[1].ItemName, Is.EqualTo("Bier"));
+                      Assert.That(result.Value[1].StationOrder.StationId, Is.EqualTo(_barIndoorId));
                     });
   }
 
   [Test]
-  public async Task ResolveAsync_UnknownCatalogItemId_FailsNamingTheOffendingItemAndStopsAtTheFirstUnknown()
+  public async Task BuildRoutedItemsAsync_UnknownCatalogItemId_FailsNamingTheOffendingItemAndStopsAtTheFirstUnknown()
   {
     var unknownId = Guid.Parse("bbbbbbbb-0000-0000-0000-00000000dead");
     var secondUnknownId = Guid.Parse("bbbbbbbb-0000-0000-0000-00000000beef");
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(unknownId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(secondUnknownId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogItem?>(null));
 
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId,
-                                                                                                          [
-                                                                                                            ItemFor(unknownId),
-                                                                                                            ItemFor(secondUnknownId)
-                                                                                                          ],
-                                                                                                          CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId,
+                                                                                                           [
+                                                                                                             ItemFor(unknownId),
+                                                                                                             ItemFor(secondUnknownId)
+                                                                                                           ],
+                                                                                                           CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -93,9 +92,9 @@ public sealed class OrderItemResolutionServiceTest
   }
 
   [Test]
-  public async Task ResolveAsync_MoreThanOneCandidateAndNoStationChosen_FailsWithStationRequired()
+  public async Task BuildRoutedItemsAsync_MoreThanOneCandidateAndNoStationChosen_FailsWithStationRequired()
   {
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId, [ItemFor(AmbiguouslyRoutedItemId())], CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId, [ItemFor(AmbiguouslyRoutedItemId())], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -105,9 +104,9 @@ public sealed class OrderItemResolutionServiceTest
   }
 
   [Test]
-  public async Task ResolveAsync_StationNotAssignedToTheItem_FailsWithStationNotAssignedToItem()
+  public async Task BuildRoutedItemsAsync_StationNotAssignedToTheItem_FailsWithStationNotAssignedToItem()
   {
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId, [ItemFor(_bratwurstId, _barIndoorId)], CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId, [ItemFor(_bratwurstId, _barIndoorId)], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -117,7 +116,7 @@ public sealed class OrderItemResolutionServiceTest
   }
 
   [Test]
-  public async Task ResolveAsync_DeactivatedItemReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
+  public async Task BuildRoutedItemsAsync_DeactivatedItemReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
   {
     A.CallTo(() => _catalogItemRepository.FindByIdAsync(_bratwurstId, A<CancellationToken>._))
    .Returns(Task.FromResult<CatalogItem?>(new()
@@ -129,7 +128,7 @@ public sealed class OrderItemResolutionServiceTest
                                             IsActive = false
                                           }));
 
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId, [ItemFor(_bratwurstId)], CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId, [ItemFor(_bratwurstId)], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -141,9 +140,9 @@ public sealed class OrderItemResolutionServiceTest
   }
 
   [Test]
-  public async Task ResolveAsync_SoldOutMenuRowReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
+  public async Task BuildRoutedItemsAsync_SoldOutMenuRowReturnedByTheRepository_IsRefusedNamingItemNotAvailable()
   {
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId, [ItemFor(SoldOutItemId())], CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId, [ItemFor(SoldOutItemId())], CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -155,7 +154,7 @@ public sealed class OrderItemResolutionServiceTest
   }
 
   [Test]
-  public async Task ResolveAsync_EveryDeclaredRoutingFailureReason_MapsToItsOwnValidationFailureReason()
+  public async Task BuildRoutedItemsAsync_EveryDeclaredRoutingFailureReason_MapsToItsOwnValidationFailureReason()
   {
     Dictionary<RoutingFailureReason, OrderValidationFailureReason> expectedMapping = new()
                                                                                      {
@@ -186,7 +185,7 @@ public sealed class OrderItemResolutionServiceTest
                         _ => throw new InvalidOperationException($"No scenario covers {routingFailureReason}")
                       };
 
-    Result<IReadOnlyList<ResolvedOrderItem>, OrderValidationFailure> result = await _service.ResolveAsync(_festivalId, [itemRequest], CancellationToken.None);
+    Result<IReadOnlyList<OrderItem>, OrderValidationFailure> result = await _service.BuildRoutedItemsAsync(_festivalId, [itemRequest], CancellationToken.None);
 
     Assert.That(result.IsSuccess, Is.False, $"{routingFailureReason} should have been refused");
 

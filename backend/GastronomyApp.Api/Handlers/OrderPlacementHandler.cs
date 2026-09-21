@@ -1,7 +1,9 @@
-﻿using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts;
+using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -16,13 +18,13 @@ public sealed class OrderPlacementHandler
   private readonly HubNotificationDispatcher _dispatcher;
   private readonly ILogger<OrderPlacementHandler> _log;
   private readonly IMapper _mapper;
-  private readonly PlacedOrderReader _placedOrderReader;
+  private readonly IOrderRepository _orderRepository;
   private readonly ResultEnvelope _resultEnvelope;
 
-  public OrderPlacementHandler(OrderAcceptanceService acceptanceService, PlacedOrderReader placedOrderReader, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderPlacementHandler> log, IMapper mapper)
+  public OrderPlacementHandler(OrderAcceptanceService acceptanceService, IOrderRepository orderRepository, HubNotificationDispatcher dispatcher, ResultEnvelope resultEnvelope, ILogger<OrderPlacementHandler> log, IMapper mapper)
   {
     _acceptanceService = acceptanceService;
-    _placedOrderReader = placedOrderReader;
+    _orderRepository = orderRepository;
     _dispatcher = dispatcher;
     _resultEnvelope = resultEnvelope;
     _log = log;
@@ -34,7 +36,7 @@ public sealed class OrderPlacementHandler
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<OrderAcceptanceResult, OrderValidationFailure> acceptance = await _acceptanceService.AcceptAsync(request, caller.StaffMemberId, cancellationToken);
+    Result<Order, OrderValidationFailure> acceptance = await _acceptanceService.AcceptAsync(request, caller.StaffMemberId, cancellationToken);
 
     if (!acceptance.IsSuccess)
     {
@@ -43,13 +45,10 @@ public sealed class OrderPlacementHandler
       return _resultEnvelope.ToResult(_resultEnvelope.BuildProblemDescription(acceptance.Failure));
     }
 
-    var report = (await _placedOrderReader.FindAsync(acceptance.Value.Order.Id, cancellationToken))!;
-    var view = _mapper.Map<PlacedOrderView>(report);
+    var storedOrder = (await _orderRepository.FindWithStationOrdersAsync(acceptance.Value.Id, cancellationToken))!;
+    var view = _mapper.Map<PlacedOrderView>(storedOrder);
 
     await TellEveryStationWithAStationOrderAsync(view, cancellationToken);
-
-    if (acceptance.Value.WasAlreadyAccepted)
-      return Results.Json(view, statusCode: StatusCodes.Status200OK);
 
     return Results.Json(view, statusCode: StatusCodes.Status201Created);
   }

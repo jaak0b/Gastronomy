@@ -1,4 +1,5 @@
 using FakeItEasy;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.ReadModels;
@@ -19,7 +20,6 @@ public sealed class OpenItemsServiceTest
     A.CallTo(() => _clock.UtcNow).Returns(_now);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindOpenAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _repository.FindOwnersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyDictionary<Guid, OrderItemOwner>>(_owners));
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
     A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([]));
 
@@ -31,7 +31,8 @@ public sealed class OpenItemsServiceTest
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
   private readonly DateTime _orderedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
-  private readonly Dictionary<Guid, OrderItemOwner> _owners = [];
+
+  private int _ordersPlaced;
 
   private IClock _clock = null!;
   private IFestivalRepository _festivalRepository = null!;
@@ -129,7 +130,7 @@ public sealed class OpenItemsServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
 
-    TableOrderReport report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
+    var report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -142,7 +143,7 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadTableAsync_AnUnknownTableName_ReportsNoOrdersAndNothingOpen()
   {
-    TableOrderReport report = await _service.ReadTableAsync("Tisch 99", CancellationToken.None);
+    var report = await _service.ReadTableAsync("Tisch 99", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -155,7 +156,7 @@ public sealed class OpenItemsServiceTest
   [Test]
   public async Task ReadTableAsync_AWhitespaceTableName_ReportsNoOrdersAndNothingOpen()
   {
-    TableOrderReport report = await _service.ReadTableAsync("   ", CancellationToken.None);
+    var report = await _service.ReadTableAsync("   ", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -174,11 +175,15 @@ public sealed class OpenItemsServiceTest
                   GlobalOrderNumber = 1,
                   CreatedAtUtc = _orderedAtUtc,
                   StaffMemberName = "Anna",
-                  Items = [Position("Bratwurst", 350), Position("Limonade", 250, _now)]
+                  Items =
+                  [
+                    Position("Bratwurst", 350),
+                    Position("Limonade", 250, _now)
+                  ]
                 };
     A.CallTo(() => _repository.FindTableOrdersAsync(_festivalId, "Tisch 12", A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<TableOrderRecord>>([order]));
 
-    TableOrderReport report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
+    var report = await _service.ReadTableAsync("Tisch 12", CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
@@ -186,11 +191,12 @@ public sealed class OpenItemsServiceTest
                       Assert.That(report.OpenAmountCents, Is.EqualTo(350));
                       Assert.That(report.Orders, Has.Count.EqualTo(1));
                       Assert.That(report.Orders[0].StaffMemberName, Is.EqualTo("Anna"));
-                      Assert.That(report.Orders[0].Items.Select(item => item.ItemName), Is.EqualTo(new[]
-                                                                                                   {
-                                                                                                     "Bratwurst",
-                                                                                                     "Limonade"
-                                                                                                   }));
+                      Assert.That(report.Orders[0].Items.Select(item => item.ItemName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Bratwurst",
+                                               "Limonade"
+                                             }));
                     });
   }
 
@@ -201,13 +207,33 @@ public sealed class OpenItemsServiceTest
 
   private OrderItem At(string tableName, OrderItem item)
   {
-    _owners[item.Id] = new()
-                       {
-                         OrderId = Guid.NewGuid(),
-                         TableName = tableName,
-                         GlobalOrderNumber = _owners.Count + 1,
-                         OrderedAtUtc = _orderedAtUtc
-                       };
+    _ordersPlaced++;
+
+    Order order = new()
+                  {
+                    Id = Guid.NewGuid(),
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = _festivalId,
+                    GlobalOrderNumber = _ordersPlaced,
+                    StaffMemberId = Guid.NewGuid(),
+                    TableName = tableName,
+                    CreatedAtUtc = _orderedAtUtc
+                  };
+
+    StationOrder stationOrder = new()
+                                {
+                                  Id = item.StationOrderId,
+                                  OrderId = order.Id,
+                                  FestivalId = _festivalId,
+                                  StationId = Guid.NewGuid(),
+                                  StationOrderNumber = _ordersPlaced,
+                                  DeliveryMode = DeliveryMode.Together,
+                                  Order = order
+                                };
+
+    stationOrder.Items.Add(item);
+    order.StationOrders.Add(stationOrder);
+    item.StationOrder = stationOrder;
 
     return item;
   }

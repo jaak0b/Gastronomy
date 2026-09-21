@@ -12,7 +12,7 @@ public sealed class OrderRepositoryTest
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
     var order = BuildOrder(seeded, Guid.NewGuid());
 
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
@@ -35,7 +35,7 @@ public sealed class OrderRepositoryTest
   public async Task FindByClientOrderIdAsync_UnknownId_ReturnsNull()
   {
     using SqliteInMemoryFixture fixture = new();
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
 
     var found = await repository.FindByClientOrderIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken);
 
@@ -43,94 +43,72 @@ public sealed class OrderRepositoryTest
   }
 
   [Test]
-  public async Task FindPlacedAsync_AnOrderThatIsNotThere_ReturnsNull()
+  public async Task FindWithStationOrdersAsync_AnOrderThatIsNotThere_ReturnsNull()
   {
     using SqliteInMemoryFixture fixture = new();
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
 
-    Assert.That(await repository.FindPlacedAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
+    Assert.That(await repository.FindWithStationOrdersAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
 
   [Test]
-  public async Task FindPlacedAsync_AnOrderThatWasSent_CarriesItsStationOrdersWithTheStationNames()
+  public async Task FindWithStationOrdersAsync_AnOrderThatWasSent_CarriesItsStationOrdersWithTheirStationAndItems()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
     var order = BuildOrder(seeded, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
-    var placed = (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
+    var found = (await repository.FindWithStationOrdersAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(placed.GlobalOrderNumber, Is.EqualTo(1));
-                      Assert.That(placed.StationOrders, Has.Count.EqualTo(1));
-                      Assert.That(placed.StationOrders[0].StationName, Is.EqualTo("Kueche"));
-                      Assert.That(placed.StationOrders[0].DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
-                      Assert.That(placed.StationOrders[0].Items, Has.Count.EqualTo(1));
-                      Assert.That(placed.StationOrders[0].Items[0].UnitPriceCents, Is.EqualTo(350));
-                      Assert.That(placed.StationOrders[0].Items[0].IsFulfilled, Is.False);
+                      Assert.That(found.GlobalOrderNumber, Is.EqualTo(1));
+                      Assert.That(found.StationOrders, Has.Count.EqualTo(1));
+                      Assert.That(found.StationOrders[0].Station.Name, Is.EqualTo("Kueche"));
+                      Assert.That(found.StationOrders[0].DeliveryMode, Is.EqualTo(DeliveryMode.AsItComes));
+                      Assert.That(found.StationOrders[0].Items, Has.Count.EqualTo(1));
+                      Assert.That(found.StationOrders[0].Items[0].UnitPriceCents, Is.EqualTo(350));
+                      Assert.That(found.StationOrders[0].Items[0].CatalogItem, Is.Not.Null);
+                      Assert.That(found.StationOrders[0].Items[0].FulfilledAtUtc, Is.Null);
                     });
   }
 
   [Test]
-  public async Task FindPlacedAsync_AnItemTheStationHandedOut_SaysItIsFulfilled()
+  public async Task FindWithStationOrdersAsync_AnItemTheStationHandedOut_CarriesTheMomentItLeft()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
     var order = BuildOrder(seeded, Guid.NewGuid());
-    order.StationOrders[0].Items[0].FulfilledAtUtc = new(2026, 8, 27, 18, 45, 0, DateTimeKind.Utc);
+    var handedOutAtUtc = new DateTime(2026, 8, 27, 18, 45, 0, DateTimeKind.Utc);
+    order.StationOrders[0].Items[0].FulfilledAtUtc = handedOutAtUtc;
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
-    var placed = (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
+    var found = (await repository.FindWithStationOrdersAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
 
-    Assert.That(placed.StationOrders[0].Items[0].IsFulfilled, Is.True);
+    Assert.That(found.StationOrders[0].Items[0].FulfilledAtUtc, Is.EqualTo(handedOutAtUtc));
   }
 
   [Test]
-  public async Task FindPlacedAsync_TwoStationsWithTheSameOrderNumber_ListsThemInTheStationsOwnOrder()
+  public async Task FindWithStationOrdersAsync_AnOrderAtTwoStations_CarriesBothStationOrders()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+    OrderRepository repository = new(fixture.DbContext);
     var order = BuildOrderForTwoStations(seeded, Guid.NewGuid());
     await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
 
-    var placed = (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
+    var found = (await repository.FindWithStationOrdersAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
 
-    Assert.That(placed.StationOrders.Select(stationOrder => stationOrder.StationName),
-                Is.EqualTo(new[]
-                           {
-                             "Kueche",
-                             "Theke"
-                           }));
+    Assert.That(found.StationOrders.Select(stationOrder => stationOrder.Station.Name),
+                Is.EquivalentTo(new[]
+                                {
+                                  "Kueche",
+                                  "Theke"
+                                }));
   }
-
-  [Test]
-  public async Task FindPlacedAsync_AnItemAnotherWasOrderedBetween_ComeBackTogetherByNameAndNote()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    OrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
-    var order = BuildOrderWithItems(seeded, Guid.NewGuid());
-    await repository.AddAsync(order, TestContext.CurrentContext.CancellationToken);
-
-    var placed = (await repository.FindPlacedAsync(order.Id, TestContext.CurrentContext.CancellationToken))!;
-
-    Assert.That(placed.StationOrders[0].Items.Select(item => item.OrderItemId),
-                Is.EqualTo(new[]
-                           {
-                             _firstKasekrainerId,
-                             _secondKasekrainerId,
-                             _schnitzelId
-                           }));
-  }
-
-  private readonly Guid _firstKasekrainerId = new("00000000-0000-0000-0000-000000000002");
-  private readonly Guid _secondKasekrainerId = new("00000000-0000-0000-0000-000000000003");
-  private readonly Guid _schnitzelId = new("00000000-0000-0000-0000-000000000001");
 
   private Order BuildOrderForTwoStations(SeededDomain seeded, Guid clientOrderId)
   {
@@ -138,18 +116,6 @@ public sealed class OrderRepositoryTest
     order.StationOrders.Clear();
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.BarStationId, new("00000000-0000-0000-0000-000000000001")));
     order.StationOrders.Add(BuildStationOrder(seeded, order.Id, seeded.KitchenStationId, new("00000000-0000-0000-0000-000000000002")));
-
-    return order;
-  }
-
-  private Order BuildOrderWithItems(SeededDomain seeded, Guid clientOrderId)
-  {
-    var order = BuildOrder(seeded, clientOrderId);
-    var stationOrder = order.StationOrders[0];
-    stationOrder.Items.Clear();
-    stationOrder.Items.Add(BuildItem(stationOrder.Id, seeded.SausageItemId, "Käsekrainer", _firstKasekrainerId));
-    stationOrder.Items.Add(BuildItem(stationOrder.Id, seeded.LemonadeItemId, "Schnitzel", _schnitzelId));
-    stationOrder.Items.Add(BuildItem(stationOrder.Id, seeded.SausageItemId, "Käsekrainer", _secondKasekrainerId));
 
     return order;
   }
@@ -164,19 +130,6 @@ public sealed class OrderRepositoryTest
              StationId = stationId,
              StationOrderNumber = 1,
              DeliveryMode = DeliveryMode.AsItComes
-           };
-  }
-
-  private OrderItem BuildItem(Guid stationOrderId, Guid catalogItemId, string itemName, Guid itemId)
-  {
-    return new()
-           {
-             Id = itemId,
-             StationOrderId = stationOrderId,
-             CatalogItemId = catalogItemId,
-             ItemName = itemName,
-             UnitPriceCents = 350,
-             Note = null
            };
   }
 

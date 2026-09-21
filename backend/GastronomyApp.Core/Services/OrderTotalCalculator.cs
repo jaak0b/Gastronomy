@@ -1,13 +1,13 @@
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OrderTotalCalculator
 {
-  public int SumTotalCents(IEnumerable<PlacedOrderItem> items)
+  public int SumTotalCents(Order order)
   {
-    ArgumentNullException.ThrowIfNull(items);
+    ArgumentNullException.ThrowIfNull(order);
 
-    return items.Sum(item => item.UnitPriceCents);
+    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Sum(item => item.UnitPriceCents);
   }
 }

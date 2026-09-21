@@ -60,8 +60,8 @@ public sealed class StationFulfillmentHandler
 
     await _dispatcher.PushStationOrdersChangedAsync(stationId, cancellationToken);
 
-    foreach (var statusChange in change.Value.OrderStatusChanges)
-      await _dispatcher.PushOrderStatusChangedAsync(statusChange.OrderId, statusChange.Status, cancellationToken);
+    foreach (var changedOrder in change.Value.ChangedOrders)
+      await _dispatcher.PushOrderStatusChangedAsync(_mapper.Map<OrderStatusChangedEvent>(changedOrder), cancellationToken);
 
     return Results.Ok(_mapper.Map<StationQueueView>(change.Value.Queue));
   }

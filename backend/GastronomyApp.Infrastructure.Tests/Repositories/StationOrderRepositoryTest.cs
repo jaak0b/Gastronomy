@@ -31,12 +31,12 @@ public sealed class StationOrderRepositoryTest
   }
 
   [Test]
-  public void FindFulfillmentCountsAsync_NullIds_ThrowsArgumentNullException()
+  public void FindOrdersWithItemsAsync_NullIds_ThrowsArgumentNullException()
   {
     using SqliteInMemoryFixture fixture = new();
     StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
-    Assert.That(async () => await repository.FindFulfillmentCountsAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
+    Assert.That(async () => await repository.FindOrdersWithItemsAsync(null!, TestContext.CurrentContext.CancellationToken), Throws.ArgumentNullException);
   }
 
   [Test]
@@ -309,7 +309,7 @@ public sealed class StationOrderRepositoryTest
   }
 
   [Test]
-  public async Task FindFulfillmentCountsAsync_AnOrderAcrossTwoStations_CountsEveryItemOfThatOrder()
+  public async Task FindOrdersWithItemsAsync_AnOrderAcrossTwoStations_CarriesEveryItemOfThatOrder()
   {
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
@@ -320,27 +320,27 @@ public sealed class StationOrderRepositoryTest
 
     StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
-    IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([orderId], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Order> orders = await repository.FindOrdersWithItemsAsync([orderId], TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(counts, Has.Count.EqualTo(1));
-                      Assert.That(counts[0].ItemCount, Is.EqualTo(4));
-                      Assert.That(counts[0].FulfilledItemCount, Is.EqualTo(1));
+                      Assert.That(orders, Has.Count.EqualTo(1));
+                      Assert.That(orders[0].StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(), Is.EqualTo(4));
+                      Assert.That(orders[0].StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(item => item.FulfilledAtUtc != null), Is.EqualTo(1));
                     });
   }
 
   [Test]
-  public async Task FindFulfillmentCountsAsync_AnOrderThatIsNoLongerThere_ReportsNothingForIt()
+  public async Task FindOrdersWithItemsAsync_AnOrderThatIsNoLongerThere_ReportsNothingForIt()
   {
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
     StationOrderRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
 
-    IReadOnlyList<OrderFulfillmentCounts> counts = await repository.FindFulfillmentCountsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Order> orders = await repository.FindOrdersWithItemsAsync([Guid.NewGuid()], TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(counts, Is.Empty);
+    Assert.That(orders, Is.Empty);
   }
 
   [Test]

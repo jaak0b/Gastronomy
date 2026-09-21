@@ -37,7 +37,7 @@ public sealed class OrderIdempotencyTest
     using (var second = await _context.PostOrderAsync(body))
     {
       secondBody = await second.Content.ReadAsStringAsync();
-      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
     Assert.That(secondBody, Is.EqualTo(firstBody));
@@ -73,7 +73,7 @@ public sealed class OrderIdempotencyTest
     using (var second = await _context.PostOrderAsync(different))
     {
       secondBody = await second.Content.ReadAsStringAsync();
-      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+      Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
     }
 
     Assert.That(secondBody, Is.EqualTo(firstBody));

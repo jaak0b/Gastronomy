@@ -58,13 +58,13 @@ public sealed class StationOrderRepository : IStationOrderRepository
     return await _dbContext.StationOrders.AsNoTracking().Where(stationOrder => ids.Contains(stationOrder.Id)).Select(stationOrder => stationOrder.OrderId).Distinct().ToListAsync(cancellationToken);
   }
 
-  public async Task<IReadOnlyList<OrderFulfillmentCounts>> FindFulfillmentCountsAsync(IReadOnlyCollection<Guid> orderIds, CancellationToken cancellationToken)
+  public async Task<IReadOnlyList<Order>> FindOrdersWithItemsAsync(IReadOnlyCollection<Guid> orderIds, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderIds);
 
     List<Guid> ids = orderIds.ToList();
 
-    return await _dbContext.Orders.AsNoTracking().Where(order => ids.Contains(order.Id)).ProjectToType<OrderFulfillmentCounts>(_mapperConfig).ToListAsync(cancellationToken);
+    return await _dbContext.Orders.AsNoTracking().Where(order => ids.Contains(order.Id)).Include(order => order.StationOrders).ThenInclude(stationOrder => stationOrder.Items).OrderBy(order => order.GlobalOrderNumber).ToListAsync(cancellationToken);
   }
 
   public async Task<IReadOnlyList<StationQueuedWork>> FindQueuedWorkAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)

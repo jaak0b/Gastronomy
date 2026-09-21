@@ -139,7 +139,7 @@ public sealed class OrderItemSettlementService
   {
     IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
 
-    IReadOnlyCollection<SettlementCandidate> candidates = await BuildCandidatesAsync(selected, cancellationToken);
+    IReadOnlyCollection<SettlementCandidate> candidates = BuildCandidates(selected);
 
     Result<SettlementResult, SettlementFailure> settlement = Settle(lines, settledByStaffMemberId, candidates, _clock.UtcNow);
 
@@ -149,15 +149,13 @@ public sealed class OrderItemSettlementService
     return settlement;
   }
 
-  private async Task<IReadOnlyCollection<SettlementCandidate>> BuildCandidatesAsync(IReadOnlyCollection<OrderItem> selected, CancellationToken cancellationToken)
+  private IReadOnlyCollection<SettlementCandidate> BuildCandidates(IReadOnlyCollection<OrderItem> selected)
   {
-    IReadOnlyDictionary<Guid, OrderItemOwner> owners = await _repository.FindOwnersAsync(selected.Select(item => item.Id).ToList(), cancellationToken);
-
-    return selected.Where(item => owners.ContainsKey(item.Id))
+    return selected.Where(item => item.StationOrder?.Order is not null)
                    .Select(item => new SettlementCandidate
                                    {
                                      Item = item,
-                                     TableName = owners[item.Id].TableName
+                                     TableName = item.StationOrder.Order.TableName
                                    })
                    .ToList();
   }

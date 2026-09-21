@@ -15,11 +15,6 @@ public sealed class StationOrderProjection : IRegister
 
     config.NewConfig<CatalogItem, QueuedWork>();
 
-    config.NewConfig<Order, OrderFulfillmentCounts>()
-          .Map(counts => counts.OrderId, order => order.Id)
-          .Map(counts => counts.ItemCount, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Count())
-          .Map(counts => counts.FulfilledItemCount, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).Count(item => item.FulfilledAtUtc != null));
-
     config.NewConfig<StationQueuedWorkRow, StationQueuedWork>().Map(work => work.StationId, row => row.StationOrder.StationId).Map(work => work.Work, row => row.CatalogItem);
 
     config.NewConfig<QueuedStationOrderRow, QueuedStationOrder>()

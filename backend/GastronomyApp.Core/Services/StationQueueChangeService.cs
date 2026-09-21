@@ -8,15 +8,15 @@ public sealed class StationQueueChangeService
 {
   private readonly StationAtFestivalLookup _lookup;
   private readonly StationQueueService _queueService;
-  private readonly OrderStatusReader _statusReader;
+  private readonly ChangedOrderReader _changedOrderReader;
   private readonly StationQueueWriter _writer;
 
-  public StationQueueChangeService(StationAtFestivalLookup lookup, StationQueueWriter writer, StationQueueService queueService, OrderStatusReader statusReader)
+  public StationQueueChangeService(StationAtFestivalLookup lookup, StationQueueWriter writer, StationQueueService queueService, ChangedOrderReader changedOrderReader)
   {
     _lookup = lookup;
     _writer = writer;
     _queueService = queueService;
-    _statusReader = statusReader;
+    _changedOrderReader = changedOrderReader;
   }
 
   public async Task<Result<StationQueueChange, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
@@ -70,14 +70,14 @@ public sealed class StationQueueChangeService
 
   private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(StationAtFestival station, IReadOnlyCollection<OrderItem> touchedItems, CancellationToken cancellationToken)
   {
-    IReadOnlyList<OrderStatusChange> statusChanges = await _statusReader.ReadStatusesOfStationOrdersAsync(touchedItems.Select(item => item.StationOrderId).Distinct().ToList(), cancellationToken);
+    IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedItems.Select(item => item.StationOrderId).Distinct().ToList(), cancellationToken);
 
     var queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
 
     return Result<StationQueueChange, StationQueueFailure>.Success(new()
                                                                    {
                                                                      Queue = queue,
-                                                                     OrderStatusChanges = statusChanges
+                                                                     ChangedOrders = changedOrders
                                                                    });
   }
 }

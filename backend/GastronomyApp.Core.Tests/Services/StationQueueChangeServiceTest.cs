@@ -28,19 +28,11 @@ public sealed class StationQueueChangeServiceTest
     A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
     A.CallTo(() => _stationOrderRepository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
     A.CallTo(() => _stationOrderRepository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
-    A.CallTo(() => _stationOrderRepository.FindFulfillmentCountsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._))
-   .Returns(Task.FromResult<IReadOnlyList<OrderFulfillmentCounts>>([
-                                                                     new()
-                                                                     {
-                                                                       OrderId = _orderId,
-                                                                       ItemCount = 2,
-                                                                       FulfilledItemCount = 1
-                                                                     }
-                                                                   ]));
+    A.CallTo(() => _stationOrderRepository.FindOrdersWithItemsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([TouchedOrder()]));
 
     StationAtFestivalLookup lookup = new(_stationRepository, _festivalStationRepository, new(_festivalRepository, new(), _clock));
 
-    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository, new()));
+    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository));
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -67,9 +59,8 @@ public sealed class StationQueueChangeServiceTest
                     {
                       Assert.That(change.IsSuccess, Is.True);
                       Assert.That(change.Value.Queue.StationId, Is.EqualTo(_stationId));
-                      Assert.That(change.Value.OrderStatusChanges, Has.Count.EqualTo(1));
-                      Assert.That(change.Value.OrderStatusChanges[0].OrderId, Is.EqualTo(_orderId));
-                      Assert.That(change.Value.OrderStatusChanges[0].Status, Is.EqualTo(OrderStatus.PartiallyFulfilled));
+                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
+                      Assert.That(change.Value.ChangedOrders[0].Id, Is.EqualTo(_orderId));
                     });
   }
 
@@ -85,7 +76,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.OrderStatusChanges, Has.Count.EqualTo(1));
+                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
                     });
   }
 
@@ -123,7 +114,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.OrderStatusChanges, Has.Count.EqualTo(1));
+                      Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
                     });
   }
 
@@ -144,7 +135,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.OrderStatusChanges, Is.Empty);
+                      Assert.That(change.Value.ChangedOrders, Is.Empty);
                       Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
                     });
   }
@@ -168,6 +159,20 @@ public sealed class StationQueueChangeServiceTest
   private void GivenItemsAtThisStation(params OrderItem[] items)
   {
     A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>(items.ToList()));
+  }
+
+  private Order TouchedOrder()
+  {
+    return new()
+           {
+             Id = _orderId,
+             ClientOrderId = Guid.NewGuid(),
+             FestivalId = _festivalId,
+             GlobalOrderNumber = 4,
+             StaffMemberId = Guid.NewGuid(),
+             TableName = "Tisch 12",
+             CreatedAtUtc = _now
+           };
   }
 
   private OrderItem OpenItem()

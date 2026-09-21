@@ -11,6 +11,7 @@ using GastronomyApp.Api.Mapping;
 using GastronomyApp.Api.Names;
 using GastronomyApp.Api.RateLimiting;
 using GastronomyApp.Api.Responders;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure;
@@ -23,7 +24,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using GastronomyApp.Api.Values;
 
 namespace GastronomyApp.Api;
 
@@ -85,7 +85,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderItemSettlementService>();
     services.AddScoped<OpenItemsService>();
-    services.AddScoped<PlacedOrderReader>();
     services.AddScoped<DeviceLanguageService>();
     services.AddScoped<OrderAcceptanceService>();
     services.AddScoped<ItemOrderability>();
@@ -104,7 +103,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueService>();
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();
-    services.AddScoped<OrderStatusReader>();
+    services.AddScoped<ChangedOrderReader>();
     services.AddScoped<StationEstimateService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();

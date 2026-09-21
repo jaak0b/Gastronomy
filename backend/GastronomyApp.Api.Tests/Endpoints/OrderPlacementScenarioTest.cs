@@ -166,7 +166,7 @@ public sealed class OrderPlacementScenarioTest
     return new(_context.World.BratwurstItemId, bratwurst.GetProperty("priceCents").GetInt32(), _context.World.BeerItemId, beer.GetProperty("priceCents").GetInt32());
   }
 
-  private async Task<PlacedOrder> SendOrderAsync(string deviceToken, CatalogSelection selection)
+  private async Task<PlacedOrderResponse> SendOrderAsync(string deviceToken, CatalogSelection selection)
   {
     OrderBody body = new(Guid.NewGuid(),
                          "Tisch 12",

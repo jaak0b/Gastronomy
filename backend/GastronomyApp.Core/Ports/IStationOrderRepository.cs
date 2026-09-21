@@ -15,7 +15,7 @@ public interface IStationOrderRepository
 
   public Task<IReadOnlyList<Guid>> FindOrderIdsOfStationOrdersAsync(IReadOnlyCollection<Guid> stationOrderIds, CancellationToken cancellationToken);
 
-  public Task<IReadOnlyList<OrderFulfillmentCounts>> FindFulfillmentCountsAsync(IReadOnlyCollection<Guid> orderIds, CancellationToken cancellationToken);
+  public Task<IReadOnlyList<Order>> FindOrdersWithItemsAsync(IReadOnlyCollection<Guid> orderIds, CancellationToken cancellationToken);
 
   public Task<IReadOnlyList<StationQueuedWork>> FindQueuedWorkAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken);
 

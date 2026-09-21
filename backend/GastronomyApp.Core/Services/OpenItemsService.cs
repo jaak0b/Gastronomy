@@ -32,14 +32,12 @@ public sealed class OpenItemsService
 
     IReadOnlyList<OrderItem> openItems = await _repository.FindOpenAtFestivalAsync(festival.Id, cancellationToken);
 
-    IReadOnlyDictionary<Guid, OrderItemOwner> owners = await _repository.FindOwnersAsync(openItems.Select(item => item.Id).Distinct().ToList(), cancellationToken);
-
-    Dictionary<string, List<OrderItem>> openByTable = GroupByTable(openItems, owners);
+    Dictionary<string, List<OrderItem>> openByTable = GroupByTable(openItems);
 
     return new()
            {
-             Tables = openByTable.Keys.OrderBy(tableName => tableName, StringComparer.Ordinal).Select(tableName => BuildOpenTable(tableName, ItemsAtTable(openByTable, tableName), owners)).ToList(),
-             OrderItemIdsWithoutAnOrder = openItems.Where(item => !owners.ContainsKey(item.Id)).Select(item => item.Id).Distinct().ToList()
+             Tables = openByTable.Keys.OrderBy(tableName => tableName, StringComparer.Ordinal).Select(tableName => BuildOpenTable(tableName, ItemsAtTable(openByTable, tableName))).ToList(),
+             OrderItemIdsWithoutAnOrder = openItems.Where(item => OrderOf(item) is null).Select(item => item.Id).Distinct().ToList()
            };
   }
 
@@ -75,6 +73,11 @@ public sealed class OpenItemsService
            };
   }
 
+  private Order? OrderOf(OrderItem item)
+  {
+    return item.StationOrder?.Order;
+  }
+
   private IReadOnlyCollection<OrderItem> ItemsAtTable(Dictionary<string, List<OrderItem>> byTable, string tableName)
   {
     if (byTable.TryGetValue(tableName, out List<OrderItem>? items))
@@ -93,32 +96,32 @@ public sealed class OpenItemsService
            };
   }
 
-  private OpenTable BuildOpenTable(string tableName, IReadOnlyCollection<OrderItem> openItems, IReadOnlyDictionary<Guid, OrderItemOwner> owners)
+  private OpenTable BuildOpenTable(string tableName, IReadOnlyCollection<OrderItem> openItems)
   {
     return new()
            {
              TableName = tableName,
              OpenAmountCents = _settlementService.SumOpenAmountCents(openItems),
-             Items = BuildOpenItems(openItems, owners)
+             Items = BuildOpenItems(openItems)
            };
   }
 
-  private Dictionary<string, List<OrderItem>> GroupByTable(IEnumerable<OrderItem> items, IReadOnlyDictionary<Guid, OrderItemOwner> owners)
+  private Dictionary<string, List<OrderItem>> GroupByTable(IEnumerable<OrderItem> items)
   {
-    return items.Where(item => owners.ContainsKey(item.Id)).GroupBy(item => owners[item.Id].TableName, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
+    return items.Where(item => OrderOf(item) is not null).GroupBy(item => OrderOf(item)!.TableName, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
   }
 
-  private IReadOnlyList<OpenOrderItem> BuildOpenItems(IEnumerable<OrderItem> items, IReadOnlyDictionary<Guid, OrderItemOwner> owners)
+  private IReadOnlyList<OpenOrderItem> BuildOpenItems(IEnumerable<OrderItem> items)
   {
     return items.Select(item => new OpenOrderItem
                                 {
                                   OrderItemId = item.Id,
-                                  OrderId = owners[item.Id].OrderId,
-                                  GlobalOrderNumber = owners[item.Id].GlobalOrderNumber,
+                                  OrderId = OrderOf(item)!.Id,
+                                  GlobalOrderNumber = OrderOf(item)!.GlobalOrderNumber,
                                   ItemName = item.ItemName,
                                   Note = item.Note,
                                   UnitPriceCents = item.UnitPriceCents,
-                                  OrderedAtUtc = owners[item.Id].OrderedAtUtc
+                                  OrderedAtUtc = OrderOf(item)!.CreatedAtUtc
                                 })
                 .OrderBy(openItem => openItem.GlobalOrderNumber)
                 .ThenBy(openItem => openItem.ItemName, StringComparer.Ordinal)
