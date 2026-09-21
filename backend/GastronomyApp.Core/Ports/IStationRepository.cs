@@ -7,6 +7,8 @@ public interface IStationRepository
 {
   public Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken);
 
+  public Task<IReadOnlyList<Station>> FindAtFestivalWithOpenItemsAsync(Guid festivalId, CancellationToken cancellationToken);
+
   public Task<IReadOnlyList<AdministeredStation>> FindAdministeredAsync(Guid? festivalId, DateTime nowUtc, CancellationToken cancellationToken);
 
   public Task<Station?> FindByIdAsync(Guid stationId, CancellationToken cancellationToken);

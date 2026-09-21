@@ -21,7 +21,7 @@ public sealed class StationQueueWriter
     _clock = clock;
   }
 
-  public async Task<Result<FulfillmentResult, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> FulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
@@ -36,7 +36,7 @@ public sealed class StationQueueWriter
                           cancellationToken);
   }
 
-  public async Task<Result<FulfillmentResult, StationQueueFailure>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
+  public async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
 
@@ -68,31 +68,31 @@ public sealed class StationQueueWriter
     return Result<StationOrder, StationQueueFailure>.Success(hidden.Value);
   }
 
-  private async Task<Result<FulfillmentResult, StationQueueFailure>> RunAsync(Func<CancellationToken, Task<Result<FulfillmentResult, FulfillmentFailure>>> body, CancellationToken cancellationToken)
+  private async Task<Result<IReadOnlyList<StationOrder>, StationQueueFailure>> RunAsync(Func<CancellationToken, Task<Result<IReadOnlyList<StationOrder>, FulfillmentFailure>>> body, CancellationToken cancellationToken)
   {
-    Result<FulfillmentResult, FulfillmentFailure> outcome = await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                                                                              {
-                                                                                                Result<FulfillmentResult, FulfillmentFailure> applied = await body(transactionCancellationToken);
+    Result<IReadOnlyList<StationOrder>, FulfillmentFailure> outcome = await _transactionRunner.RunAsync(async transactionCancellationToken =>
+                                                                                                        {
+                                                                                                          Result<IReadOnlyList<StationOrder>, FulfillmentFailure> applied = await body(transactionCancellationToken);
 
-                                                                                                if (applied.IsSuccess)
-                                                                                                  await _repository.SaveChangesAsync(transactionCancellationToken);
+                                                                                                          if (applied.IsSuccess)
+                                                                                                            await _repository.SaveChangesAsync(transactionCancellationToken);
 
-                                                                                                return new TransactionOutcome<Result<FulfillmentResult, FulfillmentFailure>>
-                                                                                                       {
-                                                                                                         Value = applied,
-                                                                                                         ShouldCommit = applied.IsSuccess
-                                                                                                       };
-                                                                                              },
-                                                                                              cancellationToken);
+                                                                                                          return new TransactionOutcome<Result<IReadOnlyList<StationOrder>, FulfillmentFailure>>
+                                                                                                                 {
+                                                                                                                   Value = applied,
+                                                                                                                   ShouldCommit = applied.IsSuccess
+                                                                                                                 };
+                                                                                                        },
+                                                                                                        cancellationToken);
 
     if (outcome.IsSuccess)
-      return Result<FulfillmentResult, StationQueueFailure>.Success(outcome.Value);
+      return Result<IReadOnlyList<StationOrder>, StationQueueFailure>.Success(outcome.Value);
 
-    return Result<FulfillmentResult, StationQueueFailure>.Failed(new()
-                                                                 {
-                                                                   Reason = TranslateFulfillmentReason(outcome.Failure.Reason),
-                                                                   OffendingOrderItemId = outcome.Failure.OffendingOrderItemId
-                                                                 });
+    return Result<IReadOnlyList<StationOrder>, StationQueueFailure>.Failed(new()
+                                                                           {
+                                                                             Reason = TranslateFulfillmentReason(outcome.Failure.Reason),
+                                                                             OffendingOrderItemId = outcome.Failure.OffendingOrderItemId
+                                                                           });
   }
 
   private StationQueueFailureReason TranslateFulfillmentReason(FulfillmentFailureReason reason)

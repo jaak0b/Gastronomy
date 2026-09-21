@@ -5,7 +5,7 @@ namespace GastronomyApp.Core.Services;
 
 public sealed class OrderItemFulfillmentService
 {
-  public Result<FulfillmentResult, FulfillmentFailure> Fulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
+  public Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Fulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems, DateTime fulfilledAtUtc)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
@@ -13,40 +13,26 @@ public sealed class OrderItemFulfillmentService
     List<Guid> selectedIds = orderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
-      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
+      return Refuse(FulfillmentFailureReason.NoItemsSelected, null);
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
-    List<OrderItem> toFulfill = [];
-    List<OrderItem> alreadyFulfilled = [];
+    List<OrderItem> selectedItems = [];
 
     foreach (var orderItemId in selectedIds)
     {
       if (!itemsById.TryGetValue(orderItemId, out var item))
-      {
-        return Result<FulfillmentResult, FulfillmentFailure>.Failed(new()
-                                                                    {
-                                                                      Reason = FulfillmentFailureReason.UnknownOrderItemId,
-                                                                      OffendingOrderItemId = orderItemId
-                                                                    });
-      }
+        return Refuse(FulfillmentFailureReason.UnknownOrderItemId, orderItemId);
 
-      if (item.FulfilledAtUtc is null)
-        toFulfill.Add(item);
-      else
-        alreadyFulfilled.Add(item);
+      selectedItems.Add(item);
     }
 
-    foreach (var item in toFulfill)
+    foreach (var item in selectedItems.Where(item => item.FulfilledAtUtc is null))
       item.FulfilledAtUtc = fulfilledAtUtc;
 
-    return Result<FulfillmentResult, FulfillmentFailure>.Success(new()
-                                                                 {
-                                                                   ChangedItems = toFulfill,
-                                                                   AlreadyFulfilled = alreadyFulfilled
-                                                                 });
+    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Success(StationOrdersOf(selectedItems));
   }
 
-  public Result<FulfillmentResult, FulfillmentFailure> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
+  public Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
   {
     ArgumentNullException.ThrowIfNull(orderItemIds);
     ArgumentNullException.ThrowIfNull(knownItems);
@@ -54,7 +40,7 @@ public sealed class OrderItemFulfillmentService
     List<Guid> selectedIds = orderItemIds.Distinct().ToList();
 
     if (selectedIds.Count == 0)
-      return Result<FulfillmentResult, FulfillmentFailure>.Failed(new() { Reason = FulfillmentFailureReason.NoItemsSelected });
+      return Refuse(FulfillmentFailureReason.NoItemsSelected, null);
 
     Dictionary<Guid, OrderItem> itemsById = knownItems.ToDictionary(item => item.Id);
     List<OrderItem> toClear = [];
@@ -62,22 +48,10 @@ public sealed class OrderItemFulfillmentService
     foreach (var orderItemId in selectedIds)
     {
       if (!itemsById.TryGetValue(orderItemId, out var item))
-      {
-        return Result<FulfillmentResult, FulfillmentFailure>.Failed(new()
-                                                                    {
-                                                                      Reason = FulfillmentFailureReason.UnknownOrderItemId,
-                                                                      OffendingOrderItemId = orderItemId
-                                                                    });
-      }
+        return Refuse(FulfillmentFailureReason.UnknownOrderItemId, orderItemId);
 
       if (item.FulfilledAtUtc is null)
-      {
-        return Result<FulfillmentResult, FulfillmentFailure>.Failed(new()
-                                                                    {
-                                                                      Reason = FulfillmentFailureReason.ItemNotFulfilled,
-                                                                      OffendingOrderItemId = item.Id
-                                                                    });
-      }
+        return Refuse(FulfillmentFailureReason.ItemNotFulfilled, item.Id);
 
       toClear.Add(item);
     }
@@ -85,10 +59,20 @@ public sealed class OrderItemFulfillmentService
     foreach (var item in toClear)
       item.FulfilledAtUtc = null;
 
-    return Result<FulfillmentResult, FulfillmentFailure>.Success(new()
-                                                                 {
-                                                                   ChangedItems = toClear,
-                                                                   AlreadyFulfilled = []
-                                                                 });
+    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Success(StationOrdersOf(toClear));
+  }
+
+  private Result<IReadOnlyList<StationOrder>, FulfillmentFailure> Refuse(FulfillmentFailureReason reason, Guid? offendingOrderItemId)
+  {
+    return Result<IReadOnlyList<StationOrder>, FulfillmentFailure>.Failed(new()
+                                                                          {
+                                                                            Reason = reason,
+                                                                            OffendingOrderItemId = offendingOrderItemId
+                                                                          });
+  }
+
+  private IReadOnlyList<StationOrder> StationOrdersOf(IEnumerable<OrderItem> items)
+  {
+    return items.Select(item => item.StationOrder).DistinctBy(stationOrder => stationOrder.Id).ToList();
   }
 }

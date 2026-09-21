@@ -2,7 +2,6 @@ using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Core.Tests.TestSupport;
@@ -26,7 +25,7 @@ public sealed class StationQueueChangeServiceTest
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _festivalStationRepository.FindLinkAsync(_festivalId, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<FestivalStation?>(Link()));
     A.CallTo(() => _stationOrderRepository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
-    A.CallTo(() => _stationOrderRepository.FindUnfinishedAtStationAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<QueuedStationOrder>>([]));
+    A.CallTo(() => _stationOrderRepository.FindStationWithUnfinishedOrdersAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(Kitchen()));
     A.CallTo(() => _stationOrderRepository.FindOrderIdsOfStationOrdersAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_orderId]));
     A.CallTo(() => _stationOrderRepository.FindOrdersWithItemsAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([TouchedOrder()]));
 
@@ -58,7 +57,7 @@ public sealed class StationQueueChangeServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(change.IsSuccess, Is.True);
-                      Assert.That(change.Value.Queue.StationId, Is.EqualTo(_stationId));
+                      Assert.That(change.Value.Station.Id, Is.EqualTo(_stationId));
                       Assert.That(change.Value.ChangedOrders, Has.Count.EqualTo(1));
                       Assert.That(change.Value.ChangedOrders[0].Id, Is.EqualTo(_orderId));
                     });
@@ -177,14 +176,21 @@ public sealed class StationQueueChangeServiceTest
 
   private OrderItem OpenItem()
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = "Bratwurst",
-             UnitPriceCents = 350
-           };
+    var stationOrder = AsItComesStationOrder();
+
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrder.Id,
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350,
+                       StationOrder = stationOrder
+                     };
+
+    stationOrder.Items.Add(item);
+
+    return item;
   }
 
   private StationOrder AsItComesStationOrder()

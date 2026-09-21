@@ -28,12 +28,12 @@ public sealed class StationQueueChangeService
     if (!access.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
 
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.FulfillAsync(orderItemIds, stationId, cancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync(orderItemIds, stationId, cancellationToken);
 
     if (!written.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(written.Failure);
 
-    return await BuildChangeAsync(access.Value, written.Value.ChangedItems.Concat(written.Value.AlreadyFulfilled).ToList(), cancellationToken);
+    return await BuildChangeAsync(access.Value, written.Value, cancellationToken);
   }
 
   public async Task<Result<StationQueueChange, StationQueueFailure>> UnfulfillAsync(IReadOnlyCollection<Guid> orderItemIds, Guid stationId, CancellationToken cancellationToken)
@@ -45,12 +45,12 @@ public sealed class StationQueueChangeService
     if (!access.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(access.Failure);
 
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.UnfulfillAsync(orderItemIds, stationId, cancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync(orderItemIds, stationId, cancellationToken);
 
     if (!written.IsSuccess)
       return Result<StationQueueChange, StationQueueFailure>.Failed(written.Failure);
 
-    return await BuildChangeAsync(access.Value, written.Value.ChangedItems, cancellationToken);
+    return await BuildChangeAsync(access.Value, written.Value, cancellationToken);
   }
 
   public async Task<Result<StationQueueChange, StationQueueFailure>> HideFromAsItComesQueueAsync(Guid stationOrderId, Guid stationId, CancellationToken cancellationToken)
@@ -68,15 +68,18 @@ public sealed class StationQueueChangeService
     return await BuildChangeAsync(access.Value, [], cancellationToken);
   }
 
-  private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(StationAtFestival station, IReadOnlyCollection<OrderItem> touchedItems, CancellationToken cancellationToken)
+  private async Task<Result<StationQueueChange, StationQueueFailure>> BuildChangeAsync(StationAtFestival station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedItems.Select(item => item.StationOrderId).Distinct().ToList(), cancellationToken);
+    IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedStationOrders.Select(stationOrder => stationOrder.Id).Distinct().ToList(), cancellationToken);
 
-    var queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
+    Result<Station, StationQueueFailure> queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
+
+    if (!queue.IsSuccess)
+      return Result<StationQueueChange, StationQueueFailure>.Failed(queue.Failure);
 
     return Result<StationQueueChange, StationQueueFailure>.Success(new()
                                                                    {
-                                                                     Queue = queue,
+                                                                     Station = queue.Value,
                                                                      ChangedOrders = changedOrders
                                                                    });
   }

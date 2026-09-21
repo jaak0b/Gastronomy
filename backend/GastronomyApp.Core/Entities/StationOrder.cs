@@ -26,4 +26,9 @@ public sealed class StationOrder
   public Station Station { get; set; } = null!;
 
   public Collection<OrderItem> Items { get; } = [];
+
+  public bool IsInAsItComesColumn()
+  {
+    return DeliveryMode == DeliveryMode.AsItComes && !IsHiddenFromAsItComesQueue;
+  }
 }

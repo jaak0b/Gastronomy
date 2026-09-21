@@ -39,7 +39,7 @@ public sealed class StationQueueWriterTest
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -54,7 +54,7 @@ public sealed class StationQueueWriterTest
   [Test]
   public async Task FulfillAsync_AnItemThatIsNotAtThisStation_RefusesAndRollsBack()
   {
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([Guid.NewGuid()], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -69,7 +69,7 @@ public sealed class StationQueueWriterTest
   [Test]
   public async Task FulfillAsync_NothingSelected_RefusesBecauseNoItemsWereSelected()
   {
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.FulfillAsync([], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.FulfillAsync([], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -91,7 +91,7 @@ public sealed class StationQueueWriterTest
     bratwurst.FulfilledAtUtc = _now.AddMinutes(-1);
     GivenItemsAtThisStation(bratwurst);
 
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -107,7 +107,7 @@ public sealed class StationQueueWriterTest
     var bratwurst = OpenItem();
     GivenItemsAtThisStation(bratwurst);
 
-    Result<FulfillmentResult, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> written = await _writer.UnfulfillAsync([bratwurst.Id], _stationId, TestContext.CurrentContext.CancellationToken);
 
     Assert.Multiple(() =>
                     {
@@ -184,14 +184,21 @@ public sealed class StationQueueWriterTest
 
   private OrderItem OpenItem()
   {
-    return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = "Bratwurst",
-             UnitPriceCents = 350
-           };
+    var stationOrder = StationOrderWith(DeliveryMode.Together);
+
+    OrderItem item = new()
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrder.Id,
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350,
+                       StationOrder = stationOrder
+                     };
+
+    stationOrder.Items.Add(item);
+
+    return item;
   }
 
   private StationOrder StationOrderWith(DeliveryMode deliveryMode)

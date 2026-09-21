@@ -76,11 +76,8 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<FestivalMoment>();
-    services.AddSingleton<OrderStatusCalculator>();
-    services.AddSingleton<OrderTotalCalculator>();
     services.AddSingleton<OrderItemFulfillmentService>();
     services.AddSingleton<StationOrderVisibilityService>();
-    services.AddSingleton<ProductionEstimateCalculator>();
 
     services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderItemSettlementService>();

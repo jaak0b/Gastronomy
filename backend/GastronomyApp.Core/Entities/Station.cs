@@ -23,4 +23,11 @@ public sealed class Station
   public Collection<StationOrder> StationOrders { get; } = [];
 
   public Collection<FestivalStation> FestivalStations { get; } = [];
+
+  public double QueuedMinutes()
+  {
+    var queuedMinutes = StationOrders.SelectMany(stationOrder => stationOrder.Items).Where(item => item.FulfilledAtUtc == null && !item.CatalogItem.IsQueueIndependent).Sum(item => item.CatalogItem.ProductionMinutes ?? 0);
+
+    return Math.Round(queuedMinutes, 1);
+  }
 }

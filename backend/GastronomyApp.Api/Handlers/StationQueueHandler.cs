@@ -1,7 +1,7 @@
 using GastronomyApp.Api.Responders;
 using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts;
-using GastronomyApp.Core.ReadModels;
+using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Results;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
@@ -26,7 +26,7 @@ public sealed class StationQueueHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<StationQueue, StationQueueFailure> queue = await _queueService.ReadQueueAsync(caller.StationId, cancellationToken);
+    Result<Station, StationQueueFailure> queue = await _queueService.ReadQueueAsync(caller.StationId, cancellationToken);
 
     if (!queue.IsSuccess)
       return _refusalResponder.Respond(queue.Failure);
@@ -38,7 +38,7 @@ public sealed class StationQueueHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    Result<IReadOnlyList<QueuedStationOrder>, StationQueueFailure> stationOrders = await _queueService.ReadFulfilledAsync(caller.StationId, cancellationToken);
+    Result<IReadOnlyList<StationOrder>, StationQueueFailure> stationOrders = await _queueService.ReadFulfilledAsync(caller.StationId, cancellationToken);
 
     if (!stationOrders.IsSuccess)
       return _refusalResponder.Respond(stationOrders.Failure);

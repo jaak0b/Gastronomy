@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using GastronomyApp.Contracts.Enums;
 
 namespace GastronomyApp.Core.Entities;
 
@@ -23,4 +24,24 @@ public sealed class Order
   public StaffMember StaffMember { get; set; } = null!;
 
   public Collection<StationOrder> StationOrders { get; } = [];
+
+  public OrderStatus Status()
+  {
+    List<OrderItem> items = StationOrders.SelectMany(stationOrder => stationOrder.Items).ToList();
+
+    var fulfilledItemCount = items.Count(item => item.FulfilledAtUtc is not null);
+
+    if (fulfilledItemCount == 0)
+      return OrderStatus.Open;
+
+    if (fulfilledItemCount >= items.Count)
+      return OrderStatus.Fulfilled;
+
+    return OrderStatus.PartiallyFulfilled;
+  }
+
+  public int TotalCents()
+  {
+    return StationOrders.SelectMany(stationOrder => stationOrder.Items).Sum(item => item.UnitPriceCents);
+  }
 }

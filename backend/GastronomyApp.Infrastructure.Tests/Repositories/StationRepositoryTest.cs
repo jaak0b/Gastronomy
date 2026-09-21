@@ -1,3 +1,4 @@
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.ReadModels;
 using GastronomyApp.Infrastructure.Repositories;
@@ -132,6 +133,126 @@ public sealed class StationRepositoryTest
     await using var readContext = fixture.CreateContext();
 
     Assert.That(await readContext.Stations.AnyAsync(station => station.Id == stationId, TestContext.CurrentContext.CancellationToken), Is.True);
+  }
+
+  [Test]
+  public async Task FindAtFestivalWithOpenItemsAsync_TheStationsOfOneFestival_ReturnsThemByTheirPlaceInTheList()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+
+    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+
+    IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations.Select(station => station.Id),
+                Is.EqualTo(new[]
+                           {
+                             seeded.KitchenStationId,
+                             seeded.BarStationId
+                           }));
+  }
+
+  [Test]
+  public async Task FindAtFestivalWithOpenItemsAsync_OpenItems_CarryTheArticleTheyWereOrderedFrom()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    await GiveTheSausageAProductionTimeAsync(fixture, seeded);
+    await PlaceKitchenOrderAsync(fixture, seeded);
+
+    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+
+    IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations[0].StationOrders.SelectMany(stationOrder => stationOrder.Items).Select(item => item.CatalogItem.ProductionMinutes),
+                Is.EquivalentTo(new double?[]
+                                {
+                                  4,
+                                  null
+                                }));
+  }
+
+  [Test]
+  public async Task FindAtFestivalWithOpenItemsAsync_AnItemTheStationHandedOut_LeavesItOut()
+  {
+    using SqliteInMemoryFixture fixture = new();
+    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
+    IReadOnlyList<Guid> items = await PlaceKitchenOrderAsync(fixture, seeded);
+    await HandOutAsync(fixture, items);
+
+    StationRepository repository = new(fixture.DbContext, new ProjectionConfiguration().Build());
+
+    IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
+
+    Assert.That(stations.SelectMany(station => station.StationOrders).SelectMany(stationOrder => stationOrder.Items), Is.Empty);
+  }
+
+  private async Task GiveTheSausageAProductionTimeAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
+  {
+    var sausage = await fixture.DbContext.CatalogItems.FirstAsync(item => item.Id == seeded.SausageItemId, TestContext.CurrentContext.CancellationToken);
+    sausage.ProductionMinutes = 4;
+
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task HandOutAsync(SqliteInMemoryFixture fixture, IReadOnlyCollection<Guid> orderItemIds)
+  {
+    List<Guid> ids = orderItemIds.ToList();
+    List<OrderItem> items = await fixture.DbContext.OrderItems.Where(item => ids.Contains(item.Id)).ToListAsync(TestContext.CurrentContext.CancellationToken);
+
+    foreach (var item in items)
+      item.FulfilledAtUtc = _now.AddMinutes(5);
+
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+  }
+
+  private async Task<IReadOnlyList<Guid>> PlaceKitchenOrderAsync(SqliteInMemoryFixture fixture, SeededDomain seeded)
+  {
+    var orderId = Guid.NewGuid();
+    var stationOrderId = Guid.NewGuid();
+
+    Order order = new()
+                  {
+                    Id = orderId,
+                    ClientOrderId = Guid.NewGuid(),
+                    FestivalId = seeded.FestivalId,
+                    GlobalOrderNumber = 1,
+                    StaffMemberId = seeded.StaffMemberId,
+                    TableName = "Tisch 12",
+                    CreatedAtUtc = _now
+                  };
+
+    StationOrder stationOrder = new()
+                                {
+                                  Id = stationOrderId,
+                                  OrderId = orderId,
+                                  FestivalId = seeded.FestivalId,
+                                  StationId = seeded.KitchenStationId,
+                                  StationOrderNumber = 1,
+                                  DeliveryMode = DeliveryMode.Together
+                                };
+
+    stationOrder.Items.Add(BuildItem(stationOrderId, seeded.SausageItemId, "Bratwurst", 350));
+    stationOrder.Items.Add(BuildItem(stationOrderId, seeded.LemonadeItemId, "Limonade", 250));
+    order.StationOrders.Add(stationOrder);
+
+    fixture.DbContext.Orders.Add(order);
+    await fixture.DbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
+
+    return stationOrder.Items.Select(item => item.Id).ToList();
+  }
+
+  private OrderItem BuildItem(Guid stationOrderId, Guid catalogItemId, string itemName, int unitPriceCents)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             StationOrderId = stationOrderId,
+             CatalogItemId = catalogItemId,
+             ItemName = itemName,
+             UnitPriceCents = unitPriceCents
+           };
   }
 
   private async Task GiveTheKitchenATabletAsync(SqliteInMemoryFixture fixture, SeededDomain seeded, DateTime lastSeenAtUtc)
