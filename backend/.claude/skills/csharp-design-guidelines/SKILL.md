@@ -171,8 +171,11 @@ and do not apply to this application.
 Inside the backend, data travels as EF entities. Wire records live in `GastronomyApp.Contracts`:
 requests are consumed by `Core`, responses are produced only by `Api`, mapped from entities with
 Mapster. A record outside `Contracts` exists only when the alternative is a tuple or more than about
-five parameters, and only after trying the entity or its id first. Logic that is one expression over
-an entity is a method on the entity, not a separate function. No stateless one-method service classes.
+five parameters, and only after trying the entity or its id first. An EF entity carries properties
+only, never a method: a fact derived from an entity is a method on that entity type's service
+(`OrderService.StatusOf(order)`), and a transaction across entities is a method on the use-case
+service. A private helper that only reshapes data, and a local function standing in for one, is
+banned: write the LINQ inline at the call site.
 Names shared across call sites are constants in one static class. A rule that refuses returns
 `ErrorOr<T>`, never a nullable value standing for a refusal; the refusal is an `Error` from a factory
 in `Core/Refusals`, and its numeric type is its HTTP status, declared once in `RefusalType`. A handler

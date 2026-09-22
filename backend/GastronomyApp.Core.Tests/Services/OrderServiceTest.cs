@@ -1,66 +1,69 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 
-namespace GastronomyApp.Core.Tests.Entities;
+namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class OrderTest
+public sealed class OrderServiceTest
 {
+  private readonly OrderService _service = new();
+
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);
   private readonly DateTime _handedOutAtUtc = new(2026, 9, 5, 19, 30, 0, DateTimeKind.Utc);
 
   [Test]
-  public void Status_NothingHandedOut_IsOpen()
+  public void StatusOf_NothingHandedOut_IsOpen()
   {
-    Assert.That(OrderWithItems(2, 0).Status(), Is.EqualTo(OrderStatus.Open));
+    Assert.That(_service.StatusOf(OrderWithItems(2, 0)), Is.EqualTo(OrderStatus.Open));
   }
 
   [Test]
-  public void Status_SomeItemsHandedOut_IsPartiallyFulfilled()
+  public void StatusOf_SomeItemsHandedOut_IsPartiallyFulfilled()
   {
-    Assert.That(OrderWithItems(3, 1).Status(), Is.EqualTo(OrderStatus.PartiallyFulfilled));
+    Assert.That(_service.StatusOf(OrderWithItems(3, 1)), Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
 
   [Test]
-  public void Status_EveryItemHandedOut_IsFulfilled()
+  public void StatusOf_EveryItemHandedOut_IsFulfilled()
   {
-    Assert.That(OrderWithItems(2, 2).Status(), Is.EqualTo(OrderStatus.Fulfilled));
+    Assert.That(_service.StatusOf(OrderWithItems(2, 2)), Is.EqualTo(OrderStatus.Fulfilled));
   }
 
   [Test]
-  public void Status_AnOrderWithoutItems_IsOpen()
+  public void StatusOf_AnOrderWithoutItems_IsOpen()
   {
-    Assert.That(OrderWithItems(0, 0).Status(), Is.EqualTo(OrderStatus.Open));
+    Assert.That(_service.StatusOf(OrderWithItems(0, 0)), Is.EqualTo(OrderStatus.Open));
   }
 
   [Test]
-  public void Status_ItemsSpreadOverTwoStationOrders_CountsEveryStationOrder()
+  public void StatusOf_ItemsSpreadOverTwoStationOrders_CountsEveryStationOrder()
   {
     var order = OrderWithItems(1, 1);
     order.StationOrders.Add(StationOrderWithItems(order.Id, 1, 0));
 
-    Assert.That(order.Status(), Is.EqualTo(OrderStatus.PartiallyFulfilled));
+    Assert.That(_service.StatusOf(order), Is.EqualTo(OrderStatus.PartiallyFulfilled));
   }
 
   [Test]
-  public void TotalCents_AnOrderWithoutItems_CountsNothing()
+  public void TotalCentsOf_AnOrderWithoutItems_CountsNothing()
   {
-    Assert.That(OrderWithPrices().TotalCents(), Is.Zero);
+    Assert.That(_service.TotalCentsOf(OrderWithPrices()), Is.Zero);
   }
 
   [Test]
-  public void TotalCents_SeveralItems_AddsThePricesThePhoneDisplayed()
+  public void TotalCentsOf_SeveralItems_AddsThePricesThePhoneDisplayed()
   {
-    Assert.That(OrderWithPrices(350, 400, 250).TotalCents(), Is.EqualTo(1000));
+    Assert.That(_service.TotalCentsOf(OrderWithPrices(350, 400, 250)), Is.EqualTo(1000));
   }
 
   [Test]
-  public void TotalCents_ItemsAtTwoStations_AddsUpBothStationOrders()
+  public void TotalCentsOf_ItemsAtTwoStations_AddsUpBothStationOrders()
   {
     var order = OrderWithPrices(350);
     order.StationOrders.Add(StationOrderWithPrices(order.Id, 400));
 
-    Assert.That(order.TotalCents(), Is.EqualTo(750));
+    Assert.That(_service.TotalCentsOf(order), Is.EqualTo(750));
   }
 
   private Order OrderWithItems(int itemCount, int fulfilledItemCount)

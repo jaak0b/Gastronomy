@@ -12,7 +12,7 @@ public sealed class StationEstimateMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration().Build());
+    _mapper = new Mapper(new MappingConfiguration(new()).Build());
   }
 
   private readonly Guid _kitchenId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
