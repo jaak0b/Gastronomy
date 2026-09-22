@@ -14,8 +14,7 @@ public sealed class SettlementMapping : IRegister
     config.NewConfig<SettlementResult, SettlementView>()
           .Map(view => view.SettledOrderItemIds, settlement => IdsOf(settlement.NewlySettled))
           .Map(view => view.ReappliedOrderItemIds, settlement => IdsOf(settlement.Reapplied))
-          .Map(view => view.AlreadySettledByOthersOrderItemIds, settlement => IdsOf(settlement.AlreadySettledByOthers))
-          .Map(view => view.OtherPhonesWereTold, settlement => settlement.OtherDevicesWereTold);
+          .Map(view => view.AlreadySettledByOthersOrderItemIds, settlement => IdsOf(settlement.AlreadySettledByOthers));
   }
 
   private IReadOnlyList<Guid> IdsOf(IEnumerable<OrderItem> items)

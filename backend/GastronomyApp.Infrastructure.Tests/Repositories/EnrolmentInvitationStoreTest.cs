@@ -1,13 +1,10 @@
-﻿using ErrorOr;
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Results;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Infrastructure.Tests.Repositories;
@@ -220,54 +217,6 @@ public sealed class EnrolmentInvitationStoreTest
   }
 
   [Test]
-  public async Task CreateAsync_TwoConcurrentCallers_LeaveExactlyOneOutstandingInvitation()
-  {
-    using SqliteTempFileFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
-    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
-
-    var firstContext = fixture.CreateContext();
-    var secondContext = fixture.CreateContext();
-    var firstStore = CreateStore(firstContext, clock);
-    var secondStore = CreateStore(secondContext, clock);
-    var anna = await AnnaAsync(firstContext, seeded);
-    var kitchen = await KitchenAsync(secondContext, seeded);
-
-    await Task.WhenAll(Task.Run(() => firstStore.CreateAsync(anna, TestContext.CurrentContext.CancellationToken)), Task.Run(() => secondStore.CreateAsync(kitchen, TestContext.CurrentContext.CancellationToken)));
-
-    var verificationContext = fixture.CreateContext();
-    var outstandingCount = await verificationContext.EnrolmentInvitations.CountAsync(invitation => invitation.ConsumedAtUtc == null && invitation.ExpiresAtUtc > clock.GetUtcNow().UtcDateTime, TestContext.CurrentContext.CancellationToken);
-
-    Assert.That(outstandingCount, Is.EqualTo(1));
-  }
-
-  [Test]
-  public async Task RedeemAsync_TwoConcurrentCallers_IssueExactlyOneDevice()
-  {
-    using SqliteTempFileFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.CreateContext(), TestContext.CurrentContext.CancellationToken);
-    FakeTimeProvider clock = new(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero));
-
-    var creatingContext = fixture.CreateContext();
-    var created = await CreateStore(creatingContext, clock).CreateAsync(await AnnaAsync(creatingContext, seeded), TestContext.CurrentContext.CancellationToken);
-
-    var firstStore = CreateStore(fixture.CreateContext(), clock);
-    var secondStore = CreateStore(fixture.CreateContext(), clock);
-
-    ErrorOr<EnrolmentRedemptionResult>[] results = await Task.WhenAll(Task.Run(() => firstStore.RedeemAsync(created.QRCodeValue, null, "First phone", "de", TestContext.CurrentContext.CancellationToken)),
-                                                             Task.Run(() => secondStore.RedeemAsync(created.QRCodeValue, null, "Second phone", "de", TestContext.CurrentContext.CancellationToken)));
-
-    var verificationContext = fixture.CreateContext();
-    var deviceCount = await verificationContext.Devices.CountAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(results.Count(result => result.IsSuccess), Is.EqualTo(1));
-                      Assert.That(deviceCount, Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
   public async Task RedeemAsync_SuccessfulRedemption_CarriesAPlaintextTokenThatVerifies()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -276,12 +225,12 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(fixture.DbContext);
     DeviceTokenStore deviceTokenStore = new(fixture.DbContext, ownerStore, secretHasher, clock);
-    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, new ImmediateTransactionRunner(fixture.DbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
+    EnrolmentInvitationStore store = new(fixture.DbContext, ownerStore, secretHasher, deviceTokenStore, clock);
 
     var created = await store.CreateAsync(await AnnaAsync(fixture.DbContext, seeded), TestContext.CurrentContext.CancellationToken);
     var redemption = await store.RedeemAsync(created.QRCodeValue, null, "Test agent", "de", TestContext.CurrentContext.CancellationToken);
 
-    
+
     var separatorIndex = redemption.Value.PlaintextToken.IndexOf('.', StringComparison.Ordinal);
     var verifiedOwner = await deviceTokenStore.VerifyAsync(redemption.Value.PlaintextToken[..separatorIndex], redemption.Value.PlaintextToken[(separatorIndex + 1)..], TestContext.CurrentContext.CancellationToken);
 
@@ -372,6 +321,6 @@ public sealed class EnrolmentInvitationStoreTest
     Pbkdf2SecretHasher secretHasher = new();
     DeviceOwnerStore ownerStore = new(dbContext);
 
-    return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), new ImmediateTransactionRunner(dbContext, new(), new(), NullLogger<ImmediateTransactionRunner>.Instance), clock);
+    return new(dbContext, ownerStore, secretHasher, new DeviceTokenStore(dbContext, ownerStore, secretHasher, clock), clock);
   }
 }

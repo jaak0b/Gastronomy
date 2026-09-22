@@ -24,12 +24,10 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private readonly IDeviceTokenStore _deviceTokenStore;
   private readonly IDeviceOwnerStore _ownerStore;
   private readonly Pbkdf2SecretHasher _secretHasher;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IDeviceTokenStore deviceTokenStore, ITransactionRunner transactionRunner, TimeProvider timeProvider)
+  public EnrolmentInvitationStore(GastronomyAppDbContext dbContext, IDeviceOwnerStore ownerStore, Pbkdf2SecretHasher secretHasher, IDeviceTokenStore deviceTokenStore, TimeProvider timeProvider)
   {
     _dbContext = dbContext;
-    _transactionRunner = transactionRunner;
     _ownerStore = ownerStore;
     _secretHasher = secretHasher;
     _deviceTokenStore = deviceTokenStore;
@@ -38,50 +36,39 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
 
   public async Task<IssuedEnrolmentInvitation> CreateAsync(IDeviceOwner? owner, CancellationToken cancellationToken)
   {
-    ErrorOr<IssuedEnrolmentInvitation> issued = await _transactionRunner.RunAsync(async transactionCancellationToken =>
-                                       {
-                                         var now = _timeProvider.GetUtcNow().UtcDateTime;
+    var now = _timeProvider.GetUtcNow().UtcDateTime;
 
-                                         await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, transactionCancellationToken);
+    await ConsumeEveryUnconsumedPredecessorIncludingExpiredOnesAsync(now, cancellationToken);
 
-                                         var qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QRCodeLengthBytes));
+    var qrCodeValue = Convert.ToHexString(RandomNumberGenerator.GetBytes(QRCodeLengthBytes));
 
-                                         var hashedQRCode = _secretHasher.Hash(qrCodeValue);
-                                         var expiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes);
+    var hashedQRCode = _secretHasher.Hash(qrCodeValue);
+    var expiresAtUtc = now.AddMinutes(InvitationLifetimeMinutes);
 
-                                         EnrolmentInvitation invitation = new()
-                                                                          {
-                                                                            Id = Guid.NewGuid(),
-                                                                            QRCodeHash = hashedQRCode.Hash,
-                                                                            QRCodeSalt = hashedQRCode.Salt,
-                                                                            QRCodeIterations = hashedQRCode.Iterations,
-                                                                            QRCodeAlgorithm = hashedQRCode.Algorithm,
-                                                                            CreatedAtUtc = now,
-                                                                            ExpiresAtUtc = expiresAtUtc,
-                                                                            ConsumedAtUtc = null,
-                                                                            ConsumedByDeviceId = null
-                                                                          };
+    EnrolmentInvitation invitation = new()
+    {
+      Id = Guid.NewGuid(),
+      QRCodeHash = hashedQRCode.Hash,
+      QRCodeSalt = hashedQRCode.Salt,
+      QRCodeIterations = hashedQRCode.Iterations,
+      QRCodeAlgorithm = hashedQRCode.Algorithm,
+      CreatedAtUtc = now,
+      ExpiresAtUtc = expiresAtUtc,
+      ConsumedAtUtc = null,
+      ConsumedByDeviceId = null
+    };
 
-                                         _dbContext.EnrolmentInvitations.Add(invitation);
-                                         await _dbContext.SaveChangesAsync(transactionCancellationToken);
+    _dbContext.EnrolmentInvitations.Add(invitation);
+    await _dbContext.SaveChangesAsync(cancellationToken);
 
-                                         if (owner is not null)
-                                         {
-                                           owner.EnrolmentInvitationId = invitation.Id;
-                                           owner.EnrolmentInvitation = invitation;
-                                           await _dbContext.SaveChangesAsync(transactionCancellationToken);
-                                         }
+    if (owner is not null)
+    {
+      owner.EnrolmentInvitationId = invitation.Id;
+      owner.EnrolmentInvitation = invitation;
+      await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 
-                                         return new IssuedEnrolmentInvitation(invitation, qrCodeValue, owner).ToErrorOr();
-                                       },
-                                       cancellationToken);
-
-    return issued.Value;
-  }
-
-  public Task<ErrorOr<EnrolmentRedemptionResult>> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(async transactionCancellationToken => await RedeemInsideTransactionAsync(code, name, userAgent, acceptLanguageHeader, transactionCancellationToken), cancellationToken);
+    return new(invitation, qrCodeValue, owner);
   }
 
   public async Task<EnrolmentInvitation?> FindByIdAsync(Guid invitationId, CancellationToken cancellationToken)
@@ -97,7 +84,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       invitation.ConsumedAtUtc = consumedAtUtc;
   }
 
-  private async Task<ErrorOr<EnrolmentRedemptionResult>> RedeemInsideTransactionAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
+  public async Task<ErrorOr<EnrolmentRedemptionResult>> RedeemAsync(string code, string? name, string userAgent, string acceptLanguageHeader, CancellationToken cancellationToken)
   {
     var now = _timeProvider.GetUtcNow().UtcDateTime;
     var invitation = await LoadUnconsumedInvitationAsync(cancellationToken);
@@ -131,11 +118,11 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private Error OffTheListRefusalFor(DeviceOwnerKind kind, Guid invitationId)
   {
     return kind switch
-           {
-             DeviceOwnerKind.StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
-             DeviceOwnerKind.Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
-             _ => new UnreachableCase().Throw<Error>(kind)
-           };
+    {
+      DeviceOwnerKind.StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
+      DeviceOwnerKind.Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
+      _ => new UnreachableCase().Throw<Error>(kind)
+    };
   }
 
   private async Task<EnrolmentInvitation?> LoadUnconsumedInvitationAsync(CancellationToken cancellationToken)
@@ -183,12 +170,12 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
   private async Task<IDeviceOwner> CreateStaffMemberAsync(string name, DateTime now, CancellationToken cancellationToken)
   {
     StaffMember newStaffMember = new()
-                                 {
-                                   Id = Guid.NewGuid(),
-                                   Name = name.Trim(),
-                                   IsActive = true,
-                                   CreatedAtUtc = now
-                                 };
+    {
+      Id = Guid.NewGuid(),
+      Name = name.Trim(),
+      IsActive = true,
+      CreatedAtUtc = now
+    };
 
     _dbContext.StaffMembers.Add(newStaffMember);
     await _dbContext.SaveChangesAsync(cancellationToken);

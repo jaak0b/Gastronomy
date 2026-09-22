@@ -16,15 +16,13 @@ public sealed class CatalogItemAdministrationService
   private readonly IFestivalRepository _festivalRepository;
   private readonly ICatalogItemRepository _itemRepository;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly ITransactionRunner _transactionRunner;
 
   public CatalogItemAdministrationService(ICatalogItemRepository itemRepository,
                                           ICatalogCategoryRepository categoryRepository,
                                           IFestivalRepository festivalRepository,
                                           ICatalogChangeAnnouncer announcer,
                                           IAfterCommitActions afterCommitActions,
-                                          RunningFestivalLookup runningFestival,
-                                          ITransactionRunner transactionRunner)
+                                          RunningFestivalLookup runningFestival)
   {
     _itemRepository = itemRepository;
     _categoryRepository = categoryRepository;
@@ -32,7 +30,6 @@ public sealed class CatalogItemAdministrationService
     _afterCommitActions = afterCommitActions;
     _festivalRepository = festivalRepository;
     _runningFestival = runningFestival;
-    _transactionRunner = transactionRunner;
   }
 
   public async Task<ErrorOr<IReadOnlyList<CatalogItem>>> ListAsync(Guid? festivalId, CancellationToken cancellationToken)
@@ -45,31 +42,7 @@ public sealed class CatalogItemAdministrationService
     return items.ToErrorOr();
   }
 
-  public Task<ErrorOr<CatalogItem>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken =>
-                                         CreatedAsync(name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogItem>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken =>
-                                         UpdatedAsync(itemId, name, categoryId, sortOrder, productionMinutes, isQueueIndependent, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogItem>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(itemId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogItem>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(itemId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  private async Task<ErrorOr<CatalogItem>> CreatedAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogItem>> CreateAsync(string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     Error? refusal = ProductionMinutesRefusal(productionMinutes) ?? await NameRefusalAsync(name!, null, cancellationToken) ?? await CategoryRefusalAsync(categoryId, true, cancellationToken);
 
@@ -77,24 +50,26 @@ public sealed class CatalogItemAdministrationService
       return error;
 
     CatalogItem created = new()
-                          {
-                            Id = Guid.NewGuid(),
-                            Name = name!,
-                            CategoryId = categoryId!.Value,
-                            SortOrder = sortOrder,
-                            IsActive = true,
-                            ProductionMinutes = productionMinutes,
-                            IsQueueIndependent = isQueueIndependent
-                          };
+    {
+      Id = Guid.NewGuid(),
+      Name = name!,
+      CategoryId = categoryId!.Value,
+      SortOrder = sortOrder,
+      IsActive = true,
+      ProductionMinutes = productionMinutes,
+      IsQueueIndependent = isQueueIndependent
+    };
 
     await _itemRepository.AddAsync(created, cancellationToken);
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
+
     return created;
   }
 
-  private async Task<ErrorOr<CatalogItem>> UpdatedAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogItem>> UpdateAsync(Guid itemId, string? name, Guid? categoryId, int sortOrder, double? productionMinutes, bool isQueueIndependent, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
@@ -114,10 +89,12 @@ public sealed class CatalogItemAdministrationService
 
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
+
     return item;
   }
 
-  private async Task<ErrorOr<CatalogItem>> SwitchedOnAsync(Guid itemId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogItem>> ActivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
@@ -130,10 +107,12 @@ public sealed class CatalogItemAdministrationService
     item.IsActive = true;
     await _itemRepository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
+
     return item;
   }
 
-  private async Task<ErrorOr<CatalogItem>> SwitchedOffAsync(Guid itemId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogItem>> DeactivateAsync(Guid itemId, CancellationToken cancellationToken)
   {
     var item = await _itemRepository.FindByIdAsync(itemId, cancellationToken);
 
@@ -147,6 +126,8 @@ public sealed class CatalogItemAdministrationService
 
     item.IsActive = false;
     await _itemRepository.SaveChangesAsync(cancellationToken);
+
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return item;
   }

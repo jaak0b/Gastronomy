@@ -41,7 +41,6 @@ const SETTLED = {
   settledOrderItemIds: ['item-1'],
   reappliedOrderItemIds: [],
   alreadySettledByOthersOrderItemIds: [],
-  otherPhonesWereTold: true,
 }
 
 const TWO_TABLES = {
@@ -405,7 +404,6 @@ describe('the screen that shows what the tables still owe', () => {
             settledOrderItemIds: ['item-1'],
             reappliedOrderItemIds: [],
             alreadySettledByOthersOrderItemIds: ['item-2'],
-            otherPhonesWereTold: true,
           }),
           { status: 200 },
         ),

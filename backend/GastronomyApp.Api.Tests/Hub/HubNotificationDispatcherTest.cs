@@ -59,16 +59,6 @@ public sealed class HubNotificationDispatcherTest
     A.CallTo(() => _clients.SendCoreAsync("StationOrdersChanged", A<object[]>._, A<CancellationToken>._)).MustHaveHappened();
   }
 
-  [Test]
-  public async Task AnnounceOrderItemsSettledAsync_AHubThatCannotBeReached_SaysTheOtherPhonesWereNotTold()
-  {
-    A.CallTo(() => _clients.SendCoreAsync(A<string>._, A<object[]>._, A<CancellationToken>._)).Throws<InvalidOperationException>();
-
-    var wereTold = await _dispatcher.AnnounceOrderItemsSettledAsync([_deviceId], ["Tisch 1"], CancellationToken.None);
-
-    Assert.That(wereTold, Is.False);
-  }
-
   private bool NamesTheRevokedDevice(IReadOnlyList<object> arguments)
   {
     return arguments.Single() is DeviceRevokedEvent revoked && revoked.DeviceId == _deviceId;

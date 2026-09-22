@@ -1,9 +1,10 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Tests.Endpoints;
@@ -43,6 +44,30 @@ public sealed class EnrolmentEndpointsTest
                       Assert.That(body.RootElement.GetProperty("deviceId").GetGuid(), Is.Not.EqualTo(Guid.Empty));
                       Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(), Is.EqualTo("Anna"));
                       Assert.That(body.RootElement.GetProperty("language").GetString(), Is.Not.Empty);
+                    });
+  }
+
+  [Test]
+  public async Task PostRedeem_TheSameCodeScannedTwiceAtTheSameMoment_SetsUpExactlyOneDevice()
+  {
+    var code = await CreateInvitationCodeAsync();
+
+    Task<HttpResponseMessage> first = RedeemAsync(code);
+    Task<HttpResponseMessage> second = RedeemAsync(code);
+
+    HttpResponseMessage[] responses = await Task.WhenAll(first, second);
+    var acceptedResponses = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
+
+    foreach (var response in responses)
+      response.Dispose();
+
+    await using var database = _factory.CreateContext();
+    var deviceCount = await database.Devices.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(acceptedResponses, Is.EqualTo(1));
+                      Assert.That(deviceCount, Is.EqualTo(1));
                     });
   }
 

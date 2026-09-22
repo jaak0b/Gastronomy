@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Ports;
@@ -69,7 +69,7 @@ public sealed class FirstRunViewModel : ViewModelBase
   public void Evaluate()
   {
     var firewallConfigured = _firewall.IsRuleConfigured();
-    var dataFolderReady = _dataFolder.Exists() && _dataFolder.CurrentUserCanWrite();
+    var dataFolderReady = _dataFolder.CurrentUserCanWrite();
     var everythingInPlace = firewallConfigured && dataFolderReady;
 
     IsSetupOffered = !everythingInPlace;

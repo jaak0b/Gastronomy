@@ -2729,8 +2729,7 @@
         "required": [
           "settledOrderItemIds",
           "reappliedOrderItemIds",
-          "alreadySettledByOthersOrderItemIds",
-          "otherPhonesWereTold"
+          "alreadySettledByOthersOrderItemIds"
         ],
         "type": "object",
         "properties": {
@@ -2754,9 +2753,6 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          "otherPhonesWereTold": {
-            "type": "boolean"
           }
         }
       },

@@ -34,7 +34,7 @@ public sealed class StationQueueChangeServiceTest
     _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
     _orderStatusAnnouncer = A.Fake<IOrderStatusAnnouncer>();
 
-    _service = new(lookup, new(_stationOrderRepository, new(), new(), new RecordingTransactionRunner(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository), _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
+    _service = new(lookup, new(_stationOrderRepository, new(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository), _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -166,15 +166,15 @@ public sealed class StationQueueChangeServiceTest
   private Order TouchedOrder()
   {
     return new()
-           {
-             Id = _orderId,
-             ClientOrderId = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             GlobalOrderNumber = 4,
-             StaffMemberId = Guid.NewGuid(),
-             TableName = "Tisch 12",
-             CreatedAtUtc = _now
-           };
+    {
+      Id = _orderId,
+      ClientOrderId = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      GlobalOrderNumber = 4,
+      StaffMemberId = Guid.NewGuid(),
+      TableName = "Tisch 12",
+      CreatedAtUtc = _now
+    };
   }
 
   private OrderItem OpenItem()
@@ -182,14 +182,14 @@ public sealed class StationQueueChangeServiceTest
     var stationOrder = AsItComesStationOrder();
 
     OrderItem item = new()
-                     {
-                       Id = Guid.NewGuid(),
-                       StationOrderId = stationOrder.Id,
-                       CatalogItemId = Guid.NewGuid(),
-                       ItemName = "Bratwurst",
-                       UnitPriceCents = 350,
-                       StationOrder = stationOrder
-                     };
+    {
+      Id = Guid.NewGuid(),
+      StationOrderId = stationOrder.Id,
+      CatalogItemId = Guid.NewGuid(),
+      ItemName = "Bratwurst",
+      UnitPriceCents = 350,
+      StationOrder = stationOrder
+    };
 
     stationOrder.Items.Add(item);
 
@@ -199,48 +199,48 @@ public sealed class StationQueueChangeServiceTest
   private StationOrder AsItComesStationOrder()
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             OrderId = _orderId,
-             FestivalId = _festivalId,
-             StationId = _stationId,
-             StationOrderNumber = 1,
-             DeliveryMode = DeliveryMode.AsItComes
-           };
+    {
+      Id = Guid.NewGuid(),
+      OrderId = _orderId,
+      FestivalId = _festivalId,
+      StationId = _stationId,
+      StationOrderNumber = 1,
+      DeliveryMode = DeliveryMode.AsItComes
+    };
   }
 
   private Station Kitchen()
   {
     return new()
-           {
-             Id = _stationId,
-             Name = "Kueche",
-             SortOrder = 1,
-             IsActive = true
-           };
+    {
+      Id = _stationId,
+      Name = "Kueche",
+      SortOrder = 1,
+      IsActive = true
+    };
   }
 
   private Festival RunningFestival()
   {
     return new()
-           {
-             Id = _festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-2),
-             EndsAtUtc = _now.AddHours(5),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = _festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _now.AddHours(-2),
+      EndsAtUtc = _now.AddHours(5),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 
   private FestivalStation Link()
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             StationId = _stationId,
-             NextStationOrderNumber = 1
-           };
+    {
+      Id = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      StationId = _stationId,
+      NextStationOrderNumber = 1
+    };
   }
 }

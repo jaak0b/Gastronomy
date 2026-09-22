@@ -18,7 +18,6 @@ public sealed class FestivalMenuServiceTest
     _festivalRepository = A.Fake<IFestivalRepository>();
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(false)));
@@ -28,7 +27,7 @@ public sealed class FestivalMenuServiceTest
     A.CallTo(() => _repository.FindMenuRowAsync(A<Guid>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<FestivalCatalogItem?>(null));
     A.CallTo(() => _orderabilityRepository.FindActiveStationIdsAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([_kitchenId]));
 
-    _service = new(_repository, _festivalRepository, new(_orderabilityRepository, _festivalRepository, _clock), A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock), _transactionRunner);
+    _service = new(_repository, _festivalRepository, new(_orderabilityRepository, _festivalRepository, _clock), A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -42,7 +41,6 @@ public sealed class FestivalMenuServiceTest
   private IItemOrderabilityRepository _orderabilityRepository = null!;
   private IFestivalMenuRepository _repository = null!;
   private FestivalMenuService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task PutOnTheMenuAsync_AStationThatIsNotAtTheFestival_NamesTheStationItRefused()
@@ -78,7 +76,6 @@ public sealed class FestivalMenuServiceTest
                     {
                       Assert.That(putOn.IsSuccess, Is.True);
                       Assert.That(putOn.Value.PriceCents, Is.EqualTo(350));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.AddMenuRowAsync(A<FestivalCatalogItem>.That.Matches(row => row.PriceCents == 350), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -124,7 +121,6 @@ public sealed class FestivalMenuServiceTest
                     {
                       Assert.That(takenOff.IsSuccess, Is.False);
                       Assert.That(takenOff.RefusalMessageKey(), Is.EqualTo("admin.itemStaysOnTheMenuWhileTheFestivalRuns"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -152,7 +148,6 @@ public sealed class FestivalMenuServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(takenOff.IsSuccess, Is.True);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.RemoveMenuRow(menuRow)).MustHaveHappenedOnceExactly();
@@ -186,33 +181,32 @@ public sealed class FestivalMenuServiceTest
                     {
                       Assert.That(saved.Value, Is.SameAs(menuRow));
                       Assert.That(menuRow.IsAvailable, Is.False);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
   private FestivalCatalogItem BuildMenuRow(int priceCents, bool isAvailable)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             CatalogItemId = _bratwurstId,
-             PriceCents = priceCents,
-             IsAvailable = isAvailable
-           };
+    {
+      Id = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      CatalogItemId = _bratwurstId,
+      PriceCents = priceCents,
+      IsAvailable = isAvailable
+    };
   }
 
   private Festival BuildFestival(bool hasEnded)
   {
     return new()
-           {
-             Id = _festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-5),
-             EndsAtUtc = EndOfTheFestival(hasEnded),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = _festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _now.AddHours(-5),
+      EndsAtUtc = EndOfTheFestival(hasEnded),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 
   private DateTime EndOfTheFestival(bool hasEnded)

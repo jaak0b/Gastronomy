@@ -22,7 +22,6 @@ public sealed class StationAdministrationServiceTest
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
@@ -39,8 +38,7 @@ public sealed class StationAdministrationServiceTest
                    _stationsAnnouncer,
                    new ImmediateAfterCommitActions(),
                    new(_orderabilityRepository, _festivalRepository, _clock),
-                   new(_festivalRepository, new(), _clock),
-                   _transactionRunner);
+                   new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -59,7 +57,6 @@ public sealed class StationAdministrationServiceTest
   private IStationRepository _repository = null!;
   private IStationsChangeAnnouncer _stationsAnnouncer = null!;
   private StationAdministrationService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task CreateAsync_AStationTheFestivalDidNotHaveBefore_TellsTheDevices()
@@ -106,7 +103,6 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(created.Value.DeviceId, Is.Null);
                       Assert.That(created.Value.HasOutstandingInvitation(), Is.False);
                       Assert.That(created.Value.IsAtTheFestival(), Is.False);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
@@ -164,7 +160,6 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(switchedOff.Value, Is.SameAs(station));
                       Assert.That(station.IsActive, Is.False);
                       Assert.That(station.EnrolmentInvitationId, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -188,26 +183,26 @@ public sealed class StationAdministrationServiceTest
   private Station BuildStation(bool isActive, Guid? deviceId, Guid? invitationId)
   {
     return new()
-           {
-             Id = _kitchenId,
-             Name = "Kueche",
-             SortOrder = 1,
-             IsActive = isActive,
-             DeviceId = deviceId,
-             EnrolmentInvitationId = invitationId
-           };
+    {
+      Id = _kitchenId,
+      Name = "Kueche",
+      SortOrder = 1,
+      IsActive = isActive,
+      DeviceId = deviceId,
+      EnrolmentInvitationId = invitationId
+    };
   }
 
   private Festival BuildFestival()
   {
     return new()
-           {
-             Id = _festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-1),
-             EndsAtUtc = _now.AddHours(5),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = _festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _now.AddHours(-1),
+      EndsAtUtc = _now.AddHours(5),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 }

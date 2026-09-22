@@ -1,6 +1,8 @@
-﻿using GastronomyApp.Api.Hosting;
+﻿using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using GastronomyApp.Api.Values;
@@ -21,9 +23,17 @@ public sealed class GastronomyAppApiApplication
 
     var app = builder.Build();
 
-    new DatabaseInitializer().Initialize(app.Services);
+    MigrateTheDatabase(app.Services);
     new ApiPipeline().Configure(app);
 
     return app;
+  }
+
+  private void MigrateTheDatabase(IServiceProvider services)
+  {
+    using var scope = services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
+
+    database.Database.Migrate();
   }
 }

@@ -9,13 +9,11 @@ public sealed class StaffMemberAdministrationService
 {
   private readonly IStaffMemberRepository _repository;
   private readonly DeviceOwnerRetirement _retirement;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public StaffMemberAdministrationService(IStaffMemberRepository repository, DeviceOwnerRetirement retirement, ITransactionRunner transactionRunner)
+  public StaffMemberAdministrationService(IStaffMemberRepository repository, DeviceOwnerRetirement retirement)
   {
     _repository = repository;
     _retirement = retirement;
-    _transactionRunner = transactionRunner;
   }
 
   public Task<IReadOnlyList<StaffMember>> ListAsync(CancellationToken cancellationToken)
@@ -23,22 +21,7 @@ public sealed class StaffMemberAdministrationService
     return _repository.FindAllAsync(cancellationToken);
   }
 
-  public Task<ErrorOr<StaffMember>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => RenamedAsync(staffMemberId, name, transactionCancellationToken), cancellationToken);
-  }
-
-  public Task<ErrorOr<StaffMember>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(staffMemberId, transactionCancellationToken), cancellationToken);
-  }
-
-  public Task<ErrorOr<StaffMember>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(staffMemberId, transactionCancellationToken), cancellationToken);
-  }
-
-  private async Task<ErrorOr<StaffMember>> RenamedAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
+  public async Task<ErrorOr<StaffMember>> RenameAsync(Guid staffMemberId, string? name, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
@@ -51,7 +34,7 @@ public sealed class StaffMemberAdministrationService
     return staffMember;
   }
 
-  private async Task<ErrorOr<StaffMember>> SwitchedOnAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<StaffMember>> ActivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 
@@ -64,7 +47,7 @@ public sealed class StaffMemberAdministrationService
     return staffMember;
   }
 
-  private async Task<ErrorOr<StaffMember>> SwitchedOffAsync(Guid staffMemberId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<StaffMember>> DeactivateAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
     var staffMember = await _repository.FindByIdAsync(staffMemberId, cancellationToken);
 

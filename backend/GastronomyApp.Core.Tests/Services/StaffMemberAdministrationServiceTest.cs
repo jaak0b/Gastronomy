@@ -19,11 +19,10 @@ public sealed class StaffMemberAdministrationServiceTest
     _deviceTokenStore = A.Fake<IDeviceTokenStore>();
     _announcer = A.Fake<IDeviceRevocationAnnouncer>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(null));
 
-    _service = new(_repository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock), _transactionRunner);
+    _service = new(_repository, new(_invitationStore, _deviceTokenStore, _announcer, new ImmediateAfterCommitActions(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -37,7 +36,6 @@ public sealed class StaffMemberAdministrationServiceTest
   private IEnrolmentInvitationStore _invitationStore = null!;
   private IStaffMemberRepository _repository = null!;
   private StaffMemberAdministrationService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task ListAsync_AskedForEverybody_ReadsTheListAsItIsRightNow()
@@ -72,7 +70,6 @@ public sealed class StaffMemberAdministrationServiceTest
                       Assert.That(renamed.IsSuccess, Is.True);
                       Assert.That(renamed.Value.Name, Is.EqualTo("Anne Marie"));
                       Assert.That(staffMember.Name, Is.EqualTo("Anne Marie"));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
@@ -104,7 +101,6 @@ public sealed class StaffMemberAdministrationServiceTest
                       Assert.That(switchedOff.IsSuccess, Is.True);
                       Assert.That(staffMember.IsActive, Is.False);
                       Assert.That(staffMember.EnrolmentInvitationId, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _invitationStore.ConsumeAsync(_invitationId, _now, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -128,13 +124,13 @@ public sealed class StaffMemberAdministrationServiceTest
   private StaffMember BuildStaffMember(bool isActive, Guid? deviceId, Guid? invitationId)
   {
     return new()
-           {
-             Id = _annaId,
-             Name = "Anna",
-             IsActive = isActive,
-             DeviceId = deviceId,
-             EnrolmentInvitationId = invitationId,
-             CreatedAtUtc = _now
-           };
+    {
+      Id = _annaId,
+      Name = "Anna",
+      IsActive = isActive,
+      DeviceId = deviceId,
+      EnrolmentInvitationId = invitationId,
+      CreatedAtUtc = _now
+    };
   }
 }

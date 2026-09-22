@@ -21,16 +21,14 @@ public sealed class OrderItemSettlementServiceTest
     _repository = A.Fake<IOpenItemRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(RunningFestival()));
     A.CallTo(() => _repository.FindForSettlementAsync(A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
     _announcer = A.Fake<ISettlementAnnouncer>();
-    A.CallTo(() => _announcer.AnnounceOrderItemsSettledAsync(A<IReadOnlyList<Guid>>._, A<IReadOnlyList<string>>._, A<CancellationToken>._)).Returns(true);
     _logger = A.Fake<ILogger<OrderItemSettlementService>>();
 
-    _service = new(_repository, new(_festivalRepository, new(), _clock), _announcer, new ImmediateAfterCommitActions(), _transactionRunner, _clock, _logger);
+    _service = new(_repository, new(_festivalRepository, new(), _clock), _announcer, new ImmediateAfterCommitActions(), _clock, _logger);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -44,7 +42,6 @@ public sealed class OrderItemSettlementServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private IOpenItemRepository _repository = null!;
   private OrderItemSettlementService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public void Settle_OnePricePerLine_StoresExactlyThePricesThePhoneSent()
@@ -346,7 +343,6 @@ public sealed class OrderItemSettlementServiceTest
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
                       Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(_transactionRunner.Committed, Is.Null);
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -366,7 +362,6 @@ public sealed class OrderItemSettlementServiceTest
                       Assert.That(settlement.Value.NewlySettled, Has.Count.EqualTo(1));
                       Assert.That(settlement.Value.SettledTableNames, Is.EqualTo(new[] { "Tisch 12" }));
                       Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -378,28 +373,9 @@ public sealed class OrderItemSettlementServiceTest
     var bratwurst = OpenItem(350);
     GivenTheTableHolds("Tisch 12", bratwurst);
 
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
-
-    Assert.That(settlement.Value.OtherDevicesWereTold, Is.True);
+    await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
 
     A.CallTo(() => _announcer.AnnounceOrderItemsSettledAsync(A<IReadOnlyList<Guid>>.That.IsSameSequenceAs(new[] { bratwurst.Id }), A<IReadOnlyList<string>>.That.IsSameSequenceAs(new[] { "Tisch 12" }), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-  }
-
-  [Test]
-  public async Task SettleAsync_TheOtherPhonesCannotBeTold_KeepsTheSettlementAndSaysOnlyTheNoticeFailed()
-  {
-    var bratwurst = OpenItem(350);
-    GivenTheTableHolds("Tisch 12", bratwurst);
-    A.CallTo(() => _announcer.AnnounceOrderItemsSettledAsync(A<IReadOnlyList<Guid>>._, A<IReadOnlyList<string>>._, A<CancellationToken>._)).Returns(false);
-
-    ErrorOr<SettlementResult> settlement = await _service.SettleAsync([Line(bratwurst, 350)], _collectingWaiter, CancellationToken.None);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(settlement.IsSuccess, Is.True);
-                      Assert.That(settlement.Value.OtherDevicesWereTold, Is.False);
-                      Assert.That(bratwurst.SettledAtUtc, Is.EqualTo(_now));
-                    });
   }
 
   [Test]
@@ -435,7 +411,6 @@ public sealed class OrderItemSettlementServiceTest
                     {
                       Assert.That(settlement.IsSuccess, Is.False);
                       Assert.That(settlement.RefusalMessageKey(), Is.EqualTo("order.settlementUnknownItem"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -468,26 +443,26 @@ public sealed class OrderItemSettlementServiceTest
   private void PutAtTable(string tableName, OrderItem item)
   {
     Order order = new()
-                  {
-                    Id = Guid.NewGuid(),
-                    ClientOrderId = Guid.NewGuid(),
-                    FestivalId = RunningFestival().Id,
-                    GlobalOrderNumber = 1,
-                    StaffMemberId = Guid.NewGuid(),
-                    TableName = tableName,
-                    CreatedAtUtc = _earlier
-                  };
+    {
+      Id = Guid.NewGuid(),
+      ClientOrderId = Guid.NewGuid(),
+      FestivalId = RunningFestival().Id,
+      GlobalOrderNumber = 1,
+      StaffMemberId = Guid.NewGuid(),
+      TableName = tableName,
+      CreatedAtUtc = _earlier
+    };
 
     StationOrder stationOrder = new()
-                                {
-                                  Id = item.StationOrderId,
-                                  OrderId = order.Id,
-                                  FestivalId = order.FestivalId,
-                                  StationId = Guid.NewGuid(),
-                                  StationOrderNumber = 1,
-                                  DeliveryMode = DeliveryMode.Together,
-                                  Order = order
-                                };
+    {
+      Id = item.StationOrderId,
+      OrderId = order.Id,
+      FestivalId = order.FestivalId,
+      StationId = Guid.NewGuid(),
+      StationOrderNumber = 1,
+      DeliveryMode = DeliveryMode.Together,
+      Order = order
+    };
 
     stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
@@ -497,34 +472,34 @@ public sealed class OrderItemSettlementServiceTest
   private Festival RunningFestival()
   {
     return new()
-           {
-             Id = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001"),
-             Name = "Sommerfest",
-             StartsAtUtc = _earlier,
-             EndsAtUtc = _now.AddHours(5),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001"),
+      Name = "Sommerfest",
+      StartsAtUtc = _earlier,
+      EndsAtUtc = _now.AddHours(5),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 
   private SettleLineRequest Line(OrderItem item, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
-           {
-             OrderItemId = item.Id,
-             PaidPriceCents = paidPriceCents,
-             PaymentNotice = paymentNotice
-           };
+    {
+      OrderItemId = item.Id,
+      PaidPriceCents = paidPriceCents,
+      PaymentNotice = paymentNotice
+    };
   }
 
   private SettleLineRequest Line(Guid orderItemId, int? paidPriceCents, string? paymentNotice = null)
   {
     return new()
-           {
-             OrderItemId = orderItemId,
-             PaidPriceCents = paidPriceCents,
-             PaymentNotice = paymentNotice
-           };
+    {
+      OrderItemId = orderItemId,
+      PaidPriceCents = paidPriceCents,
+      PaymentNotice = paymentNotice
+    };
   }
 
   private IReadOnlyCollection<OrderItem> AtOneTable(params OrderItem[] items)
@@ -543,12 +518,12 @@ public sealed class OrderItemSettlementServiceTest
   private OrderItem OpenItem(int unitPriceCents)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = "Artikel",
-             UnitPriceCents = unitPriceCents
-           };
+    {
+      Id = Guid.NewGuid(),
+      StationOrderId = Guid.NewGuid(),
+      CatalogItemId = Guid.NewGuid(),
+      ItemName = "Artikel",
+      UnitPriceCents = unitPriceCents
+    };
   }
 }

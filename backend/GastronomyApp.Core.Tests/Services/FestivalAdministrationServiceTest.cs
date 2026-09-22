@@ -16,7 +16,6 @@ public sealed class FestivalAdministrationServiceTest
   {
     _repository = A.Fake<IFestivalRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _repository.FindAllAsync(A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyCollection<Festival>>([]));
     A.CallTo(() => _repository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
@@ -24,7 +23,7 @@ public sealed class FestivalAdministrationServiceTest
 
     _announcer = A.Fake<IFestivalChangeAnnouncer>();
 
-    _service = new(_repository, new(), new(), _announcer, new ImmediateAfterCommitActions(), _transactionRunner, new(_repository, new(), _clock));
+    _service = new(_repository, new(), _announcer, new ImmediateAfterCommitActions(), new(_repository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -34,7 +33,6 @@ public sealed class FestivalAdministrationServiceTest
   private TimeProvider _clock = null!;
   private IFestivalRepository _repository = null!;
   private FestivalAdministrationService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task CreateAsync_APeriodNoOtherFestivalCovers_TellsTheDevices()
@@ -123,7 +121,6 @@ public sealed class FestivalAdministrationServiceTest
                     {
                       Assert.That(created.IsSuccess, Is.True);
                       Assert.That(created.Value.Name, Is.EqualTo("Sommerfest"));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.AddAsync(A<Festival>.That.Matches(festival => festival.Name == "Sommerfest"), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -165,7 +162,6 @@ public sealed class FestivalAdministrationServiceTest
                       Assert.That(hidden.IsSuccess, Is.False);
                       Assert.That(hidden.RefusalMessageKey(), Is.EqualTo("admin.actionFailed"));
                       Assert.That(hidden.RefusalDescription(), Does.Contain(_festivalId.ToString()));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -198,7 +194,6 @@ public sealed class FestivalAdministrationServiceTest
                       Assert.That(shown.IsSuccess, Is.True);
                       Assert.That(shown.Value, Is.SameAs(festival));
                       Assert.That(festival.IsHidden, Is.False);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
@@ -217,13 +212,13 @@ public sealed class FestivalAdministrationServiceTest
   private Festival BuildFestival(Guid festivalId, bool isHidden)
   {
     return new()
-           {
-             Id = festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-1),
-             EndsAtUtc = _now.AddHours(5),
-             NextOrderNumber = 1,
-             IsHidden = isHidden
-           };
+    {
+      Id = festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _now.AddHours(-1),
+      EndsAtUtc = _now.AddHours(5),
+      NextOrderNumber = 1,
+      IsHidden = isHidden
+    };
   }
 }

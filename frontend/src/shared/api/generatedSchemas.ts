@@ -176,7 +176,7 @@ export type SettleItemsRequest = __TypedOpenapi.Schemas.SettleItemsRequest;
 export const SettleItemsRequest = z.strictObject({ lines: z.array(SettleLineRequest).nullable() });
 
 export type SettlementView = __TypedOpenapi.Schemas.SettlementView;
-export const SettlementView = z.strictObject({ settledOrderItemIds: z.array(z.string()), reappliedOrderItemIds: z.array(z.string()), alreadySettledByOthersOrderItemIds: z.array(z.string()), otherPhonesWereTold: z.boolean() });
+export const SettlementView = z.strictObject({ settledOrderItemIds: z.array(z.string()), reappliedOrderItemIds: z.array(z.string()), alreadySettledByOthersOrderItemIds: z.array(z.string()) });
 
 export type StationEstimateView = __TypedOpenapi.Schemas.StationEstimateView;
 export const StationEstimateView = z.strictObject({ stationId: z.string(), queuedMinutes: z.number() });

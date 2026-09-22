@@ -33,7 +33,7 @@ public sealed class HostLauncher : IHostLauncher
 
     var configuredFolder = _dataFolderSetupFactory(options.DataDirectory);
 
-    if (!configuredFolder.Exists() || !configuredFolder.CurrentUserCanWrite())
+    if (!configuredFolder.CurrentUserCanWrite())
       return new HostLaunchResult.DataFolderNotWritable(options.DataDirectory);
 
     WebApplication? built = null;

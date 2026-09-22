@@ -130,7 +130,6 @@
     "amountPaidCancel": "Cancel",
     "listIncomplete": "Ask at the table what is still open. This list is missing {count} item, because the computer can no longer find the order it belongs to. | Ask at the table what is still open. This list is missing {count} items, because the computer can no longer find the orders they belong to.",
     "someWereAlreadySettled": "Somebody else had already settled {count} item in your selection. Give the guest {amount} back. | Somebody else had already settled {count} items in your selection. Give the guest {amount} back.",
-    "otherPhonesWereNotTold": "The items are settled.",
     "settleFailed": "Try again. Settling failed.",
     "settleAnswerNeverCame": "It is not clear whether the settlement arrived. Reload the list and check whether the items are still open."
   },

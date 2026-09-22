@@ -44,7 +44,6 @@ const SETTLED = {
   settledOrderItemIds: ['item-1'],
   reappliedOrderItemIds: [],
   alreadySettledByOthersOrderItemIds: [],
-  otherPhonesWereTold: true,
 }
 
 const TABLE_REPORT = {
@@ -260,7 +259,6 @@ describe('settling what the waiter ticked', () => {
         settledOrderItemIds: ['item-1'],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-2'],
-        otherPhonesWereTold: true,
       }),
       jsonOf(EMPTY_LIST),
     ])
@@ -274,24 +272,6 @@ describe('settling what the waiter ticked', () => {
       parameters: { count: 1, amount: '3,50 €' },
       count: 1,
     })
-  })
-
-  it('reports a settle the other phones were not told about as a settle, not as a failure', async () => {
-    const { openItems } = await storeWithTheOpenList([
-      jsonOf({
-        settledOrderItemIds: ['item-1'],
-        reappliedOrderItemIds: [],
-        alreadySettledByOthersOrderItemIds: [],
-        otherPhonesWereTold: false,
-      }),
-      jsonOf(EMPTY_LIST),
-    ])
-    openItems.toggleItem('item-1')
-
-    const outcome = await openItems.settle(350, null)
-
-    expect(outcome).toBe('accepted')
-    expect(openItems.notice?.key).toBe('openItems.otherPhonesWereNotTold')
   })
 
   it('shows the laptop wording when the laptop refuses, so no raw key reaches the phone', async () => {

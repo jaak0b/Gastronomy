@@ -1,5 +1,7 @@
+﻿using ErrorOr;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Tests.TestSupport;
 
 namespace GastronomyApp.Core.Tests.Entities;
 
@@ -7,40 +9,60 @@ namespace GastronomyApp.Core.Tests.Entities;
 public sealed class StationOrderTest
 {
   [Test]
-  public void IsInAsItComesColumn_AnAsItComesOrderNobodyHid_StandsInTheColumn()
+  public void HideFromAsItComesQueue_ATogetherStationOrder_IsRefusedAndLeavesTheFlagOff()
   {
-    Assert.That(StationOrderWith(DeliveryMode.AsItComes, false).IsInAsItComesColumn(), Is.True);
+    var stationOrder = BuildStationOrder(DeliveryMode.Together);
+
+    ErrorOr<StationOrder> outcome = stationOrder.HideFromAsItComesQueue();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(outcome.IsSuccess, Is.False);
+                      Assert.That(outcome.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.False);
+                    });
   }
 
   [Test]
-  public void IsInAsItComesColumn_AnAsItComesOrderTheEmployeeHid_StaysOutOfTheColumn()
+  public void HideFromAsItComesQueue_AnAsItComesStationOrder_SetsTheFlag()
   {
-    Assert.That(StationOrderWith(DeliveryMode.AsItComes, true).IsInAsItComesColumn(), Is.False);
+    var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
+
+    ErrorOr<StationOrder> outcome = stationOrder.HideFromAsItComesQueue();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(outcome.IsSuccess, Is.True);
+                      Assert.That(outcome.Value, Is.SameAs(stationOrder));
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
+                    });
   }
 
   [Test]
-  public void IsInAsItComesColumn_ATogetherOrder_StaysOutOfTheColumn()
+  public void HideFromAsItComesQueue_AnAlreadyHiddenStationOrder_IsAccepted()
   {
-    Assert.That(StationOrderWith(DeliveryMode.Together, false).IsInAsItComesColumn(), Is.False);
+    var stationOrder = BuildStationOrder(DeliveryMode.AsItComes);
+    stationOrder.IsHiddenFromAsItComesQueue = true;
+
+    ErrorOr<StationOrder> outcome = stationOrder.HideFromAsItComesQueue();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(outcome.IsSuccess, Is.True);
+                      Assert.That(stationOrder.IsHiddenFromAsItComesQueue, Is.True);
+                    });
   }
 
-  [Test]
-  public void IsInAsItComesColumn_ATogetherOrderMarkedHidden_StaysOutOfTheColumnAllTheSame()
-  {
-    Assert.That(StationOrderWith(DeliveryMode.Together, true).IsInAsItComesColumn(), Is.False);
-  }
-
-  private StationOrder StationOrderWith(DeliveryMode deliveryMode, bool isHidden)
+  private StationOrder BuildStationOrder(DeliveryMode deliveryMode)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             OrderId = Guid.NewGuid(),
-             FestivalId = Guid.NewGuid(),
-             StationId = Guid.NewGuid(),
-             StationOrderNumber = 1,
-             DeliveryMode = deliveryMode,
-             IsHiddenFromAsItComesQueue = isHidden
-           };
+    {
+      Id = Guid.NewGuid(),
+      OrderId = Guid.NewGuid(),
+      FestivalId = Guid.NewGuid(),
+      StationId = Guid.NewGuid(),
+      StationOrderNumber = 1,
+      DeliveryMode = deliveryMode
+    };
   }
 }

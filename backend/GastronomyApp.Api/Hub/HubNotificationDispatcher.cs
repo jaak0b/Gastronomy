@@ -79,7 +79,7 @@ public sealed class HubNotificationDispatcher : IStationOrdersAnnouncer, IOrderS
                          cancellationToken);
   }
 
-  public Task<bool> AnnounceOrderItemsSettledAsync(IReadOnlyList<Guid> settledOrderItemIds, IReadOnlyList<string> tableNames, CancellationToken cancellationToken)
+  public Task AnnounceOrderItemsSettledAsync(IReadOnlyList<Guid> settledOrderItemIds, IReadOnlyList<string> tableNames, CancellationToken cancellationToken)
   {
     return AnnounceAsync(Names.HubEvents.OrderItemsSettled,
                          new OrderItemsSettledEvent(settledOrderItemIds, tableNames),
@@ -111,7 +111,7 @@ public sealed class HubNotificationDispatcher : IStationOrdersAnnouncer, IOrderS
                                                                   cancellationToken);
   }
 
-  private Task<bool> AnnounceAsync(string eventName, object payload, IReadOnlyList<string> groups, CancellationToken cancellationToken)
+  private Task AnnounceAsync(string eventName, object payload, IReadOnlyList<string> groups, CancellationToken cancellationToken)
   {
     return _guard.TellTheDevicesWithoutFailingTheSavedChangeAsync(announcementCancellationToken => SendToGroupsAsync(eventName, payload, groups, announcementCancellationToken), cancellationToken);
   }

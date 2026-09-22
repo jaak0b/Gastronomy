@@ -13,4 +13,6 @@ public static class RefusalType
   public const int Gone = 410;
 
   public const int UnprocessableEntity = 422;
+
+  public const int ServiceUnavailable = 503;
 }

@@ -2,5 +2,5 @@
 
 public interface IAnnouncementGuard
 {
-  public Task<bool> TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices, CancellationToken cancellationToken);
+  public Task TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices, CancellationToken cancellationToken);
 }

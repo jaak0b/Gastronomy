@@ -1,8 +1,9 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace GastronomyApp.Core.Tests.Services;
@@ -22,7 +23,7 @@ public sealed class OpenItemsServiceTest
     A.CallTo(() => _repository.FindTableNamesAtFestivalAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<string>>([]));
     A.CallTo(() => _repository.FindTableOrdersAsync(A<Guid>._, A<string>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Order>>([]));
 
-    _service = new(_repository, new(_festivalRepository, new(), _clock));
+    _service = new(_repository, new(_festivalRepository, new(), _clock), NullLogger<OpenItemsService>.Instance);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -224,26 +225,26 @@ public sealed class OpenItemsServiceTest
     _ordersPlaced++;
 
     Order order = new()
-                  {
-                    Id = Guid.NewGuid(),
-                    ClientOrderId = Guid.NewGuid(),
-                    FestivalId = _festivalId,
-                    GlobalOrderNumber = _ordersPlaced,
-                    StaffMemberId = Guid.NewGuid(),
-                    TableName = tableName,
-                    CreatedAtUtc = _orderedAtUtc
-                  };
+    {
+      Id = Guid.NewGuid(),
+      ClientOrderId = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      GlobalOrderNumber = _ordersPlaced,
+      StaffMemberId = Guid.NewGuid(),
+      TableName = tableName,
+      CreatedAtUtc = _orderedAtUtc
+    };
 
     StationOrder stationOrder = new()
-                                {
-                                  Id = item.StationOrderId,
-                                  OrderId = order.Id,
-                                  FestivalId = _festivalId,
-                                  StationId = Guid.NewGuid(),
-                                  StationOrderNumber = _ordersPlaced,
-                                  DeliveryMode = DeliveryMode.Together,
-                                  Order = order
-                                };
+    {
+      Id = item.StationOrderId,
+      OrderId = order.Id,
+      FestivalId = _festivalId,
+      StationId = Guid.NewGuid(),
+      StationOrderNumber = _ordersPlaced,
+      DeliveryMode = DeliveryMode.Together,
+      Order = order
+    };
 
     stationOrder.Items.Add(item);
     order.StationOrders.Add(stationOrder);
@@ -266,25 +267,25 @@ public sealed class OpenItemsServiceTest
   private OrderItem OpenItem(string itemName, int unitPriceCents)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             StationOrderId = Guid.NewGuid(),
-             CatalogItemId = Guid.NewGuid(),
-             ItemName = itemName,
-             UnitPriceCents = unitPriceCents
-           };
+    {
+      Id = Guid.NewGuid(),
+      StationOrderId = Guid.NewGuid(),
+      CatalogItemId = Guid.NewGuid(),
+      ItemName = itemName,
+      UnitPriceCents = unitPriceCents
+    };
   }
 
   private Festival RunningFestival()
   {
     return new()
-           {
-             Id = _festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _orderedAtUtc,
-             EndsAtUtc = _now.AddHours(5),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = _festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _orderedAtUtc,
+      EndsAtUtc = _now.AddHours(5),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 }

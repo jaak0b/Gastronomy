@@ -12,15 +12,13 @@ public sealed class CatalogCategoryAdministrationService
   private readonly ICatalogChangeAnnouncer _announcer;
   private readonly CatalogCategoryOrdering _ordering;
   private readonly ICatalogCategoryRepository _repository;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner)
+  public CatalogCategoryAdministrationService(ICatalogCategoryRepository repository, CatalogCategoryOrdering ordering, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions)
   {
     _repository = repository;
     _ordering = ordering;
     _announcer = announcer;
     _afterCommitActions = afterCommitActions;
-    _transactionRunner = transactionRunner;
   }
 
   public Task<IReadOnlyList<CatalogCategory>> ListAsync(CancellationToken cancellationToken)
@@ -28,32 +26,7 @@ public sealed class CatalogCategoryAdministrationService
     return _repository.FindAllOrderedAsync(cancellationToken);
   }
 
-  public Task<ErrorOr<CatalogCategory>> CreateAsync(string? name, string? colourHex, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, colourHex, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogCategory>> UpdateAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(categoryId, name, colourHex, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => MovedAsync(categoryId, direction, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogCategory>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOnAsync(categoryId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<CatalogCategory>> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => SwitchedOffAsync(categoryId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  private async Task<ErrorOr<CatalogCategory>> CreatedAsync(string? name, string? colourHex, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogCategory>> CreateAsync(string? name, string? colourHex, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
 
@@ -61,21 +34,22 @@ public sealed class CatalogCategoryAdministrationService
       return Refusal.CatalogCategory.NameTaken(name!.Trim());
 
     CatalogCategory created = new()
-                              {
-                                Id = Guid.NewGuid(),
-                                Name = name!.Trim(),
-                                ColourHex = colourHex!,
-                                SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
-                                IsActive = true
-                              };
+    {
+      Id = Guid.NewGuid(),
+      Name = name!.Trim(),
+      ColourHex = colourHex!,
+      SortOrder = _ordering.NextSortOrder(categories.Select(category => category.SortOrder).ToList()),
+      IsActive = true
+    };
 
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return created;
   }
 
-  private async Task<ErrorOr<CatalogCategory>> UpdatedAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogCategory>> UpdateAsync(Guid categoryId, string? name, string? colourHex, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
     var category = categories.FirstOrDefault(candidate => candidate.Id == categoryId);
@@ -89,11 +63,12 @@ public sealed class CatalogCategoryAdministrationService
     category.Name = name!.Trim();
     category.ColourHex = colourHex!;
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }
 
-  private async Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MovedAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IReadOnlyList<CatalogCategory>>> MoveAsync(Guid categoryId, CategoryMoveDirection direction, CancellationToken cancellationToken)
   {
     IReadOnlyList<CatalogCategory> categories = await _repository.FindAllOrderedAsync(cancellationToken);
 
@@ -102,17 +77,18 @@ public sealed class CatalogCategoryAdministrationService
 
     IReadOnlyList<CatalogCategory> reordered = _ordering.Move(categories, categoryId, direction);
 
-    if (_ordering.IsNumberedInOrder(reordered))
-      return reordered.ToErrorOr();
+    if (!_ordering.IsNumberedInOrder(reordered))
+    {
+      _ordering.NumberInOrder(reordered);
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
 
-    _ordering.NumberInOrder(reordered);
-
-    await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return reordered.ToErrorOr();
   }
 
-  private async Task<ErrorOr<CatalogCategory>> SwitchedOnAsync(Guid categoryId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogCategory>> ActivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     var category = await _repository.FindByIdAsync(categoryId, cancellationToken);
 
@@ -121,11 +97,12 @@ public sealed class CatalogCategoryAdministrationService
 
     category.IsActive = true;
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }
 
-  private async Task<ErrorOr<CatalogCategory>> SwitchedOffAsync(Guid categoryId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<CatalogCategory>> DeactivateAsync(Guid categoryId, CancellationToken cancellationToken)
   {
     var category = await _repository.FindByIdAsync(categoryId, cancellationToken);
 
@@ -137,6 +114,7 @@ public sealed class CatalogCategoryAdministrationService
 
     category.IsActive = false;
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return category;
   }

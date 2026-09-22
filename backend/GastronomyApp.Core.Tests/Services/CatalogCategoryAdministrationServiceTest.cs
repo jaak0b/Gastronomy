@@ -15,7 +15,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
   public void SetUp()
   {
     _repository = A.Fake<ICatalogCategoryRepository>();
-    _transactionRunner = new();
     _food = BuildCategory(_foodCategoryId, "Speisen", 1, true);
     _drinks = BuildCategory(_drinkCategoryId, "Getraenke", 2, true);
 
@@ -30,7 +29,7 @@ public sealed class CatalogCategoryAdministrationServiceTest
 
     _catalogAnnouncer = A.Fake<ICatalogChangeAnnouncer>();
 
-    _service = new(_repository, new(), _catalogAnnouncer, new ImmediateAfterCommitActions(), _transactionRunner);
+    _service = new(_repository, new(), _catalogAnnouncer, new ImmediateAfterCommitActions());
   }
 
   private readonly Guid _drinkCategoryId = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
@@ -41,7 +40,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
   private ICatalogChangeAnnouncer _catalogAnnouncer = null!;
   private ICatalogCategoryRepository _repository = null!;
   private CatalogCategoryAdministrationService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task MoveAsync_DownFromTheFirstPosition_TellsTheDevicesTheCatalogChanged()
@@ -77,7 +75,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
                       Assert.That(created.IsSuccess, Is.True);
                       Assert.That(created.Value.Name, Is.EqualTo("Nachtisch"));
                       Assert.That(created.Value.SortOrder, Is.EqualTo(3));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.AddAsync(created.Value, A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -124,7 +121,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
                                                _foodCategoryId
                                              }));
                       Assert.That(_drinks.SortOrder, Is.EqualTo(1));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
@@ -139,7 +135,6 @@ public sealed class CatalogCategoryAdministrationServiceTest
                     {
                       Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.categoryHasActiveItems"));
                       Assert.That(_food.IsActive, Is.True);
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -152,19 +147,18 @@ public sealed class CatalogCategoryAdministrationServiceTest
                     {
                       Assert.That(switchedOff.IsSuccess, Is.True);
                       Assert.That(_food.IsActive, Is.False);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
   private CatalogCategory BuildCategory(Guid categoryId, string name, int sortOrder, bool isActive)
   {
     return new()
-           {
-             Id = categoryId,
-             Name = name,
-             ColourHex = "#C62828",
-             SortOrder = sortOrder,
-             IsActive = isActive
-           };
+    {
+      Id = categoryId,
+      Name = name,
+      ColourHex = "#C62828",
+      SortOrder = sortOrder,
+      IsActive = isActive
+    };
   }
 }

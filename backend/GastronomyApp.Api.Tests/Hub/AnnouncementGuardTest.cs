@@ -37,22 +37,6 @@ public sealed class AnnouncementGuardTest
   }
 
   [Test]
-  public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesWereTold_SaysSo()
-  {
-    var wereTold = await _guard.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => Task.CompletedTask, CancellationToken.None);
-
-    Assert.That(wereTold, Is.True);
-  }
-
-  [Test]
-  public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_SaysTheyWereNotTold()
-  {
-    var wereTold = await _guard.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke."), CancellationToken.None);
-
-    Assert.That(wereTold, Is.False);
-  }
-
-  [Test]
   public void TellTheDevicesWithoutFailingTheSavedChangeAsync_TheDevicesCannotBeTold_DoesNotFailTheSavedChange()
   {
     Assert.That(async () => await _guard.TellTheDevicesWithoutFailingTheSavedChangeAsync(_ => throw new InvalidOperationException("The connection to the station tablets broke."), CancellationToken.None), Throws.Nothing);

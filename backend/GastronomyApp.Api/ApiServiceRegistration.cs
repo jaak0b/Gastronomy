@@ -56,9 +56,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<AfterCommitActions>();
     services.AddScoped<IAfterCommitActions>(provider => provider.GetRequiredService<AfterCommitActions>());
 
-    services.AddScoped<ImmediateTransactionRunner>();
-    services.AddScoped<ITransactionRunner>(provider => provider.GetRequiredService<ImmediateTransactionRunner>());
-
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<IOpenItemRepository, OpenItemRepository>();
     services.AddScoped<IDeviceRepository, DeviceRepository>();
@@ -76,9 +73,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<FestivalSchedule>();
-    services.AddSingleton<FestivalMoment>();
     services.AddSingleton<OrderItemFulfillmentService>();
-    services.AddSingleton<StationOrderVisibilityService>();
 
     services.AddScoped<OrderItemResolutionService>();
     services.AddScoped<OrderItemSettlementService>();

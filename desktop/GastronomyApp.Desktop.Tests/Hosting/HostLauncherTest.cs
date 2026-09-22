@@ -1,4 +1,4 @@
-using FakeItEasy;
+﻿using FakeItEasy;
 using GastronomyApp.Desktop.Hosting;
 using GastronomyApp.Desktop.Values;
 using GastronomyApp.Api.Values;
@@ -41,11 +41,11 @@ public sealed class HostLauncherTest
   private ApiHostOptions ConfiguredOptions()
   {
     return new()
-           {
-             DataDirectory = ConfiguredFolder,
-             Port = 5000,
-             BindAddress = "0.0.0.0"
-           };
+    {
+      DataDirectory = ConfiguredFolder,
+      Port = 5000,
+      BindAddress = "0.0.0.0"
+    };
   }
 
   [Test]
@@ -75,16 +75,6 @@ public sealed class HostLauncherTest
                       Assert.That(result, Is.InstanceOf<HostLaunchResult.DataFolderNotWritable>());
                       Assert.That(((HostLaunchResult.DataFolderNotWritable)result).Path, Is.EqualTo(ConfiguredFolder));
                     });
-  }
-
-  [Test]
-  public async Task StartAsync_WhenTheFolderIsMissing_ReportsItAsNotWritable()
-  {
-    A.CallTo(() => _dataFolderSetup.Exists()).Returns(false);
-
-    var result = await CreateLauncher().StartAsync(ConfiguredOptions());
-
-    Assert.That(result, Is.InstanceOf<HostLaunchResult.DataFolderNotWritable>());
   }
 
   [Test]

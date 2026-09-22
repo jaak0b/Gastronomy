@@ -17,11 +17,10 @@ public sealed class StationQueueWriterTest
   {
     _repository = A.Fake<IStationOrderRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _repository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
-    _writer = new(_repository, new(), new(), _transactionRunner, _clock);
+    _writer = new(_repository, new(), _clock);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -30,7 +29,6 @@ public sealed class StationQueueWriterTest
 
   private TimeProvider _clock = null!;
   private IStationOrderRepository _repository = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
   private StationQueueWriter _writer = null!;
 
   [Test]
@@ -45,7 +43,6 @@ public sealed class StationQueueWriterTest
                     {
                       Assert.That(written.IsSuccess, Is.True);
                       Assert.That(bratwurst.FulfilledAtUtc, Is.EqualTo(_now));
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappened();
@@ -60,7 +57,6 @@ public sealed class StationQueueWriterTest
                     {
                       Assert.That(written.IsSuccess, Is.False);
                       Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.itemNotAtThisStation"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
 
     A.CallTo(() => _repository.SaveChangesAsync(A<CancellationToken>._)).MustNotHaveHappened();
@@ -85,7 +81,6 @@ public sealed class StationQueueWriterTest
                     {
                       Assert.That(written.IsSuccess, Is.True);
                       Assert.That(bratwurst.FulfilledAtUtc, Is.Null);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
   }
 
@@ -101,7 +96,6 @@ public sealed class StationQueueWriterTest
                     {
                       Assert.That(written.IsSuccess, Is.False);
                       Assert.That(written.RefusalMessageKey(), Is.EqualTo("station.changeNotSaved"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -175,14 +169,14 @@ public sealed class StationQueueWriterTest
     var stationOrder = StationOrderWith(DeliveryMode.Together);
 
     OrderItem item = new()
-                     {
-                       Id = Guid.NewGuid(),
-                       StationOrderId = stationOrder.Id,
-                       CatalogItemId = Guid.NewGuid(),
-                       ItemName = "Bratwurst",
-                       UnitPriceCents = 350,
-                       StationOrder = stationOrder
-                     };
+    {
+      Id = Guid.NewGuid(),
+      StationOrderId = stationOrder.Id,
+      CatalogItemId = Guid.NewGuid(),
+      ItemName = "Bratwurst",
+      UnitPriceCents = 350,
+      StationOrder = stationOrder
+    };
 
     stationOrder.Items.Add(item);
 
@@ -192,13 +186,13 @@ public sealed class StationQueueWriterTest
   private StationOrder StationOrderWith(DeliveryMode deliveryMode)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             OrderId = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             StationId = _stationId,
-             StationOrderNumber = 1,
-             DeliveryMode = deliveryMode
-           };
+    {
+      Id = Guid.NewGuid(),
+      OrderId = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      StationId = _stationId,
+      StationOrderNumber = 1,
+      DeliveryMode = deliveryMode
+    };
   }
 }

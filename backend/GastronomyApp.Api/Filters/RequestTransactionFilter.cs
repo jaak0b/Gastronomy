@@ -1,89 +1,91 @@
 ﻿using System.Data.Common;
-using ErrorOr;
 using System.Globalization;
-using GastronomyApp.Core.Exceptions;
-using GastronomyApp.Core.Ports;
+using ErrorOr;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
+using GastronomyApp.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace GastronomyApp.Infrastructure.Persistence;
+namespace GastronomyApp.Api.Filters;
 
-public sealed class ImmediateTransactionRunner : ITransactionRunner
+public sealed class RequestTransactionFilter : IEndpointFilter
 {
   private const int AttemptsBeforeGivingUp = 5;
 
-  private readonly AfterCommitActions _afterCommitActions;
-
-  private readonly GastronomyAppDbContext _dbContext;
   private readonly SqliteFailureTranslator _failureTranslator;
-  private readonly ILogger<ImmediateTransactionRunner> _logger;
+  private readonly ILogger<RequestTransactionFilter> _logger;
 
-  public ImmediateTransactionRunner(GastronomyAppDbContext dbContext, SqliteFailureTranslator failureTranslator, AfterCommitActions afterCommitActions, ILogger<ImmediateTransactionRunner> logger)
+  public RequestTransactionFilter(SqliteFailureTranslator failureTranslator, ILogger<RequestTransactionFilter> logger)
   {
-    _dbContext = dbContext;
     _failureTranslator = failureTranslator;
-    _afterCommitActions = afterCommitActions;
     _logger = logger;
   }
 
-  public async Task<ErrorOr<TValue>> RunAsync<TValue>(Func<CancellationToken, Task<ErrorOr<TValue>>> body, CancellationToken cancellationToken)
+  public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
   {
-    ArgumentNullException.ThrowIfNull(body);
+    ArgumentNullException.ThrowIfNull(context);
+    ArgumentNullException.ThrowIfNull(next);
 
+    if (!ChangesStoredData(context.HttpContext.Request.Method))
+      return await next(context);
+
+    var database = context.HttpContext.RequestServices.GetRequiredService<GastronomyAppDbContext>();
+    var afterCommitActions = context.HttpContext.RequestServices.GetRequiredService<AfterCommitActions>();
     DbUpdateConcurrencyException? lostRace = null;
 
     for (var attempt = 1; attempt <= AttemptsBeforeGivingUp; attempt++)
-    {
       try
       {
-        return await RunOnceAsync(body, cancellationToken);
+        return await RunOnceAsync(context, next, database, afterCommitActions);
       }
       catch (DbUpdateConcurrencyException exception)
       {
         lostRace = exception;
-        _dbContext.ChangeTracker.Clear();
+        database.ChangeTracker.Clear();
 
         if (attempt < AttemptsBeforeGivingUp)
-          _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to write inside an immediate transaction lost a row to another writer, so it is being tried again.", attempt, AttemptsBeforeGivingUp);
+          _logger.LogWarning("Attempt {Attempt} of {AttemptsBeforeGivingUp} to answer {RequestPath} inside an immediate transaction lost a row to another writer, so it is being tried again.", attempt, AttemptsBeforeGivingUp, context.HttpContext.Request.Path.Value);
       }
-    }
 
-    throw new ConcurrentWriteException("Another writer took the rows this transaction had read, and every attempt to write them lost that race.", lostRace!);
+    throw new InfrastructureException(InfrastructureFailureReason.ConflictingChange, "Another writer took the rows this request had read, and every attempt to write them lost that race.", lostRace!);
   }
 
-  private async Task<ErrorOr<TValue>> RunOnceAsync<TValue>(Func<CancellationToken, Task<ErrorOr<TValue>>> body, CancellationToken cancellationToken)
+  private async Task<object?> RunOnceAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next, GastronomyAppDbContext database, AfterCommitActions afterCommitActions)
   {
-    var previousBehavior = _dbContext.Database.AutoTransactionBehavior;
-    if (previousBehavior == AutoTransactionBehavior.Never)
-      throw new InvalidOperationException("This context is already inside an immediate transaction, and SQLite cannot nest one inside another.");
+    var cancellationToken = context.HttpContext.RequestAborted;
+    var previousBehavior = database.Database.AutoTransactionBehavior;
 
-    await _dbContext.Database.OpenConnectionAsync(cancellationToken);
-    var connection = _dbContext.Database.GetDbConnection();
+    if (previousBehavior == AutoTransactionBehavior.Never)
+      throw new InvalidOperationException("This request is already inside an immediate transaction, and SQLite cannot nest one inside another.");
+
+    await database.Database.OpenConnectionAsync(cancellationToken);
+    var connection = database.Database.GetDbConnection();
     var transactionIsOpen = false;
     IReadOnlyList<Func<CancellationToken, Task>> committedActions = [];
-    ErrorOr<TValue> outcome;
+    object? answer;
 
-    _afterCommitActions.StartCollecting();
+    afterCommitActions.StartCollecting();
 
     try
     {
-      _dbContext.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
+      database.Database.AutoTransactionBehavior = AutoTransactionBehavior.Never;
 
       await ExecuteAsync(connection, "BEGIN IMMEDIATE", ReadBusyTimeoutSeconds(connection), cancellationToken);
       transactionIsOpen = true;
 
-      outcome = await body(cancellationToken);
+      answer = await next(context);
 
-      var shouldCommit = !outcome.IsError;
+      var shouldCommit = IsSuccess(answer);
 
       await ExecuteAsync(connection, ClosingStatementFor(shouldCommit), null, cancellationToken);
       transactionIsOpen = false;
 
       if (shouldCommit)
-        committedActions = _afterCommitActions.TakeCollectedActions();
+        committedActions = afterCommitActions.TakeCollectedActions();
     }
     catch (SqliteException exception) when (_failureTranslator.IsDatabaseUnavailable(exception))
     {
@@ -99,18 +101,31 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     }
     finally
     {
-      _afterCommitActions.DiscardCollectedActions();
+      afterCommitActions.DiscardCollectedActions();
 
       if (transactionIsOpen)
         await RollbackAbandonedTransactionAsync(connection);
 
-      _dbContext.Database.AutoTransactionBehavior = previousBehavior;
-      await _dbContext.Database.CloseConnectionAsync();
+      database.Database.AutoTransactionBehavior = previousBehavior;
+      await database.Database.CloseConnectionAsync();
     }
 
     await RunCommittedActionsAsync(committedActions, cancellationToken);
 
-    return outcome;
+    return answer;
+  }
+
+  private bool ChangesStoredData(string method)
+  {
+    return HttpMethods.IsPost(method) || HttpMethods.IsPut(method) || HttpMethods.IsPatch(method) || HttpMethods.IsDelete(method);
+  }
+
+  private bool IsSuccess(object? answer)
+  {
+    if (answer is IErrorOr refusable)
+      return !refusable.IsError;
+
+    return true;
   }
 
   private async Task RunCommittedActionsAsync(IReadOnlyList<Func<CancellationToken, Task>> committedActions, CancellationToken cancellationToken)
@@ -134,7 +149,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
     }
     catch (SqliteException rollbackException)
     {
-      throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, "The transaction could not be rolled back after the operation failed.", rollbackException);
+      throw new InfrastructureException(InfrastructureFailureReason.DatabaseUnavailable, "The transaction could not be rolled back after the request failed.", rollbackException);
     }
   }
 
@@ -142,6 +157,7 @@ public sealed class ImmediateTransactionRunner : ITransactionRunner
   {
     await using var command = connection.CreateCommand();
     command.CommandText = statement;
+
     if (commandTimeoutSeconds is not null)
       command.CommandTimeout = commandTimeoutSeconds.Value;
 

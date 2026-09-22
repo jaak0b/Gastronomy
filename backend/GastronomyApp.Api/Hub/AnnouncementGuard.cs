@@ -14,27 +14,21 @@ public sealed class AnnouncementGuard : IAnnouncementGuard
     _logger = logger;
   }
 
-  public async Task<bool> TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices, CancellationToken cancellationToken)
+  public async Task TellTheDevicesWithoutFailingTheSavedChangeAsync(Func<CancellationToken, Task> tellTheDevices, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(tellTheDevices);
 
     try
     {
       await tellTheDevices(cancellationToken);
-
-      return true;
     }
     catch (OperationCanceledException) when (_applicationLifetime.ApplicationStopping.IsCancellationRequested)
     {
       _logger.LogInformation("The change was saved, but the program was quitting, so the phones and station tablets were not told about it and will load it the next time they connect.");
-
-      return false;
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, "The change was saved, but the phones and station tablets could not be told about it, so they keep showing what they loaded before until they load it again.");
-
-      return false;
     }
   }
 }

@@ -41,14 +41,12 @@ const OWN_SETTLEMENT_APPLIED_AGAIN = {
   settledOrderItemIds: [],
   reappliedOrderItemIds: ['item-1', 'item-2'],
   alreadySettledByOthersOrderItemIds: [],
-  otherPhonesWereTold: true,
 }
 
 const SOMEBODY_ELSE_HAD_ITEM_ONE = {
   settledOrderItemIds: ['item-2'],
   reappliedOrderItemIds: [],
   alreadySettledByOthersOrderItemIds: ['item-1'],
-  otherPhonesWereTold: true,
 }
 
 interface RecordedCall {

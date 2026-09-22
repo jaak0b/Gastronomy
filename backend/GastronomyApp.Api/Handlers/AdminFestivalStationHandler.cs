@@ -1,29 +1,26 @@
 ﻿using ErrorOr;
-using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Services;
-using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Handlers;
 
 public sealed class AdminFestivalStationHandler
 {
-  private readonly ResultEnvelope _resultEnvelope;
   private readonly FestivalStationService _service;
 
-  public AdminFestivalStationHandler(FestivalStationService service, ResultEnvelope resultEnvelope)
+  public AdminFestivalStationHandler(FestivalStationService service)
   {
     _service = service;
-    _resultEnvelope = resultEnvelope;
   }
 
-  public async Task<IResult> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
+  public async Task<ApiAnswer<SavedStationView>> AddAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _service.AddAsync(festivalId, stationId, cancellationToken).Match(link => Results.Ok(new SavedStationView(link.StationId)), _resultEnvelope.Refuse);
+    return await _service.AddAsync(festivalId, stationId, cancellationToken).Then(link => new SavedStationView(link.StationId));
   }
 
-  public async Task<IResult> RemoveAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
+  public async Task<NoContentAnswer> RemoveAsync(Guid festivalId, Guid stationId, CancellationToken cancellationToken)
   {
-    return await _service.RemoveAsync(festivalId, stationId, cancellationToken).Match(link => Results.NoContent(), _resultEnvelope.Refuse);
+    return await _service.RemoveAsync(festivalId, stationId, cancellationToken).Then(link => Result.Success);
   }
 }

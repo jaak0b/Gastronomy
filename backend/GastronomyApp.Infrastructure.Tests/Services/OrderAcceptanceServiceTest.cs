@@ -1,13 +1,9 @@
 ﻿using ErrorOr;
-using FakeItEasy;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Ports;
-using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Infrastructure.Tests.Services;
 
@@ -53,35 +49,6 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_TwoParallelSubmissionsSameClientOrderId_ProduceExactlyOneOrder()
-  {
-    using SqliteTempFileFixture fixture = new();
-    var seedContext = fixture.CreateContext();
-    var seeded = await new DomainSeeder().SeedAsync(seedContext, TestContext.CurrentContext.CancellationToken);
-    var clientOrderId = Guid.NewGuid();
-
-    OrderAcceptanceComposition composition = new();
-    var firstService = composition.Create(fixture.CreateContext());
-    var secondService = composition.Create(fixture.CreateContext());
-
-    Task<ErrorOr<Order>> firstCall = Task.Run(() => firstService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken));
-    Task<ErrorOr<Order>> secondCall = Task.Run(() => secondService.AcceptAsync(BuildRequest(seeded, clientOrderId), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken));
-
-    ErrorOr<Order>[] results = await Task.WhenAll(firstCall, secondCall);
-
-    var verificationContext = fixture.CreateContext();
-    var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(results[0].IsSuccess, Is.True);
-                      Assert.That(results[1].IsSuccess, Is.True);
-                      Assert.That(results[1].Value.Id, Is.EqualTo(results[0].Value.Id));
-                      Assert.That(orderCount, Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
   public async Task AcceptAsync_MultipleStations_AllocatesIndependentSequenceNumbers()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -100,73 +67,6 @@ public sealed class OrderAcceptanceServiceTest
                       Assert.That(barTicket.StationOrderNumber, Is.EqualTo(2));
                       Assert.That(second.Value.GlobalOrderNumber, Is.EqualTo(2));
                     });
-  }
-
-  [Test]
-  public async Task AcceptAsync_CounterMovedOnAfterThisContextReadIt_RetriesAndTakesTheNumberThatFollowsIt()
-  {
-    using SqliteTempFileFixture fixture = new();
-    var seedContext = fixture.CreateContext();
-    var seeded = await new DomainSeeder().SeedAsync(seedContext, TestContext.CurrentContext.CancellationToken);
-
-    var acceptanceContext = fixture.CreateContext();
-    await acceptanceContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-
-    var competingContext = fixture.CreateContext();
-    var competingFestival = await competingContext.Festivals.FirstAsync(candidate => candidate.Id == seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
-    competingFestival.NextOrderNumber = 5;
-    await competingContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
-
-    var acceptanceService = new OrderAcceptanceComposition().Create(acceptanceContext);
-
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.True);
-                      Assert.That(result.Value.GlobalOrderNumber, Is.EqualTo(5));
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_EveryAttemptLosesTheCounter_RefusesTheOrderAndWritesNothing()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    var alwaysContendedAllocator = A.Fake<INumberAllocator>();
-    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new DbUpdateConcurrencyException());
-
-    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator);
-
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    var orderCount = await fixture.DbContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.cannotBeProcessed"));
-                      Assert.That(orderCount, Is.EqualTo(0));
-                      A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).MustHaveHappened(5, Times.Exactly);
-                    });
-  }
-
-  [Test]
-  public async Task AcceptAsync_AnAttemptLosesTheCounter_WritesAWarningNamingTheAttempt()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-
-    var alwaysContendedAllocator = A.Fake<INumberAllocator>();
-    A.CallTo(() => alwaysContendedAllocator.AllocateGlobalOrderNumberAsync(A<Guid>._, A<CancellationToken>._)).ThrowsAsync(new DbUpdateConcurrencyException());
-
-    ILogger<ImmediateTransactionRunner> logger = A.Fake<ILogger<ImmediateTransactionRunner>>();
-    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext, alwaysContendedAllocator, logger);
-
-    await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid()), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    A.CallTo(logger).Where(call => call.Method.Name == nameof(ILogger.Log) && call.GetArgument<LogLevel>(0) == LogLevel.Warning).MustHaveHappened(4, Times.Exactly);
   }
 
   [Test]
@@ -216,30 +116,6 @@ public sealed class OrderAcceptanceServiceTest
   }
 
   [Test]
-  public async Task AcceptAsync_ASettlementBelowTheTotalWithoutANotice_RollsBackTheOrderAndItsNumbers()
-  {
-    using SqliteInMemoryFixture fixture = new();
-    var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
-    var acceptanceService = new OrderAcceptanceComposition().Create(fixture.DbContext);
-
-    ErrorOr<Order> result = await acceptanceService.AcceptAsync(BuildRequest(seeded, Guid.NewGuid(), new() { PaidPriceCents = 250 }, new() { PaidPriceCents = 250 }), seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken);
-
-    using var verificationContext = fixture.CreateContext();
-    var orderCount = await verificationContext.Orders.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var itemCount = await verificationContext.OrderItems.CountAsync(TestContext.CurrentContext.CancellationToken);
-    var nextOrderNumber = await verificationContext.Festivals.Select(festival => festival.NextOrderNumber).SingleAsync(TestContext.CurrentContext.CancellationToken);
-
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(result.IsSuccess, Is.False);
-                      Assert.That(result.RefusalMessageKey(), Is.EqualTo("order.settlementCannotBeProcessed"));
-                      Assert.That(orderCount, Is.Zero);
-                      Assert.That(itemCount, Is.Zero);
-                      Assert.That(nextOrderNumber, Is.EqualTo(1));
-                    });
-  }
-
-  [Test]
   public async Task AcceptAsync_ReplayingASettledClientOrderId_ReturnsTheStoredOrderWithoutWritingOrNumberingAnythingAgain()
   {
     using SqliteInMemoryFixture fixture = new();
@@ -273,10 +149,10 @@ public sealed class OrderAcceptanceServiceTest
   private PlaceOrderRequest BuildRequest(SeededDomain seeded, Guid clientOrderId, OrderSettlementLineRequest? sausageSettlement = null, OrderSettlementLineRequest? lemonadeSettlement = null)
   {
     return new()
-           {
-             ClientOrderId = clientOrderId,
-             TableName = "Tisch 12",
-             Items =
+    {
+      ClientOrderId = clientOrderId,
+      TableName = "Tisch 12",
+      Items =
              [
                new()
                {
@@ -293,6 +169,6 @@ public sealed class OrderAcceptanceServiceTest
                  Settlement = lemonadeSettlement
                }
              ]
-           };
+    };
   }
 }

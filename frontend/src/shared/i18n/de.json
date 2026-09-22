@@ -130,7 +130,6 @@
     "amountPaidCancel": "Abbrechen",
     "listIncomplete": "Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Position nicht, weil der Rechner die Bestellung dazu nicht mehr findet. | Fragen Sie am Tisch nach, was noch offen ist. Diese Liste zeigt {count} Positionen nicht, weil der Rechner die Bestellungen dazu nicht mehr findet.",
     "someWereAlreadySettled": "Jemand anderes hatte {count} Position aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück. | Jemand anderes hatte {count} Positionen aus Ihrer Auswahl schon abgerechnet. Geben Sie dem Gast {amount} zurück.",
-    "otherPhonesWereNotTold": "Die Positionen sind abgerechnet.",
     "settleFailed": "Versuchen Sie es noch einmal. Das Abrechnen ist fehlgeschlagen.",
     "settleAnswerNeverCame": "Es ist nicht klar, ob die Abrechnung angekommen ist. Laden Sie die Liste neu und schauen Sie nach, ob die Positionen noch offen sind."
   },

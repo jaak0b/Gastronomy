@@ -1,5 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using ErrorOr;
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Entities;
 
@@ -30,5 +32,15 @@ public sealed class StationOrder
   public bool IsInAsItComesColumn()
   {
     return DeliveryMode == DeliveryMode.AsItComes && !IsHiddenFromAsItComesQueue;
+  }
+
+  public ErrorOr<StationOrder> HideFromAsItComesQueue()
+  {
+    if (DeliveryMode != DeliveryMode.AsItComes)
+      return Refusal.StationQueue.NotAnAsItComesOrder(Id);
+
+    IsHiddenFromAsItComesQueue = true;
+
+    return this;
   }
 }

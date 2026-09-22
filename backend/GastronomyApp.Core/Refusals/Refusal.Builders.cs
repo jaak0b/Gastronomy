@@ -63,4 +63,9 @@ public static partial class Refusal
   {
     return Error.Custom(RefusalType.UnprocessableEntity, messageKey, reason, metadata);
   }
+
+  private static Error ServiceUnavailable(string messageKey, string reason, Dictionary<string, object> metadata)
+  {
+    return Error.Custom(RefusalType.ServiceUnavailable, messageKey, reason, metadata);
+  }
 }

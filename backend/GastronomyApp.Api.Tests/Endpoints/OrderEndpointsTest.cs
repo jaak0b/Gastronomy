@@ -1,4 +1,5 @@
-using System.Net;
+﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Entities;
@@ -174,12 +175,12 @@ public sealed class OrderEndpointsTest
     await using (var seeding = _context.Factory.CreateContext())
     {
       seeding.ItemStationAssignments.Add(new()
-                                         {
-                                           Id = Guid.NewGuid(),
-                                           FestivalId = _context.World.FestivalId,
-                                           CatalogItemId = _context.World.BratwurstItemId,
-                                           StationId = _context.World.BarStationId
-                                         });
+      {
+        Id = Guid.NewGuid(),
+        FestivalId = _context.World.FestivalId,
+        CatalogItemId = _context.World.BratwurstItemId,
+        StationId = _context.World.BarStationId
+      });
       var kitchen = await seeding.Stations.FirstAsync(station => station.Id == _context.World.KitchenStationId);
       kitchen.IsActive = false;
       await seeding.SaveChangesAsync();
@@ -301,6 +302,26 @@ public sealed class OrderEndpointsTest
                       Assert.That(settledLine.SettledByStaffMemberId, Is.EqualTo(_context.World.StaffMemberId));
                       Assert.That(openLine.ChargedPriceCents, Is.Null);
                       Assert.That(openLine.SettledByStaffMemberId, Is.Null);
+                    });
+  }
+
+  [TestCase("/api/orders")]
+  [TestCase("/api/open-items/settle")]
+  public async Task PostWithoutARequestBody_IsRefusedBeforeTheHandlerRuns(string route)
+  {
+    using HttpRequestMessage request = new(HttpMethod.Post, route);
+    request.Headers.Authorization = new("Bearer", _context.DeviceToken);
+    request.Content = new StringContent(string.Empty, Encoding.UTF8, "application/json");
+
+    using var response = await _context.Client.SendAsync(request);
+
+    await using var database = _context.Factory.CreateContext();
+    var orderCount = await database.Orders.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(orderCount, Is.EqualTo(0));
                     });
   }
 }

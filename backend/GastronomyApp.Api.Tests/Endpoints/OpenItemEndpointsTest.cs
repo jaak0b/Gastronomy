@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 using GastronomyApp.Core.Entities;
@@ -224,7 +224,6 @@ public sealed class OpenItemEndpointsTest
                       Assert.That(body.RootElement.GetProperty("settledOrderItemIds").GetArrayLength(), Is.EqualTo(2));
                       Assert.That(body.RootElement.GetProperty("reappliedOrderItemIds").GetArrayLength(), Is.Zero);
                       Assert.That(body.RootElement.GetProperty("alreadySettledByOthersOrderItemIds").GetArrayLength(), Is.Zero);
-                      Assert.That(body.RootElement.GetProperty("otherPhonesWereTold").GetBoolean(), Is.True);
                       Assert.That(open.RootElement.GetProperty("tables").GetArrayLength(), Is.Zero);
                       Assert.That(stored.Select(item => item.ChargedPriceCents), Is.All.EqualTo(350));
                       Assert.That(stored.Select(item => item.PaymentNotice), Is.All.Null);
@@ -553,13 +552,13 @@ public sealed class OpenItemEndpointsTest
     await database.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
 
     database.OrderItems.Add(new()
-                            {
-                              Id = Guid.NewGuid(),
-                              StationOrderId = Guid.NewGuid(),
-                              CatalogItemId = _context.World.BratwurstItemId,
-                              ItemName = "Bratwurst mit Brot",
-                              UnitPriceCents = 350
-                            });
+    {
+      Id = Guid.NewGuid(),
+      StationOrderId = Guid.NewGuid(),
+      CatalogItemId = _context.World.BratwurstItemId,
+      ItemName = "Bratwurst mit Brot",
+      UnitPriceCents = 350
+    });
 
     await database.SaveChangesAsync();
     await database.Database.CloseConnectionAsync();

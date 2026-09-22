@@ -1,8 +1,8 @@
+﻿using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Handlers;
 
@@ -17,10 +17,10 @@ public sealed class StationEstimateHandler
     _mapper = mapper;
   }
 
-  public async Task<IResult> ListAsync(CancellationToken cancellationToken)
+  public async Task<ApiAnswer<StationEstimateListView>> ListAsync(CancellationToken cancellationToken)
   {
     IReadOnlyList<Station> stations = await _estimateService.ReadStationsWithOpenWorkAsync(cancellationToken);
 
-    return Results.Ok(new StationEstimateListView(_mapper.Map<IReadOnlyList<StationEstimateView>>(stations)));
+    return new StationEstimateListView(_mapper.Map<IReadOnlyList<StationEstimateView>>(stations));
   }
 }

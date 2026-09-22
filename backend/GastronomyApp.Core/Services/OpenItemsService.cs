@@ -1,17 +1,20 @@
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Core.Services;
 
 public sealed class OpenItemsService
 {
+  private readonly ILogger<OpenItemsService> _logger;
   private readonly IOpenItemRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
 
-  public OpenItemsService(IOpenItemRepository repository, RunningFestivalLookup runningFestival)
+  public OpenItemsService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ILogger<OpenItemsService> logger)
   {
     _repository = repository;
     _runningFestival = runningFestival;
+    _logger = logger;
   }
 
   public async Task<IReadOnlyList<OrderItem>> ReadOpenItemsAsync(CancellationToken cancellationToken)
@@ -35,7 +38,12 @@ public sealed class OpenItemsService
   {
     ArgumentNullException.ThrowIfNull(openItems);
 
-    return openItems.Where(item => OrderOf(item) is null).Select(item => item.Id).Distinct().ToList();
+    List<Guid> itemIdsWithoutAnOrder = openItems.Where(item => OrderOf(item) is null).Select(item => item.Id).Distinct().ToList();
+
+    if (itemIdsWithoutAnOrder.Count > 0)
+      _logger.LogError("{ItemCount} order items cannot be traced back to an order and are therefore missing from the open items list. Order item ids: {OrderItemIds}.", itemIdsWithoutAnOrder.Count, itemIdsWithoutAnOrder);
+
+    return itemIdsWithoutAnOrder;
   }
 
   public async Task<IReadOnlyList<string>> ReadTableNamesAsync(CancellationToken cancellationToken)

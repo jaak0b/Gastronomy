@@ -1,4 +1,4 @@
-namespace GastronomyApp.Contracts.Validation;
+﻿namespace GastronomyApp.Contracts.Validation;
 
 public static class RefusalMessageKeys
 {
@@ -19,6 +19,10 @@ public static class RefusalMessageKeys
   public const string EnrolmentCodeMissing = "enrolment.codeMissing";
 
   public const string OrderCannotBeProcessed = "order.cannotBeProcessed";
+
+  public const string ReviewConflictingChange = "review.conflictingChange";
+
+  public const string ReviewSendFailedDatabase = "review.sendFailedDatabase";
 
   public const string SettlementCannotBeProcessed = "order.settlementCannotBeProcessed";
 

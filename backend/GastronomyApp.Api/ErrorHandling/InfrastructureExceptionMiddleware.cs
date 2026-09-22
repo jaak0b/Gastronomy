@@ -1,3 +1,4 @@
+﻿using GastronomyApp.Core.Refusals;
 using GastronomyApp.Infrastructure.Enums;
 using GastronomyApp.Infrastructure.ErrorHandling;
 using Microsoft.AspNetCore.Http;
@@ -21,15 +22,11 @@ public sealed class InfrastructureExceptionMiddleware : IMiddleware
     }
     catch (InfrastructureException exception) when (exception.Reason == InfrastructureFailureReason.DatabaseUnavailable)
     {
-      var problem = _resultEnvelope.Problem(StatusCodes.Status503ServiceUnavailable, "DatabaseUnavailable", "review.sendFailedDatabase");
-
-      await problem.ExecuteAsync(context);
+      await _resultEnvelope.Refuse([Refusal.Storage.DatabaseUnavailable()]).ExecuteAsync(context);
     }
     catch (InfrastructureException exception) when (exception.Reason == InfrastructureFailureReason.ConflictingChange)
     {
-      var problem = _resultEnvelope.Problem(StatusCodes.Status409Conflict, "ConflictingChange", "review.conflictingChange");
-
-      await problem.ExecuteAsync(context);
+      await _resultEnvelope.Refuse([Refusal.Storage.ConflictingChange()]).ExecuteAsync(context);
     }
   }
 }

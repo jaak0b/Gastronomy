@@ -1,49 +1,43 @@
+﻿using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Handlers;
 
 public sealed class OpenItemQueryHandler
 {
-  private readonly ILogger<OpenItemQueryHandler> _logger;
   private readonly IMapper _mapper;
   private readonly OpenItemsService _service;
   private readonly OrderItemSettlementService _settlementService;
 
-  public OpenItemQueryHandler(OpenItemsService service, OrderItemSettlementService settlementService, ILogger<OpenItemQueryHandler> logger, IMapper mapper)
+  public OpenItemQueryHandler(OpenItemsService service, OrderItemSettlementService settlementService, IMapper mapper)
   {
     _service = service;
     _settlementService = settlementService;
-    _logger = logger;
     _mapper = mapper;
   }
 
-  public async Task<IResult> ListAsync(CancellationToken cancellationToken)
+  public async Task<ApiAnswer<OpenItemsView>> ListAsync(CancellationToken cancellationToken)
   {
     IReadOnlyList<OrderItem> openItems = await _service.ReadOpenItemsAsync(cancellationToken);
 
     IReadOnlyList<Guid> orderItemIdsWithoutAnOrder = _service.ItemIdsWithoutAnOrder(openItems);
 
-    if (orderItemIdsWithoutAnOrder.Count > 0)
-      _logger.LogError("{ItemCount} order items cannot be traced back to an order and are therefore missing from the open items list. Order item ids: {OrderItemIds}.", orderItemIdsWithoutAnOrder.Count, orderItemIdsWithoutAnOrder);
-
     List<OpenTableView> tables = _service.GroupItemsWithAKnownOrderByTableName(openItems).Select(ToOpenTableView).ToList();
 
-    return Results.Ok(new OpenItemsView(tables, orderItemIdsWithoutAnOrder.Count));
+    return new OpenItemsView(tables, orderItemIdsWithoutAnOrder.Count);
   }
 
-  public async Task<IResult> ListTableNamesAsync(CancellationToken cancellationToken)
+  public async Task<ApiAnswer<TableNamesView>> ListTableNamesAsync(CancellationToken cancellationToken)
   {
     IReadOnlyList<string> tableNames = await _service.ReadTableNamesAsync(cancellationToken);
 
-    return Results.Ok(new TableNamesView(tableNames));
+    return new TableNamesView(tableNames);
   }
 
-  public async Task<IResult> ReadTableAsync(string? tableName, CancellationToken cancellationToken)
+  public async Task<ApiAnswer<TableOrderReportView>> ReadTableAsync(string? tableName, CancellationToken cancellationToken)
   {
     var readTableName = tableName ?? string.Empty;
 
@@ -51,7 +45,7 @@ public sealed class OpenItemQueryHandler
 
     List<OrderItem> positions = orders.SelectMany(order => order.StationOrders).SelectMany(stationOrder => stationOrder.Items).ToList();
 
-    return Results.Ok(new TableOrderReportView(readTableName, _settlementService.SumOpenAmountCents(positions), _mapper.Map<IReadOnlyList<TableOrderRecordView>>(orders)));
+    return new TableOrderReportView(readTableName, _settlementService.SumOpenAmountCents(positions), _mapper.Map<IReadOnlyList<TableOrderRecordView>>(orders));
   }
 
   private OpenTableView ToOpenTableView(IGrouping<string, OrderItem> table)

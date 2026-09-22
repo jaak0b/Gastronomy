@@ -3,7 +3,6 @@ using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Exceptions;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
 
@@ -20,7 +19,6 @@ public sealed class OrderAcceptanceService
   private readonly IOrderRepository _orderRepository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly OrderItemSettlementService _settlementService;
-  private readonly ITransactionRunner _transactionRunner;
 
   public OrderAcceptanceService(IOrderRepository orderRepository,
                                 RunningFestivalLookup runningFestival,
@@ -29,7 +27,6 @@ public sealed class OrderAcceptanceService
                                 OrderItemSettlementService settlementService,
                                 IStationOrdersAnnouncer announcer,
                                 IAfterCommitActions afterCommitActions,
-                                ITransactionRunner transactionRunner,
                                 TimeProvider timeProvider)
   {
     _orderRepository = orderRepository;
@@ -39,7 +36,6 @@ public sealed class OrderAcceptanceService
     _settlementService = settlementService;
     _announcer = announcer;
     _afterCommitActions = afterCommitActions;
-    _transactionRunner = transactionRunner;
     _timeProvider = timeProvider;
   }
 
@@ -47,18 +43,6 @@ public sealed class OrderAcceptanceService
   {
     ArgumentNullException.ThrowIfNull(request);
 
-    try
-    {
-      return await _transactionRunner.RunAsync(transactionCancellationToken => AcceptInsideTransactionAsync(request, staffMemberId, transactionCancellationToken), cancellationToken);
-    }
-    catch (ConcurrentWriteException)
-    {
-      return Refusal.Order.OrderNumberCouldNotBeAllocated();
-    }
-  }
-
-  private async Task<ErrorOr<Order>> AcceptInsideTransactionAsync(PlaceOrderRequest request, Guid staffMemberId, CancellationToken cancellationToken)
-  {
     var existingOrder = await _orderRepository.FindByClientOrderIdAsync(request.ClientOrderId, cancellationToken);
     if (existingOrder is not null)
       return await AcceptedOrderAsync(existingOrder.Id, cancellationToken);
@@ -109,11 +93,11 @@ public sealed class OrderAcceptanceService
         continue;
 
       lines.Add(new()
-                {
-                  OrderItemId = routedItems[index].Id,
-                  PaidPriceCents = settlement.PaidPriceCents,
-                  PaymentNotice = settlement.PaymentNotice
-                });
+      {
+        OrderItemId = routedItems[index].Id,
+        PaidPriceCents = settlement.PaidPriceCents,
+        PaymentNotice = settlement.PaymentNotice
+      });
     }
 
     if (lines.Count == 0)
@@ -128,15 +112,15 @@ public sealed class OrderAcceptanceService
     var globalOrderNumber = await _numberAllocator.AllocateGlobalOrderNumberAsync(festivalId, cancellationToken);
 
     Order order = new()
-                  {
-                    Id = Guid.NewGuid(),
-                    ClientOrderId = request.ClientOrderId,
-                    FestivalId = festivalId,
-                    GlobalOrderNumber = globalOrderNumber,
-                    StaffMemberId = staffMemberId,
-                    TableName = request.TableName ?? string.Empty,
-                    CreatedAtUtc = createdAtUtc
-                  };
+    {
+      Id = Guid.NewGuid(),
+      ClientOrderId = request.ClientOrderId,
+      FestivalId = festivalId,
+      GlobalOrderNumber = globalOrderNumber,
+      StaffMemberId = staffMemberId,
+      TableName = request.TableName ?? string.Empty,
+      CreatedAtUtc = createdAtUtc
+    };
 
     Dictionary<Guid, DeliveryMode> deliveryModesByStationId = (request.DeliveryModes ?? []).GroupBy(mode => mode.StationId).ToDictionary(group => group.Key, group => group.Last().DeliveryMode);
 

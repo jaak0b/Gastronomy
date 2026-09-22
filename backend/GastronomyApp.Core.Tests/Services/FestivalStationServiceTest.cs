@@ -20,7 +20,6 @@ public sealed class FestivalStationServiceTest
     _orderabilityRepository = A.Fake<IItemOrderabilityRepository>();
     _numberAllocator = A.Fake<INumberAllocator>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(BuildFestival(false)));
@@ -33,7 +32,7 @@ public sealed class FestivalStationServiceTest
     A.CallTo(() => _orderabilityRepository.FindItemIdsPreparedByAsync(A<Guid>._, A<IReadOnlyCollection<Guid>>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
     A.CallTo(() => _orderabilityRepository.FindActiveMenuItemIdsAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<Guid>>([]));
 
-    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, A.Fake<IStationsChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock), _transactionRunner);
+    _service = new(_repository, _festivalRepository, _stationRepository, new(_orderabilityRepository, _festivalRepository, _clock), _numberAllocator, A.Fake<IStationsChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -48,7 +47,6 @@ public sealed class FestivalStationServiceTest
   private IFestivalStationRepository _repository = null!;
   private FestivalStationService _service = null!;
   private IStationRepository _stationRepository = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task AddAsync_AStationThatIsNotThere_FailsBecauseTheStationIsNotFound()
@@ -88,7 +86,6 @@ public sealed class FestivalStationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(added.IsSuccess, Is.True);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _repository.AddLinkAsync(A<FestivalStation>.That.Matches(link => link.NextStationOrderNumber == 7), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -118,7 +115,6 @@ public sealed class FestivalStationServiceTest
                     {
                       Assert.That(removed.IsSuccess, Is.False);
                       Assert.That(removed.RefusalMessageKey(), Is.EqualTo("admin.stationHasOrdersAtTheFestival"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -157,25 +153,25 @@ public sealed class FestivalStationServiceTest
   private FestivalStation BuildLink()
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             FestivalId = _festivalId,
-             StationId = _kitchenId,
-             NextStationOrderNumber = 1
-           };
+    {
+      Id = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      StationId = _kitchenId,
+      NextStationOrderNumber = 1
+    };
   }
 
   private Festival BuildFestival(bool hasEnded)
   {
     return new()
-           {
-             Id = _festivalId,
-             Name = "Sommerfest",
-             StartsAtUtc = _now.AddHours(-5),
-             EndsAtUtc = EndOfTheFestival(hasEnded),
-             NextOrderNumber = 1,
-             IsHidden = false
-           };
+    {
+      Id = _festivalId,
+      Name = "Sommerfest",
+      StartsAtUtc = _now.AddHours(-5),
+      EndsAtUtc = EndOfTheFestival(hasEnded),
+      NextOrderNumber = 1,
+      IsHidden = false
+    };
   }
 
   private DateTime EndOfTheFestival(bool hasEnded)

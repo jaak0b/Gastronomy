@@ -1,11 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Api.Handlers;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts;
 using GastronomyApp.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -71,29 +68,27 @@ public sealed class AdminCatalogConcurrencyTest
     using var scope = _context.Factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<GastronomyAppDbContext>();
     dbContext.CatalogCategories.Add(new()
-                                    {
-                                      Id = Guid.NewGuid(),
-                                      Name = ColdDrinksName,
-                                      ColourHex = "#1565C0",
-                                      SortOrder = 9,
-                                      IsActive = true
-                                    });
+    {
+      Id = Guid.NewGuid(),
+      Name = ColdDrinksName,
+      ColourHex = "#1565C0",
+      SortOrder = 9,
+      IsActive = true
+    });
     await dbContext.SaveChangesAsync(TestContext.CurrentContext.CancellationToken);
 
-    var result = await scope.ServiceProvider.GetRequiredService<AdminCategoryHandler>()
-                .CreateAsync(new()
-                             {
-                               Name = ColdDrinksNameWithTheUmlautInCapitals,
-                               ColourHex = "#1565C0"
-                             },
-                             CancellationToken.None);
-
-    JsonHttpResult<ApiError> refusal = (JsonHttpResult<ApiError>)result;
+    using var response = await _context.Client.PostAsJsonAsync("/api/admin/categories",
+                                                              new
+                                                              {
+                                                                name = ColdDrinksNameWithTheUmlautInCapitals,
+                                                                colourHex = "#1565C0"
+                                                              });
+    var messageKey = await ReadMessageKeyAsync(response);
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(refusal.StatusCode, Is.EqualTo((int)HttpStatusCode.Conflict));
-                      Assert.That(refusal.Value!.MessageKey, Is.EqualTo("admin.categoryNameTaken"));
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
+                      Assert.That(messageKey, Is.EqualTo("admin.categoryNameTaken"));
                     });
   }
 

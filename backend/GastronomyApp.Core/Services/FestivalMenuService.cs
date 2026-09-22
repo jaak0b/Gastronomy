@@ -13,9 +13,8 @@ public sealed class FestivalMenuService
   private readonly ItemOrderability _orderability;
   private readonly IFestivalMenuRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival, ITransactionRunner transactionRunner)
+  public FestivalMenuService(IFestivalMenuRepository repository, IFestivalRepository festivalRepository, ItemOrderability orderability, ICatalogChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
     _announcer = announcer;
@@ -23,27 +22,9 @@ public sealed class FestivalMenuService
     _festivalRepository = festivalRepository;
     _orderability = orderability;
     _runningFestival = runningFestival;
-    _transactionRunner = transactionRunner;
   }
 
-  public Task<ErrorOr<FestivalCatalogItem>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIds, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => PutOnAsync(festivalId, catalogItemId, priceCents, stationIds, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  public Task<ErrorOr<FestivalCatalogItem>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => TakenOffAsync(festivalId, catalogItemId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<FestivalCatalogItem>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => AvailabilitySetAsync(festivalId, catalogItemId, isAvailable, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  private async Task<ErrorOr<FestivalCatalogItem>> PutOnAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
+  public async Task<ErrorOr<FestivalCatalogItem>> PutOnTheMenuAsync(Guid festivalId, Guid catalogItemId, int priceCents, IReadOnlyList<Guid>? stationIdsRequested, CancellationToken cancellationToken)
   {
     if (!await _festivalRepository.ExistsAsync(festivalId, cancellationToken))
       return Refusal.FestivalMenu.FestivalNotFound(festivalId);
@@ -68,13 +49,13 @@ public sealed class FestivalMenuService
     if (menuRow is null)
     {
       menuRow = new()
-                {
-                  Id = Guid.NewGuid(),
-                  FestivalId = festivalId,
-                  CatalogItemId = catalogItemId,
-                  PriceCents = priceCents,
-                  IsAvailable = true
-                };
+      {
+        Id = Guid.NewGuid(),
+        FestivalId = festivalId,
+        CatalogItemId = catalogItemId,
+        PriceCents = priceCents,
+        IsAvailable = true
+      };
 
       await _repository.AddMenuRowAsync(menuRow, cancellationToken);
     }
@@ -87,20 +68,21 @@ public sealed class FestivalMenuService
 
     foreach (var stationId in stationIds.Distinct())
       await _repository.AddAssignmentAsync(new()
-                                           {
-                                             Id = Guid.NewGuid(),
-                                             FestivalId = festivalId,
-                                             CatalogItemId = catalogItemId,
-                                             StationId = stationId
-                                           },
+      {
+        Id = Guid.NewGuid(),
+        FestivalId = festivalId,
+        CatalogItemId = catalogItemId,
+        StationId = stationId
+      },
                                            cancellationToken);
 
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }
 
-  private async Task<ErrorOr<FestivalCatalogItem>> TakenOffAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<FestivalCatalogItem>> TakeOffTheMenuAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken)
   {
     var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
@@ -121,22 +103,25 @@ public sealed class FestivalMenuService
     _repository.RemoveMenuRow(menuRow);
 
     await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }
 
-  private async Task<ErrorOr<FestivalCatalogItem>> AvailabilitySetAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
+  public async Task<ErrorOr<FestivalCatalogItem>> SetAvailabilityAsync(Guid festivalId, Guid catalogItemId, bool isAvailable, CancellationToken cancellationToken)
   {
     var menuRow = await _repository.FindMenuRowAsync(festivalId, catalogItemId, cancellationToken);
 
     if (menuRow is null)
       return Refusal.FestivalMenu.MenuRowNotFound(festivalId, catalogItemId);
 
-    if (menuRow.IsAvailable == isAvailable)
-      return menuRow;
+    if (menuRow.IsAvailable != isAvailable)
+    {
+      menuRow.IsAvailable = isAvailable;
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
 
-    menuRow.IsAvailable = isAvailable;
-    await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceCatalogChangedAsync, cancellationToken);
 
     return menuRow;
   }

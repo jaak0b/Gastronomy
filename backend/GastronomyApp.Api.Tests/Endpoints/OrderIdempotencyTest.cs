@@ -56,6 +56,32 @@ public sealed class OrderIdempotencyTest
   }
 
   [Test]
+  public async Task PostOrder_TheSameSubmissionSentTwiceAtTheSameMoment_StoresExactlyOneOrder()
+  {
+    var body = _context.BuildOrder(Guid.NewGuid());
+
+    Task<HttpResponseMessage> first = _context.PostOrderAsync(body);
+    Task<HttpResponseMessage> second = _context.PostOrderAsync(body);
+
+    HttpResponseMessage[] responses = await Task.WhenAll(first, second);
+    List<HttpStatusCode> statuses = responses.Select(response => response.StatusCode).ToList();
+
+    foreach (var response in responses)
+      response.Dispose();
+
+    await using var database = _context.Factory.CreateContext();
+    var orderCount = await database.Orders.CountAsync();
+    var itemCount = await database.OrderItems.CountAsync();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(statuses, Is.All.EqualTo(HttpStatusCode.Created));
+                      Assert.That(orderCount, Is.EqualTo(1));
+                      Assert.That(itemCount, Is.EqualTo(2));
+                    });
+  }
+
+  [Test]
   public async Task PostOrder_SameSubmissionIdDifferentContent_ReturnsTheOrderTheLaptopAlreadyHolds()
   {
     var clientOrderId = Guid.NewGuid();

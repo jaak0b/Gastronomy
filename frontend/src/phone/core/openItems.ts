@@ -185,8 +185,5 @@ export function noticeAfterSettling(
       count: takenBySomebodyElse.length,
     }
   }
-  if (!settlement.otherPhonesWereTold) {
-    return { key: 'openItems.otherPhonesWereNotTold', parameters: {}, count: null }
-  }
   return null
 }

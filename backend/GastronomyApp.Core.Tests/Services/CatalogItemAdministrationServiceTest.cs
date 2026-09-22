@@ -18,7 +18,6 @@ public sealed class CatalogItemAdministrationServiceTest
     _categoryRepository = A.Fake<ICatalogCategoryRepository>();
     _festivalRepository = A.Fake<IFestivalRepository>();
     _clock = new FakeTimeProvider(new(_now));
-    _transactionRunner = new();
 
     A.CallTo(() => _festivalRepository.ExistsAsync(A<Guid>._, A<CancellationToken>._)).Returns(true);
     A.CallTo(() => _festivalRepository.FindRunningAsync(A<DateTime>._, A<CancellationToken>._)).Returns(Task.FromResult<Festival?>(null));
@@ -30,7 +29,7 @@ public sealed class CatalogItemAdministrationServiceTest
     A.CallTo(() => _categoryRepository.FindByIdAsync(_foodCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_foodCategoryId, true)));
     A.CallTo(() => _categoryRepository.FindByIdAsync(_switchedOffCategoryId, A<CancellationToken>._)).Returns(Task.FromResult<CatalogCategory?>(BuildCategory(_switchedOffCategoryId, false)));
 
-    _service = new(_itemRepository, _categoryRepository, _festivalRepository, A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock), _transactionRunner);
+    _service = new(_itemRepository, _categoryRepository, _festivalRepository, A.Fake<ICatalogChangeAnnouncer>(), new ImmediateAfterCommitActions(), new(_festivalRepository, new(), _clock));
   }
 
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
@@ -45,7 +44,6 @@ public sealed class CatalogItemAdministrationServiceTest
   private IFestivalRepository _festivalRepository = null!;
   private ICatalogItemRepository _itemRepository = null!;
   private CatalogItemAdministrationService _service = null!;
-  private RecordingTransactionRunner _transactionRunner = null!;
 
   [Test]
   public async Task ListAsync_FestivalThatIsNotThere_FailsBecauseTheFestivalIsNotFound()
@@ -66,13 +64,13 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     var bratwurst = BuildItem(_bratwurstId, "Bratwurst", _foodCategoryId, true);
     bratwurst.FestivalCatalogItems.Add(new()
-                                       {
-                                         Id = Guid.NewGuid(),
-                                         FestivalId = _festivalId,
-                                         CatalogItemId = _bratwurstId,
-                                         PriceCents = 350,
-                                         IsAvailable = true
-                                       });
+    {
+      Id = Guid.NewGuid(),
+      FestivalId = _festivalId,
+      CatalogItemId = _bratwurstId,
+      PriceCents = 350,
+      IsAvailable = true
+    });
 
     A.CallTo(() => _itemRepository.FindAllOrderedAsync(_festivalId, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<CatalogItem>>([bratwurst]));
 
@@ -95,7 +93,6 @@ public sealed class CatalogItemAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.RefusalMessageKey(), Is.EqualTo("admin.itemNameTaken"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -137,7 +134,6 @@ public sealed class CatalogItemAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(created.IsSuccess, Is.True);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _itemRepository.AddAsync(A<CatalogItem>.That.Matches(item => item.Name == "Currywurst" && item.IsActive && item.ProductionMinutes == 1.5), A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -186,20 +182,19 @@ public sealed class CatalogItemAdministrationServiceTest
     GivenAFestivalIsRunning();
     A.CallTo(() => _itemRepository.FindMenuRowAsync(_festivalId, _bratwurstId, A<CancellationToken>._))
    .Returns(Task.FromResult<FestivalCatalogItem?>(new()
-                                                  {
-                                                    Id = Guid.NewGuid(),
-                                                    FestivalId = _festivalId,
-                                                    CatalogItemId = _bratwurstId,
-                                                    PriceCents = 350,
-                                                    IsAvailable = true
-                                                  }));
+   {
+     Id = Guid.NewGuid(),
+     FestivalId = _festivalId,
+     CatalogItemId = _bratwurstId,
+     PriceCents = 350,
+     IsAvailable = true
+   }));
 
     ErrorOr<CatalogItem> switchedOff = await _service.DeactivateAsync(_bratwurstId, CancellationToken.None);
 
     Assert.Multiple(() =>
                     {
                       Assert.That(switchedOff.RefusalMessageKey(), Is.EqualTo("admin.itemIsOnTheRunningFestivalsMenu"));
-                      Assert.That(_transactionRunner.Committed, Is.False);
                     });
   }
 
@@ -211,7 +206,6 @@ public sealed class CatalogItemAdministrationServiceTest
     Assert.Multiple(() =>
                     {
                       Assert.That(switchedOff.IsSuccess, Is.True);
-                      Assert.That(_transactionRunner.Committed, Is.True);
                     });
 
     A.CallTo(() => _itemRepository.SaveChangesAsync(A<CancellationToken>._)).MustHaveHappenedOnceExactly();
@@ -221,14 +215,14 @@ public sealed class CatalogItemAdministrationServiceTest
   {
     A.CallTo(() => _festivalRepository.FindRunningAsync(_now, A<CancellationToken>._))
    .Returns(Task.FromResult<Festival?>(new()
-                                       {
-                                         Id = _festivalId,
-                                         Name = "Sommerfest",
-                                         StartsAtUtc = _now.AddHours(-1),
-                                         EndsAtUtc = _now.AddHours(5),
-                                         NextOrderNumber = 1,
-                                         IsHidden = false
-                                       }));
+   {
+     Id = _festivalId,
+     Name = "Sommerfest",
+     StartsAtUtc = _now.AddHours(-1),
+     EndsAtUtc = _now.AddHours(5),
+     NextOrderNumber = 1,
+     IsHidden = false
+   }));
   }
 
   private Task<ErrorOr<CatalogItem>> CreatedAsync(string? name, Guid? categoryId, int sortOrder = 1, double? productionMinutes = null, bool isQueueIndependent = false)
@@ -239,24 +233,24 @@ public sealed class CatalogItemAdministrationServiceTest
   private CatalogItem BuildItem(Guid itemId, string name, Guid categoryId, bool isActive)
   {
     return new()
-           {
-             Id = itemId,
-             Name = name,
-             CategoryId = categoryId,
-             SortOrder = 1,
-             IsActive = isActive
-           };
+    {
+      Id = itemId,
+      Name = name,
+      CategoryId = categoryId,
+      SortOrder = 1,
+      IsActive = isActive
+    };
   }
 
   private CatalogCategory BuildCategory(Guid categoryId, bool isActive)
   {
     return new()
-           {
-             Id = categoryId,
-             Name = "Speisen",
-             ColourHex = "#C62828",
-             SortOrder = 1,
-             IsActive = isActive
-           };
+    {
+      Id = categoryId,
+      Name = "Speisen",
+      ColourHex = "#C62828",
+      SortOrder = 1,
+      IsActive = isActive
+    };
   }
 }

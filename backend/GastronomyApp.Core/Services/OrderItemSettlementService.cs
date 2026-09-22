@@ -16,15 +16,13 @@ public sealed class OrderItemSettlementService
   private readonly ILogger<OrderItemSettlementService> _logger;
   private readonly IOpenItemRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ISettlementAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner, TimeProvider timeProvider, ILogger<OrderItemSettlementService> logger)
+  public OrderItemSettlementService(IOpenItemRepository repository, RunningFestivalLookup runningFestival, ISettlementAnnouncer announcer, IAfterCommitActions afterCommitActions, TimeProvider timeProvider, ILogger<OrderItemSettlementService> logger)
   {
     _repository = repository;
     _runningFestival = runningFestival;
     _announcer = announcer;
     _afterCommitActions = afterCommitActions;
-    _transactionRunner = transactionRunner;
     _timeProvider = timeProvider;
     _logger = logger;
   }
@@ -38,28 +36,28 @@ public sealed class OrderItemSettlementService
     if (festival is null)
       return Refusal.Settlement.NoRunningFestival();
 
-    ErrorOr<SettlementResult> settled = await _transactionRunner.RunAsync(transactionCancellationToken => SettledInsideTransactionAsync(lines, settledByStaffMemberId, transactionCancellationToken), cancellationToken);
+    IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
+
+    ErrorOr<SettlementResult> settled = await Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
 
     if (settled.IsError)
       return settled.Errors;
 
-    return await AnnouncedAsync(settled.Value, cancellationToken);
+    await AnnounceAsync(settled.Value, cancellationToken);
+
+    return settled.Value;
   }
 
-  private async Task<SettlementResult> AnnouncedAsync(SettlementResult settlement, CancellationToken cancellationToken)
+  private async Task AnnounceAsync(SettlementResult settlement, CancellationToken cancellationToken)
   {
     List<Guid> settledIds = settlement.NewlySettled.Select(item => item.Id).ToList();
 
     if (settledIds.Count == 0)
-      return settlement;
+      return;
 
     _logger.LogInformation("{SettledItemCount} order items were settled and saved. Order item ids: {SettledOrderItemIds}.", settledIds.Count, settledIds);
 
-    var otherDevicesWereTold = false;
-
-    await _afterCommitActions.RunWhenCommittedAsync(async announcementCancellationToken => otherDevicesWereTold = await _announcer.AnnounceOrderItemsSettledAsync(settledIds, settlement.SettledTableNames, announcementCancellationToken), cancellationToken);
-
-    return settlement with { OtherDevicesWereTold = otherDevicesWereTold };
+    await _afterCommitActions.RunWhenCommittedAsync(announcementCancellationToken => _announcer.AnnounceOrderItemsSettledAsync(settledIds, settlement.SettledTableNames, announcementCancellationToken), cancellationToken);
   }
 
   public ErrorOr<SettlementResult> Settle(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, IReadOnlyCollection<OrderItem> knownItems, DateTime settledAtUtc)
@@ -146,19 +144,12 @@ public sealed class OrderItemSettlementService
     }
 
     return new()
-           {
-             NewlySettled = newlySettled,
-             Reapplied = reapplied,
-             AlreadySettledByOthers = alreadySettledByOthers,
-             SettledTableNames = SortedNames(tableNamesOfTheNewlySettled)
-           };
-  }
-
-  private async Task<ErrorOr<SettlementResult>> SettledInsideTransactionAsync(IReadOnlyList<SettleLineRequest> lines, Guid settledByStaffMemberId, CancellationToken cancellationToken)
-  {
-    IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
-
-    return await Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
+    {
+      NewlySettled = newlySettled,
+      Reapplied = reapplied,
+      AlreadySettledByOthers = alreadySettledByOthers,
+      SettledTableNames = SortedNames(tableNamesOfTheNewlySettled)
+    };
   }
 
   private IReadOnlyCollection<OrderItem> ItemsWhoseTableIsKnown(IReadOnlyCollection<OrderItem> selected)

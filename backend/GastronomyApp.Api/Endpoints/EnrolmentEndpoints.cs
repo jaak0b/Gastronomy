@@ -12,8 +12,7 @@ public static class EnrolmentEndpoints
   {
     routes.MapPost("/api/enrolment/redeem", async (RedeemEnrolmentRequest request, HttpContext httpContext, EnrolmentRedemptionHandler handler, CancellationToken cancellationToken) => await handler.RedeemAsync(request, httpContext, cancellationToken))
           .AllowAnonymous()
-          .RequireRateLimiting(Names.RateLimitPolicies.PerAddress)
-          .Produces<RedeemedEnrolmentView>();
+          .RequireRateLimiting(Names.RateLimitPolicies.PerAddress);
 
     return routes;
   }

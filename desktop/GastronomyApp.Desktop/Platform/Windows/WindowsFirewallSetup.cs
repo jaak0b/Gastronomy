@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using GastronomyApp.Desktop.Values;
 using GastronomyApp.Desktop.Ports;
 
@@ -32,7 +32,7 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
 
     NetshResult result;
 
-    if (RuleExists())
+    if (ShowRule(string.Empty).ExitCode == 0)
       result = _netsh.Run($"advfirewall firewall set rule name=\"{RuleName}\" dir=in new {ruleSettings}");
     else
       result = _netsh.Run($"advfirewall firewall add rule name=\"{RuleName}\" dir=in {ruleSettings}");
@@ -49,11 +49,6 @@ public sealed class WindowsFirewallSetup : IFirewallSetup
       return $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}.";
 
     return $"Configuring the inbound firewall rule failed with exit code {result.ExitCode}: {reportedProblem}";
-  }
-
-  private bool RuleExists()
-  {
-    return ShowRule(string.Empty).ExitCode == 0;
   }
 
   private NetshResult ShowRule(string profileFilter)

@@ -1,8 +1,8 @@
 ﻿using ErrorOr;
+using GastronomyApp.Api.Answers;
 using GastronomyApp.Contracts.Catalog;
 using GastronomyApp.Core.Services;
 using MapsterMapper;
-using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Handlers;
 
@@ -17,8 +17,10 @@ public sealed class CatalogHandler
     _mapper = mapper;
   }
 
-  public async Task<IResult> ReadAsync(CancellationToken cancellationToken)
+  public async Task<ApiAnswer<CatalogView>> ReadAsync(CancellationToken cancellationToken)
   {
-    return await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken).Match(festival => Results.Ok(_mapper.Map<CatalogView>(festival)), noFestivalIsRunning => Results.Ok(CatalogView.Empty));
+    ErrorOr<Core.Entities.Festival> runningFestival = await _catalogService.ReadRunningFestivalCatalogAsync(cancellationToken);
+
+    return runningFestival.Match<ErrorOr<CatalogView>>(festival => _mapper.Map<CatalogView>(festival), noFestivalIsRunning => CatalogView.Empty);
   }
 }

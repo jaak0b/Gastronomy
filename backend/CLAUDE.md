@@ -72,13 +72,30 @@ with the request path, takes the status from `NumericType`, and writes an `ApiEr
 bad line is collected into `List<Error>`; the envelope answers with the first and the log holds them
 all.
 
-A handler is one expression: the service call, `ThenDo`/`ThenDoAsync` for what follows a success, and
-`Match(view => Results...., _resultEnvelope.Refuse)` at the end. A handler holds no `ErrorOr` in a
-local and switches on no refusal.
+A handler's body is one expression: the service call, `Then`, `ThenDo` and their async siblings for
+what follows a success, and nothing else. A handler holds no `ErrorOr` in a local, switches on no
+refusal, writes no status code and never touches `ResultEnvelope`.
 
-`ITransactionRunner.RunAsync` takes a body returning `Task<ErrorOr<T>>`, commits when the body
-answers with a value and rolls back when it answers with errors; the after-commit actions run only
-on a commit.
+**The handler's return type is the status it answers with.** The three answer types in `Api/Answers`
+each take the handler's `ErrorOr<TView>` through an implicit conversion, so the body stays that one
+expression: `ApiAnswer<TView>` answers 200, `CreatedAnswer<TView>` answers 201 and `NoContentAnswer`
+answers 204. Each is an `IResult` that writes the view as JSON on success and hands a refusal to
+`ResultEnvelope`, which it resolves from the request's services; the shared part of that lives once,
+in `ViewOrRefusal<TView>`. Each is also an `IEndpointMetadataProvider` and describes its own response
+in `PopulateMetadata`, so a route declares no `Produces` of its own and the OpenAPI document still
+carries one response per route. `ApiAnswer<TView>` also converts from a bare `TView`, which is what a
+query that cannot refuse returns. The invitation QR route is the one endpoint that answers `IResult`
+itself, because it writes an SVG image rather than a view.
+
+The device a request came from is a handler parameter, not something a handler looks up:
+`StaffDeviceCaller` and `StationDeviceCaller` bind themselves through `BindAsync`.
+
+**A request is one transaction.** `RequestTransactionFilter` runs on every POST, PUT, PATCH and
+DELETE route: it opens `BEGIN IMMEDIATE`, commits when the handler answered with a value, and rolls
+back when the handler refused or when the request threw. The steps collected in `IAfterCommitActions`
+are drained only after that commit. A write that loses its rows to another writer is tried again, and
+when every attempt loses that race the request answers one refusal, `Refusal.Storage.ConflictingChange()`,
+as 409. There is no transaction runner, and no service opens a transaction of its own.
 
 ## Announcements
 

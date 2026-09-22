@@ -11,20 +11,16 @@ public sealed class FestivalAdministrationService
 
   private readonly IAfterCommitActions _afterCommitActions;
   private readonly IFestivalChangeAnnouncer _announcer;
-  private readonly FestivalMoment _moment;
   private readonly IFestivalRepository _repository;
   private readonly RunningFestivalLookup _runningFestival;
   private readonly FestivalSchedule _schedule;
-  private readonly ITransactionRunner _transactionRunner;
 
-  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, FestivalMoment moment, IFestivalChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, ITransactionRunner transactionRunner, RunningFestivalLookup runningFestival)
+  public FestivalAdministrationService(IFestivalRepository repository, FestivalSchedule schedule, IFestivalChangeAnnouncer announcer, IAfterCommitActions afterCommitActions, RunningFestivalLookup runningFestival)
   {
     _repository = repository;
     _announcer = announcer;
     _afterCommitActions = afterCommitActions;
     _schedule = schedule;
-    _moment = moment;
-    _transactionRunner = transactionRunner;
     _runningFestival = runningFestival;
   }
 
@@ -43,37 +39,10 @@ public sealed class FestivalAdministrationService
     return _runningFestival.IsRunning(festival);
   }
 
-  public Task<ErrorOr<Festival>> CreateAsync(string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> CreateAsync(string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
   {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CreatedAsync(name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<Festival>> UpdateAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => UpdatedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  public Task<ErrorOr<Festival>> CopyAsync(Guid festivalId, string? name, DateTime startsAtUtc, DateTime endsAtUtc, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => CopiedAsync(festivalId, name, startsAtUtc, endsAtUtc, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)),
-                                       cancellationToken);
-  }
-
-  public Task<ErrorOr<Festival>> HideAsync(Guid festivalId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => HiddenAsync(festivalId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  public Task<ErrorOr<Festival>> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
-  {
-    return _transactionRunner.RunAsync(transactionCancellationToken => ShownAsync(festivalId, transactionCancellationToken).ThenDoAsync(saved => _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, transactionCancellationToken)), cancellationToken);
-  }
-
-  private async Task<ErrorOr<Festival>> CreatedAsync(string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
-  {
-    var startsAtUtc = _moment.AsUtc(startsAtUtcRaw);
-    var endsAtUtc = _moment.AsUtc(endsAtUtcRaw);
+    var startsAtUtc = AsUtc(startsAtUtcRaw);
+    var endsAtUtc = AsUtc(endsAtUtcRaw);
 
     if (await PeriodRefusalAsync(startsAtUtc, endsAtUtc, Guid.Empty, cancellationToken) is { } refusal)
       return refusal;
@@ -83,18 +52,20 @@ public sealed class FestivalAdministrationService
     await _repository.AddAsync(created, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
+
     return created;
   }
 
-  private async Task<ErrorOr<Festival>> UpdatedAsync(Guid festivalId, string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> UpdateAsync(Guid festivalId, string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
   {
     var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
       return Refusal.Festival.FestivalNotFound(festivalId);
 
-    var startsAtUtc = _moment.AsUtc(startsAtUtcRaw);
-    var endsAtUtc = _moment.AsUtc(endsAtUtcRaw);
+    var startsAtUtc = AsUtc(startsAtUtcRaw);
+    var endsAtUtc = AsUtc(endsAtUtcRaw);
 
     if (await PeriodRefusalAsync(startsAtUtc, endsAtUtc, festivalId, cancellationToken) is { } refusal)
       return refusal;
@@ -105,16 +76,18 @@ public sealed class FestivalAdministrationService
 
     await _repository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
+
     return festival;
   }
 
-  private async Task<ErrorOr<Festival>> CopiedAsync(Guid festivalId, string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> CopyAsync(Guid festivalId, string? name, DateTime startsAtUtcRaw, DateTime endsAtUtcRaw, CancellationToken cancellationToken)
   {
     if (!await _repository.ExistsAsync(festivalId, cancellationToken))
       return Refusal.Festival.FestivalNotFound(festivalId);
 
-    var startsAtUtc = _moment.AsUtc(startsAtUtcRaw);
-    var endsAtUtc = _moment.AsUtc(endsAtUtcRaw);
+    var startsAtUtc = AsUtc(startsAtUtcRaw);
+    var endsAtUtc = AsUtc(endsAtUtcRaw);
 
     if (await PeriodRefusalAsync(startsAtUtc, endsAtUtc, Guid.Empty, cancellationToken) is { } refusal)
       return refusal;
@@ -125,10 +98,12 @@ public sealed class FestivalAdministrationService
     await _repository.CopyContentsAsync(festivalId, copy.Id, cancellationToken);
     await _repository.SaveChangesAsync(cancellationToken);
 
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
+
     return copy;
   }
 
-  private async Task<ErrorOr<Festival>> HiddenAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> HideAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
@@ -138,27 +113,31 @@ public sealed class FestivalAdministrationService
     if (_runningFestival.IsRunning(festival))
       return Refusal.Festival.FestivalIsRunning(festivalId);
 
-    if (festival.IsHidden)
-      return festival;
+    if (!festival.IsHidden)
+    {
+      festival.IsHidden = true;
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
 
-    festival.IsHidden = true;
-    await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
 
     return festival;
   }
 
-  private async Task<ErrorOr<Festival>> ShownAsync(Guid festivalId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<Festival>> ShowAsync(Guid festivalId, CancellationToken cancellationToken)
   {
     var festival = await _repository.FindByIdAsync(festivalId, cancellationToken);
 
     if (festival is null)
       return Refusal.Festival.FestivalNotFound(festivalId);
 
-    if (!festival.IsHidden)
-      return festival;
+    if (festival.IsHidden)
+    {
+      festival.IsHidden = false;
+      await _repository.SaveChangesAsync(cancellationToken);
+    }
 
-    festival.IsHidden = false;
-    await _repository.SaveChangesAsync(cancellationToken);
+    await _afterCommitActions.RunWhenCommittedAsync(_announcer.AnnounceFestivalChangedAsync, cancellationToken);
 
     return festival;
   }
@@ -177,16 +156,24 @@ public sealed class FestivalAdministrationService
     return Refusal.Festival.PeriodOverlapsAnotherFestival(inTheWay.Name);
   }
 
+  private DateTime AsUtc(DateTime moment)
+  {
+    if (moment.Kind == DateTimeKind.Local)
+      return moment.ToUniversalTime();
+
+    return DateTime.SpecifyKind(moment, DateTimeKind.Utc);
+  }
+
   private Festival BuildFestival(string name, DateTime startsAtUtc, DateTime endsAtUtc)
   {
     return new()
-           {
-             Id = Guid.NewGuid(),
-             Name = name,
-             StartsAtUtc = startsAtUtc,
-             EndsAtUtc = endsAtUtc,
-             NextOrderNumber = FirstNumber,
-             IsHidden = false
-           };
+    {
+      Id = Guid.NewGuid(),
+      Name = name,
+      StartsAtUtc = startsAtUtc,
+      EndsAtUtc = endsAtUtc,
+      NextOrderNumber = FirstNumber,
+      IsHidden = false
+    };
   }
 }

@@ -1,3 +1,4 @@
+﻿using System.Text;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -32,6 +33,17 @@ public sealed class AdminCategoryEndpointsTest
     var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
     beer.IsActive = false;
     await database.SaveChangesAsync();
+  }
+
+  [Test]
+  public async Task PutCategoryWithoutARequestBody_IsRefusedBeforeTheHandlerRuns()
+  {
+    using HttpRequestMessage request = new(HttpMethod.Put, $"/api/admin/categories/{Guid.NewGuid()}");
+    request.Content = new StringContent(string.Empty, Encoding.UTF8, "application/json");
+
+    using var response = await _context.Client.SendAsync(request);
+
+    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
   }
 
   [Test]

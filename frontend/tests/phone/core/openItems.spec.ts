@@ -167,7 +167,6 @@ describe('what the waiter is told after settling', () => {
         settledOrderItemIds: ['item-1'],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-2'],
-        otherPhonesWereTold: true,
       },
       thePhoneSent,
       'de',
@@ -186,7 +185,6 @@ describe('what the waiter is told after settling', () => {
         settledOrderItemIds: [],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-3'],
-        otherPhonesWereTold: true,
       },
       [
         { orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null },
@@ -205,7 +203,6 @@ describe('what the waiter is told after settling', () => {
         settledOrderItemIds: [],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-1'],
-        otherPhonesWereTold: true,
       },
       [{ orderItemId: 'item-1', paidPriceCents: 350, paymentNotice: null }],
       'en',
@@ -220,7 +217,6 @@ describe('what the waiter is told after settling', () => {
         settledOrderItemIds: [],
         reappliedOrderItemIds: ['item-1', 'item-2'],
         alreadySettledByOthersOrderItemIds: [],
-        otherPhonesWereTold: true,
       },
       thePhoneSent,
       'de',
@@ -235,7 +231,6 @@ describe('what the waiter is told after settling', () => {
         settledOrderItemIds: [],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: ['item-1'],
-        otherPhonesWereTold: true,
       },
       thePhoneSent,
       'de',
@@ -244,32 +239,12 @@ describe('what the waiter is told after settling', () => {
     expect(notice?.key).toBe('openItems.someWereAlreadySettled')
   })
 
-  it('says the other phones were not told when the laptop could not reach them', () => {
+  it('says nothing when the whole selection was settled', () => {
     const notice = noticeAfterSettling(
       {
         settledOrderItemIds: ['item-1'],
         reappliedOrderItemIds: [],
         alreadySettledByOthersOrderItemIds: [],
-        otherPhonesWereTold: false,
-      },
-      thePhoneSent,
-      'de',
-    )
-
-    expect(notice).toEqual({
-      key: 'openItems.otherPhonesWereNotTold',
-      parameters: {},
-      count: null,
-    })
-  })
-
-  it('says nothing when the whole selection was settled and every phone was told', () => {
-    const notice = noticeAfterSettling(
-      {
-        settledOrderItemIds: ['item-1'],
-        reappliedOrderItemIds: [],
-        alreadySettledByOthersOrderItemIds: [],
-        otherPhonesWereTold: true,
       },
       thePhoneSent,
       'de',

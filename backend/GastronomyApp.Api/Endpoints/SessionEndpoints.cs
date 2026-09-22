@@ -1,8 +1,7 @@
-﻿using GastronomyApp.Api.Auth;
-using GastronomyApp.Api.Handlers;
+﻿using GastronomyApp.Api.Handlers;
+using GastronomyApp.Api.Values;
 using GastronomyApp.Contracts.Session;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
 namespace GastronomyApp.Api.Endpoints;
@@ -13,21 +12,9 @@ public static class SessionEndpoints
   {
     var group = routes.MapGroup("/api/session").RequireAuthorization().RequireRateLimiting(Names.RateLimitPolicies.PerDevice);
 
-    group.MapGet(string.Empty,
-                 async (HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>
-                 {
-                   var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                   return await handler.ReadAsync(caller, cancellationToken);
-                 })
-         .Produces<SessionView>();
+    group.MapGet(string.Empty, async (DeviceCaller caller, SessionHandler handler, CancellationToken cancellationToken) => await handler.ReadAsync(caller, cancellationToken));
 
-    group.MapPut("/language",
-                 async (LanguageChangeRequest request, HttpContext httpContext, CallerIdentity callerIdentity, SessionHandler handler, CancellationToken cancellationToken) =>
-                 {
-                   var caller = callerIdentity.ReadDevice(httpContext.User)!;
-                   return await handler.ChangeLanguageAsync(request, caller, cancellationToken);
-                 })
-         .Produces(StatusCodes.Status204NoContent);
+    group.MapPut("/language", async (LanguageChangeRequest request, DeviceCaller caller, SessionHandler handler, CancellationToken cancellationToken) => await handler.ChangeLanguageAsync(request, caller, cancellationToken));
 
     return routes;
   }
