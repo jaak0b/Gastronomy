@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Auth.Filters;
@@ -40,7 +40,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(), serviceProvider.GetRequiredService<StationOrderService>(), serviceProvider.GetRequiredService<StationService>()).Build());
+    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(), serviceProvider.GetRequiredService<StationOrderService>(), serviceProvider.GetRequiredService<StationService>(), serviceProvider.GetRequiredService<StaffMemberService>(), serviceProvider.GetRequiredService<FestivalService>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -75,6 +75,9 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<OrderService>();
     services.AddSingleton<StationOrderService>();
     services.AddSingleton<StationService>();
+    services.AddSingleton<StaffMemberService>();
+    services.AddSingleton<FestivalService>();
+    services.AddSingleton<EnrolmentInvitationRules>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<OrderItemFulfillmentService>();
 

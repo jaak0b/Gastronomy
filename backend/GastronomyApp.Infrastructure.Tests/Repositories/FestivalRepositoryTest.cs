@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
@@ -8,6 +9,8 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 [TestFixture]
 public sealed class FestivalRepositoryTest
 {
+  private readonly FestivalService _festivalService = new();
+
   private readonly DateTime _start = new(2026, 8, 26, 12, 0, 0, DateTimeKind.Utc);
 
   private async Task<Guid> AddFestivalAsync(GastronomyAppDbContext dbContext, string name, DateTime startsAtUtc, DateTime endsAtUtc, bool isHidden)
@@ -128,8 +131,8 @@ public sealed class FestivalRepositoryTest
     Assert.Multiple(() =>
                     {
                       Assert.That(festivals.Select(festival => festival.Id), Is.EqualTo(new[] { festivalId }));
-                      Assert.That(festivals[0].StationCount(), Is.EqualTo(0));
-                      Assert.That(festivals[0].MenuItemCount(), Is.EqualTo(0));
+                      Assert.That(_festivalService.StationCountOf(festivals[0]), Is.EqualTo(0));
+                      Assert.That(_festivalService.MenuItemCountOf(festivals[0]), Is.EqualTo(0));
                       Assert.That(orderCounts.GetValueOrDefault(festivalId), Is.EqualTo(0));
                     });
   }
@@ -149,8 +152,8 @@ public sealed class FestivalRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(sommerfest.StationCount(), Is.EqualTo(2));
-                      Assert.That(sommerfest.MenuItemCount(), Is.EqualTo(2));
+                      Assert.That(_festivalService.StationCountOf(sommerfest), Is.EqualTo(2));
+                      Assert.That(_festivalService.MenuItemCountOf(sommerfest), Is.EqualTo(2));
                       Assert.That(orderCounts.GetValueOrDefault(seeded.FestivalId), Is.EqualTo(0));
                     });
   }
@@ -183,8 +186,8 @@ public sealed class FestivalRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(copy.StationCount(), Is.EqualTo(2));
-                      Assert.That(copy.MenuItemCount(), Is.EqualTo(2));
+                      Assert.That(_festivalService.StationCountOf(copy), Is.EqualTo(2));
+                      Assert.That(_festivalService.MenuItemCountOf(copy), Is.EqualTo(2));
                     });
   }
 

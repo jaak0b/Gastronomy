@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
@@ -28,7 +28,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyCollection<Station> stations = await repository.FindAtFestivalAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -46,7 +46,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
@@ -59,7 +59,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -74,7 +74,7 @@ public sealed class StationRepositoryTest
     var lastSeenAtUtc = _now.AddMinutes(-3);
     await GiveTheKitchenATabletAsync(fixture, seeded, lastSeenAtUtc);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
@@ -94,7 +94,7 @@ public sealed class StationRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteTheKitchenAsync(fixture, seeded, _now.AddMinutes(2));
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stillValid = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
@@ -115,7 +115,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     Assert.Multiple(async () =>
                     {
@@ -130,7 +130,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
     var stationId = Guid.NewGuid();
 
     await repository.AddAsync(new()
@@ -154,7 +154,7 @@ public sealed class StationRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -174,7 +174,7 @@ public sealed class StationRepositoryTest
     await GiveTheSausageAProductionTimeAsync(fixture, seeded);
     await PlaceKitchenOrderAsync(fixture, seeded);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
@@ -194,7 +194,7 @@ public sealed class StationRepositoryTest
     IReadOnlyList<Guid> items = await PlaceKitchenOrderAsync(fixture, seeded);
     await HandOutAsync(fixture, items);
 
-    StationRepository repository = new(fixture.DbContext, _clock);
+    StationRepository repository = new(fixture.DbContext, _clock, new());
 
     IReadOnlyList<Station> stations = await repository.FindAtFestivalWithOpenItemsAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 

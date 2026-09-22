@@ -1,4 +1,5 @@
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ namespace GastronomyApp.Infrastructure.Tests.Repositories;
 [TestFixture]
 public sealed class StaffMemberRepositoryTest
 {
+  private readonly StaffMemberService _staffMemberService = new();
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
   [Test]
@@ -17,7 +19,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -25,7 +27,7 @@ public sealed class StaffMemberRepositoryTest
                     {
                       Assert.That(staffMembers[0].Name, Is.EqualTo("Anna"));
                       Assert.That(staffMembers[0].Device, Is.Null);
-                      Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.False);
+                      Assert.That(_staffMemberService.HasOutstandingInvitation(staffMembers[0]), Is.False);
                     });
   }
 
@@ -37,7 +39,7 @@ public sealed class StaffMemberRepositoryTest
     var lastSeenAtUtc = _now.AddMinutes(-2);
     await GiveAnnaAPhoneAsync(fixture, seeded, lastSeenAtUtc);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
@@ -55,11 +57,11 @@ public sealed class StaffMemberRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, null);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.True);
+    Assert.That(_staffMemberService.HasOutstandingInvitation(staffMembers[0]), Is.True);
   }
 
   [Test]
@@ -69,11 +71,11 @@ public sealed class StaffMemberRepositoryTest
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
     await InviteAnnaAsync(fixture, seeded, _now.AddMinutes(-1));
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     IReadOnlyList<StaffMember> staffMembers = await repository.FindAllAsync(TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(staffMembers[0].HasOutstandingInvitation(), Is.False);
+    Assert.That(_staffMemberService.HasOutstandingInvitation(staffMembers[0]), Is.False);
   }
 
   [Test]
@@ -82,7 +84,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     Assert.That(await repository.FindByIdAsync(Guid.NewGuid(), TestContext.CurrentContext.CancellationToken), Is.Null);
   }
@@ -93,7 +95,7 @@ public sealed class StaffMemberRepositoryTest
     using SqliteInMemoryFixture fixture = new();
     var seeded = await new DomainSeeder().SeedAsync(fixture.DbContext, TestContext.CurrentContext.CancellationToken);
 
-    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)));
+    StaffMemberRepository repository = new(fixture.DbContext, new FakeTimeProvider(new(2026, 8, 27, 18, 0, 0, TimeSpan.Zero)), new());
 
     var anna = (await repository.FindByIdAsync(seeded.StaffMemberId, TestContext.CurrentContext.CancellationToken))!;
     anna.Name = "Anne Marie";

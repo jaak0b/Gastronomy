@@ -21,9 +21,4 @@ public sealed class EnrolmentInvitation
   public Guid? ConsumedByDeviceId { get; set; }
 
   public Device? ConsumedByDevice { get; set; }
-
-  public bool IsOutstandingAt(DateTime nowUtc)
-  {
-    return ConsumedAtUtc is null && ExpiresAtUtc > nowUtc;
-  }
 }

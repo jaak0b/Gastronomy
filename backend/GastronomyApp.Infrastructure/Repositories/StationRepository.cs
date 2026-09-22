@@ -1,5 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,11 +10,13 @@ public sealed class StationRepository : IStationRepository
 {
   private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly EnrolmentInvitationRules _invitationRules;
 
-  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider)
+  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationRules invitationRules)
   {
     _dbContext = dbContext;
     _timeProvider = timeProvider;
+    _invitationRules = invitationRules;
   }
 
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -54,7 +57,7 @@ public sealed class StationRepository : IStationRepository
 
     var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-    foreach (var station in stations.Where(station => station.EnrolmentInvitation?.IsOutstandingAt(nowUtc) == false))
+    foreach (var station in stations.Where(station => station.EnrolmentInvitation != null && !_invitationRules.IsOutstandingAt(station.EnrolmentInvitation, nowUtc)))
       station.EnrolmentInvitation = null;
 
     return stations;

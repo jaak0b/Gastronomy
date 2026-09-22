@@ -1,5 +1,6 @@
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,11 +10,13 @@ public sealed class StaffMemberRepository : IStaffMemberRepository
 {
   private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
+  private readonly EnrolmentInvitationRules _invitationRules;
 
-  public StaffMemberRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider)
+  public StaffMemberRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationRules invitationRules)
   {
     _dbContext = dbContext;
     _timeProvider = timeProvider;
+    _invitationRules = invitationRules;
   }
 
   public async Task<IReadOnlyList<StaffMember>> FindAllAsync(CancellationToken cancellationToken)
@@ -22,7 +25,7 @@ public sealed class StaffMemberRepository : IStaffMemberRepository
 
     var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-    foreach (var staffMember in staffMembers.Where(staffMember => staffMember.EnrolmentInvitation?.IsOutstandingAt(nowUtc) == false))
+    foreach (var staffMember in staffMembers.Where(staffMember => staffMember.EnrolmentInvitation != null && !_invitationRules.IsOutstandingAt(staffMember.EnrolmentInvitation, nowUtc)))
       staffMember.EnrolmentInvitation = null;
 
     return staffMembers;

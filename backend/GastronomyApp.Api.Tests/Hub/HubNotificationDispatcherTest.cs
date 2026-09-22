@@ -1,4 +1,4 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using GastronomyApp.Api.Hub;
 using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Events;
@@ -24,7 +24,7 @@ public sealed class HubNotificationDispatcherTest
 
     AnnouncementGuard guard = new(A.Fake<IHostApplicationLifetime>(), A.Fake<ILogger<AnnouncementGuard>>());
 
-    _dispatcher = new(_hubContext, guard, new(new(), _hubContext), new Mapper(new MappingConfiguration(new(), new(), new()).Build()));
+    _dispatcher = new(_hubContext, guard, new(new(), _hubContext), new Mapper(new MappingConfiguration(new(), new(), new(), new(), new()).Build()));
   }
 
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");

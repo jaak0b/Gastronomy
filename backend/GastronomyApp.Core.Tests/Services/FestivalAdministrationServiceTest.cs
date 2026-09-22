@@ -26,6 +26,7 @@ public sealed class FestivalAdministrationServiceTest
     _service = new(_repository, new(), _announcer, new ImmediateAfterCommitActions(), new(_repository, new(), _clock));
   }
 
+  private readonly FestivalService _festivalService = new();
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
 
@@ -59,8 +60,8 @@ public sealed class FestivalAdministrationServiceTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(listed[0].StationCount(), Is.EqualTo(0));
-                      Assert.That(listed[0].MenuItemCount(), Is.EqualTo(0));
+                      Assert.That(_festivalService.StationCountOf(listed[0]), Is.EqualTo(0));
+                      Assert.That(_festivalService.MenuItemCountOf(listed[0]), Is.EqualTo(0));
                       Assert.That(_service.IsRunning(listed[0]), Is.True);
                     });
   }
@@ -212,13 +213,13 @@ public sealed class FestivalAdministrationServiceTest
   private Festival BuildFestival(Guid festivalId, bool isHidden)
   {
     return new()
-    {
-      Id = festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _now.AddHours(-1),
-      EndsAtUtc = _now.AddHours(5),
-      NextOrderNumber = 1,
-      IsHidden = isHidden
-    };
+           {
+             Id = festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _now.AddHours(-1),
+             EndsAtUtc = _now.AddHours(5),
+             NextOrderNumber = 1,
+             IsHidden = isHidden
+           };
   }
 }

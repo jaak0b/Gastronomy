@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 
 namespace GastronomyApp.Core.Entities;
 
@@ -21,9 +21,4 @@ public sealed class StaffMember : IDeviceOwner
   public EnrolmentInvitation? EnrolmentInvitation { get; set; }
 
   public Collection<Order> Orders { get; } = [];
-
-  public bool HasOutstandingInvitation()
-  {
-    return EnrolmentInvitation is not null;
-  }
 }

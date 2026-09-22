@@ -1,4 +1,4 @@
-﻿using GastronomyApp.Api.Mapping;
+using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.OpenItems;
 using GastronomyApp.Core.Entities;
@@ -12,7 +12,7 @@ public sealed class OpenItemMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new(), new(), new()).Build());
+    _mapper = new Mapper(new MappingConfiguration(new(), new(), new(), new(), new()).Build());
     _ordersPlaced = 0;
   }
 
