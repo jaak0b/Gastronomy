@@ -22,11 +22,9 @@ public sealed class OpenItemMapping : IMappingRegistration
           .Map(view => view.GlobalOrderNumber, item => item.StationOrder.Order.GlobalOrderNumber)
           .Map(view => view.OrderedAtUtc, item => item.StationOrder.Order.CreatedAtUtc);
 
-    config.NewConfig<Order, TableOrderRecordView>().Map(view => view.OrderId, order => order.Id).Map(view => view.StaffMemberName, order => order.StaffMember.Name).Map(view => view.Items, order => PositionsOfTheOrder(order));
-  }
-
-  private IReadOnlyList<OrderItem> PositionsOfTheOrder(Order order)
-  {
-    return order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.Ordinal).ThenBy(item => item.Note, StringComparer.Ordinal).ThenBy(item => item.Id).ToList();
+    config.NewConfig<Order, TableOrderRecordView>()
+          .Map(view => view.OrderId, order => order.Id)
+          .Map(view => view.StaffMemberName, order => order.StaffMember.Name)
+          .Map(view => view.Items, order => order.StationOrders.SelectMany(stationOrder => stationOrder.Items).OrderBy(item => item.ItemName, StringComparer.Ordinal).ThenBy(item => item.Note, StringComparer.Ordinal).ThenBy(item => item.Id).ToList());
   }
 }

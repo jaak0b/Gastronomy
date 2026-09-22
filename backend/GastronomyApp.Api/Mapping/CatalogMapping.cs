@@ -28,23 +28,8 @@ public sealed class CatalogMapping : IMappingRegistration
 
     config.NewConfig<Festival, CatalogView>()
           .Map(view => view.Festival, festival => festival)
-          .Map(view => view.Categories, festival => CategoriesOnTheMenu(festival))
-          .Map(view => view.Items, festival => ItemsOnTheMenu(festival))
-          .Map(view => view.Stations, festival => StationsAtTheFestival(festival));
-  }
-
-  private IReadOnlyList<CatalogCategory> CategoriesOnTheMenu(Festival festival)
-  {
-    return festival.CatalogItems.Select(menuRow => menuRow.CatalogItem.Category).DistinctBy(category => category.Id).OrderBy(category => category.SortOrder).ToList();
-  }
-
-  private IReadOnlyList<FestivalCatalogItem> ItemsOnTheMenu(Festival festival)
-  {
-    return festival.CatalogItems.OrderBy(menuRow => menuRow.CatalogItem.SortOrder).ToList();
-  }
-
-  private IReadOnlyList<FestivalStation> StationsAtTheFestival(Festival festival)
-  {
-    return festival.Stations.OrderBy(link => link.Station.SortOrder).ToList();
+          .Map(view => view.Categories, festival => festival.CatalogItems.Select(menuRow => menuRow.CatalogItem.Category).DistinctBy(category => category.Id).OrderBy(category => category.SortOrder).ToList())
+          .Map(view => view.Items, festival => festival.CatalogItems.OrderBy(menuRow => menuRow.CatalogItem.SortOrder).ToList())
+          .Map(view => view.Stations, festival => festival.Stations.OrderBy(link => link.Station.SortOrder).ToList());
   }
 }

@@ -160,7 +160,7 @@ public sealed class OrderItemSettlementService
 
   private void OverwriteChargedPrice(OrderItem item, int chargedPriceCents, string? paymentNotice)
   {
-    var written = TrimNotice(paymentNotice);
+    var written = (paymentNotice ?? string.Empty).Trim();
 
     item.ChargedPriceCents = chargedPriceCents;
     item.PaymentNotice = written;
@@ -189,15 +189,10 @@ public sealed class OrderItemSettlementService
     {
       var line = lines[index];
 
-      if (line.PaidPriceCents!.Value < selected[index].UnitPriceCents && TrimNotice(line.PaymentNotice).Length == 0)
+      if (line.PaidPriceCents!.Value < selected[index].UnitPriceCents && (line.PaymentNotice ?? string.Empty).Trim().Length == 0)
         missing.Add(Refusal.Settlement.PaymentNoticeMissing(line.OrderItemId));
     }
 
     return missing;
-  }
-
-  private string TrimNotice(string? paymentNotice)
-  {
-    return (paymentNotice ?? string.Empty).Trim();
   }
 }

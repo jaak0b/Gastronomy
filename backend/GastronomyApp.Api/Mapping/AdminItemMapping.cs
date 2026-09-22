@@ -10,16 +10,11 @@ public sealed class AdminItemMapping : IMappingRegistration
   {
     ArgumentNullException.ThrowIfNull(config);
 
-    config.NewConfig<CatalogItem, AdminItemView>().Map(view => view.ItemId, item => item.Id).Map(view => view.AtTheFestival, item => AtTheFestival(item));
-  }
-
-  private AdminItemAtFestivalView? AtTheFestival(CatalogItem item)
-  {
-    var menuRow = item.FestivalCatalogItems.FirstOrDefault();
-
-    if (menuRow is null)
-      return null;
-
-    return new(menuRow.PriceCents, menuRow.IsAvailable, item.StationAssignments.Select(assignment => assignment.StationId).ToList());
+    config.NewConfig<CatalogItem, AdminItemView>()
+          .Map(view => view.ItemId, item => item.Id)
+          .Map(view => view.AtTheFestival,
+               item => item.FestivalCatalogItems.FirstOrDefault() == null
+                         ? null
+                         : new AdminItemAtFestivalView(item.FestivalCatalogItems.FirstOrDefault()!.PriceCents, item.FestivalCatalogItems.FirstOrDefault()!.IsAvailable, item.StationAssignments.Select(assignment => assignment.StationId).ToList()));
   }
 }
