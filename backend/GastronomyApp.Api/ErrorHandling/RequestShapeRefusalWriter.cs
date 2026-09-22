@@ -1,18 +1,17 @@
-using GastronomyApp.Contracts;
+﻿using ErrorOr;
+using GastronomyApp.Core.Refusals;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http.Metadata;
 
 namespace GastronomyApp.Api.ErrorHandling;
 
 public sealed class RequestShapeRefusalWriter : IProblemDetailsService
 {
-  private const string ValidationFailedCode = Names.ProblemCodes.ValidationFailed;
+  private readonly ResultEnvelope _envelope;
 
-  private readonly ILogger<RequestShapeRefusalWriter> _log;
-
-  public RequestShapeRefusalWriter(ILogger<RequestShapeRefusalWriter> log)
+  public RequestShapeRefusalWriter(ResultEnvelope envelope)
   {
-    _log = log;
+    _envelope = envelope;
   }
 
   public async ValueTask<bool> TryWriteAsync(ProblemDetailsContext context)
@@ -22,25 +21,12 @@ public sealed class RequestShapeRefusalWriter : IProblemDetailsService
     if (context.ProblemDetails is not HttpValidationProblemDetails refusedShape)
       return false;
 
-    var messageKey = FirstMessageKey(refusedShape);
+    var refusedMembers = CollectRefusals(refusedShape, FindRequestType(context.HttpContext));
 
-    if (messageKey is null)
-    {
-      _log.LogError("A request to {Path} was refused by the contract, but the refusal named no message key, so the phone cannot be told what went wrong.", context.HttpContext.Request.Path);
+    if (refusedMembers.Count == 0)
+      throw new InvalidOperationException($"A request to {context.HttpContext.Request.Path} was refused by the contract, but the refusal named no member, so there is nothing the phone could be told.");
 
-      return false;
-    }
-
-    _log.LogWarning("A request to {Path} was refused because the body does not match the contract: {RefusedMembers}.", context.HttpContext.Request.Path, RenderedMembers(refusedShape));
-
-    context.HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-
-    await context.HttpContext.Response.WriteAsJsonAsync(new ApiError
-                                                        {
-                                                          Code = ValidationFailedCode,
-                                                          MessageKey = messageKey,
-                                                          Parameters = new Dictionary<string, string>()
-                                                        });
+    await _envelope.Refuse(refusedMembers).ExecuteAsync(context.HttpContext);
 
     return true;
   }
@@ -51,13 +37,38 @@ public sealed class RequestShapeRefusalWriter : IProblemDetailsService
       throw new InvalidOperationException("A refusal was handed to the request shape refusal writer that it cannot describe to the caller.");
   }
 
-  private string? FirstMessageKey(HttpValidationProblemDetails refusedShape)
+  private List<Error> CollectRefusals(HttpValidationProblemDetails refusedShape, Type? requestType)
   {
-    return refusedShape.Errors.SelectMany(refusedMember => refusedMember.Value).FirstOrDefault();
+    IReadOnlyList<string> declaredMembers = ReadDeclaredMemberNames(requestType);
+
+    return refusedShape.Errors
+                       .OrderBy(refusedMember => PositionOfMember(declaredMembers, refusedMember.Key))
+                       .ThenBy(refusedMember => refusedMember.Key, StringComparer.Ordinal)
+                       .SelectMany(refusedMember => refusedMember.Value.Select(messageKey => Refusal.RequestShape.MemberRefused(refusedMember.Key, messageKey)))
+                       .ToList();
   }
 
-  private string RenderedMembers(HttpValidationProblemDetails refusedShape)
+  private Type? FindRequestType(HttpContext httpContext)
   {
-    return string.Join("; ", refusedShape.Errors.Select(refusedMember => $"{refusedMember.Key}: {string.Join(", ", refusedMember.Value)}"));
+    return httpContext.GetEndpoint()?.Metadata.GetMetadata<IAcceptsMetadata>()?.RequestType;
+  }
+
+  private IReadOnlyList<string> ReadDeclaredMemberNames(Type? requestType)
+  {
+    if (requestType is null)
+      return [];
+
+    return requestType.GetProperties().Select(property => property.Name).ToList();
+  }
+
+  private int PositionOfMember(IReadOnlyList<string> declaredMembers, string member)
+  {
+    var rootMember = member.Split('.', '[')[0];
+
+    for (var position = 0; position < declaredMembers.Count; position++)
+      if (string.Equals(declaredMembers[position], rootMember, StringComparison.OrdinalIgnoreCase))
+        return position;
+
+    return int.MaxValue;
   }
 }

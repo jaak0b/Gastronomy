@@ -52,11 +52,6 @@ public static class Names
     }
   }
 
-  public static class ProblemCodes
-  {
-    public const string ValidationFailed = "ValidationFailed";
-  }
-
   public static class RateLimitPolicies
   {
     public const string PerDevice = "per-device";

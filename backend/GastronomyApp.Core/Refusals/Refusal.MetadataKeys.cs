@@ -8,6 +8,8 @@ public static partial class Refusal
 
     public const string Count = "count";
 
+    public const string Member = "member";
+
     public const string Name = "name";
 
     public const string OrderItemId = "orderItemId";

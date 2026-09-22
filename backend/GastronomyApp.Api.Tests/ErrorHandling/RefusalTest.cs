@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text.Json;
 using ErrorOr;
+using GastronomyApp.Contracts.Validation;
 using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Api.Tests.ErrorHandling;
@@ -75,15 +76,20 @@ public sealed class RefusalTest
 
     foreach (var area in typeof(Refusal).GetNestedTypes(BindingFlags.Public).Where(nested => nested.IsClass))
       foreach (var factory in area.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Where(method => method.ReturnType == typeof(Error)))
-        refusals.Add(($"Refusal.{area.Name}.{factory.Name}", (Error)factory.Invoke(null, factory.GetParameters().Select(parameter => DummyFor(parameter.ParameterType)).ToArray())!));
+        refusals.Add(($"Refusal.{area.Name}.{factory.Name}", (Error)factory.Invoke(null, factory.GetParameters().Select(DummyFor).ToArray())!));
 
     Assert.That(refusals, Is.Not.Empty, "the reflection found no refusal at all");
 
     return refusals;
   }
 
-  private object? DummyFor(System.Type parameterType)
+  private object? DummyFor(ParameterInfo parameter)
   {
+    if (parameter.ParameterType == typeof(string) && parameter.Name == "messageKey")
+      return RefusalMessageKeys.OrderCannotBeProcessed;
+
+    var parameterType = parameter.ParameterType;
+
     if (parameterType == typeof(Guid) || parameterType == typeof(Guid?))
       return Guid.Parse("11111111-1111-1111-1111-111111111111");
 

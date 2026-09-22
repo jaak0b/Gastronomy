@@ -40,7 +40,10 @@ sent with an order needs a reason when the amount paid is below the price the ph
 Every attribute carries the frontend's message key as its `ErrorMessage`, and the keys are constants
 in `Contracts/Validation/RefusalMessageKeys.cs`. A refused shape answers 400 with the same `ApiError`
 record every other refusal uses: `RequestShapeRefusalWriter` is the `IProblemDetailsService` the
-validation filter writes through, and it logs which member was refused before it answers.
+validation filter writes through, and it maps every refused member to
+`Refusal.RequestShape.MemberRefused` in the order the request record declares its properties, then
+hands that list to `ResultEnvelope` like every other refusal. A refused shape that names no member is
+a broken program and throws.
 
 **Domain rules stay in `GastronomyApp.Core`** and return `ErrorOr<T>` from the ErrorOr package:
 anything that needs the database (no running festival, an item that is not on the menu, a name
@@ -69,8 +72,8 @@ on). A factory carries:
 with the request path, takes the status from `NumericType`, and writes an `ApiError` built from the
 `ProblemCode` metadata, the `Code` and the remaining metadata as parameters. A refusal without a
 `ProblemCode` is answered with the bare status and no body. Where a command validates a list, every
-bad line is collected into `List<Error>`; the envelope answers with the first and the log holds them
-all.
+bad line is collected into `List<Error>`; the envelope answers with the first line of that list, in the
+order the caller handed it over, and the log holds them all.
 
 A handler's body is one expression: the service call, `Then`, `ThenDo` and their async siblings for
 what follows a success, and nothing else. A handler holds no `ErrorOr` in a local, switches on no

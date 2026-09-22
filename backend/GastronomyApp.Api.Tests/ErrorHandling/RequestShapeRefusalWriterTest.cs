@@ -1,7 +1,14 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GastronomyApp.Api.ErrorHandling;
 using GastronomyApp.Api.Tests.TestSupport;
+using GastronomyApp.Contracts;
+using GastronomyApp.Contracts.Admin.Catalog;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace GastronomyApp.Api.Tests.ErrorHandling;
 
@@ -37,11 +44,11 @@ public sealed class RequestShapeRefusalWriterTest
   private object BuildOrderWith(object items)
   {
     return new
-           {
-             clientOrderId = Guid.NewGuid(),
-             tableName = "Tisch 12",
-             items
-           };
+    {
+      clientOrderId = Guid.NewGuid(),
+      tableName = "Tisch 12",
+      items
+    };
   }
 
   [Test]
@@ -259,5 +266,119 @@ public sealed class RequestShapeRefusalWriterTest
                                                               });
 
     await AssertRefusedWithAsync(response, "admin.itemPriceOutOfRange");
+  }
+
+  [Test]
+  public async Task TryWrite_TwoRefusedMembersListedInReverse_AnswersTheKeyOfTheMemberDeclaredFirst()
+  {
+    RecordingLogger recordedRefusals = new();
+
+    var written = await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
+    {
+      ["ColourHex"] = ["admin.categoryColourInvalid"],
+      ["Name"] = ["admin.categoryNameMissing"]
+    }),
+                                               typeof(SaveCategoryRequest),
+                                               recordedRefusals);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(written.StatusCode, Is.EqualTo(StatusCodes.Status400BadRequest));
+                      Assert.That(written.Error!.Code, Is.EqualTo("ValidationFailed"));
+                      Assert.That(written.Error.MessageKey, Is.EqualTo("admin.categoryNameMissing"));
+                    });
+  }
+
+  [Test]
+  public void TryWrite_ARefusedShapeNamingNoMember_Throws()
+  {
+    Assert.ThrowsAsync<InvalidOperationException>(async () => await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>()), typeof(SaveCategoryRequest), new RecordingLogger()));
+  }
+
+  [Test]
+  public async Task TryWrite_TwoRefusedMembers_LogsEveryRefusedMember()
+  {
+    RecordingLogger recordedRefusals = new();
+
+    await WriteRefusedShapeAsync(new HttpValidationProblemDetails(new Dictionary<string, string[]>
+    {
+      ["ColourHex"] = ["admin.categoryColourInvalid"],
+      ["Name"] = ["admin.categoryNameMissing"]
+    }),
+                                 typeof(SaveCategoryRequest),
+                                 recordedRefusals);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("admin.categoryNameMissing"));
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("admin.categoryColourInvalid"));
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("ColourHex"));
+                      Assert.That(recordedRefusals.Lines, Has.Some.Contains("Name"));
+                    });
+  }
+
+  private async static Task<WrittenAnswer> WriteRefusedShapeAsync(HttpValidationProblemDetails refusedShape, Type requestType, RecordingLogger recordedRefusals)
+  {
+    ServiceCollection services = new();
+    services.AddLogging();
+
+    DefaultHttpContext httpContext = new() { RequestServices = services.BuildServiceProvider() };
+    httpContext.SetEndpoint(new Endpoint(null, new EndpointMetadataCollection(new AcceptedRequestType(requestType)), "the route under test"));
+
+    using MemoryStream body = new();
+    httpContext.Response.Body = body;
+
+    RequestShapeRefusalWriter writer = new(new ResultEnvelope(new SystemTextJsonRecordingSerializer(), new HttpContextAccessor(), recordedRefusals));
+
+    await writer.TryWriteAsync(new ProblemDetailsContext
+    {
+      HttpContext = httpContext,
+      ProblemDetails = refusedShape
+    });
+
+    body.Position = 0;
+
+    if (body.Length == 0)
+      return new(httpContext.Response.StatusCode, null);
+
+    return new(httpContext.Response.StatusCode, await JsonSerializer.DeserializeAsync<ApiError>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+  }
+
+  private sealed record WrittenAnswer(int StatusCode, ApiError? Error);
+
+  private sealed class AcceptedRequestType : IAcceptsMetadata
+  {
+    public AcceptedRequestType(Type requestType)
+    {
+      RequestType = requestType;
+    }
+
+    public IReadOnlyList<string> ContentTypes { get; } = ["application/json"];
+
+    public Type? RequestType { get; }
+
+    public bool IsOptional => false;
+  }
+
+  private sealed class RecordingLogger : ILogger<ResultEnvelope>
+  {
+    public List<string> Lines { get; } = [];
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+    {
+      return null;
+    }
+
+    public bool IsEnabled(LogLevel logLevel)
+    {
+      return true;
+    }
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+      ArgumentNullException.ThrowIfNull(formatter);
+
+      Lines.Add(formatter(state, exception));
+    }
   }
 }
