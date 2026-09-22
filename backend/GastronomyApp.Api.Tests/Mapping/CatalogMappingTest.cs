@@ -11,7 +11,7 @@ public sealed class CatalogMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new(), new()).Build());
+    _mapper = new Mapper(new MappingConfiguration(new(), new(), new()).Build());
   }
 
   private readonly Guid _barId = Guid.Parse("dddddddd-0000-0000-0000-000000000002");

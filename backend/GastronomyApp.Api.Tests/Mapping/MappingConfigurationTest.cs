@@ -8,6 +8,6 @@ public sealed class MappingConfigurationTest
   [Test]
   public void Build_EveryRegisteredMapping_CompilesWithASourceForEveryDestinationMember()
   {
-    Assert.DoesNotThrow(() => new MappingConfiguration(new(), new()).Build());
+    Assert.DoesNotThrow(() => new MappingConfiguration(new(), new(), new()).Build());
   }
 }

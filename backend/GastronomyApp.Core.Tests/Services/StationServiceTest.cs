@@ -1,90 +1,92 @@
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 
-namespace GastronomyApp.Core.Tests.Entities;
+namespace GastronomyApp.Core.Tests.Services;
 
 [TestFixture]
-public sealed class StationTest
+public sealed class StationServiceTest
 {
+  private readonly StationService _stationService = new();
   private readonly DateTime _handedOutAtUtc = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
 
   [Test]
-  public void QueuedMinutes_TwoOpenArticles_SumsTheirStatedMinutes()
+  public void QueuedMinutesOf_TwoOpenArticles_SumsTheirStatedMinutes()
   {
     var station = StationWith(OpenItem(5, false), OpenItem(7, false));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(12));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(12));
   }
 
   [Test]
-  public void QueuedMinutes_HalfMinutes_SumsTheHalves()
+  public void QueuedMinutesOf_HalfMinutes_SumsTheHalves()
   {
     var station = StationWith(OpenItem(1.5, false), OpenItem(2.5, false));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(4));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(4));
   }
 
   [Test]
-  public void QueuedMinutes_FractionsThatCarryBinaryDust_ReachTheWireWithOneDecimalPlace()
+  public void QueuedMinutesOf_FractionsThatCarryBinaryDust_ReachTheWireWithOneDecimalPlace()
   {
     var station = StationWith(OpenItem(0.1, false), OpenItem(0.2, false));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(0.3));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(0.3));
   }
 
   [Test]
-  public void QueuedMinutes_AnArticleWithoutAStatedMinuteCount_CountsAsZero()
+  public void QueuedMinutesOf_AnArticleWithoutAStatedMinuteCount_CountsAsZero()
   {
     var station = StationWith(OpenItem(null, false), OpenItem(3, false));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(3));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(3));
   }
 
   [Test]
-  public void QueuedMinutes_AnArticlePreparedBesideTheQueue_StaysOutOfTheSum()
+  public void QueuedMinutesOf_AnArticlePreparedBesideTheQueue_StaysOutOfTheSum()
   {
     var station = StationWith(OpenItem(5, false), OpenItem(7, true));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(5));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(5));
   }
 
   [Test]
-  public void QueuedMinutes_HalfMinutesThatArePreparedBesideTheQueue_StayOutOfTheSum()
+  public void QueuedMinutesOf_HalfMinutesThatArePreparedBesideTheQueue_StayOutOfTheSum()
   {
     var station = StationWith(OpenItem(1.5, false), OpenItem(2.5, true));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(1.5));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(1.5));
   }
 
   [Test]
-  public void QueuedMinutes_OnlyArticlesPreparedBesideTheQueue_LeavesTheQueueEmpty()
+  public void QueuedMinutesOf_OnlyArticlesPreparedBesideTheQueue_LeavesTheQueueEmpty()
   {
     var station = StationWith(OpenItem(4, true), OpenItem(null, true));
 
-    Assert.That(station.QueuedMinutes(), Is.Zero);
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.Zero);
   }
 
   [Test]
-  public void QueuedMinutes_AnItemTheStationHandedOut_StaysOutOfTheSum()
+  public void QueuedMinutesOf_AnItemTheStationHandedOut_StaysOutOfTheSum()
   {
     var station = StationWith(OpenItem(5, false), HandedOutItem(7));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(5));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(5));
   }
 
   [Test]
-  public void QueuedMinutes_ItemsOfTwoStationOrders_SumsAcrossBothOfThem()
+  public void QueuedMinutesOf_ItemsOfTwoStationOrders_SumsAcrossBothOfThem()
   {
     var station = StationWith(OpenItem(5, false));
     AddStationOrder(station, OpenItem(3, false));
 
-    Assert.That(station.QueuedMinutes(), Is.EqualTo(8));
+    Assert.That(_stationService.QueuedMinutesOf(station), Is.EqualTo(8));
   }
 
   [Test]
-  public void QueuedMinutes_AStationWithoutOpenWork_IsZero()
+  public void QueuedMinutesOf_AStationWithoutOpenWork_IsZero()
   {
-    Assert.That(StationWith().QueuedMinutes(), Is.Zero);
+    Assert.That(_stationService.QueuedMinutesOf(StationWith()), Is.Zero);
   }
 
   private Station StationWith(params OrderItem[] items)

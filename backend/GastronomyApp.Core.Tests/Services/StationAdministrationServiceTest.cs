@@ -41,6 +41,7 @@ public sealed class StationAdministrationServiceTest
                    new(_festivalRepository, new(), _clock));
   }
 
+  private readonly StationService _stationService = new();
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
   private readonly Guid _festivalId = Guid.Parse("eeeeeeee-0000-0000-0000-000000000001");
@@ -101,8 +102,8 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(created.Value.SortOrder, Is.EqualTo(2));
                       Assert.That(created.Value.IsActive, Is.True);
                       Assert.That(created.Value.DeviceId, Is.Null);
-                      Assert.That(created.Value.HasOutstandingInvitation(), Is.False);
-                      Assert.That(created.Value.IsAtTheFestival(), Is.False);
+                      Assert.That(_stationService.HasOutstandingInvitation(created.Value), Is.False);
+                      Assert.That(_stationService.IsAtTheFestival(created.Value), Is.False);
                     });
   }
 
@@ -183,26 +184,26 @@ public sealed class StationAdministrationServiceTest
   private Station BuildStation(bool isActive, Guid? deviceId, Guid? invitationId)
   {
     return new()
-    {
-      Id = _kitchenId,
-      Name = "Kueche",
-      SortOrder = 1,
-      IsActive = isActive,
-      DeviceId = deviceId,
-      EnrolmentInvitationId = invitationId
-    };
+           {
+             Id = _kitchenId,
+             Name = "Kueche",
+             SortOrder = 1,
+             IsActive = isActive,
+             DeviceId = deviceId,
+             EnrolmentInvitationId = invitationId
+           };
   }
 
   private Festival BuildFestival()
   {
     return new()
-    {
-      Id = _festivalId,
-      Name = "Sommerfest",
-      StartsAtUtc = _now.AddHours(-1),
-      EndsAtUtc = _now.AddHours(5),
-      NextOrderNumber = 1,
-      IsHidden = false
-    };
+           {
+             Id = _festivalId,
+             Name = "Sommerfest",
+             StartsAtUtc = _now.AddHours(-1),
+             EndsAtUtc = _now.AddHours(5),
+             NextOrderNumber = 1,
+             IsHidden = false
+           };
   }
 }

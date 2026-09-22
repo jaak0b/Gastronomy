@@ -1,5 +1,6 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ public sealed class StationRepositoryTest
     _clock = new(new(_now));
   }
 
+  private readonly StationService _stationService = new();
   private readonly DateTime _now = new(2026, 8, 27, 18, 0, 0, DateTimeKind.Utc);
 
   private FakeTimeProvider _clock = null!;
@@ -48,7 +50,7 @@ public sealed class StationRepositoryTest
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => station.IsAtTheFestival()), Is.All.False);
+    Assert.That(stations.Select(station => _stationService.IsAtTheFestival(station)), Is.All.False);
   }
 
   [Test]
@@ -61,7 +63,7 @@ public sealed class StationRepositoryTest
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => station.IsAtTheFestival()), Is.All.True);
+    Assert.That(stations.Select(station => _stationService.IsAtTheFestival(station)), Is.All.True);
   }
 
   [Test]
@@ -102,8 +104,8 @@ public sealed class StationRepositoryTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stillValid.First(station => station.Id == seeded.KitchenStationId).HasOutstandingInvitation(), Is.True);
-                      Assert.That(afterItRanOut.First(station => station.Id == seeded.KitchenStationId).HasOutstandingInvitation(), Is.False);
+                      Assert.That(_stationService.HasOutstandingInvitation(stillValid.First(station => station.Id == seeded.KitchenStationId)), Is.True);
+                      Assert.That(_stationService.HasOutstandingInvitation(afterItRanOut.First(station => station.Id == seeded.KitchenStationId)), Is.False);
                     });
   }
 

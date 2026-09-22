@@ -1,11 +1,19 @@
 using GastronomyApp.Contracts.Admin.Stations;
 using GastronomyApp.Core.Entities;
+using GastronomyApp.Core.Services;
 using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class AdminStationMapping : IRegister
+public sealed class AdminStationMapping
 {
+  private readonly StationService _stationService;
+
+  public AdminStationMapping(StationService stationService)
+  {
+    _stationService = stationService;
+  }
+
   public void Register(TypeAdapterConfig config)
   {
     ArgumentNullException.ThrowIfNull(config);
@@ -14,7 +22,7 @@ public sealed class AdminStationMapping : IRegister
           .Map(view => view.StationId, station => station.Id)
           .Map(view => view.HasDevice, station => station.DeviceId != null)
           .Map(view => view.LastSeenAtUtc, station => station.Device == null ? null : (DateTime?)station.Device.LastSeenAtUtc)
-          .Map(view => view.HasOutstandingInvitation, station => station.HasOutstandingInvitation())
-          .Map(view => view.IsAtTheFestival, station => station.IsAtTheFestival());
+          .Map(view => view.HasOutstandingInvitation, station => _stationService.HasOutstandingInvitation(station))
+          .Map(view => view.IsAtTheFestival, station => _stationService.IsAtTheFestival(station));
   }
 }

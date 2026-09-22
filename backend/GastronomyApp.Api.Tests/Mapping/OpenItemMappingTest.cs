@@ -12,7 +12,7 @@ public sealed class OpenItemMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new(), new()).Build());
+    _mapper = new Mapper(new MappingConfiguration(new(), new(), new()).Build());
     _ordersPlaced = 0;
   }
 
