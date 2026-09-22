@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Mapping;
+﻿using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Stations;
 using GastronomyApp.Core.Entities;
@@ -12,7 +12,7 @@ public sealed class StationQueueMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new()).Build());
+    _mapper = new Mapper(new MappingConfiguration(new(), new()).Build());
   }
 
   private readonly DateTime _placedAtUtc = new(2026, 9, 5, 19, 5, 0, DateTimeKind.Utc);

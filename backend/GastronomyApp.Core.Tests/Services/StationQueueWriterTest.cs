@@ -20,7 +20,7 @@ public sealed class StationQueueWriterTest
 
     A.CallTo(() => _repository.FindItemsAtStationAsync(A<IReadOnlyCollection<Guid>>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IReadOnlyList<OrderItem>>([]));
 
-    _writer = new(_repository, new(), _clock);
+    _writer = new(_repository, new(), new(), _clock);
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
@@ -169,14 +169,14 @@ public sealed class StationQueueWriterTest
     var stationOrder = StationOrderWith(DeliveryMode.Together);
 
     OrderItem item = new()
-    {
-      Id = Guid.NewGuid(),
-      StationOrderId = stationOrder.Id,
-      CatalogItemId = Guid.NewGuid(),
-      ItemName = "Bratwurst",
-      UnitPriceCents = 350,
-      StationOrder = stationOrder
-    };
+                     {
+                       Id = Guid.NewGuid(),
+                       StationOrderId = stationOrder.Id,
+                       CatalogItemId = Guid.NewGuid(),
+                       ItemName = "Bratwurst",
+                       UnitPriceCents = 350,
+                       StationOrder = stationOrder
+                     };
 
     stationOrder.Items.Add(item);
 
@@ -186,13 +186,13 @@ public sealed class StationQueueWriterTest
   private StationOrder StationOrderWith(DeliveryMode deliveryMode)
   {
     return new()
-    {
-      Id = Guid.NewGuid(),
-      OrderId = Guid.NewGuid(),
-      FestivalId = _festivalId,
-      StationId = _stationId,
-      StationOrderNumber = 1,
-      DeliveryMode = deliveryMode
-    };
+           {
+             Id = Guid.NewGuid(),
+             OrderId = Guid.NewGuid(),
+             FestivalId = _festivalId,
+             StationId = _stationId,
+             StationOrderNumber = 1,
+             DeliveryMode = deliveryMode
+           };
   }
 }

@@ -27,7 +27,7 @@ public sealed class OrderItemFulfillmentService
     foreach (var item in selectedItems.Where(item => item.FulfilledAtUtc is null))
       item.FulfilledAtUtc = fulfilledAtUtc;
 
-    return StationOrdersOf(selectedItems).ToErrorOr();
+    return selectedItems.Select(item => item.StationOrder).DistinctBy(stationOrder => stationOrder.Id).ToList().ToErrorOr<IReadOnlyList<StationOrder>>();
   }
 
   public ErrorOr<IReadOnlyList<StationOrder>> Unfulfill(IReadOnlyList<Guid> orderItemIds, IReadOnlyCollection<OrderItem> knownItems)
@@ -62,11 +62,6 @@ public sealed class OrderItemFulfillmentService
     foreach (var item in toClear)
       item.FulfilledAtUtc = null;
 
-    return StationOrdersOf(toClear).ToErrorOr();
-  }
-
-  private IReadOnlyList<StationOrder> StationOrdersOf(IEnumerable<OrderItem> items)
-  {
-    return items.Select(item => item.StationOrder).DistinctBy(stationOrder => stationOrder.Id).ToList();
+    return toClear.Select(item => item.StationOrder).DistinctBy(stationOrder => stationOrder.Id).ToList().ToErrorOr<IReadOnlyList<StationOrder>>();
   }
 }

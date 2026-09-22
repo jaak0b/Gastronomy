@@ -40,7 +40,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>()).Build());
+    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(), serviceProvider.GetRequiredService<StationOrderService>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -73,6 +73,7 @@ public sealed class ApiServiceRegistration
 
     services.AddSingleton<OrderRoutingResolver>();
     services.AddSingleton<OrderService>();
+    services.AddSingleton<StationOrderService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<OrderItemFulfillmentService>();
 

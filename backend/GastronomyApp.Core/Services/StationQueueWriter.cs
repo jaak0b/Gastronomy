@@ -10,11 +10,13 @@ public sealed class StationQueueWriter
   private readonly TimeProvider _timeProvider;
   private readonly OrderItemFulfillmentService _fulfillmentService;
   private readonly IStationOrderRepository _repository;
+  private readonly StationOrderService _stationOrderService;
 
-  public StationQueueWriter(IStationOrderRepository repository, OrderItemFulfillmentService fulfillmentService, TimeProvider timeProvider)
+  public StationQueueWriter(IStationOrderRepository repository, OrderItemFulfillmentService fulfillmentService, StationOrderService stationOrderService, TimeProvider timeProvider)
   {
     _repository = repository;
     _fulfillmentService = fulfillmentService;
+    _stationOrderService = stationOrderService;
     _timeProvider = timeProvider;
   }
 
@@ -47,6 +49,6 @@ public sealed class StationQueueWriter
     if (stationOrder is null)
       return Refusal.StationQueue.OrderNotAtThisStation(stationOrderId);
 
-    return await stationOrder.HideFromAsItComesQueue().ThenDoAsync(hidden => _repository.SaveChangesAsync(cancellationToken));
+    return await _stationOrderService.HideFromAsItComesQueue(stationOrder).ThenDoAsync(hidden => _repository.SaveChangesAsync(cancellationToken));
   }
 }

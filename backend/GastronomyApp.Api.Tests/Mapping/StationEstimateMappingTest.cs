@@ -1,4 +1,4 @@
-using GastronomyApp.Api.Mapping;
+﻿using GastronomyApp.Api.Mapping;
 using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
@@ -12,7 +12,7 @@ public sealed class StationEstimateMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new()).Build());
+    _mapper = new Mapper(new MappingConfiguration(new(), new()).Build());
   }
 
   private readonly Guid _kitchenId = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
