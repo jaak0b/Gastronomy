@@ -9,7 +9,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class EnrolmentMapping : IRegister
+public sealed class EnrolmentMapping : IMappingRegistration
 {
   public void Register(TypeAdapterConfig config)
   {
@@ -30,7 +30,11 @@ public sealed class EnrolmentMapping : IRegister
           .Map(view => view.Station, redemption => AsStation(redemption.Owner))
           .Map(view => view.Language, redemption => redemption.Owner.Device!.Language);
 
-    config.NewConfig<IDeviceOwner, EnrolmentCompletedEvent>().Map(payload => payload.StaffMemberId, owner => IdOfStaffMember(owner)).Map(payload => payload.StationId, owner => IdOfStation(owner)).Map(payload => payload.OwnerName, owner => owner.Name).Map(payload => payload.DeviceId, owner => owner.Device!.Id);
+    config.NewConfig<IDeviceOwner, EnrolmentCompletedEvent>()
+          .Map(payload => payload.StaffMemberId, owner => IdOfStaffMember(owner))
+          .Map(payload => payload.StationId, owner => IdOfStation(owner))
+          .Map(payload => payload.OwnerName, owner => owner.Name)
+          .Map(payload => payload.DeviceId, owner => owner.Device!.Id);
 
     config.NewConfig<IDeviceOwner, SessionView>().Ignore(view => view.DeviceId).Ignore(view => view.Language).Map(view => view.StaffMember, owner => AsStaffMember(owner)).Map(view => view.Station, owner => AsStation(owner));
   }

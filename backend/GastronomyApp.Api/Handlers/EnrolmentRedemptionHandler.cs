@@ -12,9 +12,9 @@ public sealed class EnrolmentRedemptionHandler
   private const string AcceptLanguageHeaderName = "Accept-Language";
 
   private readonly IMapper _mapper;
-  private readonly EnrolmentInvitationService _service;
+  private readonly EnrolmentService _service;
 
-  public EnrolmentRedemptionHandler(EnrolmentInvitationService service, IMapper mapper)
+  public EnrolmentRedemptionHandler(EnrolmentService service, IMapper mapper)
   {
     _service = service;
     _mapper = mapper;
@@ -24,7 +24,6 @@ public sealed class EnrolmentRedemptionHandler
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    return await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), request.PreviousDeviceToken, cancellationToken)
-                   .Then(_mapper.Map<RedeemedEnrolmentView>);
+    return await _service.RedeemAsync(request.Code!, request.Name?.Trim(), request.UserAgent ?? string.Empty, httpContext.Request.Headers[AcceptLanguageHeaderName].ToString(), request.PreviousDeviceToken, cancellationToken).Then(_mapper.Map<RedeemedEnrolmentView>);
   }
 }

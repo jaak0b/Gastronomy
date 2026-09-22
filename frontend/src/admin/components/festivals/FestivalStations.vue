@@ -25,10 +25,10 @@ const refusalText = useRefusalText(refusal)
 const stationRefusalText = useRefusalText(stationRefusal)
 
 const atTheFestival = computed(() =>
-  stations.stations.filter((station) => station.isAtTheFestival),
+  stations.stations.filter((station) => station.isAtAnyFestival),
 )
 const stillToAdd = computed(() =>
-  stations.stations.filter((station) => station.isActive && !station.isAtTheFestival),
+  stations.stations.filter((station) => station.isActive && !station.isAtAnyFestival),
 )
 
 async function add(): Promise<void> {

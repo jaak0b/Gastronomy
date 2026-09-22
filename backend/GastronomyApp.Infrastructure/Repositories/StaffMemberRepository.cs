@@ -10,13 +10,13 @@ public sealed class StaffMemberRepository : IStaffMemberRepository
 {
   private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly EnrolmentInvitationRules _invitationRules;
+  private readonly EnrolmentInvitationService _enrolmentInvitationService;
 
-  public StaffMemberRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationRules invitationRules)
+  public StaffMemberRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationService enrolmentInvitationService)
   {
     _dbContext = dbContext;
     _timeProvider = timeProvider;
-    _invitationRules = invitationRules;
+    _enrolmentInvitationService = enrolmentInvitationService;
   }
 
   public async Task<IReadOnlyList<StaffMember>> FindAllAsync(CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public sealed class StaffMemberRepository : IStaffMemberRepository
 
     var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-    foreach (var staffMember in staffMembers.Where(staffMember => staffMember.EnrolmentInvitation != null && !_invitationRules.IsOutstandingAt(staffMember.EnrolmentInvitation, nowUtc)))
+    foreach (var staffMember in staffMembers.Where(staffMember => staffMember.EnrolmentInvitation != null && !_enrolmentInvitationService.IsOutstandingAt(staffMember.EnrolmentInvitation, nowUtc)))
       staffMember.EnrolmentInvitation = null;
 
     return staffMembers;

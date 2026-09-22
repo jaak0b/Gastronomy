@@ -5,7 +5,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class AdminFestivalMapping
+public sealed class AdminFestivalMapping : IMappingRegistration
 {
   private readonly FestivalService _festivalService;
 

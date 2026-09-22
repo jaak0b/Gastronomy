@@ -4,7 +4,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class AdminCategoryMapping : IRegister
+public sealed class AdminCategoryMapping : IMappingRegistration
 {
   public void Register(TypeAdapterConfig config)
   {

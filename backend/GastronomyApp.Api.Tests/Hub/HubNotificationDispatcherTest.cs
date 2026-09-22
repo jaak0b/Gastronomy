@@ -24,7 +24,23 @@ public sealed class HubNotificationDispatcherTest
 
     AnnouncementGuard guard = new(A.Fake<IHostApplicationLifetime>(), A.Fake<ILogger<AnnouncementGuard>>());
 
-    _dispatcher = new(_hubContext, guard, new(new(), _hubContext), new Mapper(new MappingConfiguration(new(), new(), new(), new(), new()).Build()));
+    IMappingRegistration[] registrations =
+    [
+      new AdminCategoryMapping(),
+      new AdminFestivalMapping(new()),
+      new AdminItemMapping(),
+      new AdminStaffMembersMapping(new()),
+      new AdminStationMapping(new()),
+      new CatalogMapping(),
+      new EnrolmentMapping(),
+      new OpenItemMapping(),
+      new OrderMapping(new()),
+      new SettlementMapping(),
+      new StationEstimateMapping(new()),
+      new StationQueueMapping(new())
+    ];
+
+    _dispatcher = new(_hubContext, guard, new(new(), _hubContext), new Mapper(new MappingConfiguration(registrations).Build()));
   }
 
   private readonly Guid _deviceId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");

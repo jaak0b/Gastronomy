@@ -5,7 +5,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class SettlementMapping : IRegister
+public sealed class SettlementMapping : IMappingRegistration
 {
   public void Register(TypeAdapterConfig config)
   {

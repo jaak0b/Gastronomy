@@ -6,7 +6,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class OrderMapping
+public sealed class OrderMapping : IMappingRegistration
 {
   private readonly OrderService _orderService;
 

@@ -50,7 +50,7 @@ public sealed class StationRepositoryTest
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(null, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => _stationService.IsAtTheFestival(station)), Is.All.False);
+    Assert.That(stations.Select(station => _stationService.IsAtAnyFestival(station)), Is.All.False);
   }
 
   [Test]
@@ -63,7 +63,7 @@ public sealed class StationRepositoryTest
 
     IReadOnlyList<Station> stations = await repository.FindAllAsync(seeded.FestivalId, TestContext.CurrentContext.CancellationToken);
 
-    Assert.That(stations.Select(station => _stationService.IsAtTheFestival(station)), Is.All.True);
+    Assert.That(stations.Select(station => _stationService.IsAtAnyFestival(station)), Is.All.True);
   }
 
   [Test]

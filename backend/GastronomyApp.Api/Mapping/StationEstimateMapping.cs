@@ -5,7 +5,7 @@ using Mapster;
 
 namespace GastronomyApp.Api.Mapping;
 
-public sealed class StationEstimateMapping
+public sealed class StationEstimateMapping : IMappingRegistration
 {
   private readonly StationService _stationService;
 

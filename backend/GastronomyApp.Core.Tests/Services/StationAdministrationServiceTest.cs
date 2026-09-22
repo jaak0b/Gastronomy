@@ -103,7 +103,7 @@ public sealed class StationAdministrationServiceTest
                       Assert.That(created.Value.IsActive, Is.True);
                       Assert.That(created.Value.DeviceId, Is.Null);
                       Assert.That(_stationService.HasOutstandingInvitation(created.Value), Is.False);
-                      Assert.That(_stationService.IsAtTheFestival(created.Value), Is.False);
+                      Assert.That(_stationService.IsAtAnyFestival(created.Value), Is.False);
                     });
   }
 

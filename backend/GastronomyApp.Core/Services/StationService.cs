@@ -11,7 +11,7 @@ public sealed class StationService
     return station.EnrolmentInvitation is not null;
   }
 
-  public bool IsAtTheFestival(Station station)
+  public bool IsAtAnyFestival(Station station)
   {
     ArgumentNullException.ThrowIfNull(station);
 

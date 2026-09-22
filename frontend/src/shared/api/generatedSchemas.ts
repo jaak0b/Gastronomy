@@ -32,7 +32,7 @@ export type AdminStaffMemberListView = __TypedOpenapi.Schemas.AdminStaffMemberLi
 export const AdminStaffMemberListView = z.strictObject({ staffMembers: z.array(AdminStaffMemberView) });
 
 export type AdminStationView = __TypedOpenapi.Schemas.AdminStationView;
-export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), lastSeenAtUtc: z.string().nullable(), hasOutstandingInvitation: z.boolean(), isAtTheFestival: z.boolean() });
+export const AdminStationView = z.strictObject({ stationId: z.string(), name: z.string(), sortOrder: z.number().int(), isActive: z.boolean(), hasDevice: z.boolean(), lastSeenAtUtc: z.string().nullable(), hasOutstandingInvitation: z.boolean(), isAtAnyFestival: z.boolean() });
 
 export type AdminStationListView = __TypedOpenapi.Schemas.AdminStationListView;
 export const AdminStationListView = z.strictObject({ stations: z.array(AdminStationView) });

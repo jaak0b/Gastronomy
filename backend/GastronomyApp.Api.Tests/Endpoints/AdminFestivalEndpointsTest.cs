@@ -742,8 +742,8 @@ public sealed class AdminFestivalEndpointsTest
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(kitchen.GetProperty("isAtTheFestival").GetBoolean(), Is.True);
-                      Assert.That(stranger.GetProperty("isAtTheFestival").GetBoolean(), Is.False);
+                      Assert.That(kitchen.GetProperty("isAtAnyFestival").GetBoolean(), Is.True);
+                      Assert.That(stranger.GetProperty("isAtAnyFestival").GetBoolean(), Is.False);
                     });
   }
 
@@ -756,7 +756,7 @@ public sealed class AdminFestivalEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("isAtTheFestival").GetBoolean()), Is.All.False);
+                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("isAtAnyFestival").GetBoolean()), Is.All.False);
                     });
   }
 

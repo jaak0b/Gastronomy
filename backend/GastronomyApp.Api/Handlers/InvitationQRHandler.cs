@@ -13,9 +13,9 @@ public sealed class InvitationQRHandler
   private const int PixelsPerModule = 8;
 
   private readonly ResultEnvelope _resultEnvelope;
-  private readonly EnrolmentInvitationService _service;
+  private readonly EnrolmentService _service;
 
-  public InvitationQRHandler(EnrolmentInvitationService service, ResultEnvelope resultEnvelope)
+  public InvitationQRHandler(EnrolmentService service, ResultEnvelope resultEnvelope)
   {
     _service = service;
     _resultEnvelope = resultEnvelope;

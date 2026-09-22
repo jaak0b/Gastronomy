@@ -85,7 +85,7 @@ const ONE_STATION = {
       hasDevice: true,
       lastSeenAtUtc: null,
       hasOutstandingInvitation: false,
-      isAtTheFestival: true,
+      isAtAnyFestival: true,
     },
   ],
 }

@@ -10,13 +10,13 @@ public sealed class StationRepository : IStationRepository
 {
   private readonly TimeProvider _timeProvider;
   private readonly GastronomyAppDbContext _dbContext;
-  private readonly EnrolmentInvitationRules _invitationRules;
+  private readonly EnrolmentInvitationService _enrolmentInvitationService;
 
-  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationRules invitationRules)
+  public StationRepository(GastronomyAppDbContext dbContext, TimeProvider timeProvider, EnrolmentInvitationService enrolmentInvitationService)
   {
     _dbContext = dbContext;
     _timeProvider = timeProvider;
-    _invitationRules = invitationRules;
+    _enrolmentInvitationService = enrolmentInvitationService;
   }
 
   public async Task<IReadOnlyCollection<Station>> FindAtFestivalAsync(Guid festivalId, CancellationToken cancellationToken)
@@ -57,7 +57,7 @@ public sealed class StationRepository : IStationRepository
 
     var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-    foreach (var station in stations.Where(station => station.EnrolmentInvitation != null && !_invitationRules.IsOutstandingAt(station.EnrolmentInvitation, nowUtc)))
+    foreach (var station in stations.Where(station => station.EnrolmentInvitation != null && !_enrolmentInvitationService.IsOutstandingAt(station.EnrolmentInvitation, nowUtc)))
       station.EnrolmentInvitation = null;
 
     return stations;

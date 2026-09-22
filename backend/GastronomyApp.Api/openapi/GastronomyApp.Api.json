@@ -1707,7 +1707,7 @@
           "hasDevice",
           "lastSeenAtUtc",
           "hasOutstandingInvitation",
-          "isAtTheFestival"
+          "isAtAnyFestival"
         ],
         "type": "object",
         "properties": {
@@ -1738,7 +1738,7 @@
           "hasOutstandingInvitation": {
             "type": "boolean"
           },
-          "isAtTheFestival": {
+          "isAtAnyFestival": {
             "type": "boolean"
           }
         }

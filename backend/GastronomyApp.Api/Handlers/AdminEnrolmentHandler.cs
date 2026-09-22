@@ -13,10 +13,10 @@ public sealed class AdminEnrolmentHandler
 {
   private readonly IOutstandingInvitationCache _invitationCache;
   private readonly IMapper _mapper;
-  private readonly EnrolmentInvitationService _service;
+  private readonly EnrolmentService _service;
   private readonly EnrolmentUrlBuilder _urlBuilder;
 
-  public AdminEnrolmentHandler(EnrolmentInvitationService service, EnrolmentUrlBuilder urlBuilder, IOutstandingInvitationCache invitationCache, IMapper mapper)
+  public AdminEnrolmentHandler(EnrolmentService service, EnrolmentUrlBuilder urlBuilder, IOutstandingInvitationCache invitationCache, IMapper mapper)
   {
     _service = service;
     _urlBuilder = urlBuilder;
@@ -36,9 +36,9 @@ public sealed class AdminEnrolmentHandler
     _invitationCache.Remember(new(issuedInvitation.Invitation.Id, issuedInvitation.QRCodeValue, qrUrl, issuedInvitation.Invitation.ExpiresAtUtc));
 
     return _mapper.Map<InvitationView>(issuedInvitation) with
-    {
-      QRUrl = qrUrl,
-      AvailableAddresses = _urlBuilder.ReachableAddresses()
-    };
+           {
+             QRUrl = qrUrl,
+             AvailableAddresses = _urlBuilder.ReachableAddresses()
+           };
   }
 }

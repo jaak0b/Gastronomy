@@ -90,7 +90,7 @@ public sealed class AdminEndpointsTest
                       Assert.That(body.RootElement.GetProperty("hasDevice").GetBoolean(), Is.False);
                       Assert.That(body.RootElement.GetProperty("lastSeenAtUtc").ValueKind, Is.EqualTo(JsonValueKind.Null));
                       Assert.That(body.RootElement.GetProperty("hasOutstandingInvitation").GetBoolean(), Is.False);
-                      Assert.That(body.RootElement.GetProperty("isAtTheFestival").GetBoolean(), Is.False);
+                      Assert.That(body.RootElement.GetProperty("isAtAnyFestival").GetBoolean(), Is.False);
                     });
   }
 

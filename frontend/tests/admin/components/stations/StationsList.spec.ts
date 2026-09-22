@@ -18,7 +18,7 @@ const ONE_STATION = JSON.stringify({
       hasDevice: true,
       lastSeenAtUtc: null,
       hasOutstandingInvitation: false,
-      isAtTheFestival: true,
+      isAtAnyFestival: true,
     },
   ],
 })
@@ -138,7 +138,7 @@ describe('a new station', () => {
               hasDevice: false,
               lastSeenAtUtc: null,
               hasOutstandingInvitation: false,
-              isAtTheFestival: false,
+              isAtAnyFestival: false,
             }),
             { status: 201 },
           )
@@ -599,7 +599,7 @@ describe('a refusal the admin has walked away from', () => {
     hasDevice: true,
     lastSeenAtUtc: null,
     hasOutstandingInvitation: false,
-    isAtTheFestival: true,
+    isAtAnyFestival: true,
   }
 
   beforeEach(() => {

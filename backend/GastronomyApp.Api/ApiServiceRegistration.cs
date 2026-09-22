@@ -40,11 +40,20 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(),
-                                                                      serviceProvider.GetRequiredService<StationOrderService>(),
-                                                                      serviceProvider.GetRequiredService<StationService>(),
-                                                                      serviceProvider.GetRequiredService<StaffMemberService>(),
-                                                                      serviceProvider.GetRequiredService<FestivalService>()).Build());
+    services.AddSingleton<IMappingRegistration, AdminCategoryMapping>();
+    services.AddSingleton<IMappingRegistration, AdminFestivalMapping>();
+    services.AddSingleton<IMappingRegistration, AdminItemMapping>();
+    services.AddSingleton<IMappingRegistration, AdminStaffMembersMapping>();
+    services.AddSingleton<IMappingRegistration, AdminStationMapping>();
+    services.AddSingleton<IMappingRegistration, CatalogMapping>();
+    services.AddSingleton<IMappingRegistration, EnrolmentMapping>();
+    services.AddSingleton<IMappingRegistration, OpenItemMapping>();
+    services.AddSingleton<IMappingRegistration, OrderMapping>();
+    services.AddSingleton<IMappingRegistration, SettlementMapping>();
+    services.AddSingleton<IMappingRegistration, StationEstimateMapping>();
+    services.AddSingleton<IMappingRegistration, StationQueueMapping>();
+
+    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -81,7 +90,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationService>();
     services.AddSingleton<StaffMemberService>();
     services.AddSingleton<FestivalService>();
-    services.AddSingleton<EnrolmentInvitationRules>();
+    services.AddSingleton<EnrolmentInvitationService>();
     services.AddSingleton<FestivalSchedule>();
     services.AddSingleton<OrderItemFulfillmentService>();
 
@@ -101,7 +110,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<FestivalStationService>();
     services.AddScoped<StationAdministrationService>();
     services.AddScoped<StaffMemberAdministrationService>();
-    services.AddScoped<EnrolmentInvitationService>();
+    services.AddScoped<EnrolmentService>();
     services.AddScoped<RunningFestivalLookup>();
     services.AddScoped<StationAtFestivalLookup>();
     services.AddScoped<StationQueueService>();

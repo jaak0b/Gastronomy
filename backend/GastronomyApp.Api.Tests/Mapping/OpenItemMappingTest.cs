@@ -12,7 +12,23 @@ public sealed class OpenItemMappingTest
   [SetUp]
   public void SetUp()
   {
-    _mapper = new Mapper(new MappingConfiguration(new(), new(), new(), new(), new()).Build());
+    IMappingRegistration[] registrations =
+    [
+      new AdminCategoryMapping(),
+      new AdminFestivalMapping(new()),
+      new AdminItemMapping(),
+      new AdminStaffMembersMapping(new()),
+      new AdminStationMapping(new()),
+      new CatalogMapping(),
+      new EnrolmentMapping(),
+      new OpenItemMapping(),
+      new OrderMapping(new()),
+      new SettlementMapping(),
+      new StationEstimateMapping(new()),
+      new StationQueueMapping(new())
+    ];
+
+    _mapper = new Mapper(new MappingConfiguration(registrations).Build());
     _ordersPlaced = 0;
   }
 

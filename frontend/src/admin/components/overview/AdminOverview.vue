@@ -26,7 +26,7 @@ const rows = computed<ReadinessRow[]>(() => {
   if (runningFestival.value === null) {
     return readiness
   }
-  if (stations.stations.every((station) => !station.isAtTheFestival)) {
+  if (stations.stations.every((station) => !station.isAtAnyFestival)) {
     readiness.push({ key: 'admin.overview.missingStation', parameters: {}, count: null })
   }
   if (categories.categories.length === 0) {
@@ -47,7 +47,7 @@ const rows = computed<ReadinessRow[]>(() => {
     })
   }
   for (const station of stations.stations) {
-    if (station.isAtTheFestival && station.isActive && !station.hasDevice) {
+    if (station.isAtAnyFestival && station.isActive && !station.hasDevice) {
       readiness.push({
         key: 'admin.overview.stationWithoutTablet',
         parameters: { name: station.name },

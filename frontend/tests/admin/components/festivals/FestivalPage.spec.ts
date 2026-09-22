@@ -36,7 +36,7 @@ const KITCHEN = {
   hasDevice: true,
   lastSeenAtUtc: null,
   hasOutstandingInvitation: false,
-  isAtTheFestival: true,
+  isAtAnyFestival: true,
 }
 
 const BAR = {
@@ -47,7 +47,7 @@ const BAR = {
   hasDevice: false,
   lastSeenAtUtc: null,
   hasOutstandingInvitation: false,
-  isAtTheFestival: false,
+  isAtAnyFestival: false,
 }
 
 const FOOD = {
@@ -389,7 +389,7 @@ describe('the stations of this festival', () => {
       hasDevice: false,
       lastSeenAtUtc: null,
       hasOutstandingInvitation: false,
-      isAtTheFestival: false,
+      isAtAnyFestival: false,
     }
     const calls = stubLaptop({ created: NEW_STATION })
 
@@ -460,7 +460,7 @@ describe('the stations of this festival', () => {
   })
 
   it('tints every second station row so the eye can follow it', async () => {
-    stubLaptop({ stations: [KITCHEN, { ...BAR, isAtTheFestival: true }] })
+    stubLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] })
 
     const page = mountPage()
     await vi.waitFor(() => expect(page.findAll('.festival-station-row').length).toBe(2))
@@ -622,7 +622,7 @@ describe('the items of this festival', () => {
   it('sends the price with a newly chosen station and summarises both stations', async () => {
     const listed = listedItems()
     const calls = stubLaptop({
-      stations: [KITCHEN, { ...BAR, isAtTheFestival: true }],
+      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
       items: listed,
       waitBeforeAnswering: async (call) => {
         if (call.method === 'PUT' && call.url.endsWith(`/items/${SAUSAGE_ID}`)) {
@@ -701,7 +701,7 @@ describe('the items of this festival', () => {
   })
 
   it('keeps the stations as they were while the price in that row cannot be read', async () => {
-    const calls = stubLaptop({ stations: [KITCHEN, { ...BAR, isAtTheFestival: true }] })
+    const calls = stubLaptop({ stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }] })
 
     const page = mountPage()
     await vi.waitFor(() =>
@@ -1014,7 +1014,7 @@ describe('an item change the laptop refuses', () => {
 
   it('puts the station selection back where the laptop has it and says why', async () => {
     stubLaptop({
-      stations: [KITCHEN, { ...BAR, isAtTheFestival: true }],
+      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
       refusal: REFUSED_PUT,
     })
 
@@ -1080,7 +1080,7 @@ describe('an item change the laptop refuses', () => {
     })
     let held = false
     const calls = stubLaptop({
-      stations: [KITCHEN, { ...BAR, isAtTheFestival: true }],
+      stations: [KITCHEN, { ...BAR, isAtAnyFestival: true }],
       waitBeforeAnswering: async (call) => {
         if (call.method === 'PUT' && !held) {
           held = true

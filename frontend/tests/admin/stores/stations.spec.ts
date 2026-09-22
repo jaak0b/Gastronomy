@@ -10,7 +10,7 @@ const BACKEND_STATION = {
   hasDevice: false,
   lastSeenAtUtc: null,
   hasOutstandingInvitation: false,
-  isAtTheFestival: true,
+  isAtAnyFestival: true,
 }
 
 const ZELT = {
@@ -21,7 +21,7 @@ const ZELT = {
   hasDevice: false,
   lastSeenAtUtc: null,
   hasOutstandingInvitation: false,
-  isAtTheFestival: false,
+  isAtAnyFestival: false,
 }
 
 interface RecordedCall {
@@ -237,7 +237,7 @@ const CREATED_STATION = {
   hasDevice: false,
   lastSeenAtUtc: null,
   hasOutstandingInvitation: false,
-  isAtTheFestival: false,
+  isAtAnyFestival: false,
 }
 
 describe('a station created while a list read is on the way', () => {

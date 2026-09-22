@@ -194,7 +194,7 @@ describe('a station at a festival', () => {
                 hasDevice: false,
                 lastSeenAtUtc: null,
                 hasOutstandingInvitation: false,
-                isAtTheFestival: false,
+                isAtAnyFestival: false,
               }),
               { status: 201 },
             )
@@ -214,7 +214,7 @@ describe('a station at a festival', () => {
         hasDevice: false,
         lastSeenAtUtc: null,
         hasOutstandingInvitation: false,
-        isAtTheFestival: false,
+        isAtAnyFestival: false,
       },
     })
   })
