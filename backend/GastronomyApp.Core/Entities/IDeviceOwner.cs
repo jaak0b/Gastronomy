@@ -1,6 +1,4 @@
-using GastronomyApp.Contracts.Enums;
-
-namespace GastronomyApp.Core.Entities;
+﻿namespace GastronomyApp.Core.Entities;
 
 public interface IDeviceOwner
 {
@@ -9,8 +7,6 @@ public interface IDeviceOwner
   public string Name { get; }
 
   public bool IsActive { get; }
-
-  public DeviceOwnerKind Kind { get; }
 
   public Guid? DeviceId { get; set; }
 

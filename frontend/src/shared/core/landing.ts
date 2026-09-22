@@ -1,4 +1,3 @@
-import { DeviceOwnerKind } from '../api/generatedSchemas'
 import type { AppRoute } from '../router/route'
 import { assertNever } from './assertNever'
 
@@ -34,7 +33,8 @@ export function isPhoneScreen(screen: ScreenName): screen is PhoneScreenName {
 export type DeviceSession =
   | { state: 'notSetUp' }
   | { state: 'startingUp' }
-  | { state: 'setUp'; deviceKind: DeviceOwnerKind }
+  | { state: 'waiterPhone' }
+  | { state: 'stationTablet' }
 
 type EnrolledScreenRoute = 'home' | 'review' | 'openItems' | 'stations'
 
@@ -53,20 +53,6 @@ function screenForAWaiterPhone(route: EnrolledScreenRoute): ScreenName {
   }
 }
 
-function screenForTheKindOfDevice(
-  deviceKind: DeviceOwnerKind,
-  route: EnrolledScreenRoute,
-): ScreenName {
-  switch (deviceKind) {
-    case 'station':
-      return 'station'
-    case 'staffMember':
-      return screenForAWaiterPhone(route)
-    default:
-      return assertNever(deviceKind)
-  }
-}
-
 function screenForTheDeviceSession(
   session: DeviceSession,
   route: EnrolledScreenRoute,
@@ -76,8 +62,10 @@ function screenForTheDeviceSession(
       return 'welcome'
     case 'startingUp':
       return 'startingUp'
-    case 'setUp':
-      return screenForTheKindOfDevice(session.deviceKind, route)
+    case 'stationTablet':
+      return 'station'
+    case 'waiterPhone':
+      return screenForAWaiterPhone(route)
     default:
       return assertNever(session)
   }

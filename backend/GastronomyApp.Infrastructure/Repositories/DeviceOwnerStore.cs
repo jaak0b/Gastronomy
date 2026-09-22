@@ -1,7 +1,5 @@
-using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,17 +14,14 @@ public sealed class DeviceOwnerStore : IDeviceOwnerStore
     _dbContext = dbContext;
   }
 
-  public async Task<IDeviceOwner?> FindAsync(DeviceOwnerKind kind, Guid ownerId, CancellationToken cancellationToken)
+  public Task<StaffMember?> FindStaffMemberAsync(Guid staffMemberId, CancellationToken cancellationToken)
   {
-    switch (kind)
-    {
-      case DeviceOwnerKind.StaffMember:
-        return await _dbContext.StaffMembers.Include(staffMember => staffMember.Device).FirstOrDefaultAsync(candidate => candidate.Id == ownerId, cancellationToken);
-      case DeviceOwnerKind.Station:
-        return await _dbContext.Stations.Include(station => station.Device).FirstOrDefaultAsync(candidate => candidate.Id == ownerId, cancellationToken);
-      default:
-        return new UnreachableCase().Throw<IDeviceOwner?>(kind);
-    }
+    return _dbContext.StaffMembers.Include(staffMember => staffMember.Device).FirstOrDefaultAsync(candidate => candidate.Id == staffMemberId, cancellationToken);
+  }
+
+  public Task<Station?> FindStationAsync(Guid stationId, CancellationToken cancellationToken)
+  {
+    return _dbContext.Stations.Include(station => station.Device).FirstOrDefaultAsync(candidate => candidate.Id == stationId, cancellationToken);
   }
 
   public async Task<IDeviceOwner?> FindByDeviceAsync(Guid deviceId, CancellationToken cancellationToken)

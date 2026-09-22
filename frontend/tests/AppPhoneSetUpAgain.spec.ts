@@ -14,7 +14,6 @@ const { restoreDraft, saveDraft, saveSendProgress } = await import('../src/phone
 
 const SESSION = {
   deviceId: 'device-1',
-  deviceKind: 'staffMember',
   staffMember: { id: 'staff-1', name: 'Anna' },
   station: null,
   language: 'de',

@@ -8,7 +8,6 @@ import { testPlugins } from '../../../support/plugins'
 const INVITATION: InvitationView = {
   invitationId: 'invitation-1',
   qrUrl: 'http://192.168.1.20:5000/j/abc123',
-  ownerKind: 'staffMember',
   availableAddresses: [],
   expiresAtUtc: '2026-08-27T18:05:00Z',
   staffMember: { id: 'staff-1', name: 'Anna' },

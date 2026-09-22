@@ -277,7 +277,6 @@ describe('setting up the tablet of a station', () => {
             JSON.stringify({
               invitationId: 'invitation-1',
               qrUrl: 'http://192.168.0.22:5000/j/CODE',
-              ownerKind: 'station',
               availableAddresses: [],
               expiresAtUtc: '2026-08-27T20:00:00Z',
               staffMember: null,

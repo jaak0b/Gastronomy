@@ -25,7 +25,7 @@ public sealed class SessionHandler
   {
     ArgumentNullException.ThrowIfNull(caller);
 
-    return await _sessionService.ReadOwnerAsync(caller.OwnerKind, caller.OwnerId, cancellationToken).Then(owner => BuildSessionView(owner, caller));
+    return await _sessionService.ReadOwnerOfDeviceAsync(caller.DeviceId, cancellationToken).Then(owner => BuildSessionView(owner, caller));
   }
 
   public async Task<NoContentAnswer> ChangeLanguageAsync(LanguageChangeRequest request, DeviceCaller caller, CancellationToken cancellationToken)

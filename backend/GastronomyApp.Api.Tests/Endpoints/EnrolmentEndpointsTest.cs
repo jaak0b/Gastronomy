@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,7 +106,6 @@ public sealed class EnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("staffMember"));
                       Assert.That(body.RootElement.GetProperty("staffMember").GetProperty("name").GetString(), Is.EqualTo("Bernd"));
                       Assert.That(body.RootElement.GetProperty("deviceToken").GetString(), Is.Not.Empty);
                     });
@@ -285,7 +283,7 @@ public sealed class EnrolmentEndpointsTest
   private async Task<string> CreateInvitationCodeAsync()
   {
     using var scope = _factory.Services.CreateScope();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, _world.StaffMemberId, CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
 
     return (await scope.ServiceProvider.GetRequiredService<IEnrolmentInvitationStore>().CreateAsync(owner, CancellationToken.None)).QRCodeValue;
   }

@@ -1917,12 +1917,6 @@
           "asItComes"
         ]
       },
-      "DeviceOwnerKind": {
-        "enum": [
-          "staffMember",
-          "station"
-        ]
-      },
       "DeviceRevokedEvent": {
         "required": [
           "deviceId"
@@ -1937,21 +1931,25 @@
       },
       "EnrolmentCompletedEvent": {
         "required": [
-          "deviceKind",
-          "ownerId",
+          "staffMemberId",
+          "stationId",
           "ownerName",
           "deviceId"
         ],
         "type": "object",
         "properties": {
-          "deviceKind": {
-            "enum": [
-              "staffMember",
-              "station"
-            ]
+          "staffMemberId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
-          "ownerId": {
-            "type": "string",
+          "stationId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "ownerName": {
@@ -1971,7 +1969,6 @@
           "invitationId",
           "qrUrl",
           "expiresAtUtc",
-          "ownerKind",
           "staffMember",
           "station",
           "availableAddresses"
@@ -1988,16 +1985,6 @@
           "expiresAtUtc": {
             "type": "string",
             "format": "date-time"
-          },
-          "ownerKind": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DeviceOwnerKind"
-              }
-            ]
           },
           "staffMember": {
             "oneOf": [
@@ -2359,7 +2346,6 @@
         "required": [
           "deviceId",
           "deviceToken",
-          "deviceKind",
           "staffMember",
           "station",
           "language"
@@ -2372,9 +2358,6 @@
           },
           "deviceToken": {
             "type": "string"
-          },
-          "deviceKind": {
-            "$ref": "#/components/schemas/DeviceOwnerKind"
           },
           "staffMember": {
             "oneOf": [
@@ -2629,7 +2612,6 @@
       "SessionView": {
         "required": [
           "deviceId",
-          "deviceKind",
           "staffMember",
           "station",
           "language"
@@ -2639,9 +2621,6 @@
           "deviceId": {
             "type": "string",
             "format": "uuid"
-          },
-          "deviceKind": {
-            "$ref": "#/components/schemas/DeviceOwnerKind"
           },
           "staffMember": {
             "oneOf": [

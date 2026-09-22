@@ -64,14 +64,11 @@ export const CreateInvitationRequest = z.strictObject({ staffMemberId: z.string(
 export type DeliveryMode = __TypedOpenapi.Schemas.DeliveryMode;
 export const DeliveryMode = z.enum(["together", "asItComes"]);
 
-export type DeviceOwnerKind = __TypedOpenapi.Schemas.DeviceOwnerKind;
-export const DeviceOwnerKind = z.enum(["staffMember", "station"]);
-
 export type DeviceRevokedEvent = __TypedOpenapi.Schemas.DeviceRevokedEvent;
 export const DeviceRevokedEvent = z.strictObject({ deviceId: z.string() });
 
 export type EnrolmentCompletedEvent = __TypedOpenapi.Schemas.EnrolmentCompletedEvent;
-export const EnrolmentCompletedEvent = z.strictObject({ deviceKind: z.enum(["staffMember", "station"]), ownerId: z.string(), ownerName: z.string(), deviceId: z.string() });
+export const EnrolmentCompletedEvent = z.strictObject({ staffMemberId: z.string().nullable(), stationId: z.string().nullable(), ownerName: z.string(), deviceId: z.string() });
 
 export type FestivalChangedEvent = __TypedOpenapi.Schemas.FestivalChangedEvent;
 export const FestivalChangedEvent = z.record(z.string(), z.unknown());
@@ -83,7 +80,7 @@ export type StationSummaryView = __TypedOpenapi.Schemas.StationSummaryView;
 export const StationSummaryView = z.strictObject({ id: z.string(), name: z.string() });
 
 export type InvitationView = __TypedOpenapi.Schemas.InvitationView;
-export const InvitationView = z.strictObject({ invitationId: z.string(), qrUrl: z.string(), expiresAtUtc: z.string(), ownerKind: DeviceOwnerKind.nullable(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), availableAddresses: z.array(z.string()) });
+export const InvitationView = z.strictObject({ invitationId: z.string(), qrUrl: z.string(), expiresAtUtc: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), availableAddresses: z.array(z.string()) });
 
 export type LanguageChangeRequest = __TypedOpenapi.Schemas.LanguageChangeRequest;
 export const LanguageChangeRequest = z.strictObject({ language: z.string().nullable() });
@@ -131,7 +128,7 @@ export type PlaceOrderRequest = __TypedOpenapi.Schemas.PlaceOrderRequest;
 export const PlaceOrderRequest = z.strictObject({ clientOrderId: z.string(), tableName: z.string().nullable(), items: z.array(OrderItemRequest).nullable(), deliveryModes: z.array(OrderDeliveryModeRequest).nullable().optional() });
 
 export type RedeemedEnrolmentView = __TypedOpenapi.Schemas.RedeemedEnrolmentView;
-export const RedeemedEnrolmentView = z.strictObject({ deviceId: z.string(), deviceToken: z.string(), deviceKind: DeviceOwnerKind, staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
+export const RedeemedEnrolmentView = z.strictObject({ deviceId: z.string(), deviceToken: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
 
 export type RedeemEnrolmentRequest = __TypedOpenapi.Schemas.RedeemEnrolmentRequest;
 export const RedeemEnrolmentRequest = z.strictObject({ code: z.string().nullable(), name: z.string().nullable().optional(), userAgent: z.string().nullable().optional(), previousDeviceToken: z.string().nullable().optional() });
@@ -164,7 +161,7 @@ export type SaveStationRequest = __TypedOpenapi.Schemas.SaveStationRequest;
 export const SaveStationRequest = z.strictObject({ name: z.string().nullable(), sortOrder: z.number().int() });
 
 export type SessionView = __TypedOpenapi.Schemas.SessionView;
-export const SessionView = z.strictObject({ deviceId: z.string(), deviceKind: DeviceOwnerKind, staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
+export const SessionView = z.strictObject({ deviceId: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), language: z.string() });
 
 export type SetAvailabilityRequest = __TypedOpenapi.Schemas.SetAvailabilityRequest;
 export const SetAvailabilityRequest = z.strictObject({ isAvailable: z.boolean() });

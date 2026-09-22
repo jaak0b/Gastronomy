@@ -1,11 +1,12 @@
-using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 
 namespace GastronomyApp.Core.Ports;
 
 public interface IDeviceOwnerStore
 {
-  public Task<IDeviceOwner?> FindAsync(DeviceOwnerKind kind, Guid ownerId, CancellationToken cancellationToken);
+  public Task<StaffMember?> FindStaffMemberAsync(Guid staffMemberId, CancellationToken cancellationToken);
+
+  public Task<Station?> FindStationAsync(Guid stationId, CancellationToken cancellationToken);
 
   public Task<IDeviceOwner?> FindByDeviceAsync(Guid deviceId, CancellationToken cancellationToken);
 

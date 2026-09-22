@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using FakeItEasy;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
@@ -27,7 +26,8 @@ public sealed class EnrolmentInvitationServiceTest
     _clock = new FakeTimeProvider(new(_now));
 
     A.CallTo(() => _store.CreateAsync(A<IDeviceOwner?>._, A<CancellationToken>._)).ReturnsLazily(call => Task.FromResult(new IssuedEnrolmentInvitation(BuildInvitation(null, null, _now.AddMinutes(5)), "ABCDEF", call.GetArgument<IDeviceOwner?>(0))));
-    A.CallTo(() => _ownerStore.FindAsync(A<DeviceOwnerKind>._, A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(null));
+    A.CallTo(() => _ownerStore.FindStaffMemberAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<StaffMember?>(null));
+    A.CallTo(() => _ownerStore.FindStationAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(null));
     A.CallTo(() => _store.FindByIdAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult<EnrolmentInvitation?>(null));
     A.CallTo(() => _invitationCache.Read()).Returns(null);
     A.CallTo(() => _tokenSplitter.Split(A<string?>._)).Returns(null);
@@ -109,7 +109,7 @@ public sealed class EnrolmentInvitationServiceTest
                         DeviceId = _deviceId
                       };
 
-    A.CallTo(() => _ownerStore.FindAsync(DeviceOwnerKind.Station, _stationId, A<CancellationToken>._)).Returns(Task.FromResult<IDeviceOwner?>(kitchen));
+    A.CallTo(() => _ownerStore.FindStationAsync(_stationId, A<CancellationToken>._)).Returns(Task.FromResult<Station?>(kitchen));
 
     ErrorOr<IssuedEnrolmentInvitation> issued = await _service.CreateAsync(null, _stationId, CancellationToken.None);
 

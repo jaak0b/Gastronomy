@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Results;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,7 +100,7 @@ public sealed class DeviceAuthenticationTest
   private async Task<IssuedDeviceToken> IssueTokenAsync()
   {
     using var scope = _factory.Services.CreateScope();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, _world.StaffMemberId, CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
 
     return await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
   }

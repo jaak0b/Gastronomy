@@ -48,7 +48,7 @@ function aQueue(orders: StationOrderQueueView[], asItComes: StationOrderQueueVie
 function enrolledStationTablet(): void {
   const session = useSessionStore()
   session.deviceToken = 'token-here'
-  session.deviceKind = 'station'
+  session.station = KITCHEN
 }
 
 function stubTheLaptop(routes: Record<string, () => Response>): {

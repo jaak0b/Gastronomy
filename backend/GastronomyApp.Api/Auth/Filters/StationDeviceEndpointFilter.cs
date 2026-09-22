@@ -1,4 +1,4 @@
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Core.Entities;
 using Microsoft.AspNetCore.Http;
 
 namespace GastronomyApp.Api.Auth.Filters;
@@ -17,6 +17,6 @@ public sealed class StationDeviceEndpointFilter : IEndpointFilter
     ArgumentNullException.ThrowIfNull(context);
     ArgumentNullException.ThrowIfNull(next);
 
-    return _gate.FindRefusal(context.HttpContext, DeviceOwnerKind.Station) ?? await next(context);
+    return await _gate.FindRefusalAsync<Station>(context.HttpContext) ?? await next(context);
   }
 }

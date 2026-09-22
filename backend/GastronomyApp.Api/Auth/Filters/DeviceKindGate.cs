@@ -1,27 +1,27 @@
-using GastronomyApp.Api.ErrorHandling;
-using GastronomyApp.Contracts.Enums;
+﻿using GastronomyApp.Api.ErrorHandling;
+using GastronomyApp.Core.Entities;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GastronomyApp.Api.Auth.Filters;
 
 public sealed class DeviceKindGate
 {
-  private readonly CallerIdentity _callerIdentity;
   private readonly ResultEnvelope _resultEnvelope;
 
-  public DeviceKindGate(CallerIdentity callerIdentity, ResultEnvelope resultEnvelope)
+  public DeviceKindGate(ResultEnvelope resultEnvelope)
   {
-    _callerIdentity = callerIdentity;
     _resultEnvelope = resultEnvelope;
   }
 
-  public IResult? FindRefusal(HttpContext httpContext, DeviceOwnerKind requiredKind)
+  public async Task<IResult?> FindRefusalAsync<TOwner>(HttpContext httpContext) where TOwner : IDeviceOwner
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    var caller = _callerIdentity.ReadDevice(httpContext.User);
+    var callerIdentity = httpContext.RequestServices.GetRequiredService<CallerIdentity>();
+    var owner = await callerIdentity.ReadOwnerAsync(httpContext.User, httpContext.RequestAborted);
 
-    if (caller is not null && caller.OwnerKind == requiredKind)
+    if (owner is TOwner)
       return null;
 
     return _resultEnvelope.Problem(StatusCodes.Status403Forbidden, "WrongDeviceKind", "auth.wrongDeviceKind");

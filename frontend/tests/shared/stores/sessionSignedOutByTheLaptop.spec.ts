@@ -9,7 +9,6 @@ const { TOKEN_STORAGE_KEY, useSessionStore } = await import('../../../src/shared
 
 const THE_TABLET = {
   deviceId: 'device-of-the-tablet',
-  deviceKind: 'station',
   staffMember: null,
   station: { id: 'station-kueche', name: 'Küche' },
   language: 'de',

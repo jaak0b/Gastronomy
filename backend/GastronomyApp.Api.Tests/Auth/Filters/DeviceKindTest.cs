@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
 
@@ -68,7 +68,6 @@ public sealed class DeviceKindTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("station"));
                       Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(), Is.EqualTo("Kueche"));
                     });
   }

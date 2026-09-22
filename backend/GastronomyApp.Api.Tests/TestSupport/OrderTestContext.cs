@@ -1,7 +1,6 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
@@ -79,7 +78,7 @@ public sealed class OrderTestContext : IAsyncDisposable
   public async Task<string> IssueStationTokenAsync(Guid stationId)
   {
     using var scope = Factory.Services.CreateScope();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.Station, stationId, CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStationAsync(stationId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit tablet", CancellationToken.None);
 
     return issued.PlaintextToken;
@@ -100,7 +99,7 @@ public sealed class OrderTestContext : IAsyncDisposable
                               });
     await database.SaveChangesAsync();
 
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, staffMemberId, CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(staffMemberId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit second phone", CancellationToken.None);
 
     return issued.PlaintextToken;

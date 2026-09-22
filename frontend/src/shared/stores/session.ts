@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { onUnauthorisedAnswer, request, requestAction } from '../api/client'
-import { DeviceOwnerKind, RedeemedEnrolmentView, SessionView, StaffMemberView, StationSummaryView } from '../api/generatedSchemas'
+import { RedeemedEnrolmentView, SessionView, StaffMemberView, StationSummaryView } from '../api/generatedSchemas'
 import { appLanguageSchema, type AppLanguage } from '../core/deviceLanguage'
 import { assertNever } from '../core/assertNever'
 import { deviceTokenIsWellFormed } from '../core/deviceToken'
@@ -41,22 +41,23 @@ export const useSessionStore = defineStore('session', () => {
   const language = ref<AppLanguage>(initialLanguage())
   const redeemErrorKey = ref<string | null>(null)
   const isEnrolled = computed(() => deviceToken.value !== null)
-  const deviceKind = ref<DeviceOwnerKind | null>(null)
   const deviceId = ref<string | null>(null)
   const startingUpFailure = ref<StartingUpFailure | null>(null)
   const deviceSession = computed<DeviceSession>(() => {
     if (deviceToken.value === null) {
       return { state: 'notSetUp' }
     }
-    if (deviceKind.value === null) {
-      return { state: 'startingUp' }
+    if (staffMember.value !== null) {
+      return { state: 'waiterPhone' }
     }
-    return { state: 'setUp', deviceKind: deviceKind.value }
+    if (station.value !== null) {
+      return { state: 'stationTablet' }
+    }
+    return { state: 'startingUp' }
   })
 
-  function storeToken(token: string, kind: DeviceOwnerKind, id: string): void {
+  function storeToken(token: string, id: string): void {
     deviceToken.value = token
-    deviceKind.value = kind
     deviceId.value = id
     startingUpFailure.value = null
     localStorage.setItem(TOKEN_STORAGE_KEY, token)
@@ -65,7 +66,6 @@ export const useSessionStore = defineStore('session', () => {
   function clearToken(): void {
     const tokenThisTabHeld = deviceToken.value
     deviceToken.value = null
-    deviceKind.value = null
     deviceId.value = null
     startingUpFailure.value = null
     staffMember.value = null
@@ -116,7 +116,7 @@ export const useSessionStore = defineStore('session', () => {
     })
     switch (result.kind) {
       case 'ok':
-        storeToken(result.data.deviceToken, result.data.deviceKind, result.data.deviceId)
+        storeToken(result.data.deviceToken, result.data.deviceId)
         staffMember.value = result.data.staffMember
         station.value = result.data.station ?? null
         language.value = result.data.language
@@ -151,7 +151,6 @@ export const useSessionStore = defineStore('session', () => {
       case 'ok':
         staffMember.value = result.data.staffMember
         station.value = result.data.station
-        deviceKind.value = result.data.deviceKind
         deviceId.value = result.data.deviceId
         language.value = result.data.language
         return
@@ -187,7 +186,6 @@ export const useSessionStore = defineStore('session', () => {
 
   return {
     deviceToken,
-    deviceKind,
     deviceId,
     deviceSession,
     startingUpFailure,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { screenFor } from '../../../src/shared/core/landing'
 
-const aStationTablet = { state: 'setUp', deviceKind: 'station' } as const
-const aWaiterPhone = { state: 'setUp', deviceKind: 'staffMember' } as const
+const aStationTablet = { state: 'stationTablet' } as const
+const aWaiterPhone = { state: 'waiterPhone' } as const
 const aDeviceThatIsNotSetUp = { state: 'notSetUp' } as const
 const aDeviceWaitingForTheLaptop = { state: 'startingUp' } as const
 

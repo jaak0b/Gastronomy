@@ -68,7 +68,6 @@ describe('setting a phone up for a waiter who is not on the list yet', () => {
         return new Response(
           JSON.stringify({
             deviceToken: 'token-1',
-            deviceKind: 'staffMember',
             staffMember: { id: 'staff-1', name: 'Bernd' },
             language: 'de',
           }),
@@ -110,7 +109,6 @@ describe('the token a browser gives up when it redeems a code', () => {
           JSON.stringify({
             deviceId: 'device-of-the-phone',
             deviceToken: 'token-of-the-phone',
-            deviceKind: 'staffMember',
             staffMember: { id: 'staff-1', name: 'Anna' },
             station: null,
             language: 'de',

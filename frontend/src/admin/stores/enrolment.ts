@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { request } from '../../shared/api/client'
 import { fetchInvitationQr } from '../api/invitationQr'
-import { DeviceOwnerKind, InvitationView } from '../../shared/api/generatedSchemas'
+import { EnrolmentCompletedEvent, InvitationView } from '../../shared/api/generatedSchemas'
 import { adminOk, type AdminActionResult } from '../core/adminActionResult'
 import { adminFailureFrom } from '../core/adminMutation'
 import type { InvitationQr } from '../core/invitationQr'
@@ -14,11 +14,6 @@ export type InvitationOwner =
   | { kind: 'somebodyNew' }
   | { kind: 'staffMember'; staffMemberId: string }
   | { kind: 'station'; stationId: string }
-
-export interface EnrolledDevice {
-  deviceKind: DeviceOwnerKind
-  ownerName: string
-}
 
 function bodyFor(owner: InvitationOwner): Record<string, string> {
   switch (owner.kind) {
@@ -36,27 +31,16 @@ function bodyFor(owner: InvitationOwner): Record<string, string> {
 export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
   const invitation = ref<InvitationView | null>(null)
   const invitationQr = ref<InvitationQr>({ kind: 'loading' })
-  const enrolled = ref<EnrolledDevice | null>(null)
+  const enrolled = ref<EnrolmentCompletedEvent | null>(null)
 
   const invitationGate = createLatestRequestGate()
 
-  function enrolledNameFor(wanted: DeviceOwnerKind): string | null {
-    const device = enrolled.value
-    if (device === null) {
-      return null
-    }
-    switch (device.deviceKind) {
-      case 'staffMember':
-        return wanted === 'staffMember' ? device.ownerName : null
-      case 'station':
-        return wanted === 'station' ? device.ownerName : null
-      default:
-        return assertNever(device.deviceKind)
-    }
-  }
-
-  const enrolledStaffMemberName = computed(() => enrolledNameFor('staffMember'))
-  const enrolledStationName = computed(() => enrolledNameFor('station'))
+  const enrolledStaffMemberName = computed(() =>
+    enrolled.value !== null && enrolled.value.staffMemberId !== null ? enrolled.value.ownerName : null,
+  )
+  const enrolledStationName = computed(() =>
+    enrolled.value !== null && enrolled.value.stationId !== null ? enrolled.value.ownerName : null,
+  )
 
   async function createInvitation(owner: InvitationOwner): Promise<AdminActionResult<null>> {
     const token = invitationGate.startRequest()
@@ -90,7 +74,7 @@ export const useAdminEnrolmentStore = defineStore('adminEnrolment', () => {
 
   function listen(onEnrolled: () => void): () => void {
     const connection = useConnectionStore()
-    return connection.onEvent<EnrolledDevice>('EnrolmentCompleted', (payload) => {
+    return connection.onEvent<EnrolmentCompletedEvent>('EnrolmentCompleted', (payload) => {
       enrolled.value = payload
       closeInvitation()
       onEnrolled()

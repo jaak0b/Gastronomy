@@ -25,7 +25,6 @@ function answerFor(url: string): unknown {
   }
   return {
     deviceId: 'device-1',
-    deviceKind: 'staffMember',
     staffMember: { id: 'staff-1', name: 'Anna' },
     station: null,
     language: 'de',

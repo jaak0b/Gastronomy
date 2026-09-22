@@ -39,7 +39,6 @@ public sealed class DeviceAuthenticationHandler : AuthenticationHandler<DeviceAu
     var device = owner.Device;
     ClaimsIdentity identity = new([
                                     new(ClaimTypes.NameIdentifier, owner.Id.ToString()),
-                                    new(Names.DeviceClaims.OwnerKind, owner.Kind.ToString()),
                                     new(Names.DeviceClaims.DeviceId, device.Id.ToString()),
                                     new(Names.DeviceClaims.Language, device.Language)
                                   ],

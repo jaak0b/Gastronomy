@@ -16,7 +16,6 @@ const { TOKEN_STORAGE_KEY } = await import('../src/shared/stores/session')
 
 const THE_TABLET = {
   deviceId: 'device-of-the-tablet',
-  deviceKind: 'station',
   staffMember: null,
   station: { id: 'station-kueche', name: 'Küche' },
   language: 'de',
@@ -25,7 +24,6 @@ const THE_TABLET = {
 const THE_PHONE = {
   deviceId: 'device-of-the-phone',
   deviceToken: 'token-of-the-phone',
-  deviceKind: 'staffMember',
   staffMember: { id: 'staff-1', name: 'Anna' },
   station: null,
   language: 'de',

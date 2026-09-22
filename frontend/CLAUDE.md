@@ -39,7 +39,7 @@ and `ConfirmedSettlement` in `src/phone/core/submission.ts`.
    and submission identity are plain TypeScript, so they are testable without mounting anything.
 
 2. **Exhaustive switches over union types.** Any branch on a discriminated union (an order status, a
-   delivery mode, a device kind) must handle every member explicitly and end in
+   delivery mode, a device session) must handle every member explicitly and end in
    `assertNever`. Never
    write an `else`, or a trailing `if`, that assumes whatever is left: it silently absorbs union members
    added later, turning a compile error into a runtime crash or, worse, a wrong but plausible result.
@@ -118,7 +118,7 @@ and `ConfirmedSettlement` in `src/phone/core/submission.ts`.
   in the app may depend on a remembered address. A 6-digit code is the fallback for a broken camera.
   The same QR flow enrols a waiter's phone and a station's tablet; the invitation says which of the
   two it belongs to, and the laptop tells the device which of the two it is when it starts.
-- **The device kind decides the screen.** A station tablet lands on the station screen and stays
+- **The owner the device belongs to decides the screen.** A station tablet lands on the station screen and stays
   there; a waiter's phone keeps the ordering flow. A device that is set up but has not yet heard
   back from the laptop shows a starting screen until it does. That decision lives in
   `src/shared/core/landing.ts`, not in a component.

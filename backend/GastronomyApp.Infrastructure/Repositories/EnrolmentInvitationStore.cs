@@ -1,6 +1,5 @@
 ﻿using System.Security.Cryptography;
 using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -110,18 +109,18 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
       owner = await CreateStaffMemberAsync(name, now, cancellationToken);
     }
     else if (!owner.IsActive)
-      return OffTheListRefusalFor(owner.Kind, invitation.Id);
+      return OffTheListRefusalFor(owner, invitation.Id);
 
     return await CompleteRedemptionAsync(invitation, owner, userAgent, acceptLanguageHeader, now, cancellationToken);
   }
 
-  private Error OffTheListRefusalFor(DeviceOwnerKind kind, Guid invitationId)
+  private Error OffTheListRefusalFor(IDeviceOwner owner, Guid invitationId)
   {
-    return kind switch
+    return owner switch
     {
-      DeviceOwnerKind.StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
-      DeviceOwnerKind.Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
-      _ => new UnreachableCase().Throw<Error>(kind)
+      StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
+      Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
+      _ => new UnreachableCase().Throw<Error>(owner)
     };
   }
 

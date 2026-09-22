@@ -1,5 +1,4 @@
 ﻿using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -15,9 +14,9 @@ public sealed class SessionService
     _ownerStore = ownerStore;
   }
 
-  public async Task<ErrorOr<IDeviceOwner>> ReadOwnerAsync(DeviceOwnerKind ownerKind, Guid ownerId, CancellationToken cancellationToken)
+  public async Task<ErrorOr<IDeviceOwner>> ReadOwnerOfDeviceAsync(Guid deviceId, CancellationToken cancellationToken)
   {
-    var owner = await _ownerStore.FindAsync(ownerKind, ownerId, cancellationToken);
+    var owner = await _ownerStore.FindByDeviceAsync(deviceId, cancellationToken);
 
     if (owner is null)
       return Refusal.Session.OwnerUnknown();

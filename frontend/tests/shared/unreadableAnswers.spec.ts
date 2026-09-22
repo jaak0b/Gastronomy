@@ -60,7 +60,7 @@ describe('an answer the phone cannot read', () => {
     await session.loadSession()
 
     expect(session.startingUpFailure).toBe('theLaptopCouldNotAnswer')
-    expect(session.deviceKind).toBeNull()
+    expect(session.deviceSession).toEqual({ state: 'startingUp' })
   })
 
   it('marks the station board as unloaded instead of showing a queue from a broken answer', async () => {

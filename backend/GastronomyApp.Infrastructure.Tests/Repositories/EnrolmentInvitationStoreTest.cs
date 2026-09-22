@@ -1,5 +1,4 @@
-﻿using GastronomyApp.Contracts.Enums;
-using GastronomyApp.Core.Entities;
+﻿using GastronomyApp.Core.Entities;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Repositories;
 using GastronomyApp.Infrastructure.Security;
@@ -24,7 +23,7 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.IsSuccess, Is.True);
-                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Value.Owner, Is.InstanceOf<StaffMember>());
                       Assert.That(redemption.Value.Owner.Device, Is.Not.Null);
                       Assert.That(redemption.Value.Owner.Name, Is.EqualTo("Anna"));
                       Assert.That(redemption.Value.Owner.DeviceId, Is.EqualTo(redemption.Value.Owner.Device!.Id));
@@ -44,7 +43,7 @@ public sealed class EnrolmentInvitationStoreTest
     Assert.Multiple(() =>
                     {
                       Assert.That(redemption.IsSuccess, Is.True);
-                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.StaffMember));
+                      Assert.That(redemption.Value.Owner, Is.InstanceOf<StaffMember>());
                       Assert.That(redemption.Value.Owner.Device, Is.Not.Null);
                       Assert.That(redemption.Value.Owner.Name, Is.EqualTo("Bernd"));
                       Assert.That(redemption.Value.Owner.IsActive, Is.True);
@@ -85,7 +84,7 @@ public sealed class EnrolmentInvitationStoreTest
                     {
                       Assert.That(pointedAtTheInvitation, Is.EqualTo(created.Invitation.Id));
                       Assert.That(redemption.IsSuccess, Is.True);
-                      Assert.That(redemption.Value.Owner.Kind, Is.EqualTo(DeviceOwnerKind.Station));
+                      Assert.That(redemption.Value.Owner, Is.InstanceOf<Station>());
                       Assert.That(redemption.Value.Owner.Id, Is.EqualTo(seeded.KitchenStationId));
                       Assert.That(kitchen.DeviceId, Is.EqualTo(redemption.Value.Owner.Device!.Id));
                       Assert.That(kitchen.EnrolmentInvitationId, Is.Null);

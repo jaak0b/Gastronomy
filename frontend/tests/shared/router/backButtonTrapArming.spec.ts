@@ -18,7 +18,6 @@ describe('the app puts a device behind the door as soon as its screen is on disp
         const payload = url.startsWith('/api/session')
           ? {
               deviceId: 'device-1',
-              deviceKind: 'station',
               staffMember: null,
               station: { id: 's-1', name: 'Küche' },
               language: 'de',

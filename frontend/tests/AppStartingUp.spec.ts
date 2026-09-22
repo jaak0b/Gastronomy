@@ -40,7 +40,7 @@ const STATION_ORDERS = {
 
 let device: ReturnType<typeof mount> | null = null
 
-function aLaptopThatKnowsThisDeviceAs(deviceKind: 'staffMember' | 'station'): string[] {
+function aLaptopThatKnowsThisDeviceAs(owner: 'staffMember' | 'station'): string[] {
   const urls: string[] = []
   vi.stubGlobal(
     'fetch',
@@ -50,9 +50,8 @@ function aLaptopThatKnowsThisDeviceAs(deviceKind: 'staffMember' | 'station'): st
         return new Response(
           JSON.stringify({
             deviceId: 'device-1',
-            deviceKind,
-            staffMember: deviceKind === 'staffMember' ? { id: 'staff-1', name: 'Anna' } : null,
-            station: deviceKind === 'station' ? { id: 'station-kueche', name: 'Küche' } : null,
+            staffMember: owner === 'staffMember' ? { id: 'staff-1', name: 'Anna' } : null,
+            station: owner === 'station' ? { id: 'station-kueche', name: 'Küche' } : null,
             language: 'de',
           }),
           { status: 200 },

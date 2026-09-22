@@ -11,8 +11,6 @@ public static class Names
   {
     public const string DeviceId = "device_id";
 
-    public const string OwnerKind = "device_owner_kind";
-
     public const string Language = "language";
   }
 

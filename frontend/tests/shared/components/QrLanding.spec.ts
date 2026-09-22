@@ -84,7 +84,6 @@ describe('landing on a QR code link', () => {
     answerWith(200, {
       deviceId: 'device-1',
       deviceToken: 'token-1',
-      deviceKind: 'staffMember',
       staffMember: { id: 'staff-1', name: 'Anna' },
       station: null,
       language: 'de',
@@ -112,7 +111,6 @@ describe('landing on a QR code link', () => {
         body: {
           deviceId: 'device-2',
           deviceToken: 'token-2',
-          deviceKind: 'staffMember',
           staffMember: { id: 'staff-2', name: 'Bernd' },
           station: null,
           language: 'de',

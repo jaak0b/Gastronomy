@@ -1,5 +1,4 @@
 ﻿using ErrorOr;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
@@ -64,9 +63,8 @@ public sealed class EnrolmentInvitationService
     var issued = await _store.CreateAsync(owner, cancellationToken);
     await _retirement.RevokeDeviceAsync(deviceToReplace, cancellationToken);
 
-    _logger.LogInformation("Enrolment invitation {InvitationId} was created for the {OwnerKind} {OwnerId}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
+    _logger.LogInformation("Enrolment invitation {InvitationId} was created for the owner {OwnerId}, and is valid until {ExpiresAtUtc}. A missing owner means a waiter who types their name when they scan it.",
                            issued.Invitation.Id,
-                           issued.Owner?.Kind,
                            issued.Owner?.Id,
                            issued.Invitation.ExpiresAtUtc);
 
@@ -90,7 +88,7 @@ public sealed class EnrolmentInvitationService
 
     _invitationCache.ForgetInvitation();
 
-    _logger.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the {DeviceKind} {OwnerId}.", redemption.Invitation.Id, device.Id, owner.Kind, owner.Id);
+    _logger.LogInformation("Enrolment invitation {InvitationId} was redeemed. Device {DeviceId} now belongs to the owner {OwnerId}.", redemption.Invitation.Id, device.Id, owner.Id);
 
     var tokenParts = _tokenSplitter.Split(previousDeviceToken);
 
@@ -148,11 +146,11 @@ public sealed class EnrolmentInvitationService
     return invitation;
   }
 
-  private Task<IDeviceOwner?> FindOwnerAsync(Guid? staffMemberId, Guid? stationId, CancellationToken cancellationToken)
+  private async Task<IDeviceOwner?> FindOwnerAsync(Guid? staffMemberId, Guid? stationId, CancellationToken cancellationToken)
   {
     if (staffMemberId is not null)
-      return _ownerStore.FindAsync(DeviceOwnerKind.StaffMember, staffMemberId.Value, cancellationToken);
+      return await _ownerStore.FindStaffMemberAsync(staffMemberId.Value, cancellationToken);
 
-    return _ownerStore.FindAsync(DeviceOwnerKind.Station, stationId!.Value, cancellationToken);
+    return await _ownerStore.FindStationAsync(stationId!.Value, cancellationToken);
   }
 }

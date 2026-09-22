@@ -1,8 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GastronomyApp.Api.Tests.TestSupport;
-using GastronomyApp.Contracts.Enums;
 using GastronomyApp.Core.Ports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,7 @@ public sealed class CatalogEndpointsTest
     _world = await new ApiSeeder().SeedAsync(context, CancellationToken.None);
 
     using var scope = _factory.Services.CreateScope();
-    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindAsync(DeviceOwnerKind.StaffMember, _world.StaffMemberId, CancellationToken.None);
+    var owner = await scope.ServiceProvider.GetRequiredService<IDeviceOwnerStore>().FindStaffMemberAsync(_world.StaffMemberId, CancellationToken.None);
     var issued = await scope.ServiceProvider.GetRequiredService<IDeviceTokenStore>().IssueAsync(owner!, "de", "NUnit", CancellationToken.None);
     _deviceToken = issued.PlaintextToken;
   }

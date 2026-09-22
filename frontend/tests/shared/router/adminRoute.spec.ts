@@ -90,7 +90,6 @@ describe('the screen a device lands on', () => {
         const payload = url.startsWith('/api/session')
           ? {
               deviceId: 'device-1',
-              deviceKind: 'staffMember',
               staffMember: { id: 'staff-member-1', name: 'Anna' },
               station: null,
               language: 'de',
@@ -116,7 +115,6 @@ describe('the screen a device lands on', () => {
         const payload = url.startsWith('/api/session')
           ? {
               deviceId: 'device-1',
-              deviceKind: 'station',
               staffMember: null,
               station: { id: 's-1', name: 'Küche' },
               language: 'de',
@@ -144,7 +142,7 @@ describe('the screen a device lands on', () => {
     const { useSessionStore } = await import('../../../src/shared/stores/session')
     const session = useSessionStore()
     session.deviceToken = 'a-token'
-    session.deviceKind = 'staffMember'
+    session.staffMember = { id: 'staff-1', name: 'Anna' }
 
     const app = await mountApp()
 

@@ -83,7 +83,7 @@ function stubTheLaptopWithAnswersHeldBack(): {
 function enrolledStationTablet(): void {
   const session = useSessionStore()
   session.deviceToken = 'token-here'
-  session.deviceKind = 'station'
+  session.station = KITCHEN
 }
 
 describe('a station tablet whose answers come back out of order', () => {

@@ -155,7 +155,7 @@ function stubTheLaptop(routes: StubRoutes = {}): { url: string; body: unknown }[
 async function mountPage(): Promise<VueWrapper> {
   const session = useSessionStore()
   session.deviceToken = 'token-here'
-  session.deviceKind = 'station'
+  session.station = KITCHEN
   const page = mount(StationPage, {
     global: { plugins: testPlugins() },
     attachTo: document.body,
@@ -177,7 +177,7 @@ async function mountPageFollowingTheChosenLanguage(): Promise<VueWrapper> {
   localStorage.setItem('language', 'de')
   const session = useSessionStore()
   session.deviceToken = 'token-here'
-  session.deviceKind = 'station'
+  session.station = KITCHEN
   const page = mount(StationPageFollowingTheLanguage, {
     global: { plugins: testPlugins() },
     attachTo: document.body,

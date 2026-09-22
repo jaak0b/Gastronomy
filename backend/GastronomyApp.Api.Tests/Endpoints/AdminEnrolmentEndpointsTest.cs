@@ -63,7 +63,6 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-                      Assert.That(body.RootElement.GetProperty("ownerKind").GetString(), Is.EqualTo("station"));
                       Assert.That(body.RootElement.GetProperty("station").GetProperty("name").GetString(), Is.EqualTo("Kueche"));
                     });
   }
@@ -82,7 +81,6 @@ public sealed class AdminEnrolmentEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("deviceKind").GetString(), Is.EqualTo("station"));
                       Assert.That(body.RootElement.GetProperty("station").GetProperty("id").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
                       Assert.That(body.RootElement.TryGetProperty("staffMember", out var staffMember), Is.True);
                       Assert.That(staffMember.ValueKind, Is.EqualTo(JsonValueKind.Null));

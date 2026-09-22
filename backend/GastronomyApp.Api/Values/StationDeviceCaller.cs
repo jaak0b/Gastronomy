@@ -6,10 +6,10 @@ namespace GastronomyApp.Api.Values;
 
 public sealed record StationDeviceCaller(Guid StationId, Guid DeviceId, string Language)
 {
-  public static ValueTask<StationDeviceCaller?> BindAsync(HttpContext httpContext)
+  public static async ValueTask<StationDeviceCaller?> BindAsync(HttpContext httpContext)
   {
     ArgumentNullException.ThrowIfNull(httpContext);
 
-    return ValueTask.FromResult(httpContext.RequestServices.GetRequiredService<CallerIdentity>().ReadStationDevice(httpContext.User));
+    return await httpContext.RequestServices.GetRequiredService<CallerIdentity>().ReadStationDeviceAsync(httpContext.User, httpContext.RequestAborted);
   }
 }

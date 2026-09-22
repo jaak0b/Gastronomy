@@ -1,6 +1,5 @@
-using GastronomyApp.Api.Auth;
+﻿using GastronomyApp.Api.Auth;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Contracts.Enums;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GastronomyApp.Api.Hub;
@@ -21,9 +20,13 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
   override public async Task OnConnectedAsync()
   {
     DeviceCaller? caller = null;
+    StationDeviceCaller? stationCaller = null;
 
     if (Context.User is not null)
+    {
       caller = _callerIdentity.ReadDevice(Context.User);
+      stationCaller = await _callerIdentity.ReadStationDeviceAsync(Context.User, Context.ConnectionAborted);
+    }
 
     var httpContext = Context.GetHttpContext();
 
@@ -33,9 +36,9 @@ public sealed class GastronomyHub : Microsoft.AspNetCore.SignalR.Hub
     {
       joinedGroups.Add(Names.HubGroups.BuildDeviceGroupName(caller.DeviceId));
 
-      if (caller.OwnerKind == DeviceOwnerKind.Station)
+      if (stationCaller is not null)
       {
-        joinedGroups.Add(Names.HubGroups.BuildStationGroupName(caller.OwnerId));
+        joinedGroups.Add(Names.HubGroups.BuildStationGroupName(stationCaller.StationId));
         joinedGroups.Add(Names.HubGroups.Stations);
       }
       else

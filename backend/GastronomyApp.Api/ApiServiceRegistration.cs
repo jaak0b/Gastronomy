@@ -109,7 +109,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<SystemTextJsonRecordingSerializer>();
     services.AddSingleton<ResultEnvelope>();
     services.AddSingleton<IProblemDetailsService, RequestShapeRefusalWriter>();
-    services.AddSingleton<CallerIdentity>();
+    services.AddScoped<CallerIdentity>();
     services.AddSingleton<DeviceTokenSplitter>();
     services.AddSingleton<IDeviceTokenSplitter>(provider => provider.GetRequiredService<DeviceTokenSplitter>());
     services.AddSingleton<LocalAddressSet>();
