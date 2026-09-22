@@ -4,7 +4,6 @@ using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Ports;
 using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Results;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Infrastructure.Persistence;
 using GastronomyApp.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -120,7 +119,7 @@ public sealed class EnrolmentInvitationStore : IEnrolmentInvitationStore
     {
       StaffMember => Refusal.EnrolmentRedemption.StaffMemberIsOffTheList(invitationId),
       Station => Refusal.EnrolmentRedemption.StationIsOffTheList(invitationId),
-      _ => new UnreachableCase().Throw<Error>(owner)
+      _ => throw new InvalidOperationException($"Unhandled value: {owner}")
     };
   }
 

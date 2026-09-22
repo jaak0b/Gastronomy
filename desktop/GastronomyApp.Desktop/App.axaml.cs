@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.Hosting;
@@ -16,7 +15,6 @@ namespace GastronomyApp.Desktop;
 
 public class App : Application
 {
-  private readonly UnreachableCase _unreachableCase = new();
   private AppBootstrapper? _bootstrapper;
   private DesktopComposition? _composition;
   private MainWindow? _mainWindow;
@@ -89,7 +87,7 @@ public class App : Application
              BootstrapOutcome.ProceedToWindow => true,
              BootstrapOutcome.ProceedToWindowWithoutServer => false,
              BootstrapOutcome.ExitImmediately => false,
-             _ => _unreachableCase.Throw<bool>(outcome)
+             _ => throw new InvalidOperationException($"Unhandled value: {outcome}")
            };
   }
 

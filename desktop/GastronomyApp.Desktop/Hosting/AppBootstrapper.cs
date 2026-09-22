@@ -1,4 +1,3 @@
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.ViewModels;
 using Serilog;
@@ -11,7 +10,6 @@ public sealed class AppBootstrapper
   private readonly Action _bringExistingWindowToFront;
   private readonly Action<Action> _dispatchToUserInterface;
   private readonly Func<MainWindowViewModel> _mainWindowViewModelFactory;
-  private readonly UnreachableCase _unreachableCase = new();
   private readonly ISingleInstance _singleInstance;
 
   private bool _holdsTheInstance;
@@ -57,7 +55,7 @@ public sealed class AppBootstrapper
         return BootstrapOutcome.ExitImmediately;
 
       default:
-        return _unreachableCase.Throw<BootstrapOutcome>(outcome);
+        throw new InvalidOperationException($"Unhandled value: {outcome}");
     }
   }
 

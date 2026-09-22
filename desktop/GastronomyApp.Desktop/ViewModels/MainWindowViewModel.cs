@@ -3,7 +3,6 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using GastronomyApp.Api.Options;
 using GastronomyApp.Api.Values;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Events;
 using GastronomyApp.Desktop.Ports;
@@ -20,7 +19,6 @@ public sealed class MainWindowViewModel : ViewModelBase
   private readonly string _currentVersion;
   private readonly IFreePortProvider _freePorts;
   private readonly IHostLauncher _launcher;
-  private readonly UnreachableCase _unreachableCase = new();
   private readonly IPowerManager _power;
   private readonly ISettingsStore _settingsStore;
   private readonly IDesktopTextProvider _text;
@@ -323,9 +321,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       default:
-        _unreachableCase.Throw<HostLaunchResult>(result);
-
-        break;
+        throw new InvalidOperationException($"Unhandled value: {result}");
     }
   }
 
@@ -380,9 +376,7 @@ public sealed class MainWindowViewModel : ViewModelBase
           break;
 
         default:
-          _unreachableCase.Throw<UpdatePreparation>(preparation);
-
-          break;
+          throw new InvalidOperationException($"Unhandled value: {preparation}");
       }
     }
     finally
@@ -411,9 +405,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         break;
 
       default:
-        _unreachableCase.Throw<ElevatedSetupOutcome>(outcome);
-
-        break;
+        throw new InvalidOperationException($"Unhandled value: {outcome}");
     }
   }
 

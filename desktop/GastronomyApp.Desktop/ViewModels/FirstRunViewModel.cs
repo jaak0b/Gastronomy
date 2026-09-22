@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.Input;
-using GastronomyApp.Core.Services;
 using GastronomyApp.Desktop.Enums;
 using GastronomyApp.Desktop.Ports;
 
@@ -10,7 +9,6 @@ public sealed class FirstRunViewModel : ViewModelBase
   private readonly IDataFolderSetup _dataFolder;
   private readonly IElevatedSetupLauncher _elevatedSetup;
   private readonly IFirewallSetup _firewall;
-  private readonly UnreachableCase _unreachableCase = new();
   private readonly IDesktopTextProvider _text;
   private string? _declinedText;
 
@@ -110,9 +108,7 @@ public sealed class FirstRunViewModel : ViewModelBase
         break;
 
       default:
-        _unreachableCase.Throw<ElevatedSetupOutcome>(outcome);
-
-        break;
+        throw new InvalidOperationException($"Unhandled value: {outcome}");
     }
 
     IsSetupOffered = false;
