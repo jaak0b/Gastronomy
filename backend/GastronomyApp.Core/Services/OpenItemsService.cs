@@ -31,14 +31,19 @@ public sealed class OpenItemsService
   {
     ArgumentNullException.ThrowIfNull(openItems);
 
-    return openItems.Where(item => OrderOf(item) is not null).OrderBy(item => OrderOf(item)!.GlobalOrderNumber).ThenBy(item => item.ItemName, StringComparer.Ordinal).GroupBy(item => OrderOf(item)!.TableName, StringComparer.Ordinal).OrderBy(table => table.Key, StringComparer.Ordinal).ToList();
+    return openItems.Where(item => item.StationOrder?.Order is not null)
+                    .OrderBy(item => item.StationOrder!.Order!.GlobalOrderNumber)
+                    .ThenBy(item => item.ItemName, StringComparer.Ordinal)
+                    .GroupBy(item => item.StationOrder!.Order!.TableName, StringComparer.Ordinal)
+                    .OrderBy(table => table.Key, StringComparer.Ordinal)
+                    .ToList();
   }
 
   public IReadOnlyList<Guid> ItemIdsWithoutAnOrder(IEnumerable<OrderItem> openItems)
   {
     ArgumentNullException.ThrowIfNull(openItems);
 
-    List<Guid> itemIdsWithoutAnOrder = openItems.Where(item => OrderOf(item) is null).Select(item => item.Id).Distinct().ToList();
+    List<Guid> itemIdsWithoutAnOrder = openItems.Where(item => item.StationOrder?.Order is null).Select(item => item.Id).Distinct().ToList();
 
     if (itemIdsWithoutAnOrder.Count > 0)
       _logger.LogError("{ItemCount} order items cannot be traced back to an order and are therefore missing from the open items list. Order item ids: {OrderItemIds}.", itemIdsWithoutAnOrder.Count, itemIdsWithoutAnOrder);
@@ -69,10 +74,5 @@ public sealed class OpenItemsService
       return [];
 
     return await _repository.FindTableOrdersAsync(festival.Id, tableName, cancellationToken);
-  }
-
-  private Order? OrderOf(OrderItem item)
-  {
-    return item.StationOrder?.Order;
   }
 }

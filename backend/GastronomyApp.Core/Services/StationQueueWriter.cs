@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using GastronomyApp.Core.Entities;
-using GastronomyApp.Core.Refusals;
 using GastronomyApp.Core.Ports;
+using GastronomyApp.Core.Refusals;
 
 namespace GastronomyApp.Core.Services;
 

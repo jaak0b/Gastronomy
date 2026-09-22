@@ -40,7 +40,11 @@ public sealed class ApiServiceRegistration
     services.AddSingleton(options);
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(), serviceProvider.GetRequiredService<StationOrderService>(), serviceProvider.GetRequiredService<StationService>(), serviceProvider.GetRequiredService<StaffMemberService>(), serviceProvider.GetRequiredService<FestivalService>()).Build());
+    services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetRequiredService<OrderService>(),
+                                                                      serviceProvider.GetRequiredService<StationOrderService>(),
+                                                                      serviceProvider.GetRequiredService<StationService>(),
+                                                                      serviceProvider.GetRequiredService<StaffMemberService>(),
+                                                                      serviceProvider.GetRequiredService<FestivalService>()).Build());
     services.AddScoped<IMapper, ServiceMapper>();
 
     SqliteConnectionFactory connectionFactory = new();
@@ -103,7 +107,6 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueService>();
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();
-    services.AddScoped<ChangedOrderReader>();
     services.AddScoped<StationEstimateService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();

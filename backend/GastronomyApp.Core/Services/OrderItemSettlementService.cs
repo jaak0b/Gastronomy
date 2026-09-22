@@ -36,9 +36,9 @@ public sealed class OrderItemSettlementService
     if (festival is null)
       return Refusal.Settlement.NoRunningFestival();
 
-    IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(ReadSelectedIds(lines), cancellationToken);
+    IReadOnlyList<OrderItem> selected = await _repository.FindForSettlementAsync(lines.Select(line => line.OrderItemId).Distinct().ToList(), cancellationToken);
 
-    ErrorOr<SettlementResult> settled = await Settle(lines, settledByStaffMemberId, ItemsWhoseTableIsKnown(selected), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
+    ErrorOr<SettlementResult> settled = await Settle(lines, settledByStaffMemberId, selected.Where(item => item.StationOrder?.Order is not null).ToList(), _timeProvider.GetUtcNow().UtcDateTime).ThenDoAsync(settlement => _repository.SaveChangesAsync(cancellationToken));
 
     if (settled.IsError)
       return settled.Errors;
@@ -88,7 +88,7 @@ public sealed class OrderItemSettlementService
     if (missingNotices.Count > 0)
       return missingNotices;
 
-    IReadOnlyList<string> tableNames = SortedNames(selected.Select(TableNameOf));
+    IReadOnlyList<string> tableNames = selected.Select(item => item.StationOrder.Order.TableName).Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList();
     if (tableNames.Count > 1)
       return Refusal.Settlement.SelectionSpansSeveralTables(tableNames);
 
@@ -129,7 +129,7 @@ public sealed class OrderItemSettlementService
       {
         MarkSettled(item, paidPriceCents, line.PaymentNotice, settledByStaffMemberId, settledAtUtc);
         newlySettled.Add(item);
-        tableNamesOfTheNewlySettled.Add(TableNameOf(item));
+        tableNamesOfTheNewlySettled.Add(item.StationOrder.Order.TableName);
         continue;
       }
 
@@ -144,32 +144,12 @@ public sealed class OrderItemSettlementService
     }
 
     return new()
-    {
-      NewlySettled = newlySettled,
-      Reapplied = reapplied,
-      AlreadySettledByOthers = alreadySettledByOthers,
-      SettledTableNames = SortedNames(tableNamesOfTheNewlySettled)
-    };
-  }
-
-  private IReadOnlyCollection<OrderItem> ItemsWhoseTableIsKnown(IReadOnlyCollection<OrderItem> selected)
-  {
-    return selected.Where(item => item.StationOrder?.Order is not null).ToList();
-  }
-
-  private string TableNameOf(OrderItem item)
-  {
-    return item.StationOrder.Order.TableName;
-  }
-
-  private IReadOnlyList<Guid> ReadSelectedIds(IReadOnlyList<SettleLineRequest> lines)
-  {
-    return lines.Select(line => line.OrderItemId).Distinct().ToList();
-  }
-
-  private IReadOnlyList<string> SortedNames(IEnumerable<string> tableNames)
-  {
-    return tableNames.Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList();
+           {
+             NewlySettled = newlySettled,
+             Reapplied = reapplied,
+             AlreadySettledByOthers = alreadySettledByOthers,
+             SettledTableNames = tableNamesOfTheNewlySettled.Distinct(StringComparer.Ordinal).OrderBy(tableName => tableName, StringComparer.Ordinal).ToList()
+           };
   }
 
   private void EnsureSettlerNamed(Guid settledByStaffMemberId)

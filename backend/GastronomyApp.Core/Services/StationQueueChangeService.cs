@@ -7,19 +7,19 @@ namespace GastronomyApp.Core.Services;
 public sealed class StationQueueChangeService
 {
   private readonly IAfterCommitActions _afterCommitActions;
-  private readonly ChangedOrderReader _changedOrderReader;
   private readonly StationAtFestivalLookup _lookup;
   private readonly IOrderStatusAnnouncer _orderStatusAnnouncer;
   private readonly StationQueueService _queueService;
+  private readonly IStationOrderRepository _repository;
   private readonly IStationOrdersAnnouncer _stationOrdersAnnouncer;
   private readonly StationQueueWriter _writer;
 
-  public StationQueueChangeService(StationAtFestivalLookup lookup, StationQueueWriter writer, StationQueueService queueService, ChangedOrderReader changedOrderReader, IStationOrdersAnnouncer stationOrdersAnnouncer, IOrderStatusAnnouncer orderStatusAnnouncer, IAfterCommitActions afterCommitActions)
+  public StationQueueChangeService(StationAtFestivalLookup lookup, StationQueueWriter writer, StationQueueService queueService, IStationOrderRepository repository, IStationOrdersAnnouncer stationOrdersAnnouncer, IOrderStatusAnnouncer orderStatusAnnouncer, IAfterCommitActions afterCommitActions)
   {
     _lookup = lookup;
     _writer = writer;
     _queueService = queueService;
-    _changedOrderReader = changedOrderReader;
+    _repository = repository;
     _stationOrdersAnnouncer = stationOrdersAnnouncer;
     _orderStatusAnnouncer = orderStatusAnnouncer;
     _afterCommitActions = afterCommitActions;
@@ -73,7 +73,9 @@ public sealed class StationQueueChangeService
 
   private async Task<ErrorOr<Station>> AnnouncedQueueAsync(FestivalStation station, IReadOnlyCollection<StationOrder> touchedStationOrders, CancellationToken cancellationToken)
   {
-    IReadOnlyList<Order> changedOrders = await _changedOrderReader.ReadOrdersOfStationOrdersAsync(touchedStationOrders.Select(stationOrder => stationOrder.Id).Distinct().ToList(), cancellationToken);
+    List<Guid> touchedStationOrderIds = touchedStationOrders.Select(stationOrder => stationOrder.Id).Distinct().ToList();
+
+    IReadOnlyList<Order> changedOrders = touchedStationOrderIds.Count == 0 ? [] : await _repository.FindOrdersWithItemsAsync(await _repository.FindOrderIdsOfStationOrdersAsync(touchedStationOrderIds, cancellationToken), cancellationToken);
 
     ErrorOr<Station> queue = await _queueService.ReadQueueAtAsync(station, cancellationToken);
 

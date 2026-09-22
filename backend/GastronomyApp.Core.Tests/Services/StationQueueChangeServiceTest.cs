@@ -34,7 +34,7 @@ public sealed class StationQueueChangeServiceTest
     _stationOrdersAnnouncer = A.Fake<IStationOrdersAnnouncer>();
     _orderStatusAnnouncer = A.Fake<IOrderStatusAnnouncer>();
 
-    _service = new(lookup, new(_stationOrderRepository, new(), new(), _clock), new(lookup, _stationOrderRepository), new(_stationOrderRepository), _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
+    _service = new(lookup, new(_stationOrderRepository, new(), new(), _clock), new(lookup, _stationOrderRepository), _stationOrderRepository, _stationOrdersAnnouncer, _orderStatusAnnouncer, new ImmediateAfterCommitActions());
   }
 
   private readonly DateTime _now = new(2026, 9, 5, 20, 15, 0, DateTimeKind.Utc);
