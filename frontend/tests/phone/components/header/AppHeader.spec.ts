@@ -36,20 +36,6 @@ describe('finding the way back to the ordering screen', () => {
   })
 })
 
-describe('the settings control', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    document.body.innerHTML = ''
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
-  })
-
-  it('is named for a screen reader even though it carries an icon', () => {
-    const header = mountHeader()
-
-    expect(header.get('.settings').attributes('aria-label')).toBe('Einstellungen')
-  })
-})
-
 describe('the row of destinations', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

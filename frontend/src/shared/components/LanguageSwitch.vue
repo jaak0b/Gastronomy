@@ -23,7 +23,6 @@ function choose(language: AppLanguage): void {
     class="language-switch"
     :model-value="props.language"
     :items="options"
-    :aria-label="t('language.label')"
     variant="outlined"
     density="compact"
     hide-details

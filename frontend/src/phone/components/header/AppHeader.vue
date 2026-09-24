@@ -56,7 +56,6 @@ const currentDestination = computed<Destination>(() => {
       class="settings"
       icon="mdi-cog"
       variant="text"
-      :aria-label="t('header.settings')"
       @click="settingsAreOpen = true"
     >
       <v-icon icon="mdi-cog" />

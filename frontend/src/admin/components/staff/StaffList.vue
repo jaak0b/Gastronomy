@@ -157,7 +157,6 @@ onUnmounted(() => {
           icon="mdi-delete"
           variant="text"
           color="error"
-          :aria-label="t('admin.deactivate')"
           @click="askingAboutId = staffMember.staffMemberId"
         />
         <v-btn

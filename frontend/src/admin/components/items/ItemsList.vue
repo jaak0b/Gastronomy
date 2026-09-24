@@ -276,21 +276,18 @@ onUnmounted(() => {
           class="rename-category"
           icon="mdi-pencil"
           variant="text"
-          :aria-label="t('admin.categories.edit')"
           @click="startRenamingCategory(group.category)"
         />
         <v-btn
           class="move-category-up"
           icon="mdi-arrow-up"
           variant="text"
-          :aria-label="t('admin.categories.moveUp')"
           @click="moveCategory(group.category.categoryId, 'up')"
         />
         <v-btn
           class="move-category-down"
           icon="mdi-arrow-down"
           variant="text"
-          :aria-label="t('admin.categories.moveDown')"
           @click="moveCategory(group.category.categoryId, 'down')"
         />
         <v-btn
@@ -299,7 +296,6 @@ onUnmounted(() => {
           icon="mdi-eye-off"
           variant="text"
           color="error"
-          :aria-label="t('admin.categories.deactivate')"
           @click="askingAboutCategoryId = group.category.categoryId"
         />
         <v-btn
@@ -327,7 +323,6 @@ onUnmounted(() => {
               icon="mdi-delete"
               variant="text"
               color="error"
-              :aria-label="t('admin.deactivate')"
               :disabled="isOnTheRunningFestivalsMenu(item)"
               @click="askingAboutId = item.itemId"
             />

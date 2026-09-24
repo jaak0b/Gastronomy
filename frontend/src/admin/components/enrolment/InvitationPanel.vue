@@ -75,7 +75,6 @@ async function copyUrl(): Promise<void> {
             variant="text"
             size="small"
             :icon="wasCopied ? 'mdi-check' : 'mdi-content-copy'"
-            :aria-label="wasCopied ? t('admin.enrol.copied') : t('admin.enrol.copyUrl')"
             @click="copyUrl"
           />
         </div>

@@ -66,10 +66,4 @@ describe('LanguageSwitch', () => {
 
     expect(control.emitted('select')).toEqual([['de']])
   })
-
-  it('is named for a screen reader even though no label is visible', () => {
-    const control = mountSwitch('de')
-
-    expect(control.get('input[aria-label]').attributes('aria-label')).toBe('Sprache')
-  })
 })

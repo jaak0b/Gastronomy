@@ -103,6 +103,11 @@ and `ConfirmedSettlement` in `src/phone/core/submission.ts`.
    Colour never carries meaning alone: the word or the icon is always there. A new control takes a
    token from this list; it never invents a hue and never borrows a status colour for an action.
 
+9. **No aria-labels.** `aria-label` and `aria-labelledby` are forbidden in every template and
+   component, and no locale key exists only to feed one. Every control says what it does through its
+   visible text or its icon, and a test selects an element by its class, its data attribute or its
+   text, never by an accessibility attribute. A review lists any aria attribute as a finding.
+
 ## Design constraints from the deployment
 
 - **Touch targets are large.** One thumb, in the dark, possibly with gloves.
