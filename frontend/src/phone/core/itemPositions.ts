@@ -2,6 +2,7 @@ import type { DraftLine, DraftOrder } from './draftCart'
 import { CatalogItemView } from '../../shared/api/generatedSchemas'
 import { groupKeepingFirstSeenOrder } from '../../shared/core/collapse'
 import { needsStationChoice } from './routingPreview'
+import { quantityTimesUnitPriceCents } from './totals'
 
 export interface ItemPosition {
   index: number
@@ -65,4 +66,21 @@ export function groupPositions(positions: readonly ItemPosition[]): PositionGrou
     }),
     (group, position) => ({ ...group, indexes: [...group.indexes, position.index] }),
   )
+}
+
+export interface ItemPositionsView {
+  totalCount: number
+  articleTotalCents: number
+  rows: PositionGroup[]
+}
+
+export function buildItemPositionsView(
+  positions: readonly ItemPosition[],
+  unitPriceCents: number,
+): ItemPositionsView {
+  return {
+    totalCount: positions.length,
+    articleTotalCents: quantityTimesUnitPriceCents(positions.length, unitPriceCents),
+    rows: groupPositions(positions),
+  }
 }

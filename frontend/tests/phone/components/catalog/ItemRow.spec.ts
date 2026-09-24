@@ -44,9 +44,19 @@ function noted(index: number, note: string): ItemPosition {
   }
 }
 
+function stationNameFor(stationId: string): string {
+  return stationId === 'station-bar' ? 'Theke' : stationId
+}
+
 function mountRow(isAvailable: boolean, positions: ItemPosition[]) {
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions, language: 'de' as const, estimateRange: null },
+    props: {
+      item: item(isAvailable),
+      positions,
+      language: 'de' as const,
+      estimateRange: null,
+      stationNameFor,
+    },
     global: { plugins: testPlugins('de') },
     attachTo: document.body,
   })
@@ -59,6 +69,7 @@ function mountRowForAnItemAtSeveralStations(isAvailable: boolean, positions: Ite
       positions,
       language: 'de' as const,
       estimateRange: null,
+      stationNameFor,
     },
     global: { plugins: testPlugins('de') },
     attachTo: document.body,
@@ -90,7 +101,7 @@ describe('the item row itself', () => {
     const row = mountRow(true, [])
 
     expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.price').text()).toBe('2,00 €')
+    expect(row.get('.unit-price').text()).toBe('2,00 €')
   })
 
   it('adds one of the item and opens nothing when the name is tapped', async () => {
@@ -102,30 +113,21 @@ describe('the item row itself', () => {
     expect(document.querySelector('.note-dialog')).toBeNull()
   })
 
-  it('counts the portions that carry no note', () => {
+  it('puts the plain portions and the noted portion each on a row of their own', () => {
     const row = mountRow(true, [plain(0), plain(1), noted(2, 'ohne Eis')])
 
-    expect(row.get('.count').text()).toBe('2')
-  })
-
-  it('shows no count while nothing plain is on the order', () => {
-    const row = mountRow(true, [noted(0, 'ohne Eis')])
-
-    expect(row.find('.count').exists()).toBe(false)
+    const rows = row.findAll('.note-group')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].get('.group-count').text()).toBe('2')
+    expect(rows[0].get('.group-label').text()).toBe('Theke')
   })
 
   it('takes the most recently added plain portion off again', async () => {
     const row = mountRow(true, [plain(0), plain(4)])
 
-    await row.get('.remove-one').trigger('click')
+    await row.get('.note-group .group-remove').trigger('click')
 
     expect(row.emitted('removeOne')).toEqual([[4]])
-  })
-
-  it('offers nothing to remove while nothing plain is on the order', () => {
-    const row = mountRow(true, [])
-
-    expect(row.find('.remove-one').exists()).toBe(false)
   })
 
   it('cannot be tapped once the item has sold out', () => {
@@ -139,6 +141,76 @@ describe('the item row itself', () => {
     const row = mountRow(false, [])
 
     expect(row.get('.sold-out').text()).toBe('Ausverkauft')
+  })
+})
+
+describe('the note control on an article with nothing ordered yet', () => {
+  it('sits inside the header and renders no rows area', () => {
+    const row = mountRow(true, [])
+
+    expect(row.get('.item-head').find('.add-note').exists()).toBe(true)
+    expect(row.find('.note-group').exists()).toBe(false)
+  })
+})
+
+describe('the note button placement once rows are on the order', () => {
+  it('stays in the header for Schnitzel, an item with several rows underneath', () => {
+    const row = mount(ItemRow, {
+      props: {
+        item: schnitzel(),
+        positions: [at(0, 'station-schank', 'Schank'), at(1, 'station-kueche', 'Küche')],
+        language: 'de' as const,
+        estimateRange: null,
+        stationNameFor,
+      },
+      global: { plugins: testPlugins('de') },
+      attachTo: document.body,
+    })
+
+    expect(row.get('.item-head').find('.add-note').exists()).toBe(true)
+  })
+})
+
+describe('the default station shown on a plain row', () => {
+  function wurstel(): CatalogItemView {
+    return {
+      id: 'item-wurstel',
+      name: 'Würstel',
+      categoryId: 'category-essen',
+      priceCents: 250,
+      sortOrder: 1,
+      isAvailable: true,
+      stationIds: ['station-bar'],
+      isQueueIndependent: false,
+    }
+  }
+
+  it('names the station the plain-only item is routed to, on its one row', () => {
+    const positions: ItemPosition[] = Array.from({ length: 15 }, (_unused, index) => ({
+      index,
+      note: null,
+      hasAStationChoice: false,
+      stationId: 'station-bar',
+      stationName: null,
+    }))
+    const row = mount(ItemRow, {
+      props: {
+        item: wurstel(),
+        positions,
+        language: 'de' as const,
+        estimateRange: null,
+        stationNameFor,
+      },
+      global: { plugins: testPlugins('de') },
+      attachTo: document.body,
+    })
+
+    const rows = row.findAll('.note-group')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].get('.group-count').text()).toBe('15')
+    expect(rows[0].get('.group-station-fixed').text()).toBe('Theke')
+    expect(rows[0].find('.group-remove').exists()).toBe(true)
+    expect(rows[0].find('.group-add').exists()).toBe(true)
   })
 })
 
@@ -335,15 +407,15 @@ describe('the portions that carry a note', () => {
 
     const groups = row.findAll('.note-group')
 
-    expect(groups).toHaveLength(1)
-    expect(groups[0].get('.group-note').text()).toBe('Hinweis: ohne Eis')
-    expect(groups[0].get('.group-count').text()).toBe('1')
+    expect(groups).toHaveLength(2)
+    expect(groups[1].get('.group-note').text()).toBe('ohne Eis')
+    expect(groups[1].get('.group-count').text()).toBe('1')
   })
 
   it('labels the note in English too', () => {
     const row = mountRowWithEstimate(null, 'en', true, [noted(0, 'no ice')])
 
-    expect(row.get('.group-note').text()).toBe('Note: no ice')
+    expect(row.get('.group-note').text()).toBe('no ice')
   })
 
   it('counts portions carrying the same note on one line', () => {
@@ -387,7 +459,7 @@ describe('the portions that carry a note', () => {
       { index: 0, note: null, hasAStationChoice: true, stationId: 'station-1', stationName: 'Bar innen' },
     ])
 
-    expect(row.get('.note-group .group-label').text()).toBe('Ausgabestelle: Bar innen')
+    expect(row.get('.note-group .group-label').text()).toBe('Bar innen')
   })
 
   it('keeps the station visible on a line that also carries a note', () => {
@@ -402,8 +474,8 @@ describe('the portions that carry a note', () => {
     ])
 
     const label = row.get('.note-group .group-label').text()
-    expect(label).toContain('Ausgabestelle: Bar innen')
-    expect(label).toContain('Hinweis: ohne Eis')
+    expect(label).toContain('Bar innen')
+    expect(label).toContain('ohne Eis')
   })
 
   it('adds another portion to a station-only group', async () => {
@@ -440,6 +512,15 @@ describe('the portions that carry a note', () => {
 
     expect(row.find('.group-station').exists()).toBe(false)
   })
+
+  it('gives each station its own row when units of one article differ only by station', () => {
+    const row = mountRow(true, [
+      { index: 0, note: null, hasAStationChoice: true, stationId: 'station-1', stationName: 'Bar innen' },
+      { index: 1, note: null, hasAStationChoice: true, stationId: 'station-2', stationName: 'Bar aussen' },
+    ])
+
+    expect(row.findAll('.note-group')).toHaveLength(2)
+  })
 })
 
 describe('asking for a note on an item several stations could prepare', () => {
@@ -470,18 +551,24 @@ function mountRowWithEstimate(
   positions: ItemPosition[] = [],
 ) {
   return mount(ItemRow, {
-    props: { item: item(isAvailable), positions, language: locale, estimateRange: range },
+    props: {
+      item: item(isAvailable),
+      positions,
+      language: locale,
+      estimateRange: range,
+      stationNameFor,
+    },
     global: { plugins: testPlugins(locale) },
     attachTo: document.body,
   })
 }
 
 describe('the waiting time written on an item row', () => {
-  it('sits on the facts line under the name, beside the price', () => {
+  it('sits on the facts line under the name, the price beside the name', () => {
     const row = mountRowWithEstimate({ min: 6, max: 6 })
 
     expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.facts .price').text()).toBe('2,00 €')
+    expect(row.get('.unit-price').text()).toBe('2,00 €')
     expect(row.get('.facts .estimate').text()).toBe('~6 Min.')
   })
 
@@ -520,7 +607,7 @@ describe('the waiting time written on an item row', () => {
     const row = mountRowWithEstimate(null)
 
     expect(row.get('.name').text()).toBe('Wasser')
-    expect(row.get('.facts .price').text()).toBe('2,00 €')
+    expect(row.get('.unit-price').text()).toBe('2,00 €')
     expect(row.find('.estimate').exists()).toBe(false)
   })
 
@@ -529,7 +616,84 @@ describe('the waiting time written on an item row', () => {
 
     expect(row.get('.name').text()).toBe('Wasser')
     expect(row.find('.estimate').exists()).toBe(false)
-    expect(row.get('.facts .price').text()).toBe('2,00 €')
+    expect(row.get('.unit-price').text()).toBe('2,00 €')
     expect(row.get('.facts .sold-out').text()).toBe('Ausverkauft')
+  })
+})
+
+function schnitzel(): CatalogItemView {
+  return {
+    id: 'item-schnitzel',
+    name: 'Schnitzel',
+    categoryId: 'category-essen',
+    priceCents: 300,
+    sortOrder: 1,
+    isAvailable: true,
+    stationIds: ['station-schank', 'station-kueche'],
+    isQueueIndependent: false,
+  }
+}
+
+function at(index: number, stationId: string, stationName: string, note: string | null = null): ItemPosition {
+  return { index, note, hasAStationChoice: true, stationId, stationName }
+}
+
+describe('the counts and totals on an article', () => {
+  it('sums every row on the header and prices each row on its own', () => {
+    const row = mount(ItemRow, {
+      props: {
+        item: schnitzel(),
+        positions: [
+          at(0, 'station-schank', 'Schank'),
+          at(1, 'station-schank', 'Schank'),
+          at(2, 'station-kueche', 'Küche'),
+          at(3, 'station-schank', 'Schank'),
+          at(4, 'station-schank', 'Schank'),
+          at(5, 'station-schank', 'Schank', 'ABCD'),
+          at(6, 'station-schank', 'Schank'),
+        ],
+        language: 'en' as const,
+        estimateRange: null,
+        stationNameFor,
+      },
+      global: { plugins: testPlugins('en') },
+      attachTo: document.body,
+    })
+
+    expect(row.get('.unit-price').text()).toBe('7 × €3.00')
+    expect(row.get('.article-total').text()).toBe('€21.00')
+    const rows = row.findAll('.note-group')
+    expect(rows.map((entry) => entry.get('.group-count').text())).toEqual(['5', '1', '1'])
+    expect(rows.map((entry) => entry.get('.group-station').text())).toEqual(['Schank', 'Küche', 'Schank'])
+    expect(rows[2].get('.group-station').text()).toBe('Schank')
+    expect(rows[2].get('.group-note').text()).toBe('ABCD')
+  })
+
+  it('puts every plain portion on the one row the header total still sums up', () => {
+    const row = mount(ItemRow, {
+      props: {
+        item: { ...item(true), priceCents: 400 },
+        positions: [plain(0), plain(1), plain(2)],
+        language: 'en' as const,
+        estimateRange: null,
+        stationNameFor,
+      },
+      global: { plugins: testPlugins('en') },
+      attachTo: document.body,
+    })
+
+    expect(row.get('.unit-price').text()).toBe('3 × €4.00')
+    expect(row.get('.article-total').text()).toBe('€12.00')
+    const rows = row.findAll('.note-group')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].get('.group-count').text()).toBe('3')
+    expect(rows[0].get('.group-station-fixed').text()).toBe('Theke')
+  })
+
+  it('shows the plain unit price and no total while the article is not on the order', () => {
+    const row = mountRow(true, [])
+
+    expect(row.get('.unit-price').text()).toBe('2,00 €')
+    expect(row.find('.article-total').exists()).toBe(false)
   })
 })

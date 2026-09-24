@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupPositions, countItemPortions, positionsForItem } from '../../../src/phone/core/itemPositions'
+import { groupPositions, countItemPortions, buildItemPositionsView, positionsForItem } from '../../../src/phone/core/itemPositions'
 import type { ItemPosition } from '../../../src/phone/core/itemPositions'
 import type { DraftLine, DraftOrder } from '../../../src/phone/core/draftCart'
 import { CatalogItemView } from '../../../src/shared/api/generatedSchemas'
@@ -203,5 +203,74 @@ describe('groupPositions', () => {
 
   it('returns nothing for an item that is not on the order', () => {
     expect(groupPositions([])).toEqual([])
+  })
+})
+
+describe('buildItemPositionsView', () => {
+  function at(
+    index: number,
+    stationId: string | null,
+    stationName: string | null,
+    note: string | null = null,
+  ): ItemPosition {
+    return { index, note, hasAStationChoice: stationName !== null, stationId, stationName }
+  }
+
+  it('sums the count and the total of every row and prices each row on its own', () => {
+    const view = buildItemPositionsView(
+      [
+        at(0, 'station-schank', 'Schank'),
+        at(1, 'station-kueche', 'Küche'),
+        at(2, 'station-schank', 'Schank', 'ABCD'),
+        at(3, 'station-schank', 'Schank'),
+        at(4, 'station-schank', 'Schank'),
+        at(5, 'station-schank', 'Schank'),
+        at(6, 'station-schank', 'Schank'),
+      ],
+      300,
+    )
+
+    expect(view.totalCount).toBe(7)
+    expect(view.articleTotalCents).toBe(2100)
+    expect(view.rows.map((row) => row.indexes.length)).toEqual([5, 1, 1])
+  })
+
+  it('keeps two rows of one article apart when only their notes differ', () => {
+    const view = buildItemPositionsView(
+      [at(0, 'station-bar', null, 'ohne Eis'), at(1, 'station-bar', null, 'mit Eis')],
+      250,
+    )
+
+    expect(view.rows.map((row) => row.note)).toEqual(['ohne Eis', 'mit Eis'])
+    expect(view.articleTotalCents).toBe(500)
+  })
+
+  it('gives plain portions a single row of their own', () => {
+    const view = buildItemPositionsView(
+      [at(0, 'station-bar', null), at(1, 'station-bar', null), at(2, 'station-bar', null)],
+      400,
+    )
+
+    expect(view.totalCount).toBe(3)
+    expect(view.articleTotalCents).toBe(1200)
+    expect(view.rows).toHaveLength(1)
+    expect(view.rows[0].indexes).toEqual([0, 1, 2])
+  })
+
+  it('counts nothing for an article that is not on the order', () => {
+    expect(buildItemPositionsView([], 400)).toEqual({
+      totalCount: 0,
+      articleTotalCents: 0,
+      rows: [],
+    })
+  })
+
+  it('gives a unit its own row when only its chosen station differs, even without a note', () => {
+    const view = buildItemPositionsView(
+      [at(0, 'station-1', 'Bar innen'), at(1, 'station-2', 'Bar aussen')],
+      300,
+    )
+
+    expect(view.rows).toHaveLength(2)
   })
 })

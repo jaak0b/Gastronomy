@@ -34,13 +34,11 @@
   },
   "catalog": {
     "addNote": "Note",
-    "noteText": "Note: {note}",
+    "countTimesPrice": "{count} × {price}",
     "noteTitle": "Note for {name}",
     "noteAdd": "Add",
     "noteSave": "Save",
     "noteCancel": "Cancel",
-    "removeOne": "One less {name}",
-    "addOne": "One more {name}",
     "title": "Take an order",
     "categoryWithCount": "{count} x {name}",
     "backToCategories": "Back to the categories",
@@ -62,7 +60,6 @@
   },
   "line": {
     "whereTitle": "Station for {item}",
-    "station": "Station: {name}",
     "currentStation": "Current",
     "cancel": "Cancel"
   },
@@ -191,8 +188,6 @@
       "done": "{name} has set up their phone.",
       "doneStation": "The tablet at {name} is set up.",
       "expired": "Create a new QR code. This one was not scanned for five minutes.",
-      "copyUrl": "Copy the address",
-      "copied": "Address copied",
       "copyUnavailable": "Type the address above by hand. Copying is not available on this page.",
       "forSomebodyNew": "Scan this QR code with the phone camera. Then enter the name on the phone.",
       "forSomebodyKnown": "Scan this QR code with the phone camera.",
@@ -214,10 +209,7 @@
       "name": "Category name",
       "colour": "Colour",
       "edit": "Edit the category",
-      "moveUp": "Move up",
-      "moveDown": "Move down",
       "activate": "Switch the category on",
-      "deactivate": "Switch the category off",
       "deactivateTitle": "Switch this category off?",
       "deactivateConfirm": "Switch the category off",
       "noneYet": "Click \"New category\". There is no category to choose yet."
@@ -234,7 +226,6 @@
     "stationHasUnfinishedItems": "While a festival is active, a station with open orders cannot be switched off.",
     "stationNameMissing": "Give the station a name before you save it.",
     "actionFailed": "The action failed. Try again, otherwise reload the page.",
-    "deactivate": "Deactivate",
     "deactivated": "Deactivated",
     "showDeactivated": "Show deactivated entries",
     "festivalNameMissing": "Give the festival a name.",
@@ -333,7 +324,6 @@
     "title": "This device is not set up yet."
   },
   "language": {
-    "label": "Language",
     "german": "Deutsch",
     "english": "English"
   },

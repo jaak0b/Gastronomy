@@ -277,6 +277,7 @@ function chooseStation(stationId: string, note: string | null): void {
         :language="session.language"
         :positions-for="positionsFor"
         :estimate-range-for="estimateRangeFor"
+        :station-name-for="catalog.stationName"
         class="my-2"
         @add="addItem"
         @add-with-a-note="addItemWithANote"

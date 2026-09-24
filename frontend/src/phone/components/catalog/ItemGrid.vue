@@ -10,6 +10,7 @@ defineProps<{
   language: AppLanguage
   positionsFor: (itemId: string) => ItemPosition[]
   estimateRangeFor: (itemId: string) => EstimateRange | null
+  stationNameFor: (stationId: string) => string
 }>()
 defineEmits<{
   add: [item: CatalogItemView]
@@ -31,6 +32,7 @@ defineEmits<{
       :language="language"
       :positions="positionsFor(item.id)"
       :estimate-range="estimateRangeFor(item.id)"
+      :station-name-for="stationNameFor"
       @add="$emit('add', item)"
       @add-with-a-note="(note) => $emit('addWithANote', item, note)"
       @add-with-a-note-at-a-station="$emit('addWithANoteAtAStation', item)"

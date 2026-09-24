@@ -34,13 +34,11 @@
   },
   "catalog": {
     "addNote": "Hinweis",
-    "noteText": "Hinweis: {note}",
+    "countTimesPrice": "{count} × {price}",
     "noteTitle": "Hinweis für {name}",
     "noteAdd": "Hinzufügen",
     "noteSave": "Übernehmen",
     "noteCancel": "Abbrechen",
-    "removeOne": "Ein {name} weniger",
-    "addOne": "Ein {name} mehr",
     "title": "Bestellung aufnehmen",
     "categoryWithCount": "{count} x {name}",
     "backToCategories": "Zurück zu den Kategorien",
@@ -62,7 +60,6 @@
   },
   "line": {
     "whereTitle": "Ausgabestelle für {item}",
-    "station": "Ausgabestelle: {name}",
     "currentStation": "Aktuell",
     "cancel": "Abbrechen"
   },
@@ -191,8 +188,6 @@
       "done": "{name} hat das Telefon eingerichtet.",
       "doneStation": "Das Tablet an der Ausgabestelle {name} ist eingerichtet.",
       "expired": "Erstellen Sie einen neuen QR-Code. Dieser wurde fünf Minuten lang nicht gescannt.",
-      "copyUrl": "Adresse kopieren",
-      "copied": "Adresse kopiert",
       "copyUnavailable": "Tippen Sie die Adresse oben von Hand ab. Das Kopieren ist auf dieser Seite nicht möglich.",
       "forSomebodyNew": "Scannen Sie diesen QR-Code mit der Kamera des Telefons. Geben Sie danach am Telefon den Namen ein.",
       "forSomebodyKnown": "Scannen Sie diesen QR-Code mit der Kamera des Telefons.",
@@ -214,10 +209,7 @@
       "name": "Name der Kategorie",
       "colour": "Farbe",
       "edit": "Kategorie bearbeiten",
-      "moveUp": "Nach oben schieben",
-      "moveDown": "Nach unten schieben",
       "activate": "Kategorie einschalten",
-      "deactivate": "Kategorie abschalten",
       "deactivateTitle": "Kategorie abschalten?",
       "deactivateConfirm": "Kategorie abschalten",
       "noneYet": "Klicken Sie auf \"Neue Kategorie\". Es gibt noch keine Kategorie, die Sie auswählen können."
@@ -234,7 +226,6 @@
     "stationHasUnfinishedItems": "Solange ein Fest aktiv ist, kann eine Ausgabestelle mit offenen Bestellungen nicht abgeschaltet werden.",
     "stationNameMissing": "Geben Sie der Ausgabestelle einen Namen, bevor Sie sie speichern.",
     "actionFailed": "Die Aktion ist fehlgeschlagen. Versuchen Sie es noch einmal, sonst laden Sie die Seite neu.",
-    "deactivate": "Deaktivieren",
     "deactivated": "Deaktiviert",
     "showDeactivated": "Deaktivierte anzeigen",
     "festivalNameMissing": "Geben Sie dem Fest einen Namen.",
@@ -333,7 +324,6 @@
     "title": "Dieses Gerät ist noch nicht eingerichtet."
   },
   "language": {
-    "label": "Sprache",
     "german": "Deutsch",
     "english": "English"
   },

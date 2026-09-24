@@ -8,7 +8,7 @@ import { assertNever } from '../../../shared/core/assertNever'
 import type { EstimateRange } from '../../core/estimates'
 import { estimateRangeText } from '../../core/estimateWording'
 import { formatPrice } from '../../core/totals'
-import { groupPositions, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
+import { buildItemPositionsView, type ItemPosition, type PositionGroup } from '../../core/itemPositions'
 import { needsStationChoice } from '../../core/routingPreview'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
@@ -17,6 +17,7 @@ const props = defineProps<{
   positions: ItemPosition[]
   language: AppLanguage
   estimateRange: EstimateRange | null
+  stationNameFor: (stationId: string) => string
 }>()
 const emit = defineEmits<{
   add: []
@@ -53,13 +54,25 @@ const estimate = computed(() =>
   isSoldOut.value ? null : estimateRangeText(props.estimateRange, t, props.language),
 )
 
-const groups = computed(() => groupPositions(props.positions))
+const view = computed(() => buildItemPositionsView(props.positions, props.item.priceCents))
 
-const plainGroup = computed(
-  () => groups.value.find((group) => group.note === null && group.stationName === null) ?? null,
+const countTimesPrice = computed(() =>
+  t('catalog.countTimesPrice', { count: view.value.totalCount, price: price.value }),
 )
 
-const noteGroups = computed(() => groups.value.filter((group) => group !== plainGroup.value))
+const unitPriceText = computed(() =>
+  view.value.totalCount > 0 ? countTimesPrice.value : price.value,
+)
+
+const articleTotal = computed(() => formatPrice(view.value.articleTotalCents, props.language))
+
+const defaultStationName = computed(() => {
+  if (needsStationChoice(props.item)) {
+    return null
+  }
+  const stationId = props.item.stationIds[0]
+  return stationId === undefined ? null : props.stationNameFor(stationId)
+})
 
 const canConfirm = computed(() => typedNote.value.trim().length > 0)
 
@@ -96,34 +109,36 @@ function confirm(): void {
 function mostRecentIndexIn(group: PositionGroup): number {
   return group.indexes[group.indexes.length - 1]
 }
+
+function stationNameForRow(group: PositionGroup): string | null {
+  return group.stationName ?? defaultStationName.value
+}
 </script>
 
 <template>
   <div class="item-row" :class="{ 'is-sold-out': isSoldOut }">
     <div class="item-line d-flex align-start">
-      <div class="lead d-flex align-center">
-        <v-btn
-          v-if="plainGroup !== null"
-          class="remove-one"
-          icon="mdi-minus"
-          variant="text"
-          size="large"
-          :aria-label="t('catalog.removeOne', { name: item.name })"
-          @click="emit('removeOne', mostRecentIndexIn(plainGroup))"
-        />
-        <span v-if="plainGroup !== null" class="count text-h6">{{ plainGroup.indexes.length }}</span>
-      </div>
       <div class="item-body flex-grow-1">
         <div class="item-head d-flex align-start">
           <v-btn class="add flex-grow-1" variant="text" :disabled="isSoldOut" @click="emit('add')">
-            <span class="name text-body-1">{{ item.name }}</span>
+            <span class="name-line">
+              <span class="name text-body-1">{{ item.name }}</span>
+              <span class="unit-price text-body-2 text-medium-emphasis">
+                {{ unitPriceText }}
+              </span>
+            </span>
             <span class="facts text-body-2 text-medium-emphasis">
-              <span class="price">{{ price }}</span>
               <span v-if="estimate !== null" class="estimate">{{ estimate }}</span>
               <span v-if="isSoldOut" class="sold-out">{{ t('catalog.soldOut') }}</span>
             </span>
           </v-btn>
-          <v-btn class="add-note" variant="text" :disabled="isSoldOut" @click="askForANote">
+          <span v-if="view.totalCount > 0" class="article-total text-body-1">{{ articleTotal }}</span>
+          <v-btn
+            class="add-note add-note-in-header"
+            variant="text"
+            :disabled="isSoldOut"
+            @click="askForANote"
+          >
             {{ t('catalog.addNote') }}
           </v-btn>
         </div>
@@ -131,42 +146,44 @@ function mostRecentIndexIn(group: PositionGroup): number {
     </div>
 
     <div
-      v-for="group in noteGroups"
+      v-for="group in view.rows"
       :key="group.indexes[0]"
       class="note-group d-flex align-center ga-2"
     >
-      <v-btn
-        class="group-remove"
-        icon="mdi-minus"
-        variant="text"
-        size="small"
-        :aria-label="t('catalog.removeOne', { name: item.name })"
-        @click="emit('removeOne', mostRecentIndexIn(group))"
-      />
-      <span class="group-count text-body-2">{{ group.indexes.length }}</span>
-      <div class="group-label text-body-2 text-start flex-grow-1 d-flex flex-column">
+      <span class="group-count">{{ group.indexes.length }}</span>
+      <div class="group-label text-body-2 text-start flex-grow-1 d-flex align-center">
         <button
           v-if="group.stationName !== null"
           class="group-station"
           @click="emit('changeStation', group.indexes)"
         >
-          {{ t('line.station', { name: group.stationName }) }}
+          {{ group.stationName }}
         </button>
+        <span v-else-if="stationNameForRow(group) !== null" class="group-station-fixed">
+          {{ stationNameForRow(group) }}
+        </span>
+        <span v-if="group.note !== null && stationNameForRow(group) !== null" class="group-separator">
+          &middot;
+        </span>
         <button
           v-if="group.note !== null"
           class="group-note text-medium-emphasis"
           @click="correctTheNoteFor(group)"
         >
-          {{ t('catalog.noteText', { note: group.note }) }}
+          {{ group.note }}
         </button>
       </div>
       <v-btn
-        class="group-add"
+        class="group-remove stepper"
+        icon="mdi-minus"
+        variant="text"
+        @click="emit('removeOne', mostRecentIndexIn(group))"
+      />
+      <v-btn
+        class="group-add stepper"
         icon="mdi-plus"
         variant="text"
-        size="small"
         :disabled="isSoldOut"
-        :aria-label="t('catalog.addOne', { name: item.name })"
         @click="emit('addLikeGroup', group.note, group.stationId)"
       />
     </div>
@@ -211,23 +228,49 @@ function mostRecentIndexIn(group: PositionGroup): number {
   padding-block: 4px;
 }
 
-.lead {
-  min-height: 64px;
-  flex: 0 0 auto;
-}
-
-.remove-one {
-  flex: 0 0 auto;
-  border-radius: 8px;
-}
-
 .add-note {
-  align-self: flex-start;
-  flex: 0 0 auto;
-  height: auto;
-  min-height: 64px;
+  min-height: 48px;
   border-radius: 8px;
   padding-inline: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.add-note-in-header {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.name-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.unit-price,
+.article-total {
+  white-space: nowrap;
+}
+
+.article-total {
+  flex: 0 0 auto;
+  align-self: center;
+  padding-inline: 0.75rem;
+}
+
+.group-count {
+  min-width: 2ch;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.stepper {
+  flex: 0 0 auto;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 8px;
 }
 
 .item-body {
@@ -236,6 +279,8 @@ function mostRecentIndexIn(group: PositionGroup): number {
 
 .group-label {
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .item-head {
@@ -274,16 +319,9 @@ function mostRecentIndexIn(group: PositionGroup): number {
   overflow-wrap: anywhere;
 }
 
-.price,
 .sold-out {
   flex: 0 0 auto;
   white-space: nowrap;
-}
-
-.count {
-  min-width: 2ch;
-  text-align: center;
-  align-self: center;
 }
 
 .note-group {
@@ -300,6 +338,33 @@ function mostRecentIndexIn(group: PositionGroup): number {
   color: inherit;
   text-align: start;
   padding-block: 4px;
+  padding-inline: 0;
   min-height: 2.25rem;
+}
+
+.group-station,
+.group-station-fixed,
+.group-separator {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.group-station-fixed {
+  padding-block: 4px;
+  padding-inline: 0;
+  min-height: 2.25rem;
+  color: inherit;
+}
+
+.group-separator {
+  margin-inline: 0.35em;
+}
+
+.group-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
