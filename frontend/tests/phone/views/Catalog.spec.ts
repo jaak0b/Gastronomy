@@ -213,7 +213,7 @@ describe('the items of one category on the ordering screen', () => {
     await openCategory(view, 0)
 
     expect(order.draft.lines).toHaveLength(1)
-    expect(view.findAll('.item-row .count')[0].text()).toBe('1')
+    expect(view.get('.item-row .note-group .group-count').text()).toBe('1')
   })
 
   it('sends the waiter back to the categories when the open one leaves the menu', async () => {
@@ -264,7 +264,7 @@ describe('the portions written on a category button', () => {
     await openCategory(view, 0)
     await view.findAll('.item-row .add')[0].trigger('click')
 
-    await view.findAll('.item-row .remove-one')[0].trigger('click')
+    await view.get('.item-row .note-group .group-remove').trigger('click')
     await goBackToTheCategories(view)
 
     expect(categoryButtons(view)).toEqual(['Essen', 'Getränke'])
@@ -302,7 +302,7 @@ describe('building the order on the ordering screen', () => {
     await view.findAll('.item-row .add')[0].trigger('click')
 
     expect(order.draft.lines).toHaveLength(2)
-    expect(view.findAll('.item-row .count')[0].text()).toBe('2')
+    expect(view.get('.item-row .note-group .group-count').text()).toBe('2')
   })
 
   it('puts a portion carrying the typed note on a line of its own', async () => {
@@ -320,8 +320,10 @@ describe('building the order on the ordering screen', () => {
     await view.vm.$nextTick()
 
     expect(order.draft.lines.map((line) => line.note)).toEqual([null, 'ohne Eis'])
-    expect(view.findAll('.item-row .count')[0].text()).toBe('1')
-    expect(view.get('.item-row .note-group .group-note').text()).toBe('Hinweis: ohne Eis')
+    const groups = view.findAll('.item-row .note-group')
+    expect(groups).toHaveLength(2)
+    expect(groups[0].get('.group-count').text()).toBe('1')
+    expect(groups[1].get('.group-note').text()).toBe('ohne Eis')
   })
 
   it('takes the most recently added portion off again', async () => {
@@ -331,7 +333,7 @@ describe('building the order on the ordering screen', () => {
 
     await view.findAll('.item-row .add')[0].trigger('click')
     await view.findAll('.item-row .add')[0].trigger('click')
-    await view.findAll('.item-row .remove-one')[0].trigger('click')
+    await view.get('.item-row .note-group .group-remove').trigger('click')
 
     expect(order.draft.lines).toHaveLength(1)
   })
