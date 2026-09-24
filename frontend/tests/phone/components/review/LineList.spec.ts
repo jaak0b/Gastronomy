@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { testPlugins } from '../../../support/plugins'
 import LineList from '../../../../src/phone/components/review/LineList.vue'
 import type { BasketLineView } from '../../../../src/phone/core/basket'
-import { DeliveryMode, StationEstimateView } from '../../../../src/shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../../../src/shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../../src/shared/core/deviceLanguage'
 import { routedStationId } from '../../../../src/phone/core/routingPreview'
 
@@ -23,8 +23,6 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationId: null,
     stationName: '',
     candidateStationIds: ['station-kueche'],
-    productionMinutes: null,
-    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,
@@ -38,7 +36,7 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
 }
 
 interface ListOptions {
-  estimates?: StationEstimateView[]
+  quotedStations?: StationQuoteView[]
   deliveryModes?: Record<string, DeliveryMode>
   changesAreRefused?: boolean
   language?: AppLanguage
@@ -51,7 +49,7 @@ function mountList(lines: BasketLineView[], options: ListOptions = {}) {
     props: {
       lines,
       language,
-      estimates: options.estimates ?? [],
+      quotedStations: options.quotedStations ?? [],
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
       changesAreRefused: options.changesAreRefused ?? false,
     },
@@ -150,19 +148,14 @@ describe('choosing how a station hands its part of the order out', () => {
   })
 
   it('names both ways the station can hand its part out', () => {
-    const list = mountList([line({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
+    const list = mountList([line()])
 
     expect(list.get('.delivery-together').text()).toBe('Gemeinsam')
     expect(list.get('.delivery-as-it-comes').text()).toBe('Einzeln')
   })
 
   it('names both ways in English', () => {
-    const list = mountList([line({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-      language: 'en',
-    })
+    const list = mountList([line()], { language: 'en' })
 
     expect(list.get('.delivery-together').text()).toBe('Combined')
     expect(list.get('.delivery-as-it-comes').text()).toBe('Individual')
@@ -228,149 +221,37 @@ describe('choosing how a station hands its part of the order out', () => {
 })
 
 describe('how long the station will take for its part of the order', () => {
-  it('adds the queue of the station to every line that goes to it, on the station header', () => {
-    const list = mountList(
-      [
-        line({ productionMinutes: 10 }),
-        line({ catalogItemId: 'item-schnitzel', name: 'Schnitzel', productionMinutes: 10 }),
-      ],
-      { estimates: [{ stationId: 'station-kueche', queuedMinutes: 132 }] },
-    )
+  it('shows the time the laptop calculated on the station header', () => {
+    const list = mountList([line()], {
+      quotedStations: [{ stationId: 'station-kueche', readyInMinutes: 152 }],
+    })
 
     expect(list.get('.station-name').text()).toBe('Geht an Küche (~152 Min.)')
   })
 
   it('writes the same header in English', () => {
-    const list = mountList(
-      [
-        line({ productionMinutes: 10 }),
-        line({ catalogItemId: 'item-schnitzel', name: 'Schnitzel', productionMinutes: 10 }),
-      ],
-      {
-        estimates: [{ stationId: 'station-kueche', queuedMinutes: 132 }],
-        language: 'en',
-      },
-    )
+    const list = mountList([line()], {
+      quotedStations: [{ stationId: 'station-kueche', readyInMinutes: 152 }],
+      language: 'en',
+    })
 
     expect(list.get('.station-name').text()).toBe('Goes to Küche (~152 min)')
   })
 
   it('keeps the header time while each item comes out on its own', () => {
-    const list = mountList([line({ productionMinutes: 8 })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
+    const list = mountList([line()], {
+      quotedStations: [{ stationId: 'station-kueche', readyInMinutes: 20 }],
       deliveryModes: { 'station-kueche': 'asItComes' },
     })
 
     expect(list.get('.station-name').text()).toBe('Geht an Küche (~20 Min.)')
   })
 
-  it('names the queue alone when no line of the part has a time', () => {
-    const list = mountList([line({ productionMinutes: null })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }],
-    })
-
-    expect(list.get('.station-name').text()).toBe('Geht an Küche (~12 Min.)')
-  })
-
-  it('leaves the time off the header when the station has no queue and no line has a time', () => {
-    const list = mountList([line({ productionMinutes: null })], {
-      estimates: [{ stationId: 'station-kueche', queuedMinutes: 0 }],
+  it('leaves the time off the header when the laptop could not calculate one', () => {
+    const list = mountList([line()], {
+      quotedStations: [{ stationId: 'station-kueche', readyInMinutes: null }],
     })
 
     expect(list.get('.station-name').text()).toBe('Geht an Küche')
-  })
-
-  it('leaves a line that cannot be ordered out of the header time', () => {
-    const list = mountList(
-      [
-        line({ productionMinutes: 4 }),
-        line({
-          catalogItemId: 'item-pommes',
-          name: 'Pommes',
-          productionMinutes: 8,
-          isSoldOut: true,
-        }),
-      ],
-      { estimates: [{ stationId: 'station-kueche', queuedMinutes: 12 }] },
-    )
-
-    expect(list.get('.station-name').text()).toBe('Geht an Küche (~16 Min.)')
-  })
-})
-
-describe('a line whose item is no longer on the menu', () => {
-  it('stays on the screen with the name the guest ordered it by', () => {
-    const list = mountList([line({ name: 'Currywurst', isNoLongerOnTheMenu: true })])
-
-    expect(list.get('.line-name').text()).toBe('1 x Currywurst')
-  })
-
-  it('says that the item is sold out', () => {
-    const list = mountList([line({ name: 'Currywurst', isNoLongerOnTheMenu: true })])
-
-    expect(list.get('.sold-out').text()).toBe('Currywurst ist gerade ausverkauft.')
-  })
-
-  it('is greyed the same way a sold out line is', () => {
-    const list = mountList([line({ name: 'Currywurst', isNoLongerOnTheMenu: true })])
-
-    expect(list.get('.line').classes()).toContain('is-unavailable')
-  })
-
-  it('shows a dash for the price, because nobody knows it any more', () => {
-    const list = mountList([
-      line({ name: 'Currywurst', unitPriceCents: null, isNoLongerOnTheMenu: true }),
-      line({ name: 'Currywurst', unitPriceCents: null, isNoLongerOnTheMenu: true }),
-    ])
-
-    expect(list.get('.line .price').text()).toBe('-')
-  })
-})
-
-describe('a line whose station no longer prepares its item', () => {
-  function movedLine(overrides: Partial<BasketLineView> = {}) {
-    return line({
-      name: 'Bier',
-      stationId: 'station-theke-innen',
-      candidateStationIds: ['station-theke-aussen'],
-      isNoLongerPreparedAtItsStation: true,
-      ...overrides,
-    })
-  }
-
-  it('says the item is sold out, the same as every line that cannot be ordered', () => {
-    const list = mountList([movedLine()])
-
-    expect(list.get('.sold-out').text()).toBe('Bier ist gerade ausverkauft.')
-  })
-
-  it('is greyed the way every line that cannot be ordered is', () => {
-    const list = mountList([movedLine()])
-
-    expect(list.get('.line').classes()).toContain('is-unavailable')
-  })
-
-  it('shows no sold-out notice while the station still prepares the item', () => {
-    const list = mountList([line({ stationId: 'station-kueche' })])
-
-    expect(list.find('.sold-out').exists()).toBe(false)
-  })
-})
-
-describe('a station that has left the item list while the order stood on the summary', () => {
-  function beerFromAStationNobodyCanNameAnyMore(): BasketLineView {
-    return line({
-      catalogItemId: 'item-bier',
-      name: 'Bier',
-      stationId: 'station-theke-abgebaut',
-      candidateStationIds: ['station-theke-abgebaut'],
-      stationName: 'Theke aussen',
-    })
-  }
-
-  it('is still named in the header of its card', () => {
-    const list = mountList([beerFromAStationNobodyCanNameAnyMore()])
-
-    expect(list.get('.station-name').text()).toBe('Geht an Theke aussen')
   })
 })

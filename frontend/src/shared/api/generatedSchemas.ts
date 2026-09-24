@@ -70,6 +70,18 @@ export const DeviceRevokedEvent = z.strictObject({ deviceId: z.string() });
 export type EnrolmentCompletedEvent = __TypedOpenapi.Schemas.EnrolmentCompletedEvent;
 export const EnrolmentCompletedEvent = z.strictObject({ staffMemberId: z.string().nullable(), stationId: z.string().nullable(), ownerName: z.string(), deviceId: z.string() });
 
+export type EstimateQuoteLine = __TypedOpenapi.Schemas.EstimateQuoteLine;
+export const EstimateQuoteLine = z.strictObject({ catalogItemId: z.string(), stationId: z.string(), units: z.number().int() });
+
+export type EstimateQuoteRequest = __TypedOpenapi.Schemas.EstimateQuoteRequest;
+export const EstimateQuoteRequest = z.strictObject({ lines: z.array(EstimateQuoteLine) });
+
+export type StationQuoteView = __TypedOpenapi.Schemas.StationQuoteView;
+export const StationQuoteView = z.strictObject({ stationId: z.string(), readyInMinutes: z.number().nullable() });
+
+export type EstimateQuoteView = __TypedOpenapi.Schemas.EstimateQuoteView;
+export const EstimateQuoteView = z.strictObject({ stations: z.array(StationQuoteView) });
+
 export type FestivalChangedEvent = __TypedOpenapi.Schemas.FestivalChangedEvent;
 export const FestivalChangedEvent = z.record(z.string(), z.unknown());
 
@@ -81,6 +93,9 @@ export const StationSummaryView = z.strictObject({ id: z.string(), name: z.strin
 
 export type InvitationView = __TypedOpenapi.Schemas.InvitationView;
 export const InvitationView = z.strictObject({ invitationId: z.string(), qrUrl: z.string(), expiresAtUtc: z.string(), staffMember: StaffMemberView.nullable(), station: StationSummaryView.nullable(), availableAddresses: z.array(z.string()) });
+
+export type ItemEstimateView = __TypedOpenapi.Schemas.ItemEstimateView;
+export const ItemEstimateView = z.strictObject({ catalogItemId: z.string(), stationId: z.string(), readyInMinutes: z.number() });
 
 export type LanguageChangeRequest = __TypedOpenapi.Schemas.LanguageChangeRequest;
 export const LanguageChangeRequest = z.strictObject({ language: z.string().nullable() });
@@ -174,12 +189,6 @@ export const SettleItemsRequest = z.strictObject({ lines: z.array(SettleLineRequ
 
 export type SettlementView = __TypedOpenapi.Schemas.SettlementView;
 export const SettlementView = z.strictObject({ settledOrderItemIds: z.array(z.string()), reappliedOrderItemIds: z.array(z.string()), alreadySettledByOthersOrderItemIds: z.array(z.string()) });
-
-export type StationEstimateView = __TypedOpenapi.Schemas.StationEstimateView;
-export const StationEstimateView = z.strictObject({ stationId: z.string(), queuedMinutes: z.number() });
-
-export type StationEstimateListView = __TypedOpenapi.Schemas.StationEstimateListView;
-export const StationEstimateListView = z.strictObject({ stations: z.array(StationEstimateView) });
 
 export type StationQueueItemView = __TypedOpenapi.Schemas.StationQueueItemView;
 export const StationQueueItemView = z.strictObject({ orderItemId: z.string(), itemName: z.string(), note: z.string().nullable(), fulfilledAtUtc: z.string().nullable() });

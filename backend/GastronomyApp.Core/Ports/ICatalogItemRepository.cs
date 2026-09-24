@@ -6,9 +6,13 @@ public interface ICatalogItemRepository
 {
   public Task<CatalogItem?> FindByIdAsync(Guid catalogItemId, CancellationToken cancellationToken);
 
+  public Task<IReadOnlyList<CatalogItem>> FindByIdsAsync(IReadOnlyCollection<Guid> catalogItemIds, CancellationToken cancellationToken);
+
   public Task<IReadOnlyList<CatalogItem>> FindAllOrderedAsync(Guid? festivalId, CancellationToken cancellationToken);
 
   public Task<IReadOnlyCollection<ItemStationAssignment>> FindAssignmentsAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken);
+
+  public Task<IReadOnlyList<ItemStationAssignment>> FindTimedAssignmentsIncludingOpenItemsAsync(Guid festivalId, CancellationToken cancellationToken);
 
   public Task<FestivalCatalogItem?> FindMenuRowAsync(Guid festivalId, Guid catalogItemId, CancellationToken cancellationToken);
 

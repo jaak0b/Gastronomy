@@ -7,6 +7,18 @@ import { useConnectionStore } from '../../../src/shared/stores/connection'
 
 vi.mock('@microsoft/signalr', async () => (await import('../../support/hubConnection')).signalrModuleFake())
 
+const BRATWURST_IN_THE_KITCHEN = {
+  catalogItemId: 'item-bratwurst',
+  stationId: 'station-kueche',
+  readyInMinutes: 48,
+}
+
+const TWO_BRATWURST = [{ catalogItemId: 'item-bratwurst', stationId: 'station-kueche', units: 2 }]
+
+function emptyAnswerFor(url: string): unknown {
+  return url === '/api/estimates/quote' ? { stations: [] } : []
+}
+
 function enrolledPhone() {
   useSessionStore().deviceToken = 'token-here'
 }
@@ -21,13 +33,13 @@ describe('the waiting times the phone asks the laptop for', () => {
     vi.unstubAllGlobals()
   })
 
-  it('keeps the queue of every station the laptop named', async () => {
+  it('keeps the time of every article and station the laptop named', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(
         async () =>
           new Response(
-            JSON.stringify({ stations: [{ stationId: 'station-kueche', queuedMinutes: 12 }] }),
+            JSON.stringify([BRATWURST_IN_THE_KITCHEN]),
             { status: 200 },
           ),
       ),
@@ -37,7 +49,7 @@ describe('the waiting times the phone asks the laptop for', () => {
 
     await estimates.load()
 
-    expect(estimates.stations).toEqual([{ stationId: 'station-kueche', queuedMinutes: 12 }])
+    expect(estimates.items).toEqual([BRATWURST_IN_THE_KITCHEN])
   })
 
   it('asks the laptop at its own address', async () => {
@@ -46,7 +58,7 @@ describe('the waiting times the phone asks the laptop for', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ stations: [] }), { status: 200 })
+        return new Response(JSON.stringify(emptyAnswerFor(url)), { status: 200 })
       }),
     )
     enrolledPhone()
@@ -64,10 +76,7 @@ describe('the waiting times the phone asks the laptop for', () => {
       vi.fn(async () => {
         calls += 1
         if (calls === 1) {
-          return new Response(
-            JSON.stringify({ stations: [{ stationId: 'station-kueche', queuedMinutes: 12 }] }),
-            { status: 200 },
-          )
+          return new Response(JSON.stringify([BRATWURST_IN_THE_KITCHEN]), { status: 200 })
         }
         throw new TypeError('Failed to fetch')
       }),
@@ -79,7 +88,7 @@ describe('the waiting times the phone asks the laptop for', () => {
 
     await estimates.load()
 
-    expect(estimates.stations).toEqual([])
+    expect(estimates.items).toEqual([])
     expect(logged).toHaveBeenCalledOnce()
     logged.mockRestore()
   })
@@ -113,7 +122,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ stations: [] }), { status: 200 })
+        return new Response(JSON.stringify(emptyAnswerFor(url)), { status: 200 })
       }),
     )
     useEstimatesStore().listen()
@@ -185,7 +194,7 @@ describe('the waiting times a phone follows while it takes orders', () => {
       'fetch',
       vi.fn(async (url: string) => {
         urls.push(url)
-        return new Response(JSON.stringify({ stations: [] }), { status: 200 })
+        return new Response(JSON.stringify(emptyAnswerFor(url)), { status: 200 })
       }),
     )
     const stopListening = useEstimatesStore().listen()
@@ -197,5 +206,134 @@ describe('the waiting times a phone follows while it takes orders', () => {
     await letTheReloadFinish()
 
     expect(urls).toEqual([])
+  })
+})
+
+describe('the waiting time the laptop calculates for the order on the screen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    forgetHubEvents()
+    enrolledPhone()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sends the lines of the order and keeps the time of every station', async () => {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit) => {
+        bodies.push(JSON.parse(String(init.body)))
+        return new Response(
+          JSON.stringify({ stations: [{ stationId: 'station-kueche', readyInMinutes: 96 }] }),
+          { status: 200 },
+        )
+      }),
+    )
+    const estimates = useEstimatesStore()
+
+    await estimates.quote(TWO_BRATWURST)
+
+    expect(bodies).toEqual([{ lines: TWO_BRATWURST }])
+    expect(estimates.quotedStations).toEqual([{ stationId: 'station-kueche', readyInMinutes: 96 }])
+  })
+
+  it('drops the times and reports it to the console when the laptop cannot answer', async () => {
+    let calls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        calls += 1
+        if (calls === 1) {
+          return new Response(
+            JSON.stringify({ stations: [{ stationId: 'station-kueche', readyInMinutes: 96 }] }),
+            { status: 200 },
+          )
+        }
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    const estimates = useEstimatesStore()
+    await estimates.quote(TWO_BRATWURST)
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await estimates.quote(TWO_BRATWURST)
+
+    expect(estimates.quotedStations).toEqual([])
+    expect(logged).toHaveBeenCalledOnce()
+    logged.mockRestore()
+  })
+
+  it('keeps the newer answer when an older one arrives late', async () => {
+    const answers: Array<(response: Response) => void> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((resolve) => answers.push(resolve))),
+    )
+    const estimates = useEstimatesStore()
+    const older = estimates.quote(TWO_BRATWURST)
+    const newer = estimates.quote([{ ...TWO_BRATWURST[0], units: 3 }])
+
+    answers[1](new Response(JSON.stringify({ stations: [{ stationId: 'station-kueche', readyInMinutes: 144 }] }), { status: 200 }))
+    await newer
+    answers[0](new Response(JSON.stringify({ stations: [{ stationId: 'station-kueche', readyInMinutes: 96 }] }), { status: 200 }))
+    await older
+
+    expect(estimates.quotedStations).toEqual([{ stationId: 'station-kueche', readyInMinutes: 144 }])
+  })
+
+  it('asks nothing for an order without lines', async () => {
+    const fetched = vi.fn()
+    vi.stubGlobal('fetch', fetched)
+
+    await useEstimatesStore().quote([])
+
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it('asks again when a station worked off part of its queue', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify(emptyAnswerFor(url)), { status: 200 })
+      }),
+    )
+    const estimates = useEstimatesStore()
+    estimates.listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    await estimates.quote(TWO_BRATWURST)
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged', { stationId: 'station-kueche' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(urls).toEqual(['/api/estimates', '/api/estimates/quote'])
+  })
+
+  it('stops asking once the review screen has closed', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify(emptyAnswerFor(url)), { status: 200 })
+      }),
+    )
+    const estimates = useEstimatesStore()
+    estimates.listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    await estimates.quote(TWO_BRATWURST)
+    estimates.stopQuoting()
+    urls.length = 0
+
+    fireHubEvent('StationOrdersChanged', { stationId: 'station-kueche' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(urls).toEqual(['/api/estimates'])
   })
 })

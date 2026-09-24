@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ConfirmSendDialog from '../../../../src/phone/components/review/ConfirmSendDialog.vue'
 import type { BasketLineView } from '../../../../src/phone/core/basket'
-import { DeliveryMode, StationEstimateView } from '../../../../src/shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../../../src/shared/api/generatedSchemas'
 import { testPlugins } from '../../../support/plugins'
 
-const QUEUES: StationEstimateView[] = [{ stationId: 'station-kueche', queuedMinutes: 12 }]
+const QUOTE: StationQuoteView[] = [{ stationId: 'station-kueche', readyInMinutes: 40 }]
 
 function bratwurst(overrides: Partial<BasketLineView> = {}): BasketLineView {
   return {
@@ -16,8 +16,6 @@ function bratwurst(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationId: 'station-kueche',
     stationName: 'Küche',
     candidateStationIds: ['station-kueche'],
-    productionMinutes: 28,
-    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,
@@ -32,7 +30,6 @@ function bier(): BasketLineView {
     stationId: 'station-theke-innen',
     stationName: 'Theke innen',
     candidateStationIds: ['station-theke-innen'],
-    productionMinutes: null,
   })
 }
 
@@ -40,6 +37,7 @@ interface DialogOptions {
   locale?: 'de' | 'en'
   lines?: BasketLineView[]
   deliveryModes?: Record<string, DeliveryMode>
+  quotedStations?: StationQuoteView[]
 }
 
 const ORDER_ACROSS_TWO_STATIONS: DialogOptions = {
@@ -57,7 +55,7 @@ function mountDialog(options: DialogOptions = {}) {
       totalCents: 6600,
       language: locale,
       lines: options.lines ?? [bratwurst()],
-      estimates: QUEUES,
+      quotedStations: options.quotedStations ?? QUOTE,
       deliveryModeFor: (stationId: string) => chosen[stationId] ?? ('together' as DeliveryMode),
     },
     global: { plugins: testPlugins(locale) },
@@ -123,17 +121,10 @@ describe('the question before an order goes out, in German', () => {
     ])
   })
 
-  it('adds every line of the station to the queue, not just the slowest one', () => {
-    mountDialog({
-      lines: [
-        bratwurst(),
-        bratwurst({ catalogItemId: 'item-currywurst', name: 'Currywurst' }),
-      ],
-    })
+  it('names no time for a station the laptop could not calculate', () => {
+    mountDialog({ quotedStations: [{ stationId: 'station-kueche', readyInMinutes: null }] })
 
-    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Gemeinsam (~68 Min.)',
-    ])
+    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual(['Gemeinsam'])
   })
 
   it('names no time for a station that hands its part out item by item', () => {
@@ -209,20 +200,6 @@ describe('the question before an order goes out, in English', () => {
     expect(textsOf('.confirm-send-dialog .row-station .label')).toEqual(['Küche:'])
     expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
       'Combined (~40 min)',
-    ])
-  })
-
-  it('adds every line of the station to the queue, not just the slowest one', () => {
-    mountDialog({
-      lines: [
-        bratwurst(),
-        bratwurst({ catalogItemId: 'item-currywurst', name: 'Currywurst' }),
-      ],
-      locale: 'en',
-    })
-
-    expect(textsOf('.confirm-send-dialog .row-station .value')).toEqual([
-      'Combined (~68 min)',
     ])
   })
 

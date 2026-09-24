@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeliveryMode, StationEstimateView } from '../../../shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import { lineCannotBeOrdered, type BasketLineView } from '../../core/basket'
 import { mergeLinesWithSameArticleAndNote, type CollapsedLine } from '../../../shared/core/collapse'
@@ -18,7 +18,7 @@ interface StationPart extends StationDelivery {
 const props = defineProps<{
   lines: BasketLineView[]
   language: AppLanguage
-  estimates: StationEstimateView[]
+  quotedStations: StationQuoteView[]
   deliveryModeFor: (stationId: string) => DeliveryMode
   changesAreRefused: boolean
 }>()
@@ -40,7 +40,7 @@ function readingOrder(
 }
 
 const parts = computed<StationPart[]>(() =>
-  stationDeliveries(props.lines, props.estimates, props.deliveryModeFor).map((delivery) => ({
+  stationDeliveries(props.lines, props.quotedStations, props.deliveryModeFor).map((delivery) => ({
     ...delivery,
     entries: mergeLinesWithSameArticleAndNote(delivery.lines, (line) => line.name, (line) => line.note).sort(readingOrder),
   })),

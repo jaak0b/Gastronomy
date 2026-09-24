@@ -15,5 +15,7 @@ public static partial class Refusal
     public const string OrderItemId = "orderItemId";
 
     public const string ProblemCode = "problemCode";
+
+    public const string StationId = "stationId";
   }
 }

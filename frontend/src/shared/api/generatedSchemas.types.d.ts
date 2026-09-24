@@ -23,10 +23,15 @@ export type CreateInvitationRequest = Partial<{ staffMemberId: (null | string), 
 export type DeliveryMode = ("together" | "asItComes")
 export type DeviceRevokedEvent = { deviceId: string }
 export type EnrolmentCompletedEvent = { staffMemberId: (null | string), stationId: (null | string), ownerName: string, deviceId: string }
+export type EstimateQuoteLine = { catalogItemId: string, stationId: string, units: number }
+export type EstimateQuoteRequest = { lines: Array<EstimateQuoteLine> }
+export type StationQuoteView = { stationId: string, readyInMinutes: (null | number) }
+export type EstimateQuoteView = { stations: Array<StationQuoteView> }
 export type FestivalChangedEvent = Record<string, unknown>
 export type StaffMemberView = { id: string, name: string }
 export type StationSummaryView = { id: string, name: string }
 export type InvitationView = { invitationId: string, qrUrl: string, expiresAtUtc: string, staffMember: (null | StaffMemberView), station: (null | StationSummaryView), availableAddresses: Array<string> }
+export type ItemEstimateView = { catalogItemId: string, stationId: string, readyInMinutes: number }
 export type LanguageChangeRequest = { language: (null | string) }
 export type LanguageView = { language: string }
 export type MoveCategoryRequest = { direction: CategoryMoveDirection }
@@ -58,8 +63,6 @@ export type SetAvailabilityRequest = { isAvailable: boolean }
 export type SettleLineRequest = { orderItemId: string, paidPriceCents: (null | number), paymentNotice?: (null | string) }
 export type SettleItemsRequest = { lines: (null | Array<SettleLineRequest>) }
 export type SettlementView = { settledOrderItemIds: Array<string>, reappliedOrderItemIds: Array<string>, alreadySettledByOthersOrderItemIds: Array<string> }
-export type StationEstimateView = { stationId: string, queuedMinutes: number }
-export type StationEstimateListView = { stations: Array<StationEstimateView> }
 export type StationQueueItemView = { orderItemId: string, itemName: string, note: (null | string), fulfilledAtUtc: (null | string) }
 export type StationOrderQueueView = { stationOrderId: string, globalOrderNumber: number, stationOrderNumber: number, tableName: string, staffMemberName: string, deliveryMode: DeliveryMode, createdAtUtc: string, isHiddenFromAsItComesQueue: boolean, itemCount: number, fulfilledItemCount: number, items: Array<StationQueueItemView> }
 export type StationFulfilledView = { stationOrders: Array<StationOrderQueueView> }
@@ -246,7 +249,23 @@ export type get__api_estimates = {
       requestFormat: "json",
       responseFormat: "json",
       parameters: never,
-      responses: {200: Schemas.StationEstimateListView,
+      responses: {200: Array<Schemas.ItemEstimateView>,
+},
+      
+    }
+export type post__api_estimates_quote = {
+      method: "POST",
+      path: "/api/estimates/quote",
+      requestFormat: "json",
+      responseFormat: "json",
+      parameters: {
+            
+        
+        
+        
+        body:  Schemas.EstimateQuoteRequest,
+          }
+      responses: {200: Schemas.EstimateQuoteView,
 },
       
     }
@@ -808,6 +827,7 @@ export type delete__api_admin_festivals_FestivalId_stations_StationId = {
 "/api/admin/enrolment/invitations": Endpoints.post__api_admin_enrolment_invitations,
 "/api/orders": Endpoints.post__api_orders,
 "/api/open-items/settle": Endpoints.post__api_openItems_settle,
+"/api/estimates/quote": Endpoints.post__api_estimates_quote,
 "/api/station/items/fulfill": Endpoints.post__api_station_items_fulfill,
 "/api/station/items/unfulfill": Endpoints.post__api_station_items_unfulfill,
 "/api/station/orders/{stationOrderId}/hide": Endpoints.post__api_station_orders_StationOrderId_hide,

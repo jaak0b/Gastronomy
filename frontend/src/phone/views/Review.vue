@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ConfirmedSettlement } from '../core/submission'
 import { isTableNameValid } from '../core/tableName'
 import { formatPrice } from '../core/totals'
+import { quoteLinesFor } from '../core/estimates'
 import { useEstimatesStore } from '../stores/estimates'
 import { useOrderStore } from '../stores/order'
 import { useSessionStore } from '../../shared/stores/session'
@@ -18,8 +19,18 @@ const estimates = useEstimatesStore()
 const order = useOrderStore()
 const session = useSessionStore()
 
-onMounted(async () => {
-  await estimates.load()
+const quoteLines = computed(() => quoteLinesFor(order.basketLines))
+
+watch(
+  quoteLines,
+  (lines) => {
+    void estimates.quote(lines)
+  },
+  { immediate: true, deep: true },
+)
+
+onUnmounted(() => {
+  estimates.stopQuoting()
 })
 
 const total = computed(() => formatPrice(order.totalCents, session.language))
@@ -91,7 +102,7 @@ function backToItems(): void {
     <LineList
       :lines="order.basketLines"
       :language="session.language"
-      :estimates="estimates.stations"
+      :quoted-stations="estimates.quotedStations"
       :delivery-mode-for="order.deliveryModeAt"
       :changes-are-refused="order.changesAreRefused"
       @choose-delivery-mode="order.chooseDeliveryMode"
@@ -161,7 +172,7 @@ function backToItems(): void {
       :total-cents="order.totalCents"
       :language="session.language"
       :lines="order.basketLines"
-      :estimates="estimates.stations"
+      :quoted-stations="estimates.quotedStations"
       :delivery-mode-for="order.deliveryModeAt"
       @confirmed="sendAsConfirmed"
       @cancelled="keepTheOrderOnTheScreen"

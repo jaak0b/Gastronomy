@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { stationDeliveries } from '../../../src/phone/core/stationDeliveries'
 import type { BasketLineView } from '../../../src/phone/core/basket'
-import { DeliveryMode, StationEstimateView } from '../../../src/shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../../src/shared/api/generatedSchemas'
 
-const QUEUES: StationEstimateView[] = [
-  { stationId: 'station-kueche', queuedMinutes: 12 },
-  { stationId: 'station-theke', queuedMinutes: 0 },
+const QUOTE: StationQuoteView[] = [
+  { stationId: 'station-kueche', readyInMinutes: 23 },
+  { stationId: 'station-theke', readyInMinutes: null },
 ]
 
 function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
@@ -17,8 +17,6 @@ function line(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationId: 'station-kueche',
     stationName: 'Küche',
     candidateStationIds: ['station-kueche'],
-    productionMinutes: 8,
-    isQueueIndependent: false,
     isSoldOut: false,
     isNoLongerOnTheMenu: false,
     isNoLongerPreparedAtItsStation: false,
@@ -33,7 +31,6 @@ function beer(overrides: Partial<BasketLineView> = {}): BasketLineView {
     stationId: 'station-theke',
     stationName: 'Theke innen',
     candidateStationIds: ['station-theke'],
-    productionMinutes: null,
     ...overrides,
   })
 }
@@ -44,7 +41,7 @@ function alwaysTogether(): DeliveryMode {
 
 describe('what each station of an order is asked to do', () => {
   it('names one station per part of the order, in the order the parts stand on the screen', () => {
-    const deliveries = stationDeliveries([line(), beer()], QUEUES, alwaysTogether)
+    const deliveries = stationDeliveries([line(), beer()], QUOTE, alwaysTogether)
 
     expect(deliveries.map((delivery) => delivery.stationId)).toEqual([
       'station-kueche',
@@ -56,7 +53,7 @@ describe('what each station of an order is asked to do', () => {
   it('carries the mode the server chose for that station and nothing from the other one', () => {
     const chosen: Record<string, DeliveryMode> = { 'station-theke': 'asItComes' }
 
-    const deliveries = stationDeliveries([line(), beer()], QUEUES, (stationId) =>
+    const deliveries = stationDeliveries([line(), beer()], QUOTE, (stationId) =>
       chosen[stationId] ?? 'together',
     )
 
@@ -66,7 +63,7 @@ describe('what each station of an order is asked to do', () => {
   it('hands everything out together while the line still waits for its station', () => {
     const deliveries = stationDeliveries(
       [line({ stationId: null, candidateStationIds: ['station-kueche', 'station-theke'] })],
-      QUEUES,
+      QUOTE,
       () => 'asItComes',
     )
 
@@ -76,113 +73,44 @@ describe('what each station of an order is asked to do', () => {
 })
 
 describe('how long a station says its part will take', () => {
-  it('adds the queue to every line of the part that goes to the station', () => {
-    const deliveries = stationDeliveries(
-      [line(), line({ catalogItemId: 'item-pommes', name: 'Pommes', productionMinutes: 3 })],
-      QUEUES,
-      alwaysTogether,
-    )
+  it('names the time the laptop calculated for the station', () => {
+    const deliveries = stationDeliveries([line()], QUOTE, alwaysTogether)
 
     expect(deliveries[0].minutes).toBe(23)
   })
 
-  it('counts two portions of the same item as two lines', () => {
-    const deliveries = stationDeliveries(
-      [line({ productionMinutes: 4 }), line({ productionMinutes: 4 })],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(20)
-  })
-
   it('names no time for the part when each item goes out on its own', () => {
-    const deliveries = stationDeliveries([line()], QUEUES, () => 'asItComes')
+    const deliveries = stationDeliveries([line()], QUOTE, () => 'asItComes')
 
     expect(deliveries[0].minutes).toBeNull()
   })
 
-  it('names no time for a part whose items nobody gave a preparation time and nothing is queued', () => {
-    const deliveries = stationDeliveries([beer()], QUEUES, alwaysTogether)
+  it('keeps the calculated time of the station even when the part goes out item by item', () => {
+    const deliveries = stationDeliveries([line()], QUOTE, () => 'asItComes')
+
+    expect(deliveries[0].stationMinutes).toBe(23)
+  })
+
+  it('names no time for a station the laptop could not calculate', () => {
+    const deliveries = stationDeliveries([beer()], QUOTE, alwaysTogether)
 
     expect(deliveries[0].minutes).toBeNull()
   })
 
-  it('names the queue alone for a part whose items nobody gave a preparation time', () => {
-    const deliveries = stationDeliveries(
-      [line({ productionMinutes: null })],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(12)
-  })
-
-  it('adds the timed line and counts the untimed one as nothing', () => {
-    const deliveries = stationDeliveries(
-      [line(), line({ catalogItemId: 'item-brot', name: 'Brot', productionMinutes: null })],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(20)
-  })
-
-  it('names no time while the part has no station to be queued at', () => {
+  it('names no time while the part has no station yet', () => {
     const deliveries = stationDeliveries(
       [line({ stationId: null, candidateStationIds: ['station-kueche', 'station-theke'] })],
-      QUEUES,
+      QUOTE,
       alwaysTogether,
     )
 
     expect(deliveries[0].minutes).toBeNull()
   })
 
-  it('leaves out an item that cannot be ordered, because the part will not carry it', () => {
-    const deliveries = stationDeliveries(
-      [
-        line({ productionMinutes: 4 }),
-        line({ catalogItemId: 'item-pommes', name: 'Pommes', productionMinutes: 8, isSoldOut: true }),
-      ],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(16)
-  })
-
-  it('leaves out an item that has left the menu, for the same reason', () => {
-    const deliveries = stationDeliveries(
-      [
-        line({ productionMinutes: 4 }),
-        line({
-          catalogItemId: 'item-currywurst',
-          name: 'Currywurst',
-          productionMinutes: 8,
-          isNoLongerOnTheMenu: true,
-        }),
-      ],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(16)
-  })
-
-  it('names the queue alone for a part where nothing at all can be ordered', () => {
-    const deliveries = stationDeliveries(
-      [line({ productionMinutes: 8, isSoldOut: true })],
-      QUEUES,
-      alwaysTogether,
-    )
-
-    expect(deliveries[0].minutes).toBe(12)
-  })
-
-  it('names no waiting time for a station the laptop said nothing about', () => {
+  it('names no time for a station the laptop said nothing about', () => {
     const deliveries = stationDeliveries(
       [line({ stationId: 'station-grill', candidateStationIds: ['station-grill'] })],
-      QUEUES,
+      QUOTE,
       alwaysTogether,
     )
 

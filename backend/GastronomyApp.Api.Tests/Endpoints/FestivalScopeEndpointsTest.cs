@@ -82,7 +82,7 @@ public sealed class FestivalScopeEndpointsTest
     Assert.Multiple(() =>
                     {
                       Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                      Assert.That(body.RootElement.GetProperty("stations").GetArrayLength(), Is.EqualTo(0));
+                      Assert.That(body.RootElement.GetArrayLength(), Is.EqualTo(0));
                     });
   }
 

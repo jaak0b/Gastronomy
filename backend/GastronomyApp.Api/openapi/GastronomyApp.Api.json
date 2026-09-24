@@ -300,7 +300,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StationEstimateListView"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemEstimateView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/estimates/quote": {
+      "post": {
+        "tags": [
+          "GetDocument.Insider"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstimateQuoteView"
                 }
               }
             }
@@ -1961,6 +1993,58 @@
           }
         }
       },
+      "EstimateQuoteLine": {
+        "required": [
+          "catalogItemId",
+          "stationId",
+          "units"
+        ],
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "units": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EstimateQuoteRequest": {
+        "required": [
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EstimateQuoteLine"
+            }
+          }
+        }
+      },
+      "EstimateQuoteView": {
+        "required": [
+          "stations"
+        ],
+        "type": "object",
+        "properties": {
+          "stations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationQuoteView"
+            }
+          }
+        }
+      },
       "FestivalChangedEvent": {
         "type": "object"
       },
@@ -2011,6 +2095,28 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ItemEstimateView": {
+        "required": [
+          "catalogItemId",
+          "stationId",
+          "readyInMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "readyInMinutes": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -2751,37 +2857,6 @@
           }
         }
       },
-      "StationEstimateListView": {
-        "required": [
-          "stations"
-        ],
-        "type": "object",
-        "properties": {
-          "stations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StationEstimateView"
-            }
-          }
-        }
-      },
-      "StationEstimateView": {
-        "required": [
-          "stationId",
-          "queuedMinutes"
-        ],
-        "type": "object",
-        "properties": {
-          "stationId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "queuedMinutes": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
       "StationFulfilledView": {
         "required": [
           "stationOrders"
@@ -2978,6 +3053,26 @@
             "items": {
               "$ref": "#/components/schemas/StationOrderQueueView"
             }
+          }
+        }
+      },
+      "StationQuoteView": {
+        "required": [
+          "stationId",
+          "readyInMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "readyInMinutes": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },

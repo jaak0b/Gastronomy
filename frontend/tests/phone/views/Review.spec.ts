@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import Review from '../../../src/phone/views/Review.vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { useSessionStore } from '../../../src/shared/stores/session'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { saveDraft, saveSendProgress } from '../../../src/phone/core/draftCart'
 import { testPlugins } from '../../support/plugins'
@@ -999,5 +1000,65 @@ describe('the question the waiter answers before an order goes out', () => {
 
     const sent = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string)
     expect(sent.items[0].settlement).toBeNull()
+  })
+})
+
+describe('the waiting time on the review screen', () => {
+  const quoteBodies: unknown[] = []
+
+  function answerTheQuoteWith(readyInMinutes: number | null): void {
+    quoteBodies.length = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit) => {
+        quoteBodies.push(JSON.parse(String(init.body)))
+        return new Response(
+          JSON.stringify({ stations: [{ stationId: 'station-bar', readyInMinutes }] }),
+          { status: 200 },
+        )
+      }),
+    )
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    document.body.innerHTML = ''
+    navigate('/review')
+    useSessionStore().deviceToken = 'token-here'
+  })
+
+  it('shows the time the laptop calculated for the station', async () => {
+    answerTheQuoteWith(14)
+    prepareOrder()
+
+    const review = mount(Review, { global: { plugins: testPlugins() } })
+    await flushPromises()
+
+    expect(review.get('.station-name').text()).toBe('Geht an Bar (~14 Min.)')
+  })
+
+  it('shows no time for a station the laptop could not calculate', async () => {
+    answerTheQuoteWith(null)
+    prepareOrder()
+
+    const review = mount(Review, { global: { plugins: testPlugins() } })
+    await flushPromises()
+
+    expect(review.get('.station-name').text()).toBe('Geht an Bar')
+  })
+
+  it('asks again with the new count when the order changes', async () => {
+    answerTheQuoteWith(14)
+    const order = prepareOrder()
+    mount(Review, { global: { plugins: testPlugins() } })
+    await flushPromises()
+
+    order.addItem({ catalogItemId: WASSER.id, note: 'ohne Eis', stationId: 'station-bar', name: WASSER.name })
+    await flushPromises()
+
+    expect(quoteBodies.at(-1)).toEqual({
+      lines: [{ catalogItemId: 'item-wasser', stationId: 'station-bar', units: 2 }],
+    })
   })
 })

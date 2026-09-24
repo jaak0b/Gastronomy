@@ -1,7 +1,7 @@
-import { DeliveryMode, StationEstimateView } from '../../shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../shared/api/generatedSchemas'
 import { assertNever } from '../../shared/core/assertNever'
-import { lineCannotBeOrdered, type BasketLineView } from './basket'
-import { stationReadyInMinutes } from './estimates'
+import type { BasketLineView } from './basket'
+import { quotedMinutesAt } from './estimates'
 import { buildStationOrders, DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES } from './stationOrders'
 
 export interface StationDelivery {
@@ -41,16 +41,14 @@ function minutesForTheChosenMode(
 
 export function stationDeliveries(
   lines: readonly BasketLineView[],
-  estimates: readonly StationEstimateView[],
+  quotedStations: readonly StationQuoteView[],
   deliveryModeFor: (stationId: string) => DeliveryMode,
 ): StationDelivery[] {
   return buildStationOrders(lines).map((stationOrder) => {
     const stationId = stationOrder.stationId
     const deliveryMode =
       stationId === null ? DELIVERY_MODE_BEFORE_THE_SERVER_CHOOSES : deliveryModeFor(stationId)
-    const orderableLines = stationOrder.lines.filter((line) => !lineCannotBeOrdered(line))
-    const stationMinutes =
-      stationId === null ? null : stationReadyInMinutes(estimates, orderableLines, stationId)
+    const stationMinutes = stationId === null ? null : quotedMinutesAt(quotedStations, stationId)
     return {
       stationId,
       stationName: stationOrder.lines[0].stationName,

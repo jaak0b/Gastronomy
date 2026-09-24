@@ -72,7 +72,6 @@ describe('buildBasketView', () => {
         stationId: null,
         stationName: 'Kueche',
         candidateStationIds: ['station-kueche'],
-        isQueueIndependent: false,
         isSoldOut: false,
         isNoLongerOnTheMenu: false,
         isNoLongerPreparedAtItsStation: false,

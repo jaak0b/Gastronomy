@@ -29,37 +29,32 @@ public sealed class EstimateEndpointsTest
   private OrderTestContext _context = null!;
 
   [Test]
-  public async Task GetEstimates_NoOrdersYet_ReportsEveryActiveStationAsEmpty()
+  public async Task GetEstimates_TwoOpenBratwursts_ReportsTheNextBratwurstAfterThemWithTheWireNames()
   {
-    var stations = await ReadEstimatesAsync();
+    await PlaceAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    var estimates = await ReadEstimatesAsync();
+    var bratwurst = estimates.EnumerateArray().Single();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(stations.GetArrayLength(), Is.EqualTo(2));
-                      Assert.That(stations.EnumerateArray().Select(station => station.GetProperty("queuedMinutes").GetDouble()), Is.All.Zero);
+                      Assert.That(bratwurst.EnumerateObject().Select(property => property.Name),
+                                  Is.EquivalentTo(new[]
+                                                  {
+                                                    "catalogItemId",
+                                                    "stationId",
+                                                    "readyInMinutes"
+                                                  }));
+                      Assert.That(bratwurst.GetProperty("catalogItemId").GetGuid(), Is.EqualTo(_context.World.BratwurstItemId));
+                      Assert.That(bratwurst.GetProperty("stationId").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
+                      Assert.That(bratwurst.GetProperty("readyInMinutes").GetDouble(), Is.EqualTo(12));
                     });
   }
 
   [Test]
-  public async Task GetEstimates_TwoUnfinishedItems_SumsTheMinutesOfTheStationThatHasToMakeThem()
+  public async Task GetEstimates_HandedOutItems_LeavesThemOutOfTheQueue()
   {
-    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    var stations = await ReadEstimatesAsync();
-
-    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(8));
-  }
-
-  [Test]
-  public async Task GetEstimates_FulfilledItems_LeavesThemOutOfTheSum()
-  {
-    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
+    await PlaceAsync(_context.BuildOrder(Guid.NewGuid()));
 
     await using (var database = _context.Factory.CreateContext())
     {
@@ -71,55 +66,27 @@ public sealed class EstimateEndpointsTest
       await database.SaveChangesAsync();
     }
 
-    var stations = await ReadEstimatesAsync();
-
-    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.Zero);
+    Assert.That(ReadyInMinutesOf(await ReadEstimatesAsync(), _context.World.BratwurstItemId), Is.EqualTo(4));
   }
 
   [Test]
-  public async Task GetEstimates_AnItemWithoutAStatedDuration_CountsAsNoTimeAtAll()
+  public async Task GetEstimates_AnIndependentArticle_CountsOnlyWhatIsStillOpenOfItself()
   {
-    OrderBody beerOnly = new(Guid.NewGuid(), "Tisch 12", [new(_context.World.BeerItemId, 300, null, null)]);
+    await MakeBeerIndependentAsync(3);
 
-    using (var placed = await _context.PostOrderAsync(beerOnly))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    var stations = await ReadEstimatesAsync();
-
-    Assert.That(ReadQueuedMinutes(stations, _context.World.BarStationId), Is.Zero);
-  }
-
-  [Test]
-  public async Task GetEstimates_OneItemIsPreparedIndependently_LeavesItOutWhileTheQueuedOneIsCounted()
-  {
-    await using (var database = _context.Factory.CreateContext())
-    {
-      var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
-      beer.ProductionMinutes = 4;
-      beer.IsQueueIndependent = true;
-      await database.SaveChangesAsync();
-    }
-
-    OrderBody both = new(Guid.NewGuid(),
+    await PlaceAsync(new(Guid.NewGuid(),
                          "Tisch 12",
                          [
-                           new(_context.World.BratwurstItemId, 350, null, null),
-                           new(_context.World.BeerItemId, 300, null, null)
-                         ]);
+                           new(_context.World.BeerItemId, 300, null, null),
+                           new(_context.World.BratwurstItemId, 350, null, null)
+                         ]));
 
-    using (var placed = await _context.PostOrderAsync(both))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
-
-    var stations = await ReadEstimatesAsync();
+    var estimates = await ReadEstimatesAsync();
 
     Assert.Multiple(() =>
                     {
-                      Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(4));
-                      Assert.That(ReadQueuedMinutes(stations, _context.World.BarStationId), Is.Zero);
+                      Assert.That(ReadyInMinutesOf(estimates, _context.World.BeerItemId), Is.EqualTo(6));
+                      Assert.That(ReadyInMinutesOf(estimates, _context.World.BratwurstItemId), Is.EqualTo(8));
                     });
   }
 
@@ -133,19 +100,61 @@ public sealed class EstimateEndpointsTest
       await database.SaveChangesAsync();
     }
 
-    using (var placed = await _context.PostOrderAsync(_context.BuildOrder(Guid.NewGuid())))
-    {
-      Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-    }
+    await PlaceAsync(_context.BuildOrder(Guid.NewGuid()));
 
-    var stations = await ReadEstimatesAsync();
-
-    Assert.That(ReadQueuedMinutes(stations, _context.World.KitchenStationId), Is.EqualTo(3));
+    Assert.That(ReadyInMinutesOf(await ReadEstimatesAsync(), _context.World.BratwurstItemId), Is.EqualTo(4.5));
   }
 
-  private double ReadQueuedMinutes(JsonElement stations, Guid stationId)
+  [Test]
+  public async Task PostQuote_TwoMoreBratwurstsBehindTwoOpenOnes_AnswersWithTheMinutesOfTheKitchen()
   {
-    return stations.EnumerateArray().Single(station => station.GetProperty("stationId").GetGuid() == stationId).GetProperty("queuedMinutes").GetDouble();
+    await PlaceAsync(_context.BuildOrder(Guid.NewGuid()));
+
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/estimates/quote", new { lines = new[] { new { catalogItemId = _context.World.BratwurstItemId, stationId = _context.World.KitchenStationId, units = 2 } } });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var kitchen = body.RootElement.GetProperty("stations").EnumerateArray().Single();
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                      Assert.That(kitchen.GetProperty("stationId").GetGuid(), Is.EqualTo(_context.World.KitchenStationId));
+                      Assert.That(kitchen.GetProperty("readyInMinutes").GetDouble(), Is.EqualTo(16));
+                    });
+  }
+
+  [Test]
+  public async Task PostQuote_AnUnknownArticle_IsRefusedWithTheErrorEnvelope()
+  {
+    using var response = await _context.SendAsync(HttpMethod.Post, "/api/estimates/quote", new { lines = new[] { new { catalogItemId = Guid.NewGuid(), stationId = _context.World.KitchenStationId, units = 1 } } });
+    var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                      Assert.That(body.RootElement.GetProperty("code").GetString(), Is.EqualTo("ValidationFailed"));
+                      Assert.That(body.RootElement.GetProperty("messageKey").GetString(), Is.EqualTo("order.cannotBeProcessed"));
+                    });
+  }
+
+  private async Task MakeBeerIndependentAsync(double productionMinutes)
+  {
+    await using var database = _context.Factory.CreateContext();
+    var beer = await database.CatalogItems.FirstAsync(item => item.Id == _context.World.BeerItemId);
+    beer.ProductionMinutes = productionMinutes;
+    beer.IsQueueIndependent = true;
+    await database.SaveChangesAsync();
+  }
+
+  private async Task PlaceAsync(OrderBody order)
+  {
+    using var placed = await _context.PostOrderAsync(order);
+
+    Assert.That(placed.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+  }
+
+  private double ReadyInMinutesOf(JsonElement estimates, Guid catalogItemId)
+  {
+    return estimates.EnumerateArray().Single(estimate => estimate.GetProperty("catalogItemId").GetGuid() == catalogItemId).GetProperty("readyInMinutes").GetDouble();
   }
 
   private async Task<JsonElement> ReadEstimatesAsync()
@@ -156,6 +165,6 @@ public sealed class EstimateEndpointsTest
 
     var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-    return body.RootElement.GetProperty("stations").Clone();
+    return body.RootElement.Clone();
   }
 }

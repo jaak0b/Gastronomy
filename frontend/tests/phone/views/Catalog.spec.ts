@@ -5,7 +5,7 @@ import CatalogPage from '../../../src/phone/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useEstimatesStore } from '../../../src/phone/stores/estimates'
 import { useOrderStore } from '../../../src/phone/stores/order'
-import { CatalogView, StationEstimateView } from '../../../src/shared/api/generatedSchemas'
+import { CatalogView, ItemEstimateView } from '../../../src/shared/api/generatedSchemas'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
 
@@ -597,9 +597,10 @@ const CATALOG_WITH_TIMED_ITEMS: CatalogView = {
   ],
 }
 
-const TIMED_QUEUES: StationEstimateView[] = [
-  { stationId: 'station-kueche', queuedMinutes: 0 },
-  { stationId: 'station-bar', queuedMinutes: 50 },
+const TIMED_ESTIMATES: ItemEstimateView[] = [
+  { catalogItemId: 'item-bratwurst', stationId: 'station-kueche', readyInMinutes: 10 },
+  { catalogItemId: 'item-kaffee', stationId: 'station-kueche', readyInMinutes: 10 },
+  { catalogItemId: 'item-kaffee', stationId: 'station-bar', readyInMinutes: 60 },
 ]
 
 describe('the waiting time on the ordering screen', () => {
@@ -614,7 +615,7 @@ describe('the waiting time on the ordering screen', () => {
   function mountCatalogWithEstimates(): MountedCatalog {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_TIMED_ITEMS
-    useEstimatesStore().stations = TIMED_QUEUES
+    useEstimatesStore().items = TIMED_ESTIMATES
     return mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
   }
 
@@ -633,23 +634,6 @@ describe('the waiting time on the ordering screen', () => {
     ])
   })
 
-  it('shifts the range with the portions already on the order', async () => {
-    const view = mountCatalogWithEstimates()
-    useOrderStore().addItem({
-      catalogItemId: 'item-wasser',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Wasser',
-    })
-
-    await openCategory(view, 0)
-
-    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
-      '~10 Min.',
-      '~10 - 62 Min.',
-    ])
-  })
-
   it('writes the time of each station on its button in the station question', async () => {
     const view = mountCatalogWithEstimates()
 
@@ -663,10 +647,10 @@ describe('the waiting time on the ordering screen', () => {
     expect(choices).toEqual(['Küche (~10 Min.)', 'Bar (~60 Min.)'])
   })
 
-  it('writes no time on the buttons of an item nobody gave a production time', async () => {
+  it('writes no time on the buttons of an item the laptop gave no time for', async () => {
     const catalog = useCatalogStore()
     catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
-    useEstimatesStore().stations = TIMED_QUEUES
+    useEstimatesStore().items = []
     const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
 
     await openCategory(view, 0)
@@ -679,58 +663,6 @@ describe('the waiting time on the ordering screen', () => {
     expect(choices).toEqual(['Küche', 'Bar'])
   })
 
-  it('writes the station time after moving the portions that are already on the order', async () => {
-    const view = mountCatalogWithEstimates()
-    const order = useOrderStore()
-    order.addItem({
-      catalogItemId: 'item-kaffee',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Kaffee',
-    })
-    order.addItem({
-      catalogItemId: 'item-kaffee',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Kaffee',
-    })
-
-    await openCategory(view, 0)
-    await view.findAll('.item-row')[1].get('.group-station').trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
-
-    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
-      element.textContent?.trim(),
-    )
-    expect(choices).toEqual(['Küche (~20 Min.)', 'Bar (~70 Min.) Aktuell'])
-  })
-
-  it('keeps a line that sold out out of the range on the row', async () => {
-    const catalogWithASoldOutWasser: CatalogView = {
-      ...CATALOG_WITH_TIMED_ITEMS,
-      items: CATALOG_WITH_TIMED_ITEMS.items.map((item) =>
-        item.id === 'item-wasser' ? { ...item, isAvailable: false } : item,
-      ),
-    }
-    const catalog = useCatalogStore()
-    catalog.catalog = catalogWithASoldOutWasser
-    useEstimatesStore().stations = TIMED_QUEUES
-    useOrderStore().addItem({
-      catalogItemId: 'item-wasser',
-      note: null,
-      stationId: 'station-bar',
-      name: 'Wasser',
-    })
-    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await openCategory(view, 0)
-
-    expect(view.findAll('.item-row .estimate').map((element) => element.text())).toEqual([
-      '~10 Min.',
-      '~10 - 60 Min.',
-    ])
-  })
-
   it('writes no time on the station buttons when the item has just sold out', async () => {
     const catalogWithASoldOutKaffee: CatalogView = {
       ...CATALOG_WITH_TIMED_ITEMS,
@@ -740,7 +672,7 @@ describe('the waiting time on the ordering screen', () => {
     }
     const catalog = useCatalogStore()
     catalog.catalog = catalogWithASoldOutKaffee
-    useEstimatesStore().stations = TIMED_QUEUES
+    useEstimatesStore().items = TIMED_ESTIMATES
     useOrderStore().addItem({
       catalogItemId: 'item-kaffee',
       note: null,

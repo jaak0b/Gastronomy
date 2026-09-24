@@ -15,7 +15,7 @@ function answerFor(url: string): unknown {
     return { festival: null, categories: [], items: [], stations: [] }
   }
   if (url.startsWith('/api/estimates')) {
-    return { stations: [] }
+    return []
   }
   if (url.startsWith('/api/open-items/table-names')) {
     return { tableNames: [] }

@@ -2,14 +2,12 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CatalogCategoryView, CatalogItemView } from '../../shared/api/generatedSchemas'
-import { lineCannotBeOrdered } from '../core/basket'
 import { itemState } from '../core/catalogItemState'
 import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import {
-
-  pickerEstimateRange,
-  stationEstimateAfterAdding,
+  estimateRangeForItem,
+  readyInMinutesAt,
   type EstimateRange,
 } from '../core/estimates'
 import { letteringColourOn } from '../../shared/core/letteringColour'
@@ -147,15 +145,8 @@ const currentStationId = computed(() => {
   return first === undefined ? null : order.draft.lines[first]?.stationId ?? null
 })
 
-const orderableBasketLines = computed(() =>
-  order.basketLines.filter((line) => !lineCannotBeOrdered(line)),
-)
-
 function estimateRangeFor(itemId: string): EstimateRange | null {
-  const item = catalog.catalog.items.find((candidate) => candidate.id === itemId)
-  return item === undefined
-    ? null
-    : pickerEstimateRange(item, estimates.stations, orderableBasketLines.value)
+  return estimateRangeForItem(estimates.items, itemId)
 }
 
 function estimateForTheStationChoice(stationId: string): number | null {
@@ -163,24 +154,7 @@ function estimateForTheStationChoice(stationId: string): number | null {
   if (item === null || itemState(item) === 'soldOut') {
     return null
   }
-  const productionMinutes = item.productionMinutes
-  if (productionMinutes === null) {
-    return null
-  }
-  const movedIndexes = new Set(linesAwaitingStation.value)
-  const linesStaying = order.basketLines.filter(
-    (line, index) => !movedIndexes.has(index) && !lineCannotBeOrdered(line),
-  )
-  const unitsAtTheStation =
-    linesAwaitingStation.value.length === 0 ? 1 : linesAwaitingStation.value.length
-  return stationEstimateAfterAdding(
-    estimates.stations,
-    linesStaying,
-    stationId,
-    productionMinutes,
-    item.isQueueIndependent,
-    unitsAtTheStation,
-  )
+  return readyInMinutesAt(estimates.items, item.id, stationId)
 }
 
 function place(item: CatalogItemView, note: string | null, stationId: string | null): void {

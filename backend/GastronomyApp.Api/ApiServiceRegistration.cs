@@ -50,7 +50,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<IMappingRegistration, OpenItemMapping>();
     services.AddSingleton<IMappingRegistration, OrderMapping>();
     services.AddSingleton<IMappingRegistration, SettlementMapping>();
-    services.AddSingleton<IMappingRegistration, StationEstimateMapping>();
+    services.AddSingleton<IMappingRegistration, EstimateMapping>();
     services.AddSingleton<IMappingRegistration, StationQueueMapping>();
 
     services.AddSingleton(serviceProvider => new MappingConfiguration(serviceProvider.GetServices<IMappingRegistration>()).Build());
@@ -116,7 +116,7 @@ public sealed class ApiServiceRegistration
     services.AddScoped<StationQueueService>();
     services.AddScoped<StationQueueWriter>();
     services.AddScoped<StationQueueChangeService>();
-    services.AddScoped<StationEstimateService>();
+    services.AddScoped<EstimateService>();
 
     services.AddScoped<IDeviceOwnerStore, DeviceOwnerStore>();
     services.AddScoped<IDeviceTokenStore, DeviceTokenStore>();
@@ -157,7 +157,7 @@ public sealed class ApiServiceRegistration
     services.AddSingleton<StationShellResponder>();
     services.AddSingleton<ClientRouteFallbackResponder>();
     services.AddSingleton<DeviceKindGate>();
-    services.AddScoped<StationEstimateHandler>();
+    services.AddScoped<EstimateHandler>();
     services.AddScoped<StationQueueHandler>();
     services.AddScoped<StationFulfillmentHandler>();
 

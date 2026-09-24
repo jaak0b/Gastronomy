@@ -1,4 +1,5 @@
 using GastronomyApp.Contracts.Enums;
+using GastronomyApp.Contracts.Orders;
 using GastronomyApp.Core.Entities;
 using GastronomyApp.Core.Services;
 
@@ -89,6 +90,75 @@ public sealed class StationServiceTest
     Assert.That(_stationService.QueuedMinutesOf(StationWith()), Is.Zero);
   }
 
+  [Test]
+  public void ReadyInMinutesOf_AnArticleThatWaitsInTheQueue_AddsItsOwnMinutesToTheOpenSharedQueue()
+  {
+    var station = StationWith(OpenItem(5, false), OpenItem(30, true));
+    var bratwurst = Article(4, false);
+
+    Assert.That(_stationService.ReadyInMinutesOf(AssignmentOf(bratwurst, station)), Is.EqualTo(9));
+  }
+
+  [Test]
+  public void ReadyInMinutesOf_AnIndependentArticle_AddsItsOwnMinutesToWhatIsStillOpenOfThatArticleAlone()
+  {
+    var fries = Article(3, true);
+    var station = StationWith(OpenItem(10, false), OpenItemOf(fries), OpenItemOf(fries), OpenItem(20, true));
+
+    Assert.That(_stationService.ReadyInMinutesOf(AssignmentOf(fries, station)), Is.EqualTo(9));
+  }
+
+  [Test]
+  public void QuotedReadyInMinutesOf_MixedLinesWhereTheIndependentArticleTakesLonger_AnswersWithTheIndependentArticle()
+  {
+    var bratwurst = Article(4, false);
+    var pizza = Article(15, true);
+    var station = StationWith(OpenItem(2, false), OpenItemOf(pizza));
+    EstimateQuoteLine[] lines =
+    [
+      new() { CatalogItemId = bratwurst.Id, StationId = station.Id, Units = 1 },
+      new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 1 },
+      new() { CatalogItemId = bratwurst.Id, StationId = Guid.NewGuid(), Units = 5 }
+    ];
+
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [bratwurst, pizza]), Is.EqualTo(30));
+  }
+
+  [Test]
+  public void QuotedReadyInMinutesOf_MixedLinesWhereTheSharedQueueTakesLonger_AnswersWithTheSharedQueue()
+  {
+    var bratwurst = Article(4, false);
+    var pizza = Article(3, true);
+    var station = StationWith(OpenItem(10, false));
+    EstimateQuoteLine[] lines =
+    [
+      new() { CatalogItemId = bratwurst.Id, StationId = station.Id, Units = 2 },
+      new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 1 }
+    ];
+
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [bratwurst, pizza]), Is.EqualTo(18));
+  }
+
+  [Test]
+  public void QuotedReadyInMinutesOf_SeveralUnitsOfAnIndependentArticle_MultipliesItsMinutes()
+  {
+    var pizza = Article(2.5, true);
+    var station = StationWith(OpenItem(1, false));
+    EstimateQuoteLine[] lines = [new() { CatalogItemId = pizza.Id, StationId = station.Id, Units = 3 }];
+
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [pizza]), Is.EqualTo(7.5));
+  }
+
+  [Test]
+  public void QuotedReadyInMinutesOf_NoLineAtTheStationHasMinutes_AnswersWithoutANumber()
+  {
+    var beer = Article(null, false);
+    var station = StationWith(OpenItem(5, false));
+    EstimateQuoteLine[] lines = [new() { CatalogItemId = beer.Id, StationId = station.Id, Units = 2 }];
+
+    Assert.That(_stationService.QuotedReadyInMinutesOf(station, lines, [beer]), Is.Null);
+  }
+
   private Station StationWith(params OrderItem[] items)
   {
     Station station = new()
@@ -144,6 +214,46 @@ public sealed class StationServiceTest
                              ProductionMinutes = productionMinutes,
                              IsQueueIndependent = isQueueIndependent
                            }
+           };
+  }
+
+  private CatalogItem Article(double? productionMinutes, bool isQueueIndependent)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             Name = "Artikel",
+             CategoryId = Guid.NewGuid(),
+             SortOrder = 1,
+             IsActive = true,
+             ProductionMinutes = productionMinutes,
+             IsQueueIndependent = isQueueIndependent
+           };
+  }
+
+  private OrderItem OpenItemOf(CatalogItem article)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             StationOrderId = Guid.NewGuid(),
+             CatalogItemId = article.Id,
+             ItemName = article.Name,
+             UnitPriceCents = 350,
+             CatalogItem = article
+           };
+  }
+
+  private ItemStationAssignment AssignmentOf(CatalogItem article, Station station)
+  {
+    return new()
+           {
+             Id = Guid.NewGuid(),
+             FestivalId = Guid.NewGuid(),
+             CatalogItemId = article.Id,
+             StationId = station.Id,
+             CatalogItem = article,
+             Station = station
            };
   }
 

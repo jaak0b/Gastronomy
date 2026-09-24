@@ -23,7 +23,7 @@ public sealed class CatalogMappingTest
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),
-      new StationEstimateMapping(new()),
+      new EstimateMapping(new()),
       new StationQueueMapping(new())
     ];
 

@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ConfirmedSettlement } from '../../core/submission'
-import { DeliveryMode, StationEstimateView } from '../../../shared/api/generatedSchemas'
+import { DeliveryMode, StationQuoteView } from '../../../shared/api/generatedSchemas'
 import type { AppLanguage } from '../../../shared/core/deviceLanguage'
 import type { BasketLineView } from '../../core/basket'
 import { withEstimate } from '../../core/estimateWording'
@@ -22,7 +22,7 @@ const props = defineProps<{
   totalCents: number
   language: AppLanguage
   lines: BasketLineView[]
-  estimates: StationEstimateView[]
+  quotedStations: StationQuoteView[]
   deliveryModeFor: (stationId: string) => DeliveryMode
 }>()
 
@@ -38,7 +38,7 @@ const amount = computed(() => formatPrice(props.totalCents, props.language))
 
 const stations = computed(() =>
   deliveriesWithAStation(
-    stationDeliveries(props.lines, props.estimates, props.deliveryModeFor),
+    stationDeliveries(props.lines, props.quotedStations, props.deliveryModeFor),
   ),
 )
 

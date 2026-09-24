@@ -24,7 +24,7 @@ public sealed class StationQueueMappingTest
       new OpenItemMapping(),
       new OrderMapping(new()),
       new SettlementMapping(),
-      new StationEstimateMapping(new()),
+      new EstimateMapping(new()),
       new StationQueueMapping(new())
     ];
 
