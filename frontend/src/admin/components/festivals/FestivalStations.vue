@@ -146,9 +146,13 @@ async function remove(): Promise<void> {
               <v-btn class="edit-station" variant="text" @click="startEditing(station)">
                 {{ t('admin.edit') }}
               </v-btn>
-              <v-btn class="remove-station" variant="text" @click="removedStation = station">
-                {{ t('admin.festival.remove') }}
-              </v-btn>
+              <v-btn
+                class="remove-station"
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                @click="removedStation = station"
+              />
             </div>
             <v-alert
               v-if="refusalText !== null && refusedStationId === station.stationId"

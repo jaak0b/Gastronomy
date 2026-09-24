@@ -290,12 +290,12 @@ async function remove(): Promise<void> {
                 <span class="remove-item-wrapper">
                   <v-btn
                     class="remove-item"
+                    icon="mdi-delete"
                     variant="text"
+                    color="error"
                     :disabled="isRunning"
                     @click="removedItem = item"
-                  >
-                    {{ t('admin.festival.remove') }}
-                  </v-btn>
+                  />
                   <v-tooltip activator="parent" location="top" :disabled="!isRunning">
                     {{ t('admin.itemStaysOnTheMenuWhileTheFestivalRuns') }}
                   </v-tooltip>
