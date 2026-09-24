@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   estimateRangeForItem,
   quoteLinesFor,
-  readyInMinutesAt,
+  quoteLinesForStationChoice,
 } from '../../../src/phone/core/estimates'
 import { ItemEstimateView } from '../../../src/shared/api/generatedSchemas'
 import type { BasketLineView } from '../../../src/phone/core/basket'
@@ -41,16 +41,6 @@ describe('estimateRangeForItem, what the item list shows', () => {
 
   it('shows nothing for an item the laptop gave no time for', () => {
     expect(estimateRangeForItem(ESTIMATES, 'item-bier')).toBeNull()
-  })
-})
-
-describe('readyInMinutesAt, what one station button promises', () => {
-  it('names the time the laptop gave for the item at that station', () => {
-    expect(readyInMinutesAt(ESTIMATES, 'item-bratwurst', 'station-grill')).toBe(96)
-  })
-
-  it('names nothing for a station the laptop gave no time for', () => {
-    expect(readyInMinutesAt(ESTIMATES, 'item-pommes', 'station-grill')).toBeNull()
   })
 })
 
@@ -100,6 +90,50 @@ describe('quoteLinesFor, what the review screen asks the laptop to calculate', (
 
     expect(quoteLinesFor(lines)).toEqual([
       { catalogItemId: 'item-pommes', stationId: 'station-kueche', units: 1 },
+    ])
+  })
+})
+
+describe('quoteLinesForStationChoice, what one button of the station question asks the laptop', () => {
+  const KAFFEE = { catalogItemId: 'item-kaffee', units: 1 }
+
+  it('asks for the cart with the new unit placed at the candidate station', () => {
+    const lines = [line(), line()]
+
+    expect(quoteLinesForStationChoice(lines, [], KAFFEE, 'station-bar')).toEqual([
+      { catalogItemId: 'item-bratwurst', stationId: 'station-kueche', units: 2 },
+      { catalogItemId: 'item-kaffee', stationId: 'station-bar', units: 1 },
+    ])
+  })
+
+  it('adds the new units to the line the cart already holds for that article at that station', () => {
+    const lines = [line({ catalogItemId: 'item-kaffee', stationId: 'station-bar' })]
+
+    expect(
+      quoteLinesForStationChoice(lines, [], { catalogItemId: 'item-kaffee', units: 2 }, 'station-bar'),
+    ).toEqual([{ catalogItemId: 'item-kaffee', stationId: 'station-bar', units: 3 }])
+  })
+
+  it('moves the lines being assigned to the candidate station instead of counting them where they are', () => {
+    const lines = [
+      line(),
+      line({ catalogItemId: 'item-kaffee', stationId: 'station-kueche' }),
+      line({ catalogItemId: 'item-kaffee', stationId: 'station-kueche' }),
+    ]
+
+    expect(
+      quoteLinesForStationChoice(lines, [1, 2], { catalogItemId: 'item-kaffee', units: 2 }, 'station-bar'),
+    ).toEqual([
+      { catalogItemId: 'item-bratwurst', stationId: 'station-kueche', units: 1 },
+      { catalogItemId: 'item-kaffee', stationId: 'station-bar', units: 2 },
+    ])
+  })
+
+  it('leaves out another line whose station is still undecided', () => {
+    const lines = [line({ stationId: null, candidateStationIds: ['station-kueche', 'station-grill'] })]
+
+    expect(quoteLinesForStationChoice(lines, [], KAFFEE, 'station-bar')).toEqual([
+      { catalogItemId: 'item-kaffee', stationId: 'station-bar', units: 1 },
     ])
   })
 })

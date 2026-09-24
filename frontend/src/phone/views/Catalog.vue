@@ -7,11 +7,12 @@ import { countCategoryPortions } from '../core/categoryPortions'
 import { positionsForItem, type ItemPosition } from '../core/itemPositions'
 import {
   estimateRangeForItem,
-  readyInMinutesAt,
+  quotedMinutesAt,
+  quoteLinesForStationChoice,
   type EstimateRange,
 } from '../core/estimates'
 import { letteringColourOn } from '../../shared/core/letteringColour'
-import { needsStationChoice } from '../core/routingPreview'
+import { candidateStations, needsStationChoice } from '../core/routingPreview'
 import { isTableNameValid } from '../core/tableName'
 import { useCatalogStore } from '../stores/catalog'
 import { useEstimatesStore } from '../stores/estimates'
@@ -54,6 +55,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   closeOpenStep()
+  estimates.stopQuotingStationChoices()
 })
 
 const openCategory = computed<CatalogCategoryView | null>(
@@ -154,8 +156,30 @@ function estimateForTheStationChoice(stationId: string): number | null {
   if (item === null || itemState(item) === 'soldOut') {
     return null
   }
-  return readyInMinutesAt(estimates.items, item.id, stationId)
+  return quotedMinutesAt(estimates.stationChoiceQuotes[stationId] ?? [], stationId)
 }
+
+watch(itemBehindTheStationChoice, (item) => {
+  estimates.stopQuotingStationChoices()
+  if (item === null) {
+    return
+  }
+  const unitsAwaitingStation = {
+    catalogItemId: item.id,
+    units: linesAwaitingStation.value.length > 0 ? linesAwaitingStation.value.length : 1,
+  }
+  for (const stationId of candidateStations(item)) {
+    void estimates.quoteStationChoice(
+      stationId,
+      quoteLinesForStationChoice(
+        order.basketLines,
+        linesAwaitingStation.value,
+        unitsAwaitingStation,
+        stationId,
+      ),
+    )
+  }
+})
 
 function place(item: CatalogItemView, note: string | null, stationId: string | null): void {
   order.addItem({

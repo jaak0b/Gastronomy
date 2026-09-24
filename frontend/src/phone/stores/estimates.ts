@@ -8,7 +8,7 @@ import {
   ItemEstimateView,
   StationQuoteView,
 } from '../../shared/api/generatedSchemas'
-import { createLatestRequestGate } from '../../shared/core/latestRequestGate'
+import { createLatestRequestGate, type LatestRequestGate } from '../../shared/core/latestRequestGate'
 import { useConnectionStore } from '../../shared/stores/connection'
 import { useSessionStore } from '../../shared/stores/session'
 
@@ -16,6 +16,10 @@ export const useEstimatesStore = defineStore('estimates', () => {
   const items = ref<ItemEstimateView[]>([])
   const quotedStations = ref<StationQuoteView[]>([])
   const linesBeingQuoted = ref<EstimateQuoteLine[] | null>(null)
+
+  const stationChoiceQuotes = ref<Record<string, StationQuoteView[]>>({})
+  const stationChoiceLines = new Map<string, EstimateQuoteLine[]>()
+  const stationChoiceGates = new Map<string, LatestRequestGate>()
 
   const loadGate = createLatestRequestGate()
   const quoteGate = createLatestRequestGate()
@@ -41,11 +45,15 @@ export const useEstimatesStore = defineStore('estimates', () => {
     items.value = result.data
   }
 
-  async function askForTheQuote(lines: EstimateQuoteLine[]): Promise<void> {
+  async function sendQuoteRequest(
+    lines: EstimateQuoteLine[],
+    gate: LatestRequestGate,
+    apply: (stations: StationQuoteView[]) => void,
+  ): Promise<void> {
     const session = useSessionStore()
-    const token = quoteGate.startRequest()
+    const token = gate.startRequest()
     if (session.deviceToken === null || lines.length === 0) {
-      quotedStations.value = []
+      apply([])
       return
     }
     const result = await request('/api/estimates/quote', {
@@ -54,20 +62,56 @@ export const useEstimatesStore = defineStore('estimates', () => {
       token: session.deviceToken,
       schema: EstimateQuoteView,
     })
-    if (!quoteGate.isNewestRequest(token)) {
+    if (!gate.isNewestRequest(token)) {
       return
     }
     if (result.kind !== 'ok') {
       console.error('The waiting times for the order could not be calculated.', result)
-      quotedStations.value = []
+      apply([])
       return
     }
-    quotedStations.value = result.data.stations
+    apply(result.data.stations)
+  }
+
+  function quoteReviewOrder(lines: EstimateQuoteLine[]): Promise<void> {
+    return sendQuoteRequest(lines, quoteGate, (stations) => {
+      quotedStations.value = stations
+    })
+  }
+
+  function gateForStationChoice(stationChoice: string): LatestRequestGate {
+    const existing = stationChoiceGates.get(stationChoice)
+    if (existing !== undefined) {
+      return existing
+    }
+    const created = createLatestRequestGate()
+    stationChoiceGates.set(stationChoice, created)
+    return created
+  }
+
+  function requoteStationChoice(stationChoice: string, lines: EstimateQuoteLine[]): Promise<void> {
+    return sendQuoteRequest(lines, gateForStationChoice(stationChoice), (stations) => {
+      stationChoiceQuotes.value = { ...stationChoiceQuotes.value, [stationChoice]: stations }
+    })
+  }
+
+  async function quoteStationChoice(stationChoice: string, lines: EstimateQuoteLine[]): Promise<void> {
+    stationChoiceLines.set(stationChoice, lines)
+    stationChoiceQuotes.value = Object.fromEntries(
+      Object.entries(stationChoiceQuotes.value).filter(([quoted]) => quoted !== stationChoice),
+    )
+    await requoteStationChoice(stationChoice, lines)
+  }
+
+  function stopQuotingStationChoices(): void {
+    stationChoiceLines.clear()
+    stationChoiceGates.forEach((gate) => gate.startRequest())
+    stationChoiceQuotes.value = {}
   }
 
   async function quote(lines: EstimateQuoteLine[]): Promise<void> {
     linesBeingQuoted.value = lines
-    await askForTheQuote(lines)
+    await quoteReviewOrder(lines)
   }
 
   function stopQuoting(): void {
@@ -78,7 +122,13 @@ export const useEstimatesStore = defineStore('estimates', () => {
 
   async function refresh(): Promise<void> {
     const lines = linesBeingQuoted.value
-    await Promise.all([load(), lines === null ? Promise.resolve() : askForTheQuote(lines)])
+    await Promise.all([
+      load(),
+      lines === null ? Promise.resolve() : quoteReviewOrder(lines),
+      ...[...stationChoiceLines].map(([stationChoice, linesOfTheStationChoice]) =>
+        requoteStationChoice(stationChoice, linesOfTheStationChoice),
+      ),
+    ])
   }
 
   function listen(): () => void {
@@ -99,5 +149,15 @@ export const useEstimatesStore = defineStore('estimates', () => {
     }
   }
 
-  return { items, quotedStations, load, quote, stopQuoting, listen }
+  return {
+    items,
+    quotedStations,
+    stationChoiceQuotes,
+    load,
+    quote,
+    stopQuoting,
+    quoteStationChoice,
+    stopQuotingStationChoices,
+    listen,
+  }
 })

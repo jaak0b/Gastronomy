@@ -11,18 +11,6 @@ export interface EstimateRange {
   max: number
 }
 
-export function readyInMinutesAt(
-  estimates: readonly ItemEstimateView[],
-  catalogItemId: string,
-  stationId: string,
-): number | null {
-  return (
-    estimates.find(
-      (estimate) => estimate.catalogItemId === catalogItemId && estimate.stationId === stationId,
-    )?.readyInMinutes ?? null
-  )
-}
-
 export function estimateRangeForItem(
   estimates: readonly ItemEstimateView[],
   catalogItemId: string,
@@ -43,22 +31,52 @@ export function quotedMinutesAt(
   return quotedStations.find((station) => station.stationId === stationId)?.readyInMinutes ?? null
 }
 
+function addUnitsToQuoteLines(
+  quoteLines: EstimateQuoteLine[],
+  catalogItemId: string,
+  stationId: string,
+  units: number,
+): void {
+  const sameArticleAtSameStation = quoteLines.find(
+    (quoteLine) => quoteLine.catalogItemId === catalogItemId && quoteLine.stationId === stationId,
+  )
+  if (sameArticleAtSameStation === undefined) {
+    quoteLines.push({ catalogItemId, stationId, units })
+  } else {
+    sameArticleAtSameStation.units += units
+  }
+}
+
 export function quoteLinesFor(lines: readonly BasketLineView[]): EstimateQuoteLine[] {
   const quoteLines: EstimateQuoteLine[] = []
   for (const line of lines.filter((candidate) => !lineCannotBeOrdered(candidate))) {
     const stationId = routedStationId(line)
-    if (stationId === null) {
-      continue
-    }
-    const sameArticleAtSameStation = quoteLines.find(
-      (quoteLine) =>
-        quoteLine.catalogItemId === line.catalogItemId && quoteLine.stationId === stationId,
-    )
-    if (sameArticleAtSameStation === undefined) {
-      quoteLines.push({ catalogItemId: line.catalogItemId, stationId, units: 1 })
-    } else {
-      sameArticleAtSameStation.units += 1
+    if (stationId !== null) {
+      addUnitsToQuoteLines(quoteLines, line.catalogItemId, stationId, 1)
     }
   }
+  return quoteLines
+}
+
+export interface UnitsAwaitingStation {
+  catalogItemId: string
+  units: number
+}
+
+export function quoteLinesForStationChoice(
+  lines: readonly BasketLineView[],
+  linesAwaitingStation: readonly number[],
+  unitsAwaitingStation: UnitsAwaitingStation,
+  candidateStationId: string,
+): EstimateQuoteLine[] {
+  const quoteLines = quoteLinesFor(
+    lines.filter((_, index) => !linesAwaitingStation.includes(index)),
+  )
+  addUnitsToQuoteLines(
+    quoteLines,
+    unitsAwaitingStation.catalogItemId,
+    candidateStationId,
+    unitsAwaitingStation.units,
+  )
   return quoteLines
 }

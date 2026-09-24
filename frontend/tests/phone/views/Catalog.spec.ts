@@ -5,6 +5,7 @@ import CatalogPage from '../../../src/phone/views/Catalog.vue'
 import { useCatalogStore } from '../../../src/phone/stores/catalog'
 import { useEstimatesStore } from '../../../src/phone/stores/estimates'
 import { useOrderStore } from '../../../src/phone/stores/order'
+import { useSessionStore } from '../../../src/shared/stores/session'
 import { CatalogView, ItemEstimateView } from '../../../src/shared/api/generatedSchemas'
 import { currentRoute, navigate } from '../../../src/shared/router/router'
 import { testPlugins } from '../../support/plugins'
@@ -634,33 +635,71 @@ describe('the waiting time on the ordering screen', () => {
     ])
   })
 
-  it('writes the time of each station on its button in the station question', async () => {
+  function answerEachQuoteWith(minutesAt: Record<string, number | null>): void {
+    useSessionStore().deviceToken = 'token-here'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url !== '/api/estimates/quote') {
+          return new Response('[]', { status: 200 })
+        }
+        const { lines } = JSON.parse(String(init?.body)) as {
+          lines: { catalogItemId: string; stationId: string }[]
+        }
+        const stationId = lines.find((quoteLine) => quoteLine.catalogItemId === 'item-kaffee')?.stationId ?? ''
+        return new Response(
+          JSON.stringify({ stations: [{ stationId, readyInMinutes: minutesAt[stationId] ?? null }] }),
+          { status: 200 },
+        )
+      }),
+    )
+  }
+
+  async function askWhereTheKaffeeGoes(view: MountedCatalog): Promise<void> {
+    await openCategory(view, 0)
+    await view.findAll('.item-row .add')[1].trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+  }
+
+  function stationChoices(): (string | undefined)[] {
+    return [...document.querySelectorAll('.station-choice')].map((element) =>
+      element.textContent?.trim(),
+    )
+  }
+
+  it('writes the time the laptop quoted for each station on its button in the station question', async () => {
+    answerEachQuoteWith({ 'station-kueche': 25, 'station-bar': 70 })
     const view = mountCatalogWithEstimates()
 
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[1].trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
+    await askWhereTheKaffeeGoes(view)
 
-    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
-      element.textContent?.trim(),
-    )
-    expect(choices).toEqual(['Küche (~10 Min.)', 'Bar (~60 Min.)'])
+    await vi.waitFor(() => expect(stationChoices()).toEqual(['Küche (~25 Min.)', 'Bar (~70 Min.)']))
   })
 
-  it('writes no time on the buttons of an item the laptop gave no time for', async () => {
-    const catalog = useCatalogStore()
-    catalog.catalog = CATALOG_WITH_A_STATION_CHOICE
-    useEstimatesStore().items = []
-    const view = mount(CatalogPage, { global: { plugins: testPlugins() }, attachTo: document.body })
-
-    await openCategory(view, 0)
-    await view.findAll('.item-row .add')[1].trigger('click')
-    await vi.waitFor(() => expect(document.querySelector('.line-station-sheet')).not.toBeNull())
-
-    const choices = [...document.querySelectorAll('.station-choice')].map((element) =>
-      element.textContent?.trim(),
+  it('writes no time on a button while the laptop has not answered yet', async () => {
+    useSessionStore().deviceToken = 'token-here'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/estimates/quote'
+          ? new Promise<Response>(() => {})
+          : Promise.resolve(new Response('[]', { status: 200 })),
+      ),
     )
-    expect(choices).toEqual(['Küche', 'Bar'])
+    const view = mountCatalogWithEstimates()
+
+    await askWhereTheKaffeeGoes(view)
+
+    expect(stationChoices()).toEqual(['Küche', 'Bar'])
+  })
+
+  it('writes no time on the button of a station the laptop quoted no time for', async () => {
+    answerEachQuoteWith({ 'station-kueche': 25, 'station-bar': null })
+    const view = mountCatalogWithEstimates()
+
+    await askWhereTheKaffeeGoes(view)
+
+    await vi.waitFor(() => expect(stationChoices()).toEqual(['Küche (~25 Min.)', 'Bar']))
   })
 
   it('writes no time on the station buttons when the item has just sold out', async () => {

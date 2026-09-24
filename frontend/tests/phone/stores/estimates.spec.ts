@@ -337,3 +337,90 @@ describe('the waiting time the laptop calculates for the order on the screen', (
     expect(urls).toEqual(['/api/estimates'])
   })
 })
+
+describe('the waiting times the laptop calculates for each button of the station question', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    forgetHubEvents()
+    enrolledPhone()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const KAFFEE_AT_THE_BAR = [{ catalogItemId: 'item-kaffee', stationId: 'station-bar', units: 1 }]
+
+  function answerNaming(readyInMinutes: number): Response {
+    return new Response(JSON.stringify({ stations: [{ stationId: 'station-bar', readyInMinutes }] }), { status: 200 })
+  }
+
+  it('drops an answer that arrives after the station question has closed', async () => {
+    const answers: Array<(response: Response) => void> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((resolve) => answers.push(resolve))),
+    )
+    const estimates = useEstimatesStore()
+    const pending = estimates.quoteStationChoice('station-bar', KAFFEE_AT_THE_BAR)
+
+    estimates.stopQuotingStationChoices()
+    answers[0](answerNaming(12))
+    await pending
+
+    expect(estimates.stationChoiceQuotes).toEqual({})
+  })
+
+  it('keeps the newer answer for a button when an older one for the same button arrives late', async () => {
+    const answers: Array<(response: Response) => void> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((resolve) => answers.push(resolve))),
+    )
+    const estimates = useEstimatesStore()
+    const older = estimates.quoteStationChoice('station-bar', KAFFEE_AT_THE_BAR)
+    const newer = estimates.quoteStationChoice('station-bar', [{ ...KAFFEE_AT_THE_BAR[0], units: 2 }])
+
+    answers[0](answerNaming(12))
+    await older
+    answers[1](answerNaming(24))
+    await newer
+
+    expect(estimates.stationChoiceQuotes).toEqual({
+      'station-bar': [{ stationId: 'station-bar', readyInMinutes: 24 }],
+    })
+  })
+
+  it('keeps the answer to the refreshed question when the first answer arrives late', async () => {
+    const answers: Array<{ url: string; resolve: (response: Response) => void }> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (url: string) =>
+          new Promise<Response>((resolve) => {
+            if (url === '/api/estimates') {
+              resolve(new Response(JSON.stringify([]), { status: 200 }))
+              return
+            }
+            answers.push({ url, resolve })
+          }),
+      ),
+    )
+    const estimates = useEstimatesStore()
+    estimates.listen()
+    await useConnectionStore().connect({ deviceToken: 'token-here' })
+    const first = estimates.quoteStationChoice('station-bar', KAFFEE_AT_THE_BAR)
+
+    fireHubEvent('StationOrdersChanged', { stationId: 'station-bar' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    answers[1].resolve(answerNaming(30))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    answers[0].resolve(answerNaming(12))
+    await first
+
+    expect(estimates.stationChoiceQuotes).toEqual({
+      'station-bar': [{ stationId: 'station-bar', readyInMinutes: 30 }],
+    })
+  })
+})
