@@ -37,7 +37,9 @@ second list or nowhere.
    Never a sentence that begins "if a caller passes".
 2. **A failing test you actually ran.** Write it, run it narrowly, and quote the real failure output.
    If you cannot make the current code fail, say so and drop the claim. A defect nobody can express
-   as a failing test is a defect nobody meets.
+   as a failing test is a defect nobody meets. The failure must be on the assertion the test was
+   written for, naming the wrong value the code produced. A compile error, a missing member, a
+   fixture that does not set up or an exception before the assertion is not a failing test.
 3. **What the user loses, and whether they can tell.** Name the consequence: work or data destroyed,
    something silently wrong that looks right, a step that cannot be retried, time lost to a control
    that refuses without a reason. "Wrong according to the code" is not a consequence.
@@ -74,6 +76,12 @@ one place, a deletion that left traces behind, a missing test for behaviour that
 breaks the writing rules, a repository rule the change ignores. Say which rule each one touches. These
 still need a disposition from whoever asked for the review, so state them clearly, but never dress
 them up as defects.
+
+When the change is a bug fix, check the red run it claims. Rule 3 wants a run where the test compiled,
+executed and failed on its own assertion against the old code. A quoted compile error, a missing
+member, a fixture failure or an exception before the assertion is not that, and neither is a run
+against a throwing stub added for the purpose. Report a fix whose red proof is any of those as a rule
+finding, naming what was quoted instead.
 
 When a repository rule and the real world disagree, say so in the same breath rather than reporting
 the rule as a defect. "Hard rule 2 wants this surfaced to the user; in practice it needs an internal

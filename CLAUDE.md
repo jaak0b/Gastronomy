@@ -112,6 +112,19 @@ Numbered for unambiguous reference; do not cite rule numbers in shipped source o
    fix proves only that the code does what it now does. If you catch yourself having edited
    production code first, revert it and restart from (a).
 
+   **Red means the test compiled, ran and failed on the assertion it was written for.** A build
+   error, a missing member, a type mismatch or a test the runner never reached is not a red run
+   and proves nothing about the behaviour. Neither is a failure for another reason: a fixture that
+   does not set up, a wrong selector, an exception before the assertion. The quoted failure names
+   the wrong value the old code produced. A report that quotes anything else as the red run is
+   rejected, and the fix restarts from (a).
+
+   **Red is demanded where old behaviour exists to fail against.** A bug fix always has that: the
+   old code gives a wrong answer and the test says which. A member that does not exist yet has
+   nothing to fail against, so for a brand new method, type or property the test is still written
+   before the body, but no red run is required and no throwing stub is added just to produce one.
+   The moment such a test touches behaviour that already exists, the red run is required again.
+
    For a **new feature**, the tests rule 4 requires still ship in the same change, and they may be
    written after the code. Write them first anyway when the behaviour is intricate or the design is
    unclear, since that is where test-first earns its cost. Never hand back a feature whose tests were
